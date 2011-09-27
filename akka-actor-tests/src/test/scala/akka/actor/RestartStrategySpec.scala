@@ -224,7 +224,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     val countDownLatch = new CountDownLatch(2)
 
     val boss = actorOf(Props(new Actor {
-      def receive = { case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open }
+      def receive = { case t: Terminated ⇒ maxNoOfRestartsLatch.open }
     }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, Some(1000))))
 
     val slave = actorOf(Props(new Actor {

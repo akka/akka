@@ -53,27 +53,21 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case class Failed(actor: ActorRef, cause: Throwable, recoverable: Boolean, timesRestarted: Int, restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
+case class Failed(@BeanProperty actor: ActorRef,
+                  @BeanProperty cause: Throwable,
+                  @BeanProperty recoverable: Boolean,
+                  @BeanProperty timesRestarted: Int,
+                  @BeanProperty restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
+
+case class ChildTerminated(child: ActorRef, cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
-
-case class Link(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
-
-case class Unlink(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
-
-case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
 case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
 case object ReceiveTimeout extends PossiblyHarmful
-
-case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  @BeanProperty victim: ActorRef,
-  @BeanProperty maxNrOfRetries: Option[Int],
-  @BeanProperty withinTimeRange: Option[Int],
-  @BeanProperty lastExceptionCausingRestart: Throwable) //FIXME should be removed and replaced with Terminated
 
 case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable)
 
@@ -609,9 +603,7 @@ trait Actor {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
         case RevertHotSwap             ⇒ unbecome()
         case f: Failed                 ⇒ context.handleFailure(f)
-        case Link(child)               ⇒ self.link(child)
-        case Unlink(child)             ⇒ self.unlink(child)
-        case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
+        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct)
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel

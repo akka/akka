@@ -161,8 +161,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
     timeout: Timeout,
     channel: UntypedChannel): Future[Any]
 
-  protected[akka] def supervisor_=(sup: Option[ActorRef])
-
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int])
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
@@ -249,7 +247,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def link(actorRef: ActorRef): ActorRef = actorCell.link(actorRef)
+  def link(subject: ActorRef): ActorRef = actorCell.link(subject)
 
   /**
    * Unlink the actor.
@@ -257,7 +255,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def unlink(actorRef: ActorRef): ActorRef = actorCell.unlink(actorRef)
+  def unlink(subject: ActorRef): ActorRef = actorCell.unlink(subject)
 
   /**
    * Returns the supervisor, if there is one.
@@ -282,9 +280,6 @@ class LocalActorRef private[akka] (
   }
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit =
-    actorCell.supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorCell.postMessageToMailbox(message, channel)
@@ -391,10 +386,6 @@ private[akka] case class RemoteActorRef private[akka] (
     unsupported
   }
 
-  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
-    unsupported
-  }
-
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
 
@@ -486,10 +477,6 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
   def supervisor: Option[ActorRef] = unsupported
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
-    unsupported
-  }
 
   def suspend(): Unit = unsupported
 

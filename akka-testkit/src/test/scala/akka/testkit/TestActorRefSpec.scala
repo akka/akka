@@ -224,25 +224,6 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
     }
 
-    "warn about scheduled supervisor" in {
-      val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } })
-      val ref = TestActorRef[WorkerActor]
-
-      val filter = EventFilter.custom(_ ⇒ true)
-      EventHandler.notify(TestEvent.Mute(filter))
-      val log = TestActorRef[Logger]
-      EventHandler.addListener(log)
-      val eventHandlerLevel = EventHandler.level
-      EventHandler.level = EventHandler.WarningLevel
-      boss link ref
-      val la = log.underlyingActor
-      la.count must be(1)
-      la.msg must (include("supervisor") and include("CallingThreadDispatcher"))
-      EventHandler.level = eventHandlerLevel
-      EventHandler.removeListener(log)
-      EventHandler.notify(TestEvent.UnMute(filter))
-    }
-
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       intercept[IllegalActorStateException] { ref("work") }

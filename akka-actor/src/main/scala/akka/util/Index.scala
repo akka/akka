@@ -112,6 +112,17 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
     } else false //Remove failed
   }
 
+  def remove(key: K): Option[Iterable[V]] = {
+    val set = container get key
+
+    if (set ne null) {
+      set.synchronized {
+        container.remove(key, set)
+        Some(scala.collection.JavaConverters.collectionAsScalaIterableConverter(set).asScala)
+      }
+    } else None //Remove failed
+  }
+
   /**
    * @return true if the underlying containers is empty, may report false negatives when the last remove is underway
    */

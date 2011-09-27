@@ -100,8 +100,6 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     // for testing...
     case Stat ⇒
       tryReply(Stats(_delegates length))
-    case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
-      _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case Terminated(victim, _) ⇒
       _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case msg ⇒

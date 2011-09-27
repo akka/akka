@@ -12,12 +12,19 @@ import akka.util.duration._
 import akka.config.Config.config
 import akka.config.Supervision._
 
+object LoggingReceiveSpec {
+  class TestLogActor extends Actor {
+    def receive = { case _ ⇒ }
+  }
+}
+
 class LoggingReceiveSpec
   extends WordSpec
   with BeforeAndAfterEach
   with BeforeAndAfterAll
   with MustMatchers
   with TestKit {
+  import LoggingReceiveSpec._
 
   val level = EventHandler.level
 
@@ -52,7 +59,8 @@ class LoggingReceiveSpec
   ignoreMsg {
     case EventHandler.Debug(_, s: String) ⇒
       !s.startsWith("received") && s != "started" && s != "stopping" && s != "restarting" &&
-        s != "restarted" && !s.startsWith("now supervising") && !s.startsWith("stopped supervising")
+        s != "restarted" && !s.startsWith("now supervising") && !s.startsWith("stopped supervising") &&
+        !s.startsWith("now monitoring") && !s.startsWith("stopped monitoring")
     case EventHandler.Debug(_, _)                               ⇒ true
     case EventHandler.Error(_: UnhandledMessageException, _, _) ⇒ false
     case _: EventHandler.Error                                  ⇒ true
@@ -131,36 +139,42 @@ class LoggingReceiveSpec
 
     "log LifeCycle changes if requested" in {
       within(2 seconds) {
-        val supervisor = TestActorRef(Props(new Actor {
-          def receive = { case _ ⇒ }
-        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)))
+        val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)))
+
         val f = Actor.getClass.getDeclaredField("debugLifecycle")
         f.setAccessible(true)
         f.setBoolean(Actor, true)
-        val actor = TestActorRef(new Actor {
-          def receive = {
-            case _ ⇒
-          }
-        })
+
+        val actor = TestActorRef[TestLogActor](Props[TestLogActor].withSupervisor(supervisor))
         val actor1 = actor.underlyingActor
-        expectMsg(EventHandler.Debug(actor1, "started"))
-        supervisor link actor
+
         expectMsgPF() {
           case EventHandler.Debug(ref, msg: String) ⇒
             ref == supervisor.underlyingActor && msg.startsWith("now supervising")
         }
+
+        expectMsg(EventHandler.Debug(actor1, "started"))
+
+        supervisor link actor
+        expectMsgPF(hint = "now monitoring") {
+          case EventHandler.Debug(ref, msg: String) ⇒
+            ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
+        }
+
+        supervisor unlink actor
+        expectMsgPF(hint = "stopped monitoring") {
+          case EventHandler.Debug(ref, msg: String) ⇒
+            ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")
+        }
+
         actor ! Kill
         expectMsg(EventHandler.Debug(actor1, "restarting"))
         awaitCond(msgAvailable)
         val actor2 = actor.underlyingActor
-        expectMsgPF() {
+        expectMsgPF(hint = "restarted") {
           case EventHandler.Debug(ref, "restarted") if ref eq actor2 ⇒ true
         }
-        supervisor unlink actor
-        expectMsgPF() {
-          case EventHandler.Debug(ref, msg: String) ⇒
-            ref == supervisor.underlyingActor && msg.startsWith("stopped supervising")
-        }
+
         actor.stop()
         expectMsg(EventHandler.Debug(actor2, "stopping"))
         supervisor.stop()

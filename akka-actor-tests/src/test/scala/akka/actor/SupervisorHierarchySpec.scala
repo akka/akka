@@ -51,7 +51,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val countDownMax = new CountDownLatch(1)
     val boss = actorOf(Props(new Actor {
       protected def receive = {
-        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ countDownMax.countDown()
+        case Terminated(_, _) ⇒ countDownMax.countDown()
       }
     }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 1, 5000)))
 

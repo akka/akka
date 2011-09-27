@@ -2,99 +2,53 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-/*package akka.event
+package akka.event
 
-import akka.actor.{ Death, ActorRef }
 import akka.config.Supervision.{ FaultHandlingStrategy }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import akka.actor._
+import akka.dispatch.SystemEnvelope
 
 trait DeathWatch {
-  def signal(death: Death): Unit
+  def signal(fail: Failed, supervisor: ActorRef): Unit
+  def signal(terminated: Terminated): Unit
 }
 
-object Supervision {
-  case class ActiveEntry(monitoring: Vector[ActorRef] = Vector(), supervising: Vector[ActorRef] = Vector(), strategy: FaultHandlingStrategy)
-  case class PassiveEntry(monitors: Vector[ActorRef] = Vector(), supervisor: Option[ActorRef] = None)
+trait Monitoring {
+
+  def link(monitor: ActorRef, monitored: ActorRef): Unit
+
+  def unlink(monitor: ActorRef, monitored: ActorRef): Unit
 }
 
-trait Supervision { self: DeathWatch =>
+object DumbMonitoring extends DeathWatch with Monitoring {
 
-  import Supervision._
+  val monitoring = new akka.util.Index[ActorRef, ActorRef] //Key == monitored, Values == monitors
 
-  val guard = new ReentrantReadWriteLock
-  val read = guard.readLock()
-  val write = guard.writeLock()
+  def signal(fail: Failed, supervisor: ActorRef): Unit =
+    supervisor match {
+      case l: LocalActorRef ⇒ l ! fail //FIXME, should Failed be a system message ? => l.underlying.dispatcher.systemDispatch(SystemEnvelope(l.underlying, fail, NullChannel))
+      case other            ⇒ throw new IllegalStateException("Supervision only works for local actors currently")
+    }
 
-  val activeEntries  = new ConcurrentHashMap[ActorRef, ActiveEntry](1024)
-  val passiveEntries = new ConcurrentHashMap[ActorRef, PassiveEntry](1024)
+  def signal(terminated: Terminated): Unit = {
+    val monitors = monitoring.remove(terminated.actor)
+    if (monitors.isDefined)
+      monitors.get.foreach(_ ! terminated)
+  }
 
-  def registerMonitorable(monitor: ActorRef, monitorsSupervisor: Option[ActorRef], faultHandlingStrategy: FaultHandlingStrategy) {
-    read.lock()
-    try {
-      activeEntries.putIfAbsent(monitor, ActiveEntry(strategy = faultHandlingStrategy))
-      passiveEntries.putIfAbsent(monitor, PassiveEntry(supervisor = monitorsSupervisor))
-    } finally {
-      read.unlock()
+  def link(monitor: ActorRef, monitored: ActorRef): Unit = {
+    if (monitored.isShutdown) monitor ! Terminated(monitored, new ActorKilledException("Already terminated when linking"))
+    else { // FIXME race between shutting down
+      monitoring.put(monitored, monitor)
     }
   }
 
-  def deregisterMonitorable(monitor: ActorRef) {
-    read.lock()
-    try {
-      activeEntries.remove(monitor)
-      passiveEntries.remove(monitor)
-    } finally {
-      read.unlock()
-    }
-  }
-
-  def startMonitoring(monitor: ActorRef, monitored: ActorRef): ActorRef = {
-    def addActiveEntry(): ActorRef =
-      activeEntries.get(monitor) match {
-        case null => null//He's stopped or not started, which is unlikely
-        case entry =>
-          val updated = entry.copy(monitoring = entry.monitoring :+ monitored)
-          if (activeEntries.replace(monitor, entry, updated))
-            monitored
-          else
-            addActiveEntry()
-      }
-
-    def addPassiveEntry(): ActorRef =
-      activeEntries.get(monitored) match {
-        case null => null//The thing we're trying to monitor isn't registered, abort
-        case _ =>
-          passiveEntries.get(monitored) match {
-            case null =>
-              passiveEntries.putIfAbsent(monitored, PassiveEntry(monitors = Vector(monitor))) match {
-                case null => monitored//All good
-                case _ => addPassiveEntry()
-              }
-
-            case existing =>
-              val updated = existing.copy(monitors = existing.monitors :+ monitor)
-              if (passiveEntries.replace(monitored, existing, updated))
-                monitored
-              else
-                addPassiveEntry()
-          }
-    }
-
-    read.lock()
-    try {
-      addActiveEntry()
-      addPassiveEntry()
-    } finally {
-      read.unlock()
-    }
-  }
-
-  def stopMonitoring(monitor: ActorRef, monitored: ActorRef, strategy: FaultHandlingStrategy, supervise: Boolean): ActorRef = {
-    monitored
+  def unlink(monitor: ActorRef, monitored: ActorRef): Unit = {
+    monitoring.remove(monitored, monitor)
   }
 }
-*/
 
 /*
 * Scenarios that can occur:

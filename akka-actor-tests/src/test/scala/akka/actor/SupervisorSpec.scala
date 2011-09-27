@@ -60,8 +60,8 @@ object SupervisorSpec {
     val temp = actorOf(Props[PingPongActor].withSupervisor(self))
 
     override def receive = {
-      case Die ⇒ (temp.?(Die, TimeoutMillis)).get
-      case _: MaximumNumberOfRestartsWithinTimeRangeReached ⇒
+      case Die           ⇒ (temp.?(Die, TimeoutMillis)).get
+      case _: Terminated ⇒
     }
   }
 

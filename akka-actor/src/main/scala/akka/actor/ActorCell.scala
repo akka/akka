@@ -4,15 +4,23 @@
 
 package akka.actor
 
-import akka.event.EventHandler
-import akka.config.Supervision._
+import akka.config.Supervision.{
+  AllForOnePermanentStrategy,
+  AllForOneTemporaryStrategy,
+  FaultHandlingStrategy,
+  OneForOnePermanentStrategy,
+  OneForOneTemporaryStrategy,
+  Temporary,
+  Permanent
+}
 import akka.dispatch._
 import akka.util._
 import java.util.{ Collection ⇒ JCollection }
-import java.util.concurrent.{ ScheduledFuture, ConcurrentHashMap, TimeUnit }
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
+import akka.event.{ DumbMonitoring, EventHandler }
+import java.util.concurrent.{ ConcurrentLinkedQueue, ScheduledFuture, ConcurrentHashMap, TimeUnit }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -45,7 +53,9 @@ private[akka] trait ActorContext {
 
   def dispatcher: MessageDispatcher
 
-  def handleFailure(fail: Failed)
+  def handleFailure(fail: Failed): Unit
+
+  def handleChildTerminated(childtermination: ChildTerminated): Unit
 }
 
 private[akka] object ActorCell {
@@ -68,16 +78,13 @@ private[akka] class ActorCell(
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
-  @volatile //Should be a final field
-  var _supervisor: Option[ActorRef] = None
-
   @volatile //FIXME doesn't need to be volatile
   var maxNrOfRetriesCount: Int = 0
 
   @volatile //FIXME doesn't need to be volatile
   var restartTimeWindowStartNanos: Long = 0L
 
-  lazy val _linkedActors = new ConcurrentHashMap[Uuid, ActorRef]
+  val _linkedActors = new ConcurrentLinkedQueue[ActorRef]
 
   @volatile //FIXME doesn't need to be volatile
   var hotswap: Stack[PartialFunction[Any, Unit]] = _hotswap // TODO: currently settable from outside for compatibility
@@ -104,9 +111,17 @@ private[akka] class ActorCell(
   @volatile
   var mailbox: Mailbox = _
 
-  def start() {
-    if (props.supervisor.isDefined) props.supervisor.get.link(self)
+  def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)
+
+    if (props.supervisor.isDefined) {
+      props.supervisor.get match {
+        case l: LocalActorRef ⇒
+          l.underlying.dispatcher.systemDispatch(SystemEnvelope(l.underlying, akka.dispatch.Supervise(self), NullChannel))
+        case other ⇒ throw new UnsupportedOperationException("Supervision failure: " + other + " cannot be a supervisor, only LocalActorRefs can")
+      }
+    }
+
     Actor.registry.register(self)
     dispatcher.attach(this)
   }
@@ -136,40 +151,22 @@ private[akka] class ActorCell(
     if (isRunning)
       dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
 
-  def link(actorRef: ActorRef): ActorRef = {
-    guard.withGuard {
-      val actorRefSupervisor = actorRef.supervisor
-      val hasSupervisorAlready = actorRefSupervisor.isDefined
-      if (hasSupervisorAlready && actorRefSupervisor.get.uuid == self.uuid) return actorRef // we already supervise this guy
-      else if (hasSupervisorAlready) throw new IllegalActorStateException(
-        "Actor can only have one supervisor [" + actorRef + "], e.g. link(actor) fails")
-      else {
-        _linkedActors.put(actorRef.uuid, actorRef)
-        actorRef.supervisor = Some(self)
-      }
-    }
-    if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "now supervising " + actorRef)
-    actorRef
+  def link(subject: ActorRef): ActorRef = {
+    dispatcher.systemDispatch(SystemEnvelope(this, Link(subject), NullChannel))
+    subject
   }
 
-  def unlink(actorRef: ActorRef): ActorRef = {
-    guard.withGuard {
-      if (_linkedActors.remove(actorRef.uuid) eq null)
-        throw new IllegalActorStateException("Actor [" + actorRef + "] is not a linked actor, can't unlink")
-      actorRef.supervisor = None
-      if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "stopped supervising " + actorRef)
-    }
-    actorRef
+  def unlink(subject: ActorRef): ActorRef = {
+    dispatcher.systemDispatch(SystemEnvelope(this, Unlink(subject), NullChannel))
+    subject
   }
 
-  def linkedActors: JCollection[ActorRef] = java.util.Collections.unmodifiableCollection(_linkedActors.values)
+  def linkedActors: JCollection[ActorRef] = java.util.Collections.unmodifiableCollection(_linkedActors)
 
-  def supervisor: Option[ActorRef] = _supervisor
+  //TODO FIXME remove this method
+  def supervisor: Option[ActorRef] = props.supervisor
 
-  def supervisor_=(sup: Option[ActorRef]): Unit = _supervisor = sup
-
-  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
-    dispatcher dispatch Envelope(this, message, channel)
+  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher dispatch Envelope(this, message, channel)
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -216,10 +213,11 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
-        e.printStackTrace(System.err)
         envelope.channel.sendException(e)
-        if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
-        else throw e
+        if (supervisor.isDefined)
+          DumbMonitoring.signal(Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos), supervisor.get)
+        else
+          throw e
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -239,20 +237,18 @@ private[akka] class ActorCell(
         if (a ne null) a.postStop()
 
         { //Stop supervised actors
-          val i = _linkedActors.values.iterator
-          while (i.hasNext) {
-            i.next.stop()
-            i.remove()
+          var a = _linkedActors.poll()
+          while (a ne null) {
+            a.stop()
+            a = _linkedActors.poll()
           }
         }
       } finally {
-        try {
-          if (supervisor.isDefined)
-            supervisor.get ! Failed(self, new ActorKilledException("Stopped"), false, maxNrOfRetriesCount, restartTimeWindowStartNanos) //Death(self, new ActorKilledException("Stopped"), false)
-        } catch {
-          case e: ActorInitializationException ⇒
-          // TODO: remove when ! cannot throw anymore
-        }
+        val cause = new ActorKilledException("Stopped") //FIXME make this an object, can be reused everywhere
+
+        if (supervisor.isDefined) supervisor ! ChildTerminated(self, cause)
+        DumbMonitoring.signal(Terminated(self, cause))
+
         currentMessage = null
         clearActorContext()
       }
@@ -262,11 +258,14 @@ private[akka] class ActorCell(
     try {
       if (!mailbox.isClosed) {
         envelope.message match {
-          case Create    ⇒ create(recreation = false)
-          case Recreate  ⇒ create(recreation = true)
-          case Suspend   ⇒ suspend()
-          case Resume    ⇒ resume()
-          case Terminate ⇒ terminate()
+          case Create           ⇒ create(recreation = false)
+          case Recreate         ⇒ create(recreation = true)
+          case Link(subject)    ⇒ akka.event.DumbMonitoring.link(self, subject); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "now monitoring " + subject)
+          case Unlink(subject)  ⇒ akka.event.DumbMonitoring.unlink(self, subject); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "stopped monitoring " + subject)
+          case Suspend          ⇒ suspend()
+          case Resume           ⇒ resume()
+          case Terminate        ⇒ terminate()
+          case Supervise(child) ⇒ if (!_linkedActors.contains(child)) { _linkedActors.offer(child); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "now supervising " + child) }
         }
       }
     } catch {
@@ -299,7 +298,10 @@ private[akka] class ActorCell(
 
               channel.sendException(e)
 
-              if (supervisor.isDefined) supervisor.get ! Failed(self, e, true, maxNrOfRetriesCount, restartTimeWindowStartNanos) else dispatcher.resume(this)
+              if (supervisor.isDefined)
+                DumbMonitoring.signal(Failed(self, e, true, maxNrOfRetriesCount, restartTimeWindowStartNanos), supervisor.get)
+              else
+                dispatcher.resume(this)
 
               if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
           } finally {
@@ -333,10 +335,27 @@ private[akka] class ActorCell(
 
       case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
         fail.actor.stop()
-        self ! MaximumNumberOfRestartsWithinTimeRangeReached(fail.actor, None, None, fail.cause) //FIXME this should be removed, you should link to an actor to get Terminated messages
 
       case _ ⇒
-        if (_supervisor.isDefined) throw fail.cause else fail.actor.stop() //Escalate problem if not handled here
+        if (supervisor.isDefined) throw fail.cause else fail.actor.stop() //Escalate problem if not handled here
+    }
+  }
+
+  def handleChildTerminated(ct: ChildTerminated): Unit = {
+    props.faultHandler match {
+      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
+      //STOP ALL AND ESCALATE
+
+      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass))                     ⇒
+      //STOP ALL?
+
+      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
+      //ESCALATE?
+
+      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
+        _linkedActors.remove(ct.child)
+
+      case _ ⇒ throw ct.cause //Escalate problem if not handled here
     }
   }
 
@@ -379,9 +398,6 @@ private[akka] class ActorCell(
           success
         }
       } else {
-        // tooManyRestarts
-        if (supervisor.isDefined)
-          supervisor.get ! MaximumNumberOfRestartsWithinTimeRangeReached(self, maxNrOfRetries, withinTimeRange, reason)
         stop()
         true // done
       }
@@ -429,21 +445,16 @@ private[akka] class ActorCell(
   protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     props.faultHandler.lifeCycle match {
       case Temporary ⇒
-        val i = _linkedActors.values.iterator
-        while (i.hasNext) {
-          val actorRef = i.next()
-
-          i.remove()
-
-          actorRef.stop()
-
-          //FIXME if last temporary actor is gone, then unlink me from supervisor <-- should this exist?
-          if (!i.hasNext && supervisor.isDefined)
-            supervisor.get ! UnlinkAndStop(self)
+        { //Stop supervised actors
+          var a = _linkedActors.poll()
+          while (a ne null) {
+            a.stop()
+            a = _linkedActors.poll()
+          }
         }
 
       case Permanent ⇒
-        val i = _linkedActors.values.iterator
+        val i = _linkedActors.iterator
         while (i.hasNext) i.next().restart(reason, maxNrOfRetries, withinTimeRange)
     }
   }
