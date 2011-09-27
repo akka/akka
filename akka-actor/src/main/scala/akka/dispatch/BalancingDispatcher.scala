@@ -94,6 +94,9 @@ class BalancingDispatcher(
   protected[akka] override def unregister(actor: ActorCell) = {
     super.unregister(actor)
     buddies.remove(actor)
+    val buddy = buddies.pollFirst()
+    if (buddy ne null)
+      registerForExecution(buddy.mailbox, false, false)
   }
 
   protected[akka] override def shutdown(): Unit = {
@@ -122,10 +125,10 @@ class BalancingDispatcher(
     val receiver = invocation.receiver
     messageQueue enqueue invocation
 
-    registerForExecution(receiver.mailbox, true, false)
+    registerForExecution(receiver.mailbox, false, false)
 
     val buddy = buddies.pollFirst()
     if (buddy ne null)
-      registerForExecution(buddy.mailbox, true, false)
+      registerForExecution(buddy.mailbox, false, false)
   }
 }
