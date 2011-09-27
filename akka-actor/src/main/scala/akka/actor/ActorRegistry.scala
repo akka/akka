@@ -52,7 +52,6 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     // FIXME: this check is nice but makes serialization/deserialization specs break
     //if (actorsByAddress.containsKey(address) || registeredInCluster(address))
     //  throw new IllegalStateException("Actor 'address' [" + address + "] is already in use, can't register actor [" + actor + "]")
-
     actorsByAddress.put(address, actor)
     actorsByUuid.put(actor.uuid, actor)
     notifyListeners(ActorRegistered(address, actor, Option(typedActorsByUuid get actor.uuid)))

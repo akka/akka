@@ -158,6 +158,7 @@ private[akka] class ActorCell(
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.registry.unregister(self)
+      Actor.provider.evict(self.address)
       status = Status.Shutdown
       dispatcher.detach(this)
       try {

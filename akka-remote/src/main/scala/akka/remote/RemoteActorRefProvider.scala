@@ -43,7 +43,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
-      val actor =
+      val actor = 
         Deployer.lookupDeploymentFor(address) match {
           case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
             // FIXME create RoutedActorRef if 'router' is specified
@@ -71,6 +71,11 @@ class RemoteActorRefProvider extends ActorRefProvider {
   }
 
   def findActorRef(address: String): Option[ActorRef] = throw new UnsupportedOperationException
+
+  /**
+   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
+   */
+  private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
   /**
    * Using (checking out) actor on a specific node.

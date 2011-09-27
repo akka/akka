@@ -16,6 +16,8 @@ trait ActorRefProvider {
   def actorOf(props: Props, address: String): Option[ActorRef]
 
   def findActorRef(address: String): Option[ActorRef]
+
+  private[akka] def evict(address: String): Boolean
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
@@ -88,6 +90,24 @@ private[akka] class ActorRefProviders(
     findActorRef(address, providersAsList)
   }
 
+  /**
+   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
+   */
+  private[akka] def evict(address: String): Boolean = {
+
+    @annotation.tailrec
+    def evict(address: String, providers: List[ActorRefProvider]): Boolean = {
+      providers match {
+        case Nil ⇒ false
+        case provider :: rest ⇒
+          if (provider.evict(address)) true // done
+          else evict(address, rest) // recur
+      }
+    }
+
+    evict(address, providersAsList)
+  }
+
   private[akka] def systemActorOf(props: Props, address: String): Option[ActorRef] = {
     localProvider
       .getOrElse(throw new IllegalStateException("No LocalActorRefProvider available"))
@@ -112,6 +132,11 @@ class LocalActorRefProvider extends ActorRefProvider {
 
   def findActorRef(address: String): Option[ActorRef] = Actor.registry.local.actorFor(address)
 
+  /**
+   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
+   */
+  private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
+
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): Option[ActorRef] = {
     Address.validate(address)
 
@@ -128,6 +153,7 @@ class LocalActorRefProvider extends ActorRefProvider {
           case _                                         ⇒ None // non-local actor
         }
 
+      actor foreach { a ⇒ Actor.registry.register(a) }
       newFuture.completeWithResult(actor)
       actor
 
