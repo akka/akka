@@ -51,7 +51,7 @@ class SchedulerSpec extends JUnitSuite {
     collectFuture(Scheduler.schedule(() ⇒ countDownLatch2.countDown(), 0, 50, TimeUnit.MILLISECONDS))
 
     // after max 1 second it should be executed at least the 3 times already
-    assert(countDownLatch2.await(1, TimeUnit.SECONDS))
+    assert(countDownLatch2.await(2, TimeUnit.SECONDS))
   }
 
   @Test
@@ -66,7 +66,7 @@ class SchedulerSpec extends JUnitSuite {
     collectFuture(Scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS))
 
     // after 1 second the wait should fail
-    assert(countDownLatch.await(1, TimeUnit.SECONDS) == false)
+    assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
     // should still be 1 left
     assert(countDownLatch.getCount == 1)
   }

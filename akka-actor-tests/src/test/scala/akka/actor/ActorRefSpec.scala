@@ -19,6 +19,8 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
 
+  case class ReplyTo(channel: Channel[Any])
+
   val latch = TestLatch(4)
 
   class ReplyActor extends Actor {
@@ -32,7 +34,7 @@ object ActorRefSpec {
       }
       case "complexRequest2" ⇒
         val worker = actorOf(Props[WorkerActor])
-        worker ! channel
+        worker ! ReplyTo(channel)
       case "workDone"      ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ reply("simpleReply")
     }
@@ -45,7 +47,7 @@ object ActorRefSpec {
         reply("workDone")
         self.stop()
       }
-      case replyTo: Channel[Any] ⇒ {
+      case ReplyTo(replyTo) ⇒ {
         work
         replyTo ! "complexReply"
       }

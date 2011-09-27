@@ -270,8 +270,8 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  //FIXME TODO REMOVE THIS
-  @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this")
+  // FIXME TODO: remove this method
+  // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor.get
     while ((instance eq null) && actorCell.isRunning) {

@@ -191,8 +191,8 @@ object Routing {
     new RoutedActorRef(
       new RoutedProps(
         () ⇒ router,
-        RoutedProps.defaultFailureDetectorFactory,
         connections,
+        RoutedProps.defaultFailureDetectorFactory,
         RoutedProps.defaultTimeout, true),
       actorAddress)
   }

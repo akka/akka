@@ -85,17 +85,12 @@ object RoutedProps {
  */
 case class RoutedProps(
   routerFactory: () ⇒ Router,
-  failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector,
   connections: Iterable[ActorRef],
-  timeout: Timeout,
-  localOnly: Boolean) {
+  failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector = RoutedProps.defaultFailureDetectorFactory,
+  timeout: Timeout = RoutedProps.defaultTimeout,
+  localOnly: Boolean = RoutedProps.defaultLocalOnly) {
 
-  def this() = this(
-    routerFactory = RoutedProps.defaultRouterFactory,
-    failureDetectorFactory = RoutedProps.defaultFailureDetectorFactory,
-    connections = List(),
-    timeout = RoutedProps.defaultTimeout,
-    localOnly = RoutedProps.defaultLocalOnly)
+  def this() = this(RoutedProps.defaultRouterFactory, List())
 
   /**
    * Returns a new RoutedProps configured with a random router.

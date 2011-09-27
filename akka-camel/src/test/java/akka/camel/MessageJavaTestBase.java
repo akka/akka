@@ -67,7 +67,7 @@ public class MessageJavaTestBase {
     @Test public void shouldTransformBodyAndPreserveHeaders() {
       assertEquals(
           new Message("ab", createMap("A", "1")),
-          new Message("a" , createMap("A", "1")).transformBody((Function)new TestTransformer()));
+          new Message("a" , createMap("A", "1")).transformBody((Function<String, Object>) new TestTransformer()));
     }
 
     @Test public void shouldConvertBodyAndPreserveHeaders() {
@@ -120,7 +120,7 @@ public class MessageJavaTestBase {
         return map;
     }
 
-    private static class TestTransformer implements Function<String, String> {
+    private static class TestTransformer implements Function<String, Object> {
         public String apply(String param) {
             return param + "b";
         }

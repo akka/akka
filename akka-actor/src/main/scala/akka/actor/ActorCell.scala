@@ -216,7 +216,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
-        e.printStackTrace(System.err)
+        EventHandler.error(e, this, "error while creating actor")
         envelope.channel.sendException(e)
         if (supervisor.isDefined) supervisor.get ! Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos)
         else throw e

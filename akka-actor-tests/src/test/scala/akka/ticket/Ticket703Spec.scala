@@ -29,7 +29,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
             }
           })
         }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Exception]), 5, 1000)))
-      (actorPool.?("Ping", 7000)).await.result must be === Some("Response")
+      (actorPool.?("Ping", 10000)).await.result must be === Some("Response")
     }
   }
 }

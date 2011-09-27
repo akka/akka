@@ -53,14 +53,14 @@ trait Consumer { this: Actor ⇒
 }
 
 /**
- *  Java-friendly Consumer.
+ * Java-friendly Consumer.
  *
- * @see UntypedConsumerActor
- * @see RemoteUntypedConsumerActor
+ * Subclass this abstract class to create an MDB-style untyped consumer actor. This
+ * class is meant to be used from Java.
  *
  * @author Martin Krasser
  */
-trait UntypedConsumer extends Consumer { self: UntypedActor ⇒
+abstract class UntypedConsumerActor extends UntypedActor with Consumer {
   final override def endpointUri = getEndpointUri
   final override def blocking = isBlocking
   final override def autoack = isAutoack
@@ -83,12 +83,6 @@ trait UntypedConsumer extends Consumer { self: UntypedActor ⇒
    */
   def isAutoack() = super.autoack
 }
-
-/**
- * Subclass this abstract class to create an MDB-style untyped consumer actor. This
- * class is meant to be used from Java.
- */
-abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer
 
 /**
  * A callback handler for route definitions to consumer actors.
