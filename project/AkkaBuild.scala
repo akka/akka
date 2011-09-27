@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, camel, camelTyped, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, samples, tutorials)
     //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
@@ -191,22 +191,22 @@ object AkkaBuild extends Build {
   //   )
   // )
 
-  lazy val camel = Project(
-    id = "akka-camel",
-    base = file("akka-camel"),
-    dependencies = Seq(actor, slf4j, testkit % "test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.camel
-    )
-  )
+  // lazy val camel = Project(
+  //   id = "akka-camel",
+  //   base = file("akka-camel"),
+  //   dependencies = Seq(actor, slf4j, testkit % "test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.camel
+  //   )
+  // )
 
   // can be merged back into akka-camel
-  lazy val camelTyped = Project(
-    id = "akka-camel-typed",
-    base = file("akka-camel-typed"),
-    dependencies = Seq(camel % "compile;test->test", testkit % "test"),
-    settings = defaultSettings
-  )
+  // lazy val camelTyped = Project(
+  //   id = "akka-camel-typed",
+  //   base = file("akka-camel-typed"),
+  //   dependencies = Seq(camel % "compile;test->test", testkit % "test"),
+  //   settings = defaultSettings
+  // )
 
   // lazy val spring = Project(
   //   id = "akka-spring",
@@ -230,7 +230,8 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample, camelSample)
+    aggregate = Seq(fsmSample)
+    // aggregate = Seq(fsmSample, camelSample)
   )
 
   // lazy val antsSample = Project(
@@ -254,14 +255,14 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
-  lazy val camelSample = Project(
-    id = "akka-sample-camel",
-    base = file("akka-samples/akka-sample-camel"),
-    dependencies = Seq(actor, camelTyped, testkit % "test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.sampleCamel
-    )
-  )
+  // lazy val camelSample = Project(
+  //   id = "akka-sample-camel",
+  //   base = file("akka-samples/akka-sample-camel"),
+  //   dependencies = Seq(actor, camelTyped, testkit % "test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.sampleCamel
+  //   )
+  // )
 
   // lazy val helloSample = Project(
   //   id = "akka-sample-hello",
@@ -409,9 +410,10 @@ object Dependencies {
 
   val mongoMailbox = Seq(mongoAsync, twttrUtilCore)
 
-  val camel = Seq(camelCore, Test.junit, Test.scalatest, Test.logback)
+//  val camel = Seq(camelCore, Test.junit, Test.scalatest, Test.logback)
 
-  val spring = Seq(springBeans, springContext, camelSpring, Test.junit, Test.scalatest)
+  val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
+//  val spring = Seq(springBeans, springContext, camelSpring, Test.junit, Test.scalatest)
 
   val kernel = Seq(
     jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
@@ -419,8 +421,8 @@ object Dependencies {
   )
 
   // TODO: resolve Jetty version conflict
-  val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
-    Test.junit, Test.scalatest, Test.logback)
+  // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
+  //   Test.junit, Test.scalatest, Test.logback)
 }
 
 object Dependency {
