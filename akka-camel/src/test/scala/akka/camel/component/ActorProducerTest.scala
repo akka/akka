@@ -208,7 +208,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test
-  def shouldThrowExceptionWhenIdNotSet: Unit = {
+  def shouldThrowExceptionWhenIdNotSet{
     val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:id:")
@@ -218,7 +218,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test
-  def shouldThrowExceptionWhenUuidNotSet: Unit = {
+  def shouldThrowExceptionWhenUuidNotSet{
     val actor = actorOf[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:")
@@ -228,7 +228,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
   }
 
   @Test
-  def shouldSendMessageToActorAndTimeout(): Unit = {
+  def shouldSendMessageToActorAndTimeout() {
     val actor = actorOf(Props[Tester3].withTimeout(Timeout(1)))
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOut)

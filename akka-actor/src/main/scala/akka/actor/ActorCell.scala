@@ -104,7 +104,7 @@ private[akka] class ActorCell(
   @volatile
   var mailbox: Mailbox = _
 
-  def start(): Unit = {
+  def start() {
     if (props.supervisor.isDefined) props.supervisor.get.link(self)
     mailbox = dispatcher.createMailbox(this)
     Actor.registry.register(self)
@@ -200,7 +200,7 @@ private[akka] class ActorCell(
     case msg  ⇒ msg.channel
   }
 
-  def systemInvoke(envelope: SystemEnvelope): Unit = {
+  def systemInvoke(envelope: SystemEnvelope) {
     def create(recreation: Boolean): Unit = try {
       actor.get() match {
         case null ⇒
@@ -226,7 +226,7 @@ private[akka] class ActorCell(
 
     def resume(): Unit = dispatcher resume this
 
-    def terminate(): Unit = {
+    def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.provider.evict(self.address)
@@ -279,7 +279,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def invoke(messageHandle: Envelope): Unit = {
+  def invoke(messageHandle: Envelope) {
     guard.lock.lock()
     try {
       if (!mailbox.isClosed) {
@@ -320,7 +320,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleFailure(fail: Failed): Unit = {
+  def handleFailure(fail: Failed) {
     props.faultHandler match {
       case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
         restartLinkedActors(fail.cause, maxRetries, within)
@@ -426,7 +426,7 @@ private[akka] class ActorCell(
     denied == false // if we weren't denied, we have a go
   }
 
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = {
+  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
     props.faultHandler.lifeCycle match {
       case Temporary ⇒
         val i = _linkedActors.values.iterator
@@ -466,7 +466,7 @@ private[akka] class ActorCell(
 
   def clearActorContext(): Unit = setActorContext(null)
 
-  def setActorContext(newContext: ActorContext): Unit = {
+  def setActorContext(newContext: ActorContext) {
     @tailrec
     def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, newContext: ActorContext): Boolean = {
       val success = try {

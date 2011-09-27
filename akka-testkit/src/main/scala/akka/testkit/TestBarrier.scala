@@ -26,7 +26,7 @@ class TestBarrier(count: Int) {
 
   def await(): Unit = await(TestBarrier.DefaultTimeout)
 
-  def await(timeout: Duration): Unit = {
+  def await(timeout: Duration) {
     try {
       barrier.await(Testing.testTime(timeout.toNanos), TimeUnit.NANOSECONDS)
     } catch {

@@ -27,7 +27,7 @@ class BoundedBlockingQueue[E <: AnyRef](
   private val notEmpty = lock.newCondition()
   private val notFull = lock.newCondition()
 
-  def put(e: E): Unit = { //Blocks until not full
+  def put(e: E) { //Blocks until not full
     if (e eq null) throw new NullPointerException
     lock.lock()
     try {
@@ -157,7 +157,7 @@ class BoundedBlockingQueue[E <: AnyRef](
     }
   }
 
-  override def clear(): Unit = {
+  override def clear() {
     lock.lock()
     try {
       backing.clear
@@ -273,7 +273,7 @@ class BoundedBlockingQueue[E <: AnyRef](
           elements(last).asInstanceOf[E]
         }
 
-        def remove(): Unit = {
+        def remove() {
           if (last < 0) throw new IllegalStateException
           val target = elements(last)
           last = -1 //To avoid 2 subsequent removes without a next in between

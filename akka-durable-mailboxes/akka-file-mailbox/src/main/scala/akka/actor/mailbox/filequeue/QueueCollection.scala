@@ -127,7 +127,7 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
    * Retrieve an item from a queue and pass it to a continuation. If no item is available within
    * the requested time, or the server is shutting down, None is passed.
    */
-  def remove(key: String, timeout: Int, transaction: Boolean, peek: Boolean)(f: Option[QItem] ⇒ Unit): Unit = {
+  def remove(key: String, timeout: Int, transaction: Boolean, peek: Boolean)(f: Option[QItem] ⇒ Unit) {
     queue(key) match {
       case None ⇒
         queueMisses.incr

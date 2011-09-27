@@ -20,7 +20,7 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
     r1.method.getName < r2.method.getName
 
   @Before
-  def setUp: Unit = {
+  def setUp{
     publisher = actorOf(new TypedConsumerPublisherMock)
     requestor = actorOf(new TypedConsumerPublishRequestor)
     requestor ! InitPublishRequestor(publisher)

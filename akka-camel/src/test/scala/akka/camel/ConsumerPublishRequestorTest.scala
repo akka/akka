@@ -17,7 +17,7 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
   var consumer: LocalActorRef = _
 
   @Before
-  def setUp: Unit = {
+  def setUp{
     publisher = actorOf(new ConsumerPublisherMock)
     requestor = actorOf(new ConsumerPublishRequestor)
     requestor ! InitPublishRequestor(publisher)

@@ -36,7 +36,7 @@ final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMess
   /**
    * @return whether to proceed with processing other messages
    */
-  final def invoke(): Unit = {
+  final def invoke() {
     receiver systemInvoke this
   }
 }
@@ -105,7 +105,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Attaches the specified actor instance to this dispatcher
    */
-  final def attach(actor: ActorCell): Unit = {
+  final def attach(actor: ActorCell) {
     guard.lock.lock()
     try {
       startIfUnstarted()
@@ -118,7 +118,7 @@ abstract class MessageDispatcher extends Serializable {
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorCell): Unit = {
+  final def detach(actor: ActorCell) {
     guard withGuard {
       unregister(actor)
       if (uuids.isEmpty && _tasks.get == 0) {
@@ -134,11 +134,11 @@ abstract class MessageDispatcher extends Serializable {
     }
   }
 
-  protected final def startIfUnstarted(): Unit = {
+  protected final def startIfUnstarted() {
     if (active.isOff) guard withGuard { active.switchOn { start() } }
   }
 
-  protected[akka] final def dispatchTask(block: () ⇒ Unit): Unit = {
+  protected[akka] final def dispatchTask(block: () ⇒ Unit) {
     _tasks.getAndIncrement()
     try {
       startIfUnstarted()
@@ -170,7 +170,7 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "attach" for the only invocation
    */
-  protected[akka] def register(actor: ActorCell): Unit = {
+  protected[akka] def register(actor: ActorCell) {
     if (uuids add actor.uuid) {
       systemDispatch(SystemEnvelope(actor, Create, NullChannel)) //FIXME should this be here or moved into ActorCell.start perhaps?
     } else System.err.println("Couldn't register: " + actor)
@@ -180,7 +180,7 @@ abstract class MessageDispatcher extends Serializable {
    * Only "private[akka] for the sake of intercepting calls, DO NOT CALL THIS OUTSIDE OF THE DISPATCHER,
    * and only call it under the dispatcher-guard, see "detach" for the only invocation
    */
-  protected[akka] def unregister(actor: ActorCell): Unit = {
+  protected[akka] def unregister(actor: ActorCell) {
     if (uuids remove actor.uuid) {
       val mailBox = actor.mailbox
       mailBox.become(Mailbox.Closed)
@@ -193,7 +193,7 @@ abstract class MessageDispatcher extends Serializable {
    * Overridable callback to clean up the mailbox for a given actor,
    * called when an actor is unregistered.
    */
-  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox): Unit = {
+  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
 
     if (mailBox.hasSystemMessages) {
       var envelope = mailBox.systemDequeue()

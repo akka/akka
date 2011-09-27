@@ -181,7 +181,7 @@ public class JavaFutureTests {
                     }));
         }
 
-        Future<String> result = fold("", 15000,listFutures, new Function2<String,String,String>(){
+        Future<String> result = fold("", 15000,listFutures, new Function2<String,String,String>() {
           public String apply(String r, String t) {
               return r + t;
           }
@@ -203,7 +203,7 @@ public class JavaFutureTests {
                     }));
         }
 
-        Future<String> result = reduce(listFutures, 15000, new Function2<String,String,String>(){
+        Future<String> result = reduce(listFutures, 15000, new Function2<String,String,String>() {
           public String apply(String r, String t) {
               return r + t;
           }
@@ -221,7 +221,7 @@ public class JavaFutureTests {
             listStrings.add("test");
         }
 
-        Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
+        Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>() {
           public Future<String> apply(final String r) {
               return future(new Callable<String>() {
                         public String call() {

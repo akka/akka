@@ -158,7 +158,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
   /*
      * Refreshes locally cached metrics from ZooKeeper, and invokes plugged monitors
      */
-  private[akka] def refresh(): Unit = {
+  private[akka] def refresh() {
 
     storeMetricsInZK(getLocalMetrics)
     refreshMetricsCacheFromZK()
@@ -172,7 +172,7 @@ In order to get better metrics, please put "sigar.jar" to the classpath, and add
   /*
      * Refreshes metrics manager cache from ZooKeeper
      */
-  private def refreshMetricsCacheFromZK(): Unit = {
+  private def refreshMetricsCacheFromZK() {
     val allMetricsFromZK = getAllMetricsFromZK
 
     localNodeMetricsCache.keySet.foreach { key ⇒

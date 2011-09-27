@@ -22,7 +22,7 @@ class AkkaExceptionSpec extends WordSpec with MustMatchers {
     }
   }
 
-  def verify(clazz: java.lang.Class[_]): Unit = {
+  def verify(clazz: java.lang.Class[_]) {
     clazz.getConstructor(Array(classOf[String]): _*)
   }
 }

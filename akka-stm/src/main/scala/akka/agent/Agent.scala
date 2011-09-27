@@ -110,7 +110,7 @@ class Agent[T](initialValue: T) {
   /**
    * Dispatch a function to update the internal state.
    */
-  def send(f: T ⇒ T): Unit = {
+  def send(f: T ⇒ T) {
     def dispatch = updater ! Update(f)
     if (Stm.activeTransaction) { get; deferred(dispatch) }
     else dispatch

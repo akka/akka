@@ -270,7 +270,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
    * Return a transactionally-removed item to the queue. This is a rolled-
    * back transaction.
    */
-  def unremove(xid: Int): Unit = {
+  def unremove(xid: Int) {
     synchronized {
       if (!closed) {
         if (keepJournal()) journal.unremove(xid)
@@ -279,7 +279,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     }
   }
 
-  def confirmRemove(xid: Int): Unit = {
+  def confirmRemove(xid: Int) {
     synchronized {
       if (!closed) {
         if (keepJournal()) journal.confirmRemove(xid)
@@ -288,7 +288,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     }
   }
 
-  def flush(): Unit = {
+  def flush() {
     while (remove(false).isDefined) {}
   }
 
@@ -324,7 +324,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     xidCounter
   }
 
-  private final def fillReadBehind(): Unit = {
+  private final def fillReadBehind() {
     // if we're in read-behind mode, scan forward in the journal to keep memory as full as
     // possible. this amortizes the disk overhead across all reads.
     while (keepJournal() && journal.inReadBehind && _memoryBytes < maxMemorySize()) {
@@ -338,7 +338,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     }
   }
 
-  def replayJournal(): Unit = {
+  def replayJournal() {
     if (!keepJournal()) return
 
     EventHandler.debug(this, "Replaying transaction journal for '%s'".format(name))
@@ -380,7 +380,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
 
   //  -----  internal implementations
 
-  private def _add(item: QItem): Unit = {
+  private def _add(item: QItem) {
     discardExpired
     if (!journal.inReadBehind) {
       queue += item

@@ -345,7 +345,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   protected[akka] override def timeout: Long = _timeout
 
-  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = {
+  def postMessageToMailbox(message: Any, channel: UntypedChannel) {
     val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
     Actor.remote.send[Any](message, chSender, None, remoteAddress, timeout, true, this, loader)
   }

@@ -53,7 +53,7 @@ trait PromiseStreamIn[A] {
   final def enqueue(elem: Future[A]): Unit =
     elem foreach (enqueue(_))
 
-  final def enqueue(elem1: Future[A], elem2: Future[A], elems: Future[A]*): Unit = {
+  final def enqueue(elem1: Future[A], elem2: Future[A], elems: Future[A]*) {
     this += elem1 += elem2
     elems foreach (enqueue(_))
   }

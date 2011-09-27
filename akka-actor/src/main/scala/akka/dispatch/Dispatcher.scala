@@ -102,7 +102,7 @@ class Dispatcher(
     registerForExecution(mbox, false, true)
   }
 
-  protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
+  protected[akka] def executeTask(invocation: TaskInvocation) {
     try {
       executorService.get() execute invocation
     } catch {

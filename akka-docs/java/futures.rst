@@ -204,7 +204,7 @@ The ``traverse`` method is similar to ``sequence``, but it takes a sequence of `
 
   Iterable<String> listStrings = ... //Just a sequence of Strings
 
-  Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>(){
+  Future<Iterable<String>> result = traverse(listStrings, new Function<String,Future<String>>() {
           public Future<String> apply(final String r) {
               return future(new Callable<String>() {
                         public String call() {
@@ -229,7 +229,7 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
 
   Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
 
-  Future<String> result = fold("", 15000, futures, new Function2<String, String, String>(){ //Start value is the empty string, timeout is 15 seconds
+  Future<String> result = fold("", 15000, futures, new Function2<String, String, String>() { //Start value is the empty string, timeout is 15 seconds
           public String apply(String r, String t) {
               return r + t; //Just concatenate
           }
@@ -251,7 +251,7 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 
   Iterable<Future<String>> futures = ... //A sequence of Futures, in this case Strings
 
-  Future<String> result = reduce(futures, 15000, new Function2<String, String, String>(){ //Timeout is 15 seconds
+  Future<String> result = reduce(futures, 15000, new Function2<String, String, String>() { //Timeout is 15 seconds
           public String apply(String r, String t) {
               return r + t; //Just concatenate
           }

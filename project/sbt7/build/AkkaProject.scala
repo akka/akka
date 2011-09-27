@@ -560,7 +560,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       case s if s.startsWith("akka-") => Iterator.single(s.drop(5))
       case _ => Iterator.empty
     }
-    val (repos, configs) = (project.moduleConfigurations ++ extraConfigs).foldLeft((Set.empty[String], Set.empty[String])){
+    val (repos, configs) = (project.moduleConfigurations ++ extraConfigs).foldLeft((Set.empty[String], Set.empty[String])) {
       case ((repos, configs), ModuleConfiguration(org, name, ver, MavenRepository(repoName, repoPath))) =>
         val repoId = repoName.replaceAll("""[^a-zA-Z]""", "_")
         val configId = org.replaceAll("""[^a-zA-Z]""", "_") +

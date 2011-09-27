@@ -366,7 +366,7 @@ object Actor {
    * }
    * </pre>
    */
-  def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
+  def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher) {
     actorOf(Props(self ⇒ { case "go" ⇒ try { body } finally { self.stop() } }).withDispatcher(dispatcher)) ! "go"
   }
 }

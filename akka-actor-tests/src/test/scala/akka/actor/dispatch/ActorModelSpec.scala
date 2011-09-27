@@ -334,7 +334,7 @@ abstract class ActorModelSpec extends JUnitSuite {
   }
 
   @Test
-  def dispatcherShouldProcessMessagesInParallel: Unit = {
+  def dispatcherShouldProcessMessagesInParallel {
     implicit val dispatcher = newInterceptedDispatcher
     val aStart, aStop, bParallel = new CountDownLatch(1)
     val a, b = newTestActor

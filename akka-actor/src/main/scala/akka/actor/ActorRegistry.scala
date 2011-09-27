@@ -60,12 +60,12 @@ private[actor] final class ActorRegistry private[actor] () extends ListenerManag
     notifyListeners(ActorRegistered(address, actor))
   }
 
-  private[akka] def registerTypedActor(actorRef: ActorRef, proxy: AnyRef): Unit = {
+  private[akka] def registerTypedActor(actorRef: ActorRef, proxy: AnyRef) {
     if (typedActorsByUuid.putIfAbsent(actorRef.uuid, proxy) eq null)
       notifyListeners(TypedActorRegistered(actorRef.address, actorRef, proxy))
   }
 
-  private[akka] def unregisterTypedActor(actorRef: ActorRef, proxy: AnyRef): Unit = {
+  private[akka] def unregisterTypedActor(actorRef: ActorRef, proxy: AnyRef) {
     if (typedActorsByUuid.remove(actorRef.uuid, proxy))
       notifyListeners(TypedActorUnregistered(actorRef.address, actorRef, proxy))
   }

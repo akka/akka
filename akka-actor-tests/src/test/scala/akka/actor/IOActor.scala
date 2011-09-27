@@ -121,7 +121,7 @@ object IOActorSpec {
 
     var socket: SocketHandle = _
 
-    override def preStart: Unit = {
+    override def preStart {
       socket = connect(ioManager, host, port)
     }
 

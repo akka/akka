@@ -99,7 +99,7 @@ class BalancingDispatcher(
       registerForExecution(buddy.mailbox, false, false)
   }
 
-  protected[akka] override def shutdown(): Unit = {
+  protected[akka] override def shutdown() {
     super.shutdown()
     buddies.clear()
   }

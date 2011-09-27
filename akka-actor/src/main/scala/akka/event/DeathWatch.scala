@@ -29,7 +29,7 @@ trait Supervision { self: DeathWatch =>
   val activeEntries  = new ConcurrentHashMap[ActorRef, ActiveEntry](1024)
   val passiveEntries = new ConcurrentHashMap[ActorRef, PassiveEntry](1024)
 
-  def registerMonitorable(monitor: ActorRef, monitorsSupervisor: Option[ActorRef], faultHandlingStrategy: FaultHandlingStrategy): Unit = {
+  def registerMonitorable(monitor: ActorRef, monitorsSupervisor: Option[ActorRef], faultHandlingStrategy: FaultHandlingStrategy) {
     read.lock()
     try {
       activeEntries.putIfAbsent(monitor, ActiveEntry(strategy = faultHandlingStrategy))
@@ -39,7 +39,7 @@ trait Supervision { self: DeathWatch =>
     }
   }
 
-  def deregisterMonitorable(monitor: ActorRef): Unit = {
+  def deregisterMonitorable(monitor: ActorRef) {
     read.lock()
     try {
       activeEntries.remove(monitor)

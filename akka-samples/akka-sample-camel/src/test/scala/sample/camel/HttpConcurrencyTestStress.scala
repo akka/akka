@@ -45,7 +45,7 @@ class HttpConcurrencyTestStress extends JUnitSuite {
 
 object HttpConcurrencyTestStress {
   @BeforeClass
-  def beforeClass: Unit = {
+  def beforeClass{
     startCamelService
 
     val workers = for (i ← 1 to 8) yield actorOf[HttpServerWorker]

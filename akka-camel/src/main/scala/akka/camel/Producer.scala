@@ -92,7 +92,7 @@ trait ProducerSupport { this: Actor ⇒
    * @param msg message to produce
    * @param pattern exchange pattern
    */
-  protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
+  protected def produce(msg: Any, pattern: ExchangePattern) {
     val cmsg = Message.canonicalize(msg)
     val exchange = createExchange(pattern).fromRequestMessage(cmsg)
     processor.process(exchange, new AsyncCallback {
@@ -101,7 +101,7 @@ trait ProducerSupport { this: Actor ⇒
       // later by another thread.
       val replyChannel = channel
 
-      def done(doneSync: Boolean): Unit = {
+      def done(doneSync: Boolean) {
         (doneSync, exchange.isFailed) match {
           case (true, true)   ⇒ dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
           case (true, false)  ⇒ dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))

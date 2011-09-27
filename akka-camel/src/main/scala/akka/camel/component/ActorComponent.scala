@@ -281,7 +281,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
 
   def resume(): Unit = ()
 
-  def stop(): Unit = {
+  def stop() {
     running = false
   }
 

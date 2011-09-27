@@ -466,7 +466,7 @@ The API for server managed remote typed actors is nearly the same as for untyped
 .. code-block:: scala
 
   class RegistrationServiceImpl extends TypedActor with RegistrationService {
-    def registerUser(user: User): Unit = {
+    def registerUser(user: User) {
       ... // register user
     }
   }
@@ -489,7 +489,7 @@ They are also useful if you need to perform some cleanup when a client disconnec
 .. code-block:: scala
 
   class RegistrationServiceImpl extends TypedActor with RegistrationService {
-    def registerUser(user: User): Unit = {
+    def registerUser(user: User) {
       ... // register user
     }
   }

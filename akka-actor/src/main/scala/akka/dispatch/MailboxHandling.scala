@@ -44,7 +44,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
    * Internal method to enforce a volatile write of the status
    */
   @tailrec
-  final def acknowledgeStatus(): Unit = {
+  final def acknowledgeStatus() {
     val s = _status.get()
     if (_status.compareAndSet(s, s)) ()
     else acknowledgeStatus()
@@ -112,7 +112,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
     }
   }
 
-  def processAllSystemMessages(): Unit = {
+  def processAllSystemMessages() {
     var nextMessage = systemDequeue()
     while (nextMessage ne null) {
       nextMessage.invoke()

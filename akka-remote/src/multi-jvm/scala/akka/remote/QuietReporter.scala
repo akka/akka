@@ -16,5 +16,5 @@ class QuietReporter(inColor: Boolean) extends StandardOutReporter(false, inColor
     case _              ⇒ super.apply(event)
   }
 
-  override def makeFinalReport(resourceName: String, duration: Option[Long], summaryOption: Option[Summary]): Unit = {}
+  override def makeFinalReport(resourceName: String, duration: Option[Long], summaryOption: Option[Summary]) {}
 }

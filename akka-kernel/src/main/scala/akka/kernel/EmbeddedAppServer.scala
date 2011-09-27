@@ -50,7 +50,7 @@ trait EmbeddedAppServer extends Bootable {
       server = Option(configuration.configure.asInstanceOf[Server]) map { s ⇒ //Set the correct classloader to our contexts
         applicationLoader foreach { loader ⇒
           //We need to provide the correct classloader to the servlets
-          def setClassLoader(handlers: Seq[Handler]): Unit = {
+          def setClassLoader(handlers: Seq[Handler]) {
             handlers foreach {
               case c: ContextHandler    ⇒ c.setClassLoader(loader)
               case c: HandlerCollection ⇒ setClassLoader(c.getHandlers)

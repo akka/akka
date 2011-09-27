@@ -249,7 +249,7 @@ object JvmIO {
 
   def ignoreOutputStream = (out: OutputStream) => ()
 
-  def transfer(in: InputStream, out: OutputStream): Unit = {
+  def transfer(in: InputStream, out: OutputStream) {
     try {
       val buffer = new Array[Byte](BufferSize)
       def read {

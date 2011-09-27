@@ -16,7 +16,7 @@ object ScalaDom {
       .getDOMImplementation
       .createDocument(null, null, null)
 
-    def build(node: Node, parent: JNode): Unit = {
+    def build(node: Node, parent: JNode) {
       val jnode: JNode = node match {
         case e: Elem ⇒ {
           val jn = doc.createElement(e.label)

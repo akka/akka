@@ -196,7 +196,7 @@ trait IO {
 
   // only reinvoke messages from the original message to avoid stack overflow
   private var reinvoked = false
-  private def reinvoke(): Unit = {
+  private def reinvoke() {
     if (!reinvoked && (_next eq Idle) && _messages.nonEmpty) {
       try {
         reinvoked = true
@@ -208,7 +208,7 @@ trait IO {
   }
 
   @tailrec
-  private def run(): Unit = {
+  private def run() {
     _next match {
       case ByteStringLength(continuation, handle, message, waitingFor) ⇒
         context.currentMessage = message
@@ -256,7 +256,7 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
 
   var worker: IOWorker = _
 
-  override def preStart: Unit = {
+  override def preStart {
     worker = new IOWorker(self, bufferSize)
     worker.start()
   }
@@ -279,7 +279,7 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
     case IO.Close(handle)          ⇒ worker(Close(handle))
   }
 
-  override def postStop: Unit = {
+  override def postStop {
     worker(Shutdown)
   }
 
@@ -324,7 +324,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   private val buffer = ByteBuffer.allocate(bufferSize)
 
   private val thread = new Thread("io-worker") {
-    override def run(): Unit = {
+    override def run() {
       while (selector.isOpen) {
         selector select ()
         val keys = selector.selectedKeys.iterator
@@ -359,7 +359,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
     }
   }
 
-  private def process(key: SelectionKey): Unit = {
+  private def process(key: SelectionKey) {
     val handle = key.attachment.asInstanceOf[IO.Handle]
     try {
       if (key.isConnectable) key.channel match {
@@ -387,7 +387,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
     }
   }
 
-  private def cleanup(handle: IO.Handle, cause: Option[Exception]): Unit = {
+  private def cleanup(handle: IO.Handle, cause: Option[Exception]) {
     handle match {
       case server: IO.ServerHandle  ⇒ accepted -= server
       case writable: IO.WriteHandle ⇒ writes -= writable
@@ -409,19 +409,19 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   private def setOps(handle: IO.Handle, ops: Int): Unit =
     channels(handle) keyFor selector interestOps ops
 
-  private def addOps(handle: IO.Handle, ops: Int): Unit = {
+  private def addOps(handle: IO.Handle, ops: Int) {
     val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur | ops)
   }
 
-  private def removeOps(handle: IO.Handle, ops: Int): Unit = {
+  private def removeOps(handle: IO.Handle, ops: Int) {
     val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur - (cur & ops))
   }
 
-  private def connect(socket: IO.SocketHandle, channel: SocketChannel): Unit = {
+  private def connect(socket: IO.SocketHandle, channel: SocketChannel) {
     if (channel.finishConnect) {
       removeOps(socket, OP_CONNECT)
       socket.owner ! IO.Connected(socket)
@@ -431,7 +431,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   @tailrec
-  private def accept(server: IO.ServerHandle, channel: ServerSocketChannel): Unit = {
+  private def accept(server: IO.ServerHandle, channel: ServerSocketChannel) {
     val socket = channel.accept
     if (socket ne null) {
       socket configureBlocking false
@@ -442,7 +442,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   @tailrec
-  private def read(handle: IO.ReadHandle, channel: ReadChannel): Unit = {
+  private def read(handle: IO.ReadHandle, channel: ReadChannel) {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
@@ -455,7 +455,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   @tailrec
-  private def write(handle: IO.WriteHandle, channel: WriteChannel): Unit = {
+  private def write(handle: IO.WriteHandle, channel: WriteChannel) {
     val queue = writes(handle)
     if (queue.nonEmpty) {
       val (buf, bufs) = queue.dequeue
@@ -473,7 +473,7 @@ private[akka] class IOWorker(ioManager: ActorRef, val bufferSize: Int) {
   }
 
   @tailrec
-  private def addRequest(req: Request): Unit = {
+  private def addRequest(req: Request) {
     val requests = _requests.get
     if (_requests compareAndSet (requests, req :: requests))
       selector wakeup ()

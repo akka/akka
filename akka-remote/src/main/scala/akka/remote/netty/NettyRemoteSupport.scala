@@ -812,7 +812,7 @@ trait NettyRemoteServerModule extends RemoteServerModule {
    * <p/>
    * NOTE: You need to call this method if you have registered an actor by a custom ID.
    */
-  def unregisterPerSession(id: String): Unit = {
+  def unregisterPerSession(id: String) {
 
     if (_isRunning.isOn) {
       EventHandler.info(this, "Unregistering server side remote actor with id [%s]".format(id))
@@ -890,10 +890,10 @@ class RemoteServerHandler(
   val sessionActors = new ChannelLocal[ConcurrentHashMap[String, ActorRef]]()
 
   //Writes the specified message to the specified channel and propagates write errors to listeners
-  private def write(channel: Channel, payload: AkkaRemoteProtocol): Unit = {
+  private def write(channel: Channel, payload: AkkaRemoteProtocol) {
     channel.write(payload).addListener(
       new ChannelFutureListener {
-        def operationComplete(future: ChannelFuture): Unit = {
+        def operationComplete(future: ChannelFuture) {
           if (future.isCancelled) {
             //Not interesting at the moment
           } else if (!future.isSuccess) {

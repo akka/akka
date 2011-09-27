@@ -38,7 +38,7 @@ If you have a POJO with an interface implementation separation like this:
 .. code-block:: scala
 
   public class RegistrationServiceImpl extends TypedActor with RegistrationService {
-    def register(user: User, cred: Credentials): Unit = {
+    def register(user: User, cred: Credentials) {
       ... // register user
     }
 

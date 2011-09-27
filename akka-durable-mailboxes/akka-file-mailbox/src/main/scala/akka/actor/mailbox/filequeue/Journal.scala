@@ -62,15 +62,15 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
   private val CMD_CONFIRM_REMOVE = 6
   private val CMD_ADD_XID = 7
 
-  private def open(file: File): Unit = {
+  private def open(file: File) {
     writer = new FileOutputStream(file, true).getChannel
   }
 
-  def open(): Unit = {
+  def open() {
     open(queueFile)
   }
 
-  def roll(xid: Int, openItems: List[QItem], queue: Iterable[QItem]): Unit = {
+  def roll(xid: Int, openItems: List[QItem], queue: Iterable[QItem]) {
     writer.close
     val tmpFile = new File(queuePath + "~~" + System.currentTimeMillis)
     open(tmpFile)
@@ -89,13 +89,13 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
     open
   }
 
-  def close(): Unit = {
+  def close() {
     writer.close
     for (r ← reader) r.close
     reader = None
   }
 
-  def erase(): Unit = {
+  def erase() {
     try {
       close()
       queueFile.delete
@@ -108,7 +108,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
 
   def isReplaying(): Boolean = replayer.isDefined
 
-  private def add(allowSync: Boolean, item: QItem): Unit = {
+  private def add(allowSync: Boolean, item: QItem) {
     val blob = ByteBuffer.wrap(item.pack())
     size += write(false, CMD_ADDX.toByte, blob.limit)
     do {
@@ -136,7 +136,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
     size += write(true, CMD_REMOVE.toByte)
   }
 
-  private def removeTentative(allowSync: Boolean): Unit = {
+  private def removeTentative(allowSync: Boolean) {
     size += write(allowSync, CMD_REMOVE_TENTATIVE.toByte)
   }
 
@@ -155,14 +155,14 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
     size += write(true, CMD_CONFIRM_REMOVE.toByte, xid)
   }
 
-  def startReadBehind(): Unit = {
+  def startReadBehind() {
     val pos = if (replayer.isDefined) replayer.get.position else writer.position
     val rj = new FileInputStream(queueFile).getChannel
     rj.position(pos)
     reader = Some(rj)
   }
 
-  def fillReadBehind(f: QItem ⇒ Unit): Unit = {
+  def fillReadBehind(f: QItem ⇒ Unit) {
     val pos = if (replayer.isDefined) replayer.get.position else writer.position
     for (rj ← reader) {
       if (rj.position == pos) {
@@ -178,7 +178,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
     }
   }
 
-  def replay(name: String)(f: JournalItem ⇒ Unit): Unit = {
+  def replay(name: String)(f: JournalItem ⇒ Unit) {
     size = 0
     var lastUpdate = 0L
     val TEN_MB = 10L * 1024 * 1024

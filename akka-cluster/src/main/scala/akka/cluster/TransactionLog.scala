@@ -393,7 +393,7 @@ object TransactionLog {
   /**
    * Starts up the transaction log.
    */
-  def start(): Unit = {
+  def start() {
     isConnected switchOn {
       bookieClient = new BookKeeper(zooKeeperServers)
       zkClient = new AkkaZkClient(zooKeeperServers, sessionTimeout, connectionTimeout)

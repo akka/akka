@@ -487,12 +487,12 @@ trait FSM[S, D] extends ListenerManagement {
     }
   }
 
-  private def processMsg(value: Any, source: AnyRef): Unit = {
+  private def processMsg(value: Any, source: AnyRef) {
     val event = Event(value, currentState.stateData)
     processEvent(event, source)
   }
 
-  private[akka] def processEvent(event: Event, source: AnyRef): Unit = {
+  private[akka] def processEvent(event: Event, source: AnyRef) {
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc isDefinedAt event) {
       stateFunc(event)
@@ -503,7 +503,7 @@ trait FSM[S, D] extends ListenerManagement {
     applyState(nextState)
   }
 
-  private[akka] def applyState(nextState: State): Unit = {
+  private[akka] def applyState(nextState: State) {
     nextState.stopReason match {
       case None ⇒ makeTransition(nextState)
       case _ ⇒
@@ -513,7 +513,7 @@ trait FSM[S, D] extends ListenerManagement {
     }
   }
 
-  private[akka] def makeTransition(nextState: State): Unit = {
+  private[akka] def makeTransition(nextState: State) {
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
@@ -535,7 +535,7 @@ trait FSM[S, D] extends ListenerManagement {
 
   override def postStop() { terminate(stay withStopReason Shutdown) }
 
-  private def terminate(nextState: State): Unit = {
+  private def terminate(nextState: State) {
     if (!currentState.stopReason.isDefined) {
       val reason = nextState.stopReason.get
       reason match {

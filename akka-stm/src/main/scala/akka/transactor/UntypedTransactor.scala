@@ -26,7 +26,7 @@ abstract class UntypedTransactor extends UntypedActor {
    * Implement a general pattern for using coordinated transactions.
    */
   @throws(classOf[Exception])
-  final def onReceive(message: Any): Unit = {
+  final def onReceive(message: Any) {
     message match {
       case coordinated @ Coordinated(message) ⇒ {
         val others = coordinate(message)
@@ -87,19 +87,19 @@ abstract class UntypedTransactor extends UntypedActor {
    * A Receive block that runs before the coordinated transaction is entered.
    */
   @throws(classOf[Exception])
-  def before(message: Any): Unit = {}
+  def before(message: Any) {}
 
   /**
    * The Receive block to run inside the coordinated transaction.
    */
   @throws(classOf[Exception])
-  def atomically(message: Any): Unit = {}
+  def atomically(message: Any) {}
 
   /**
    * A Receive block that runs after the coordinated transaction.
    */
   @throws(classOf[Exception])
-  def after(message: Any): Unit = {}
+  def after(message: Any) {}
 
   /**
    * Bypass transactionality and behave like a normal actor.

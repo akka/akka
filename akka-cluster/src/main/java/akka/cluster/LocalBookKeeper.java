@@ -46,7 +46,7 @@ public class LocalBookKeeper {
         numberOfBookies = 3;
     }
 
-    public LocalBookKeeper(int numberOfBookies){
+    public LocalBookKeeper(int numberOfBookies) {
         this();
         this.numberOfBookies = numberOfBookies;
     }
@@ -87,7 +87,7 @@ public class LocalBookKeeper {
         boolean b = waitForServerUp(HOSTPORT, CONNECTION_TIMEOUT);
     }
 
-    public void initializeZookeper(){
+    public void initializeZookeper() {
         //initialize the zk client with values
         try {
             zkc = new ZooKeeper("127.0.0.1", ZooKeeperDefaultPort, new emptyWatcher());
@@ -107,7 +107,7 @@ public class LocalBookKeeper {
         tmpDirs = new File[numberOfBookies];
         bs = new BookieServer[numberOfBookies];
 
-        for(int i = 0; i < numberOfBookies; i++){
+        for(int i = 0; i < numberOfBookies; i++) {
             tmpDirs[i] = File.createTempFile("bookie" + Integer.toString(i), "test");
             tmpDirs[i].delete();
             tmpDirs[i].mkdir();
@@ -119,7 +119,7 @@ public class LocalBookKeeper {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        if(args.length < 1){
+        if(args.length < 1) {
             usage();
             System.exit(-1);
         }
@@ -127,7 +127,7 @@ public class LocalBookKeeper {
         lb.runZookeeper(1000);
         lb.initializeZookeper();
         lb.runBookies();
-        while (true){
+        while (true) {
             Thread.sleep(5000);
         }
     }

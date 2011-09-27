@@ -18,14 +18,14 @@ trait MultiJvmSync extends WordSpec with MustMatchers with BeforeAndAfterAll {
     MultiJvmSync.start(getClass.getName, nodes)
   }
 
-  def onStart(): Unit = {}
+  def onStart() {}
 
   override def afterAll() = {
     MultiJvmSync.end(getClass.getName, nodes)
     onEnd()
   }
 
-  def onEnd(): Unit = {}
+  def onEnd() {}
 
   def barrier(name: String, timeout: Duration = FileBasedBarrier.DefaultTimeout) = {
     MultiJvmSync.barrier(name, nodes, getClass.getName, timeout)

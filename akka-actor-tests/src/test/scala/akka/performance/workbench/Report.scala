@@ -21,7 +21,7 @@ class Report(
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val fileTimestampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
 
-  def html(statistics: Seq[Stats]): Unit = {
+  def html(statistics: Seq[Stats]) {
 
     val current = statistics.last
     val sb = new StringBuilder

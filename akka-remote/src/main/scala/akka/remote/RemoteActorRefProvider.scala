@@ -60,6 +60,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
             }
 
           case deploy ⇒ None // non-remote actor
+        }
       } catch {
         case e: Exception ⇒
           newFuture completeWithException e // so the other threads gets notified of error
