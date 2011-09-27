@@ -327,7 +327,6 @@ object LocalDeployer extends ActorDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]
 
   private[akka] def init(deployments: Seq[Deploy]) {
-    EventHandler.info(this, "Loading deployment plans [\n\t%s\n]" format deployments.mkString("\n\t"))
     deployments foreach (deploy(_)) // deploy
   }
 

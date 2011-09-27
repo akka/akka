@@ -7,7 +7,7 @@ import org.junit.Test
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.actor.Actor._
-import akka.dispatch.{ MessageQueue, Dispatchers }
+import akka.dispatch.{ Mailbox, Dispatchers }
 import akka.actor.{ LocalActorRef, IllegalActorStateException, Actor, Props }
 
 object BalancingDispatcherSpec {
@@ -80,8 +80,8 @@ class BalancingDispatcherSpec extends JUnitSuite with MustMatchers {
     }
 
     finishedCounter.await(5, TimeUnit.SECONDS)
-    fast.underlying.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
-    slow.underlying.mailbox.asInstanceOf[MessageQueue].isEmpty must be(true)
+    fast.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
+    slow.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
     fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
     fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be >
       (slow.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount)

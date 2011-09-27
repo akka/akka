@@ -68,8 +68,6 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
-
     // now crash again... should not restart
     slave ! Crash
     slave ! Ping
@@ -79,8 +77,6 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     slave ! Crash
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
-
-    assert(!slave.isRunning)
   }
 
   @Test

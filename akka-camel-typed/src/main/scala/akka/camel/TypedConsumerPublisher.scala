@@ -12,16 +12,16 @@ import akka.event.EventHandler
 
 /**
  * Concrete publish requestor that requests publication of typed consumer actor methods on
- * <code>ActorRegistered</code> events and unpublication of typed consumer actor methods on
- * <code>ActorUnregistered</code> events.
+ * <code>TypedActorRegistered</code> events and unpublication of typed consumer actor methods on
+ * <code>TypedActorUnregistered</code> events.
  *
  * @author Martin Krasser
  */
 private[camel] class TypedConsumerPublishRequestor extends PublishRequestor {
   def receiveActorRegistryEvent = {
-    case ActorRegistered(_, actor, typedActor)   ⇒ for (event ← ConsumerMethodRegistered.eventsFor(actor, typedActor)) deliverCurrentEvent(event)
-    case ActorUnregistered(_, actor, typedActor) ⇒ for (event ← ConsumerMethodUnregistered.eventsFor(actor, typedActor)) deliverCurrentEvent(event)
-    case _                                       ⇒ ()
+    case TypedActorRegistered(_, actor, typedActor) ⇒ for (event ← ConsumerMethodRegistered.eventsFor(actor, Option(typedActor))) deliverCurrentEvent(event)
+    case TypedActorUnregistered(_, actor, typedActor) ⇒ for (event ← ConsumerMethodUnregistered.eventsFor(actor, Option(typedActor))) deliverCurrentEvent(event)
+    case _ ⇒ ()
   }
 }
 

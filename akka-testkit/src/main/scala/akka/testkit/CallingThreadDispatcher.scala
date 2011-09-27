@@ -4,7 +4,6 @@
 package akka.testkit
 
 import akka.event.EventHandler
-import akka.dispatch.{ MessageDispatcher, MessageInvocation, TaskInvocation, Promise, ActorPromise }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -12,21 +11,22 @@ import akka.util.Switch
 import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.ActorCell
+import akka.dispatch._
 
 /*
  * Locking rules:
  *
- * While not suspended, messages are processed (!isActive) or queued
- * thread-locally (isActive). While suspended, messages are queued
+ * While not suspendSwitch, messages are processed (!isActive) or queued
+ * thread-locally (isActive). While suspendSwitch, messages are queued
  * thread-locally. When resuming, all messages are atomically scooped from all
  * non-active threads and queued on the resuming thread's queue, to be
  * processed immediately. Processing a queue checks suspend before each
- * invocation, leaving the active state if suspended. For this to work
+ * invocation, leaving the active state if suspendSwitch. For this to work
  * reliably, the active flag needs to be set atomically with the initial check
  * for suspend. Scooping up messages means replacing the ThreadLocal's contents
  * with an empty new NestingQueue.
  *
- * All accesses to the queue must be done under the suspended-switch's lock, so
+ * All accesses to the queue must be done under the suspendSwitch-switch's lock, so
  * within one of its methods taking a closure argument.
  */
 
@@ -83,7 +83,7 @@ object CallingThreadDispatcher {
  * Dispatcher which runs invocations on the current thread only. This
  * dispatcher does not create any new threads, but it can be used from
  * different threads concurrently for the same actor. The dispatch strategy is
- * to run on the current thread unless the target actor is either suspended or
+ * to run on the current thread unless the target actor is either suspendSwitch or
  * already running on the current thread (if it is running on a different
  * thread, then this thread will block until that other invocation is
  * finished); if the invocation is not run, it is queued in a thread-local
@@ -93,7 +93,7 @@ object CallingThreadDispatcher {
  *
  * Suspending and resuming are global actions for one actor, meaning they can
  * affect different threads, which leads to complications. If messages are
- * queued (thread-locally) during the suspended period, the only thread to run
+ * queued (thread-locally) during the suspendSwitch period, the only thread to run
  * them upon resume is the thread actually calling the resume method. Hence,
  * all thread-local queues which are not currently being drained (possible,
  * since suspend-queue-resume might happen entirely during an invocation on a
@@ -107,7 +107,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
   import CallingThreadDispatcher._
 
-  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox
+  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this)
 
   private def getMailbox(actor: ActorCell) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
@@ -115,17 +115,21 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   protected[akka] override def shutdown() {}
 
+  protected[akka] override def throughput = 0
+  protected[akka] override def throughputDeadlineTime = 0
+  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
+
   protected[akka] override def timeoutMs = 100L
 
   override def suspend(actor: ActorCell) {
-    getMailbox(actor).suspended.switchOn
+    getMailbox(actor).suspendSwitch.switchOn
   }
 
   override def resume(actor: ActorCell) {
     val mbox = getMailbox(actor)
     val queue = mbox.queue
     val wasActive = queue.isActive
-    val switched = mbox.suspended.switchOff {
+    val switched = mbox.suspendSwitch.switchOff {
       gatherFromAllInactiveQueues(mbox, queue)
     }
     if (switched && !wasActive) {
@@ -137,13 +141,23 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 
   override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).queue.isEmpty
 
-  protected[akka] override def dispatch(handle: MessageInvocation) {
+  protected[akka] override def systemDispatch(handle: SystemEnvelope) {
+    val mbox = getMailbox(handle.receiver)
+    mbox.lock.lock
+    try {
+      handle.invoke()
+    } finally {
+      mbox.lock.unlock
+    }
+  }
+
+  protected[akka] override def dispatch(handle: Envelope) {
     val mbox = getMailbox(handle.receiver)
     val queue = mbox.queue
-    val execute = mbox.suspended.fold {
+    val execute = mbox.suspendSwitch.fold {
       queue.push(handle)
       if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-        EventHandler.warning(this, "suspended, creating Future could deadlock; target: %s" format handle.receiver)
+        EventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format handle.receiver)
       }
       false
     } {
@@ -170,14 +184,14 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
    *
    * If the catch block is executed, then a non-empty mailbox may be stalled as
    * there is no-one who cares to execute it before the next message is sent or
-   * it is suspended and resumed.
+   * it is suspendSwitch and resumed.
    */
   @tailrec
   private def runQueue(mbox: CallingThreadMailbox, queue: NestingQueue) {
     assert(queue.isActive)
     mbox.lock.lock
     val recurse = try {
-      val handle = mbox.suspended.fold[MessageInvocation] {
+      val handle = mbox.suspendSwitch.fold[Envelope] {
         queue.leave
         null
       } {
@@ -214,10 +228,10 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
 }
 
 class NestingQueue {
-  private var q = new LinkedList[MessageInvocation]()
+  private var q = new LinkedList[Envelope]()
   def size = q.size
   def isEmpty = q.isEmpty
-  def push(handle: MessageInvocation) { q.offer(handle) }
+  def push(handle: Envelope) { q.offer(handle) }
   def peek = q.peek
   def pop = q.poll
 
@@ -228,7 +242,7 @@ class NestingQueue {
   def isActive = active
 }
 
-class CallingThreadMailbox {
+class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox with DefaultSystemMessageQueue {
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = new NestingQueue
@@ -237,6 +251,10 @@ class CallingThreadMailbox {
   def queue = q.get
 
   val lock = new ReentrantLock
+  val suspendSwitch = new Switch
 
-  val suspended = new Switch(false)
+  override def enqueue(msg: Envelope) {}
+  override def dequeue() = null
+  override def hasMessages = true
+  override def numberOfMessages = 0
 }

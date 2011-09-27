@@ -101,7 +101,6 @@ described in the following::
 
   def preStart() {}
   def preRestart(cause: Throwable, message: Option[Any]) {}
-  def freshInstance(): Option[Actor] = None
   def postRestart(cause: Throwable) {}
   def postStop() {}
 
@@ -137,23 +136,13 @@ processing a message. This restart involves four of the hooks mentioned above:
    message, e.g. when a supervisor does not trap the exception and is restarted
    in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
-2. The old actor’s :meth:`freshInstance` factory method is invoked, which may
-   optionally produce the new actor instance which will replace this actor. If
-   this method returns :obj:`None` or throws an exception, the initial factory
-   from the ``Actor.actorOf`` call is used to produce the fresh instance.
+2. The initial factory from the ``Actor.actorOf`` call is used
+   to produce the fresh instance.
 3. The new actor’s :meth:`preStart` method is invoked, just as in the normal
    start-up case.
 4. The new actor’s :meth:`postRestart` method is called with the exception
    which caused the restart.
 
-.. warning::
-
-  The :meth:`freshInstance` hook may be used to propagate (part of) the failed
-  actor’s state to the fresh instance. This carries the risk of proliferating
-  the cause for the crash which triggered the restart. If you are tempted to
-  take this route, it is strongly advised to step back and consider other
-  possible approaches, e.g. distributing the state in question using other
-  means or spawning short-lived worker actors for carrying out “risky” tasks.
 
 An actor restart replaces only the actual actor object; the contents of the
 mailbox and the hotswap stack are unaffected by the restart, so processing of

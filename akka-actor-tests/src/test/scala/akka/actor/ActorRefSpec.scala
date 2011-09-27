@@ -11,11 +11,11 @@ import akka.testkit._
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import akka.config.Supervision.{ OneForOnePermanentStrategy }
-import akka.dispatch.Future
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.actor.Actor.actorOf
+import akka.dispatch.{ DefaultPromise, Promise, Future }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
 
@@ -112,8 +112,25 @@ object ActorRefSpec {
   }
 }
 
-class ActorRefSpec extends WordSpec with MustMatchers {
+class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
   import akka.actor.ActorRefSpec._
+
+  def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
+    val r = f
+    to.completeWithResult(r)
+    r
+  } catch {
+    case e ⇒
+      to.completeWithException(e)
+      throw e
+  }
+
+  def wrap[T](f: Promise[Actor] ⇒ T): T = {
+    val result = new DefaultPromise[Actor](10 * 60 * 1000)
+    val r = f(result)
+    result.get
+    r
+  }
 
   "An ActorRef" must {
 
@@ -122,84 +139,100 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         new Actor { def receive = { case _ ⇒ } }
       }
 
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new Actor {
-          val nested = new Actor { def receive = { case _ ⇒ } }
-          def receive = { case _ ⇒ }
-        })
-      }
-
       def contextStackMustBeEmpty = ActorCell.contextStack.get.headOption must be === None
 
-      contextStackMustBeEmpty
+      filterException[akka.actor.ActorInitializationException] {
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new Actor {
+              val nested = promiseIntercept(new Actor { def receive = { case _ ⇒ } })(result)
+              def receive = { case _ ⇒ }
+            }))
+        }
 
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new InnerActor)))
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(promiseIntercept(new FailingOuterActor(actorOf(new InnerActor)))(result)))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(promiseIntercept(new FailingInheritingOuterActor(actorOf(new InnerActor)))(result)))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(new InnerActor {
+              val a = promiseIntercept(new InnerActor)(result)
+            }))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+        }
+
+        contextStackMustBeEmpty
+
+        intercept[akka.actor.ActorInitializationException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
+        }
+
+        contextStackMustBeEmpty
       }
 
-      contextStackMustBeEmpty
+      filterException[java.lang.IllegalStateException] {
+        (intercept[java.lang.IllegalStateException] {
+          wrap(result ⇒
+            actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
+        }).getMessage must be === "Ur state be b0rked"
 
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf(new FailingInnerActor)))
+        contextStackMustBeEmpty
       }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new InnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInheritingInnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingInheritingOuterActor(actorOf(new FailingInnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf(new InnerActor {
-          val a = new InnerActor
-        })))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new FailingOuterActor(actorOf(new FailingInheritingInnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf(new FailingInheritingInnerActor)))
-      }
-
-      contextStackMustBeEmpty
-
-      intercept[akka.actor.ActorInitializationException] {
-        actorOf(new OuterActor(actorOf({ new InnerActor; new InnerActor })))
-      }
-
-      contextStackMustBeEmpty
-
-      (intercept[java.lang.IllegalStateException] {
-        actorOf(new OuterActor(actorOf({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })))
-      }).getMessage must be === "Ur state be b0rked"
-
-      contextStackMustBeEmpty
     }
 
     "be serializable using Java Serialization on local node" in {
@@ -225,8 +258,13 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
       ReflectiveAccess.RemoteModule.isEnabled must be === false
-
-      val a = actorOf[InnerActor]
+      val latch = new CountDownLatch(1)
+      val a = actorOf(new InnerActor {
+        override def postStop {
+          Actor.registry.unregister(self)
+          latch.countDown
+        }
+      })
 
       val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
 
@@ -237,8 +275,6 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         inetAddress.getPort,
         a.timeout)
 
-      Actor.registry.unregister(a)
-
       import java.io._
 
       val baos = new ByteArrayOutputStream(8192 * 32)
@@ -248,6 +284,9 @@ class ActorRefSpec extends WordSpec with MustMatchers {
 
       out.flush
       out.close
+
+      a.stop()
+      latch.await(5, TimeUnit.SECONDS) must be === true
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
       (intercept[java.lang.IllegalStateException] {
@@ -319,11 +358,11 @@ class ActorRefSpec extends WordSpec with MustMatchers {
         fail("shouldn't get here")
       }
 
-      ffive.resultOrException.get must be("five")
-      fnull.resultOrException.get must be("null")
+      ffive.get must be("five")
+      fnull.get must be("null")
 
+      awaitCond(ref.isShutdown, 100 millis)
       ref.isRunning must be(false)
-      ref.isShutdown must be(true)
     }
 
     "restart when Kill:ed" in {

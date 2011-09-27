@@ -32,10 +32,7 @@ import java.util.{ Collection ⇒ JCollection }
  */
 sealed trait AutoReceivedMessage extends Serializable
 
-/**
- * Life-cycle messages for the Actors
- */
-sealed trait LifeCycleMessage extends Serializable { self: AutoReceivedMessage ⇒ }
+trait PossiblyHarmful
 
 case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage {
 
@@ -56,29 +53,29 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case object Init extends AutoReceivedMessage with LifeCycleMessage
-case class Death(deceased: ActorRef, cause: Throwable, recoverable: Boolean) extends AutoReceivedMessage with LifeCycleMessage
-case class Restart(reason: Throwable) extends AutoReceivedMessage with LifeCycleMessage
+case class Failed(actor: ActorRef, cause: Throwable, recoverable: Boolean, timesRestarted: Int, restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
 
-case object RevertHotSwap extends AutoReceivedMessage
+case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
-case class Link(child: ActorRef) extends AutoReceivedMessage
+case class Link(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
-case class Unlink(child: ActorRef) extends AutoReceivedMessage
+case class Unlink(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
-case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage
+case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
-case object PoisonPill extends AutoReceivedMessage
+case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
-case object Kill extends AutoReceivedMessage
+case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
-case object ReceiveTimeout
+case object ReceiveTimeout extends PossiblyHarmful
 
 case class MaximumNumberOfRestartsWithinTimeRangeReached(
   @BeanProperty victim: ActorRef,
   @BeanProperty maxNrOfRetries: Option[Int],
   @BeanProperty withinTimeRange: Option[Int],
-  @BeanProperty lastExceptionCausingRestart: Throwable)
+  @BeanProperty lastExceptionCausingRestart: Throwable) //FIXME should be removed and replaced with Terminated
+
+case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable)
 
 // Exceptions for Actors
 class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
@@ -123,7 +120,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
 /**
  * Classes for passing status back to the sender.
  */
-object Status {
+object Status { //FIXME Why does this exist at all?
   sealed trait Status extends Serializable
   case class Success(status: AnyRef) extends Status
   case class Failure(cause: Throwable) extends Status
@@ -564,19 +561,6 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called on the crashed Actor to give it the option of producing the
-   * Actor's reincarnation. If it returns None, which is the default, the
-   * initially provided actor factory is used.
-   * <p/>
-   * <b>Warning:</b> <i>Propagating state from a crashed actor carries the risk
-   * of proliferating the cause of the error. Consider let-it-crash first.</i>
-   */
-  @experimental("1.2")
-  def freshInstance(): Option[Actor] = None
-
-  /**
-   * User overridable callback.
-   * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
   def postRestart(reason: Throwable) {}
@@ -618,35 +602,21 @@ trait Actor {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
       throw new InvalidMessageException("Message from [" + channel + "] to [" + self.toString + "] is null")
 
-    def autoReceiveMessage(msg: AutoReceivedMessage): Boolean = {
+    def autoReceiveMessage(msg: AutoReceivedMessage) {
       if (debugAutoReceive) EventHandler.debug(this, "received AutoReceiveMessage " + msg)
 
-      /**
-       * System priority messages that should be handled by the dispatcher
-       *
-       * Init
-       * Death
-       * Restart
-       * Suspend
-       * Resume
-       * Terminate
-       */
-
       msg match {
-        case Init                      ⇒ reply(()); false //All gud nao FIXME remove reply when we can have fully async init
-        case HotSwap(code, discardOld) ⇒ become(code(self), discardOld); false
-        case RevertHotSwap             ⇒ unbecome(); false
-        case d: Death                  ⇒ context.handleDeath(d); false
-        case Link(child)               ⇒ self.link(child); false
-        case Unlink(child)             ⇒ self.unlink(child); false
-        case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop(); false
-        case Restart(reason)           ⇒ throw reason
+        case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
+        case RevertHotSwap             ⇒ unbecome()
+        case f: Failed                 ⇒ context.handleFailure(f)
+        case Link(child)               ⇒ self.link(child)
+        case Unlink(child)             ⇒ self.unlink(child)
+        case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel
           self.stop()
           ch.sendException(new ActorKilledException("PoisonPill"))
-          false
       }
     }
 

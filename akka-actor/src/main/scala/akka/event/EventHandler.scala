@@ -96,7 +96,8 @@ object EventHandler extends ListenerManagement {
 
   lazy val StandardOutLogger = new StandardOutLogger {}
 
-  lazy val EventHandlerDispatcher = Dispatchers.newDispatcher("akka:event:handler").build
+  lazy val EventHandlerDispatcher =
+    Dispatchers.fromConfig("akka.event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
@@ -132,6 +133,7 @@ object EventHandler extends ListenerManagement {
       info(this, "Starting up EventHandler")
     } catch {
       case e: Exception ⇒
+        System.err.println("error while starting up EventHandler")
         e.printStackTrace()
         throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
     }
@@ -141,8 +143,10 @@ object EventHandler extends ListenerManagement {
    * Shuts down all event handler listeners including the event handle dispatcher.
    */
   def shutdown() {
-    foreachListener(_.stop())
-    EventHandlerDispatcher.shutdown()
+    foreachListener { l ⇒
+      removeListener(l)
+      l.stop()
+    }
   }
 
   def notify(event: Any) {
@@ -271,6 +275,7 @@ object EventHandler extends ListenerManagement {
       println(genericFormat.format(timestamp, event.toString))
 
     def instanceName(instance: AnyRef): String = instance match {
+      case null        ⇒ "NULL"
       case a: ActorRef ⇒ a.address
       case _           ⇒ instance.getClass.getSimpleName
     }

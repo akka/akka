@@ -115,12 +115,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 
   /**
    * Shuts down the actor its dispatcher and message queue.
-   * Alias for 'stop'.
-   */
-  def exit(): Unit = stop()
-
-  /**
-   * Shuts down the actor its dispatcher and message queue.
    */
   def stop(): Unit
 
@@ -214,21 +208,29 @@ class LocalActorRef private[akka] (
   /**
    * Is the actor running?
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def isRunning: Boolean = actorCell.isRunning
 
   /**
    * Is the actor shut down?
    */
+  //FIXME TODO RENAME TO isTerminated
   def isShutdown: Boolean = actorCell.isShutdown
 
   /**
-   * Suspends the actor. It will not process messages while suspended.
+   * Suspends the actor so that it will not process messages until resumed. The
+   * suspend request is processed asynchronously to the caller of this method
+   * as well as to normal message sends: the only ordering guarantee is that
+   * message sends done from the same thread after calling this method will not
+   * be processed until resumed.
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -268,7 +270,16 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  protected[akka] def underlyingActorInstance: Actor = actorCell.actor.get
+  //FIXME TODO REMOVE THIS
+  @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this")
+  protected[akka] def underlyingActorInstance: Actor = {
+    var instance = actorCell.actor.get
+    while ((instance eq null) && actorCell.isRunning) {
+      try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
+      instance = actorCell.actor.get
+    }
+    instance
+  }
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
 
@@ -285,7 +296,7 @@ class LocalActorRef private[akka] (
     actorCell.postMessageToMailboxAndCreateFutureResultWithTimeout(message, timeout, channel)
   }
 
-  protected[akka] def handleDeath(death: Death): Unit = actorCell.handleDeath(death)
+  protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
     actorCell.restart(reason, maxNrOfRetries, withinTimeRange)

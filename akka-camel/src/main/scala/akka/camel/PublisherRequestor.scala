@@ -54,7 +54,7 @@ private[camel] abstract class PublishRequestor extends Actor {
  * @author Martin Krasser
  */
 private[camel] object PublishRequestor {
-  def pastActorRegisteredEvents = for (actor ← Actor.registry.local.actors) yield ActorRegistered(actor.address, actor, None)
+  def pastActorRegisteredEvents = for (actor ← Actor.registry.local.actors) yield ActorRegistered(actor.address, actor)
 }
 
 /**

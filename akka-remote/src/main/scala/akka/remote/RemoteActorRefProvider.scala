@@ -43,7 +43,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
-      val actor = 
+      val actor =
         Deployer.lookupDeploymentFor(address) match {
           case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
             // FIXME create RoutedActorRef if 'router' is specified

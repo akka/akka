@@ -52,12 +52,10 @@ class ReadWriteGuard {
 }
 
 /**
- * A very simple lock that uses CCAS (Compare Compare-And-Swap)
+ * A very simple lock that uses CAS (Compare-And-Swap)
  * Does not keep track of the owner and isn't Reentrant, so don't nest and try to stick to the if*-methods
  */
-class SimpleLock {
-  val acquired = new AtomicBoolean(false)
-
+class SimpleLock(startLocked: Boolean = false) extends AtomicBoolean(startLocked) {
   def ifPossible(perform: () ⇒ Unit): Boolean = {
     if (tryLock()) {
       try {
@@ -89,20 +87,13 @@ class SimpleLock {
     } else None
   }
 
-  def tryLock() = {
-    if (acquired.get) false
-    else acquired.compareAndSet(false, true)
-  }
+  def tryLock() = compareAndSet(false, true)
 
-  def tryUnlock() = {
-    acquired.compareAndSet(true, false)
-  }
+  def tryUnlock() = compareAndSet(true, false)
 
-  def locked = acquired.get
+  def locked = get
 
-  def unlock() {
-    acquired.set(false)
-  }
+  def unlock(): Unit = set(false)
 }
 
 /**

@@ -202,7 +202,9 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     }
 
     "run onTermination upon ActorRef.stop()" in {
+      val started = TestLatch(1)
       lazy val fsm = new Actor with FSM[Int, Null] {
+        override def preStart = { started.countDown }
         startWith(1, null)
         when(1) { NullFunction }
         onTermination {
@@ -210,6 +212,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
         }
       }
       val ref = Actor.actorOf(fsm)
+      started.await
       ref.stop()
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
     }

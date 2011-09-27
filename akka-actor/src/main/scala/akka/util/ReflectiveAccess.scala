@@ -3,10 +3,10 @@
  */
 
 package akka.util
-
+import akka.dispatch.Envelope
+import akka.config.{ Config, ModuleNotAvailableException }
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
-import akka.dispatch.MessageInvocation
 import akka.config.{ Config, ModuleNotAvailableException }
 import akka.event.EventHandler
 import akka.cluster.ClusterNode
@@ -99,8 +99,8 @@ object ReflectiveAccess {
     }
 
     type Mailbox = {
-      def enqueue(message: MessageInvocation)
-      def dequeue: MessageInvocation
+      def enqueue(message: Envelope)
+      def dequeue: Envelope
     }
 
     type TransactionLogObject = {
@@ -118,7 +118,7 @@ object ReflectiveAccess {
     }
 
     type TransactionLog = {
-      def recordEntry(messageHandle: MessageInvocation, actorRef: LocalActorRef)
+      def recordEntry(messageHandle: Envelope, actorRef: LocalActorRef)
       def recordEntry(entry: Array[Byte])
       def recordSnapshot(snapshot: Array[Byte])
       def entries: Vector[Array[Byte]]

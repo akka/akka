@@ -16,7 +16,7 @@ import akka.actor._
 import akka.camel.{ Ack, Failure, Message }
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import scala.reflect.BeanProperty
-import akka.dispatch.{ FutureTimeoutException, Promise, MessageInvocation, MessageDispatcher }
+import akka.dispatch.{ FutureTimeoutException, Promise, MessageDispatcher }
 
 /**
  * @author Martin Krasser
@@ -224,7 +224,7 @@ private[camel] object ActorProducer {
  * @author Martin Krasser
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
-  override def getMessage = "%s not registered" format uri
+  override def getMessage = "'%s' not registered" format uri
 }
 
 /**
