@@ -12,14 +12,16 @@ import akka.util.ByteString
 import akka.util.cps._
 import akka.dispatch.Future
 import scala.util.continuations._
+import akka.testkit._
 
 object IOActorSpec {
   import IO._
 
-  class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef) extends Actor {
+  class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
 
     override def preStart = {
       listen(ioManager, host, port)
+      started.open()
     }
 
     def createWorker = Actor.actorOf(Props(new Actor with IO {
@@ -61,12 +63,13 @@ object IOActorSpec {
   }
 
   // Basic Redis-style protocol
-  class KVStore(host: String, port: Int, ioManager: ActorRef) extends Actor {
+  class KVStore(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
 
     var kvs: Map[String, ByteString] = Map.empty
 
     override def preStart = {
       listen(ioManager, host, port)
+      started.open()
     }
 
     def createWorker = Actor.actorOf(Props(new Actor with IO {
@@ -172,8 +175,10 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
 
   "an IO Actor" must {
     "run echo server" in {
+      val started = TestLatch(1)
       val ioManager = Actor.actorOf(new IOManager(2)) // teeny tiny buffer
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager))
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8064, ioManager, started))
+      started.await
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8064, ioManager))
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
@@ -187,8 +192,10 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run echo server under high load" in {
+      val started = TestLatch(1)
       val ioManager = Actor.actorOf(new IOManager())
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8065, ioManager))
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8065, ioManager, started))
+      started.await
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8065, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
@@ -199,8 +206,10 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run echo server under high load with small buffer" in {
+      val started = TestLatch(1)
       val ioManager = Actor.actorOf(new IOManager(2))
-      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8066, ioManager))
+      val server = Actor.actorOf(new SimpleEchoServer("localhost", 8066, ioManager, started))
+      started.await
       val client = Actor.actorOf(new SimpleEchoClient("localhost", 8066, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
@@ -211,8 +220,10 @@ class IOActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
     }
 
     "run key-value store" in {
+      val started = TestLatch(1)
       val ioManager = Actor.actorOf(new IOManager(2)) // teeny tiny buffer
-      val server = Actor.actorOf(new KVStore("localhost", 8067, ioManager))
+      val server = Actor.actorOf(new KVStore("localhost", 8067, ioManager, started))
+      started.await
       val client1 = Actor.actorOf(new KVClient("localhost", 8067, ioManager))
       val client2 = Actor.actorOf(new KVClient("localhost", 8067, ioManager))
       val f1 = client1 ? (('set, "hello", ByteString("World")))
