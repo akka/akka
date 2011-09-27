@@ -126,8 +126,8 @@ class Dispatcher(
    * Returns if it was registered
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
-    if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) {
-      if (mbox.dispatcherLock.tryLock()) { //If the dispatcher is active and the actor not suspended
+    if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
+      if (mbox.dispatcherLock.tryLock()) {
         try {
           executorService.get() execute mbox
           true
