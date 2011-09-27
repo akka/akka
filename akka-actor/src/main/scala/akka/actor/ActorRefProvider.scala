@@ -37,10 +37,13 @@ private[akka] class ActorRefProviders(
 
   import ActorRefProvider._
 
-  def register(provider: ActorRefProvider, providerType: ProviderType) = providerType match {
-    case LocalProvider   ⇒ localProvider = Option(provider)
-    case RemoteProvider  ⇒ remoteProvider = Option(provider)
-    case ClusterProvider ⇒ clusterProvider = Option(provider)
+  def register(providerType: ProviderType, provider: ActorRefProvider) = {
+    EventHandler.info(this, "Registering ActorRefProvider [%s]".format(provider.getClass.getName))
+    providerType match {
+      case LocalProvider   ⇒ localProvider = Option(provider)
+      case RemoteProvider  ⇒ remoteProvider = Option(provider)
+      case ClusterProvider ⇒ clusterProvider = Option(provider)
+    }
   }
 
   //FIXME Implement support for configuring by deployment ID etc
@@ -64,8 +67,8 @@ private[akka] class ActorRefProviders(
     actorOf(props, address, providersAsList).getOrElse(throw new ActorRefProviderException(
       "Actor [" +
         address +
-        "] could not be created or found in any of the registered ActorRefProvider's [" +
-        providersAsList.mkString(", ") + "]"))
+        "] could not be found in or created by any of the registered 'ActorRefProvider's [" +
+        providersAsList.map(_.getClass.getName).mkString(", ") + "]"))
   }
 
   def findActorRef(address: String): Option[ActorRef] = {
@@ -115,7 +118,7 @@ class LocalActorRefProvider extends ActorRefProvider {
         //WARNING FIXME HUGE RACE CONDITION THAT NEEDS GETTING FIXED
         Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
-          case Some(Deploy(_, _, router, _, Local)) ⇒
+          case Some(Deploy(_, _, router, _, LocalScope)) ⇒
             // FIXME create RoutedActorRef if 'router' is specified
             Some(new LocalActorRef(props, address, systemService)) // create a local actor
 
@@ -129,7 +132,7 @@ class LocalActorRefProvider extends ActorRefProvider {
 
 //   def actorOf(props: Props, address: String): Option[ActorRef] = {
 //     deploy match {
-//       case Deploy(configAddress, recipe, router, failureDetector, Clustered(preferredHomeNodes, replicas, replication)) ⇒
+//       case Deploy(configAddress, recipe, router, failureDetector, Cluster(preferredHomeNodes, replicas, replication)) ⇒
 
 //         ClusterModule.ensureEnabled()
 

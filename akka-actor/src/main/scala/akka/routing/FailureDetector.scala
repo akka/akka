@@ -18,6 +18,20 @@ import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
 
+sealed trait FailureDetectorType
+
+/**
+ * Used for declarative configuration of failure detection.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object FailureDetectorType {
+  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetectorType
+  case class BannagePeriodFailureDetector(timeToBan: Long) extends FailureDetectorType
+  case class CustomFailureDetector(className: String) extends FailureDetectorType
+}
+
 /**
  * Misc helper and factory methods for failure detection.
  */
@@ -59,6 +73,8 @@ object FailureDetector {
  *      the Router can indicate that some happened happened with a actor ref, e.g. the actor ref dying.
  *   </li>
  * </ol>
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait FailureDetector {
 
@@ -119,6 +135,11 @@ trait FailureDetector {
    * @param ref the dead
    */
   def remove(deadRef: ActorRef)
+
+  /**
+   * TODO: document
+   */
+  def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef
 
   /**
    * Fails over connections from one address to another.

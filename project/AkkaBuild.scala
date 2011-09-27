@@ -1,6 +1,10 @@
+package akka
+
 import sbt._
 import Keys._
+import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
+import com.typesafe.sbtscalariform.ScalariformPlugin
 import ScalariformPlugin.{ format, formatPreferences }
 import java.lang.Boolean.getBoolean
 
@@ -10,7 +14,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "se.scalablesolutions.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.0-1"
+    scalaVersion := "2.9.1"
   )
 
   lazy val akka = Project(
@@ -364,7 +368,7 @@ object AkkaBuild extends Build {
     (dir, s) => {
       s.log.info("Building reStructuredText documentation...")
       val exitCode = Process(List("make", "clean", "html", "pdf"), dir) ! s.log
-      if (exitCode != 0) error("Failed to build docs.")
+      if (exitCode != 0) sys.error("Failed to build docs.")
       s.log.info("Done building docs.")
       dir
     }
@@ -460,13 +464,13 @@ object Dependency {
   val jsr250        = "javax.annotation"            % "jsr250-api"             % "1.0"        // CDDL v1
   val jsr311        = "javax.ws.rs"                 % "jsr311-api"             % "1.1"        // CDDL v1
   val log4j         = "log4j"                       % "log4j"                  % "1.2.15"     // ApacheV2
-  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      //ApacheV2
+  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      // ApacheV2
   val multiverse    = "org.multiverse"              % "multiverse-alpha"       % V.Multiverse // ApacheV2
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val redis         = "net.debasishg"               % "redisclient_2.9.0"      % "2.3.1"      // ApacheV2
-  val sjson         = "net.debasishg"               % "sjson_2.9.0"            % "0.11"       // ApacheV2
+  val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
+  val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
@@ -479,9 +483,9 @@ object Dependency {
   // Provided
 
   object Provided {
-    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" //CDDL v1
-    val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided" // CDDL v1
-    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided" // Eclipse license
+    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" // CDDL v1
+    val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided"            // CDDL v1
+    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided"            // Eclipse license
   }
 
   // Runtime
@@ -505,8 +509,7 @@ object Dependency {
     val logback     = "ch.qos.logback"          % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"             % "mockito-all"         % "1.8.1"      % "test" // MIT
     val multiverse  = "org.multiverse"          % "multiverse-alpha"    % V.Multiverse % "test" // ApacheV2
-    val scalatest   = "org.scalatest"           % "scalatest_2.9.0"     % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing" % "scalacheck_2.9.0"    % "1.9"        % "test" // New BSD
-    val sjsonTest   = "net.debasishg"          %% "sjson"               % "0.11"       % "test" // ApacheV2
+    val scalatest   = "org.scalatest"           %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing" %% "scalacheck"         % "1.9"        % "test" // New BSD
   }
 }

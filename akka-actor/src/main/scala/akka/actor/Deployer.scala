@@ -46,7 +46,7 @@ object Deployer extends ActorDeployer {
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, _, Local) | Deploy(_, _, _, _, _: Local) ⇒ true
+    case Deploy(_, _, _, _, LocalScope) | Deploy(_, _, _, _, _: LocalScope) ⇒ true
     case _ ⇒ false
   }
 
@@ -122,7 +122,7 @@ object Deployer extends ActorDeployer {
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
       case None ⇒
-        Some(Deploy(address, None, Direct, RemoveConnectionOnFirstFailureLocalFailureDetector, Local))
+        Some(Deploy(address, None, Direct, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
 
       case Some(addressConfig) ⇒
 
@@ -145,109 +145,161 @@ object Deployer extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.failure-detector
+        // akka.actor.deployment.<address>.failure-detector.xxx
         // --------------------------------
-        val failureDetector: FailureDetector = addressConfig.getString("failure-detector", "remove-connection-on-first-local-failure") match {
-          case "remove-connection-on-first-local-failure"  ⇒ RemoveConnectionOnFirstFailureLocalFailureDetector
-          case "remove-connection-on-first-remote-failure" ⇒ RemoveConnectionOnFirstFailureRemoteFailureDetector
-          case customFailureDetectorClassName              ⇒ CustomFailureDetector(customFailureDetectorClassName)
+        val failureDetectorOption: Option[FailureDetector] = addressConfig.getSection("failure-detector") match {
+          case Some(failureDetectorConfig) ⇒
+            failureDetectorConfig.keys.toList match {
+              case Nil ⇒ None
+              case detector :: Nil ⇒
+                detector match {
+                  case "remove-connection-on-first-local-failure" ⇒
+                    Some(RemoveConnectionOnFirstFailureLocalFailureDetector)
+
+                  case "remove-connection-on-first-failure" ⇒
+                    Some(RemoveConnectionOnFirstFailureFailureDetector)
+
+                  case "bannage-period" ⇒
+                    failureDetectorConfig.getSection("bannage-period") map { section ⇒
+                      BannagePeriodFailureDetector(section.getInt("time-to-ban", 10))
+                    }
+
+                  case "custom" ⇒
+                    failureDetectorConfig.getSection("custom") map { section ⇒
+                      val implementationClass = section.getString("class").getOrElse(throw new ConfigurationException(
+                        "Configuration for [" + addressPath +
+                          "failure-detector.custom] must have a 'class' element with the fully qualified name of the failure detector class"))
+                      CustomFailureDetector(implementationClass)
+                    }
+
+                  case _ ⇒ None
+                }
+              case detectors ⇒
+                throw new ConfigurationException(
+                  "Configuration for [" + addressPath +
+                    "failure-detector] can not have multiple sections - found [" + detectors.mkString(", ") + "]")
+            }
+          case None ⇒ None
         }
+        val failureDetector = failureDetectorOption getOrElse { BannagePeriodFailureDetector(10) } // fall back to default failure detector
 
+        // --------------------------------
+        // akka.actor.deployment.<address>.create-as
+        // --------------------------------
         val recipe: Option[ActorRecipe] = addressConfig.getSection("create-as") map { section ⇒
-          val implementationClass = section.getString("implementation-class") match {
+          val implementationClass = section.getString("class") match {
             case Some(impl) ⇒
-              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException("Config option [" + addressPath + ".create-as.implementation-class] load failed", e), identity)
-            case None ⇒ throw new ConfigurationException("Config option [" + addressPath + ".create-as.implementation-class] is missing")
+              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
+                "Config option [" + addressPath + ".create-as.class] load failed", e), identity)
+            case None ⇒
+              throw new ConfigurationException(
+                "Config option [" + addressPath + ".create-as.class] is missing, need the fully qualified name of the class")
           }
-
           ActorRecipe(implementationClass)
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.cluster
+        // akka.actor.deployment.<address>.remote
         // --------------------------------
-        addressConfig.getSection("cluster") match {
-          case None ⇒
-            Some(Deploy(address, recipe, router, RemoveConnectionOnFirstFailureLocalFailureDetector, Local)) // deploy locally
+        addressConfig.getSection("remote") match {
+          case Some(remoteConfig) ⇒ // we have a 'remote' config section
 
-          case Some(clusterConfig) ⇒
+            if (addressConfig.getSection("cluster").isDefined) throw new ConfigurationException(
+              "Configuration for deployment ID [" + address + "] can not have both 'remote' and 'cluster' sections.")
 
-            // --------------------------------
-            // akka.actor.deployment.<address>.cluster.preferred-nodes
-            // --------------------------------
+            val hostname = remoteConfig.getString("hostname", "localhost")
+            val port = remoteConfig.getInt("port", 2552)
 
-            val preferredNodes = clusterConfig.getList("preferred-nodes") match {
-              case Nil ⇒ Nil
-              case homes ⇒
-                def raiseHomeConfigError() = throw new ConfigurationException(
-                  "Config option [" + addressPath +
-                    ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
-                    homes + "]")
+            Some(Deploy(address, recipe, router, failureDetector, RemoteScope(hostname, port)))
 
-                homes map { home ⇒
-                  if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
-
-                  val tokenizer = new java.util.StringTokenizer(home, ":")
-                  val protocol = tokenizer.nextElement
-                  val address = tokenizer.nextElement.asInstanceOf[String]
-
-                  protocol match {
-                    //case "host" ⇒ Host(address)
-                    case "node" ⇒ Node(address)
-                    //case "ip"   ⇒ IP(address)
-                    case _      ⇒ raiseHomeConfigError()
-                  }
-                }
-            }
+          case None ⇒ // check for 'cluster' config section
 
             // --------------------------------
-            // akka.actor.deployment.<address>.cluster.replicas
+            // akka.actor.deployment.<address>.cluster
             // --------------------------------
-            val replicationFactor = {
-              if (router == Direct) new ReplicationFactor(1)
-              else {
-                clusterConfig.getAny("replication-factor", "0") match {
-                  case "auto" ⇒ AutoReplicationFactor
-                  case "0"    ⇒ ZeroReplicationFactor
-                  case nrOfReplicas: String ⇒
-                    try {
-                      new ReplicationFactor(nrOfReplicas.toInt)
-                    } catch {
-                      case e: Exception ⇒
-                        throw new ConfigurationException(
-                          "Config option [" + addressPath +
-                            ".cluster.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
-                            nrOfReplicas + "]")
+            addressConfig.getSection("cluster") match {
+              case None ⇒
+                Some(Deploy(address, recipe, router, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope)) // deploy locally
+
+              case Some(clusterConfig) ⇒
+
+                // --------------------------------
+                // akka.actor.deployment.<address>.cluster.preferred-nodes
+                // --------------------------------
+
+                val preferredNodes = clusterConfig.getList("preferred-nodes") match {
+                  case Nil ⇒ Nil
+                  case homes ⇒
+                    def raiseHomeConfigError() = throw new ConfigurationException(
+                      "Config option [" + addressPath +
+                        ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
+                        homes + "]")
+
+                    homes map { home ⇒
+                      if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
+
+                      val tokenizer = new java.util.StringTokenizer(home, ":")
+                      val protocol = tokenizer.nextElement
+                      val address = tokenizer.nextElement.asInstanceOf[String]
+
+                      protocol match {
+                        //case "host" ⇒ Host(address)
+                        case "node" ⇒ Node(address)
+                        //case "ip"   ⇒ IP(address)
+                        case _      ⇒ raiseHomeConfigError()
+                      }
                     }
                 }
-              }
-            }
 
-            // --------------------------------
-            // akka.actor.deployment.<address>.cluster.replication
-            // --------------------------------
-            clusterConfig.getSection("replication") match {
-              case None ⇒
-                Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Transient)))
+                // --------------------------------
+                // akka.actor.deployment.<address>.cluster.replicas
+                // --------------------------------
+                val replicationFactor = {
+                  if (router == Direct) new ReplicationFactor(1)
+                  else {
+                    clusterConfig.getAny("replication-factor", "0") match {
+                      case "auto" ⇒ AutoReplicationFactor
+                      case "0"    ⇒ ZeroReplicationFactor
+                      case nrOfReplicas: String ⇒
+                        try {
+                          new ReplicationFactor(nrOfReplicas.toInt)
+                        } catch {
+                          case e: Exception ⇒
+                            throw new ConfigurationException(
+                              "Config option [" + addressPath +
+                                ".cluster.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
+                                nrOfReplicas + "]")
+                        }
+                    }
+                  }
+                }
 
-              case Some(replicationConfig) ⇒
-                val storage = replicationConfig.getString("storage", "transaction-log") match {
-                  case "transaction-log" ⇒ TransactionLog
-                  case "data-grid"       ⇒ DataGrid
-                  case unknown ⇒
-                    throw new ConfigurationException("Config option [" + addressPath +
-                      ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
-                      unknown + "]")
+                // --------------------------------
+                // akka.actor.deployment.<address>.cluster.replication
+                // --------------------------------
+                clusterConfig.getSection("replication") match {
+                  case None ⇒
+                    Some(Deploy(address, recipe, router, failureDetector, ClusterScope(preferredNodes, replicationFactor, Transient)))
+
+                  case Some(replicationConfig) ⇒
+                    val storage = replicationConfig.getString("storage", "transaction-log") match {
+                      case "transaction-log" ⇒ TransactionLog
+                      case "data-grid"       ⇒ DataGrid
+                      case unknown ⇒
+                        throw new ConfigurationException("Config option [" + addressPath +
+                          ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
+                          unknown + "]")
+                    }
+                    val strategy = replicationConfig.getString("strategy", "write-through") match {
+                      case "write-through" ⇒ WriteThrough
+                      case "write-behind"  ⇒ WriteBehind
+                      case unknown ⇒
+                        throw new ConfigurationException("Config option [" + addressPath +
+                          ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
+                          unknown + "]")
+                    }
+                    Some(Deploy(address, recipe, router, failureDetector, ClusterScope(preferredNodes, replicationFactor, Replication(storage, strategy))))
                 }
-                val strategy = replicationConfig.getString("strategy", "write-through") match {
-                  case "write-through" ⇒ WriteThrough
-                  case "write-behind"  ⇒ WriteBehind
-                  case unknown ⇒
-                    throw new ConfigurationException("Config option [" + addressPath +
-                      ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
-                      unknown + "]")
-                }
-                Some(Deploy(address, recipe, router, failureDetector, Clustered(preferredNodes, replicationFactor, Replication(storage, strategy))))
             }
         }
     }

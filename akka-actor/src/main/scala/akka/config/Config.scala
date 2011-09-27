@@ -103,26 +103,26 @@ object Config {
 
   val isClusterEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
 
-  lazy val nodename = System.getProperty("akka.cluster.nodename") match {
+  val clusterName = config.getString("akka.cluster.name", "default")
+
+  val nodename = System.getProperty("akka.cluster.nodename") match {
     case null | "" ⇒ new UUID().toString
     case value     ⇒ value
   }
 
-  lazy val hostname = System.getProperty("akka.cluster.hostname") match {
+  val hostname = System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostName
     case value     ⇒ value
   }
 
-  val remoteServerPort = System.getProperty("akka.cluster.port") match {
+  val remoteServerPort = System.getProperty("akka.remote.port") match {
     case null | "" ⇒
-      System.getProperty("akka.cluster.remote-server-port") match {
-        case null | "" ⇒ config.getInt("akka.cluster.remote-server-port", 2552)
+      System.getProperty("akka.remote.server.port") match {
+        case null | "" ⇒ config.getInt("akka.remote.server.port", 2552)
         case value     ⇒ value.toInt
       }
     case value ⇒ value.toInt
   }
-
-  val clusterName = config.getString("akka.cluster.name", "default")
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000

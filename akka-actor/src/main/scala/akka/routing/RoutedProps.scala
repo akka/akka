@@ -11,19 +11,6 @@ import java.net.InetSocketAddress
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
-sealed trait FailureDetectorType
-
-/**
- * Used for declarative configuration of failure detection in Routing.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object FailureDetectorType {
-  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetectorType
-  case object RemoveConnectionOnFirstFailureRemoteFailureDetector extends FailureDetectorType
-  case class CustomFailureDetector(className: String) extends FailureDetectorType
-}
-
 sealed trait RouterType
 
 /**

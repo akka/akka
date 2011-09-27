@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import org.scalatest.{ Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.matchers.MustMatchers
@@ -10,7 +10,7 @@ import org.scalatest.junit.JUnitRunner
 
 import org.junit.runner.RunWith
 
-import akka.cluster.netty.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteSupport
 import akka.actor.{ Actor, ActorRegistry }
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }

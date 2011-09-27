@@ -371,7 +371,7 @@ object TransactionLog {
   val quorumSize = config.getInt("akka.cluster.replication.quorum-size", 2)
   val snapshotFrequency = config.getInt("akka.cluster.replication.snapshot-frequency", 1000)
   val timeout = Duration(config.getInt("akka.cluster.replication.timeout", 30), TIME_UNIT).toMillis
-  val shouldCompressData = config.getBool("akka.cluster.use-compression", false)
+  val shouldCompressData = config.getBool("akka.remote.use-compression", false)
 
   private[akka] val transactionLogNode = "/transaction-log-ids"
 

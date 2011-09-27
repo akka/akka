@@ -1,12 +1,14 @@
-package akka.event;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 
+package akka.event;
 
 import akka.actor.ActorRef;
 
 /**
  * Java API for Akka EventHandler
  */
-
 public class JavaEventHandler {
 
 

@@ -34,7 +34,7 @@ Here is an example:
 
   import akka.actor.Actor
   import akka.event.EventHandler
-  
+
   class MyActor extends Actor {
     def receive = {
       case "test" => EventHandler.info(this, "received test")
@@ -149,7 +149,7 @@ mailbox and the hotswap stack are unaffected by the restart, so processing of
 messages will resume after the :meth:`postRestart` hook returns. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
- 
+
 Stop Hook
 ^^^^^^^^^
 
@@ -206,6 +206,8 @@ Messages are sent to an Actor through one of the following methods.
     same change in the handling of :class:`Future`’s timeout as for ``!!``, but
     additionally the old method could defer possible type cast problems into
     seemingly unrelated parts of the code base.
+
+Message ordering is guaranteed on a per-sender basis.
 
 Fire-forget
 ^^^^^^^^^^^
@@ -628,16 +630,16 @@ In generic base Actor:
 .. code-block:: scala
 
   import akka.actor.Actor.Receive
-  
+
   abstract class GenericActor extends Actor {
     // to be defined in subclassing actor
     def specificMessageHandler: Receive
-   
+
     // generic message handler
     def genericMessageHandler: Receive = {
       case event => printf("generic: %s\n", event)
     }
-   
+
     def receive = specificMessageHandler orElse genericMessageHandler
   }
 
@@ -650,5 +652,5 @@ In subclassing Actor:
       case event: MyMsg  => printf("specific: %s\n", event.subject)
     }
   }
-  
+
   case class MyMsg(subject: String)

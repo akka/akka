@@ -10,19 +10,18 @@ import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.Envelope
 import akka.util.{ ReflectiveAccess, Duration }
-import akka.cluster.{ RemoteClientSettings, MessageSerializer }
-import akka.cluster.RemoteProtocol
+import akka.event.EventHandler
+import akka.remote.{ RemoteProtocol, RemoteClientSettings, MessageSerializer }
 import RemoteProtocol._
 
 import scala.collection.immutable.Stack
 
 import java.net.InetSocketAddress
+import java.util.{ LinkedList, Collections }
 
 import com.google.protobuf.ByteString
 
 import com.eaio.uuid.UUID
-import akka.event.EventHandler
-import java.util.{ LinkedList, Collections }
 
 /**
  * Module for local actor serialization.

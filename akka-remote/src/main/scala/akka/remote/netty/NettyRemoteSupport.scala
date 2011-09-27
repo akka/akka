@@ -2,15 +2,14 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster.netty
+package akka.remote.netty
 
 import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, RemoteActorRef, PoisonPill, RemoteActorSystemMessage, AutoReceivedMessage }
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
-import akka.cluster.{ MessageSerializer, RemoteClientSettings, RemoteServerSettings }
-import akka.cluster.RemoteProtocol._
 import akka.serialization.RemoteActorSerialization
 import akka.serialization.RemoteActorSerialization._
-import akka.cluster._
+import akka.remote._
+import RemoteProtocol._
 import akka.actor.Actor._
 import akka.config.Config
 import akka.config.Config._
@@ -148,8 +147,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val useTransactionLog = config.getBool("akka.cluster.client.buffering.retry-message-send-on-failure", false)
-  val transactionLogCapacity = config.getInt("akka.cluster.client.buffering.capacity", -1)
+  val useTransactionLog = config.getBool("akka.remote.client.buffering.retry-message-send-on-failure", false)
+  val transactionLogCapacity = config.getInt("akka.remote.client.buffering.capacity", -1)
 
   val name = this.getClass.getSimpleName + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
@@ -161,9 +160,9 @@ abstract class RemoteClient private[akka] (
     else new LinkedBlockingQueue[(Boolean, Uuid, RemoteMessageProtocol)](transactionLogCapacity)
   }
 
-  private[cluster] val runSwitch = new Switch()
+  private[remote] val runSwitch = new Switch()
 
-  private[cluster] def isRunning = runSwitch.isOn
+  private[remote] def isRunning = runSwitch.isOn
 
   protected def notifyListeners(msg: ⇒ Any): Unit
 
@@ -277,7 +276,7 @@ abstract class RemoteClient private[akka] (
     }
   }
 
-  private[cluster] def sendPendingRequests() = pendingRequests synchronized {
+  private[remote] def sendPendingRequests() = pendingRequests synchronized {
     // ensure only one thread at a time can flush the log
     val nrOfMessages = pendingRequests.size
     if (nrOfMessages > 0) EventHandler.info(this, "Resending [%s] previously failed messages after remote client reconnect" format nrOfMessages)
@@ -319,8 +318,11 @@ abstract class RemoteClient private[akka] (
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveRemoteClient private[akka] (
-  module: NettyRemoteClientModule, remoteAddress: InetSocketAddress,
-  val loader: Option[ClassLoader] = None, notifyListenersFun: (⇒ Any) ⇒ Unit) extends RemoteClient(module, remoteAddress) {
+  module: NettyRemoteClientModule,
+  remoteAddress: InetSocketAddress,
+  val loader: Option[ClassLoader] = None,
+  notifyListenersFun: (⇒ Any) ⇒ Unit)
+  extends RemoteClient(module, remoteAddress) {
 
   import RemoteClientSettings._
 
@@ -328,9 +330,9 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
-  private[cluster] var connection: ChannelFuture = _
+  private[remote] var connection: ChannelFuture = _
   @volatile
-  private[cluster] var openChannels: DefaultChannelGroup = _
+  private[remote] var openChannels: DefaultChannelGroup = _
   @volatile
   private var timer: HashedWheelTimer = _
   @volatile
@@ -509,11 +511,13 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future: %s".format(reply, replyUuid))
+          EventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future [%s]".format(reply, replyUuid))
 
           futures.remove(replyUuid).asInstanceOf[Promise[Any]] match {
             case null ⇒
-              client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
+              client.notifyListeners(RemoteClientError(
+                new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module,
+                client.remoteAddress))
 
             case future ⇒
               if (reply.hasMessage) {
@@ -1057,11 +1061,17 @@ class RemoteServerHandler(
       "Looking up a remotely available actor for address [%s] on node [%s]"
         .format(address, Config.nodename))
 
-    val actorRef = createSessionActor(actorInfo, channel)
-
-    if (actorRef eq null) throw new IllegalActorStateException("Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
-
-    actorRef
+    val byAddress = server.actors.get(address) // try actor-by-address
+    if (byAddress eq null) {
+      val byUuid = server.actorsByUuid.get(uuid) // try actor-by-uuid
+      if (byUuid eq null) {
+        val bySession = createSessionActor(actorInfo, channel) // try actor-by-session
+        if (bySession eq null) {
+          throw new IllegalActorStateException(
+            "Could not find a remote actor with address [" + address + "] or uuid [" + uuid + "]")
+        } else bySession
+      } else byUuid
+    } else byAddress
   }
 
   /**

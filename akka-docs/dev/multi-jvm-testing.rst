@@ -160,20 +160,20 @@ a file named after the node in the test with suffix ``.opts`` and put them in th
 directory as the test.
 
 For example, to feed the JVM options ``-Dakka.cluster.nodename=node1`` and
-``-Dakka.cluster.port=9991`` to the ``SampleMultiJvmNode1`` let's create three ``*.opts`` files
+``-Dakka.remote.port=9991`` to the ``SampleMultiJvmNode1`` let's create three ``*.opts`` files
 and add the options to them.
 
 ``SampleMultiJvmNode1.opts``::
 
-    -Dakka.cluster.nodename=node1 -Dakka.cluster.port=9991
+    -Dakka.cluster.nodename=node1 -Dakka.remote.port=9991
 
 ``SampleMultiJvmNode2.opts``::
 
-    -Dakka.cluster.nodename=node2 -Dakka.cluster.port=9992
+    -Dakka.cluster.nodename=node2 -Dakka.remote.port=9992
 
 ``SampleMultiJvmNode3.opts``::
 
-    -Dakka.cluster.nodename=node3 -Dakka.cluster.port=9993
+    -Dakka.cluster.nodename=node3 -Dakka.remote.port=9993
 
 
 Overriding akka.conf options
@@ -278,7 +278,7 @@ something in coordination::
 
         "have jvm options" in {
           System.getProperty("akka.cluster.nodename", "") must be("node1")
-          System.getProperty("akka.cluster.port", "") must be("9991")
+          System.getProperty("akka.remote.port", "") must be("9991")
           akka.config.Config.config.getString("test.name", "") must be("node1")
         }
 
@@ -299,7 +299,7 @@ something in coordination::
 
         "have jvm options" in {
           System.getProperty("akka.cluster.nodename", "") must be("node2")
-          System.getProperty("akka.cluster.port", "") must be("9992")
+          System.getProperty("akka.remote.port", "") must be("9992")
           akka.config.Config.config.getString("test.name", "") must be("node2")
         }
 

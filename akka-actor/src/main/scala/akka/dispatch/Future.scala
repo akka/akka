@@ -1,3 +1,4 @@
+
 /**
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
@@ -775,7 +776,6 @@ trait Promise[T] extends Future[T] {
     }
     fr
   }
-
 }
 
 //Companion object to FState, just to provide a cheap, immutable default entry

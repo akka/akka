@@ -341,7 +341,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def isShutdown: Boolean = !running
 
-  ClusterModule.ensureEnabled()
+  RemoteModule.ensureEnabled()
 
   protected[akka] override def timeout: Long = _timeout
 

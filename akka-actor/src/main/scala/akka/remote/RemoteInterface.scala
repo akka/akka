@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import akka.japi.Creator
 import akka.actor._
@@ -18,6 +18,13 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.io.{ PrintWriter, PrintStream }
 import java.lang.reflect.InvocationTargetException
+
+class RemoteException(message: String) extends AkkaException(message)
+
+trait RemoteService {
+  def server: RemoteSupport
+  def address: InetSocketAddress
+}
 
 trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
@@ -49,7 +56,7 @@ trait RemoteModule {
     else {
       val actorRef =
         Deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, router, _, Clustered(home, _, _))) ⇒
+          case Some(Deploy(_, router, _, Cluster(home, _, _))) ⇒
 
             if (DeploymentConfig.isHomeNode(home)) { // on home node
               Actor.registry.actorFor(address) match { // try to look up in actor registry

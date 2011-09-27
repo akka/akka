@@ -54,11 +54,11 @@ object ClusterDeployer extends ActorDeployer {
 
   private val deploymentInProgressLockListener = new LockListener {
     def lockAcquired() {
-      EventHandler.debug(this, "Clustered deployment started")
+      EventHandler.info(this, "Clustered deployment started")
     }
 
     def lockReleased() {
-      EventHandler.debug(this, "Clustered deployment completed")
+      EventHandler.info(this, "Clustered deployment completed")
       deploymentCompleted.countDown()
     }
   }
@@ -121,13 +121,13 @@ object ClusterDeployer extends ActorDeployer {
     val deployments = addresses map { address ⇒
       zkClient.readData(deploymentAddressPath.format(address)).asInstanceOf[Deploy]
     }
-    EventHandler.info(this, "Fetched deployment plan from cluster [\n\t%s\n]" format deployments.mkString("\n\t"))
+    EventHandler.info(this, "Fetched deployment plans from cluster [\n\t%s\n]" format deployments.mkString("\n\t"))
     deployments
   }
 
   private[akka] def init(deployments: Seq[Deploy]) {
     isConnected switchOn {
-      EventHandler.info(this, "Initializing cluster deployer")
+      EventHandler.info(this, "Initializing ClusterDeployer")
 
       basePaths foreach { path ⇒
         try {
@@ -146,7 +146,7 @@ object ClusterDeployer extends ActorDeployer {
       if (!isDeploymentCompletedInCluster) {
         if (deploymentInProgressLock.lock()) {
           // try to be the one doing the clustered deployment
-          EventHandler.info(this, "Pushing deployment plan cluster [\n\t" + allDeployments.mkString("\n\t") + "\n]")
+          EventHandler.info(this, "Pushing clustered deployment plans [\n\t" + allDeployments.mkString("\n\t") + "\n]")
           allDeployments foreach (deploy(_)) // deploy
           markDeploymentCompletedInCluster()
           deploymentInProgressLock.unlock() // signal deployment complete
@@ -176,9 +176,11 @@ object ClusterDeployer extends ActorDeployer {
             zkClient.writeData(path, deployment)
           } catch {
             case e: NullPointerException ⇒
-              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
+              handleError(new DeploymentException(
+                "Could not store deployment data [" + deployment + "] in ZooKeeper since client session is closed"))
             case e: Exception ⇒
-              handleError(new DeploymentException("Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
+              handleError(new DeploymentException(
+                "Could not store deployment data [" + deployment + "] in ZooKeeper due to: " + e))
           }
       }
     }

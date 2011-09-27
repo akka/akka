@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.cluster
+package akka.remote
 
 import akka.dispatch.PinnedDispatcher
 
@@ -15,6 +15,8 @@ import akka.actor.Actor._
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
  * Also provides API for channel listener management.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object NetworkEventStream {
 
@@ -58,7 +60,8 @@ object NetworkEventStream {
     }
   }
 
-  private[akka] val channel = new LocalActorRef(Props[Channel].copy(dispatcher = new PinnedDispatcher()), newUuid.toString, systemService = true)
+  private[akka] val channel = new LocalActorRef(
+    Props[Channel].copy(dispatcher = new PinnedDispatcher()), newUuid.toString, systemService = true)
 
   /**
    * Registers a network event stream listener (asyncronously).
