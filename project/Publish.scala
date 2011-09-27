@@ -1,3 +1,5 @@
+package akka
+
 import sbt._
 import Keys._
 import java.io.File
