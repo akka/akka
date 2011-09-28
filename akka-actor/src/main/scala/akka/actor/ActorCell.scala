@@ -4,23 +4,14 @@
 
 package akka.actor
 
-import akka.config.Supervision.{
-  AllForOnePermanentStrategy,
-  AllForOneTemporaryStrategy,
-  FaultHandlingStrategy,
-  OneForOnePermanentStrategy,
-  OneForOneTemporaryStrategy,
-  Temporary,
-  Permanent
-}
 import akka.dispatch._
 import akka.util._
-import java.util.{ Collection ⇒ JCollection }
-import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
+import scala.collection.JavaConverters
 import akka.event.{ DumbMonitoring, EventHandler }
-import java.util.concurrent.{ ConcurrentLinkedQueue, ScheduledFuture, ConcurrentHashMap, TimeUnit }
+import java.util.concurrent.{ ScheduledFuture, TimeUnit }
+import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -55,7 +46,145 @@ private[akka] trait ActorContext {
 
   def handleFailure(fail: Failed): Unit
 
-  def handleChildTerminated(childtermination: ChildTerminated): Unit
+  def handleChildTerminated(child: ActorRef): Unit
+}
+
+case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
+  def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
+    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty)
+      false // Never deny an immortal
+    else if (maxNrOfRetries.nonEmpty && maxNrOfRetries.get < 1)
+      true //Always deny if no chance of restarting
+    else if (withinTimeRange.isEmpty) {
+      // restrict number of restarts
+      val retries = maxNrOfRetriesCount + 1
+      maxNrOfRetriesCount = retries //Increment number of retries
+      retries > maxNrOfRetries.get
+    } else {
+      // cannot restart more than N within M timerange
+      val retries = maxNrOfRetriesCount + 1
+
+      val windowStart = restartTimeWindowStartNanos
+      val now = System.nanoTime
+      // we are within the time window if it isn't the first restart, or if the window hasn't closed
+      val insideWindow = if (windowStart == 0) true else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
+
+      if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
+        restartTimeWindowStartNanos = now
+
+      // reset number of restarts if window has expired, otherwise, increment it
+      maxNrOfRetriesCount = if (windowStart != 0 && !insideWindow) 1 else retries // increment number of retries
+
+      val restartCountLimit = if (maxNrOfRetries.isDefined) maxNrOfRetries.get else 1
+
+      // the actor is dead if it dies X times within the window of restart
+      insideWindow && retries > restartCountLimit
+    }
+
+    denied == false // if we weren't denied, we have a go
+  }
+}
+
+sealed abstract class FaultHandlingStrategy {
+
+  def trapExit: List[Class[_ <: Throwable]]
+
+  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats]
+
+  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit
+
+  /**
+   * Returns whether it processed the failure or not
+   */
+  final def handleFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Boolean = {
+    if (trapExit.exists(_.isAssignableFrom(fail.cause.getClass))) {
+      processFailure(fail, linkedActors)
+      true
+    } else false
+  }
+}
+
+object AllForOneStrategy {
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
+    new AllForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+}
+
+/**
+ * Restart all actors linked to the same supervisor when one fails,
+ * trapExit = which Throwables should be intercepted
+ * maxNrOfRetries = the number of times an actor is allowed to be restarted
+ * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+ */
+case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit,
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats] = {
+    linkedActors collect {
+      case stats if stats.child != child ⇒ stats.child.stop(); stats //2 birds with one stone: remove the child + stop the other children
+    } //TODO optimization to drop all children here already?
+  }
+
+  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit = {
+    if (linkedActors.nonEmpty) {
+      if (linkedActors.forall(_.requestRestartPermission(maxNrOfRetries, withinTimeRange)))
+        linkedActors.foreach(_.child.restart())
+      else
+        linkedActors.foreach(_.child.stop())
+    }
+  }
+}
+
+object OneForOneStrategy {
+  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
+    new OneForOneStrategy(trapExit, if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+}
+
+/**
+ * Restart an actor when it fails
+ * trapExit = which Throwables should be intercepted
+ * maxNrOfRetries = the number of times an actor is allowed to be restarted
+ * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+ */
+case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit,
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toList,
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
+      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
+
+  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats] =
+    linkedActors.filterNot(_.child == child)
+
+  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit = {
+    linkedActors.find(_.child == fail.actor) match {
+      case Some(stats) ⇒
+        if (stats.requestRestartPermission(maxNrOfRetries, withinTimeRange))
+          fail.actor.restart()
+        else
+          fail.actor.stop() //TODO optimization to drop child here already?
+      case None ⇒ EventHandler.warning(this, "Got Failure from non-child: " + fail)
+    }
+  }
 }
 
 private[akka] object ActorCell {
@@ -66,49 +195,37 @@ private[akka] object ActorCell {
 
 private[akka] class ActorCell(
   val self: ActorRef with ScalaActorRef,
-  props: Props,
-  _receiveTimeout: Option[Long],
-  _hotswap: Stack[PartialFunction[Any, Unit]])
-  extends ActorContext {
+  val props: Props,
+  @volatile var receiveTimeout: Option[Long],
+  @volatile var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
 
-  val guard = new ReentrantGuard // TODO: remove this last synchronization point
-
   @volatile
-  var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
+  var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
 
-  @volatile //FIXME doesn't need to be volatile
-  var maxNrOfRetriesCount: Int = 0
+  @volatile //FIXME TODO doesn't need to be volatile if we remove the def linkedActors: JCollection[ActorRef]
+  var _linkedActors: List[ChildRestartStats] = Nil
 
-  @volatile //FIXME doesn't need to be volatile
-  var restartTimeWindowStartNanos: Long = 0L
-
-  val _linkedActors = new ConcurrentLinkedQueue[ActorRef]
-
-  @volatile //FIXME doesn't need to be volatile
-  var hotswap: Stack[PartialFunction[Any, Unit]] = _hotswap // TODO: currently settable from outside for compatibility
-
-  @volatile
-  var receiveTimeout: Option[Long] = _receiveTimeout // TODO: currently settable from outside for compatibility
-
-  @volatile
+  @volatile //TODO FIXME Might be able to make this non-volatile since it should be guarded by a mailbox.isShutdown test (which will force volatile piggyback read)
   var currentMessage: Envelope = null
 
-  val actor: AtomicReference[Actor] = new AtomicReference[Actor]() //FIXME We can most probably make this just a regular reference to Actor
+  @volatile //TODO FIXME Might be able to make this non-volatile since it should be guarded by a mailbox.isShutdown test (which will force volatile piggyback read)
+  var actor: Actor = _ //FIXME We can most probably make this just a regular reference to Actor
 
   def ref: ActorRef with ScalaActorRef = self
 
   def uuid: Uuid = self.uuid
 
-  def actorClass: Class[_] = actor.get.getClass
+  //FIXME TODO REMOVE THIS
+  def actorClass: Class[_] = actor.getClass
 
   def dispatcher: MessageDispatcher = props.dispatcher
 
   def isRunning: Boolean = !isShutdown
   def isShutdown: Boolean = mailbox.isClosed
 
-  @volatile
+  @volatile //This must be volatile
   var mailbox: Mailbox = _
 
   def start(): Unit = {
@@ -126,30 +243,12 @@ private[akka] class ActorCell(
     dispatcher.attach(this)
   }
 
-  def newActor(restart: Boolean): Actor = {
-    val stackBefore = contextStack.get
-    contextStack.set(stackBefore.push(this))
-    try {
-      val instance = props.creator()
-
-      if (instance eq null)
-        throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
-
-      instance
-    } finally {
-      val stackAfter = contextStack.get
-      if (stackAfter.nonEmpty)
-        contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
-    }
-  }
-
   def suspend(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Suspend, NullChannel))
 
   def resume(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Resume, NullChannel))
 
   private[akka] def stop(): Unit =
-    if (isRunning)
-      dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
+    dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
 
   def link(subject: ActorRef): ActorRef = {
     dispatcher.systemDispatch(SystemEnvelope(this, Link(subject), NullChannel))
@@ -161,7 +260,11 @@ private[akka] class ActorCell(
     subject
   }
 
-  def linkedActors: JCollection[ActorRef] = java.util.Collections.unmodifiableCollection(_linkedActors)
+  @deprecated("Dog slow and racy")
+  def linkedActors: JCollection[ActorRef] = _linkedActors match {
+    case Nil  ⇒ JCollections.emptyList[ActorRef]()
+    case some ⇒ JCollections.unmodifiableCollection(JavaConverters.asJavaCollectionConverter(some.map(_.child)).asJavaCollection)
+  }
 
   //TODO FIXME remove this method
   def supervisor: Option[ActorRef] = props.supervisor
@@ -199,25 +302,65 @@ private[akka] class ActorCell(
 
   def systemInvoke(envelope: SystemEnvelope) {
     def create(recreation: Boolean): Unit = try {
-      actor.get() match {
+
+      //This method is in charge of setting up the contextStack and create a new instance of the Actor
+      def newActor(): Actor = {
+        val stackBefore = contextStack.get
+        contextStack.set(stackBefore.push(this))
+        try {
+          val instance = props.creator()
+
+          if (instance eq null)
+            throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
+
+          instance
+        } finally {
+          val stackAfter = contextStack.get
+          if (stackAfter.nonEmpty)
+            contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
+        }
+      }
+
+      actor match {
         case null ⇒
-          val created = newActor(restart = false) //TODO !!!! Notify supervisor on failure to create!
-          actor.set(created)
+          val created = newActor() //TODO !!!! Notify supervisor on failure to create!
+          actor = created
           created.preStart()
           checkReceiveTimeout
           if (Actor.debugLifecycle) EventHandler.debug(created, "started")
+
         case instance if recreation ⇒
-          restart(new Exception("Restart commanded"), None, None)
+          val reason = new Exception("CRASHED") //FIXME TODO stash away the exception that caused the failure and reuse that? <------- !!!!!!!!!! RED RED RED
+          try {
+            val failedActor = actor
+            if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
+            if (failedActor ne null) {
+              val c = currentMessage //One read only plz
+              failedActor.preRestart(reason, if (c ne null) Some(c.message) else None)
+            }
+            val freshActor = newActor()
+            clearActorContext()
+            actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
+            freshActor.postRestart(reason)
+            if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
+          } catch {
+            case e ⇒
+              EventHandler.error(e, self, "Exception in restart of Actor [%s]".format(toString))
+              throw e
+          } finally {
+            currentMessage = null
+          }
+
+          dispatcher.resume(this) //FIXME should this be moved down?
+
+        //FIXME TODO How should we handle restarting of children? <----- !!!!!!!!!!!!! RED RED RED
 
         case _ ⇒
       }
     } catch {
       case e ⇒
         envelope.channel.sendException(e)
-        if (supervisor.isDefined)
-          DumbMonitoring.signal(Failed(self, e, false, maxNrOfRetriesCount, restartTimeWindowStartNanos), supervisor.get)
-        else
-          throw e
+        if (supervisor.isDefined) supervisor.get ! Failed(self, e) else throw e
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -232,21 +375,18 @@ private[akka] class ActorCell(
       dispatcher.detach(this)
 
       try {
-        val a = actor.get
+        val a = actor
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
         if (a ne null) a.postStop()
 
-        { //Stop supervised actors
-          var a = _linkedActors.poll()
-          while (a ne null) {
-            a.stop()
-            a = _linkedActors.poll()
-          }
-        }
+        //Stop supervised actors
+        _linkedActors.foreach(_.child.stop())
+        _linkedActors = Nil
       } finally {
         val cause = new ActorKilledException("Stopped") //FIXME make this an object, can be reused everywhere
 
-        if (supervisor.isDefined) supervisor ! ChildTerminated(self, cause)
+        if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
+
         DumbMonitoring.signal(Terminated(self, cause))
 
         currentMessage = null
@@ -254,32 +394,42 @@ private[akka] class ActorCell(
       }
     }
 
-    guard.lock.lock()
+    def supervise(child: ActorRef): Unit = {
+      val links = _linkedActors
+      if (!links.contains(child)) {
+        _linkedActors = new ChildRestartStats(child) :: links
+        if (Actor.debugLifecycle) EventHandler.debug(actor, "now supervising " + child)
+      } else EventHandler.warning(actor, "Already supervising " + child)
+    }
+
     try {
-      if (!mailbox.isClosed) {
+      val isClosed = mailbox.isClosed //Fence plus volatile read
+      if (!isClosed) {
         envelope.message match {
-          case Create           ⇒ create(recreation = false)
-          case Recreate         ⇒ create(recreation = true)
-          case Link(subject)    ⇒ akka.event.DumbMonitoring.link(self, subject); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "now monitoring " + subject)
-          case Unlink(subject)  ⇒ akka.event.DumbMonitoring.unlink(self, subject); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "stopped monitoring " + subject)
+          case Create   ⇒ create(recreation = false)
+          case Recreate ⇒ create(recreation = true)
+          case Link(subject) ⇒
+            akka.event.DumbMonitoring.link(self, subject)
+            if (Actor.debugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
+          case Unlink(subject) ⇒
+            akka.event.DumbMonitoring.unlink(self, subject)
+            if (Actor.debugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()
           case Terminate        ⇒ terminate()
-          case Supervise(child) ⇒ if (!_linkedActors.contains(child)) { _linkedActors.offer(child); if (Actor.debugLifecycle) EventHandler.debug(actor.get(), "now supervising " + child) }
+          case Supervise(child) ⇒ supervise(child)
         }
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        EventHandler.error(e, actor.get(), "error while processing " + envelope.message)
+        EventHandler.error(e, actor, "error while processing " + envelope.message)
         throw e
     } finally {
-      mailbox.acknowledgeStatus()
-      guard.lock.unlock()
+      mailbox.acknowledgeStatus() //Volatile write
     }
   }
 
   def invoke(messageHandle: Envelope) {
-    guard.lock.lock()
     try {
       if (!mailbox.isClosed) {
         currentMessage = messageHandle
@@ -287,7 +437,7 @@ private[akka] class ActorCell(
           try {
             cancelReceiveTimeout() // FIXME: leave this here?
 
-            actor.get().apply(messageHandle.message)
+            actor(messageHandle.message)
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
@@ -299,7 +449,7 @@ private[akka] class ActorCell(
               channel.sendException(e)
 
               if (supervisor.isDefined)
-                DumbMonitoring.signal(Failed(self, e, true, maxNrOfRetriesCount, restartTimeWindowStartNanos), supervisor.get)
+                supervisor.get ! Failed(self, e)
               else
                 dispatcher.resume(this)
 
@@ -309,7 +459,7 @@ private[akka] class ActorCell(
           }
         } catch {
           case e ⇒
-            EventHandler.error(e, actor.get(), e.getMessage)
+            EventHandler.error(e, actor, e.getMessage)
             throw e
         }
       } else {
@@ -318,146 +468,14 @@ private[akka] class ActorCell(
       }
     } finally {
       mailbox.acknowledgeStatus()
-      guard.lock.unlock()
     }
   }
 
-  def handleFailure(fail: Failed) {
-    props.faultHandler match {
-      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
-        restartLinkedActors(fail.cause, maxRetries, within)
+  def handleFailure(fail: Failed): Unit = props.faultHandler.handleFailure(fail, _linkedActors)
 
-      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
-        restartLinkedActors(fail.cause, None, None)
+  def handleChildTerminated(child: ActorRef): Unit = _linkedActors = props.faultHandler.handleChildTerminated(child, _linkedActors)
 
-      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
-        fail.actor.restart(fail.cause, maxRetries, within)
-
-      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(fail.cause.getClass)) ⇒
-        fail.actor.stop()
-
-      case _ ⇒
-        if (supervisor.isDefined) throw fail.cause else fail.actor.stop() //Escalate problem if not handled here
-    }
-  }
-
-  def handleChildTerminated(ct: ChildTerminated): Unit = {
-    props.faultHandler match {
-      case AllForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
-      //STOP ALL AND ESCALATE
-
-      case AllForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass))                     ⇒
-      //STOP ALL?
-
-      case OneForOnePermanentStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
-      //ESCALATE?
-
-      case OneForOneTemporaryStrategy(trapExit) if trapExit.exists(_.isAssignableFrom(ct.cause.getClass)) ⇒
-        _linkedActors.remove(ct.child)
-
-      case _ ⇒ throw ct.cause //Escalate problem if not handled here
-    }
-  }
-
-  def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    def performRestart() {
-      val failedActor = actor.get
-      if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
-      if (failedActor ne null) {
-        val c = currentMessage //One read only plz
-        failedActor.preRestart(reason, if (c ne null) Some(c.message) else None)
-      }
-      val freshActor = newActor(restart = true)
-      clearActorContext()
-      actor.set(freshActor) // assign it here so if preStart fails, we can null out the sef-refs next call
-      freshActor.postRestart(reason)
-      if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
-    }
-
-    @tailrec
-    def attemptRestart() {
-      val success = if (requestRestartPermission(maxNrOfRetries, withinTimeRange)) {
-        guard.withGuard[Boolean] {
-          val success =
-            try {
-              performRestart()
-              true
-            } catch {
-              case e ⇒
-                EventHandler.error(e, self, "Exception in restart of Actor [%s]".format(toString))
-                false // an error or exception here should trigger a retry
-            } finally {
-              currentMessage = null
-            }
-
-          if (success) {
-            dispatcher.resume(this)
-            restartLinkedActors(reason, maxNrOfRetries, withinTimeRange)
-          }
-
-          success
-        }
-      } else {
-        stop()
-        true // done
-      }
-
-      if (success) () // alles gut
-      else attemptRestart()
-    }
-
-    attemptRestart() // recur
-  }
-
-  def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
-    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) {
-      // immortal
-      false
-    } else if (withinTimeRange.isEmpty) {
-      // restrict number of restarts
-      val retries = maxNrOfRetriesCount + 1
-      maxNrOfRetriesCount = retries //Increment number of retries
-      retries > maxNrOfRetries.get
-    } else {
-      // cannot restart more than N within M timerange
-      val retries = maxNrOfRetriesCount + 1
-
-      val windowStart = restartTimeWindowStartNanos
-      val now = System.nanoTime
-      // we are within the time window if it isn't the first restart, or if the window hasn't closed
-      val insideWindow = if (windowStart == 0) true else (now - windowStart) <= TimeUnit.MILLISECONDS.toNanos(withinTimeRange.get)
-
-      if (windowStart == 0 || !insideWindow) //(Re-)set the start of the window
-        restartTimeWindowStartNanos = now
-
-      // reset number of restarts if window has expired, otherwise, increment it
-      maxNrOfRetriesCount = if (windowStart != 0 && !insideWindow) 1 else retries // increment number of retries
-
-      val restartCountLimit = if (maxNrOfRetries.isDefined) maxNrOfRetries.get else 1
-
-      // the actor is dead if it dies X times within the window of restart
-      insideWindow && retries > restartCountLimit
-    }
-
-    denied == false // if we weren't denied, we have a go
-  }
-
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    props.faultHandler.lifeCycle match {
-      case Temporary ⇒
-        { //Stop supervised actors
-          var a = _linkedActors.poll()
-          while (a ne null) {
-            a.stop()
-            a = _linkedActors.poll()
-          }
-        }
-
-      case Permanent ⇒
-        val i = _linkedActors.iterator
-        while (i.hasNext) i.next().restart(reason, maxNrOfRetries, withinTimeRange)
-    }
-  }
+  def restart(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Recreate, NullChannel))
 
   def checkReceiveTimeout() {
     cancelReceiveTimeout()
@@ -497,7 +515,7 @@ private[akka] class ActorCell(
         lookupAndSetSelfFields(parent, actor, newContext)
       }
     }
-    val a = actor.get()
+    val a = actor
     if (a ne null)
       lookupAndSetSelfFields(a.getClass, a, newContext)
   }

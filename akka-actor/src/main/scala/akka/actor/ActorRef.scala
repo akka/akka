@@ -161,7 +161,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
     timeout: Timeout,
     channel: UntypedChannel): Future[Any]
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int])
+  protected[akka] def restart(): Unit
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -271,10 +271,10 @@ class LocalActorRef private[akka] (
   //FIXME TODO REMOVE THIS
   @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this")
   protected[akka] def underlyingActorInstance: Actor = {
-    var instance = actorCell.actor.get
+    var instance = actorCell.actor
     while ((instance eq null) && actorCell.isRunning) {
       try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
-      instance = actorCell.actor.get
+      instance = actorCell.actor
     }
     instance
   }
@@ -293,8 +293,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
-    actorCell.restart(reason, maxNrOfRetries, withinTimeRange)
+  protected[akka] def restart(): Unit = actorCell.restart()
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -382,9 +381,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def supervisor: Option[ActorRef] = unsupported
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
+  protected[akka] def restart(): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
@@ -482,9 +479,7 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   def resume(): Unit = unsupported
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
+  protected[akka] def restart(): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }

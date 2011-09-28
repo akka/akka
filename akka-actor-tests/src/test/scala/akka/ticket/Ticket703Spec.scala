@@ -1,11 +1,10 @@
 package akka.ticket
 
-import akka.actor.Actor._
 import akka.actor._
+import akka.actor.Actor._
 import akka.routing._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.config.Supervision.OneForOnePermanentStrategy
 
 class Ticket703Spec extends WordSpec with MustMatchers {
 
@@ -28,7 +27,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
                 tryReply("Response")
             }
           })
-        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Exception]), 5, 1000)))
+        }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))
       (actorPool.?("Ping", 7000)).await.result must be === Some("Response")
     }
   }

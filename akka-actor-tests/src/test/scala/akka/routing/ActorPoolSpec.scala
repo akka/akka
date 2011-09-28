@@ -3,12 +3,12 @@ package akka.routing
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.dispatch.{ KeptPromise, Future }
+import akka.actor._
 import akka.actor.Actor._
 import akka.testkit.Testing._
 import akka.actor.{ TypedActor, Actor, Props }
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 object ActorPoolSpec {
@@ -24,7 +24,7 @@ object ActorPoolSpec {
     }
   }
 
-  val faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]), 5, 1000)
+  val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
 }
 
 class ActorPoolSpec extends WordSpec with MustMatchers {
@@ -439,7 +439,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                 case _ ⇒ pingCount.incrementAndGet
               }
             }).withSupervisor(self))
-          }).withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))
+          }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
         // default lifecycle
         // actor comes back right away
@@ -538,7 +538,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                 case _ ⇒ pingCount.incrementAndGet
               }
             })
-          }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[IllegalStateException]), 5, 1000)))
+          }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away
         pingCount.set(0)

@@ -160,7 +160,7 @@ In this example, we'll use the built-in *RootEndpoint* class and implement our o
   class Boot {
     val factory = SupervisorFactory(
       SupervisorConfig(
-        OneForOnePermanentStrategy(List(classOf[Exception]), 3, 100),
+        OneForOneStrategy(List(classOf[Exception]), 3, 100),
           //
           // in this particular case, just boot the built-in default root endpoint
           //

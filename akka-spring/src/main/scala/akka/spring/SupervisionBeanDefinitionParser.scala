@@ -51,9 +51,9 @@ class SupervisionBeanDefinitionParser extends AbstractSingleBeanDefinitionParser
     val trapExceptions = parseTrapExits(trapExitsElement)
 
     val restartStrategy = failover match {
-      case "AllForOne" ⇒ new AllForOnePermanentStrategy(trapExceptions, retries, timeRange)
-      case "OneForOne" ⇒ new OneForOnePermanentStrategy(trapExceptions, retries, timeRange)
-      case _           ⇒ new OneForOnePermanentStrategy(trapExceptions, retries, timeRange) //Default to OneForOne
+      case "AllForOne" ⇒ new AllForOneStrategy(trapExceptions, retries, timeRange)
+      case "OneForOne" ⇒ new OneForOneStrategy(trapExceptions, retries, timeRange)
+      case _           ⇒ new OneForOneStrategy(trapExceptions, retries, timeRange) //Default to OneForOne
     }
     builder.addPropertyValue("restartStrategy", restartStrategy)
   }

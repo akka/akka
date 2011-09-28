@@ -139,7 +139,7 @@ class LoggingReceiveSpec
 
     "log LifeCycle changes if requested" in {
       within(2 seconds) {
-        val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 5000)))
+        val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 
         val f = Actor.getClass.getDeclaredField("debugLifecycle")
         f.setAccessible(true)

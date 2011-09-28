@@ -12,7 +12,7 @@ class Boot {
   val factory =
     SupervisorFactory(
       SupervisorConfig(
-        OneForOnePermanentStrategy(List(classOf[Exception]), 3, 100),
+        OneForOneStrategy(List(classOf[Exception]), 3, 100),
         Supervise(Actor.actorOf[RootEndpoint], Permanent) ::
         Supervise(Actor.actorOf[HelloEndpoint], Permanent) :: Nil))
 

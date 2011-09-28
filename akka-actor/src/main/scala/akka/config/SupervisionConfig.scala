@@ -4,6 +4,7 @@
 
 package akka.config
 
+import akka.actor.FaultHandlingStrategy
 import akka.dispatch.MessageDispatcher
 import akka.actor.{ Terminated, ActorRef }
 import akka.japi.{ Procedure2 }
@@ -20,7 +21,6 @@ object Supervision {
 
   abstract class Server extends ConfigElement
   sealed abstract class LifeCycle extends ConfigElement
-  sealed abstract class FaultHandlingStrategy(val trapExit: List[Class[_ <: Throwable]], val lifeCycle: LifeCycle) extends ConfigElement
 
   case class SupervisorConfig(restartStrategy: FaultHandlingStrategy, worker: List[Server], maxRestartsHandler: (ActorRef, Terminated) ⇒ Unit = { (aRef, max) ⇒ () }) extends Server {
     //Java API
@@ -39,66 +39,6 @@ object Supervision {
     def apply(actorRef: ActorRef, lifeCycle: LifeCycle) = new Supervise(actorRef, lifeCycle, false)
     def unapply(supervise: Supervise) = Some((supervise.actorRef, supervise.lifeCycle, supervise.registerAsRemoteService))
   }
-
-  object AllForOnePermanentStrategy {
-    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): AllForOnePermanentStrategy =
-      new AllForOnePermanentStrategy(trapExit,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  }
-
-  /**
-   * Restart all actors linked to the same supervisor when one fails,
-   * trapExit = which Throwables should be intercepted
-   * maxNrOfRetries = the number of times an actor is allowed to be restarted
-   * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
-   */
-  case class AllForOnePermanentStrategy(override val trapExit: List[Class[_ <: Throwable]],
-                                        maxNrOfRetries: Option[Int] = None,
-                                        withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit, Permanent) {
-    def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-
-    def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toList,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-
-    def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  }
-
-  case class AllForOneTemporaryStrategy(override val trapExit: List[Class[_ <: Throwable]]) extends FaultHandlingStrategy(trapExit, Temporary)
-
-  object OneForOnePermanentStrategy {
-    def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): OneForOnePermanentStrategy =
-      new OneForOnePermanentStrategy(trapExit,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  }
-
-  /**
-   * Restart an actor when it fails
-   * trapExit = which Throwables should be intercepted
-   * maxNrOfRetries = the number of times an actor is allowed to be restarted
-   * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
-   */
-  case class OneForOnePermanentStrategy(override val trapExit: List[Class[_ <: Throwable]],
-                                        maxNrOfRetries: Option[Int] = None,
-                                        withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy(trapExit, Permanent) {
-    def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-
-    def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toList,
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-
-    def this(trapExit: java.util.List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-      this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
-        if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  }
-
-  case class OneForOneTemporaryStrategy(override val trapExit: List[Class[_ <: Throwable]]) extends FaultHandlingStrategy(trapExit, Temporary)
 
   //Scala API
   case object Permanent extends LifeCycle

@@ -48,7 +48,7 @@ object Remote extends RemoteService {
 
   private[remote] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
-      OneForOnePermanentStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
+      OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
       Supervise(
         remoteDaemon,
         Permanent)

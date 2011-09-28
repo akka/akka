@@ -54,12 +54,9 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
 }
 
 case class Failed(@BeanProperty actor: ActorRef,
-                  @BeanProperty cause: Throwable,
-                  @BeanProperty recoverable: Boolean,
-                  @BeanProperty timesRestarted: Int,
-                  @BeanProperty restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
+                  @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case class ChildTerminated(child: ActorRef, cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+case class ChildTerminated(@BeanProperty child: ActorRef, @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
@@ -603,7 +600,7 @@ trait Actor {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
         case RevertHotSwap             ⇒ unbecome()
         case f: Failed                 ⇒ context.handleFailure(f)
-        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct)
+        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct.child)
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel

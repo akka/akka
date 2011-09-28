@@ -8,7 +8,6 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import Actor._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import akka.testkit._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
@@ -29,9 +28,9 @@ class SupervisorHierarchySpec extends JUnitSuite {
   def killWorkerShouldRestartMangerAndOtherWorkers = {
     val countDown = new CountDownLatch(4)
 
-    val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 1000)))
+    val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 1000)))
 
-    val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(OneForOnePermanentStrategy(List(), None, None)).withSupervisor(boss))
+    val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(OneForOneStrategy(List(), None, None)).withSupervisor(boss))
 
     val workerOne, workerTwo, workerThree = actorOf(Props(new CountDownActor(countDown)).withSupervisor(manager))
 
@@ -53,7 +52,7 @@ class SupervisorHierarchySpec extends JUnitSuite {
       protected def receive = {
         case Terminated(_, _) ⇒ countDownMax.countDown()
       }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 1, 5000)))
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
 
     val crasher = actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(boss))
 

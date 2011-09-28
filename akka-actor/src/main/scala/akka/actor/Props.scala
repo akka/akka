@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.config.Supervision._
 import akka.dispatch._
 import akka.japi.Creator
 import akka.util._
@@ -20,7 +19,7 @@ object Props {
   final val defaultDeployId: String = ""
   final val defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
   final val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
-  final val defaultFaultHandler: FaultHandlingStrategy = AllForOnePermanentStrategy(classOf[Exception] :: Nil, None, None)
+  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(classOf[Exception] :: Nil, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
 
   /**

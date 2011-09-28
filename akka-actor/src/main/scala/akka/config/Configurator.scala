@@ -4,7 +4,8 @@
 
 package akka.config
 
-import akka.config.Supervision.{ SuperviseTypedActor, FaultHandlingStrategy }
+import akka.actor.FaultHandlingStrategy
+import akka.config.Supervision.SuperviseTypedActor
 
 private[akka] trait TypedActorConfiguratorBase {
   def getExternalDependency[T](clazz: Class[T]): T

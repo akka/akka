@@ -6,7 +6,6 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import akka.event.EventHandler
 import akka.dispatch.{ Future, Promise }
 
@@ -182,7 +181,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
           }).withSupervisor(self))
 
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[ActorKilledException]), 5, 1000)))
+        }).withFaultHandler(OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)))
 
         boss ! "sendKill"
 
