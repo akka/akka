@@ -16,12 +16,12 @@ object ActorLifeCycleSpec {
 }
 
 class ActorLifeCycleSpec extends WordSpec with MustMatchers with TestKit with BeforeAndAfterEach {
-  import ActorRestartSpec._
+  import ActorLifeCycleSpec._
 
   "An Actor" must {
 
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
-      filterEvents(EventFilter[ActorKilledException] :: Nil) {
+      filterException[ActorKilledException] {
         val gen = new AtomicInteger(0)
         val supervisor = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
 
@@ -52,6 +52,7 @@ class ActorLifeCycleSpec extends WordSpec with MustMatchers with TestKit with Be
         expectMsg(("OK", 3))
         restarter ! Kill
         expectMsg(("postStop", 3))
+        expectNoMsg(1 seconds)
       }
     }
 
