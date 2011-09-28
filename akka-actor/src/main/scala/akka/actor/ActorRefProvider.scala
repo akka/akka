@@ -148,8 +148,16 @@ class LocalActorRefProvider extends ActorRefProvider {
 
       val actor = try {
         Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
-          case Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
-            val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(router) match {
+
+          // create a local actor
+          case None | Some(Deploy(_, _, Direct, _, _, LocalScope)) ⇒
+            Some(new LocalActorRef(props, address, systemService)) // create a local actor
+
+          // create a routed actor ref
+          case deploy @ Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
+            val routerType = DeploymentConfig.routerTypeFor(router)
+
+            val routerFactory: () ⇒ Router = routerType match {
               case RouterType.Direct        ⇒ () ⇒ new DirectRouter
               case RouterType.Random        ⇒ () ⇒ new RandomRouter
               case RouterType.RoundRobin    ⇒ () ⇒ new RoundRobinRouter
@@ -167,10 +175,7 @@ class LocalActorRefProvider extends ActorRefProvider {
               routerFactory = routerFactory,
               connections = connections)))
 
-          case None ⇒
-            Some(new LocalActorRef(props, address, systemService)) // create a local actor
-
-          case _ ⇒ None // non-local actor
+          case _ ⇒ None // non-local actor - pass it on
         }
       } catch {
         case e: Exception ⇒
