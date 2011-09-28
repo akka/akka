@@ -46,7 +46,7 @@ object Deployer extends ActorDeployer {
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, _, LocalScope) | Deploy(_, _, _, _, _: LocalScope) ⇒ true
+    case Deploy(_, _, _, _, _, LocalScope) | Deploy(_, _, _, _, _, _: LocalScope) ⇒ true
     case _ ⇒ false
   }
 
@@ -122,7 +122,7 @@ object Deployer extends ActorDeployer {
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
       case None ⇒
-        Some(Deploy(address, None, Direct, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
+        Some(Deploy(address, None, Direct, ReplicationFactor(1), RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
 
       case Some(addressConfig) ⇒
 
@@ -142,6 +142,29 @@ object Deployer extends ActorDeployer {
                 "Config option [" + addressPath + ".router] needs to be one of " +
                   "[\"direct\", \"round-robin\", \"random\", \"least-cpu\", \"least-ram\", \"least-messages\" or the fully qualified name of Router class]", e),
               CustomRouter(_))
+        }
+
+        // --------------------------------
+        // akka.actor.deployment.<address>.replication-factor
+        // --------------------------------
+        val nrOfInstances = {
+          if (router == Direct) new ReplicationFactor(1)
+          else {
+            addressConfig.getAny("replication-factor", "0") match {
+              case "auto" ⇒ AutoReplicationFactor
+              case "0"    ⇒ ZeroReplicationFactor
+              case nrOfReplicas: String ⇒
+                try {
+                  new ReplicationFactor(nrOfReplicas.toInt)
+                } catch {
+                  case e: Exception ⇒
+                    throw new ConfigurationException(
+                      "Config option [" + addressPath +
+                        ".cluster.replication-factor] needs to be either [\"auto\"] or [0-N] - was [" +
+                        nrOfReplicas + "]")
+                }
+            }
+          }
         }
 
         // --------------------------------
@@ -210,7 +233,7 @@ object Deployer extends ActorDeployer {
             val hostname = remoteConfig.getString("hostname", "localhost")
             val port = remoteConfig.getInt("port", 2552)
 
-            Some(Deploy(address, recipe, router, failureDetector, RemoteScope(hostname, port)))
+            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, RemoteScope(hostname, port)))
 
           case None ⇒ // check for 'cluster' config section
 
@@ -219,7 +242,7 @@ object Deployer extends ActorDeployer {
             // --------------------------------
             addressConfig.getSection("cluster") match {
               case None ⇒
-                Some(Deploy(address, recipe, router, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope)) // deploy locally
+                Some(Deploy(address, recipe, router, nrOfInstances, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope)) // deploy locally
 
               case Some(clusterConfig) ⇒
 
@@ -252,34 +275,11 @@ object Deployer extends ActorDeployer {
                 }
 
                 // --------------------------------
-                // akka.actor.deployment.<address>.cluster.replicas
-                // --------------------------------
-                val replicationFactor = {
-                  if (router == Direct) new ReplicationFactor(1)
-                  else {
-                    clusterConfig.getAny("replication-factor", "0") match {
-                      case "auto" ⇒ AutoReplicationFactor
-                      case "0"    ⇒ ZeroReplicationFactor
-                      case nrOfReplicas: String ⇒
-                        try {
-                          new ReplicationFactor(nrOfReplicas.toInt)
-                        } catch {
-                          case e: Exception ⇒
-                            throw new ConfigurationException(
-                              "Config option [" + addressPath +
-                                ".cluster.replicas] needs to be either [\"auto\"] or [0-N] - was [" +
-                                nrOfReplicas + "]")
-                        }
-                    }
-                  }
-                }
-
-                // --------------------------------
                 // akka.actor.deployment.<address>.cluster.replication
                 // --------------------------------
                 clusterConfig.getSection("replication") match {
                   case None ⇒
-                    Some(Deploy(address, recipe, router, failureDetector, ClusterScope(preferredNodes, replicationFactor, Transient)))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
                     val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -298,7 +298,7 @@ object Deployer extends ActorDeployer {
                           ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                           unknown + "]")
                     }
-                    Some(Deploy(address, recipe, router, failureDetector, ClusterScope(preferredNodes, replicationFactor, Replication(storage, strategy))))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Replication(storage, strategy))))
                 }
             }
         }
@@ -319,7 +319,7 @@ object Deployer extends ActorDeployer {
 }
 
 /**
- * TODO: Improved documentation
+ * Simple local deployer, only for internal use.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -335,15 +335,7 @@ object LocalDeployer extends ActorDeployer {
   }
 
   private[akka] def deploy(deployment: Deploy) {
-    deployments.putIfAbsent(deployment.address, deployment) /* match {
-      case null ⇒
-        deployment match {
-          case Deploy(address, Some(recipe), routing, _) ⇒ Actor.actorOf(recipe.implementationClass, address) //FIXME use routing?
-          case _                                         ⇒
-        }
-      case `deployment` ⇒ //Already deployed TODO should it be like this?
-      case preexists    ⇒ Deployer.throwDeploymentBoundException(deployment)
-    }*/
+    deployments.putIfAbsent(deployment.address, deployment)
   }
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))

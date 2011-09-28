@@ -7,6 +7,7 @@ package akka.actor
 import DeploymentConfig._
 import akka.event.EventHandler
 import akka.AkkaException
+import akka.routing._
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -59,7 +60,7 @@ private[akka] class ActorRefProviders(
       providers match {
         case Nil ⇒ None
         case provider :: rest ⇒
-          provider.actorOf(props, address) match { //WARNING FIXME RACE CONDITION NEEDS TO BE SOLVED
+          provider.actorOf(props, address) match {
             case None ⇒ actorOf(props, address, rest) // recur
             case ref  ⇒ ref
           }
@@ -124,8 +125,8 @@ private[akka] class ActorRefProviders(
 class LocalActorRefProvider extends ActorRefProvider {
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
+  import com.eaio.uuid.UUID
 
-  // FIXME who evicts this registry, and when? Should it be used instead of ActorRegistry?
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
@@ -145,13 +146,31 @@ class LocalActorRefProvider extends ActorRefProvider {
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
 
-      def newActor() = Some(new LocalActorRef(props, address, systemService))
-
       val actor = try {
         Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
-          case Some(Deploy(_, _, router, _, LocalScope)) ⇒ newActor() // create a local actor
-          case None                                      ⇒ newActor() // create a local actor
-          case _                                         ⇒ None // non-local actor
+          case Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
+            val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(router) match {
+              case RouterType.Direct        ⇒ () ⇒ new DirectRouter
+              case RouterType.Random        ⇒ () ⇒ new RandomRouter
+              case RouterType.RoundRobin    ⇒ () ⇒ new RoundRobinRouter
+              case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
+              case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
+              case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
+              case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+            }
+            val connections: Iterable[ActorRef] =
+              if (nrOfInstances.factor > 0)
+                Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
+              else Nil
+
+            Some(Routing.actorOf(RoutedProps(
+              routerFactory = routerFactory,
+              connections = connections)))
+
+          case None ⇒
+            Some(new LocalActorRef(props, address, systemService)) // create a local actor
+
+          case _ ⇒ None // non-local actor
         }
       } catch {
         case e: Exception ⇒
