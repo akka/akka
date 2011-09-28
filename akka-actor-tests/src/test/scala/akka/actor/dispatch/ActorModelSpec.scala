@@ -419,7 +419,7 @@ abstract class ActorModelSpec extends JUnitSuite {
             case actor: LocalActorRef ⇒
               val cell = actor.underlying
               val mbox = cell.mailbox
-              System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.dispatcherLock.locked)
+              System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.isScheduled)
               var message = mbox.dequeue()
               while (message ne null) {
                 System.err.println("Lingering message for " + cell + " " + message)

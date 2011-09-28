@@ -85,7 +85,6 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] val deadLetterMailbox: Mailbox = DeadLetterMailbox
 
   object DeadLetterMailbox extends Mailbox {
-    dispatcherLock.tryLock()
     become(Mailbox.Closed)
     override def dispatcher = null //MessageDispatcher.this
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
@@ -249,7 +248,7 @@ abstract class MessageDispatcher extends Serializable {
    */
   def resume(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
     val mbox = actor.mailbox
-    mbox.become(Mailbox.Open)
+    mbox.become(Mailbox.Idle)
     registerForExecution(mbox, false, false)
   }
 
