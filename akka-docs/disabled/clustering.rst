@@ -296,7 +296,7 @@ are:
   - ``remove`` -- removes the actor from the clustered actor registry
 
 The ``store`` method also allows you to specify a replication factor. The
-``replicationFactor`` defines the number of (randomly picked) nodes in the cluster that
+``nrOfInstances`` defines the number of (randomly picked) nodes in the cluster that
 the stored actor should be automatically deployed to and instantiated  locally on (using
 ``use``). If you leave this argument out then a replication factor of ``0`` will be used
 which means that the actor will only be stored in the clustered actor registry and not
@@ -310,11 +310,11 @@ on your use-case. Default is ``false``
 This is the signatures for the ``store`` method (all different permutations of these methods are available for using from Java)::
 
     def store[T <: Actor]
-      (actorRef: ActorRef, replicationFactor: Int = 0, serializeMailbox: Boolean = false)
+      (actorRef: ActorRef, nrOfInstances: Int = 0, serializeMailbox: Boolean = false)
       (implicit format: Format[T]): ClusterNode
 
     def store[T <: Actor]
-      (actorClass: Class[T], replicationFactor: Int = 0, serializeMailbox: Boolean = false)
+      (actorClass: Class[T], nrOfInstances: Int = 0, serializeMailbox: Boolean = false)
       (implicit format: Format[T]): ClusterNode
 
 The ``implicit format: Format[T]`` might look scary but this argument is chosen for you and passed in automatically by the compiler as long as you have imported the serialization typeclass for the actor you are storing, e.g. the ``HelloActorFormat`` (defined above and imported in the sample below).
@@ -331,9 +331,9 @@ created actor::
     val hello = actorOf[HelloActor].start.asInstanceOf[LocalActorRef]
 
     val serializeMailbox = false
-    val replicationFactor = 5
+    val nrOfInstances = 5
 
-    clusterNode store (hello, serializeMailbox, replicationFactor)
+    clusterNode store (hello, serializeMailbox, nrOfInstances)
 
 Here is an example of how to use ``store`` to cluster an actor by type::
 
@@ -444,7 +444,7 @@ The workhorse for this is the ``send`` method (in different variations). The
 ``send`` methods take the following parameters:
   - ``f`` -- the function you want to be invoked on the remote nodes in the cluster
   - ``arg`` -- the argument to the function (not all of them have this parameter)
-  - ``replicationFactor`` -- the replication factor defining the number of nodes you want the function to be sent and invoked on
+  - ``nrOfInstances`` -- the replication factor defining the number of nodes you want the function to be sent and invoked on
 
 You can currently send these function types to the cluster:
   - ``Function0[Unit]`` -- takes no arguments and returns nothing

@@ -24,7 +24,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
   //         address,
   //         None,
   //         Direct,
-  //         ReplicationFactor(1),
+  //         NrOfInstances(1),
   //         RemoveConnectionOnFirstFailureLocalFailureDetector,
   //         LocalScope))
 
@@ -58,7 +58,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
   //         address,
   //         None,
   //         Direct,
-  //         ReplicationFactor(1),
+  //         NrOfInstances(1),
   //         RemoveConnectionOnFirstFailureLocalFailureDetector,
   //         LocalScope))
 
@@ -88,7 +88,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
   //         address,
   //         None,
   //         Direct,
-  //         ReplicationFactor(1),
+  //         NrOfInstances(1),
   //         RemoveConnectionOnFirstFailureLocalFailureDetector,
   //         LocalScope))
 
@@ -121,7 +121,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           RoundRobin,
-          ReplicationFactor(5),
+          NrOfInstances(5),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 
@@ -157,7 +157,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           RoundRobin,
-          ReplicationFactor(10),
+          NrOfInstances(10),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 
@@ -202,7 +202,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           RoundRobin,
-          ReplicationFactor(5),
+          NrOfInstances(5),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 
@@ -237,7 +237,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           Random,
-          ReplicationFactor(7),
+          NrOfInstances(7),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 
@@ -271,7 +271,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           Random,
-          ReplicationFactor(10),
+          NrOfInstances(10),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 
@@ -316,7 +316,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
           address,
           None,
           Random,
-          ReplicationFactor(6),
+          NrOfInstances(6),
           RemoveConnectionOnFirstFailureLocalFailureDetector,
           LocalScope))
 

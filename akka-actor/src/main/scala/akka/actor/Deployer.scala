@@ -122,7 +122,7 @@ object Deployer extends ActorDeployer {
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
       case None ⇒
-        Some(Deploy(address, None, Direct, ReplicationFactor(1), RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
+        Some(Deploy(address, None, Direct, NrOfInstances(1), RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
 
       case Some(addressConfig) ⇒
 
@@ -145,22 +145,23 @@ object Deployer extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.replication-factor
+        // akka.actor.deployment.<address>.nr-of-instances
         // --------------------------------
         val nrOfInstances = {
-          if (router == Direct) new ReplicationFactor(1)
+          if (router == Direct) NrOfInstances(1)
           else {
-            addressConfig.getAny("replication-factor", "0") match {
-              case "auto" ⇒ AutoReplicationFactor
-              case "0"    ⇒ ZeroReplicationFactor
+            addressConfig.getAny("nr-of-instances", "1") match {
+              case "auto" ⇒ AutoNrOfInstances
+              case "1"    ⇒ NrOfInstances(1)
+              case "0"    ⇒ ZeroNrOfInstances
               case nrOfReplicas: String ⇒
                 try {
-                  new ReplicationFactor(nrOfReplicas.toInt)
+                  new NrOfInstances(nrOfReplicas.toInt)
                 } catch {
                   case e: Exception ⇒
                     throw new ConfigurationException(
                       "Config option [" + addressPath +
-                        ".cluster.replication-factor] needs to be either [\"auto\"] or [0-N] - was [" +
+                        ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
                         nrOfReplicas + "]")
                 }
             }

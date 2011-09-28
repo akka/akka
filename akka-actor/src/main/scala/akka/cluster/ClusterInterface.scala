@@ -248,14 +248,14 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, serializer: Serializer): ClusterNode
+  def store[T <: Actor](actorAddress: String, actorClass: Class[T], nrOfInstances: Int, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
+  def store[T <: Actor](actorAddress: String, actorClass: Class[T], nrOfInstances: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
@@ -276,14 +276,14 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](actorAddress: String, actorClass: Class[T], replicationFactor: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
+  def store[T <: Actor](actorAddress: String, actorClass: Class[T], nrOfInstances: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor of a specific type. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store[T <: Actor](address: String, actorClass: Class[T], replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
+  def store[T <: Actor](address: String, actorClass: Class[T], nrOfInstances: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -311,14 +311,14 @@ trait ClusterNode {
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, serializer: Serializer): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, replicationScheme: ReplicationScheme, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
@@ -329,26 +329,26 @@ trait ClusterNode {
   /**
    * Needed to have reflection through structural typing work.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode
 
   /**
    * Needed to have reflection through structural typing work.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: AnyRef): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
    * Clusters an actor with UUID. If the actor is already clustered then the clustered version will be updated
    * with the actor passed in as argument. You can use this to save off snapshots of the actor to a highly
    * available durable store.
    */
-  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, replicationFactor: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
+  def store(actorAddress: String, actorFactory: () ⇒ ActorRef, nrOfInstances: Int, replicationScheme: ReplicationScheme, serializeMailbox: Boolean, serializer: Serializer): ClusterNode
 
   /**
    * Removes actor from the cluster.
@@ -442,28 +442,28 @@ trait ClusterNode {
   def inetSocketAddressesForActor(actorAddress: String): Array[(UUID, InetSocketAddress)]
 
   /**
-   * Send a function 'Function0[Unit]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument).
+   * Send a function 'Function0[Unit]' to be invoked on a random number of nodes (defined by 'nrOfInstances' argument).
    */
-  def send(f: Function0[Unit], replicationFactor: Int)
+  def send(f: Function0[Unit], nrOfInstances: Int)
 
   /**
-   * Send a function 'Function0[Any]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument).
+   * Send a function 'Function0[Any]' to be invoked on a random number of nodes (defined by 'nrOfInstances' argument).
    * Returns an 'Array' with all the 'Future's from the computation.
    */
-  def send(f: Function0[Any], replicationFactor: Int): List[Future[Any]]
+  def send(f: Function0[Any], nrOfInstances: Int): List[Future[Any]]
 
   /**
-   * Send a function 'Function1[Any, Unit]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument)
+   * Send a function 'Function1[Any, Unit]' to be invoked on a random number of nodes (defined by 'nrOfInstances' argument)
    * with the argument speficied.
    */
-  def send(f: Function1[Any, Unit], arg: Any, replicationFactor: Int)
+  def send(f: Function1[Any, Unit], arg: Any, nrOfInstances: Int)
 
   /**
-   * Send a function 'Function1[Any, Any]' to be invoked on a random number of nodes (defined by 'replicationFactor' argument)
+   * Send a function 'Function1[Any, Any]' to be invoked on a random number of nodes (defined by 'nrOfInstances' argument)
    * with the argument speficied.
    * Returns an 'Array' with all the 'Future's from the computation.
    */
-  def send(f: Function1[Any, Any], arg: Any, replicationFactor: Int): List[Future[Any]]
+  def send(f: Function1[Any, Any], arg: Any, nrOfInstances: Int): List[Future[Any]]
 
   /**
    * Stores a configuration element under a specific key.
