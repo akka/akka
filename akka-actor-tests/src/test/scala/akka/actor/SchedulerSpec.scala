@@ -118,22 +118,15 @@ class SchedulerSpec extends JUnitSuite {
     val restartLatch = new StandardLatch
     val pingLatch = new CountDownLatch(6)
 
-    val actor = actorOf(new Actor {
+    val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+    val actor = actorOf(Props(new Actor {
       def receive = {
         case Ping  ⇒ pingLatch.countDown()
         case Crash ⇒ throw new Exception("CRASH")
       }
 
       override def postRestart(reason: Throwable) = restartLatch.open
-    })
-
-    Supervisor(
-      SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, 1000),
-        Supervise(
-          actor,
-          Permanent)
-          :: Nil))
+    }).withSupervisor(supervisor))
 
     collectFuture(Scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
     // appx 2 pings before crash
