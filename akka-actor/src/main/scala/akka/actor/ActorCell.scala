@@ -331,20 +331,21 @@ private[akka] class ActorCell(
 
         case failedActor if recreation ⇒
           val reason = new Exception("CRASHED") //FIXME TODO stash away the exception that caused the failure and reuse that? <------- !!!!!!!!!! RED RED RED
-          try {
-            if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
-            val freshActor = newActor()
-            clearActorContext()
-            if (failedActor ne null) {
-              val c = currentMessage //One read only plz
+          if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
+          val freshActor = newActor()
+          if (failedActor ne null) {
+            val c = currentMessage //One read only plz
+            try {
               failedActor.preRestart(reason, if (c ne null) Some(c.message) else None)
+            } finally {
+              clearActorContext()
+              currentMessage = null
+              actor = null
             }
-            actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
-            freshActor.postRestart(reason)
-            if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
-          } finally {
-            currentMessage = null
           }
+          actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
+          freshActor.postRestart(reason)
+          if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
 
           dispatcher.resume(this) //FIXME should this be moved down?
 
