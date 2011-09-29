@@ -358,7 +358,7 @@ object Actor {
    * </pre>
    */
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher) {
-    actorOf(Props(self ⇒ { case "go" ⇒ try { body } finally { self.stop() } }).withDispatcher(dispatcher)) ! "go"
+    actorOf(Props(context ⇒ { case "go" ⇒ try { body } finally { context.self.stop() } }).withDispatcher(dispatcher)) ! "go"
   }
 }
 
@@ -546,15 +546,17 @@ trait Actor {
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
+   * By default it calls postStop()
    */
-  def preRestart(reason: Throwable, message: Option[Any]) {}
+  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
 
   /**
    * User overridable callback.
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   * By default it calls preStart()
    */
-  def postRestart(reason: Throwable) {}
+  def postRestart(reason: Throwable) { preStart() }
 
   /**
    * User overridable callback.

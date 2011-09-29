@@ -175,32 +175,32 @@ class RemoteDaemon extends Actor {
   def handle_fun0_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
-        self ⇒ {
-          case f: Function0[_] ⇒ try { f() } finally { self.stop() }
+        context ⇒ {
+          case f: Function0[_] ⇒ try { f() } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
-        self ⇒ {
-          case f: Function0[_] ⇒ try { reply(f()) } finally { self.stop() }
+        context ⇒ {
+          case f: Function0[_] ⇒ try { reply(f()) } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
-        self ⇒ {
-          case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() }
+        context ⇒ {
+          case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
-        self ⇒ {
-          case (fun: Function[_, _], param: Any) ⇒ try { reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
+        context ⇒ {
+          case (fun: Function[_, _], param: Any) ⇒ try { reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
