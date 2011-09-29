@@ -322,31 +322,26 @@ private[akka] class ActorCell(
       }
 
       actor match {
-        case null ⇒
+        case null if !recreation ⇒
           val created = newActor() //TODO !!!! Notify supervisor on failure to create!
           actor = created
           created.preStart()
           checkReceiveTimeout
           if (Actor.debugLifecycle) EventHandler.debug(created, "started")
 
-        case instance if recreation ⇒
+        case failedActor if recreation ⇒
           val reason = new Exception("CRASHED") //FIXME TODO stash away the exception that caused the failure and reuse that? <------- !!!!!!!!!! RED RED RED
           try {
-            val failedActor = actor
             if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
+            val freshActor = newActor()
+            clearActorContext()
             if (failedActor ne null) {
               val c = currentMessage //One read only plz
               failedActor.preRestart(reason, if (c ne null) Some(c.message) else None)
             }
-            val freshActor = newActor()
-            clearActorContext()
             actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
             freshActor.postRestart(reason)
             if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
-          } catch {
-            case e ⇒
-              EventHandler.error(e, self, "Exception in restart of Actor [%s]".format(toString))
-              throw e
           } finally {
             currentMessage = null
           }
@@ -358,10 +353,14 @@ private[akka] class ActorCell(
         case _ ⇒
       }
     } catch {
-      case e ⇒
+      case e ⇒ try {
         EventHandler.error(e, this, "error while creating actor")
+        // prevent any further messages to be processed until the actor has been restarted
+        dispatcher.suspend(this)
         envelope.channel.sendException(e)
+      } finally {
         if (supervisor.isDefined) supervisor.get ! Failed(self, e) else throw e
+      }
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -432,7 +431,8 @@ private[akka] class ActorCell(
 
   def invoke(messageHandle: Envelope) {
     try {
-      if (!mailbox.isClosed) {
+      val isClosed = mailbox.isClosed //Fence plus volatile read
+      if (!isClosed) {
         currentMessage = messageHandle
         try {
           try {

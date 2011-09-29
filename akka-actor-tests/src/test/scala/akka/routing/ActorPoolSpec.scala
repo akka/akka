@@ -387,7 +387,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }))
+            }).withSupervisor(self))
           }).withFaultHandler(faultHandler))
 
         val pool2 = actorOf(
@@ -411,7 +411,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }))
+            }).withSupervisor(self))
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
@@ -526,7 +526,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(new Actor {
+            def factory = actorOf(Props(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -537,7 +537,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            })
+            }).withSupervisor(self))
           }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away
