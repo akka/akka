@@ -191,13 +191,11 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 }
 
 /**
- * Java-friendly ProducerSupport.
- *
- * @see UntypedProducerActor
+ * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
  *
  * @author Martin Krasser
  */
-trait UntypedProducer extends ProducerSupport { this: UntypedActor ⇒
+abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
   final override def endpointUri = getEndpointUri
   final override def oneway = isOneway
 
@@ -243,13 +241,6 @@ trait UntypedProducer extends ProducerSupport { this: UntypedActor ⇒
   @throws(classOf[Exception])
   def onReceiveAfterProduce(message: Any): Unit = super.receiveAfterProduce(message)
 }
-
-/**
- * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
- *
- * @author Martin Krasser
- */
-abstract class UntypedProducerActor extends UntypedActor with UntypedProducer
 
 /**
  * @author Martin Krasser

@@ -31,7 +31,6 @@ class RemoteActorRefProvider extends ActorRefProvider {
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  // FIXME who evicts this registry, and when? Should it be used instead of ActorRegistry?
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
   private val failureDetector = new BannagePeriodFailureDetector(timeToBan = 60 seconds) // FIXME make timeToBan configurable
@@ -45,7 +44,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
       val actor = try {
         Deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, _, router, _, RemoteScope(host, port))) ⇒
+          case Some(Deploy(_, _, router, nrOfInstances, _, RemoteScope(host, port))) ⇒
             // FIXME create RoutedActorRef if 'router' is specified
 
             val serverAddress = Remote.address

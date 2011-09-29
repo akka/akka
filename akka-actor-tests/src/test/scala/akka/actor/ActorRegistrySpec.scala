@@ -45,7 +45,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
 
   "Actor Registry" must {
 
-    "get actor by address from registry" in {
+    "get actor by address from registry" ignore {
       val started = TestLatch(1)
       val stopped = TestLatch(1)
       val actor = actorOf(new StartStopTestActor(started, stopped), "test-actor-1")
@@ -59,7 +59,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       Actor.registry.actorFor(actor.address).isEmpty must be(true)
     }
 
-    "get actor by uuid from local registry" in {
+    "get actor by uuid from local registry" ignore {
       val started = TestLatch(1)
       val stopped = TestLatch(1)
       val actor = actorOf(new StartStopTestActor(started, stopped), "test-actor-1")
@@ -74,7 +74,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       Actor.registry.local.actorFor(uuid).isEmpty must be(true)
     }
 
-    "find things from local registry" in {
+    "find things from local registry" ignore {
       val actor = actorOf[TestActor]("test-actor-1")
       val found: Option[LocalActorRef] = Actor.registry.local.find({ case a: LocalActorRef if a.underlyingActorInstance.isInstanceOf[TestActor] ⇒ a })
       found.isDefined must be(true)
@@ -83,7 +83,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       actor.stop
     }
 
-    "get all actors from local registry" in {
+    "get all actors from local registry" ignore {
       val actor1 = actorOf[TestActor]("test-actor-1")
       val actor2 = actorOf[TestActor]("test-actor-2")
       val actors = Actor.registry.local.actors
@@ -94,7 +94,7 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       actor2.stop
     }
 
-    "get response from all actors in local registry using foreach" in {
+    "get response from all actors in local registry using foreach" ignore {
       val actor1 = actorOf[TestActor]("test-actor-1")
       val actor2 = actorOf[TestActor]("test-actor-2")
       val results = new ConcurrentLinkedQueue[Future[String]]
@@ -108,14 +108,14 @@ class ActorRegistrySpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       actor2.stop()
     }
 
-    "shutdown all actors in local registry" in {
+    "shutdown all actors in local registry" ignore {
       val actor1 = actorOf[TestActor]("test-actor-1")
       val actor2 = actorOf[TestActor]("test-actor-2")
       Actor.registry.local.shutdownAll
       Actor.registry.local.actors.size must be(0)
     }
 
-    "remove when unregistering actors from local registry" in {
+    "remove when unregistering actors from local registry" ignore {
       val actor1 = actorOf[TestActor]("test-actor-1")
       val actor2 = actorOf[TestActor]("test-actor-2")
       Actor.registry.local.actors.size must be(2)

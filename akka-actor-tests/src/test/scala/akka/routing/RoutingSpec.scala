@@ -28,13 +28,15 @@ class RoutingSpec extends WordSpec with MustMatchers {
     "be started when constructed" in {
       val actor1 = Actor.actorOf[TestActor]
 
-      val actor = Routing.actorOf("foo", List(actor1), RouterType.Direct)
+      val props = RoutedProps(() ⇒ new DirectRouter, List(actor1))
+      val actor = Routing.actorOf(props, "foo")
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.actorOf("foo", List(), RouterType.Direct)
+        val props = RoutedProps(() ⇒ new DirectRouter, List())
+        Routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -52,7 +54,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val routedActor = Routing.actorOf("foo", List(connection1), RouterType.Direct)
+      val props = RoutedProps(() ⇒ new DirectRouter, List(connection1))
+      val routedActor = Routing.actorOf(props, "foo")
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -72,7 +75,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val actor = Routing.actorOf("foo", List(connection1), RouterType.Direct)
+      val props = RoutedProps(() ⇒ new DirectRouter, List(connection1))
+      val actor = Routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! "end"
@@ -88,13 +92,15 @@ class RoutingSpec extends WordSpec with MustMatchers {
     "be started when constructed" in {
       val actor1 = Actor.actorOf[TestActor]
 
-      val actor = Routing.actorOf("foo", List(actor1), RouterType.RoundRobin)
+      val props = RoutedProps(() ⇒ new RoundRobinRouter, List(actor1))
+      val actor = Routing.actorOf(props, "foo")
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.actorOf("foo", List(), RouterType.RoundRobin)
+        val props = RoutedProps(() ⇒ new RoundRobinRouter, List())
+        Routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -126,7 +132,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
       }
 
       //create the routed actor.
-      val actor = Routing.actorOf("foo", connections, RouterType.RoundRobin)
+      val props = RoutedProps(() ⇒ new RoundRobinRouter, connections)
+      val actor = Routing.actorOf(props, "foo")
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
@@ -164,7 +171,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val actor = Routing.actorOf("foo", List(connection1, connection2), RouterType.RoundRobin)
+      val props = RoutedProps(() ⇒ new RoundRobinRouter, List(connection1, connection2))
+      val actor = Routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -186,7 +194,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val actor = Routing.actorOf("foo", List(connection1), RouterType.RoundRobin)
+      val props = RoutedProps(() ⇒ new RoundRobinRouter, List(connection1))
+      val actor = Routing.actorOf(props, "foo")
 
       try {
         actor ? Broadcast(1)
@@ -207,13 +216,15 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val actor1 = Actor.actorOf[TestActor]
 
-      val actor = Routing.actorOf("foo", List(actor1), RouterType.Random)
+      val props = RoutedProps(() ⇒ new RandomRouter, List(actor1))
+      val actor = Routing.actorOf(props, "foo")
       actor.isRunning must be(true)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
-        Routing.actorOf("foo", List(), RouterType.Random)
+        val props = RoutedProps(() ⇒ new RandomRouter, List())
+        Routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -243,7 +254,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val actor = Routing.actorOf("foo", List(connection1, connection2), RouterType.Random)
+      val props = RoutedProps(() ⇒ new RandomRouter, List(connection1, connection2))
+      val actor = Routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -265,7 +277,8 @@ class RoutingSpec extends WordSpec with MustMatchers {
         }
       })
 
-      val actor = Routing.actorOf("foo", List(connection1), RouterType.Random)
+      val props = RoutedProps(() ⇒ new RandomRouter, List(connection1))
+      val actor = Routing.actorOf(props, "foo")
 
       try {
         actor ? Broadcast(1)
@@ -277,42 +290,6 @@ class RoutingSpec extends WordSpec with MustMatchers {
       actor ! "end"
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
       counter1.get must be(0)
-    }
-  }
-
-  "least cpu router" must {
-    "throw IllegalArgumentException when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
-
-      try {
-        Routing.actorOf("foo", List(actor1), RouterType.LeastCPU)
-      } catch {
-        case e: IllegalArgumentException ⇒
-      }
-    }
-  }
-
-  "least ram router" must {
-    "throw IllegalArgumentException when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
-
-      try {
-        Routing.actorOf("foo", List(actor1), RouterType.LeastRAM)
-      } catch {
-        case e: IllegalArgumentException ⇒
-      }
-    }
-  }
-
-  "smallest mailbox" must {
-    "throw IllegalArgumentException when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
-
-      try {
-        Routing.actorOf("foo", List(actor1), RouterType.LeastMessages)
-      } catch {
-        case e: IllegalArgumentException ⇒
-      }
     }
   }
 }

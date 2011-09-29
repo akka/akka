@@ -119,7 +119,7 @@ trait TestKitLight {
    * Stop test actor. Should be done at the end of the test unless relying on
    * test actor timeout.
    */
-  def stopTestActor { testActor.stop() }
+  def stopTestActor() { testActor.stop() }
 
   /**
    * Set test actor timeout. By default, the test actor shuts itself down
@@ -144,7 +144,7 @@ trait TestKitLight {
   /**
    * Stop ignoring messages in the test actor.
    */
-  def ignoreNoMsg { testActor ! TestActor.SetIgnore(None) }
+  def ignoreNoMsg() { testActor ! TestActor.SetIgnore(None) }
 
   /**
    * Obtain current time (`System.nanoTime`) as Duration.
@@ -431,7 +431,7 @@ trait TestKitLight {
   /**
    * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
    */
-  def expectNoMsg { expectNoMsg_internal(remaining) }
+  def expectNoMsg() { expectNoMsg_internal(remaining) }
 
   /**
    * Assert that no message is received for the specified time.

@@ -359,6 +359,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
+        EventHandler.error(e, this, "error while creating actor")
         envelope.channel.sendException(e)
         if (supervisor.isDefined) supervisor.get ! Failed(self, e) else throw e
     }

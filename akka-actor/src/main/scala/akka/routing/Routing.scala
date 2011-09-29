@@ -191,8 +191,8 @@ object Routing {
     new RoutedActorRef(
       new RoutedProps(
         () ⇒ router,
-        RoutedProps.defaultFailureDetectorFactory,
         connections,
+        RoutedProps.defaultFailureDetectorFactory,
         RoutedProps.defaultTimeout, true),
       actorAddress)
   }
@@ -240,7 +240,7 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: St
     synchronized {
       if (running) {
         running = false
-        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+        router.route(Routing.Broadcast(PoisonPill))(Some(this))
       }
     }
   }

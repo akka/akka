@@ -23,6 +23,7 @@ object DeploymentConfig {
     address: String,
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
+    nrOfInstances: NrOfInstances = ZeroNrOfInstances,
     failureDetector: FailureDetector = RemoveConnectionOnFirstFailureLocalFailureDetector,
     scope: Scope = LocalScope) {
     Address.validate(address)
@@ -76,7 +77,6 @@ object DeploymentConfig {
   sealed trait Scope
   case class ClusterScope(
     preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
-    replicas: ReplicationFactor = ZeroReplicationFactor,
     replication: ReplicationScheme = Transient) extends Scope
 
   case class RemoteScope(
@@ -101,28 +101,28 @@ object DeploymentConfig {
   // --- Replicas
   // --------------------------------
 
-  class ReplicationFactor(val factor: Int) extends Serializable {
-    if (factor < 0) throw new IllegalArgumentException("replication-factor can not be negative")
+  class NrOfInstances(val factor: Int) extends Serializable {
+    if (factor < 0) throw new IllegalArgumentException("nr-of-instances can not be negative")
     override def hashCode = 0 + factor.##
-    override def equals(other: Any) = ReplicationFactor.unapply(this) == ReplicationFactor.unapply(other)
-    override def toString = "ReplicationFactor(" + factor + ")"
+    override def equals(other: Any) = NrOfInstances.unapply(this) == NrOfInstances.unapply(other)
+    override def toString = "NrOfInstances(" + factor + ")"
   }
 
-  object ReplicationFactor {
-    def apply(factor: Int): ReplicationFactor = new ReplicationFactor(factor)
+  object NrOfInstances {
+    def apply(factor: Int): NrOfInstances = new NrOfInstances(factor)
     def unapply(other: Any) = other match {
-      case x: ReplicationFactor ⇒ import x._; Some(factor)
-      case _                    ⇒ None
+      case x: NrOfInstances ⇒ import x._; Some(factor)
+      case _                ⇒ None
     }
   }
 
   // For Java API
-  class AutoReplicationFactor extends ReplicationFactor(-1)
-  class ZeroReplicationFactor extends ReplicationFactor(0)
+  class AutoNrOfInstances extends NrOfInstances(-1)
+  class ZeroNrOfInstances extends NrOfInstances(0)
 
   // For Scala API
-  case object AutoReplicationFactor extends AutoReplicationFactor
-  case object ZeroReplicationFactor extends ZeroReplicationFactor
+  case object AutoNrOfInstances extends AutoNrOfInstances
+  case object ZeroNrOfInstances extends ZeroNrOfInstances
 
   // --------------------------------
   // --- Replication
@@ -206,7 +206,7 @@ object DeploymentConfig {
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, ClusterScope(_, _, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 
