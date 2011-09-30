@@ -26,11 +26,9 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
       filterEvents(EventFilter[Exception]("test")) {
         val latch = new CountDownLatch(1)
         val sender = Actor.actorOf(new Sender(latch))
-
-        val supervised = Actor.actorOf[Supervised]
-        val supervisor = Supervisor(SupervisorConfig(
-          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-          Supervise(supervised, Permanent) :: Nil))
+        val supervisor = Actor.actorOf(Props(context ⇒ { case _ ⇒ }).
+          withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 5, 10000)))
+        val supervised = Actor.actorOf(Props[Supervised].withSupervisor(supervisor))
 
         supervised.!("test")(Some(sender))
         latch.await(5, TimeUnit.SECONDS) must be(true)
@@ -42,10 +40,9 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
         val latch = new CountDownLatch(1)
         val sender = Actor.actorOf(new Sender(latch))
 
-        val supervised = Actor.actorOf[Supervised]
-        val supervisor = Supervisor(SupervisorConfig(
-          AllForOneStrategy(List(classOf[Exception]), 5, 10000),
-          Supervise(supervised, Temporary) :: Nil))
+        val supervisor = Actor.actorOf(Props(context ⇒ { case _ ⇒ }).
+          withFaultHandler(AllForOneStrategy(List(classOf[Exception]), Some(0), None)))
+        val supervised = Actor.actorOf(Props[Supervised].withSupervisor(supervisor))
 
         supervised.!("test")(Some(sender))
         latch.await(5, TimeUnit.SECONDS) must be(true)
