@@ -5,7 +5,6 @@ package akka.spring
 
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
 import org.springframework.beans.factory.xml.{ ParserContext, AbstractSingleBeanDefinitionParser }
-import akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 
 import org.w3c.dom.Element

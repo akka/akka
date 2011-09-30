@@ -5,19 +5,18 @@
 package akka.remote
 
 import akka.actor._
-import Actor._
+import akka.actor.Actor._
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
-import akka.config.{ Config, Supervision }
-import Supervision._
-import Status._
-import Config._
+import akka.config.Config
+import akka.config.Config._
+import akka.actor.Status._
 import akka.util._
-import duration._
-import Helpers._
-import DeploymentConfig._
+import akka.util.duration._
+import akka.util.Helpers._
+import akka.actor.DeploymentConfig._
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
-import ActorSerialization._
+import akka.serialization.ActorSerialization._
 import Compression.LZF
 import RemoteProtocol._
 import RemoteDaemonMessageType._
@@ -41,18 +40,14 @@ object Remote extends RemoteService {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = Dispatchers.newDispatcher("akka:compute-grid").build
 
-  private[remote] lazy val remoteDaemon = new LocalActorRef(
-    Props(new RemoteDaemon).copy(dispatcher = new PinnedDispatcher()),
-    Remote.remoteDaemonServiceName,
-    systemService = true)
-
   private[remote] lazy val remoteDaemonSupervisor = Supervisor(
-    SupervisorConfig(
-      OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
-      Supervise(
-        remoteDaemon,
-        Permanent)
-        :: Nil))
+    OneForOneStrategy(List(classOf[Exception]), None, None)) // is infinite restart what we want?
+
+  private[remote] lazy val remoteDaemon =
+    new LocalActorRef(
+      props = Props(new RemoteDaemon).withDispatcher(new PinnedDispatcher()).withSupervisor(remoteDaemonSupervisor),
+      address = Remote.remoteDaemonServiceName,
+      systemService = true)
 
   private[remote] lazy val remoteClientLifeCycleHandler = actorOf(Props(new Actor {
     def receive = {

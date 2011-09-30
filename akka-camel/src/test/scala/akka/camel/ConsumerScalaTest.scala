@@ -11,7 +11,6 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
-import akka.config.Supervision._
 
 /**
  * @author Martin Krasser

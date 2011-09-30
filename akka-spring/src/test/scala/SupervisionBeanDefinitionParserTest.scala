@@ -11,7 +11,6 @@ import ScalaDom._
 
 import org.w3c.dom.Element
 import org.springframework.beans.factory.support.BeanDefinitionBuilder
-import akka.config.Supervision.{ FaultHandlingStrategy, AllForOneStrategy }
 
 /**
  * Test for SupervisionBeanDefinitionParser

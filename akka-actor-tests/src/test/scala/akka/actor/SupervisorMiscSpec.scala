@@ -5,7 +5,6 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.config.Supervision.{ SupervisorConfig, Supervise, Permanent }
 import akka.testkit.{ filterEvents, EventFilter }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }

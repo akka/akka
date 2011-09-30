@@ -34,9 +34,8 @@ import DeploymentConfig._
 
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
-import akka.config.{ Config, Supervision }
-import Supervision._
-import Config._
+import akka.config.Config
+import akka.config.Config._
 
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import ActorSerialization._

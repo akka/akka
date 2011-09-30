@@ -361,7 +361,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "provide default supervision of pooled actors" in {
       filterException[RuntimeException] {
-        import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
         val keepDying = new AtomicBoolean(false)
@@ -507,7 +506,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "support customizable supervision config of pooled actors" in {
       filterEvents(EventFilter[IllegalStateException], EventFilter[RuntimeException]) {
-        import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
         var keepDying = new AtomicBoolean(false)

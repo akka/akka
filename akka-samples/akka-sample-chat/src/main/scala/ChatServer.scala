@@ -8,8 +8,7 @@
 
   import akka.actor.{Actor, ActorRef, Props}
   import akka.stm._
-  import akka.config.Supervision.{OneForOneStrategy,Permanent}
-  import Actor._
+  import akka.actor.Actor._
   import akka.event.EventHandler
 
   /******************************************************************************

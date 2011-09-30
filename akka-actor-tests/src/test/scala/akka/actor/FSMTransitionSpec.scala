@@ -9,7 +9,6 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.testkit._
 import akka.util.duration._
-import akka.config.Supervision._
 import akka.event.EventHandler
 
 import FSM._

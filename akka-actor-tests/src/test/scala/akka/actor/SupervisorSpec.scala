@@ -11,9 +11,8 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
-import akka.config.Supervision._
 import akka.{ Die, Ping }
-import Actor._
+import akka.actor.Actor._
 import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
@@ -70,120 +69,53 @@ object SupervisorSpec {
   // =====================================================
 
   def temporaryActorAllForOne = {
-    val temporaryActor = actorOf(Props[PingPongActor])
-
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), Some(0)),
-        Supervise(
-          temporaryActor,
-          Temporary)
-          :: Nil))
+    val supervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), Some(0)))
+    val temporaryActor = actorOf(Props[PingPongActor].withSupervisor(supervisor))
 
     (temporaryActor, supervisor)
   }
 
   def singleActorAllForOne = {
-    val pingpong = actorOf[PingPongActor]
-
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
-        Supervise(
-          pingpong,
-          Permanent)
-          :: Nil))
+    val supervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis))
+    val pingpong = actorOf(Props[PingPongActor].withSupervisor(supervisor))
 
     (pingpong, supervisor)
   }
 
   def singleActorOneForOne = {
-    val pingpong = actorOf[PingPongActor]
-
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
-        Supervise(
-          pingpong,
-          Permanent)
-          :: Nil))
+    val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis))
+    val pingpong = actorOf(Props[PingPongActor].withSupervisor(supervisor))
 
     (pingpong, supervisor)
   }
 
   def multipleActorsAllForOne = {
-    val pingpong1 = actorOf[PingPongActor]
-    val pingpong2 = actorOf[PingPongActor]
-    val pingpong3 = actorOf[PingPongActor]
-
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
-        Supervise(
-          pingpong1,
-          Permanent)
-          ::
-          Supervise(
-            pingpong2,
-            Permanent)
-            ::
-            Supervise(
-              pingpong3,
-              Permanent)
-              :: Nil))
+    val supervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis))
+    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def multipleActorsOneForOne = {
-    val pingpong1 = actorOf[PingPongActor]
-    val pingpong2 = actorOf[PingPongActor]
-    val pingpong3 = actorOf[PingPongActor]
-
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
-        Supervise(
-          pingpong1,
-          Permanent)
-          ::
-          Supervise(
-            pingpong2,
-            Permanent)
-            ::
-            Supervise(
-              pingpong3,
-              Permanent)
-              :: Nil))
+    val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis))
+    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def nestedSupervisorsAllForOne = {
-    val pingpong1 = actorOf[PingPongActor]
-    val pingpong2 = actorOf[PingPongActor]
-    val pingpong3 = actorOf[PingPongActor]
+    val topSupervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis))
+    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(topSupervisor))
 
-    val supervisor = Supervisor(
-      SupervisorConfig(
-        AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis),
-        Supervise(
-          pingpong1,
-          Permanent)
-          ::
-          SupervisorConfig(
-            AllForOneStrategy(Nil, 3, TimeoutMillis),
-            Supervise(
-              pingpong2,
-              Permanent)
-              ::
-              Supervise(
-                pingpong3,
-                Permanent)
-                :: Nil)
-            :: Nil))
+    val middleSupervisor = Supervisor(AllForOneStrategy(Nil, 3, TimeoutMillis), topSupervisor)
+    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(middleSupervisor))
+    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(middleSupervisor))
 
-    (pingpong1, pingpong2, pingpong3, supervisor)
+    (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 }
 
@@ -359,6 +291,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "must attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
+      val supervisor = Supervisor(OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000))
 
       val dyingActor = actorOf(Props(new Actor {
         inits.incrementAndGet
@@ -369,13 +302,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
           case Ping ⇒ tryReply(PongMessage)
           case Die  ⇒ throw new RuntimeException("Expected")
         }
-      }))
-
-      val supervisor =
-        Supervisor(
-          SupervisorConfig(
-            OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000),
-            Supervise(dyingActor, Permanent) :: Nil))
+      }).withSupervisor(supervisor))
 
       intercept[RuntimeException] {
         (dyingActor.?(Die, TimeoutMillis)).get
@@ -388,7 +315,7 @@ class SupervisorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
       inits.get must be(3)
 
-      supervisor.shutdown()
+      supervisor.stop()
     }
   }
 }

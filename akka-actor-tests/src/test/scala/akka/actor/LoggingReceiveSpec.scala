@@ -10,7 +10,6 @@ import akka.event.EventHandler
 import Actor._
 import akka.util.duration._
 import akka.config.Config.config
-import akka.config.Supervision._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {

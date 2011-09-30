@@ -12,8 +12,7 @@ import akka.testkit._
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 
-import Actor._
-import akka.config.Supervision._
+import akka.actor.Actor._
 import akka.dispatch.Dispatchers
 
 object ActorFireForgetRequestReplySpec {
@@ -84,7 +83,7 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
 
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected")) {
-        val supervisor = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
+        val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(0)))
         val actor = actorOf(Props[CrashingActor].withSupervisor(supervisor))
         actor.isRunning must be(true)
         actor ! "Die"

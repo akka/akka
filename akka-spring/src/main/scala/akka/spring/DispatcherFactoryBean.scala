@@ -4,7 +4,6 @@
 package akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import akka.config.Supervision._
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
 import akka.actor.ActorRef

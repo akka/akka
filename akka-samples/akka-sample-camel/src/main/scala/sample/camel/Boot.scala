@@ -10,7 +10,6 @@ import akka.actor.Actor._
 import akka.actor.Props
 import akka.actor.TypedActor
 import akka.camel.CamelContextManager
-import akka.config.Supervision._
 
 /**
  * @author Martin Krasser
@@ -23,13 +22,6 @@ class Boot {
 
   actorOf[Consumer1]
   actorOf[Consumer2]
-
-  // Alternatively, use a supervisor for these actors
-  //val supervisor = Supervisor(
-  //  SupervisorConfig(
-  //    RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-  //    Supervise(actorOf[Consumer1], Permanent) ::
-  //    Supervise(actorOf[Consumer2], Permanent) :: Nil))
 
   // -----------------------------------------------------------------------
   // Custom Camel route example

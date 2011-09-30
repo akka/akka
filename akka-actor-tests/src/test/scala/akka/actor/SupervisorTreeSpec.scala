@@ -10,8 +10,7 @@ import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.dispatch.Dispatchers
-import akka.config.Supervision.{ SupervisorConfig, Supervise, Permanent }
-import Actor._
+import akka.actor.Actor._
 
 class SupervisorTreeSpec extends WordSpec with MustMatchers {
 

@@ -5,7 +5,6 @@
 package akka.routing
 
 import akka.dispatch.{ Promise }
-import akka.config.Supervision._
 import akka.actor._
 
 /**

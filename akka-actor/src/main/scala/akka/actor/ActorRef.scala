@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.dispatch._
-import akka.config.Supervision._
 import akka.util._
 import akka.serialization.{ Serializer, Serialization }
 import ReflectiveAccess._

@@ -6,7 +6,6 @@ import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import Actor._
-import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.{ Test, Before, After }
 import java.util.concurrent.{ ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
