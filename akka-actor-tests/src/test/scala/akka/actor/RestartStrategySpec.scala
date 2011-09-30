@@ -212,12 +212,12 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     slave ! Crash
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
-
+    sleep(500L)
     assert(!slave.isRunning)
   }
 
   @Test
-  def slaveShouldNotRestartWithinsTimeRange = {
+  def slaveShouldNotRestartWithinTimeRange = {
 
     val restartLatch, stopLatch, maxNoOfRestartsLatch = new StandardLatch
     val countDownLatch = new CountDownLatch(2)
@@ -242,6 +242,8 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       }
     }).withSupervisor(boss))
 
+    boss.link(slave)
+
     slave ! Ping
     slave ! Crash
     slave ! Ping
@@ -255,25 +257,16 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     slave ! Crash
 
     // may not be running
-    try {
-      slave ! Ping
-    } catch {
-      case e: ActorInitializationException ⇒ ()
-    }
-
+    slave ! Ping
     assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
     // may not be running
-    try {
-      slave ! Crash
-    } catch {
-      case e: ActorInitializationException ⇒ ()
-    }
+    slave ! Crash
 
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
 
     assert(maxNoOfRestartsLatch.tryAwait(1, TimeUnit.SECONDS))
-
+    sleep(500L)
     assert(!slave.isRunning)
   }
 }
