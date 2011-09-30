@@ -2,6 +2,8 @@
  *  Copyright (C) 2011 Typesafe <http://typesafe.com/>
  */
 
+package akka.sbt
+
 import sbt._
 import sbt.Keys._
 import sbt.Load.BuildStructure
