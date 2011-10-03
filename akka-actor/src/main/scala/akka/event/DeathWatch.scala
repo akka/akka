@@ -23,8 +23,7 @@ object DumbMonitoring extends DeathWatch with Monitoring {
     import java.util.concurrent.ConcurrentHashMap
     import scala.annotation.tailrec
 
-    object Tombstone
-    val mappings = new ConcurrentHashMap[ActorRef, AnyRef](mapSize)
+    val mappings = new ConcurrentHashMap[ActorRef, Vector[ActorRef]](mapSize)
 
     @tailrec
     final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
@@ -35,11 +34,10 @@ object DumbMonitoring extends DeathWatch with Monitoring {
           else {
             if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
             else {
-              if (monitored.isShutdown) dissociate(monitored, monitor)
+              if (monitored.isShutdown) !dissociate(monitored, monitor)
               else true
             }
           }
-        case Tombstone ⇒ false
         case raw: Vector[_] ⇒
           val v = raw.asInstanceOf[Vector[ActorRef]]
           if (monitored.isShutdown) false
@@ -48,7 +46,7 @@ object DumbMonitoring extends DeathWatch with Monitoring {
             val added = v :+ monitor
             if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
             else {
-              if (monitored.isShutdown) dissociate(monitored, monitor)
+              if (monitored.isShutdown) !dissociate(monitored, monitor)
               else true
             }
           }
@@ -60,19 +58,16 @@ object DumbMonitoring extends DeathWatch with Monitoring {
       def dissociateAsMonitored(monitored: ActorRef): Iterable[ActorRef] = {
         val current = mappings get monitored
         current match {
-          case null | Tombstone ⇒ Vector.empty[ActorRef]
+          case null ⇒ Vector.empty[ActorRef]
           case raw: Vector[_] ⇒
             val v = raw.asInstanceOf[Vector[ActorRef]]
-            if (!mappings.replace(monitored, v, Tombstone)) dissociateAsMonitored(monitored)
-            else {
-              assert(mappings.remove(monitored, Tombstone))
-              v
-            }
+            if (!mappings.remove(monitored, v)) dissociateAsMonitored(monitored)
+            else v
         }
       }
 
       def dissociateAsMonitor(monitor: ActorRef): Unit = {
-        val i = mappings.entrySet().iterator()
+        val i = mappings.entrySet.iterator
         while (i.hasNext()) {
           val entry = i.next()
           val v = entry.getValue
@@ -93,7 +88,7 @@ object DumbMonitoring extends DeathWatch with Monitoring {
     final def dissociate(monitored: ActorRef, monitor: ActorRef): Boolean = {
       val current = mappings get monitored
       current match {
-        case null | Tombstone ⇒ false
+        case null ⇒ false
         case raw: Vector[_] ⇒
           val v = raw.asInstanceOf[Vector[ActorRef]]
           val removed = v.filterNot(monitor ==)
