@@ -34,7 +34,10 @@ object DumbMonitoring extends DeathWatch with Monitoring {
           if (monitored.isShutdown) false
           else {
             if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
-            else true
+            else {
+              if (monitored.isShutdown) dissociate(monitored, monitor)
+              else true
+            }
           }
         case Tombstone ⇒ false
         case raw: Vector[_] ⇒
@@ -44,40 +47,63 @@ object DumbMonitoring extends DeathWatch with Monitoring {
           else {
             val added = v :+ monitor
             if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
-            else true
+            else {
+              if (monitored.isShutdown) dissociate(monitored, monitor)
+              else true
+            }
           }
       }
     }
 
-    @tailrec
     final def dissociate(monitored: ActorRef): Iterable[ActorRef] = {
-      val current = mappings get monitored
-      current match {
-        case null | Tombstone ⇒ Vector.empty[ActorRef]
-        case raw: Vector[_] ⇒
-          val v = raw.asInstanceOf[Vector[ActorRef]]
-          if (!mappings.replace(monitored, v, Tombstone)) dissociate(monitored)
-          else {
-            assert(mappings.remove(monitored, Tombstone))
-            v
-          }
+      @tailrec
+      def dissociateAsMonitored(monitored: ActorRef): Iterable[ActorRef] = {
+        val current = mappings get monitored
+        current match {
+          case null | Tombstone ⇒ Vector.empty[ActorRef]
+          case raw: Vector[_] ⇒
+            val v = raw.asInstanceOf[Vector[ActorRef]]
+            if (!mappings.replace(monitored, v, Tombstone)) dissociateAsMonitored(monitored)
+            else {
+              assert(mappings.remove(monitored, Tombstone))
+              v
+            }
+        }
       }
+
+      def dissociateAsMonitor(monitor: ActorRef): Unit = {
+        val i = mappings.entrySet().iterator()
+        while (i.hasNext()) {
+          val entry = i.next()
+          val v = entry.getValue
+          v match {
+            case raw: Vector[_] ⇒
+              val monitors = raw.asInstanceOf[Vector[ActorRef]]
+              if (monitors.contains(monitor))
+                dissociate(entry.getKey, monitor)
+            case _ ⇒ //Dun care
+          }
+        }
+      }
+
+      try { dissociateAsMonitored(monitored) } finally { dissociateAsMonitor(monitored) }
     }
 
     @tailrec
-    final def dissociate(monitored: ActorRef, monitor: ActorRef): Unit = {
+    final def dissociate(monitored: ActorRef, monitor: ActorRef): Boolean = {
       val current = mappings get monitored
       current match {
-        case null | Tombstone ⇒ Vector.empty[ActorRef]
+        case null | Tombstone ⇒ false
         case raw: Vector[_] ⇒
           val v = raw.asInstanceOf[Vector[ActorRef]]
           val removed = v.filterNot(monitor ==)
-          if (removed.isEmpty) {
+          if (removed eq v) false
+          else if (removed.isEmpty) {
             if (!mappings.remove(monitored, v)) dissociate(monitored, monitor)
-            else ()
+            else true
           } else {
             if (!mappings.replace(monitored, v, removed)) dissociate(monitored, monitor)
-            else ()
+            else true
           }
       }
     }
