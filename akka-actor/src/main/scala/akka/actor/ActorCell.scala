@@ -93,6 +93,16 @@ sealed abstract class FaultHandlingStrategy {
 
   def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit
 
+  def handleSupervisorFailing(supervisor: ActorRef, linkedActors: List[ChildRestartStats]): Unit = {
+    if (linkedActors.nonEmpty)
+      linkedActors.foreach(_.child.suspend())
+  }
+
+  def handleSupervisorRestarted(supervisor: ActorRef, linkedActors: List[ChildRestartStats]): Unit = {
+    if (linkedActors.nonEmpty)
+      linkedActors.foreach(_.child.restart())
+  }
+
   /**
    * Returns whether it processed the failure or not
    */
@@ -349,9 +359,10 @@ private[akka] class ActorCell(
 
           dispatcher.resume(this) //FIXME should this be moved down?
 
-        //FIXME TODO How should we handle restarting of children? <----- !!!!!!!!!!!!! RED RED RED
+          //FIXME TODO How should we handle restarting of children? <----- !!!!!!!!!!!!! RED RED RED
+          props.faultHandler.handleSupervisorRestarted(self, _linkedActors)
 
-        case _ ⇒
+        case _ ⇒ EventHandler.warning(this, "Anomaly in Actor creation, current Actor is '" + actor + "' and recreate = '" + recreation + "', this shouldn't be possible")
       }
     } catch {
       case e ⇒ try {
@@ -360,7 +371,7 @@ private[akka] class ActorCell(
         dispatcher.suspend(this)
         envelope.channel.sendException(e)
       } finally {
-        if (supervisor.isDefined) supervisor.get ! Failed(self, e) else throw e
+        if (supervisor.isDefined) supervisor.get ! Failed(self, e) else throw e //FIXME TODO What should be done when there's a systemMessage failure in a non-supervised actor?
       }
     }
 
@@ -384,7 +395,7 @@ private[akka] class ActorCell(
         _linkedActors.foreach(_.child.stop())
         _linkedActors = Nil
       } finally {
-        val cause = new ActorKilledException("Stopped") //FIXME make this an object, can be reused everywhere
+        val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
 
         if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
 
@@ -424,6 +435,7 @@ private[akka] class ActorCell(
     } catch {
       case e ⇒ //Should we really catch everything here?
         EventHandler.error(e, actor, "error while processing " + envelope.message)
+        //TODO FIXME How should problems here be handled?
         throw e
     } finally {
       mailbox.acknowledgeStatus() //Volatile write
@@ -450,9 +462,10 @@ private[akka] class ActorCell(
 
               channel.sendException(e)
 
-              if (supervisor.isDefined)
+              if (supervisor.isDefined) {
+                props.faultHandler.handleSupervisorFailing(self, _linkedActors)
                 supervisor.get ! Failed(self, e)
-              else
+              } else
                 dispatcher.resume(this)
 
               if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
@@ -473,7 +486,9 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleFailure(fail: Failed): Unit = props.faultHandler.handleFailure(fail, _linkedActors)
+  def handleFailure(fail: Failed): Unit = if (!props.faultHandler.handleFailure(fail, _linkedActors)) {
+    if (supervisor.isDefined) throw fail.cause else self.stop()
+  }
 
   def handleChildTerminated(child: ActorRef): Unit = _linkedActors = props.faultHandler.handleChildTerminated(child, _linkedActors)
 

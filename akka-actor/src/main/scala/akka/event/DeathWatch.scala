@@ -19,22 +19,82 @@ trait Monitoring {
 
 object DumbMonitoring extends DeathWatch with Monitoring {
 
-  val monitoring = new akka.util.Index[ActorRef, ActorRef] //Key == monitored, Values == monitors
+  class MonitoringBook(mapSize: Int = 1024) {
+    import java.util.concurrent.ConcurrentHashMap
+    import scala.annotation.tailrec
 
-  def signal(terminated: Terminated): Unit = {
-    val monitors = monitoring.remove(terminated.actor)
-    if (monitors.isDefined)
-      monitors.get.foreach(_ ! terminated)
-  }
+    object Tombstone
+    val mappings = new ConcurrentHashMap[ActorRef, AnyRef](mapSize)
 
-  def link(monitor: ActorRef, monitored: ActorRef): Unit = {
-    if (monitored.isShutdown) monitor ! Terminated(monitored, new ActorKilledException("Already terminated when linking"))
-    else { // FIXME race between shutting down
-      monitoring.put(monitored, monitor)
+    @tailrec
+    final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
+      val current = mappings get monitored
+      current match {
+        case null ⇒
+          if (monitored.isShutdown) false
+          else {
+            if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
+            else true
+          }
+        case Tombstone ⇒ false
+        case raw: Vector[_] ⇒
+          val v = raw.asInstanceOf[Vector[ActorRef]]
+          if (monitored.isShutdown) false
+          if (v.contains(monitor)) true
+          else {
+            val added = v :+ monitor
+            if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
+            else true
+          }
+      }
+    }
+
+    @tailrec
+    final def dissociate(monitored: ActorRef): Iterable[ActorRef] = {
+      val current = mappings get monitored
+      current match {
+        case null | Tombstone ⇒ Vector.empty[ActorRef]
+        case raw: Vector[_] ⇒
+          val v = raw.asInstanceOf[Vector[ActorRef]]
+          if (!mappings.replace(monitored, v, Tombstone)) dissociate(monitored)
+          else {
+            assert(mappings.remove(monitored, Tombstone))
+            v
+          }
+      }
+    }
+
+    @tailrec
+    final def dissociate(monitored: ActorRef, monitor: ActorRef): Unit = {
+      val current = mappings get monitored
+      current match {
+        case null | Tombstone ⇒ Vector.empty[ActorRef]
+        case raw: Vector[_] ⇒
+          val v = raw.asInstanceOf[Vector[ActorRef]]
+          val removed = v.filterNot(monitor ==)
+          if (removed.isEmpty) {
+            if (!mappings.remove(monitored, v)) dissociate(monitored, monitor)
+            else ()
+          } else {
+            if (!mappings.replace(monitored, v, removed)) dissociate(monitored, monitor)
+            else ()
+          }
+      }
     }
   }
 
-  def unlink(monitor: ActorRef, monitored: ActorRef): Unit = {
-    monitoring.remove(monitored, monitor)
+  val monitoring = new MonitoringBook(1024) //Key == monitored, Values == monitors
+
+  def signal(terminated: Terminated): Unit = {
+    val monitors = monitoring.dissociate(terminated.actor)
+    if (monitors.nonEmpty) monitors.foreach(_ ! terminated)
   }
+
+  def link(monitor: ActorRef, monitored: ActorRef): Unit = {
+    if (!monitoring.associate(monitored, monitor))
+      monitor ! Terminated(monitored, new ActorKilledException("Already terminated when linking"))
+  }
+
+  def unlink(monitor: ActorRef, monitored: ActorRef): Unit =
+    monitoring.dissociate(monitored, monitor)
 }

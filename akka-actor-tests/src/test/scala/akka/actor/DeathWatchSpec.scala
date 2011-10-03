@@ -20,6 +20,9 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
   import DeathWatchSpec._
 
   "The Death Watch" must {
+    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, "stopped") {
+      case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
+    }
 
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
@@ -28,9 +31,7 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
 
       terminal ! "anything"
 
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
+      expectTerminationOf(terminal)
 
       terminal.stop()
       expectNoMsg(2 seconds) //Shouldn't get more terminations
@@ -46,22 +47,14 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
 
       terminal ! "anything"
 
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
-
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
-
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
+      expectTerminationOf(terminal)
+      expectTerminationOf(terminal)
+      expectTerminationOf(terminal)
 
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(1 seconds) //Shouldn't get more terminations
+      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
@@ -76,18 +69,13 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
 
       terminal ! "anything"
 
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
-
-      expectMsgPF(5 seconds, "stopped") {
-        case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-      }
+      expectTerminationOf(terminal)
+      expectTerminationOf(terminal)
 
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(1 seconds) //Shouldn't get more terminations
+      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
@@ -105,12 +93,10 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
 
         terminal ! Kill
 
-        expectMsgPF(5 seconds, "stopped") {
-          case Terminated(terminal, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
-        }
+        expectTerminationOf(terminal)
 
         terminal.stop()
-        expectNoMsg(1 seconds) //Shouldn't get more terminations
+        expectNoMsg(2 seconds) //Shouldn't get more terminations
         supervisor.stop()
       }
     }

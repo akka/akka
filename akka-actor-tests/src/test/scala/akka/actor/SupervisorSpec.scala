@@ -30,7 +30,7 @@ object SupervisorSpec {
 
   val PingMessage = "ping"
   val PongMessage = "pong"
-  val ExceptionMessage = "Expected exception; to test fault-tolerance"
+  val ExceptionMessage = "CRASHED" //"Expected exception; to test fault-tolerance"
 
   var messageLog = new LinkedBlockingQueue[String]
 

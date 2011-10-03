@@ -6,8 +6,8 @@ package akka.util
 
 import annotation.tailrec
 
-import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Set ⇒ JSet }
+import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 
 /**
  * An implementation of a ConcurrentMultiMap
