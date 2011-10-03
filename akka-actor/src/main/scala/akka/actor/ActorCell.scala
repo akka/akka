@@ -227,9 +227,6 @@ private[akka] class ActorCell(
 
   def uuid: Uuid = self.uuid
 
-  //FIXME TODO REMOVE THIS
-  def actorClass: Class[_] = actor.getClass
-
   def dispatcher: MessageDispatcher = props.dispatcher
 
   def isShutdown: Boolean = mailbox.isClosed

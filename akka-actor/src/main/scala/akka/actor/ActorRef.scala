@@ -237,8 +237,6 @@ class LocalActorRef private[akka] (
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def actorClass: Class[_] = actorCell.actorClass
-
   protected[akka] def underlying: ActorCell = actorCell
 
   // FIXME TODO: remove this method

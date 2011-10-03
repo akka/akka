@@ -69,9 +69,6 @@ object ActorSerialization {
       .setAddress(actorRef.address)
       .setTimeout(actorRef.timeout)
 
-    if (localRef.isDefined)
-      builder.setActorClassname(localRef.get.actorClass.getName) //TODO FIXME Why is the classname needed anymore?
-
     replicationScheme match {
       case _: Transient | Transient ⇒
         builder.setReplicationStorage(ReplicationStorageType.TRANSIENT)
