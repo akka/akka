@@ -53,6 +53,7 @@ object ActorSerialization {
     replicationScheme: ReplicationScheme): Array[Byte] =
     toBinary(a, srlMailBox, replicationScheme)
 
+  @deprecated("BROKEN, REMOVE ME")
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef,
     serializeMailBox: Boolean,
@@ -62,13 +63,6 @@ object ActorSerialization {
       case l: LocalActorRef ⇒ Some(l)
       case _                ⇒ None
     }
-
-    val lifeCycleProtocol: Option[LifeCycleProtocol] = None /*{
-      actorRef.lifeCycle match {
-        case Permanent ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
-        case Temporary ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
-      }
-    }*/
 
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
@@ -95,9 +89,6 @@ object ActorSerialization {
         }
         builder.setReplicationStrategy(strategyType)
     }
-
-    lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    actorRef.supervisor.foreach(s ⇒ builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
 
     localRef foreach { l ⇒
       if (serializeMailBox) {

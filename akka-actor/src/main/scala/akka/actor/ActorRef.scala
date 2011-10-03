@@ -137,17 +137,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    */
   def unlink(actorRef: ActorRef): ActorRef
 
-  /**
-   * Returns the supervisor, if there is one.
-   */
-  def supervisor: Option[ActorRef]
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the supervisor, if there is one.
-   */
-  def getSupervisor: ActorRef = supervisor getOrElse null
-
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
@@ -245,11 +234,6 @@ class LocalActorRef private[akka] (
    * Returns the ref that was passed into it
    */
   def unlink(subject: ActorRef): ActorRef = actorCell.unlink(subject)
-
-  /**
-   * Returns the supervisor, if there is one.
-   */
-  def supervisor: Option[ActorRef] = actorCell.supervisor
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -366,8 +350,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
-  def supervisor: Option[ActorRef] = unsupported
-
   protected[akka] def restart(): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
@@ -459,8 +441,6 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   def link(actorRef: ActorRef): ActorRef = unsupported
 
   def unlink(actorRef: ActorRef): ActorRef = unsupported
-
-  def supervisor: Option[ActorRef] = unsupported
 
   def suspend(): Unit = unsupported
 

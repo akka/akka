@@ -298,7 +298,6 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def dispatcher: MessageDispatcher = unsupported
   def link(actorRef: ActorRef): ActorRef = unsupported
   def unlink(actorRef: ActorRef): ActorRef = unsupported
-  def supervisor: Option[ActorRef] = unsupported
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Timeout, channel: UntypedChannel) = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
