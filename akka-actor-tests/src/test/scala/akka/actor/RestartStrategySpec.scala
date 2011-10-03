@@ -100,7 +100,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     (1 to 100) foreach { _ ⇒ slave ! Crash }
     assert(countDownLatch.await(120, TimeUnit.SECONDS))
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
   }
 
   @Test
@@ -160,7 +160,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     assert(thirdRestartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
   }
 
   @Test
@@ -199,7 +199,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
 
     // now crash again... should not restart
     slave ! Crash
@@ -213,7 +213,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     slave ! Crash
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
     sleep(500L)
-    assert(!slave.isRunning)
+    assert(slave.isShutdown)
   }
 
   @Test
@@ -251,7 +251,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
 
     // now crash again... should not restart
     slave ! Crash
@@ -267,7 +267,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     assert(maxNoOfRestartsLatch.tryAwait(1, TimeUnit.SECONDS))
     sleep(500L)
-    assert(!slave.isRunning)
+    assert(slave.isShutdown)
   }
 }
 

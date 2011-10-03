@@ -266,16 +266,9 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   val address = exchange.getExchangeId
 
   @volatile
-  private var running: Boolean = false
-
-  def isRunning: Boolean = running
+  private var running: Boolean = true
 
   def isShutdown: Boolean = !running
-
-  def start = {
-    running = true
-    this
-  }
 
   def suspend(): Unit = ()
 
@@ -293,7 +286,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
    * @param message reply message
    * @param sender ignored
    */
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) = if(running) {
     message match {
       case Ack          ⇒ { /* no response message to set */ }
       case msg: Failure ⇒ exchange.fromFailureMessage(msg)
@@ -302,16 +295,13 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
     callback.done(false)
   }
 
-  def dispatcher_=(md: MessageDispatcher): Unit = unsupported
   def dispatcher: MessageDispatcher = unsupported
   def link(actorRef: ActorRef): ActorRef = unsupported
   def unlink(actorRef: ActorRef): ActorRef = unsupported
-  def shutdownLinkedActors: Unit = unsupported
   def supervisor: Option[ActorRef] = unsupported
+
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Timeout, channel: UntypedChannel) = unsupported
   protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def registerSupervisorAsRemoteActor = unsupported
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }

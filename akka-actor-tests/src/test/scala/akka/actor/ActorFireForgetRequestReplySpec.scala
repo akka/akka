@@ -85,7 +85,7 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
       filterEvents(EventFilter[Exception]("Expected")) {
         val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(0)))
         val actor = actorOf(Props[CrashingActor].withSupervisor(supervisor))
-        actor.isRunning must be(true)
+        actor.isShutdown must be(false)
         actor ! "Die"
         state.finished.await
         sleepFor(1 second)

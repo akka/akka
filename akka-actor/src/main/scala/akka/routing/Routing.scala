@@ -232,8 +232,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: St
   @volatile
   private var running: Boolean = true
 
-  def isRunning: Boolean = running
-
   def isShutdown: Boolean = !running
 
   def stop() {

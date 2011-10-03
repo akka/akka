@@ -363,7 +363,6 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       fnull.get must be("null")
 
       awaitCond(ref.isShutdown, 100 millis)
-      ref.isRunning must be(false)
     }
 
     "restart when Kill:ed" in {

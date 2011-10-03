@@ -232,7 +232,6 @@ private[akka] class ActorCell(
 
   def dispatcher: MessageDispatcher = props.dispatcher
 
-  def isRunning: Boolean = !isShutdown
   def isShutdown: Boolean = mailbox.isClosed
 
   @volatile //This must be volatile

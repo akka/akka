@@ -118,11 +118,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def stop(): Unit
 
   /**
-   * Is the actor running?
-   */
-  def isRunning: Boolean // TODO remove this method
-
-  /**
    * Is the actor shut down?
    */
   def isShutdown: Boolean
@@ -203,13 +198,8 @@ class LocalActorRef private[akka] (
   actorCell.start()
 
   /**
-   * Is the actor running?
-   */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
-  def isRunning: Boolean = actorCell.isRunning
-
-  /**
    * Is the actor shut down?
+   * If this method returns true, it will never return false again, but if it returns false, you cannot be sure if it's alive still (race condition)
    */
   //FIXME TODO RENAME TO isTerminated
   def isShutdown: Boolean = actorCell.isShutdown
@@ -271,7 +261,7 @@ class LocalActorRef private[akka] (
   // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor
-    while ((instance eq null) && actorCell.isRunning) {
+    while ((instance eq null) && !actorCell.isShutdown) {
       try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
       instance = actorCell.actor
     }
@@ -329,8 +319,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   @volatile
   private var running: Boolean = true
-
-  def isRunning: Boolean = running
 
   def isShutdown: Boolean = !running
 

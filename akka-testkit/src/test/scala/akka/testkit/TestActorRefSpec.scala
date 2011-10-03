@@ -162,7 +162,6 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         intercept[ActorKilledException] {
           (a ? PoisonPill).get
         }
-        a must not be ('running)
         a must be('shutdown)
         assertThread
       }
