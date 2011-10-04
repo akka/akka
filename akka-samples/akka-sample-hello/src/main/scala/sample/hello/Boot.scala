@@ -6,15 +6,9 @@ package sample.hello
 
 import akka.actor._
 import akka.http._
-import akka.config.Supervision._
 
 class Boot {
-  val factory =
-    SupervisorFactory(
-      SupervisorConfig(
-        OneForOnePermanentStrategy(List(classOf[Exception]), 3, 100),
-        Supervise(Actor.actorOf[RootEndpoint], Permanent) ::
-        Supervise(Actor.actorOf[HelloEndpoint], Permanent) :: Nil))
-
-  factory.newInstance.start()
+  val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), 3, 100))
+  Actor.actorOf(Props[RootEndpoint].withSupervisor(supervisor))
+  Actor.actorOf(Props[HelloEndpoint].withSupervisor(supervisor))
 }

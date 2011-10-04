@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.config.Supervision._
 import akka.dispatch._
 import akka.japi.Creator
 import akka.util._
@@ -17,10 +16,9 @@ import akka.util._
  */
 object Props {
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDeployId: String = ""
   final val defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
   final val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
-  final val defaultFaultHandler: FaultHandlingStrategy = AllForOnePermanentStrategy(classOf[Exception] :: Nil, None, None)
+  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(classOf[Exception] :: Nil, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
 
   /**
@@ -59,7 +57,7 @@ object Props {
    */
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
-  def apply(behavior: ActorRef ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(self) })
+  def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
 }
 
 /**

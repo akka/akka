@@ -6,8 +6,8 @@ package akka.util
 
 import annotation.tailrec
 
-import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Set ⇒ JSet }
+import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -110,6 +110,17 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
         } else false //Remove failed
       }
     } else false //Remove failed
+  }
+
+  def remove(key: K): Option[Iterable[V]] = {
+    val set = container get key
+
+    if (set ne null) {
+      set.synchronized {
+        container.remove(key, set)
+        Some(scala.collection.JavaConverters.collectionAsScalaIterableConverter(set).asScala)
+      }
+    } else None //Remove failed
   }
 
   /**

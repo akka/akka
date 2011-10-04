@@ -15,7 +15,6 @@ import akka.testkit.EventFilter
 
 import Actor._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.config.Supervision.{ Permanent, LifeCycle, OneForOnePermanentStrategy }
 import org.multiverse.api.latches.StandardLatch
 
 class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
@@ -36,7 +35,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       protected def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 2, 1000)))
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -84,7 +83,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, None)))
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
 
     val countDownLatch = new CountDownLatch(100)
 
@@ -101,7 +100,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     (1 to 100) foreach { _ ⇒ slave ! Crash }
     assert(countDownLatch.await(120, TimeUnit.SECONDS))
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
   }
 
   @Test
@@ -109,7 +108,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 2, 500)))
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 500)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -161,14 +160,14 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     assert(thirdRestartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
   }
 
   @Test
   def slaveShouldNotRestartAfterMaxRetries = {
     val boss = actorOf(Props(new Actor {
       def receive = { case _ ⇒ () }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), Some(2), None)))
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), Some(2), None)))
 
     val restartLatch = new StandardLatch
     val secondRestartLatch = new StandardLatch
@@ -200,7 +199,7 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
 
     // now crash again... should not restart
     slave ! Crash
@@ -213,19 +212,19 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
 
     slave ! Crash
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
-
-    assert(!slave.isRunning)
+    sleep(500L)
+    assert(slave.isShutdown)
   }
 
   @Test
-  def slaveShouldNotRestartWithinsTimeRange = {
+  def slaveShouldNotRestartWithinTimeRange = {
 
     val restartLatch, stopLatch, maxNoOfRestartsLatch = new StandardLatch
     val countDownLatch = new CountDownLatch(2)
 
     val boss = actorOf(Props(new Actor {
-      def receive = { case m: MaximumNumberOfRestartsWithinTimeRangeReached ⇒ maxNoOfRestartsLatch.open }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), None, Some(1000))))
+      def receive = { case t: Terminated ⇒ maxNoOfRestartsLatch.open }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))
 
     val slave = actorOf(Props(new Actor {
 
@@ -243,6 +242,8 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
       }
     }).withSupervisor(boss))
 
+    boss.link(slave)
+
     slave ! Ping
     slave ! Crash
     slave ! Ping
@@ -250,32 +251,23 @@ class RestartStrategySpec extends JUnitSuite with BeforeAndAfterAll {
     // test restart and post restart ping
     assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
 
-    assert(slave.isRunning)
+    assert(!slave.isShutdown)
 
     // now crash again... should not restart
     slave ! Crash
 
     // may not be running
-    try {
-      slave ! Ping
-    } catch {
-      case e: ActorInitializationException ⇒ ()
-    }
-
+    slave ! Ping
     assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
     // may not be running
-    try {
-      slave ! Crash
-    } catch {
-      case e: ActorInitializationException ⇒ ()
-    }
+    slave ! Crash
 
     assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
 
     assert(maxNoOfRestartsLatch.tryAwait(1, TimeUnit.SECONDS))
-
-    assert(!slave.isRunning)
+    sleep(500L)
+    assert(slave.isShutdown)
   }
 }
 

@@ -36,24 +36,7 @@ class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActor
 
   override def toString = "TestActor[" + address + ":" + uuid + "]"
 
-  override def equals(other: Any) =
-    other.isInstanceOf[TestActorRef[_]] &&
-      other.asInstanceOf[TestActorRef[_]].uuid == uuid
-
-  /**
-   * Override to check whether the new supervisor is running on the CallingThreadDispatcher,
-   * as it should be. This can of course be tricked by linking before setting the dispatcher before starting the
-   * supervisor, but then you just asked for trouble.
-   */
-  override def supervisor_=(a: Option[ActorRef]) {
-    a match { //TODO This should probably be removed since the Supervisor could be a remote actor for all we know
-      case Some(l: LocalActorRef) if !l.underlying.dispatcher.isInstanceOf[CallingThreadDispatcher] ⇒
-        EventHandler.warning(this, "supervisor " + l + " does not use CallingThreadDispatcher")
-      case _ ⇒
-    }
-    super.supervisor_=(a)
-  }
-
+  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].uuid == uuid
 }
 
 object TestActorRef {

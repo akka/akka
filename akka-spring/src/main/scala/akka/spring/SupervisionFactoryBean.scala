@@ -4,8 +4,7 @@
 package akka.spring
 
 import org.springframework.beans.factory.config.AbstractFactoryBean
-import akka.config.Supervision._
-import akka.actor.{ Supervisor, SupervisorFactory, Actor, ActorRegistry }
+import akka.actor.{ Supervisor, Actor, ActorRegistry }
 import AkkaSpringConfigurationTags._
 import reflect.BeanProperty
 import akka.config.{ TypedActorConfigurator, RemoteAddress }

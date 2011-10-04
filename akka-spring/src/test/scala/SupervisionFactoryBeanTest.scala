@@ -7,7 +7,6 @@ import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.config.Supervision._
 import akka.config.TypedActorConfigurator
 
 private[akka] class Foo
@@ -15,7 +14,7 @@ private[akka] class Foo
 @RunWith(classOf[JUnitRunner])
 class SupervisionFactoryBeanTest extends Spec with ShouldMatchers {
 
-  val faultHandlingStrategy = new AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000)
+  val faultHandlingStrategy = new AllForOneStrategy(List(classOf[Exception]), 3, 1000)
   val typedActors = List(createTypedActorProperties("akka.spring.Foo", "1000"))
 
   private def createTypedActorProperties(target: String, timeout: String): ActorProperties = {

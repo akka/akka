@@ -802,7 +802,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   def this(timeout: Long, timeunit: TimeUnit)(implicit dispatcher: MessageDispatcher) = this(Timeout(timeout, timeunit))
 
   private val _startTimeInNanos = currentTimeInNanos
-  private val ref = new AtomicReference[FState[T]](FState())
+  private val ref = new AtomicReference[FState[T]](FState()) //FIXME create a base-class in Java with an AtomicReferenceFieldUpdater and avoid allocating the AtomicReference for each
 
   @tailrec
   private def awaitUnsafe(waitTimeNanos: Long): Boolean = {

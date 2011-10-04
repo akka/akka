@@ -7,7 +7,6 @@ import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.config.Supervision._
 import akka.dispatch.MessageDispatcher
 
 @RunWith(classOf[JUnitRunner])

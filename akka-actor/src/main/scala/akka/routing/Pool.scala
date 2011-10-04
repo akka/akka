@@ -5,7 +5,6 @@
 package akka.routing
 
 import akka.dispatch.{ Promise }
-import akka.config.Supervision._
 import akka.actor._
 
 /**
@@ -89,21 +88,15 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
   protected[akka] var _delegates = Vector[ActorRef]()
 
   override def postStop() {
-    _delegates foreach { delegate ⇒
-      try {
-        delegate ! PoisonPill
-      } catch { case e: Exception ⇒ } //Ignore any exceptions here
-    }
+    _delegates foreach { _ ! PoisonPill }
   }
 
   protected def _route(): Receive = {
     // for testing...
     case Stat ⇒
       tryReply(Stats(_delegates length))
-    case MaximumNumberOfRestartsWithinTimeRangeReached(victim, _, _, _) ⇒
-      _delegates = _delegates filterNot { _.uuid == victim.uuid }
     case Terminated(victim, _) ⇒
-      _delegates = _delegates filterNot { _.uuid == victim.uuid }
+      _delegates = _delegates filterNot { victim == }
     case msg ⇒
       resizeIfAppropriate()
 

@@ -81,10 +81,10 @@ class DispatcherActorSpec extends JUnitSuite {
     val latch = new CountDownLatch(100)
     val start = new CountDownLatch(1)
     val fastOne = actorOf(
-      Props(self ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
+      Props(context ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
     val slowOne = actorOf(
-      Props(self ⇒ {
+      Props(context ⇒ {
         case "hogexecutor" ⇒ start.await
         case "ping"        ⇒ if (works.get) latch.countDown()
       }).withDispatcher(throughputDispatcher))
@@ -112,14 +112,14 @@ class DispatcherActorSpec extends JUnitSuite {
     val ready = new CountDownLatch(1)
 
     val fastOne = actorOf(
-      Props(self ⇒ {
-        case "ping" ⇒ if (works.get) latch.countDown(); self.stop()
+      Props(context ⇒ {
+        case "ping" ⇒ if (works.get) latch.countDown(); context.self.stop()
       }).withDispatcher(throughputDispatcher))
 
     val slowOne = actorOf(
-      Props(self ⇒ {
+      Props(context ⇒ {
         case "hogexecutor" ⇒ ready.countDown(); start.await
-        case "ping"        ⇒ works.set(false); self.stop()
+        case "ping"        ⇒ works.set(false); context.self.stop()
       }).withDispatcher(throughputDispatcher))
 
     slowOne ! "hogexecutor"

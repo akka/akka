@@ -270,7 +270,7 @@ I'll try to show you how we can make use Scala's mixins to decouple the Actor im
    * Chat server. Manages sessions and redirects all other messages to the Session for the client.
    */
   trait ChatServer extends Actor {
-    self.faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]),5, 5000)
+    self.faultHandler = OneForOneStrategy(List(classOf[Exception]),5, 5000)
     val storage: ActorRef
 
     EventHandler.info(this, "Chat server is starting up...")

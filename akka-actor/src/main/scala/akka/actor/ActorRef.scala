@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.dispatch._
-import akka.config.Supervision._
 import akka.util._
 import akka.serialization.{ Serializer, Serialization }
 import ReflectiveAccess._
@@ -119,11 +118,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def stop(): Unit
 
   /**
-   * Is the actor running?
-   */
-  def isRunning: Boolean // TODO remove this method
-
-  /**
    * Is the actor shut down?
    */
   def isShutdown: Boolean
@@ -143,17 +137,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    */
   def unlink(actorRef: ActorRef): ActorRef
 
-  /**
-   * Returns the supervisor, if there is one.
-   */
-  def supervisor: Option[ActorRef]
-
-  /**
-   * Akka Java API. <p/>
-   * Returns the supervisor, if there is one.
-   */
-  def getSupervisor: ActorRef = supervisor getOrElse null
-
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
@@ -161,9 +144,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
     timeout: Timeout,
     channel: UntypedChannel): Future[Any]
 
-  protected[akka] def supervisor_=(sup: Option[ActorRef])
-
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int])
+  protected[akka] def restart(cause: Throwable): Unit
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -206,13 +187,8 @@ class LocalActorRef private[akka] (
   actorCell.start()
 
   /**
-   * Is the actor running?
-   */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
-  def isRunning: Boolean = actorCell.isRunning
-
-  /**
    * Is the actor shut down?
+   * If this method returns true, it will never return false again, but if it returns false, you cannot be sure if it's alive still (race condition)
    */
   //FIXME TODO RENAME TO isTerminated
   def isShutdown: Boolean = actorCell.isShutdown
@@ -249,7 +225,7 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def link(actorRef: ActorRef): ActorRef = actorCell.link(actorRef)
+  def link(subject: ActorRef): ActorRef = actorCell.link(subject)
 
   /**
    * Unlink the actor.
@@ -257,34 +233,24 @@ class LocalActorRef private[akka] (
    * To be invoked from within the actor itself.
    * Returns the ref that was passed into it
    */
-  def unlink(actorRef: ActorRef): ActorRef = actorCell.unlink(actorRef)
-
-  /**
-   * Returns the supervisor, if there is one.
-   */
-  def supervisor: Option[ActorRef] = actorCell.supervisor
+  def unlink(subject: ActorRef): ActorRef = actorCell.unlink(subject)
 
   // ========= AKKA PROTECTED FUNCTIONS =========
-
-  protected[akka] def actorClass: Class[_] = actorCell.actorClass
 
   protected[akka] def underlying: ActorCell = actorCell
 
   // FIXME TODO: remove this method
   // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
-    var instance = actorCell.actor.get
-    while ((instance eq null) && actorCell.isRunning) {
+    var instance = actorCell.actor
+    while ((instance eq null) && !actorCell.isShutdown) {
       try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
-      instance = actorCell.actor.get
+      instance = actorCell.actor
     }
     instance
   }
 
   protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit =
-    actorCell.supervisor = sup
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorCell.postMessageToMailbox(message, channel)
@@ -298,8 +264,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit =
-    actorCell.restart(reason, maxNrOfRetries, withinTimeRange)
+  protected[akka] def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -336,8 +301,6 @@ private[akka] case class RemoteActorRef private[akka] (
 
   @volatile
   private var running: Boolean = true
-
-  def isRunning: Boolean = running
 
   def isShutdown: Boolean = !running
 
@@ -385,15 +348,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
-  def supervisor: Option[ActorRef] = unsupported
-
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
-    unsupported
-  }
+  protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
@@ -485,19 +440,11 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
-  def supervisor: Option[ActorRef] = unsupported
-
-  protected[akka] def supervisor_=(sup: Option[ActorRef]) {
-    unsupported
-  }
-
   def suspend(): Unit = unsupported
 
   def resume(): Unit = unsupported
 
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]) {
-    unsupported
-  }
+  protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }

@@ -9,7 +9,6 @@ import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
 import akka.actor._
 import akka.actor.Actor._
 import java.util.concurrent.CountDownLatch
-import akka.config.Supervision.Temporary
 import akka.dispatch.MessageDispatcher
 
 class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoNaiveDurableMailboxStorage) {

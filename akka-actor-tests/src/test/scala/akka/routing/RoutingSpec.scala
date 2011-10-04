@@ -30,7 +30,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val props = RoutedProps(() ⇒ new DirectRouter, List(actor1))
       val actor = Routing.actorOf(props, "foo")
-      actor.isRunning must be(true)
+      actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
@@ -94,7 +94,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val props = RoutedProps(() ⇒ new RoundRobinRouter, List(actor1))
       val actor = Routing.actorOf(props, "foo")
-      actor.isRunning must be(true)
+      actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
@@ -218,7 +218,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       val props = RoutedProps(() ⇒ new RandomRouter, List(actor1))
       val actor = Routing.actorOf(props, "foo")
-      actor.isRunning must be(true)
+      actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
@@ -231,7 +231,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       }
     }
 
-    "deliver messages in a random fashion" in {
+    "deliver messages in a random fashion" ignore {
 
     }
 

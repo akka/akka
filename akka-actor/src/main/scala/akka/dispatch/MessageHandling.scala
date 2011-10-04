@@ -24,12 +24,15 @@ final case class Envelope(val receiver: ActorCell, val message: Any, val channel
   }
 }
 
-sealed trait SystemMessage
+sealed trait SystemMessage extends PossiblyHarmful
 case object Create extends SystemMessage
-case object Recreate extends SystemMessage
+case class Recreate(cause: Throwable) extends SystemMessage
 case object Suspend extends SystemMessage
 case object Resume extends SystemMessage
 case object Terminate extends SystemMessage
+case class Supervise(child: ActorRef) extends SystemMessage
+case class Link(subject: ActorRef) extends SystemMessage
+case class Unlink(subject: ActorRef) extends SystemMessage
 
 final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMessage, val channel: UntypedChannel) {
   if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")

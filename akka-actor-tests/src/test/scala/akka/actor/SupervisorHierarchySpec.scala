@@ -8,7 +8,6 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 
 import Actor._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import akka.testkit._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
@@ -18,7 +17,9 @@ object SupervisorHierarchySpec {
 
   class CountDownActor(countDown: CountDownLatch) extends Actor {
     protected def receive = { case _ ⇒ }
-    override def postRestart(reason: Throwable) = countDown.countDown()
+    override def postRestart(reason: Throwable) = {
+      countDown.countDown()
+    }
   }
 }
 
@@ -29,11 +30,14 @@ class SupervisorHierarchySpec extends JUnitSuite {
   def killWorkerShouldRestartMangerAndOtherWorkers = {
     val countDown = new CountDownLatch(4)
 
-    val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 5, 1000)))
+    val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)), "boss")
 
-    val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(OneForOnePermanentStrategy(List(), None, None)).withSupervisor(boss))
+    val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None)).withSupervisor(boss), "manager")
 
-    val workerOne, workerTwo, workerThree = actorOf(Props(new CountDownActor(countDown)).withSupervisor(manager))
+    val workerProps = Props(new CountDownActor(countDown)).withSupervisor(manager)
+    val workerOne = actorOf(workerProps, "workerOne")
+    val workerTwo = actorOf(workerProps, "workerTwo")
+    val workerThree = actorOf(workerProps, "workerThree")
 
     filterException[ActorKilledException] {
       workerOne ! Kill
@@ -50,16 +54,17 @@ class SupervisorHierarchySpec extends JUnitSuite {
     val countDownMessages = new CountDownLatch(1)
     val countDownMax = new CountDownLatch(1)
     val boss = actorOf(Props(new Actor {
-      protected def receive = {
-        case MaximumNumberOfRestartsWithinTimeRangeReached(_, _, _, _) ⇒ countDownMax.countDown()
-      }
-    }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[Throwable]), 1, 5000)))
+      val crasher = self.link(actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(self)))
 
-    val crasher = actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(boss))
+      protected def receive = {
+        case "killCrasher"    ⇒ crasher ! Kill
+        case Terminated(_, _) ⇒ countDownMax.countDown()
+      }
+    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
 
     filterException[ActorKilledException] {
-      crasher ! Kill
-      crasher ! Kill
+      boss ! "killCrasher"
+      boss ! "killCrasher"
 
       assert(countDownMessages.await(2, TimeUnit.SECONDS))
       assert(countDownMax.await(2, TimeUnit.SECONDS))

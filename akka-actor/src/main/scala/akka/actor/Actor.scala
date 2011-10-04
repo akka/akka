@@ -53,27 +53,18 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case class Failed(actor: ActorRef, cause: Throwable, recoverable: Boolean, timesRestarted: Int, restartTimeWindowStartMs: Long) extends AutoReceivedMessage with PossiblyHarmful
+case class Failed(@BeanProperty actor: ActorRef,
+                  @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+
+case class ChildTerminated(@BeanProperty child: ActorRef, @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
-
-case class Link(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
-
-case class Unlink(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
-
-case class UnlinkAndStop(child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
 case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
 case object ReceiveTimeout extends PossiblyHarmful
-
-case class MaximumNumberOfRestartsWithinTimeRangeReached(
-  @BeanProperty victim: ActorRef,
-  @BeanProperty maxNrOfRetries: Option[Int],
-  @BeanProperty withinTimeRange: Option[Int],
-  @BeanProperty lastExceptionCausingRestart: Throwable) //FIXME should be removed and replaced with Terminated
 
 case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable)
 
@@ -367,7 +358,7 @@ object Actor {
    * </pre>
    */
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher) {
-    actorOf(Props(self ⇒ { case "go" ⇒ try { body } finally { self.stop() } }).withDispatcher(dispatcher)) ! "go"
+    actorOf(Props(context ⇒ { case "go" ⇒ try { body } finally { context.self.stop() } }).withDispatcher(dispatcher)) ! "go"
   }
 }
 
@@ -555,15 +546,17 @@ trait Actor {
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
+   * By default it calls postStop()
    */
-  def preRestart(reason: Throwable, message: Option[Any]) {}
+  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
 
   /**
    * User overridable callback.
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   * By default it calls preStart()
    */
-  def postRestart(reason: Throwable) {}
+  def postRestart(reason: Throwable) { preStart() }
 
   /**
    * User overridable callback.
@@ -609,9 +602,7 @@ trait Actor {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
         case RevertHotSwap             ⇒ unbecome()
         case f: Failed                 ⇒ context.handleFailure(f)
-        case Link(child)               ⇒ self.link(child)
-        case Unlink(child)             ⇒ self.unlink(child)
-        case UnlinkAndStop(child)      ⇒ self.unlink(child); child.stop()
+        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct.child)
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill ⇒
           val ch = channel

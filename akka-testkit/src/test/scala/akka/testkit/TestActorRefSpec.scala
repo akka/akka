@@ -6,7 +6,6 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import akka.event.EventHandler
 import akka.dispatch.{ Future, Promise }
 
@@ -163,7 +162,6 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
         intercept[ActorKilledException] {
           (a ? PoisonPill).get
         }
-        a must not be ('running)
         a must be('shutdown)
         assertThread
       }
@@ -182,7 +180,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
           }).withSupervisor(self))
 
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[ActorKilledException]), 5, 1000)))
+        }).withFaultHandler(OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)))
 
         boss ! "sendKill"
 
@@ -222,25 +220,6 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     "set CallingThreadDispatcher" in {
       val a = TestActorRef[WorkerActor]
       a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
-    }
-
-    "warn about scheduled supervisor" in {
-      val boss = Actor.actorOf(new Actor { def receive = { case _ ⇒ } })
-      val ref = TestActorRef[WorkerActor]
-
-      val filter = EventFilter.custom(_ ⇒ true)
-      EventHandler.notify(TestEvent.Mute(filter))
-      val log = TestActorRef[Logger]
-      EventHandler.addListener(log)
-      val eventHandlerLevel = EventHandler.level
-      EventHandler.level = EventHandler.WarningLevel
-      boss link ref
-      val la = log.underlyingActor
-      la.count must be(1)
-      la.msg must (include("supervisor") and include("CallingThreadDispatcher"))
-      EventHandler.level = eventHandlerLevel
-      EventHandler.removeListener(log)
-      EventHandler.notify(TestEvent.UnMute(filter))
     }
 
     "proxy apply for the underlying actor" in {

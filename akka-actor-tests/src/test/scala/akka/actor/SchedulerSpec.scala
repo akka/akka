@@ -6,7 +6,6 @@ import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import Actor._
-import akka.config.Supervision._
 import org.multiverse.api.latches.StandardLatch
 import org.junit.{ Test, Before, After }
 import java.util.concurrent.{ ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
@@ -118,22 +117,15 @@ class SchedulerSpec extends JUnitSuite {
     val restartLatch = new StandardLatch
     val pingLatch = new CountDownLatch(6)
 
-    val actor = actorOf(new Actor {
+    val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+    val actor = actorOf(Props(new Actor {
       def receive = {
         case Ping  ⇒ pingLatch.countDown()
         case Crash ⇒ throw new Exception("CRASH")
       }
 
       override def postRestart(reason: Throwable) = restartLatch.open
-    })
-
-    Supervisor(
-      SupervisorConfig(
-        AllForOnePermanentStrategy(List(classOf[Exception]), 3, 1000),
-        Supervise(
-          actor,
-          Permanent)
-          :: Nil))
+    }).withSupervisor(supervisor))
 
     collectFuture(Scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
     // appx 2 pings before crash
