@@ -127,14 +127,14 @@ class Dispatcher(
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
-      if (mbox.dispatcherLock.tryLock()) {
+      if (mbox.setAsScheduled()) {
         try {
           executorService.get() execute mbox
           true
         } catch {
           case e: RejectedExecutionException ⇒
             EventHandler.warning(this, e.toString)
-            mbox.dispatcherLock.unlock()
+            mbox.setAsIdle()
             throw e
         }
       } else false
