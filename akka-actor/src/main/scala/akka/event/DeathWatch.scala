@@ -17,7 +17,7 @@ trait Monitoring {
   def unlink(monitor: ActorRef, monitored: ActorRef): Unit
 }
 
-object DumbMonitoring extends DeathWatch with Monitoring {
+object InVMMonitoring extends DeathWatch with Monitoring {
 
   class MonitoringBook(mapSize: Int = 1024) {
     import java.util.concurrent.ConcurrentHashMap

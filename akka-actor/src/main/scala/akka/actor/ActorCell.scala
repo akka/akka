@@ -9,7 +9,7 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection.JavaConverters
-import akka.event.{ DumbMonitoring, EventHandler }
+import akka.event.{ InVMMonitoring, EventHandler }
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
 import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
 
@@ -399,7 +399,7 @@ private[akka] class ActorCell(
 
         if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
 
-        DumbMonitoring.signal(Terminated(self, cause))
+        InVMMonitoring.signal(Terminated(self, cause))
 
         currentMessage = null
         clearActorContext()
@@ -421,10 +421,10 @@ private[akka] class ActorCell(
           case Create          ⇒ create()
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
-            akka.event.DumbMonitoring.link(self, subject)
+            akka.event.InVMMonitoring.link(self, subject)
             if (Actor.debugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
           case Unlink(subject) ⇒
-            akka.event.DumbMonitoring.unlink(self, subject)
+            akka.event.InVMMonitoring.unlink(self, subject)
             if (Actor.debugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()
