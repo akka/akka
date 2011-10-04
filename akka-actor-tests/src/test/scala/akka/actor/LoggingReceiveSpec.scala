@@ -134,6 +134,7 @@ class LoggingReceiveSpec
       })
       actor ! PoisonPill
       expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
+      awaitCond(actor.isShutdown, 100 millis)
     }
 
     "log LifeCycle changes if requested" in {
