@@ -37,14 +37,19 @@ private[dispatch] object Mailbox {
 abstract class Mailbox extends AbstractMailbox with MessageQueue with SystemMessageQueue with Runnable {
   import Mailbox._
 
+  @inline
   final def status: Mailbox.Status = AbstractMailbox.updater.get(this)
 
+  @inline
   final def isActive: Boolean = (status & 3) == Open
 
+  @inline
   final def isSuspended: Boolean = (status & 3) == Suspended
 
+  @inline
   final def isClosed: Boolean = status == Closed
 
+  @inline
   final def isScheduled: Boolean = (status & Scheduled) != 0
 
   @inline
