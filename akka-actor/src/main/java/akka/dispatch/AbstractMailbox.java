@@ -8,5 +8,5 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 abstract class AbstractMailbox {
     private volatile int _status = Mailbox.Idle();
-    protected static AtomicIntegerFieldUpdater<AbstractMailbox> updater = AtomicIntegerFieldUpdater.newUpdater(AbstractMailbox.class, "_status");
+    protected final static AtomicIntegerFieldUpdater<AbstractMailbox> updater = AtomicIntegerFieldUpdater.newUpdater(AbstractMailbox.class, "_status");
 }

@@ -93,7 +93,7 @@ class DispatcherActorSpec extends JUnitSuite {
     (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
     fastOne ! "sabotage"
     start.countDown()
-    val result = latch.await(3, TimeUnit.SECONDS)
+    val result = latch.await(5, TimeUnit.SECONDS)
     fastOne.stop()
     slowOne.stop()
     assert(result === true)
