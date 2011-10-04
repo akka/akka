@@ -76,25 +76,26 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
    */
   @tailrec
   final def become(newStatus: Status): Boolean = {
+    import _status.{ compareAndSet ⇒ CAS, set ⇒ SET }
     newStatus match {
       case Idle ⇒
         status match {
-          case s @ (Idle | Scheduled) ⇒ if (_status.compareAndSet(s, s)) true else become(newStatus)
-          case s @ Suspended          ⇒ if (_status.compareAndSet(s, Idle)) true else become(newStatus)
-          case s @ ScheduledSuspended ⇒ if (_status.compareAndSet(s, Scheduled)) true else become(newStatus)
-          case s @ Closed             ⇒ _status.set(Closed); false
+          case s @ (Idle | Scheduled) ⇒ if (CAS(s, s)) true else become(newStatus)
+          case s @ Suspended          ⇒ if (CAS(s, Idle)) true else become(newStatus)
+          case s @ ScheduledSuspended ⇒ if (CAS(s, Scheduled)) true else become(newStatus)
+          case Closed                 ⇒ SET(Closed); false
         }
       case Suspended ⇒
         status match {
-          case s @ (Suspended | ScheduledSuspended) ⇒ if (_status.compareAndSet(s, s)) true else become(newStatus)
-          case s @ Idle                             ⇒ if (_status.compareAndSet(s, Suspended)) true else become(newStatus)
-          case s @ Scheduled                        ⇒ if (_status.compareAndSet(s, ScheduledSuspended)) true else become(newStatus)
-          case s @ Closed                           ⇒ _status.set(Closed); false
+          case s @ (Suspended | ScheduledSuspended) ⇒ if (CAS(s, s)) true else become(newStatus)
+          case s @ Idle                             ⇒ if (CAS(s, Suspended)) true else become(newStatus)
+          case s @ Scheduled                        ⇒ if (CAS(s, ScheduledSuspended)) true else become(newStatus)
+          case Closed                               ⇒ SET(Closed); false
         }
       case Closed ⇒
         status match {
-          case s @ Closed ⇒ _status.set(Closed); false
-          case s          ⇒ if (_status.compareAndSet(s, Closed)) true else become(newStatus)
+          case Closed ⇒ SET(Closed); false
+          case s      ⇒ if (CAS(s, Closed)) true else become(newStatus)
         }
     }
   }
@@ -111,7 +112,6 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
     case s @ Scheduled          ⇒ if (_status.compareAndSet(s, Idle)) true else setAsIdle()
     case s @ ScheduledSuspended ⇒ if (_status.compareAndSet(s, Suspended)) true else setAsIdle()
     case s                      ⇒ acknowledgeStatus(); false
-    // TODO: I think this write is needed to make memory consistent after processMailbox(), but someone else should check
   }
 
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
