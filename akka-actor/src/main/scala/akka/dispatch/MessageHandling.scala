@@ -26,7 +26,7 @@ final case class Envelope(val receiver: ActorCell, val message: Any, val channel
 
 sealed trait SystemMessage extends PossiblyHarmful
 case object Create extends SystemMessage
-case object Recreate extends SystemMessage
+case class Recreate(cause: Throwable) extends SystemMessage
 case object Suspend extends SystemMessage
 case object Resume extends SystemMessage
 case object Terminate extends SystemMessage

@@ -300,7 +300,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Timeout, channel: UntypedChannel) = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
+  def restart(reason: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
 }

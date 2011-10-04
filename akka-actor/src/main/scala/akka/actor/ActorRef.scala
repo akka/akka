@@ -144,7 +144,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
     timeout: Timeout,
     channel: UntypedChannel): Future[Any]
 
-  protected[akka] def restart(): Unit
+  protected[akka] def restart(cause: Throwable): Unit
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -264,7 +264,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
-  protected[akka] def restart(): Unit = actorCell.restart()
+  protected[akka] def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   // ========= PRIVATE FUNCTIONS =========
 
@@ -348,7 +348,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def unlink(actorRef: ActorRef): ActorRef = unsupported
 
-  protected[akka] def restart(): Unit = unsupported
+  protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
@@ -444,7 +444,7 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   def resume(): Unit = unsupported
 
-  protected[akka] def restart(): Unit = unsupported
+  protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
