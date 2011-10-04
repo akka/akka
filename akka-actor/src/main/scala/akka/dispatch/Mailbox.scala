@@ -19,13 +19,16 @@ private[dispatch] object Mailbox {
 
   type Status = Int
 
+  /*
+   * the following assigned numbers CANNOT be changed without looking at the code which uses them!
+   */
+
   // primary status: only first three
-  final val Idle = 0
+  final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero!
   final val Suspended = 1
   final val Closed = 2
-  // secondary status: Idle or Suspended plus Scheduled
-  final val Scheduled = 3
-  final val ScheduledSuspended = 4 // may only happen for system message processing
+  // secondary status: Scheduled bit may be added to Open/Suspended
+  final val Scheduled = 4
 }
 
 /**
@@ -34,25 +37,20 @@ private[dispatch] object Mailbox {
 abstract class Mailbox extends AbstractMailbox with MessageQueue with SystemMessageQueue with Runnable {
   import Mailbox._
 
+  @inline
   final def status: Mailbox.Status = AbstractMailbox.updater.get(this)
 
-  final def isActive: Boolean = status match {
-    case Idle | Scheduled ⇒ true
-    case _                ⇒ false
-  }
+  @inline
+  final def isActive: Boolean = (status & 3) == Open
 
-  // FIXME: this does not seem to be used anywhere, remove?
-  final def isSuspended: Boolean = status match {
-    case Suspended | ScheduledSuspended ⇒ true
-    case _                              ⇒ false
-  }
+  @inline
+  final def isSuspended: Boolean = (status & 3) == Suspended
 
+  @inline
   final def isClosed: Boolean = status == Closed
 
-  final def isScheduled: Boolean = status match {
-    case Scheduled | ScheduledSuspended ⇒ true
-    case _                              ⇒ false
-  }
+  @inline
+  final def isScheduled: Boolean = (status & Scheduled) != 0
 
   @inline
   protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
@@ -73,52 +71,73 @@ abstract class Mailbox extends AbstractMailbox with MessageQueue with SystemMess
   }
 
   /**
-   * set new primary status: Idle, Suspended or Closed. Caller does not need to
-   * worry about whether status was Scheduled or not.
+   * set new primary status Open. Caller does not need to worry about whether
+   * status was Scheduled or not.
    */
   @tailrec
-  final def become(newStatus: Status): Boolean = {
-    newStatus match {
-      case Idle ⇒
-        status match {
-          case s @ (Idle | Scheduled) ⇒ if (updateStatus(s, s)) true else become(newStatus)
-          case s @ Suspended          ⇒ if (updateStatus(s, Idle)) true else become(newStatus)
-          case s @ ScheduledSuspended ⇒ if (updateStatus(s, Scheduled)) true else become(newStatus)
-          case Closed                 ⇒ setStatus(Closed); false
-        }
-      case Suspended ⇒
-        status match {
-          case s @ (Suspended | ScheduledSuspended) ⇒ if (updateStatus(s, s)) true else become(newStatus)
-          case s @ Idle                             ⇒ if (updateStatus(s, Suspended)) true else become(newStatus)
-          case s @ Scheduled                        ⇒ if (updateStatus(s, ScheduledSuspended)) true else become(newStatus)
-          case Closed                               ⇒ setStatus(Closed); false
-        }
-      case Closed ⇒
-        status match {
-          case Closed ⇒ setStatus(Closed); false
-          case s      ⇒ if (updateStatus(s, Closed)) true else become(newStatus)
-        }
+  final def becomeOpen(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Open | s & Scheduled) || becomeOpen()
+  }
+
+  /**
+   * set new primary status Suspended. Caller does not need to worry about whether
+   * status was Scheduled or not.
+   */
+  @tailrec
+  final def becomeSuspended(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Suspended | s & Scheduled) || becomeSuspended()
+  }
+
+  /**
+   * set new primary status Closed. Caller does not need to worry about whether
+   * status was Scheduled or not.
+   */
+  @tailrec
+  final def becomeClosed(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Closed) || becomeClosed()
+  }
+
+  /**
+   * Set Scheduled status, keeping primary status as is.
+   */
+  @tailrec
+  final def setAsScheduled(): Boolean = {
+    val s = status
+    /*
+     * only try to add Scheduled bit if pure Open/Suspended, not Closed or with
+     * Scheduled bit already set (this is one of the reasons why the numbers
+     * cannot be changed in object Mailbox above)
+     */
+    if (s <= Suspended) updateStatus(s, s | Scheduled) || setAsScheduled()
+    else false
+  }
+
+  /**
+   * Reset Scheduled status, keeping primary status as is.
+   */
+  @tailrec
+  final def setAsIdle(): Boolean = {
+    val s = status
+    /*
+     * only try to remove Scheduled bit if currently Scheduled, not Closed or
+     * without Scheduled bit set (this is one of the reasons why the numbers
+     * cannot be changed in object Mailbox above)
+     */
+    if (s >= Scheduled) {
+      updateStatus(s, s & ~Scheduled) || setAsIdle()
+    } else {
+      acknowledgeStatus() // this write is needed to make memory consistent after processMailbox()
+      false
     }
   }
 
-  @tailrec
-  final def setAsScheduled(): Boolean = status match {
-    case s @ Idle      ⇒ if (updateStatus(s, Scheduled)) true else setAsScheduled()
-    case s @ Suspended ⇒ if (updateStatus(s, ScheduledSuspended)) true else setAsScheduled()
-    case _             ⇒ false
-  }
-
-  @tailrec
-  final def setAsIdle(): Boolean = status match {
-    case s @ Scheduled          ⇒ if (updateStatus(s, Idle)) true else setAsIdle()
-    case s @ ScheduledSuspended ⇒ if (updateStatus(s, Suspended)) true else setAsIdle()
-    case s                      ⇒ acknowledgeStatus(); false
-  }
-
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
-    case Idle | Scheduled               ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
-    case Closed                         ⇒ false
-    case Suspended | ScheduledSuspended ⇒ hasSystemMessageHint || hasSystemMessages
+    case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
+    case Closed           ⇒ false
+    case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   final def run = {

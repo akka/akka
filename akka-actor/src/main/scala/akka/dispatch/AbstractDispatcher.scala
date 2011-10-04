@@ -88,7 +88,7 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] val deadLetterMailbox: Mailbox = DeadLetterMailbox
 
   object DeadLetterMailbox extends Mailbox {
-    become(Mailbox.Closed)
+    becomeClosed()
     override def dispatcher = null //MessageDispatcher.this
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
@@ -185,7 +185,7 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def unregister(actor: ActorCell) {
     if (uuids remove actor.uuid) {
       val mailBox = actor.mailbox
-      mailBox.become(Mailbox.Closed)
+      mailBox.becomeClosed()
       actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
       cleanUpMailboxFor(actor, mailBox)
     } else System.err.println("Couldn't unregister: " + actor)
@@ -244,14 +244,14 @@ abstract class MessageDispatcher extends Serializable {
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
    */
   def suspend(actor: ActorCell): Unit =
-    if (uuids.contains(actor.uuid)) actor.mailbox.become(Mailbox.Suspended)
+    if (uuids.contains(actor.uuid)) actor.mailbox.becomeSuspended()
 
   /*
    * After the call to this method, the dispatcher must begin any new message processing for the specified reference
    */
   def resume(actor: ActorCell): Unit = if (uuids.contains(actor.uuid)) {
     val mbox = actor.mailbox
-    mbox.become(Mailbox.Idle)
+    mbox.becomeOpen()
     registerForExecution(mbox, false, false)
   }
 
