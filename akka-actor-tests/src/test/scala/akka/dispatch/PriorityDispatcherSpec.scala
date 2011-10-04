@@ -9,22 +9,22 @@ class PriorityDispatcherSpec extends WordSpec with MustMatchers {
 
   "A PriorityDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
-      testOrdering(UnboundedMailbox())
+      testOrdering(UnboundedPriorityMailbox(PriorityGenerator({
+        case i: Int  ⇒ i //Reverse order
+        case 'Result ⇒ Int.MaxValue
+      }: Any ⇒ Int)))
     }
 
     "Order it's messages according to the specified comparator using a bounded mailbox" in {
-      testOrdering(BoundedMailbox(1000))
+      testOrdering(BoundedPriorityMailbox(PriorityGenerator({
+        case i: Int  ⇒ i //Reverse order
+        case 'Result ⇒ Int.MaxValue
+      }: Any ⇒ Int), 1000))
     }
   }
 
   def testOrdering(mboxType: MailboxType) {
-    val dispatcher = new PriorityDispatcher("Test",
-      PriorityGenerator({
-        case i: Int  ⇒ i //Reverse order
-        case 'Result ⇒ Int.MaxValue
-      }: Any ⇒ Int),
-      throughput = 1,
-      mailboxType = mboxType)
+    val dispatcher = new Dispatcher("Test", throughput = 1, mailboxType = mboxType)
 
     val actor = actorOf(Props(new Actor {
       var acc: List[Int] = Nil

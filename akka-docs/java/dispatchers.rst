@@ -140,10 +140,10 @@ Browse the :ref:`scaladoc` or look at the code for all the options available.
 Priority event-based
 ^^^^^^^^^^^^^^^^^^^^
 
-Sometimes it's useful to be able to specify priority order of messages, that is done by using PriorityDispatcher and supply
-a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
+Sometimes it's useful to be able to specify priority order of messages, that is done by using Dispatcher and supply either
+an UnboundedPriorityMailbox or BoundedPriorityMailbox with a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
 
-Creating a PriorityDispatcher using PriorityGenerator:
+Creating a Dispatcher with a priority mailbox using PriorityGenerator:
 
 .. code-block:: java
 
@@ -172,7 +172,7 @@ Creating a PriorityDispatcher using PriorityGenerator:
         // We create an instance of the actor that will print out the messages it processes
       ActorRef ref = Actors.actorOf(MyActor.class);
       // We create a new Priority dispatcher and seed it with the priority generator
-      ref.setDispatcher(new PriorityDispatcher("foo", gen));
+      ref.setDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen)));
 
       ref.getDispatcher().suspend(ref); // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
           ref.tell("lowpriority");
