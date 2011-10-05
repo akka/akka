@@ -79,15 +79,15 @@ object DeploymentConfig {
     preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
     replication: ReplicationScheme = Transient) extends Scope
 
-  case class RemoteScope(
-    hostname: String = "localhost",
-    port: Int = 2552) extends Scope
+  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
   // For Java API
   case class LocalScope() extends Scope
 
   // For Scala API
   case object LocalScope extends Scope
+
+  case class RemoteAddress(hostname: String, port: Int)
 
   // --------------------------------
   // --- Home
