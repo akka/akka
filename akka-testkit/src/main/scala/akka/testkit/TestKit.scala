@@ -42,11 +42,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
     case Ev(SetIgnore(ign)) ⇒ stay using ign
     case Ev(StateTimeout) ⇒
       stop
-    case Event(x: AnyRef, ign) ⇒
-      val ignore = ign map (z ⇒ if (z isDefinedAt x) z(x) else false) getOrElse false
-      if (!ignore) {
+    case Event(x: AnyRef, data) ⇒
+      val observe = data map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
+      if (observe)
         queue.offerLast(RealMessage(x, channel))
-      }
+
       stay
   }
   initialize
@@ -269,10 +269,10 @@ trait TestKitLight {
    *
    * @return the received object as transformed by the partial function
    */
-  def expectMsgPF[T](max: Duration = Duration.MinusInf)(f: PartialFunction[Any, T]): T = {
+  def expectMsgPF[T](max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, T]): T = {
     val _max = if (max eq Duration.MinusInf) remaining else max.dilated
     val o = receiveOne(_max)
-    assert(o ne null, "timeout during expectMsg")
+    assert(o ne null, "timeout during expectMsg: " + hint)
     assert(f.isDefinedAt(o), "does not match: " + o)
     f(o)
   }

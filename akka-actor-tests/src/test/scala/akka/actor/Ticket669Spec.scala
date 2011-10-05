@@ -6,12 +6,11 @@ package akka.actor
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor._
-import akka.config.Supervision._
-import akka.testkit.{ filterEvents, EventFilter }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
+import akka.testkit.{ TestKit, filterEvents, EventFilter }
 
-class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll with TestKit {
   import Ticket669Spec._
 
   override def beforeAll = Thread.interrupted() //remove interrupted status.
@@ -24,45 +23,29 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
       filterEvents(EventFilter[Exception]("test")) {
-        val latch = new CountDownLatch(1)
-        val sender = Actor.actorOf(new Sender(latch))
+        val supervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), 5, 10000))
+        val supervised = Actor.actorOf(Props[Supervised].withSupervisor(supervisor))
 
-        val supervised = Actor.actorOf[Supervised]
-        val supervisor = Supervisor(SupervisorConfig(
-          AllForOnePermanentStrategy(List(classOf[Exception]), 5, 10000),
-          Supervise(supervised, Permanent) :: Nil))
-
-        supervised.!("test")(Some(sender))
-        latch.await(5, TimeUnit.SECONDS) must be(true)
+        supervised.!("test")(Some(testActor))
+        expectMsg("failure1")
+        supervisor.stop()
       }
     }
 
     "be able to reply on failure during postStop" in {
       filterEvents(EventFilter[Exception]("test")) {
-        val latch = new CountDownLatch(1)
-        val sender = Actor.actorOf(new Sender(latch))
+        val supervisor = Supervisor(AllForOneStrategy(List(classOf[Exception]), Some(0), None))
+        val supervised = Actor.actorOf(Props[Supervised].withSupervisor(supervisor))
 
-        val supervised = Actor.actorOf[Supervised]
-        val supervisor = Supervisor(SupervisorConfig(
-          AllForOnePermanentStrategy(List(classOf[Exception]), 5, 10000),
-          Supervise(supervised, Temporary) :: Nil))
-
-        supervised.!("test")(Some(sender))
-        latch.await(5, TimeUnit.SECONDS) must be(true)
+        supervised.!("test")(Some(testActor))
+        expectMsg("failure2")
+        supervisor.stop()
       }
     }
   }
 }
 
 object Ticket669Spec {
-  class Sender(latch: CountDownLatch) extends Actor {
-    def receive = {
-      case "failure1" ⇒ latch.countDown()
-      case "failure2" ⇒ latch.countDown()
-      case _          ⇒ {}
-    }
-  }
-
   class Supervised extends Actor {
     def receive = {
       case msg ⇒ throw new Exception("test")

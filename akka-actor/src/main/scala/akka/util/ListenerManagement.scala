@@ -55,14 +55,8 @@ trait ListenerManagement {
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        // Uncomment if those exceptions are so frequent as to bottleneck
-        // if (listener.isShutdown) iterator.remove() else
-        try {
-          listener ! msg
-        } catch {
-          case e: ActorInitializationException ⇒
-            if (listener.isShutdown) iterator.remove()
-        }
+        if (listener.isShutdown) iterator.remove()
+        else listener ! msg
       }
     }
   }
@@ -74,7 +68,8 @@ trait ListenerManagement {
     val iterator = listeners.iterator
     while (iterator.hasNext) {
       val listener = iterator.next
-      if (listener.isRunning) f(listener)
+      if (listener.isShutdown) iterator.remove()
+      else f(listener)
     }
   }
 }

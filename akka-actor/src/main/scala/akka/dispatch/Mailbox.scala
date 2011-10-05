@@ -15,63 +15,136 @@ import annotation.tailrec
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
-object Mailbox {
+private[dispatch] object Mailbox {
+
   type Status = Int
-  val Open = 0
-  val Suspended = 1
-  val Closed = 2
-  //private[Mailbox] val mailboxStatusUpdater = AtomicReferenceFieldUpdater.newUpdater[Mailbox, Status](classOf[Mailbox], classOf[Status], "_status")
+
+  /*
+   * the following assigned numbers CANNOT be changed without looking at the code which uses them!
+   */
+
+  // primary status: only first three
+  final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero!
+  final val Suspended = 1
+  final val Closed = 2
+  // secondary status: Scheduled bit may be added to Open/Suspended
+  final val Scheduled = 4
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnable {
+abstract class Mailbox extends AbstractMailbox with MessageQueue with SystemMessageQueue with Runnable {
   import Mailbox._
-  /*
-   * Internal implementation of MessageDispatcher uses these, don't touch or rely on
-   */
-  final val dispatcherLock = new SimpleLock(startLocked = false)
-  val _status: AtomicInteger = new AtomicInteger(Open) //Must be named _status because of the updater
 
-  final def status: Mailbox.Status = _status.get() //mailboxStatusUpdater.get(this)
+  @inline
+  final def status: Mailbox.Status = AbstractMailbox.updater.get(this)
 
-  final def isSuspended: Boolean = status == Suspended
+  @inline
+  final def isActive: Boolean = (status & 3) == Open
+
+  @inline
+  final def isSuspended: Boolean = (status & 3) == Suspended
+
+  @inline
   final def isClosed: Boolean = status == Closed
-  final def isOpen: Boolean = status == Open
+
+  @inline
+  final def isScheduled: Boolean = (status & Scheduled) != 0
+
+  @inline
+  protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
+    AbstractMailbox.updater.compareAndSet(this, oldStatus, newStatus)
+
+  @inline
+  protected final def setStatus(newStatus: Status): Unit =
+    AbstractMailbox.updater.set(this, newStatus)
 
   /**
    * Internal method to enforce a volatile write of the status
    */
   @tailrec
   final def acknowledgeStatus() {
-    val s = _status.get()
-    if (_status.compareAndSet(s, s)) ()
+    val s = status
+    if (updateStatus(s, s)) ()
     else acknowledgeStatus()
   }
 
-  def become(newStatus: Status): Boolean = {
-    @tailrec
-    def transcend(): Boolean = {
-      val current = _status.get()
-      if (current == Closed) { _status.set(Closed); false } //Ensure that the write is always performed
-      else if (_status.compareAndSet(current, newStatus)) true
-      else transcend()
+  /**
+   * set new primary status Open. Caller does not need to worry about whether
+   * status was Scheduled or not.
+   */
+  @tailrec
+  final def becomeOpen(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Open | s & Scheduled) || becomeOpen()
+  }
+
+  /**
+   * set new primary status Suspended. Caller does not need to worry about whether
+   * status was Scheduled or not.
+   */
+  @tailrec
+  final def becomeSuspended(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Suspended | s & Scheduled) || becomeSuspended()
+  }
+
+  /**
+   * set new primary status Closed. Caller does not need to worry about whether
+   * status was Scheduled or not.
+   */
+  @tailrec
+  final def becomeClosed(): Boolean = status match {
+    case Closed ⇒ setStatus(Closed); false
+    case s      ⇒ updateStatus(s, Closed) || becomeClosed()
+  }
+
+  /**
+   * Set Scheduled status, keeping primary status as is.
+   */
+  @tailrec
+  final def setAsScheduled(): Boolean = {
+    val s = status
+    /*
+     * only try to add Scheduled bit if pure Open/Suspended, not Closed or with
+     * Scheduled bit already set (this is one of the reasons why the numbers
+     * cannot be changed in object Mailbox above)
+     */
+    if (s <= Suspended) updateStatus(s, s | Scheduled) || setAsScheduled()
+    else false
+  }
+
+  /**
+   * Reset Scheduled status, keeping primary status as is.
+   */
+  @tailrec
+  final def setAsIdle(): Boolean = {
+    val s = status
+    /*
+     * only try to remove Scheduled bit if currently Scheduled, not Closed or
+     * without Scheduled bit set (this is one of the reasons why the numbers
+     * cannot be changed in object Mailbox above)
+     */
+    if (s >= Scheduled) {
+      updateStatus(s, s & ~Scheduled) || setAsIdle()
+    } else {
+      acknowledgeStatus() // this write is needed to make memory consistent after processMailbox()
+      false
     }
-    transcend()
-  } //mailboxStatusUpdater.set(this, newStatus)
+  }
 
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
-    case `Open`      ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
-    case `Closed`    ⇒ false
-    case `Suspended` ⇒ hasSystemMessageHint || hasSystemMessages
+    case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
+    case Closed           ⇒ false
+    case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   final def run = {
     try { processMailbox() } catch {
       case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
     } finally {
-      dispatcherLock.unlock()
+      setAsIdle()
       dispatcher.registerForExecution(this, false, false)
     }
   }
@@ -84,7 +157,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
   final def processMailbox() {
     processAllSystemMessages()
 
-    if (isOpen) {
+    if (isActive) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.throughput <= 1) { //If we only run one message per process {
@@ -100,7 +173,7 @@ abstract class Mailbox extends MessageQueue with SystemMessageQueue with Runnabl
 
             processAllSystemMessages()
 
-            nextMessage = if (isOpen) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
+            nextMessage = if (isActive) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
               processedMessages += 1
               if ((processedMessages >= dispatcher.throughput) || (isDeadlineEnabled && System.nanoTime >= deadlineNs)) // If we're throttled, break out
                 null //We reached our boundaries, abort

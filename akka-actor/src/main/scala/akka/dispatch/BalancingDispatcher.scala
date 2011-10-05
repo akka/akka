@@ -126,7 +126,7 @@ class BalancingDispatcher(
     messageQueue enqueue invocation
 
     val buddy = buddies.pollFirst()
-    if (buddy ne null)
+    if ((buddy ne null) && (buddy ne receiver))
       registerForExecution(buddy.mailbox, false, false)
 
     registerForExecution(receiver.mailbox, false, false)

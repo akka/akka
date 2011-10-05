@@ -80,7 +80,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
       val actor = Routing.actorOf(props, "foo")
 
-      actor.isRunning must be(true)
+      actor.isShutdown must be(false)
 
     }
 

@@ -11,7 +11,6 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
-import akka.config.Supervision._
 
 /**
  * @author Martin Krasser
@@ -178,7 +177,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-2"))
       val supervisor = Supervisor(
         SupervisorConfig(
-          OneForOnePermanentStrategy(List(classOf[Exception]), 2, 10000),
+          OneForOneStrategy(List(classOf[Exception]), 2, 10000),
           Supervise(consumer, Permanent) :: Nil))
 
       val latch = new CountDownLatch(1)
@@ -192,7 +191,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
       val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-3")))
       val supervisor = Supervisor(
         SupervisorConfig(
-          OneForOneTemporaryStrategy(List(classOf[Exception])),
+          OneForOneStrategy(List(classOf[Exception]), Some(0)),
           Supervise(consumer, Temporary) :: Nil))
 
       val latch = new CountDownLatch(1)

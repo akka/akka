@@ -22,7 +22,8 @@ class DeployerSpec extends WordSpec with MustMatchers {
           LeastCPU,
           NrOfInstances(3),
           BannagePeriodFailureDetector(10),
-          RemoteScope(List(RemoteAddress("localhost", 2552))))))
+          RemoteScope(List(
+            RemoteAddress("wallace", 2552), RemoteAddress("gromit", 2552))))))
       // ClusterScope(
       //   List(Node("node1")),
       //   new NrOfInstances(3),

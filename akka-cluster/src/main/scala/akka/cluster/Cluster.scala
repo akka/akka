@@ -34,9 +34,8 @@ import DeploymentConfig._
 
 import akka.event.EventHandler
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
-import akka.config.{ Config, Supervision }
-import Supervision._
-import Config._
+import akka.config.Config
+import akka.config.Config._
 
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import ActorSerialization._
@@ -291,7 +290,7 @@ class DefaultClusterNode private[akka] (
 
   private[cluster] lazy val remoteDaemonSupervisor = Supervisor(
     SupervisorConfig(
-      OneForOnePermanentStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
+      OneForOneStrategy(List(classOf[Exception]), Int.MaxValue, Int.MaxValue), // is infinite restart what we want?
       Supervise(
         remoteDaemon,
         Permanent)

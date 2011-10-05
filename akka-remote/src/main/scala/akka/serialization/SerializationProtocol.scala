@@ -4,10 +4,8 @@
 
 package akka.serialization
 
-import akka.config.Supervision._
-import akka.actor.{ uuidFrom, newUuid }
 import akka.actor._
-import DeploymentConfig._
+import akka.actor.DeploymentConfig._
 import akka.dispatch.Envelope
 import akka.util.{ ReflectiveAccess, Duration }
 import akka.event.EventHandler
@@ -55,6 +53,7 @@ object ActorSerialization {
     replicationScheme: ReplicationScheme): Array[Byte] =
     toBinary(a, srlMailBox, replicationScheme)
 
+  @deprecated("BROKEN, REMOVE ME")
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef,
     serializeMailBox: Boolean,
@@ -65,20 +64,10 @@ object ActorSerialization {
       case _                ⇒ None
     }
 
-    val lifeCycleProtocol: Option[LifeCycleProtocol] = None /*{
-      actorRef.lifeCycle match {
-        case Permanent ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.PERMANENT).build)
-        case Temporary ⇒ Some(LifeCycleProtocol.newBuilder.setLifeCycle(LifeCycleType.TEMPORARY).build)
-      }
-    }*/
-
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
       .setTimeout(actorRef.timeout)
-
-    if (localRef.isDefined)
-      builder.setActorClassname(localRef.get.actorClass.getName) //TODO FIXME Why is the classname needed anymore?
 
     replicationScheme match {
       case _: Transient | Transient ⇒
@@ -97,9 +86,6 @@ object ActorSerialization {
         }
         builder.setReplicationStrategy(strategyType)
     }
-
-    lifeCycleProtocol.foreach(builder.setLifeCycle(_))
-    actorRef.supervisor.foreach(s ⇒ builder.setSupervisor(RemoteActorSerialization.toRemoteActorRefProtocol(s)))
 
     localRef foreach { l ⇒
       if (serializeMailBox) {
@@ -191,14 +177,6 @@ object ActorSerialization {
       } catch {
         case e: Exception ⇒ Stack[PartialFunction[Any, Unit]]()
       }
-
-    val storedLifeCycle =
-      if (protocol.hasLifeCycle) {
-        protocol.getLifeCycle.getLifeCycle match {
-          case LifeCycleType.PERMANENT ⇒ Permanent
-          case LifeCycleType.TEMPORARY ⇒ Temporary
-        }
-      } else LifeCycleType.PERMANENT
 
     val storedSupervisor =
       if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))

@@ -8,8 +8,7 @@
 
   import akka.actor.{Actor, ActorRef, Props}
   import akka.stm._
-  import akka.config.Supervision.{OneForOnePermanentStrategy,Permanent}
-  import Actor._
+  import akka.actor.Actor._
   import akka.event.EventHandler
 
   /******************************************************************************
@@ -174,7 +173,7 @@
    * Chat server. Manages sessions and redirects all other messages to the Session for the client.
    */
   trait ChatServer extends Actor {
-    //faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]),5, 5000)
+    //faultHandler = OneForOneStrategy(List(classOf[Exception]),5, 5000)
     val storage: ActorRef
 
     EventHandler.info(this, "Chat server is starting up...")

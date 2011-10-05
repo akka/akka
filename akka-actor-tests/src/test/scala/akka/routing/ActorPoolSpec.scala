@@ -3,12 +3,12 @@ package akka.routing
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.dispatch.{ KeptPromise, Future }
+import akka.actor._
 import akka.actor.Actor._
 import akka.testkit.Testing._
 import akka.actor.{ TypedActor, Actor, Props }
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
-import akka.config.Supervision.OneForOnePermanentStrategy
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 object ActorPoolSpec {
@@ -24,7 +24,7 @@ object ActorPoolSpec {
     }
   }
 
-  val faultHandler = OneForOnePermanentStrategy(List(classOf[Exception]), 5, 1000)
+  val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
 }
 
 class ActorPoolSpec extends WordSpec with MustMatchers {
@@ -361,7 +361,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "provide default supervision of pooled actors" in {
       filterException[RuntimeException] {
-        import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
         val keepDying = new AtomicBoolean(false)
@@ -387,7 +386,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }))
+            }).withSupervisor(self))
           }).withFaultHandler(faultHandler))
 
         val pool2 = actorOf(
@@ -411,7 +410,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }))
+            }).withSupervisor(self))
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
@@ -439,7 +438,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                 case _ ⇒ pingCount.incrementAndGet
               }
             }).withSupervisor(self))
-          }).withFaultHandler(OneForOneTemporaryStrategy(List(classOf[Exception]))))
+          }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
         // default lifecycle
         // actor comes back right away
@@ -507,7 +506,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "support customizable supervision config of pooled actors" in {
       filterEvents(EventFilter[IllegalStateException], EventFilter[RuntimeException]) {
-        import akka.config.Supervision._
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
         var keepDying = new AtomicBoolean(false)
@@ -526,7 +524,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(new Actor {
+            def factory = actorOf(Props(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -537,8 +535,8 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            })
-          }).withFaultHandler(OneForOnePermanentStrategy(List(classOf[IllegalStateException]), 5, 1000)))
+            }).withSupervisor(self))
+          }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away
         pingCount.set(0)

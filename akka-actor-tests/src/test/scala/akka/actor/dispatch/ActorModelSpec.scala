@@ -350,7 +350,7 @@ abstract class ActorModelSpec extends JUnitSuite {
     a.stop
     b.stop
 
-    while (a.isRunning && b.isRunning) {} //Busy wait for termination
+    while (!a.isShutdown && !b.isShutdown) {} //Busy wait for termination
 
     assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
@@ -419,7 +419,7 @@ abstract class ActorModelSpec extends JUnitSuite {
             case actor: LocalActorRef ⇒
               val cell = actor.underlying
               val mbox = cell.mailbox
-              System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.dispatcherLock.locked)
+              System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.isScheduled)
               var message = mbox.dequeue()
               while (message ne null) {
                 System.err.println("Lingering message for " + cell + " " + message)
