@@ -46,26 +46,30 @@ private[zeromq] abstract class DealerRouterActor(socketType: Int, params: Socket
   }
   private def receiveMessages = spawn {
     val (frontendIndex, inprocServerSocketIndex) = (0, 1)
-    while (self != null && self.isRunning) {
-      if (poller.poll(pollTimeoutMsec) > 0) {
-        if (poller.pollin(frontendIndex)) {
-          receiveFrames(remoteSocket) match {
-            case frames if (frames.length > 0) => params.listener.foreach {
-              listener => listener ! params.deserializer(frames)
-            }
-          }
-        }
-        if (poller.pollin(inprocServerSocketIndex)) {
-          receiveFrames(inprocServerSocket) match {
-            case frames if (frames.length > 0) => try {
-              send(remoteSocket, frames)
-            } catch {
-              case e: ZMQException => {
-                e.printStackTrace
+    while (self != null && self.isRunning) { 
+      synchronized { 
+        if (poller.poll(pollTimeoutMsec) > 0) {
+          if (poller.pollin(frontendIndex)) {
+            receiveFrames(remoteSocket) match {
+              case frames if (frames.length > 0) => params.listener.foreach {
+                listener => listener ! params.deserializer(frames)
               }
             }
           }
-        }
+          if (poller.pollin(inprocServerSocketIndex)) {
+            receiveFrames(inprocServerSocket) match {
+              case frames if (frames.length > 0) => try {
+                send(remoteSocket, frames)
+              } catch {
+                case e: ZMQException => {
+                  e.printStackTrace
+                }
+              }
+            }
+          }
+        } else { 
+          Thread.sleep(0) 
+        } 
       }
     }
   }

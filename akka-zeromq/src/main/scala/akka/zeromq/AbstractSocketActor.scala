@@ -38,7 +38,9 @@ private[zeromq] abstract class AbstractSocketActor(socketType: Int, params: Sock
     socket.send(frames(i).payload, flags)
   }
   override def postStop {
-    if (remoteSocket != null)
-      remoteSocket.close
+    synchronized {
+      if (remoteSocket != null)
+        remoteSocket.close
+    }
   }
 }
