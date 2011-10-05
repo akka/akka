@@ -46,11 +46,11 @@ Here's what some of the Akka users have to say about how they are using Akka:
 http://stackoverflow.com/questions/4493001/good-use-case-for-akka
 
 
-Cloudy Akka
------------
+Akka Atmos
+----------
 
 And that's all in the ApacheV2-licensed open source project. On top of that we
-have a commercial product called Cloudy Akka which provides the following
+have a commercial product called Akka Atmos which provides the following
 features:
 
 #. Management through Dashboard, JMX and REST

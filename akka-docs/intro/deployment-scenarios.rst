@@ -49,25 +49,36 @@ Using the Akka sbt plugin to package your application
 The Akka sbt plugin can create a full Akka microkernel deployment for your sbt
 project.
 
-To use the plugin, first add a plugin definition to your SBT project by creating
-``project/plugins/Plugins.scala`` with::
+To use the plugin, first add a plugin definition to your sbt project by creating
+``project/plugins.sbt`` with::
+
+   resolvers += Classpaths.typesafeResolver
+
+   addSbtPlugin("se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT")
+
+Then use the AkkaKernelPlugin settings. In a 'light' configuration (build.sbt)::
+
+   seq(akka.sbt.AkkaKernelPlugin.distSettings: _*)
+
+Or in a 'full' configuration (Build.scala). For example::
 
    import sbt._
+   import sbt.Keys._
+   import akka.sbt.AkkaKernelPlugin
 
-   class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-     val akkaRepo = "Akka Repo" at "http://akka.io/repository"
-     val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT"
+   object SomeBuild extends Build {
+     lazy val someProject = Project(
+       id = "some-project",
+       base = file("."),
+       settings = Defaults.defaultSettings ++ AkkaKernelPlugin.distSettings ++ Seq(
+         organization := "org.some",
+         version := "0.1",
+         scalaVersion := "2.9.1"
+         resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+         libraryDependencies += "se.scalablesolutions.akka" % "akka-kernel" % "2.0-SNAPSHOT"
+       )
+     )
    }
-
-Then mix the ``AkkaKernelProject`` trait into your project definition. For
-example::
-
-  class MyProject(info: ProjectInfo) extends DefaultProject(info) with AkkaKernelProject
-
-This will automatically add all the Akka dependencies needed for a microkernel
-deployment (download them with ``sbt update``).
-
-Place your config files in ``src/main/config``.
 
 To build a microkernel deployment use the ``dist`` task::
 

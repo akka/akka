@@ -38,9 +38,7 @@ Here is the reference configuration file:
 .. literalinclude:: ../../config/akka-reference.conf
    :language: none
 
-A custom ``akka.conf`` might look like this:
-
-::
+A custom ``akka.conf`` might look like this::
 
   # In this file you can override any option defined in the 'akka-reference.conf' file.
   # Copy in all or parts of the 'akka-reference.conf' file and modify as you please.
@@ -122,4 +120,3 @@ Summary of System Properties
 * :ref:`akka.config <-Dakka.config>`: explicit configuration file location
 * :ref:`akka.mode <-Dakka.mode>` (``AKKA_MODE``): modify configuration file name for multiple profiles
 * :ref:`akka.output.config.source <-Dakka.output.config.source>`: whether to print configuration source to console
-
