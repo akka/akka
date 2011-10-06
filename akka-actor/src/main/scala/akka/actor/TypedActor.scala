@@ -5,12 +5,12 @@ package akka.actor
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
-import akka.actor.Actor._
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
+import akka.AkkaApplication
 
 //TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 /**
@@ -29,7 +29,7 @@ import akka.dispatch._
  *
  *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
  */
-object TypedActor {
+class TypedActor(val application: AkkaApplication) {
   private val selfReference = new ThreadLocal[AnyRef]
 
   /**
@@ -83,7 +83,7 @@ object TypedActor {
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Serializer.Identifier](), Array[Array[Byte]]())
       case ps ⇒
-        val serializers: Array[Serializer] = ps map Serialization.findSerializerFor
+        val serializers: Array[Serializer] = ps map application.serialization.findSerializerFor
         val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
         for (i ← 0 until serializers.length)
           serializedParameters(i) = serializers(i) toBinary parameters(i) //Mutable for the sake of sanity
@@ -105,7 +105,7 @@ object TypedActor {
         case a ⇒
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length)
-            deserializedParameters(i) = Serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+            deserializedParameters(i) = application.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
 
           deserializedParameters
       })
@@ -221,9 +221,13 @@ object TypedActor {
   private[akka] def configureAndProxyLocalActorRef[T <: AnyRef](interfaces: Array[Class[_]], proxyVar: AtomVar[T], props: Props, loader: ClassLoader): T = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
-    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(props.timeout)).asInstanceOf[T]
+    val timeout = props.timeout match {
+      case Timeout(Duration.MinusInf) => application.AkkaConfig.TIMEOUT
+      case x => x
+    }
+    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    val ref = actorOf(props)
+    val ref = application.createActor(props)
     actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
     proxyVar.get
   }
@@ -232,8 +236,8 @@ object TypedActor {
 
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
 
-    override def preStart = Actor.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
-    override def postStop = Actor.registry.unregisterTypedActor(self, proxyVar.get)
+    override def preStart = application.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
+    override def postStop = application.registry.unregisterTypedActor(self, proxyVar.get)
 
     val me = createInstance
     def receive = {

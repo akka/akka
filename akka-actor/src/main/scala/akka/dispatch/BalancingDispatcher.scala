@@ -28,29 +28,12 @@ import annotation.tailrec
  */
 class BalancingDispatcher(
   _name: String,
-  throughput: Int = Dispatchers.THROUGHPUT,
-  throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
-  mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  config: ThreadPoolConfig = ThreadPoolConfig())
-  extends Dispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config) {
-
-  def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
-    this(_name, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int, mailboxType: MailboxType) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-
-  def this(_name: String, _config: ThreadPoolConfig) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _config)
-
-  def this(_name: String, memberType: Class[_ <: Actor]) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-
-  def this(_name: String, mailboxType: MailboxType) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
+  throughput: Int,
+  throughputDeadlineTime: Int,
+  mailboxType: MailboxType,
+  config: ThreadPoolConfig,
+  _timeoutMs: Long)
+  extends Dispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
   private val buddies = new ConcurrentSkipListSet[ActorCell](new Comparator[ActorCell] { def compare(a: ActorCell, b: ActorCell) = a.uuid.compareTo(b.uuid) }) //new ConcurrentLinkedQueue[ActorCell]()
 

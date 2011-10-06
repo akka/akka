@@ -91,7 +91,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     _delegates foreach { _ ! PoisonPill }
   }
 
-  protected def _route(): Receive = {
+  protected def _route(): Actor.Receive = {
     // for testing...
     case Stat ⇒
       tryReply(Stats(_delegates length))

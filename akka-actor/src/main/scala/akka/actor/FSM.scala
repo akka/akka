@@ -5,7 +5,6 @@ package akka.actor
 
 import akka.util._
 import akka.event.EventHandler
-import akka.config.Config.config
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
@@ -63,8 +62,6 @@ object FSM {
   * for derived classes.
   */
   implicit def d2od(d: Duration): Option[Duration] = Some(d)
-
-  val debugEvent = config.getBool("akka.actor.debug.fsm", false)
 
   case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
 
@@ -570,6 +567,8 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
   import FSM._
 
   def logDepth: Int = 0
+  
+  private val debugEvent = context.application.AkkaConfig.FsmDebugEvent
 
   private val events = new Array[Event](logDepth)
   private val states = new Array[AnyRef](logDepth)

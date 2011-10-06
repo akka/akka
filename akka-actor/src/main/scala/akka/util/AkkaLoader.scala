@@ -3,13 +3,12 @@
  */
 
 package akka.util
-
-import akka.config.Config
+import akka.AkkaApplication
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
  */
-class AkkaLoader {
+class AkkaLoader(application: AkkaApplication) {
   private val hasBooted = new Switch(false)
 
   @volatile
@@ -23,7 +22,7 @@ class AkkaLoader {
   def boot(withBanner: Boolean, b: Bootable): Unit = hasBooted switchOn {
     if (withBanner) printBanner()
     println("Starting Akka...")
-    b.onLoad
+    b.onLoad(application)
     Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
     _bundles = Some(b)
     println("Akka started successfully")
@@ -35,7 +34,7 @@ class AkkaLoader {
   def shutdown() {
     hasBooted switchOff {
       println("Shutting down Akka...")
-      _bundles.foreach(_.onUnload)
+      _bundles.foreach(_.onUnload(application))
       _bundles = None
       println("Akka succesfully shut down")
     }
@@ -87,6 +86,6 @@ class AkkaLoader {
 ==============================================================================
                       Running version %s
 ==============================================================================
-""".format(Config.VERSION))
+""".format(AkkaApplication.VERSION))
   }
 }

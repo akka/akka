@@ -10,7 +10,7 @@ import DeploymentConfig._
 import akka.util._
 import akka.dispatch.Promise
 import akka.serialization._
-import akka.AkkaException
+import akka.{ AkkaException, AkkaApplication }
 
 import scala.reflect.BeanProperty
 
@@ -185,12 +185,12 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport extends ListenerManagement with RemoteServerModule with RemoteClientModule {
+abstract class RemoteSupport(val application: AkkaApplication) extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
   val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
     val clazz = classOf[RemoteEventHandler]
-    val handler = new LocalActorRef(Props(clazz), clazz.getName, true)
+    val handler = new LocalActorRef(application, Props(clazz), clazz.getName, true)
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
@@ -221,7 +221,7 @@ abstract class RemoteSupport extends ListenerManagement with RemoteServerModule 
 /**
  * This is the interface for the RemoteServer functionality, it's used in Actor.remote
  */
-trait RemoteServerModule extends RemoteModule {
+trait RemoteServerModule extends RemoteModule { this: RemoteSupport =>
   protected val guard = new ReentrantGuard
 
   /**
@@ -243,16 +243,16 @@ trait RemoteServerModule extends RemoteModule {
    *  Starts the server up
    */
   def start(): RemoteServerModule =
-    start(ReflectiveAccess.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
+    start(application.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
+      application.reflective.RemoteModule.configDefaultAddress.getPort,
       None)
 
   /**
    *  Starts the server up
    */
   def start(loader: ClassLoader): RemoteServerModule =
-    start(ReflectiveAccess.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      ReflectiveAccess.RemoteModule.configDefaultAddress.getPort,
+    start(application.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
+      application.reflective.RemoteModule.configDefaultAddress.getPort,
       Option(loader))
 
   /**
@@ -330,13 +330,13 @@ trait RemoteServerModule extends RemoteModule {
   def unregisterPerSession(address: String): Unit
 }
 
-trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
+trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   def actorFor(address: String, hostname: String, port: Int): ActorRef =
-    actorFor(address, Actor.TIMEOUT, hostname, port, None)
+    actorFor(address, application.AkkaConfig.TimeoutMillis, hostname, port, None)
 
   def actorFor(address: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, Actor.TIMEOUT, hostname, port, Some(loader))
+    actorFor(address, application.AkkaConfig.TimeoutMillis, hostname, port, Some(loader))
 
   def actorFor(address: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(address, timeout, hostname, port, None)
@@ -367,7 +367,6 @@ trait RemoteClientModule extends RemoteModule { self: RemoteModule ⇒
                               senderOption: Option[ActorRef],
                               senderFuture: Option[Promise[T]],
                               remoteAddress: InetSocketAddress,
-                              timeout: Long,
                               isOneWay: Boolean,
                               actorRef: ActorRef,
                               loader: Option[ClassLoader]): Option[Promise[T]]

@@ -7,11 +7,12 @@ package akka.actor
 import akka.dispatch._
 import akka.util._
 import akka.serialization.{ Serializer, Serialization }
-import ReflectiveAccess._
-import ClusterModule._
 import java.net.InetSocketAddress
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
+import akka.AkkaApplication
+import akka.remote.RemoteSupport
+import scala.util.DynamicVariable
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -56,28 +57,12 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    */
   def compareTo(other: ActorRef) = this.address compareTo other.address
 
-  protected[akka] def timeout: Long = Props.defaultTimeout.duration.toMillis //TODO Remove me if possible
-
-  /**
-   * Akka Java API. <p/>
-   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
-   * Uses the Actors default timeout (setTimeout()) and omits the sender
-   */
-  def ask(message: AnyRef): Future[AnyRef] = ask(message, timeout, null)
-
   /**
    * Akka Java API. <p/>
    * @see ask(message: AnyRef, sender: ActorRef): Future[_]
    * Uses the specified timeout (milliseconds)
    */
   def ask(message: AnyRef, timeout: Long): Future[Any] = ask(message, timeout, null)
-
-  /**
-   * Akka Java API. <p/>
-   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
-   * Uses the Actors default timeout (setTimeout())
-   */
-  def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
 
   /**
    * Akka Java API. <p/>
@@ -162,6 +147,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
+    application: AkkaApplication,
   private[this] val props: Props,
   val address: String,
   val systemService: Boolean = false,
@@ -170,20 +156,7 @@ class LocalActorRef private[akka] (
   hotswap: Stack[PartialFunction[Any, Unit]] = Stack.empty)
   extends ActorRef with ScalaActorRef {
 
-  // used only for deserialization
-  private[akka] def this(
-    __uuid: Uuid,
-    __address: String,
-    __props: Props,
-    __receiveTimeout: Option[Long],
-    __hotswap: Stack[PartialFunction[Any, Unit]]) = {
-
-    this(__props, __address, false, __uuid, __receiveTimeout, __hotswap)
-
-    actorCell.setActorContext(actorCell) // this is needed for deserialization - why?
-  }
-
-  private[this] val actorCell = new ActorCell(this, props, receiveTimeout, hotswap)
+  private[this] val actorCell = new ActorCell(application, this, props, receiveTimeout, hotswap)
   actorCell.start()
 
   /**
@@ -250,8 +223,6 @@ class LocalActorRef private[akka] (
     instance
   }
 
-  protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
-
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorCell.postMessageToMailbox(message, channel)
 
@@ -270,10 +241,9 @@ class LocalActorRef private[akka] (
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
-    val inetaddr =
-      if (ReflectiveAccess.RemoteModule.isEnabled) Actor.remote.address
-      else ReflectiveAccess.RemoteModule.configDefaultAddress
-    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
+    // TODO: this was used to really send LocalActorRef across the network, which is broken now
+    val inetaddr = application.reflective.RemoteModule.configDefaultAddress
+    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
   }
 }
 
@@ -293,9 +263,10 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
+    val application: AkkaApplication,
+    val remote: RemoteSupport,
   val remoteAddress: InetSocketAddress,
   val address: String,
-  _timeout: Long,
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
@@ -304,13 +275,11 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def isShutdown: Boolean = !running
 
-  RemoteModule.ensureEnabled()
-
-  protected[akka] override def timeout: Long = _timeout
+  application.reflective.RemoteModule.ensureEnabled()
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel) {
     val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    Actor.remote.send[Any](message, chSender, None, remoteAddress, timeout, true, this, loader)
+    remote.send[Any](message, chSender, None, remoteAddress, true, this, loader)
   }
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
@@ -320,9 +289,9 @@ private[akka] case class RemoteActorRef private[akka] (
 
     val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
     val chFuture = if (channel.isInstanceOf[Promise[_]]) Some(channel.asInstanceOf[Promise[Any]]) else None
-    val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
+    val future = remote.send[Any](message, chSender, chFuture, remoteAddress, false, this, loader)
 
-    if (future.isDefined) ActorPromise(future.get)
+    if (future.isDefined) ActorPromise(future.get)(timeout)
     else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
   }
 
@@ -341,7 +310,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
-    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
+    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
   }
 
   def link(actorRef: ActorRef): ActorRef = unsupported
@@ -415,15 +384,17 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRe
 case class SerializedActorRef(uuid: Uuid,
                               address: String,
                               hostname: String,
-                              port: Int,
-                              timeout: Long) {
+                              port: Int) {
+  import akka.serialization.Serialization._
+  
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
+  def readResolve(): AnyRef = application.value.registry.local.actorFor(uuid) match {
     case Some(actor) ⇒ actor
     case None ⇒
       //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
-      if (ReflectiveAccess.RemoteModule.isEnabled)
-        RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
+      val remote = application.value.reflective.RemoteModule
+      if (remote.isEnabled)
+        RemoteActorRef(application.value, remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
       else
         throw new IllegalStateException(
           "Trying to deserialize ActorRef [" + this +

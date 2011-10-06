@@ -64,26 +64,12 @@ import akka.actor.{ ActorCell, ActorKilledException }
  */
 class Dispatcher(
   _name: String,
-  val throughput: Int = Dispatchers.THROUGHPUT,
-  val throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
-  val mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  executorServiceFactoryProvider: ExecutorServiceFactoryProvider = ThreadPoolConfig())
+  val throughput: Int,
+  val throughputDeadlineTime: Int,
+  val mailboxType: MailboxType,
+  executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
+  val timeoutMs: Long)
   extends MessageDispatcher {
-
-  def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
-    this(_name, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int, mailboxType: MailboxType) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-
-  def this(_name: String, _executorServiceFactoryProvider: ExecutorServiceFactoryProvider) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _executorServiceFactoryProvider)
-
-  def this(_name: String) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
 
   val name = "akka:event-driven:dispatcher:" + _name
 

@@ -7,21 +7,17 @@ package akka.actor
 import java.io.File
 import java.net.{ URL, URLClassLoader }
 import java.util.jar.JarFile
-
-import akka.util.{ Bootable }
-import akka.config.Config._
+import akka.util.Bootable
+import akka.AkkaApplication
 
 /**
  * Handles all modules in the deploy directory (load and unload)
  */
 trait BootableActorLoaderService extends Bootable {
 
-  val BOOT_CLASSES = config.getList("akka.boot")
-  lazy val applicationLoader: Option[ClassLoader] = createApplicationClassLoader
-
-  protected def createApplicationClassLoader: Option[ClassLoader] = Some({
-    if (HOME.isDefined) {
-      val DEPLOY = HOME.get + "/deploy"
+  protected def createApplicationClassLoader(application: AkkaApplication): Option[ClassLoader] = Some({
+    if (application.AkkaConfig.HOME.isDefined) {
+      val DEPLOY = application.AkkaConfig.HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         System.exit(-1)
@@ -45,8 +41,11 @@ trait BootableActorLoaderService extends Bootable {
     } else Thread.currentThread.getContextClassLoader
   })
 
-  abstract override def onLoad = {
-    super.onLoad
+  abstract override def onLoad(application: AkkaApplication) = {
+    super.onLoad(application)
+
+    val BOOT_CLASSES = application.AkkaConfig.BOOT_CLASSES
+    val applicationLoader = createApplicationClassLoader(application)
 
     applicationLoader foreach Thread.currentThread.setContextClassLoader
 
@@ -55,9 +54,9 @@ trait BootableActorLoaderService extends Bootable {
     }
   }
 
-  abstract override def onUnload = {
-    super.onUnload
-    Actor.registry.local.shutdownAll
+  abstract override def onUnload(application: AkkaApplication) = {
+    super.onUnload(application)
+    application.registry.local.shutdownAll
   }
 }
 

@@ -27,7 +27,7 @@ case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
 trait Listeners { self: Actor ⇒
   private val listeners = new ConcurrentSkipListSet[ActorRef]
 
-  protected def listenerManagement: Receive = {
+  protected def listenerManagement: Actor.Receive = {
     case Listen(l)        ⇒ listeners add l
     case Deafen(l)        ⇒ listeners remove l
     case WithListeners(f) ⇒ listeners foreach f

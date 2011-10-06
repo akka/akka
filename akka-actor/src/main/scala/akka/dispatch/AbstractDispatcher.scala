@@ -8,10 +8,10 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventHandler
 import akka.config.Configuration
-import akka.config.Config.TIME_UNIT
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
+import akka.AkkaApplication
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -60,8 +60,6 @@ object MessageDispatcher {
   val UNSCHEDULED = 0
   val SCHEDULED = 1
   val RESCHEDULED = 2
-
-  implicit def defaultGlobalDispatcher = Dispatchers.defaultGlobalDispatcher
 }
 
 /**
@@ -238,7 +236,7 @@ abstract class MessageDispatcher extends Serializable {
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
    * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
    */
-  protected[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
+  protected[akka] def timeoutMs: Long
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -305,19 +303,19 @@ abstract class MessageDispatcher extends Serializable {
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator {
+abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
+    val capacity = config.getInt("mailbox-capacity", application.AkkaConfig.MailboxCapacity)
     if (capacity < 1) UnboundedMailbox()
     else {
       val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt),
-        TIME_UNIT)
+        config.getInt("mailbox-push-timeout-time", application.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
+        application.AkkaConfig.TIME_UNIT)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -327,7 +325,7 @@ abstract class MessageDispatcherConfigurator {
 
     //Apply the following options to the config if they are present in the config
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, application.AkkaConfig.TIME_UNIT))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),

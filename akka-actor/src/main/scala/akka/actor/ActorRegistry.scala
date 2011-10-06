@@ -28,7 +28,7 @@ case class TypedActorUnregistered(@BeanProperty address: String, @BeanProperty a
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[actor] final class ActorRegistry private[actor] () extends ListenerManagement {
+private[akka] final class ActorRegistry private[akka] () extends ListenerManagement {
   private val actorsByAddress = new ConcurrentHashMap[String, ActorRef]
   private val actorsByUuid = new ConcurrentHashMap[Uuid, ActorRef]
   private val typedActorsByUuid = new ConcurrentHashMap[Uuid, AnyRef]

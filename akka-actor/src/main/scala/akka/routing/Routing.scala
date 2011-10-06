@@ -8,9 +8,8 @@ import akka.AkkaException
 import akka.actor._
 import akka.event.EventHandler
 import akka.config.ConfigurationException
-import akka.actor.UntypedChannel._
-import akka.dispatch.{ Future, Futures }
-import akka.util.ReflectiveAccess
+import akka.dispatch.{ Future, MessageDispatcher }
+import akka.AkkaApplication
 
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
@@ -126,14 +125,18 @@ class RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
   }
 }
 
-/**
- * A Helper class to create actor references that use routing.
- */
 object Routing {
-
+  
   sealed trait RoutingMessage
 
   case class Broadcast(message: Any) extends RoutingMessage
+
+}
+
+/**
+ * A Helper class to create actor references that use routing.
+ */
+class Routing(val application: AkkaApplication) {
 
   /**
    * FIXME: will very likely be moved to the ActorRef.
@@ -144,11 +147,10 @@ object Routing {
     //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
     //TODO If the actor deployed uses a different config, then ignore or throw exception?
 
-    val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
-    val localOnly = props.localOnly
+    val clusteringEnabled = application.reflective.ClusterModule.isEnabled
 
     if (clusteringEnabled && !props.localOnly)
-      ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
+      application.reflective.ClusterModule.newClusteredActorRef(props)
     else {
       if (props.connections.isEmpty) //FIXME Shouldn't this be checked when instance is created so that it works with linking instead of barfing?
         throw new IllegalArgumentException("A routed actorRef can't have an empty connection set")
@@ -496,7 +498,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
  * mode, the router would behave as {@link RoundRobinRouter}
  */
-class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
+class ScatterGatherFirstCompletedRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends RoundRobinRouter with ScatterGatherRouter {
 
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Future.firstCompletedOf(results)
 }

@@ -12,23 +12,8 @@ import akka.actor.ActorCell
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class PinnedDispatcher(_actor: ActorCell, _name: String, _mailboxType: MailboxType)
-  extends Dispatcher(
-    _name, Dispatchers.THROUGHPUT, -1, _mailboxType, PinnedDispatcher.oneThread) {
-
-  def this(_name: String, _mailboxType: MailboxType) = this(null, _name, _mailboxType)
-
-  def this(_actor: ActorCell, _name: String) = this(_actor, _name, Dispatchers.MAILBOX_TYPE)
-
-  def this(_name: String) = this(null, _name, Dispatchers.MAILBOX_TYPE)
-
-  def this(_mailboxType: MailboxType) = this(null, "anon", _mailboxType)
-
-  def this(_actor: ActorCell, _mailboxType: MailboxType) = this(_actor, _actor.uuid.toString, _mailboxType)
-
-  def this(_actor: ActorCell) = this(_actor, _actor.uuid.toString, Dispatchers.MAILBOX_TYPE)
-
-  def this() = this(Dispatchers.MAILBOX_TYPE)
+class PinnedDispatcher(_actor: ActorCell, _name: String, _mailboxType: MailboxType, _timeoutMs: Long)
+  extends Dispatcher(_name, Int.MaxValue, -1, _mailboxType, PinnedDispatcher.oneThread, _timeoutMs) {
 
   protected[akka] val owner = new AtomicReference[ActorCell](_actor)
 

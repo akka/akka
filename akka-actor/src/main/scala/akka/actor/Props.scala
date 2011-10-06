@@ -16,8 +16,8 @@ import akka.util._
  */
 object Props {
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
-  final val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
+  final val defaultDispatcher: MessageDispatcher = null
+  final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(classOf[Exception] :: Nil, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
 

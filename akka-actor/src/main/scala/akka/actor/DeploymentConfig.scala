@@ -4,18 +4,11 @@
 
 package akka.actor
 
-import akka.config.Config
 import akka.routing.{ RouterType, FailureDetectorType }
+import akka.AkkaApplication
 
-/**
- * Module holding the programmatic deployment configuration classes.
- * Defines the deployment specification.
- * Most values have defaults and can be left out.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object DeploymentConfig {
-
+  
   // --------------------------------
   // --- Deploy
   // --------------------------------
@@ -75,13 +68,6 @@ object DeploymentConfig {
   // --- Scope
   // --------------------------------
   sealed trait Scope
-  case class ClusterScope(
-    preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
-    replication: ReplicationScheme = Transient) extends Scope
-
-  case class RemoteScope(
-    hostname: String = "localhost",
-    port: Int = 2552) extends Scope
 
   // For Java API
   case class LocalScope() extends Scope
@@ -177,8 +163,6 @@ object DeploymentConfig {
     //    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
-  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
-
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
     case BannagePeriodFailureDetector(timeToBan) ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
     case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
@@ -203,16 +187,6 @@ object DeploymentConfig {
     case LeastMessages   ⇒ RouterType.LeastMessages
     case LeastMessages() ⇒ RouterType.LeastMessages
     case c: CustomRouter ⇒ throw new UnsupportedOperationException("Unknown Router [" + c + "]")
-  }
-
-  def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
-    case _ ⇒ None
-  }
-
-  def isReplicated(deployment: Deploy): Boolean = replicationSchemeFor(deployment) match {
-    case Some(replicationScheme) ⇒ isReplicated(replicationScheme)
-    case _                       ⇒ false
   }
 
   def isReplicated(replicationScheme: ReplicationScheme): Boolean =
@@ -254,4 +228,38 @@ object DeploymentConfig {
         case _: DataGrid | DataGrid             ⇒ throw new UnsupportedOperationException("ReplicationStorage 'DataGrid' is no supported yet")
       }
   }
+
+}
+
+/**
+ * Module holding the programmatic deployment configuration classes.
+ * Defines the deployment specification.
+ * Most values have defaults and can be left out.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class DeploymentConfig(val application: AkkaApplication) {
+  
+  import DeploymentConfig._
+
+  case class ClusterScope(
+    preferredNodes: Iterable[Home] = Vector(Node(application.nodename)),
+    replication: ReplicationScheme = Transient) extends Scope
+
+  case class RemoteScope(
+    hostname: String = "localhost",
+    port: Int = application.AkkaConfig.REMOTE_SERVER_PORT) extends Scope
+
+  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == application.nodename)
+
+  def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
+    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
+    case _ ⇒ None
+  }
+
+  def isReplicated(deployment: Deploy): Boolean = replicationSchemeFor(deployment) match {
+    case Some(replicationScheme) ⇒ DeploymentConfig.isReplicated(replicationScheme)
+    case _                       ⇒ false
+  }
+
 }

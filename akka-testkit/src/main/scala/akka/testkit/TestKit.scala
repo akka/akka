@@ -7,11 +7,10 @@ import akka.actor._
 import Actor._
 import akka.util.Duration
 import akka.util.duration._
-
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
-
 import scala.annotation.tailrec
+import akka.AkkaApplication
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -87,9 +86,13 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
  * @author Roland Kuhn
  * @since 1.1
  */
-trait TestKitLight {
+class TestKit(_app: AkkaApplication = AkkaApplication()) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
+  
+  implicit val application = _app
+  implicit val defaultFutureTimeout = _app.AkkaConfig.TIMEOUT
+  implicit val defaultFutureDispatcher = _app.dispatcher
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -98,7 +101,7 @@ trait TestKitLight {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = new LocalActorRef(Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
+  val testActor = new LocalActorRef(application, Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
 
   /**
    * Implicit sender reference so that replies are possible for messages sent
@@ -548,14 +551,10 @@ object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 }
 
-trait TestKit extends TestKitLight {
-  implicit val self = testActor
-}
-
 /**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe extends TestKit {
+class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
 
   /**
    * Shorthand to get the testActor.
@@ -586,5 +585,5 @@ class TestProbe extends TestKit {
 }
 
 object TestProbe {
-  def apply() = new TestProbe
+  def apply()(implicit application: AkkaApplication) = new TestProbe(application)
 }

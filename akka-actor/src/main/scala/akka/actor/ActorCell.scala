@@ -12,13 +12,14 @@ import scala.collection.JavaConverters
 import akka.event.{ InVMMonitoring, EventHandler }
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
 import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
+import akka.AkkaApplication
 
 /**
  * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
  */
-private[akka] trait ActorContext {
+private[akka] trait ActorContext extends ActorRefFactory {
 
   def self: ActorRef with ScalaActorRef
 
@@ -47,6 +48,8 @@ private[akka] trait ActorContext {
   def handleFailure(fail: Failed): Unit
 
   def handleChildTerminated(child: ActorRef): Unit
+
+  def application: AkkaApplication
 }
 
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
@@ -126,8 +129,8 @@ object AllForOneStrategy {
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
 case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-                             maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  maxNrOfRetries: Option[Int] = None,
+  withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
   def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
     this(trapExit,
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
@@ -168,8 +171,8 @@ object OneForOneStrategy {
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
 case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-                             maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+  maxNrOfRetries: Option[Int] = None,
+  withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
   def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
     this(trapExit,
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
@@ -204,12 +207,15 @@ private[akka] object ActorCell {
 }
 
 private[akka] class ActorCell(
+  val application: AkkaApplication,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   @volatile var receiveTimeout: Option[Long],
   @volatile var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
+  
+  def provider = application.provider
 
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
@@ -245,7 +251,7 @@ private[akka] class ActorCell(
       }
     }
 
-    Actor.registry.register(self)
+    application.registry.register(self)
     dispatcher.attach(this)
   }
 
@@ -331,7 +337,7 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (Actor.debugLifecycle) EventHandler.debug(created, "started")
+      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(created, "started")
     } catch {
       case e ⇒ try {
         EventHandler.error(e, this, "error while creating actor")
@@ -345,7 +351,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (Actor.debugLifecycle) EventHandler.debug(failedActor, "restarting")
+      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(failedActor, "restarting")
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -359,7 +365,7 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (Actor.debugLifecycle) EventHandler.debug(freshActor, "restarted")
+      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(freshActor, "restarted")
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
@@ -382,13 +388,13 @@ private[akka] class ActorCell(
     def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
-      Actor.provider.evict(self.address)
-      Actor.registry.unregister(self)
+      application.provider.evict(self.address)
+      application.registry.unregister(self)
       dispatcher.detach(this)
 
       try {
         val a = actor
-        if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
+        if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(a, "stopping")
         if (a ne null) a.postStop()
 
         //Stop supervised actors
@@ -410,7 +416,7 @@ private[akka] class ActorCell(
       val links = _linkedActors
       if (!links.contains(child)) {
         _linkedActors = new ChildRestartStats(child) :: links
-        if (Actor.debugLifecycle) EventHandler.debug(actor, "now supervising " + child)
+        if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "now supervising " + child)
       } else EventHandler.warning(actor, "Already supervising " + child)
     }
 
@@ -422,10 +428,10 @@ private[akka] class ActorCell(
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
             akka.event.InVMMonitoring.link(self, subject)
-            if (Actor.debugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
+            if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "now monitoring " + subject)
           case Unlink(subject) ⇒
             akka.event.InVMMonitoring.unlink(self, subject)
-            if (Actor.debugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
+            if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()
           case Terminate        ⇒ terminate()

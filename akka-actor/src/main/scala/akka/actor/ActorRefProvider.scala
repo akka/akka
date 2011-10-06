@@ -8,6 +8,11 @@ import DeploymentConfig._
 import akka.event.EventHandler
 import akka.AkkaException
 import akka.routing._
+import akka.AkkaApplication
+import akka.dispatch.MessageDispatcher
+import java.util.concurrent.ConcurrentHashMap
+import akka.dispatch.Promise
+import com.eaio.uuid.UUID
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -21,6 +26,35 @@ trait ActorRefProvider {
   private[akka] def evict(address: String): Boolean
 }
 
+/**
+ * Interface implemented by AkkaApplication and AkkaContext, the only two places from which you can get fresh actors
+ */
+trait ActorRefFactory {
+
+  def provider: ActorRefProvider
+
+  def dispatcher: MessageDispatcher
+
+  def createActor(props: Props): ActorRef = createActor(props, new UUID().toString)
+
+  /*
+   * TODO this will have to go at some point, because creating two actors with 
+   * the same address can race on the cluster, and then you never know which 
+   * implementation wins 
+   */
+  def createActor(props: Props, address: String): ActorRef = {
+    val p =
+      if (props.dispatcher == Props.defaultDispatcher)
+        props.copy(dispatcher = dispatcher)
+      else
+        props
+    provider.actorOf(p, address).get
+  }
+
+  def findActor(address: String): Option[ActorRef] = provider.findActorRef(address)
+
+}
+
 class ActorRefProviderException(message: String) extends AkkaException(message)
 
 object ActorRefProvider {
@@ -31,107 +65,18 @@ object ActorRefProvider {
 }
 
 /**
- * Container for all ActorRef providers.
- */
-private[akka] class ActorRefProviders(
-  @volatile private var localProvider: Option[ActorRefProvider] = Some(new LocalActorRefProvider),
-  @volatile private var remoteProvider: Option[ActorRefProvider] = None,
-  @volatile private var clusterProvider: Option[ActorRefProvider] = None) {
-
-  import ActorRefProvider._
-
-  def register(providerType: ProviderType, provider: ActorRefProvider) = {
-    EventHandler.info(this, "Registering ActorRefProvider [%s]".format(provider.getClass.getName))
-    providerType match {
-      case LocalProvider   ⇒ localProvider = Option(provider)
-      case RemoteProvider  ⇒ remoteProvider = Option(provider)
-      case ClusterProvider ⇒ clusterProvider = Option(provider)
-    }
-  }
-
-  //FIXME Implement support for configuring by deployment ID etc
-  //FIXME If address matches an already created actor (Ahead-of-time deployed) return that actor
-  //FIXME If address exists in config, it will override the specified Props (should we attempt to merge?)
-
-  def actorOf(props: Props, address: String): ActorRef = {
-
-    @annotation.tailrec
-    def actorOf(props: Props, address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
-      providers match {
-        case Nil ⇒ None
-        case provider :: rest ⇒
-          provider.actorOf(props, address) match {
-            case None ⇒ actorOf(props, address, rest) // recur
-            case ref  ⇒ ref
-          }
-      }
-    }
-
-    actorOf(props, address, providersAsList).getOrElse(throw new ActorRefProviderException(
-      "Actor [" +
-        address +
-        "] could not be found in or created by any of the registered 'ActorRefProvider's [" +
-        providersAsList.map(_.getClass.getName).mkString(", ") + "]"))
-  }
-
-  def findActorRef(address: String): Option[ActorRef] = {
-
-    @annotation.tailrec
-    def findActorRef(address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
-      providers match {
-        case Nil ⇒ None
-        case provider :: rest ⇒
-          provider.findActorRef(address) match {
-            case None ⇒ findActorRef(address, rest) // recur
-            case ref  ⇒ ref
-          }
-      }
-    }
-
-    findActorRef(address, providersAsList)
-  }
-
-  /**
-   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
-   */
-  private[akka] def evict(address: String): Boolean = {
-
-    @annotation.tailrec
-    def evict(address: String, providers: List[ActorRefProvider]): Boolean = {
-      providers match {
-        case Nil ⇒ false
-        case provider :: rest ⇒
-          if (provider.evict(address)) true // done
-          else evict(address, rest) // recur
-      }
-    }
-
-    evict(address, providersAsList)
-  }
-
-  private[akka] def systemActorOf(props: Props, address: String): Option[ActorRef] = {
-    localProvider
-      .getOrElse(throw new IllegalStateException("No LocalActorRefProvider available"))
-      .asInstanceOf[LocalActorRefProvider]
-      .actorOf(props, address, true)
-  }
-
-  private def providersAsList = List(localProvider, remoteProvider, clusterProvider).flatten
-}
-
-/**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider extends ActorRefProvider {
-  import java.util.concurrent.ConcurrentHashMap
-  import akka.dispatch.Promise
-  import com.eaio.uuid.UUID
+class LocalActorRefProvider(application: AkkaApplication) extends ActorRefProvider {
+
+  import application.dispatcher
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
+  private val deployer = new Deployer(application)
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
 
-  def findActorRef(address: String): Option[ActorRef] = Actor.registry.local.actorFor(address)
+  def findActorRef(address: String): Option[ActorRef] = application.registry.local.actorFor(address)
 
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
@@ -147,11 +92,11 @@ class LocalActorRefProvider extends ActorRefProvider {
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
 
       val actor = try {
-        Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+        deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
           // create a local actor
           case None | Some(Deploy(_, _, Direct, _, _, LocalScope)) ⇒
-            Some(new LocalActorRef(props, address, systemService)) // create a local actor
+            Some(new LocalActorRef(application, props, address, systemService)) // create a local actor
 
           // create a routed actor ref
           case deploy @ Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
@@ -168,10 +113,10 @@ class LocalActorRefProvider extends ActorRefProvider {
             }
             val connections: Iterable[ActorRef] =
               if (nrOfInstances.factor > 0)
-                Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
+                Vector.fill(nrOfInstances.factor)(new LocalActorRef(application, props, new UUID().toString, systemService))
               else Nil
 
-            Some(Routing.actorOf(RoutedProps(
+            Some(application.routing.actorOf(RoutedProps(
               routerFactory = routerFactory,
               connections = connections)))
 
@@ -183,7 +128,7 @@ class LocalActorRefProvider extends ActorRefProvider {
           throw e
       }
 
-      actor foreach Actor.registry.register // only for ActorRegistry backward compat, will be removed later
+      actor foreach application.registry.register // only for ActorRegistry backward compat, will be removed later
 
       newFuture completeWithResult actor
       actor

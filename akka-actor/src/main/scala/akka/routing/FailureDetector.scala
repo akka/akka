@@ -9,7 +9,7 @@ import akka.actor._
 import akka.event.EventHandler
 import akka.config.ConfigurationException
 import akka.actor.UntypedChannel._
-import akka.dispatch.{ Future, Futures }
+import akka.dispatch.Future
 import akka.util.ReflectiveAccess
 
 import java.net.InetSocketAddress

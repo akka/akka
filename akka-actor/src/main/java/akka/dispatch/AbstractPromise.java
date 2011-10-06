@@ -4,8 +4,6 @@
 
 package akka.dispatch;
 
-import sun.tools.tree.FinallyStatement;
-
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class AbstractPromise {

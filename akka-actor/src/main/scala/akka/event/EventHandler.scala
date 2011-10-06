@@ -6,11 +6,11 @@ package akka.event
 
 import akka.actor._
 import akka.dispatch.Dispatchers
-import akka.config.Config._
 import akka.config.ConfigurationException
 import akka.util.{ ListenerManagement, ReflectiveAccess }
 import akka.serialization._
 import akka.AkkaException
+import akka.AkkaApplication
 
 /**
  * Event handler.
@@ -54,6 +54,10 @@ import akka.AkkaException
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
+  
+  // TODO remove this EVIL thing!
+  private val appl = AkkaApplication("akka-reference.conf")
+  
   val synchronousLogging: Boolean = System.getProperty("akka.event.force-sync") match {
     case null | "" ⇒ false
     case _         ⇒ true
@@ -97,12 +101,12 @@ object EventHandler extends ListenerManagement {
   lazy val StandardOutLogger = new StandardOutLogger {}
 
   lazy val EventHandlerDispatcher =
-    Dispatchers.fromConfig("akka.event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
+    appl.dispatcherFactory.fromConfig("akka.event-handler-dispatcher", appl.dispatcherFactory.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
   @volatile
-  var level: Int = config.getString("akka.event-handler-level", "INFO") match {
+  var level: Int = appl.AkkaConfig.LogLevel match {
     case "ERROR" | "error"     ⇒ ErrorLevel
     case "WARNING" | "warning" ⇒ WarningLevel
     case "INFO" | "info"       ⇒ InfoLevel
@@ -113,14 +117,14 @@ object EventHandler extends ListenerManagement {
 
   def start() {
     try {
-      val defaultListeners = config.getList("akka.event-handlers") match {
+      val defaultListeners = appl.AkkaConfig.EventHandlers match {
         case Nil       ⇒ "akka.event.EventHandler$DefaultListener" :: Nil
         case listeners ⇒ listeners
       }
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case Right(actorClass) ⇒ addListener(new LocalActorRef(Props(actorClass).withDispatcher(EventHandlerDispatcher), newUuid.toString, systemService = true))
+            case Right(actorClass) ⇒ addListener(new LocalActorRef(appl, Props(actorClass).withDispatcher(EventHandlerDispatcher), newUuid.toString, systemService = true))
             case Left(exception)   ⇒ throw exception
           }
         } catch {

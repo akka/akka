@@ -10,9 +10,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
-import akka.util.ReflectiveAccess._
-import akka.AkkaException
-import akka.config.{ Configuration, ConfigurationException, Config }
+import akka.{ AkkaException, AkkaApplication }
+import akka.config.{ Configuration, ConfigurationException }
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -27,12 +26,18 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Deployer extends ActorDeployer {
+class Deployer(val application: AkkaApplication) extends ActorDeployer {
+  
+  val deploymentConfig = new DeploymentConfig(application)
 
   //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
-    val deployer = if (ClusterModule.isEnabled) ClusterModule.clusterDeployer else LocalDeployer
+    val deployer = if (application.reflective.ClusterModule.isEnabled) {
+      application.reflective.ClusterModule.clusterDeployer
+    } else {
+      LocalDeployer
+    }
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -101,7 +106,7 @@ object Deployer extends ActorDeployer {
 
   private[akka] def addressesInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
-    Config.config.getSection(deploymentPath) match {
+    application.config.getSection(deploymentPath) match {
       case None ⇒ Nil
       case Some(addressConfig) ⇒
         addressConfig.map.keySet
@@ -113,7 +118,7 @@ object Deployer extends ActorDeployer {
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(address: String, configuration: Configuration = Config.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(address: String, configuration: Configuration = application.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------
@@ -234,7 +239,7 @@ object Deployer extends ActorDeployer {
             val hostname = remoteConfig.getString("hostname", "localhost")
             val port = remoteConfig.getInt("port", 2552)
 
-            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, RemoteScope(hostname, port)))
+            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.RemoteScope(hostname, port)))
 
           case None ⇒ // check for 'cluster' config section
 
@@ -280,7 +285,7 @@ object Deployer extends ActorDeployer {
                 // --------------------------------
                 clusterConfig.getSection("replication") match {
                   case None ⇒
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Transient)))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
                     val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -299,7 +304,7 @@ object Deployer extends ActorDeployer {
                           ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                           unknown + "]")
                     }
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Replication(storage, strategy))))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
                 }
             }
         }

@@ -4,6 +4,7 @@
 
 package akka.routing
 
+import akka.util.Duration
 import akka.actor._
 import akka.util.ReflectiveAccess
 
@@ -58,9 +59,9 @@ object RouterType {
 
 object RoutedProps {
 
-  final val defaultTimeout = Actor.TIMEOUT
+  final val defaultTimeout = Timeout(Duration.MinusInf)
   final val defaultRouterFactory = () ⇒ new RoundRobinRouter
-  final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
+  final val defaultLocalOnly = false
   final val defaultFailureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureLocalFailureDetector(connections.values)
 
   /**
