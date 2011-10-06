@@ -124,6 +124,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.4.1" % "compile" //New BSD
 
+    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.1-SNAPSHOT" // ApacheV2
+
     lazy val sjson      = "net.debasishg" % "sjson_2.9.0" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.9.0" % "0.11" % "test" //ApacheV2
 
@@ -159,6 +161,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),               akka_typed_actor)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),                 akka_actor)
+  lazy val akka_zeromq      = project("akka-zeromq",      "akka-zeromq",      new AkkaZeroMQProject(_),               akka_actor)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),                akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
@@ -351,6 +354,16 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val junit     = Dependencies.junit
     val mockito   = Dependencies.mockito
     val scalatest = Dependencies.scalatest
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------                                       
+  // akka-zeromq subproject                                                                                                                                    
+  // -------------------------------------------------------------------------------------------------------------------                                       
+                                                                                                                                                               
+  class AkkaZeroMQProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val protobuf   = Dependencies.protobuf
+    val zeromq     = Dependencies.zeromq
+    val scalatest  = Dependencies.scalatest
   }
 
   // -------------------------------------------------------------------------------------------------------------------
