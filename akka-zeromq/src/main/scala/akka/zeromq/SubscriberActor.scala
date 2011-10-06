@@ -10,7 +10,16 @@ private[zeromq] class SubscriberActor(params: SocketParameters) extends Abstract
   override def postStop { }
   override def receive: Receive = {
     case Start => {
-      bindOrConnectRemoteSocket; remoteSocket.subscribe(Array.empty); receiveMessages
+      bindOrConnectRemoteSocket
+      receiveMessages
+      self.reply(Ok)
+    }
+    case Subscribe(topic) => {
+      remoteSocket.subscribe(topic)
+      self.reply(Ok)
+    }
+    case Unsubscribe(topic) => {
+      remoteSocket.unsubscribe(topic)
       self.reply(Ok)
     }
   }

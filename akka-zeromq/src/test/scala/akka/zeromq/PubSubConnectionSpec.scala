@@ -12,6 +12,7 @@ class PubSubConnectionSpec extends Specification {
   "Pub-sub connection" should {
     "send / receive messages" in {
       val (publisher, subscriber) = (createPublisher, createSubscriber)
+      subscriber ? Subscribe(Array.empty)
       waitUntil { 
         publisher ? ZMQMessage(payload)
         messages.length >= 1
