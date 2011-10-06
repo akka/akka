@@ -266,7 +266,7 @@ private[akka] class ActorCell(
     subject
   }
 
-  @deprecated("Dog slow and racy")
+  @deprecated("Dog slow and racy", "now")
   def linkedActors: JCollection[ActorRef] = _linkedActors match {
     case Nil  ⇒ JCollections.emptyList[ActorRef]()
     case some ⇒ JCollections.unmodifiableCollection(JavaConverters.asJavaCollectionConverter(some.map(_.child)).asJavaCollection)

@@ -12,7 +12,7 @@ object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
 
   lazy val buildSettings = Seq(
-    organization := "se.scalablesolutions.akka",
+    organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
     scalaVersion := "2.9.1"
   )
@@ -35,7 +35,9 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable"
+      scalacOptions += "-P:continuations:enable",
+      // to fix scaladoc generation
+      fullClasspath in doc in Compile <<= fullClasspath in Compile
     )
   )
 
