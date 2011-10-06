@@ -39,6 +39,7 @@ run-codefellow
 .project
 .settings
 .classpath
+.cache
 .idea
 .scala_dependencies
 multiverse.log
