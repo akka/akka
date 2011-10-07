@@ -142,7 +142,7 @@ object Timeout {
 }
 
 object Actor {
-  
+
   type Receive = PartialFunction[Any, Unit]
 
 }
@@ -163,9 +163,9 @@ object Actor {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
-  
+
   type Receive = Actor.Receive
-  
+
   /**
    * Stores the context for this actor, including self, sender, and hotswap.
    */
@@ -187,7 +187,7 @@ trait Actor {
     ActorCell.contextStack.set(contextStack.push(null))
     context
   }
-  
+
   implicit def application = context.application
 
   private def config = application.AkkaConfig
@@ -208,7 +208,7 @@ trait Actor {
     }
     def apply(o: Any): Unit = r(o)
   }
-  
+
   object LoggingReceive {
     def apply(source: AnyRef, r: Receive): Receive = r match {
       case _: LoggingReceive ⇒ r

@@ -4,8 +4,9 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
+import akka.AkkaApplication
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
+import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
 import akka.event.EventHandler
@@ -57,13 +58,15 @@ object CoordinatedIncrement {
 class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
+  val application = AkkaApplication("CoordinatedIncrementSpec")
+  implicit val timeout = Timeout(5.seconds.dilated)
+
   val numCounters = 5
-  val timeout = 5 seconds
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i))
+    def createCounter(i: Int) = application.createActor(Props(new Counter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer)
+    val failer = application.createActor(Props(new Failer))
     (counters, failer)
   }
 

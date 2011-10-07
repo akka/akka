@@ -221,7 +221,7 @@ abstract class RemoteSupport(val application: AkkaApplication) extends ListenerM
 /**
  * This is the interface for the RemoteServer functionality, it's used in Actor.remote
  */
-trait RemoteServerModule extends RemoteModule { this: RemoteSupport =>
+trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
   protected val guard = new ReentrantGuard
 
   /**

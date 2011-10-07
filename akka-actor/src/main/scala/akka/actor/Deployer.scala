@@ -27,7 +27,7 @@ trait ActorDeployer {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Deployer(val application: AkkaApplication) extends ActorDeployer {
-  
+
   val deploymentConfig = new DeploymentConfig(application)
 
   //  val defaultAddress = Node(Config.nodename)

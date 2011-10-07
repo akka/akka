@@ -126,7 +126,7 @@ class RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
 }
 
 object Routing {
-  
+
   sealed trait RoutingMessage
 
   case class Broadcast(message: Any) extends RoutingMessage

@@ -95,7 +95,7 @@ class TestActorRefSpec extends TestKit with WordSpec with MustMatchers with Befo
   import TestActorRefSpec._
 
   EventHandler.start()
-  
+
   override def beforeEach {
     otherthread = null
   }

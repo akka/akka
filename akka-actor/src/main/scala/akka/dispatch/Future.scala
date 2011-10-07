@@ -188,7 +188,7 @@ object Future {
    */
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], timeout: Timeout, dispatcher: MessageDispatcher): Future[M[A]] =
     in.foldLeft(new KeptPromise(Right(cbf(in))): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
-    
+
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Timeout)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], dispatcher: MessageDispatcher): Future[M[A]] =
     sequence(in)(cbf, timeout, dispatcher)
 
@@ -206,7 +206,7 @@ object Future {
 
   def firstCompletedOf[T](futures: Iterable[Future[T]], timeout: Timeout)(implicit dispatcher: MessageDispatcher): Future[T] =
     firstCompletedOf(futures)(dispatcher, timeout)
-  
+
   /**
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
@@ -227,9 +227,9 @@ object Future {
     }
   }
 
-  def find[T](futures: Iterable[Future[T]], timeout:Timeout)(predicate: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher): Future[Option[T]] =
+  def find[T](futures: Iterable[Future[T]], timeout: Timeout)(predicate: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher): Future[Option[T]] =
     find(futures)(predicate)(dispatcher, timeout)
-  
+
   /**
    * A non-blocking fold over the specified futures.
    * The fold is performed on the thread where the last future is completed,
@@ -281,7 +281,7 @@ object Future {
       result
     }
   }
-  
+
   def fold[T, R](futures: Iterable[Future[T]], timeout: Timeout)(zero: R)(foldFun: (R, T) ⇒ R)(implicit dispatcher: MessageDispatcher): Future[R] =
     fold(futures)(zero)(foldFun)(dispatcher, timeout)
 
@@ -310,7 +310,7 @@ object Future {
       result
     }
   }
-  
+
   def reduce[T, R >: T](futures: Iterable[Future[T]], timeout: Timeout)(op: (R, T) ⇒ T)(implicit dispatcher: MessageDispatcher): Future[R] =
     reduce(futures)(op)(dispatcher, timeout)
 
@@ -327,7 +327,7 @@ object Future {
       val fb = fn(a.asInstanceOf[A])
       for (r ← fr; b ← fb) yield (r += b)
     }.map(_.result)
-    
+
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A], timeout: Timeout)(fn: A ⇒ Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], dispatcher: MessageDispatcher): Future[M[B]] =
     traverse(in)(fn)(cbf, timeout, dispatcher)
 
@@ -356,8 +356,8 @@ object Future {
     }, true)
     future
   }
-    
-    // TODO make variant of flow(timeout)(body) which does NOT break type inference
+
+  // TODO make variant of flow(timeout)(body) which does NOT break type inference
 
   private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None

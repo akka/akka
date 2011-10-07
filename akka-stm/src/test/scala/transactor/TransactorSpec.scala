@@ -3,18 +3,17 @@ package akka.transactor.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
+import akka.AkkaApplication
 import akka.transactor.Transactor
-import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
+import akka.actor._
 import akka.stm._
 import akka.util.duration._
 import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
-import java.util.concurrent.CountDownLatch
-
 object TransactorIncrement {
-  case class Increment(friends: Seq[ActorRef], latch: CountDownLatch)
+  case class Increment(friends: Seq[ActorRef], latch: TestLatch)
   case object GetCount
 
   class Counter(name: String) extends Transactor {
@@ -64,7 +63,7 @@ object TransactorIncrement {
 }
 
 object SimpleTransactor {
-  case class Set(ref: Ref[Int], value: Int, latch: CountDownLatch)
+  case class Set(ref: Ref[Int], value: Int, latch: TestLatch)
 
   class Setter extends Transactor {
     def atomically = {
@@ -80,22 +79,24 @@ class TransactorSpec extends WordSpec with MustMatchers {
   import TransactorIncrement._
   import SimpleTransactor._
 
+  val application = AkkaApplication("TransactorSpec")
+  implicit val timeout = Timeout(5.seconds.dilated)
+
   val numCounters = 5
-  val timeout = 5 seconds
 
   def createTransactors = {
-    def createCounter(i: Int) = Actor.actorOf(new Counter("counter" + i))
+    def createCounter(i: Int) = application.createActor(Props(new Counter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val failer = Actor.actorOf(new Failer)
+    val failer = application.createActor(Props(new Failer))
     (counters, failer)
   }
 
   "Transactor increment" should {
     "increment all counters by one with successful transactions" in {
       val (counters, failer) = createTransactors
-      val incrementLatch = new CountDownLatch(numCounters)
+      val incrementLatch = TestLatch(numCounters)
       counters(0) ! Increment(counters.tail, incrementLatch)
-      incrementLatch.await(timeout.length, timeout.unit)
+      incrementLatch.await
       for (counter ← counters) {
         (counter ? GetCount).as[Int].get must be === 1
       }
@@ -110,9 +111,9 @@ class TransactorSpec extends WordSpec with MustMatchers {
         EventFilter[ActorTimeoutException])
       EventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, failer) = createTransactors
-      val failLatch = new CountDownLatch(numCounters + 1)
+      val failLatch = TestLatch(numCounters)
       counters(0) ! Increment(counters.tail :+ failer, failLatch)
-      failLatch.await(timeout.length, timeout.unit)
+      failLatch.await
       for (counter ← counters) {
         (counter ? GetCount).as[Int].get must be === 0
       }
@@ -124,11 +125,11 @@ class TransactorSpec extends WordSpec with MustMatchers {
 
   "Transactor" should {
     "be usable without overriding normally" in {
-      val transactor = Actor.actorOf(new Setter)
+      val transactor = application.createActor(Props(new Setter))
       val ref = Ref(0)
-      val latch = new CountDownLatch(1)
+      val latch = TestLatch(1)
       transactor ! Set(ref, 5, latch)
-      latch.await(timeout.length, timeout.unit)
+      latch.await
       val value = atomic { ref.get }
       value must be === 5
       transactor.stop()

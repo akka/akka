@@ -21,8 +21,6 @@ object AkkaApplication {
 
   val VERSION = "2.0-SNAPSHOT"
 
-  val GLOBAL_HOME = systemHome orElse envHome
-
   val envHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
     case value           ⇒ Some(value)
@@ -32,6 +30,8 @@ object AkkaApplication {
     case null | "" ⇒ None
     case value     ⇒ Some(value)
   }
+
+  val GLOBAL_HOME = systemHome orElse envHome
 
   val envConf = System.getenv("AKKA_MODE") match {
     case null | "" ⇒ None
@@ -50,7 +50,7 @@ object AkkaApplication {
   } catch { case _ ⇒ None }
 
   val fromClasspath = try {
-    Some(Configuration.fromResource(defaultLocation))
+    Some(Configuration.fromResource(defaultLocation, getClass.getClassLoader))
   } catch { case _ ⇒ None }
 
   val fromHome = try {
@@ -59,13 +59,18 @@ object AkkaApplication {
 
   val emptyConfig = Configuration.fromString("akka { version = \"" + VERSION + "\" }")
 
-  def apply(name: String): AkkaApplication = new AkkaApplication(name, fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig)
-  
-  def apply(): AkkaApplication = apply("default")
+  val defaultConfig = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+
+  def apply(name: String): AkkaApplication = new AkkaApplication(name)
+
+  def apply(): AkkaApplication = new AkkaApplication()
 
 }
 
 class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory {
+
+  def this(name: String) = this(name, AkkaApplication.defaultConfig)
+  def this() = this("default")
 
   import AkkaApplication._
 
@@ -111,7 +116,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
-  
+
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
@@ -125,11 +130,11 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO check memory consistency issues
   val reflective = new ReflectiveAccess(this)
-  
+
   val routing = new Routing(this)
-  
+
   val serialization = new Serialization(this)
-  
+
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 

@@ -89,7 +89,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
 class TestKit(_app: AkkaApplication = AkkaApplication()) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
-  
+
   implicit val application = _app
   implicit val defaultFutureTimeout = _app.AkkaConfig.TIMEOUT
   implicit val defaultFutureDispatcher = _app.dispatcher

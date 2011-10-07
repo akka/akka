@@ -54,10 +54,10 @@ import akka.AkkaApplication
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object EventHandler extends ListenerManagement {
-  
+
   // TODO remove this EVIL thing!
   private val appl = AkkaApplication("akka-reference.conf")
-  
+
   val synchronousLogging: Boolean = System.getProperty("akka.event.force-sync") match {
     case null | "" ⇒ false
     case _         ⇒ true

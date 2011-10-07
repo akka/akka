@@ -147,7 +147,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-    application: AkkaApplication,
+  application: AkkaApplication,
   private[this] val props: Props,
   val address: String,
   val systemService: Boolean = false,
@@ -263,8 +263,8 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-    val application: AkkaApplication,
-    val remote: RemoteSupport,
+  val application: AkkaApplication,
+  val remote: RemoteSupport,
   val remoteAddress: InetSocketAddress,
   val address: String,
   loader: Option[ClassLoader])
@@ -386,7 +386,7 @@ case class SerializedActorRef(uuid: Uuid,
                               hostname: String,
                               port: Int) {
   import akka.serialization.Serialization._
-  
+
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = application.value.registry.local.actorFor(uuid) match {
     case Some(actor) ⇒ actor

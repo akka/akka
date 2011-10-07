@@ -6,47 +6,32 @@ package akka.stm
 
 import java.lang.{ Boolean ⇒ JBoolean }
 
-import akka.config.Config._
 import akka.util.Duration
 
 import org.multiverse.api.GlobalStmInstance.getGlobalStmInstance
 import org.multiverse.stms.alpha.AlphaStm
 import org.multiverse.templates.TransactionBoilerplate
-import org.multiverse.api.{ PropagationLevel ⇒ MPropagation }
+import org.multiverse.api.PropagationLevel
 import org.multiverse.api.{ TraceLevel ⇒ MTraceLevel }
 
 /**
  * For configuring multiverse transactions.
  */
 object TransactionConfig {
-  // note: null values are so that we can default to Multiverse inference when not set
-  val FAMILY_NAME = "DefaultTransaction"
-  val READONLY = null.asInstanceOf[JBoolean]
-  val MAX_RETRIES = config.getInt("akka.stm.max-retries", 1000)
-  val TIMEOUT = config.getLong("akka.stm.timeout", 5)
-  val TRACK_READS = null.asInstanceOf[JBoolean]
-  val WRITE_SKEW = config.getBool("akka.stm.write-skew", true)
-  val BLOCKING_ALLOWED = config.getBool("akka.stm.blocking-allowed", false)
-  val INTERRUPTIBLE = config.getBool("akka.stm.interruptible", false)
-  val SPECULATIVE = config.getBool("akka.stm.speculative", true)
-  val QUICK_RELEASE = config.getBool("akka.stm.quick-release", true)
-  val PROPAGATION = propagation(config.getString("akka.stm.propagation", "requires"))
-  val TRACE_LEVEL = traceLevel(config.getString("akka.stm.trace-level", "none"))
-
-  val DefaultTimeout = Duration(TIMEOUT, TIME_UNIT)
-
-  def propagation(level: String) = level.toLowerCase match {
-    case "requiresnew" ⇒ Propagation.RequiresNew
-    case "fine"        ⇒ Propagation.Mandatory
-    case "supports"    ⇒ Propagation.Supports
-    case "never"       ⇒ Propagation.Never
-    case _             ⇒ Propagation.Requires
-  }
-
-  def traceLevel(level: String) = level.toLowerCase match {
-    case "coarse" | "course" ⇒ TraceLevel.Coarse
-    case "fine"              ⇒ TraceLevel.Fine
-    case _                   ⇒ TraceLevel.None
+  object Default {
+    // note: null values are so that we can default to Multiverse inference when not set
+    val FamilyName = "DefaultTransaction"
+    val Readonly = null.asInstanceOf[JBoolean]
+    val MaxRetries = 1000
+    val Timeout = Duration(5, "seconds")
+    val TrackReads = null.asInstanceOf[JBoolean]
+    val WriteSkew = true
+    val BlockingAllowed = false
+    val Interruptible = false
+    val Speculative = true
+    val QuickRelease = true
+    val Propagation = PropagationLevel.Requires
+    val TraceLevel = MTraceLevel.none
   }
 
   /**
@@ -65,18 +50,18 @@ object TransactionConfig {
    * @param propagation      For controlling how nested transactions behave.
    * @param traceLevel       Transaction trace level.
    */
-  def apply(familyName: String = FAMILY_NAME,
-            readonly: JBoolean = READONLY,
-            maxRetries: Int = MAX_RETRIES,
-            timeout: Duration = DefaultTimeout,
-            trackReads: JBoolean = TRACK_READS,
-            writeSkew: Boolean = WRITE_SKEW,
-            blockingAllowed: Boolean = BLOCKING_ALLOWED,
-            interruptible: Boolean = INTERRUPTIBLE,
-            speculative: Boolean = SPECULATIVE,
-            quickRelease: Boolean = QUICK_RELEASE,
-            propagation: MPropagation = PROPAGATION,
-            traceLevel: MTraceLevel = TRACE_LEVEL) = {
+  def apply(familyName: String = Default.FamilyName,
+            readonly: JBoolean = Default.Readonly,
+            maxRetries: Int = Default.MaxRetries,
+            timeout: Duration = Default.Timeout,
+            trackReads: JBoolean = Default.TrackReads,
+            writeSkew: Boolean = Default.WriteSkew,
+            blockingAllowed: Boolean = Default.BlockingAllowed,
+            interruptible: Boolean = Default.Interruptible,
+            speculative: Boolean = Default.Speculative,
+            quickRelease: Boolean = Default.QuickRelease,
+            propagation: PropagationLevel = Default.Propagation,
+            traceLevel: MTraceLevel = Default.TraceLevel) = {
     new TransactionConfig(familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
       interruptible, speculative, quickRelease, propagation, traceLevel)
   }
@@ -98,18 +83,18 @@ object TransactionConfig {
  * <p>propagation     - For controlling how nested transactions behave.
  * <p>traceLevel      - Transaction trace level.
  */
-class TransactionConfig(val familyName: String = TransactionConfig.FAMILY_NAME,
-                        val readonly: JBoolean = TransactionConfig.READONLY,
-                        val maxRetries: Int = TransactionConfig.MAX_RETRIES,
-                        val timeout: Duration = TransactionConfig.DefaultTimeout,
-                        val trackReads: JBoolean = TransactionConfig.TRACK_READS,
-                        val writeSkew: Boolean = TransactionConfig.WRITE_SKEW,
-                        val blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
-                        val interruptible: Boolean = TransactionConfig.INTERRUPTIBLE,
-                        val speculative: Boolean = TransactionConfig.SPECULATIVE,
-                        val quickRelease: Boolean = TransactionConfig.QUICK_RELEASE,
-                        val propagation: MPropagation = TransactionConfig.PROPAGATION,
-                        val traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL)
+class TransactionConfig(val familyName: String = TransactionConfig.Default.FamilyName,
+                        val readonly: JBoolean = TransactionConfig.Default.Readonly,
+                        val maxRetries: Int = TransactionConfig.Default.MaxRetries,
+                        val timeout: Duration = TransactionConfig.Default.Timeout,
+                        val trackReads: JBoolean = TransactionConfig.Default.TrackReads,
+                        val writeSkew: Boolean = TransactionConfig.Default.WriteSkew,
+                        val blockingAllowed: Boolean = TransactionConfig.Default.BlockingAllowed,
+                        val interruptible: Boolean = TransactionConfig.Default.Interruptible,
+                        val speculative: Boolean = TransactionConfig.Default.Speculative,
+                        val quickRelease: Boolean = TransactionConfig.Default.QuickRelease,
+                        val propagation: PropagationLevel = TransactionConfig.Default.Propagation,
+                        val traceLevel: MTraceLevel = TransactionConfig.Default.TraceLevel)
 
 object DefaultTransactionConfig extends TransactionConfig
 
@@ -121,18 +106,18 @@ object TransactionFactory {
 
   def apply(config: TransactionConfig, defaultName: String) = new TransactionFactory(config, defaultName)
 
-  def apply(familyName: String = TransactionConfig.FAMILY_NAME,
-            readonly: JBoolean = TransactionConfig.READONLY,
-            maxRetries: Int = TransactionConfig.MAX_RETRIES,
-            timeout: Duration = TransactionConfig.DefaultTimeout,
-            trackReads: JBoolean = TransactionConfig.TRACK_READS,
-            writeSkew: Boolean = TransactionConfig.WRITE_SKEW,
-            blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED,
-            interruptible: Boolean = TransactionConfig.INTERRUPTIBLE,
-            speculative: Boolean = TransactionConfig.SPECULATIVE,
-            quickRelease: Boolean = TransactionConfig.QUICK_RELEASE,
-            propagation: MPropagation = TransactionConfig.PROPAGATION,
-            traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL) = {
+  def apply(familyName: String = TransactionConfig.Default.FamilyName,
+            readonly: JBoolean = TransactionConfig.Default.Readonly,
+            maxRetries: Int = TransactionConfig.Default.MaxRetries,
+            timeout: Duration = TransactionConfig.Default.Timeout,
+            trackReads: JBoolean = TransactionConfig.Default.TrackReads,
+            writeSkew: Boolean = TransactionConfig.Default.WriteSkew,
+            blockingAllowed: Boolean = TransactionConfig.Default.BlockingAllowed,
+            interruptible: Boolean = TransactionConfig.Default.Interruptible,
+            speculative: Boolean = TransactionConfig.Default.Speculative,
+            quickRelease: Boolean = TransactionConfig.Default.QuickRelease,
+            propagation: PropagationLevel = TransactionConfig.Default.Propagation,
+            traceLevel: MTraceLevel = TransactionConfig.Default.TraceLevel) = {
     val config = new TransactionConfig(
       familyName, readonly, maxRetries, timeout, trackReads, writeSkew, blockingAllowed,
       interruptible, speculative, quickRelease, propagation, traceLevel)
@@ -163,10 +148,10 @@ object TransactionFactory {
  */
 class TransactionFactory(
   val config: TransactionConfig = DefaultTransactionConfig,
-  defaultName: String = TransactionConfig.FAMILY_NAME) { self ⇒
+  defaultName: String = TransactionConfig.Default.FamilyName) { self ⇒
 
   // use the config family name if it's been set, otherwise defaultName - used by actors to set class name as default
-  val familyName = if (config.familyName != TransactionConfig.FAMILY_NAME) config.familyName else defaultName
+  val familyName = if (config.familyName != TransactionConfig.Default.FamilyName) config.familyName else defaultName
 
   val factory = {
     var builder = (getGlobalStmInstance().asInstanceOf[AlphaStm].getTransactionFactoryBuilder()
@@ -199,11 +184,11 @@ class TransactionFactory(
  * Mapping to Multiverse PropagationLevel.
  */
 object Propagation {
-  val RequiresNew = MPropagation.RequiresNew
-  val Mandatory = MPropagation.Mandatory
-  val Requires = MPropagation.Requires
-  val Supports = MPropagation.Supports
-  val Never = MPropagation.Never
+  val RequiresNew = PropagationLevel.RequiresNew
+  val Mandatory = PropagationLevel.Mandatory
+  val Requires = PropagationLevel.Requires
+  val Supports = PropagationLevel.Supports
+  val Never = PropagationLevel.Never
 }
 
 /**

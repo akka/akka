@@ -9,12 +9,16 @@ import org.scalatest.WordSpec
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 
+import akka.AkkaApplication
+
 @RunWith(classOf[JUnitRunner])
 class ConfigSpec extends WordSpec with MustMatchers {
 
   "The default configuration file (i.e. akka-reference.conf)" should {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {
-      import Config.config._
+      val config = AkkaApplication("ConfigSpec").config
+
+      import config._
 
       getBool("akka.stm.blocking-allowed") must equal(Some(false))
       getBool("akka.stm.fair") must equal(Some(true))

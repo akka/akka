@@ -129,8 +129,8 @@ object AllForOneStrategy {
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
 case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-  maxNrOfRetries: Option[Int] = None,
-  withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
   def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
     this(trapExit,
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
@@ -171,8 +171,8 @@ object OneForOneStrategy {
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
 case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
-  maxNrOfRetries: Option[Int] = None,
-  withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+                             maxNrOfRetries: Option[Int] = None,
+                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
   def this(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
     this(trapExit,
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
@@ -214,7 +214,7 @@ private[akka] class ActorCell(
   @volatile var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
-  
+
   def provider = application.provider
 
   @volatile

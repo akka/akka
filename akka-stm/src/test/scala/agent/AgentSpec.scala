@@ -3,6 +3,8 @@ package akka.agent.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
+import akka.AkkaApplication
+import akka.actor.Timeout
 import akka.agent.Agent
 import akka.stm._
 import akka.util.Duration
@@ -17,6 +19,10 @@ class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
 }
 
 class AgentSpec extends WordSpec with MustMatchers {
+
+  implicit val application = AkkaApplication("AgentSpec")
+  implicit val timeout = Timeout(5.seconds.dilated)
+
   "Agent" should {
     "update with send dispatches in order sent" in {
       val countDown = new CountDownFunction[String]

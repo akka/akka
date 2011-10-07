@@ -92,6 +92,12 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
   def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
 
   /**
+   * Returns a new Props with the specified creator set
+   *  Java API
+   */
+  def withCreator(c: Class[_ <: Actor]) = copy(creator = () ⇒ c.newInstance)
+
+  /**
    * Returns a new Props with the specified dispatcher set
    *  Java API
    */

@@ -16,7 +16,7 @@ import java.net.InetSocketAddress
 import akka.AkkaApplication
 
 object ReflectiveAccess {
-  
+
   val loader = getClass.getClassLoader
   val emptyParams: Array[Class[_]] = Array()
   val emptyArguments: Array[AnyRef] = Array()
@@ -124,7 +124,7 @@ object ReflectiveAccess {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ReflectiveAccess(val application: AkkaApplication) {
-  
+
   import ReflectiveAccess._
 
   /**

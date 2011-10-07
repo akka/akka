@@ -8,7 +8,7 @@ import akka.routing.{ RouterType, FailureDetectorType }
 import akka.AkkaApplication
 
 object DeploymentConfig {
-  
+
   // --------------------------------
   // --- Deploy
   // --------------------------------
@@ -239,7 +239,7 @@ object DeploymentConfig {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DeploymentConfig(val application: AkkaApplication) {
-  
+
   import DeploymentConfig._
 
   case class ClusterScope(
