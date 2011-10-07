@@ -37,6 +37,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.eaio.util.lang.Hex;
 
@@ -72,7 +73,7 @@ public final class UUIDGen {
     /**
      * The last time value. Used to remove duplicate UUIDs.
      */
-    private static long lastTime = Long.MIN_VALUE;
+    private final static AtomicLong lastTime = new AtomicLong(Long.MIN_VALUE);
     
     /**
      * The cached MAC address.
@@ -241,7 +242,7 @@ public final class UUIDGen {
      * @return a new time value
      * @see UUID#getTime()
      */
-    public static synchronized long createTime(long currentTimeMillis) {
+    public static long createTime(long currentTimeMillis) {
 
         long time;
 
@@ -249,11 +250,14 @@ public final class UUIDGen {
 
         long timeMillis = (currentTimeMillis * 10000) + 0x01B21DD213814000L;
 
-        if (timeMillis > lastTime) {
-            lastTime = timeMillis;
-        }
-        else {
-            timeMillis = ++lastTime;
+        // Make sure our time is unique
+
+        for(;;) {
+          final long c = lastTime.get();
+          if (timeMillis <= c) {
+            timeMillis = lastTime.incrementAndGet();
+            break;
+          } else if(lastTime.compareAndSet(c, timeMillis)) break;
         }
 
         // time low
