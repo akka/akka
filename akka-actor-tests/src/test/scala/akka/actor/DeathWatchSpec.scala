@@ -20,7 +20,7 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
   import DeathWatchSpec._
 
   "The Death Watch" must {
-    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, "stopped") {
+    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, "stopped") {
       case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
     }
 

@@ -171,11 +171,6 @@ object Actor {
   val provider = new ActorRefProviders
 
   /**
-   * Handle to the ActorRegistry.
-   */
-  val registry = new ActorRegistry
-
-  /**
    * Handle to the ClusterNode. API for the cluster client.
    */
   //  lazy val cluster: ClusterNode = ClusterModule.node
