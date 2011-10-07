@@ -274,6 +274,11 @@ abstract class MessageDispatcher extends Serializable {
   protected[akka] def throughput: Int
   protected[akka] def throughputDeadlineTime: Int
 
+  @inline
+  protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime > 0
+  @inline
+  protected[akka] final val isThroughputDefined = throughput > 1
+
   protected[akka] def executeTask(invocation: TaskInvocation)
 
   /**
