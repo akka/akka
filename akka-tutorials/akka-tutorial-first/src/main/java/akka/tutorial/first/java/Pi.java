@@ -13,6 +13,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.routing.RoutedProps;
 import akka.routing.RouterType;
+import akka.routing.LocalConnectionManager;
 import akka.routing.Routing;
 import akka.routing.Routing.Broadcast;
 import scala.collection.JavaConversions;
@@ -109,7 +110,7 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = Routing.actorOf(RoutedProps.apply().withRoundRobinRouter().withConnections(workers), "pi");
+      router = Routing.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     // message handler

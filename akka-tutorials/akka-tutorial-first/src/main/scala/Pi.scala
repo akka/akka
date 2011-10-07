@@ -8,7 +8,7 @@ import akka.actor.{ Actor, PoisonPill }
 import Actor._
 import java.util.concurrent.CountDownLatch
 import akka.routing.Routing.Broadcast
-import akka.routing.{ RoutedProps, Routing }
+import akka.routing._
 
 object Pi extends App {
 
@@ -58,7 +58,7 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOf(RoutedProps().withRoundRobinRouter.withConnections(workers), "pi")
+    val router = Routing.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(workers), "pi")
 
     // message handler
     def receive = {

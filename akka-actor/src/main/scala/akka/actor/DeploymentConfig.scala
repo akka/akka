@@ -5,7 +5,9 @@
 package akka.actor
 
 import akka.config.Config
+import akka.util.Duration
 import akka.routing.{ RouterType, FailureDetectorType }
+import akka.routing.FailureDetectorType._
 
 /**
  * Module holding the programmatic deployment configuration classes.
@@ -24,7 +26,7 @@ object DeploymentConfig {
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
-    failureDetector: FailureDetector = RemoveConnectionOnFirstFailureLocalFailureDetector,
+    failureDetector: FailureDetector = NoOpFailureDetector,
     scope: Scope = LocalScope) {
     Address.validate(address)
   }
@@ -44,6 +46,7 @@ object DeploymentConfig {
   case class Direct() extends Routing
   case class RoundRobin() extends Routing
   case class Random() extends Routing
+  case class ScatterGather() extends Routing
   case class LeastCPU() extends Routing
   case class LeastRAM() extends Routing
   case class LeastMessages() extends Routing
@@ -52,6 +55,7 @@ object DeploymentConfig {
   case object Direct extends Routing
   case object RoundRobin extends Routing
   case object Random extends Routing
+  case object ScatterGather extends Routing
   case object LeastCPU extends Routing
   case object LeastRAM extends Routing
   case object LeastMessages extends Routing
@@ -60,15 +64,15 @@ object DeploymentConfig {
   // --- FailureDetector
   // --------------------------------
   sealed trait FailureDetector
-  case class BannagePeriodFailureDetector(timeToBan: Long) extends FailureDetector
+  case class BannagePeriodFailureDetector(timeToBan: Duration) extends FailureDetector
   case class CustomFailureDetector(className: String) extends FailureDetector
 
   // For Java API
-  case class RemoveConnectionOnFirstFailureLocalFailureDetector() extends FailureDetector
+  case class NoOpFailureDetector() extends FailureDetector
   case class RemoveConnectionOnFirstFailureFailureDetector() extends FailureDetector
 
   // For Scala API
-  case object RemoveConnectionOnFirstFailureLocalFailureDetector extends FailureDetector
+  case object NoOpFailureDetector extends FailureDetector
   case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetector
 
   // --------------------------------
@@ -180,13 +184,13 @@ object DeploymentConfig {
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
 
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
-    case BannagePeriodFailureDetector(timeToBan) ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
-    case RemoveConnectionOnFirstFailureLocalFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
-    case RemoveConnectionOnFirstFailureLocalFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureLocalFailureDetector
-    case RemoveConnectionOnFirstFailureFailureDetector ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
+    case NoOpFailureDetector                             ⇒ FailureDetectorType.NoOpFailureDetector
+    case NoOpFailureDetector()                           ⇒ FailureDetectorType.NoOpFailureDetector
+    case BannagePeriodFailureDetector(timeToBan)         ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
+    case RemoveConnectionOnFirstFailureFailureDetector   ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
     case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
-    case CustomFailureDetector(implClass) ⇒ FailureDetectorType.CustomFailureDetector(implClass)
-    case unknown ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
+    case CustomFailureDetector(implClass)                ⇒ FailureDetectorType.CustomFailureDetector(implClass)
+    case unknown                                         ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
   }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
@@ -196,6 +200,8 @@ object DeploymentConfig {
     case RoundRobin()    ⇒ RouterType.RoundRobin
     case Random          ⇒ RouterType.Random
     case Random()        ⇒ RouterType.Random
+    case ScatterGather   ⇒ RouterType.ScatterGather
+    case ScatterGather() ⇒ RouterType.ScatterGather
     case LeastCPU        ⇒ RouterType.LeastCPU
     case LeastCPU()      ⇒ RouterType.LeastCPU
     case LeastRAM        ⇒ RouterType.LeastRAM

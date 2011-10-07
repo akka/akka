@@ -11,6 +11,7 @@ import static java.util.Arrays.asList;
 
 import akka.routing.RoutedProps;
 import akka.routing.Routing;
+import akka.routing.LocalConnectionManager;
 import scala.Option;
 import akka.actor.ActorRef;
 import akka.actor.Channel;
@@ -103,7 +104,7 @@ public class Pi {
          workers.add(worker);
       }
 
-      router = Routing.actorOf(RoutedProps.apply().withConnections(workers).withRoundRobinRouter(), "pi");
+      router = Routing.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     @Override
