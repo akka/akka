@@ -494,10 +494,9 @@ trait Actor {
   def tryReply(message: Any): Boolean = channel.tryTell(message)(self)
 
   /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
+   * Same as ActorContext.children
    */
-  def linkedActors: JCollection[ActorRef] = context.linkedActors
+  def children: Iterable[ActorRef] = context.children
 
   /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor
