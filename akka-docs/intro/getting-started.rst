@@ -5,8 +5,9 @@ Getting Started
 
    .. contents:: :local:
 
-The best way to start learning Akka is to try the Getting Started Tutorial, which comes in several flavours
-depending on you development environment preferences:
+The best way to start learning Akka is to try the Getting Started Tutorial,
+which comes in several flavours depending on you development environment
+preferences:
 
 - :ref:`getting-started-first-java` for Java development, either
 
@@ -20,9 +21,10 @@ depending on you development environment preferences:
 
 - :ref:`getting-started-first-scala-eclipse` for Scala development with Eclipse
 
-The Getting Started Tutorial describes everything you need to get going, and you don't need to read the rest of
-this page if you study the tutorial. For later look back reference this page describes the
-essential parts for getting started with different development environments.
+The Getting Started Tutorial describes everything you need to get going, and you
+don't need to read the rest of this page if you study the tutorial. For later
+look back reference this page describes the essential parts for getting started
+with different development environments.
 
 Prerequisites
 -------------
@@ -33,9 +35,10 @@ later installed on you machine.
 Download
 --------
 
-There are several ways to download Akka. You can download the full distribution with microkernel, which includes
-all modules. You can download just the core distribution. Or you can use a build tool like Maven or SBT to download
-dependencies from the Akka Maven repository.
+There are several ways to download Akka. You can download the full distribution
+with microkernel, which includes all modules. You can download just the core
+distribution or just the actors distribution. Or you can use a build tool like
+Maven or sbt to download dependencies from the Akka Maven repository.
 
 Modules
 -------
@@ -54,13 +57,23 @@ Akka is very modular and has many JARs for containing different features.
 - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
 - ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 
-How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
-is that ``akka-actor`` has zero external dependencies (apart from the ``scala-library.jar`` JAR).
+How to see the JARs dependencies of each Akka module is described in the
+:ref:`dependencies` section. Worth noting is that ``akka-actor`` has zero
+external dependencies (apart from the ``scala-library.jar`` JAR).
 
 Using a release distribution
 ----------------------------
 
-Download the release you need, Akka core or Akka Modules, from `<http://akka.io/downloads>`_ and unzip it.
+Download the release you need, Akka Actors, Akka Core, or Akka Microkernel, from
+http://akka.io/downloads and unzip it.
+
+Using a snapshot version
+------------------------
+
+The Akka nightly snapshots are published to
+http://repo.typesafe.com/typesafe/maven-timestamps/ and are versioned with a
+timestamp. You need to choose a timestamped version to work with and can decide
+when to update to a newer version.
 
 Microkernel
 ^^^^^^^^^^^
@@ -75,14 +88,17 @@ More information is available in the documentation of the :ref:`microkernel`.
 Using a build tool
 ------------------
 
-Akka can be used with build tools that support Maven repositories. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
-and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
+Akka can be used with build tools that support Maven repositories. The Akka
+Maven repository can be found at http://akka.io/repository/ and Typesafe provides
+http://repo.typesafe.com/typesafe/releases/ that proxies several other
+repositories, including akka.io.
 
 Using Akka with Maven
 ---------------------
 
-Information about how to use Akka with Maven, including how to create an Akka Maven project from scratch,
-can be found in the :ref:`getting-started-first-java`.
+Information about how to use Akka with Maven, including how to create an Akka
+Maven project from scratch, can be found in the
+:ref:`getting-started-first-java`.
 
 Summary of the essential parts for using Akka with Maven:
 
@@ -106,6 +122,7 @@ Summary of the essential parts for using Akka with Maven:
     <version>2.0-SNAPSHOT</version>
   </dependency>
 
+**Note**: for snapshot versions akka uses specific timestamped versions.
 
 
 Using Akka with SBT
@@ -124,7 +141,7 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     version := "1.0"
 
-    scalaVersion := "2.9.0-1"
+    scalaVersion := "2.9.1"
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 

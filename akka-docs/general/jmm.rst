@@ -30,11 +30,11 @@ Actors and the Java Memory Model
 With the Actors implementation in Akka, there are two ways multiple threads can execute actions on shared memory:
 
 * if a message is sent to an actor (e.g. by another actor). In most cases messages are immutable, but if that message
-is not a properly constructed immutable object, without a "happens before" rule, it would be possible for the receiver
-to see partially initialized data structures and possibly even values out of thin air (longs/doubles).
+  is not a properly constructed immutable object, without a "happens before" rule, it would be possible for the receiver
+  to see partially initialized data structures and possibly even values out of thin air (longs/doubles).
 * if an actor makes changes to its internal state while processing a message, and accesses that state while processing
-another message moments later. It is important to realize that with the actor model you don't get any guarantee that
-the same thread will be executing the same actor for different messages.
+  another message moments later. It is important to realize that with the actor model you don't get any guarantee that
+  the same thread will be executing the same actor for different messages.
 
 To prevent visibility and reordering problems on actors, Akka guarantees the following two "happens before" rules:
 

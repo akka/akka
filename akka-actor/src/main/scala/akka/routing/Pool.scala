@@ -40,7 +40,13 @@ trait ActorPool {
    * This method is invoked whenever the pool determines it must boost capacity.
    * @return A new actor for the pool
    */
-  def instance(): ActorRef
+  def instance(defaults: Props): ActorRef
+
+  /**
+   * This method gets called when a delegate is to be evicted, by default it sends a PoisonPill to the delegate
+   */
+  def evict(delegate: ActorRef): Unit = delegate ! PoisonPill
+
   /**
    * Returns the overall desired change in pool capacity. This method is used by non-static pools as the means
    * for the capacity strategy to influence the pool.
@@ -87,8 +93,11 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
 
   protected[akka] var _delegates = Vector[ActorRef]()
 
+  val defaultProps: Props = Props.default.withSupervisor(this.self).withDispatcher(this.context.dispatcher)
+
   override def postStop() {
-    _delegates foreach { _ ! PoisonPill }
+    _delegates foreach evict
+    _delegates = Vector.empty
   }
 
   protected def _route(): Actor.Receive = {
@@ -109,7 +118,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       case qty if qty > 0 ⇒
         _delegates ++ {
           for (i ← 0 until requestedCapacity) yield {
-            val delegate = instance()
+            val delegate = instance(defaultProps)
             self link delegate
             delegate
           }
@@ -117,7 +126,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
           case (keep, abandon) ⇒
-            abandon foreach { _ ! PoisonPill }
+            abandon foreach evict
             keep
         }
       case _ ⇒ _delegates //No change

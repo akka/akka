@@ -27,26 +27,52 @@ Download from http://akka.io/downloads/
 Akka implements a unique hybrid
 ===============================
 
-- :ref:`untyped-actors-java`, which gives you:
+Actors
+------
+
+Actors give you:
 
   - Simple and high-level abstractions for concurrency and parallelism.
   - Asynchronous, non-blocking and highly performant event-driven programming model.
   - Very lightweight event-driven processes (create ~6.5 million actors on 4GB RAM).
 
-- :ref:`fault-tolerance-java` through supervisor hierarchies with "let-it-crash"
-  semantics. Excellent for writing highly fault-tolerant systems that never
-  stop, systems that self-heal.
+See :ref:`actors-scala` and :ref:`untyped-actors-java`
 
-- :ref:`stm-java` (STM). (Distributed transactions coming soon).
+Fault Tolerance
+---------------
 
-- :ref:`transactors-java`: combine actors and STM into transactional
-  actors. Allows you to compose atomic message flows with automatic retry and
-  rollback.
+Fault tolerance through supervisor hierarchies with "let-it-crash"
+semantics. Excellent for writing highly fault-tolerant systems that never stop,
+systems that self-heal.
 
-- :ref:`remote-actors-java`: highly performant distributed actors with remote
-  supervision and error management.
+See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
 
-- :ref:`java-api` and :ref:`scala-api`
+Software Transactional Memory (STM)
+-----------------------------------
+
+See :ref:`stm-scala` and :ref:`stm-java`
+
+Transactors
+-----------
+
+Transactors combine actors and STM into transactional actors. Allows you to
+compose atomic message flows with automatic retry and rollback.
+
+See :ref:`transactors-scala` and :ref:`transactors-java`
+
+Remote Actors
+-------------
+
+Highly performant distributed actors with remote supervision and error
+management.
+
+See :ref:`remote-actors-scala` and :ref:`remote-actors-java`.
+
+
+Scala and Java APIs
+===================
+
+Akka has both a :ref:`scala-api` and a :ref:`java-api`.
 
 
 Akka can be used in two different ways
@@ -57,6 +83,5 @@ Akka can be used in two different ways
 
 - As a microkernel: stand-alone kernel, embedding a servlet container and all
   the other modules.
-
 
 See the :ref:`deployment-scenarios` for details.

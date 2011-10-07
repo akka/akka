@@ -5,6 +5,7 @@
 package akka.remote
 
 import akka.actor._
+import akka.routing._
 import DeploymentConfig._
 import Actor._
 import Status._
@@ -44,18 +45,58 @@ class RemoteActorRefProvider extends ActorRefProvider {
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
       val actor = try {
         Deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, _, router, nrOfInstances, _, RemoteScope(host, port))) ⇒
-            // FIXME create RoutedActorRef if 'router' is specified
+          case Some(Deploy(_, _, router, nrOfInstances, _, RemoteScope(remoteAddresses))) ⇒
 
-            val serverAddress = Remote.address
-            if (serverAddress.getHostName == host && serverAddress.getPort == port) {
-              // home node for this remote actor
+            val thisHostname = Remote.address.getHostName
+            val thisPort = Remote.address.getPort
+
+            def isReplicaNode: Boolean = remoteAddresses exists { remoteAddress ⇒
+              remoteAddress.hostname == thisHostname && remoteAddress.port == thisPort
+            }
+
+            if (isReplicaNode) {
+              // we are on one of the replica node for this remote actor
               Some(new LocalActorRef(props, address, false)) // create a local actor
             } else {
-              // not home node, need to provision it
-              val remoteAddress = new InetSocketAddress(host, port)
-              useActorOnNode(remoteAddress, address, props.creator)
-              Some(RemoteActorRef(remoteAddress, address, Actor.TIMEOUT, None)) // create a remote actor
+
+              // we are on the single "reference" node uses the remote actors on the replica nodes
+              val routerType = DeploymentConfig.routerTypeFor(router)
+              val routerFactory: () ⇒ Router = routerType match {
+                case RouterType.Direct ⇒
+                  if (remoteAddresses.size != 1) throw new ConfigurationException(
+                    "Actor [%s] configured with Direct router must have exactly 1 remote node configured. Found [%s]"
+                      .format(address, remoteAddresses.mkString(", ")))
+                  () ⇒ new DirectRouter
+
+                case RouterType.Random ⇒
+                  if (remoteAddresses.size < 1) throw new ConfigurationException(
+                    "Actor [%s] configured with Random router must have at least 1 remote node configured. Found [%s]"
+                      .format(address, remoteAddresses.mkString(", ")))
+                  () ⇒ new RandomRouter
+
+                case RouterType.RoundRobin ⇒
+                  if (remoteAddresses.size < 1) throw new ConfigurationException(
+                    "Actor [%s] configured with RoundRobin router must have at least 1 remote node configured. Found [%s]"
+                      .format(address, remoteAddresses.mkString(", ")))
+                  () ⇒ new RoundRobinRouter
+
+                case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
+                case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
+                case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
+                case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+              }
+
+              def provisionActorToNode(remoteAddress: RemoteAddress): RemoteActorRef = {
+                val inetSocketAddress = new InetSocketAddress(remoteAddress.hostname, remoteAddress.port)
+                useActorOnNode(inetSocketAddress, address, props.creator)
+                RemoteActorRef(inetSocketAddress, address, Actor.TIMEOUT, None)
+              }
+
+              val connections: Iterable[ActorRef] = remoteAddresses map { provisionActorToNode(_) }
+
+              Some(Routing.actorOf(RoutedProps(
+                routerFactory = routerFactory,
+                connections = connections)))
             }
 
           case deploy ⇒ None // non-remote actor

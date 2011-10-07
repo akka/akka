@@ -1,54 +1,71 @@
+
 .. _stm-scala:
 
-Software Transactional Memory (Scala)
-=====================================
+#######################################
+ Software Transactional Memory (Scala)
+#######################################
 
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
-Module stability: **SOLID**
 
 Overview of STM
----------------
+===============
 
-An `STM <http://en.wikipedia.org/wiki/Software_transactional_memory>`_ turns the Java heap into a transactional data set with begin/commit/rollback semantics. Very much like a regular database. It implements the first three letters in ACID; ACI:
+An `STM <http://en.wikipedia.org/wiki/Software_transactional_memory>`_ turns the
+Java heap into a transactional data set with begin/commit/rollback
+semantics. Very much like a regular database. It implements the first three
+letters in ACID; ACI:
+
 * Atomic
 * Consistent
 * Isolated
 
-Generally, the STM is not needed very often when working with Akka. Some use-cases (that we can think of) are:
+Generally, the STM is not needed very often when working with Akka. Some
+use-cases (that we can think of) are:
 
-- When you really need composable message flows across many actors updating their **internal local** state but need them to do that atomically in one big transaction. Might not be often, but when you do need this then you are screwed without it.
+- When you really need composable message flows across many actors updating
+  their **internal local** state but need them to do that atomically in one big
+  transaction. Might not be often, but when you do need this then you are
+  screwed without it.
 - When you want to share a datastructure across actors.
 - When you need to use the persistence modules.
 
-Akka’s STM implements the concept in `Clojure’s <http://clojure.org/>`_ STM view on state in general. Please take the time to read `this excellent document <http://clojure.org/state>`_ and view `this presentation <http://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey>`_ by Rich Hickey (the genius behind Clojure), since it forms the basis of Akka’s view on STM and state in general.
+Akka’s STM implements the concept in `Clojure's <clojure>`_ STM view on state in
+general. Please take the time to read `this excellent document <clojure-state>`_
+and view `this presentation <clojure-presentation>`_ by Rich Hickey (the genius
+behind Clojure), since it forms the basis of Akka’s view on STM and state in
+general.
 
-The STM is based on Transactional References (referred to as Refs). Refs are memory cells, holding an (arbitrary) immutable value, that implement CAS (Compare-And-Swap) semantics and are managed and enforced by the STM for coordinated changes across many Refs. They are implemented using the excellent `Multiverse STM <http://multiverse.codehaus.org/overview.html>`_.
+.. _clojure: http://clojure.org/
+.. _clojure-state: http://clojure.org/state
+.. _clojure-presentation: http://www.infoq.com/presentations/Value-Identity-State-Rich-Hickey
 
-Working with immutable collections can sometimes give bad performance due to extensive copying. Scala provides so-called persistent datastructures which makes working with immutable collections fast. They are immutable but with constant time access and modification. They use structural sharing and an insert or update does not ruin the old structure, hence “persistent”. Makes working with immutable composite types fast. The persistent datastructures currently consist of a Map and Vector.
+The STM is based on Transactional References (referred to as Refs). Refs are
+memory cells, holding an (arbitrary) immutable value, that implement CAS
+(Compare-And-Swap) semantics and are managed and enforced by the STM for
+coordinated changes across many Refs. They are implemented using the excellent
+`Multiverse STM <multiverse>`_.
+
+.. _multiverse: http://multiverse.codehaus.org/overview.html
+
+Working with immutable collections can sometimes give bad performance due to
+extensive copying. Scala provides so-called persistent datastructures which
+makes working with immutable collections fast. They are immutable but with
+constant time access and modification. They use structural sharing and an insert
+or update does not ruin the old structure, hence “persistent”. Makes working
+with immutable composite types fast. The persistent datastructures currently
+consist of a Map and Vector.
+
 
 Simple example
---------------
+==============
 
-Here is a simple example of an incremental counter using STM. This shows creating a ``Ref``, a transactional reference, and then modifying it within a transaction, which is delimited by ``atomic``.
+Here is a simple example of an incremental counter using STM. This shows
+creating a ``Ref``, a transactional reference, and then modifying it within a
+transaction, which is delimited by ``atomic``.
 
-.. code-block:: scala
-
-  import akka.stm._
-
-  val ref = Ref(0)
-
-  def counter = atomic {
-    ref alter (_ + 1)
-  }
-
-  counter
-  // -> 1
-
-  counter
-  // -> 2
+.. includecode:: code/StmDocSpec.scala#simple
 
 
 Ref

@@ -236,10 +236,29 @@ class Deployer(val application: AkkaApplication) extends ActorDeployer {
             if (addressConfig.getSection("cluster").isDefined) throw new ConfigurationException(
               "Configuration for deployment ID [" + address + "] can not have both 'remote' and 'cluster' sections.")
 
-            val hostname = remoteConfig.getString("hostname", "localhost")
-            val port = remoteConfig.getInt("port", 2552)
+            // --------------------------------
+            // akka.actor.deployment.<address>.remote.nodes
+            // --------------------------------
+            val remoteAddresses = remoteConfig.getList("nodes") match {
+              case Nil ⇒ Nil
+              case nodes ⇒
+                def raiseRemoteNodeParsingError() = throw new ConfigurationException(
+                  "Config option [" + addressPath +
+                    ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + nodes.mkString(", ") + "]")
 
-            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.RemoteScope(hostname, port)))
+                nodes map { node ⇒
+                  val tokenizer = new java.util.StringTokenizer(node, ":")
+                  val hostname = tokenizer.nextElement.toString
+                  if ((hostname eq null) || (hostname == "")) raiseRemoteNodeParsingError()
+                  val port = try tokenizer.nextElement.toString.toInt catch {
+                    case e: Exception ⇒ raiseRemoteNodeParsingError()
+                  }
+                  if (port == 0) raiseRemoteNodeParsingError()
+                  RemoteAddress(hostname, port)
+                }
+            }
+
+            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.RemoteScope(remoteAddresses)))
 
           case None ⇒ // check for 'cluster' config section
 

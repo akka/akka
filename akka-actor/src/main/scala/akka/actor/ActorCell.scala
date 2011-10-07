@@ -41,7 +41,7 @@ private[akka] trait ActorContext extends ActorRefFactory {
 
   def channel: UntypedChannel
 
-  def linkedActors: JCollection[ActorRef]
+  def children: Iterable[ActorRef]
 
   def dispatcher: MessageDispatcher
 
@@ -92,26 +92,26 @@ sealed abstract class FaultHandlingStrategy {
 
   def trapExit: List[Class[_ <: Throwable]]
 
-  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats]
+  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats]
 
-  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit
+  def processFailure(fail: Failed, children: Vector[ChildRestartStats]): Unit
 
-  def handleSupervisorFailing(supervisor: ActorRef, linkedActors: List[ChildRestartStats]): Unit = {
-    if (linkedActors.nonEmpty)
-      linkedActors.foreach(_.child.suspend())
+  def handleSupervisorFailing(supervisor: ActorRef, children: Vector[ChildRestartStats]): Unit = {
+    if (children.nonEmpty)
+      children.foreach(_.child.suspend())
   }
 
-  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, linkedActors: List[ChildRestartStats]): Unit = {
-    if (linkedActors.nonEmpty)
-      linkedActors.foreach(_.child.restart(cause))
+  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Vector[ChildRestartStats]): Unit = {
+    if (children.nonEmpty)
+      children.foreach(_.child.restart(cause))
   }
 
   /**
    * Returns whether it processed the failure or not
    */
-  final def handleFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Boolean = {
+  final def handleFailure(fail: Failed, children: Vector[ChildRestartStats]): Boolean = {
     if (trapExit.exists(_.isAssignableFrom(fail.cause.getClass))) {
-      processFailure(fail, linkedActors)
+      processFailure(fail, children)
       true
     } else false
   }
@@ -143,18 +143,18 @@ case class AllForOneStrategy(trapExit: List[Class[_ <: Throwable]],
     this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
 
-  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats] = {
-    linkedActors collect {
+  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats] = {
+    children collect {
       case stats if stats.child != child ⇒ stats.child.stop(); stats //2 birds with one stone: remove the child + stop the other children
     } //TODO optimization to drop all children here already?
   }
 
-  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit = {
-    if (linkedActors.nonEmpty) {
-      if (linkedActors.forall(_.requestRestartPermission(maxNrOfRetries, withinTimeRange)))
-        linkedActors.foreach(_.child.restart(fail.cause))
+  def processFailure(fail: Failed, children: Vector[ChildRestartStats]): Unit = {
+    if (children.nonEmpty) {
+      if (children.forall(_.requestRestartPermission(maxNrOfRetries, withinTimeRange)))
+        children.foreach(_.child.restart(fail.cause))
       else
-        linkedActors.foreach(_.child.stop())
+        children.foreach(_.child.stop())
     }
   }
 }
@@ -185,11 +185,11 @@ case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
     this(trapExit.toArray.toList.asInstanceOf[List[Class[_ <: Throwable]]],
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
 
-  def handleChildTerminated(child: ActorRef, linkedActors: List[ChildRestartStats]): List[ChildRestartStats] =
-    linkedActors.filterNot(_.child == child)
+  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats] =
+    children.filterNot(_.child == child)
 
-  def processFailure(fail: Failed, linkedActors: List[ChildRestartStats]): Unit = {
-    linkedActors.find(_.child == fail.actor) match {
+  def processFailure(fail: Failed, children: Vector[ChildRestartStats]): Unit = {
+    children.find(_.child == fail.actor) match {
       case Some(stats) ⇒
         if (stats.requestRestartPermission(maxNrOfRetries, withinTimeRange))
           fail.actor.restart(fail.cause)
@@ -220,8 +220,8 @@ private[akka] class ActorCell(
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
 
-  @volatile //FIXME TODO doesn't need to be volatile if we remove the def linkedActors: JCollection[ActorRef]
-  var _linkedActors: List[ChildRestartStats] = Nil
+  @volatile
+  var _children: Vector[ChildRestartStats] = Vector.empty
 
   @volatile //TODO FIXME Might be able to make this non-volatile since it should be guarded by a mailbox.isShutdown test (which will force volatile piggyback read)
   var currentMessage: Envelope = null
@@ -272,11 +272,7 @@ private[akka] class ActorCell(
     subject
   }
 
-  @deprecated("Dog slow and racy")
-  def linkedActors: JCollection[ActorRef] = _linkedActors match {
-    case Nil  ⇒ JCollections.emptyList[ActorRef]()
-    case some ⇒ JCollections.unmodifiableCollection(JavaConverters.asJavaCollectionConverter(some.map(_.child)).asJavaCollection)
-  }
+  def children: Iterable[ActorRef] = _children.map(_.child)
 
   //TODO FIXME remove this method
   def supervisor: Option[ActorRef] = props.supervisor
@@ -333,7 +329,7 @@ private[akka] class ActorCell(
   def systemInvoke(envelope: SystemEnvelope) {
 
     def create(): Unit = try {
-      val created = newActor() //TODO !!!! Notify supervisor on failure to create!
+      val created = newActor()
       actor = created
       created.preStart()
       checkReceiveTimeout
@@ -369,7 +365,7 @@ private[akka] class ActorCell(
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
-      props.faultHandler.handleSupervisorRestarted(cause, self, _linkedActors)
+      props.faultHandler.handleSupervisorRestarted(cause, self, _children)
     } catch {
       case e ⇒ try {
         EventHandler.error(e, this, "error while creating actor")
@@ -398,8 +394,12 @@ private[akka] class ActorCell(
         if (a ne null) a.postStop()
 
         //Stop supervised actors
-        _linkedActors.foreach(_.child.stop())
-        _linkedActors = Nil
+        val links = _children
+        if (links.nonEmpty) {
+          _children = Vector.empty
+          links.foreach(_.child.stop())
+        }
+
       } finally {
         val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
 
@@ -413,9 +413,9 @@ private[akka] class ActorCell(
     }
 
     def supervise(child: ActorRef): Unit = {
-      val links = _linkedActors
-      if (!links.contains(child)) {
-        _linkedActors = new ChildRestartStats(child) :: links
+      val links = _children
+      if (!links.exists(_.child == child)) {
+        _children = links :+ ChildRestartStats(child)
         if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "now supervising " + child)
       } else EventHandler.warning(actor, "Already supervising " + child)
     }
@@ -469,7 +469,7 @@ private[akka] class ActorCell(
               channel.sendException(e)
 
               if (supervisor.isDefined) {
-                props.faultHandler.handleSupervisorFailing(self, _linkedActors)
+                props.faultHandler.handleSupervisorFailing(self, _children)
                 supervisor.get ! Failed(self, e)
               } else
                 dispatcher.resume(this)
@@ -492,11 +492,11 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleFailure(fail: Failed): Unit = if (!props.faultHandler.handleFailure(fail, _linkedActors)) {
+  def handleFailure(fail: Failed): Unit = if (!props.faultHandler.handleFailure(fail, _children)) {
     if (supervisor.isDefined) throw fail.cause else self.stop()
   }
 
-  def handleChildTerminated(child: ActorRef): Unit = _linkedActors = props.faultHandler.handleChildTerminated(child, _linkedActors)
+  def handleChildTerminated(child: ActorRef): Unit = _children = props.faultHandler.handleChildTerminated(child, _children)
 
   def restart(cause: Throwable): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Recreate(cause), NullChannel))
 

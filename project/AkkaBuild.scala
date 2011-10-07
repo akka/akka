@@ -5,14 +5,14 @@ import Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
-import ScalariformPlugin.{ format, formatPreferences }
+import ScalariformPlugin.{ format, formatPreferences, formatSourceDirectories }
 import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
 
   lazy val buildSettings = Seq(
-    organization := "se.scalablesolutions.akka",
+    organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
     scalaVersion := "2.9.1"
   )
@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, samples, tutorials, docs)
     //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
@@ -35,7 +35,9 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable"
+      scalacOptions += "-P:continuations:enable",
+      // to fix scaladoc generation
+      fullClasspath in doc in Compile <<= fullClasspath in Compile
     )
   )
 
@@ -299,6 +301,17 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
+  lazy val docs = Project(
+    id = "akka-docs",
+    base = file("akka-docs"),
+    dependencies = Seq(actor, testkit, stm, http, remote, slf4j),
+    settings = defaultSettings ++ Seq(
+      unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
+      libraryDependencies ++= Dependencies.docs,
+      formatSourceDirectories in Test <<= unmanagedSourceDirectories in Test
+    )
+  )
+
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
@@ -423,6 +436,8 @@ object Dependencies {
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
   //   Test.junit, Test.scalatest, Test.logback)
+
+  val docs = Seq(Test.scalatest, Test.junit)
 }
 
 object Dependency {

@@ -17,16 +17,15 @@ class Ticket703Spec extends WordSpec with MustMatchers {
           def rampupRate = 0.1
           def partialFill = true
           def selectionCount = 1
-          def instance = factory
           def receive = _route
           def pressureThreshold = 1
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒
                 Thread.sleep(6000L)
                 tryReply("Response")
             }
-          })
+          }))
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))
       (actorPool.?("Ping", 10000)).await.result must be === Some("Response")
     }

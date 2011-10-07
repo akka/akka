@@ -53,7 +53,7 @@ object ActorSerialization {
     replicationScheme: ReplicationScheme): Array[Byte] =
     toBinary(a, srlMailBox, replicationScheme)
 
-  @deprecated("BROKEN, REMOVE ME")
+  @deprecated("BROKEN, REMOVE ME", "NOW")
   private[akka] def toSerializedActorRefProtocol[T <: Actor](
     actorRef: ActorRef,
     serializeMailBox: Boolean,

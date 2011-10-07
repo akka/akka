@@ -38,19 +38,18 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with SmallestMailboxSelector {
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
                 tryReply("success")
             }
-          })
+          }))
 
           def limit = 2
           def selectionCount = 1
           def partialFill = true
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -85,17 +84,16 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
           def backoffThreshold = 0.5
           def partialFill = true
           def selectionCount = 1
-          def instance = factory
           def receive = _route
           def pressureThreshold = 1
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
                 tryReply("Response")
               }
             }
-          })
+          }))
         }).withFaultHandler(faultHandler))
 
       try {
@@ -116,21 +114,20 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
                 count.incrementAndGet
                 latch.countDown()
             }
-          })
+          }))
 
           def lowerBound = 2
           def upperBound = 4
           def rampupRate = 0.1
           def partialFill = true
           def selectionCount = 1
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -181,14 +178,14 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
                 count.incrementAndGet
                 latch.countDown()
             }
-          })
+          }))
 
           def lowerBound = 2
           def upperBound = 4
@@ -196,7 +193,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
           def rampupRate = 0.1
           def partialFill = true
           def selectionCount = 1
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -235,19 +231,19 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool1 = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
-          def factory = actorOf(new Actor {
+
+          def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
                 latch1.countDown()
             }
-          })
+          }))
 
           def limit = 1
           def selectionCount = 1
           def rampupRate = 0.1
           def partialFill = true
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -264,19 +260,18 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool2 = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
                 latch2.countDown()
             }
-          })
+          }))
 
           def limit = 2
           def selectionCount = 1
           def rampupRate = 0.1
           def partialFill = false
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -294,13 +289,13 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
       val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-          def factory = actorOf(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
                 latch.countDown()
             }
-          })
+          }))
 
           def lowerBound = 1
           def upperBound = 5
@@ -310,7 +305,6 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
           def rampupRate = 0.1
           def backoffRate = 0.50
           def backoffThreshold = 0.50
-          def instance = factory
           def receive = _route
         }).withFaultHandler(faultHandler))
 
@@ -348,7 +342,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         def rampupRate = 0.1
         def backoffRate = 0.50
         def backoffThreshold = 0.50
-        def instance = getActorRefFor(typedActorOf[Foo, FooImpl]())
+        def instance(p: Props) = getActorRefFor(typedActorOf[Foo, FooImpl](p))
         def receive = _route
       }
 
@@ -374,10 +368,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def backoffThreshold = 0.5
             def partialFill = true
             def selectionCount = 1
-            def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(Props(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -386,7 +379,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).withSupervisor(self))
+            }))
           }).withFaultHandler(faultHandler))
 
         val pool2 = actorOf(
@@ -398,10 +391,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def backoffThreshold = 0.5
             def partialFill = true
             def selectionCount = 1
-            def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(Props(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -410,7 +402,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).withSupervisor(self))
+            }))
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
@@ -422,10 +414,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def backoffThreshold = 0.5
             def partialFill = true
             def selectionCount = 1
-            def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(Props(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
 
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
@@ -437,7 +428,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).withSupervisor(self))
+            }))
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
         // default lifecycle
@@ -521,10 +512,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def backoffThreshold = 0.5
             def partialFill = true
             def selectionCount = 1
-            def instance = factory
             def receive = _route
             def pressureThreshold = 1
-            def factory = actorOf(Props(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -535,7 +525,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
                   throw new RuntimeException
                 case _ ⇒ pingCount.incrementAndGet
               }
-            }).withSupervisor(self))
+            }))
           }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
 
         // actor comes back right away

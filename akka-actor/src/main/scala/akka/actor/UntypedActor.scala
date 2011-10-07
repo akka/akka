@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.japi.{ Creator, Procedure }
 import akka.dispatch.{ MessageDispatcher, Promise }
-import java.util.{ Collection ⇒ JCollection }
 
 /**
  * Subclass this abstract class to create a MDB-style untyped actor.
@@ -101,7 +100,10 @@ abstract class UntypedActor extends Actor {
    * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
    */
-  def getLinkedActors: JCollection[ActorRef] = linkedActors
+  def getChildren(): java.lang.Iterable[ActorRef] = {
+    import scala.collection.JavaConverters.asJavaIterableConverter
+    asJavaIterableConverter(context.children).asJava
+  }
 
   /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor

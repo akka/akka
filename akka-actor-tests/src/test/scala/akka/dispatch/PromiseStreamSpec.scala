@@ -4,6 +4,8 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import Future.flow
 import akka.util.cps._
+import akka.actor.Timeout
+import akka.util.duration._
 
 class PromiseStreamSpec extends JUnitSuite {
   @Test
@@ -132,7 +134,8 @@ class PromiseStreamSpec extends JUnitSuite {
 
   @Test
   def concurrentStressTest {
-    val q = PromiseStream[Long]()
+    implicit val timeout = Timeout(60 seconds)
+    val q = PromiseStream[Long](timeout.duration.toMillis)
 
     flow {
       var n = 0L

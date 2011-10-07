@@ -8,10 +8,12 @@ object Publish {
   final val Snapshot = "-SNAPSHOT"
 
   lazy val settings = Seq(
-    crossPaths  := false,
-    pomExtra    := akkaPomExtra,
-    publishTo   := akkaPublishTo,
-    credentials ++= akkaCredentials
+    crossPaths := false,
+    pomExtra := akkaPomExtra,
+    publishTo := akkaPublishTo,
+    credentials ++= akkaCredentials,
+    organizationName := "Typesafe Inc.",
+    organizationHomepage := Some(url("http://www.typesafe.com"))
   )
 
   lazy val versionSettings = Seq(
@@ -21,10 +23,6 @@ object Publish {
   def akkaPomExtra = {
     <inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
-    <organization>
-      <name>Typesafe Inc.</name>
-      <url>http://www.typesafe.com</url>
-    </organization>
     <licenses>
       <license>
         <name>Apache 2</name>

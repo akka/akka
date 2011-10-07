@@ -75,6 +75,8 @@ object DeploymentConfig {
   // For Scala API
   case object LocalScope extends Scope
 
+  case class RemoteAddress(hostname: String, port: Int)
+
   // --------------------------------
   // --- Home
   // --------------------------------
@@ -246,9 +248,7 @@ class DeploymentConfig(val application: AkkaApplication) {
     preferredNodes: Iterable[Home] = Vector(Node(application.nodename)),
     replication: ReplicationScheme = Transient) extends Scope
 
-  case class RemoteScope(
-    hostname: String = "localhost",
-    port: Int = application.AkkaConfig.REMOTE_SERVER_PORT) extends Scope
+  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == application.nodename)
 
