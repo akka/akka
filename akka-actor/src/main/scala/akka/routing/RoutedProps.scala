@@ -5,11 +5,26 @@
 package akka.routing
 
 import akka.actor._
-import akka.util.ReflectiveAccess
+import akka.util.{ ReflectiveAccess, Duration }
 
 import java.net.InetSocketAddress
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.{ iterableAsScalaIterable, mapAsScalaMap }
+
+sealed trait FailureDetectorType
+
+/**
+ * Used for declarative configuration of failure detection.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object FailureDetectorType {
+  // TODO shorten names to NoOp, BannagePeriod etc.
+  case object NoOpFailureDetector extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetectorType
+  case class BannagePeriodFailureDetector(timeToBan: Duration) extends FailureDetectorType
+  case class CustomFailureDetector(className: String) extends FailureDetectorType
+}
 
 sealed trait RouterType
 
@@ -31,6 +46,11 @@ object RouterType {
    * A RouterType that selects the connection by using round robin.
    */
   object RoundRobin extends RouterType
+
+  /**
+   * A RouterType that selects the connection by using scatter gather.
+   */
+  object ScatterGather extends RouterType
 
   /**
    * A RouterType that selects the connection based on the least amount of cpu usage
@@ -56,21 +76,6 @@ object RouterType {
 
 }
 
-object RoutedProps {
-
-  final val defaultTimeout = Actor.TIMEOUT
-  final val defaultRouterFactory = () ⇒ new RoundRobinRouter
-  final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
-  final val defaultFailureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ new RemoveConnectionOnFirstFailureLocalFailureDetector(connections.values)
-
-  /**
-   * The default RoutedProps instance, uses the settings from the RoutedProps object starting with default*
-   */
-  final val default = new RoutedProps
-
-  def apply(): RoutedProps = default
-}
-
 /**
  * Contains the configuration to create local and clustered routed actor references.
  *
@@ -85,12 +90,11 @@ object RoutedProps {
  */
 case class RoutedProps(
   routerFactory: () ⇒ Router,
-  connections: Iterable[ActorRef],
-  failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector = RoutedProps.defaultFailureDetectorFactory,
+  connectionManager: ConnectionManager,
   timeout: Timeout = RoutedProps.defaultTimeout,
   localOnly: Boolean = RoutedProps.defaultLocalOnly) {
 
-  def this() = this(RoutedProps.defaultRouterFactory, List())
+  def this() = this(RoutedProps.defaultRouterFactory, new LocalConnectionManager(List()))
 
   /**
    * Returns a new RoutedProps configured with a random router.
@@ -149,28 +153,35 @@ case class RoutedProps(
    *
    * Scala API.
    */
-  def withConnections(c: Iterable[ActorRef]): RoutedProps = copy(connections = c)
+  def withLocalConnections(c: Iterable[ActorRef]): RoutedProps = copy(connectionManager = new LocalConnectionManager(c))
 
   /**
    * Sets the connections to use.
    *
    * Java API.
    */
-  def withConnections(c: java.lang.Iterable[ActorRef]): RoutedProps = copy(connections = iterableAsScalaIterable(c))
+  def withLocalConnections(c: java.lang.Iterable[ActorRef]): RoutedProps = copy(connectionManager = new LocalConnectionManager(iterableAsScalaIterable(c)))
 
   /**
-   * Returns a new RoutedProps configured with a FailureDetector factory.
+   * Sets the connections to use.
    *
    * Scala API.
    */
-  def withFailureDetector(failureDetectorFactory: (Map[InetSocketAddress, ActorRef]) ⇒ FailureDetector): RoutedProps =
-    copy(failureDetectorFactory = failureDetectorFactory)
+  //  def withRemoteConnections(c: Map[InetSocketAddress, ActorRef]): RoutedProps = copy(connectionManager = new RemoteConnectionManager(c))
 
   /**
-   * Returns a new RoutedProps configured with a FailureDetector factory.
+   * Sets the connections to use.
    *
    * Java API.
    */
-  def withFailureDetector(failureDetectorFactory: akka.japi.Function[Map[InetSocketAddress, ActorRef], FailureDetector]): RoutedProps =
-    copy(failureDetectorFactory = (connections: Map[InetSocketAddress, ActorRef]) ⇒ failureDetectorFactory.apply(connections))
+  //  def withRemoteConnections(c: java.util.collection.Map[InetSocketAddress, ActorRef]): RoutedProps = copy(connectionManager = new RemoteConnectionManager(mapAsScalaMap(c)))
 }
+
+object RoutedProps {
+  final val defaultTimeout = Actor.TIMEOUT
+  final val defaultRouterFactory = () ⇒ new RoundRobinRouter
+  final val defaultLocalOnly = !ReflectiveAccess.ClusterModule.isEnabled
+
+  def apply() = new RoutedProps()
+}
+

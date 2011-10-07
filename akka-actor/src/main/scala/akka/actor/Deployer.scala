@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
+import akka.util.Duration
 import akka.util.ReflectiveAccess._
 import akka.AkkaException
 import akka.config.{ Configuration, ConfigurationException, Config }
@@ -122,7 +123,7 @@ object Deployer extends ActorDeployer {
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
       case None ⇒
-        Some(Deploy(address, None, Direct, NrOfInstances(1), RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope))
+        Some(Deploy(address, None, Direct, NrOfInstances(1), NoOpFailureDetector, LocalScope))
 
       case Some(addressConfig) ⇒
 
@@ -133,6 +134,7 @@ object Deployer extends ActorDeployer {
           case "direct"         ⇒ Direct
           case "round-robin"    ⇒ RoundRobin
           case "random"         ⇒ Random
+          case "scatter-gather" ⇒ ScatterGather
           case "least-cpu"      ⇒ LeastCPU
           case "least-ram"      ⇒ LeastRAM
           case "least-messages" ⇒ LeastMessages
@@ -140,7 +142,7 @@ object Deployer extends ActorDeployer {
             createInstance[AnyRef](customRouterClassName, emptyParams, emptyArguments).fold(
               e ⇒ throw new ConfigurationException(
                 "Config option [" + addressPath + ".router] needs to be one of " +
-                  "[\"direct\", \"round-robin\", \"random\", \"least-cpu\", \"least-ram\", \"least-messages\" or the fully qualified name of Router class]", e),
+                  "[\"direct\", \"round-robin\", \"random\", \"scatter-gather\", \"least-cpu\", \"least-ram\", \"least-messages\" or the fully qualified name of Router class]", e),
               CustomRouter(_))
         }
 
@@ -169,7 +171,7 @@ object Deployer extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.failure-detector.xxx
+        // akka.actor.deployment.<address>.failure-detector.<detector>
         // --------------------------------
         val failureDetectorOption: Option[FailureDetector] = addressConfig.getSection("failure-detector") match {
           case Some(failureDetectorConfig) ⇒
@@ -177,22 +179,27 @@ object Deployer extends ActorDeployer {
               case Nil ⇒ None
               case detector :: Nil ⇒
                 detector match {
-                  case "remove-connection-on-first-local-failure" ⇒
-                    Some(RemoveConnectionOnFirstFailureLocalFailureDetector)
+                  case "no-op" ⇒
+                    Some(NoOpFailureDetector)
 
                   case "remove-connection-on-first-failure" ⇒
                     Some(RemoveConnectionOnFirstFailureFailureDetector)
 
                   case "bannage-period" ⇒
+                    throw new ConfigurationException(
+                      "Configuration for [" + addressPath + ".failure-detector.bannage-period] must have a 'time-to-ban' option defined")
+
+                  case "bannage-period.time-to-ban" ⇒
                     failureDetectorConfig.getSection("bannage-period") map { section ⇒
-                      BannagePeriodFailureDetector(section.getInt("time-to-ban", 10))
+                      val timeToBan = Duration(section.getInt("time-to-ban", 60), Config.TIME_UNIT)
+                      BannagePeriodFailureDetector(timeToBan)
                     }
 
                   case "custom" ⇒
                     failureDetectorConfig.getSection("custom") map { section ⇒
                       val implementationClass = section.getString("class").getOrElse(throw new ConfigurationException(
                         "Configuration for [" + addressPath +
-                          "failure-detector.custom] must have a 'class' element with the fully qualified name of the failure detector class"))
+                          ".failure-detector.custom] must have a 'class' element with the fully qualified name of the failure detector class"))
                       CustomFailureDetector(implementationClass)
                     }
 
@@ -201,11 +208,11 @@ object Deployer extends ActorDeployer {
               case detectors ⇒
                 throw new ConfigurationException(
                   "Configuration for [" + addressPath +
-                    "failure-detector] can not have multiple sections - found [" + detectors.mkString(", ") + "]")
+                    ".failure-detector] can not have multiple sections - found [" + detectors.mkString(", ") + "]")
             }
           case None ⇒ None
         }
-        val failureDetector = failureDetectorOption getOrElse { BannagePeriodFailureDetector(10) } // fall back to default failure detector
+        val failureDetector = failureDetectorOption getOrElse { NoOpFailureDetector } // fall back to default failure detector
 
         // --------------------------------
         // akka.actor.deployment.<address>.create-as
@@ -262,7 +269,7 @@ object Deployer extends ActorDeployer {
             // --------------------------------
             addressConfig.getSection("cluster") match {
               case None ⇒
-                Some(Deploy(address, recipe, router, nrOfInstances, RemoveConnectionOnFirstFailureLocalFailureDetector, LocalScope)) // deploy locally
+                Some(Deploy(address, recipe, router, nrOfInstances, NoOpFailureDetector, LocalScope)) // deploy locally
 
               case Some(clusterConfig) ⇒
 
