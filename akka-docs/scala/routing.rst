@@ -231,10 +231,10 @@ Examples
      def rampupRate = 0.1
      def partialFill = true
      def selectionCount = 1
-     def instance = actorOf(new Actor {def receive = {case n:Int =>
+     def instance(defaults: Props) = actorOf(defaults.withCreator(new Actor {def receive = {case n:Int =>
                                                      Thread.sleep(n)
                                                      counter.incrementAndGet
-                                                     latch.countDown()}})
+                                                     latch.countDown()}}))
   }
 
 .. code-block:: scala
@@ -256,9 +256,9 @@ Examples
     def rampupRate = 0.1
     def backoffRate = 0.50
     def backoffThreshold = 0.50
-    def instance = actorOf(new Actor {def receive = {case n:Int =>
+    def instance(defaults: Props) = actorOf(defaults.withCreator(new Actor {def receive = {case n:Int =>
                                                     Thread.sleep(n)
-                                                    latch.countDown()}})
+                                                    latch.countDown()}}))
   }
 
 Taken from the unit test `spec <https://github.com/jboner/akka/blob/master/akka-actor/src/test/scala/akka/routing/RoutingSpec.scala>`_.
