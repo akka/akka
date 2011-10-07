@@ -408,7 +408,7 @@ private[akka] class ActorCell(
 
     def supervise(child: ActorRef): Unit = {
       val links = _children
-      if (!links.contains(child)) {
+      if (!links.exists(_.child == child)) {
         _children = links :+ ChildRestartStats(child)
         if (Actor.debugLifecycle) EventHandler.debug(actor, "now supervising " + child)
       } else EventHandler.warning(actor, "Already supervising " + child)
