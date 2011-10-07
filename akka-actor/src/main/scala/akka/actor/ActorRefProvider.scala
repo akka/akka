@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import DeploymentConfig._
 import akka.event.EventHandler
 import akka.AkkaException
 import akka.routing._
@@ -150,22 +149,22 @@ class LocalActorRefProvider extends ActorRefProvider {
         Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
           // create a local actor
-          case None | Some(Deploy(_, _, Direct, _, _, LocalScope)) ⇒
+          case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
             Some(new LocalActorRef(props, address, systemService)) // create a local actor
 
           // create a routed actor ref
-          case deploy @ Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
-            val routerType = DeploymentConfig.routerTypeFor(router)
-
-            val routerFactory: () ⇒ Router = routerType match {
+          case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+            val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
               case RouterType.Direct        ⇒ () ⇒ new DirectRouter
               case RouterType.Random        ⇒ () ⇒ new RandomRouter
               case RouterType.RoundRobin    ⇒ () ⇒ new RoundRobinRouter
+              case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
               case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
               case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
               case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
               case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
             }
+
             val connections: Iterable[ActorRef] =
               if (nrOfInstances.factor > 0)
                 Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
@@ -173,7 +172,7 @@ class LocalActorRefProvider extends ActorRefProvider {
 
             Some(Routing.actorOf(RoutedProps(
               routerFactory = routerFactory,
-              connections = connections)))
+              connectionManager = new LocalConnectionManager(connections))))
 
           case _ ⇒ None // non-local actor - pass it on
         }

@@ -934,7 +934,7 @@ class RemoteServerHandler(
       try {
         actor ! PoisonPill
       } catch {
-        case e: Exception ⇒ EventHandler.error(e, this, "Couldn't stop %s".format(actor))
+        case e: Exception ⇒ EventHandler.error(e, this, "Couldn't stop [%s]".format(actor))
       }
     }
 
@@ -951,7 +951,7 @@ class RemoteServerHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     event.getMessage match {
       case null ⇒
-        throw new IllegalActorStateException("Message in remote MessageEvent is null: " + event)
+        throw new IllegalActorStateException("Message in remote MessageEvent is null [" + event + "]")
 
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
         handleRemoteMessageProtocol(remote.getMessage, event.getChannel)
@@ -1050,12 +1050,6 @@ class RemoteServerHandler(
   private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
     val uuid = actorInfo.getUuid
     val address = actorInfo.getAddress
-    // val address = {
-    //   // strip off clusterActorRefPrefix if needed
-    //   val addr = actorInfo.getAddress
-    //   if (addr.startsWith(Address.clusterActorRefPrefix)) addr.substring(addr.indexOf('.') + 1, addr.length)
-    //   else addr
-    // }
 
     EventHandler.debug(this,
       "Looking up a remotely available actor for address [%s] on node [%s]"

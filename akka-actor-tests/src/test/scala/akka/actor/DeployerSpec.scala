@@ -6,6 +6,7 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import akka.util.duration._
 import DeploymentConfig._
 
 class DeployerSpec extends WordSpec with MustMatchers {
@@ -19,9 +20,9 @@ class DeployerSpec extends WordSpec with MustMatchers {
         Deploy(
           "service-ping",
           None,
-          LeastCPU,
+          RoundRobin,
           NrOfInstances(3),
-          BannagePeriodFailureDetector(10),
+          BannagePeriodFailureDetector(10 seconds),
           RemoteScope(List(
             RemoteAddress("wallace", 2552), RemoteAddress("gromit", 2552))))))
       // ClusterScope(
