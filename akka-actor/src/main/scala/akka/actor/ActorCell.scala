@@ -323,7 +323,7 @@ private[akka] class ActorCell(
   def systemInvoke(envelope: SystemEnvelope) {
 
     def create(): Unit = try {
-      val created = newActor() //TODO !!!! Notify supervisor on failure to create!
+      val created = newActor()
       actor = created
       created.preStart()
       checkReceiveTimeout
