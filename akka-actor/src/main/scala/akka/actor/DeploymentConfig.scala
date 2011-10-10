@@ -184,12 +184,12 @@ object DeploymentConfig {
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
 
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
-    case NoOpFailureDetector                             ⇒ FailureDetectorType.NoOpFailureDetector
-    case NoOpFailureDetector()                           ⇒ FailureDetectorType.NoOpFailureDetector
-    case BannagePeriodFailureDetector(timeToBan)         ⇒ FailureDetectorType.BannagePeriodFailureDetector(timeToBan)
-    case RemoveConnectionOnFirstFailureFailureDetector   ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
-    case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector
-    case CustomFailureDetector(implClass)                ⇒ FailureDetectorType.CustomFailureDetector(implClass)
+    case NoOpFailureDetector                             ⇒ FailureDetectorType.NoOp
+    case NoOpFailureDetector()                           ⇒ FailureDetectorType.NoOp
+    case BannagePeriodFailureDetector(timeToBan)         ⇒ FailureDetectorType.BannagePeriod(timeToBan)
+    case RemoveConnectionOnFirstFailureFailureDetector   ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
+    case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
+    case CustomFailureDetector(implClass)                ⇒ FailureDetectorType.Custom(implClass)
     case unknown                                         ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
   }
 

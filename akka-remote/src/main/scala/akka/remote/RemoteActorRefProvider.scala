@@ -47,10 +47,10 @@ class RemoteActorRefProvider extends ActorRefProvider {
           case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
             val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
-              case FailureDetectorType.NoOpFailureDetector                           ⇒ new NoOpFailureDetector
-              case FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector ⇒ new RemoveConnectionOnFirstFailureFailureDetector
-              case FailureDetectorType.BannagePeriodFailureDetector(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
-              case FailureDetectorType.CustomFailureDetector(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
+              case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
+              case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
+              case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
+              case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
             }
 
             val thisHostname = Remote.address.getHostName
