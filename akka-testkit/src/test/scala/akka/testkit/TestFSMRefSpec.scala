@@ -9,7 +9,7 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.util.duration._
 
-class TestFSMRefSpec extends TestKit with WordSpec with MustMatchers {
+class TestFSMRefSpec extends AkkaSpec {
 
   import FSM._
 

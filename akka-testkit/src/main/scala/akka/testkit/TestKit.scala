@@ -86,7 +86,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: AkkaApplication = AkkaApplication()) {
+class TestKit(_app: AkkaApplication) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
@@ -101,14 +101,7 @@ class TestKit(_app: AkkaApplication = AkkaApplication()) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = new LocalActorRef(application, Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
-
-  /**
-   * Implicit sender reference so that replies are possible for messages sent
-   * from the test class.
-   */
-  @deprecated("will be removed after 1.2, replaced by implicit testActor", "1.2")
-  val senderOption = Some(testActor)
+  implicit val testActor: ActorRef = new LocalActorRef(application, Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
 
   private var end: Duration = Duration.Inf
 

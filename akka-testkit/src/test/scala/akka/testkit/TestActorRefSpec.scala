@@ -90,7 +90,7 @@ object TestActorRefSpec {
 
 }
 
-class TestActorRefSpec extends TestKit with WordSpec with MustMatchers with BeforeAndAfterEach {
+class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import TestActorRefSpec._
 
