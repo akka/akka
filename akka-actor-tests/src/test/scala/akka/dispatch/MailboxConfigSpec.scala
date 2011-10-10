@@ -9,7 +9,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
-import akka.actor.{ LocalActorRef, Actor, ActorRegistry, NullChannel }
+import akka.actor.{ LocalActorRef, Actor, NullChannel }
 
 @RunWith(classOf[JUnitRunner])
 abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {

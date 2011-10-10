@@ -16,12 +16,21 @@ import com.eaio.uuid.UUID;
  *  - locating actors
  */
 public class Actors {
+
+    /**
+     *
+     * @return The actor provider
+     */
+    public static ActorRefProviders provider() {
+        return Actor$.MODULE$.provider();
+    }
+
     /**
      *
      * @return The actor registry
      */
-    public static ActorRegistry registry() {
-        return Actor$.MODULE$.registry();
+    public static ActorRefProviders registry() {
+        return Actor$.MODULE$.provider();
     }
 
     /**

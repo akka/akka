@@ -19,11 +19,10 @@ sealed trait FailureDetectorType
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object FailureDetectorType {
-  // TODO shorten names to NoOp, BannagePeriod etc.
-  case object NoOpFailureDetector extends FailureDetectorType
-  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetectorType
-  case class BannagePeriodFailureDetector(timeToBan: Duration) extends FailureDetectorType
-  case class CustomFailureDetector(className: String) extends FailureDetectorType
+  case object NoOp extends FailureDetectorType
+  case object RemoveConnectionOnFirstFailure extends FailureDetectorType
+  case class BannagePeriod(timeToBan: Duration) extends FailureDetectorType
+  case class Custom(className: String) extends FailureDetectorType
 }
 
 sealed trait RouterType

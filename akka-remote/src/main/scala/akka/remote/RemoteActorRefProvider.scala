@@ -32,6 +32,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
   import akka.dispatch.Promise
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
+
   private val remoteDaemonConnectionManager = new RemoteConnectionManager(failureDetector = new BannagePeriodFailureDetector(60 seconds)) // FIXME make timeout configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
@@ -46,10 +47,10 @@ class RemoteActorRefProvider extends ActorRefProvider {
           case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
             val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
-              case FailureDetectorType.NoOpFailureDetector                           ⇒ new NoOpFailureDetector
-              case FailureDetectorType.RemoveConnectionOnFirstFailureFailureDetector ⇒ new RemoveConnectionOnFirstFailureFailureDetector
-              case FailureDetectorType.BannagePeriodFailureDetector(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
-              case FailureDetectorType.CustomFailureDetector(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
+              case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
+              case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
+              case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
+              case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
             }
 
             val thisHostname = Remote.address.getHostName
@@ -119,7 +120,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
           throw e
       }
 
-      actor foreach Actor.registry.register // only for ActorRegistry backward compat, will be removed later
+      //      actor foreach Actor.registry.register // only for ActorRegistry backward compat, will be removed later
 
       newFuture completeWithResult actor
       actor
@@ -129,7 +130,10 @@ class RemoteActorRefProvider extends ActorRefProvider {
     }
   }
 
-  def findActorRef(address: String): Option[ActorRef] = throw new UnsupportedOperationException
+  def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
+    case null   ⇒ None
+    case future ⇒ future.await.resultOrException.getOrElse(None)
+  }
 
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.

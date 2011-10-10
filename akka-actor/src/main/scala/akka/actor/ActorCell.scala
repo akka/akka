@@ -245,7 +245,6 @@ private[akka] class ActorCell(
       }
     }
 
-    Actor.registry.register(self)
     dispatcher.attach(this)
   }
 
@@ -379,7 +378,6 @@ private[akka] class ActorCell(
       receiveTimeout = None
       cancelReceiveTimeout
       Actor.provider.evict(self.address)
-      Actor.registry.unregister(self)
       dispatcher.detach(this)
 
       try {

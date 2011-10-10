@@ -16,7 +16,7 @@ class Ticket669Spec extends WordSpec with MustMatchers with BeforeAndAfterAll wi
   override def beforeAll = Thread.interrupted() //remove interrupted status.
 
   override def afterAll = {
-    Actor.registry.local.shutdownAll
+    //    Actor.registry.local.shutdownAll
     akka.event.EventHandler.start()
   }
 
