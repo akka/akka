@@ -4,15 +4,10 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.BeforeAndAfterEach
-
 import akka.testkit._
+import org.scalatest.BeforeAndAfterEach
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
-
-import akka.actor.Actor._
 import akka.dispatch.Dispatchers
 
 object ActorFireForgetRequestReplySpec {
@@ -50,13 +45,17 @@ object ActorFireForgetRequestReplySpec {
     }
   }
 
+  class Supervisor extends Actor {
+    def receive = { case _ ⇒ () }
+  }
+
   object state {
     var s = "NIL"
     val finished = TestBarrier(2)
   }
 }
 
-class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
+class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
   import ActorFireForgetRequestReplySpec._
 
   override def beforeEach() = {
@@ -83,7 +82,7 @@ class ActorFireForgetRequestReplySpec extends WordSpec with MustMatchers with Be
 
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected")) {
-        val supervisor = Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(0)))
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
         val actor = actorOf(Props[CrashingActor].withSupervisor(supervisor))
         actor.isShutdown must be(false)
         actor ! "Die"
