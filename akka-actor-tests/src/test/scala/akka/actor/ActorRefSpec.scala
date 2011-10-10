@@ -262,7 +262,7 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       val latch = new CountDownLatch(1)
       val a = actorOf(new InnerActor {
         override def postStop {
-          Actor.registry.unregister(self)
+          //          Actor.registry.unregister(self)
           latch.countDown
         }
       })

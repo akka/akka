@@ -13,11 +13,6 @@ public class JavaAPI {
       assertNotNull(remote);
   }
 
-  @Test void mustInteractWithActorRegistry() {
-      final ActorRegistry registry = Actors.registry();
-      assertNotNull(registry);
-  }
-
   @Test void mustBeAbleToCreateActorRefFromClass() {
       ActorRef ref = Actors.actorOf(JavaAPITestActor.class);
       assertNotNull(ref);

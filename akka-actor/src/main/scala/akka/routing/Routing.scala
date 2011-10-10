@@ -66,10 +66,16 @@ object Routing {
 
   sealed trait RoutingMessage
 
+  /**
+   * Used to broadcast a message to all connections in a router. E.g. every connection gets the message
+   * regardless of their routing algorithm.
+   */
   case class Broadcast(message: Any) extends RoutingMessage
 
   /**
-   * FIXME: will very likely be moved to the ActorRef.
+   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
+   *
+   * FIXME: will very likely be moved to the ActorRefProvider.
    */
   def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
     //TODO Implement support for configuring by deployment ID etc

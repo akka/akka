@@ -15,7 +15,7 @@ trait ActorRefProvider {
 
   def actorOf(props: Props, address: String): Option[ActorRef]
 
-  def findActorRef(address: String): Option[ActorRef]
+  def actorFor(address: String): Option[ActorRef]
 
   private[akka] def evict(address: String): Boolean
 }
@@ -73,21 +73,21 @@ private[akka] class ActorRefProviders(
         providersAsList.map(_.getClass.getName).mkString(", ") + "]"))
   }
 
-  def findActorRef(address: String): Option[ActorRef] = {
+  def actorFor(address: String): Option[ActorRef] = {
 
     @annotation.tailrec
-    def findActorRef(address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
+    def actorFor(address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
       providers match {
         case Nil ⇒ None
         case provider :: rest ⇒
-          provider.findActorRef(address) match {
-            case None ⇒ findActorRef(address, rest) // recur
+          provider.actorFor(address) match {
+            case None ⇒ actorFor(address, rest) // recur
             case ref  ⇒ ref
           }
       }
     }
 
-    findActorRef(address, providersAsList)
+    actorFor(address, providersAsList)
   }
 
   /**
@@ -130,7 +130,10 @@ class LocalActorRefProvider extends ActorRefProvider {
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
 
-  def findActorRef(address: String): Option[ActorRef] = Actor.registry.local.actorFor(address)
+  def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
+    case null   ⇒ None
+    case future ⇒ future.await.resultOrException.getOrElse(None)
+  }
 
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
@@ -181,8 +184,6 @@ class LocalActorRefProvider extends ActorRefProvider {
           newFuture completeWithException e // so the other threads gets notified of error
           throw e
       }
-
-      actor foreach Actor.registry.register // only for ActorRegistry backward compat, will be removed later
 
       newFuture completeWithResult actor
       actor

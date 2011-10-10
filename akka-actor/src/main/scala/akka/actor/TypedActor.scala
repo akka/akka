@@ -232,8 +232,9 @@ object TypedActor {
 
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
 
-    override def preStart = Actor.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
-    override def postStop = Actor.registry.unregisterTypedActor(self, proxyVar.get)
+    // FIXME TypedActor register/unregister on postStop/preStart
+    // override def preStart = Actor.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
+    // override def postStop = Actor.registry.unregisterTypedActor(self, proxyVar.get)
 
     val me = createInstance
     def receive = {

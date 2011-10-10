@@ -418,7 +418,7 @@ case class SerializedActorRef(uuid: Uuid,
                               port: Int,
                               timeout: Long) {
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = Actor.registry.local.actorFor(uuid) match {
+  def readResolve(): AnyRef = Actor.provider.actorFor(address) match {
     case Some(actor) ⇒ actor
     case None ⇒
       //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something

@@ -11,7 +11,7 @@ import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import akka.remote.netty.NettyRemoteSupport
-import akka.actor.{ Actor, ActorRegistry }
+import akka.actor.Actor
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
