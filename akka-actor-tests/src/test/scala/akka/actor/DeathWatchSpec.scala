@@ -34,7 +34,6 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
       expectTerminationOf(terminal)
 
       terminal.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
@@ -54,7 +53,6 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
@@ -75,7 +73,6 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
@@ -96,7 +93,6 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
         expectTerminationOf(terminal)
 
         terminal.stop()
-        expectNoMsg(2 seconds) //Shouldn't get more terminations
         supervisor.stop()
       }
     }
