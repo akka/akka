@@ -12,6 +12,7 @@ import ClusterModule._
 import java.net.InetSocketAddress
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
+import akka.event.{ EventHandler, InVMMonitoring }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -447,4 +448,24 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
+}
+
+object DeadLetterActorRef extends UnsupportedActorRef {
+  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))
+  val address: String = "akka:internal:DeadLetterActorRef"
+
+  override def link(actorRef: ActorRef): ActorRef = actorRef
+
+  override def unlink(actorRef: ActorRef): ActorRef = actorRef
+
+  def isShutdown(): Boolean = true
+
+  def stop(): Unit = ()
+
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = EventHandler.debug(this, message)
+
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: Any,
+    timeout: Timeout,
+    channel: UntypedChannel): Future[Any] = { EventHandler.debug(this, message); brokenPromise }
 }

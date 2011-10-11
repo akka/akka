@@ -16,8 +16,7 @@ import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
  *
  * @author Viktor Klang
  */
-class Index[K <: AnyRef, V <: AnyRef: Manifest] {
-  private val Naught = Array[V]() //Nil for Arrays
+class Index[K, V] {
   private val container = new ConcurrentHashMap[K, JSet[V]]
   private val emptySet = new ConcurrentSkipListSet[V]
 
@@ -66,15 +65,6 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
   }
 
   /**
-   * @return a _new_ array of all existing values for the given key at the time of the call
-   */
-  def values(key: K): Array[V] = {
-    val set: JSet[V] = container get key
-    val result = if (set ne null) set toArray Naught else Naught
-    result.asInstanceOf[Array[V]]
-  }
-
-  /**
    * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
@@ -83,6 +73,16 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
     val set = container get key
     if (set ne null) set.iterator.find(f)
     else None
+  }
+
+  /**
+   * Returns an Iterator of V containing the values for the supplied key, or an empty iterator if the key doesn't exist
+   */
+  def valueIterator(key: K): scala.Iterator[V] = {
+    container.get(key) match {
+      case null ⇒ Iterator.empty
+      case some ⇒ scala.collection.JavaConversions.asScalaIterator(some.iterator())
+    }
   }
 
   /**
@@ -112,6 +112,10 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
     } else false //Remove failed
   }
 
+  /**
+   * Disassociates all the values for the specified key
+   * @returns None if the key wasn't associated at all, or Some(scala.Iterable[V]) if it was associated
+   */
   def remove(key: K): Option[Iterable[V]] = {
     val set = container get key
 
@@ -124,6 +128,26 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
   }
 
   /**
+   * Removes the specified value from all keys
+   */
+  def removeValue(value: V): Unit = {
+    val i = container.entrySet().iterator()
+    while (i.hasNext) {
+      val e = i.next()
+      val set = e.getValue()
+
+      if (set ne null) {
+        set.synchronized {
+          if (set.remove(value)) { //If we can remove the value
+            if (set.isEmpty) //and the set becomes empty
+              container.remove(e.getKey, emptySet) //We try to remove the key if it's mapped to an empty set
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * @return true if the underlying containers is empty, may report false negatives when the last remove is underway
    */
   def isEmpty: Boolean = container.isEmpty
@@ -131,5 +155,21 @@ class Index[K <: AnyRef, V <: AnyRef: Manifest] {
   /**
    *  Removes all keys and all values
    */
-  def clear = foreach { case (k, v) ⇒ remove(k, v) }
+  def clear(): Unit = {
+    val i = container.entrySet().iterator()
+    while (i.hasNext) {
+      val e = i.next()
+      val set = e.getValue()
+      if (set ne null) { set.synchronized { set.clear(); container.remove(e.getKey, emptySet) } }
+    }
+  }
 }
+
+/**
+ * An implementation of a ConcurrentMultiMap
+ * Adds/remove is serialized over the specified key
+ * Reads are fully concurrent <-- el-cheapo
+ *
+ * @author Viktor Klang
+ */
+class ConcurrentMultiMap[K, V] extends Index[K, V]
