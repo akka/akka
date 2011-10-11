@@ -58,7 +58,7 @@ object FailureDetector {
       implClass,
       Array[Class[_]](),
       Array[AnyRef]()) match {
-        case Right(actor) ⇒ actor
+        case Right(failureDetector) ⇒ failureDetector
         case Left(exception) ⇒
           val cause = exception match {
             case i: InvocationTargetException ⇒ i.getTargetException

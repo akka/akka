@@ -53,7 +53,7 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOf(RoutedProps(
+    val router = Actor.actorOf(RoutedProps(
       routerFactory = () ⇒ new RoundRobinRouter,
       connectionManager = new LocalConnectionManager(workers)), "pi")
 

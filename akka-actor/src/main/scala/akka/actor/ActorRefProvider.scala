@@ -5,8 +5,10 @@
 package akka.actor
 
 import akka.event.EventHandler
-import akka.AkkaException
+import akka.config.ConfigurationException
+import akka.util.ReflectiveAccess
 import akka.routing._
+import akka.AkkaException
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -91,6 +93,22 @@ private[akka] class ActorRefProviders(
   }
 
   /**
+   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
+   */
+  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
+    //TODO Implement support for configuring by deployment ID etc
+    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
+    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
+    //TODO If the actor deployed uses a different config, then ignore or throw exception?
+    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
+    val localOnly = props.localOnly
+
+    if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
+    else new RoutedActorRef(props, address)
+  }
+
+  /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
    */
   private[akka] def evict(address: String): Boolean = {
@@ -158,14 +176,14 @@ class LocalActorRefProvider extends ActorRefProvider {
           // create a routed actor ref
           case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
             val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-              case RouterType.Direct        ⇒ () ⇒ new DirectRouter
-              case RouterType.Random        ⇒ () ⇒ new RandomRouter
-              case RouterType.RoundRobin    ⇒ () ⇒ new RoundRobinRouter
-              case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
-              case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
-              case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
-              case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
-              case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+              case RouterType.Direct            ⇒ () ⇒ new DirectRouter
+              case RouterType.Random            ⇒ () ⇒ new RandomRouter
+              case RouterType.RoundRobin        ⇒ () ⇒ new RoundRobinRouter
+              case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
+              case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+              case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+              case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+              case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
             }
 
             val connections: Iterable[ActorRef] =
@@ -173,7 +191,7 @@ class LocalActorRefProvider extends ActorRefProvider {
                 Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
               else Nil
 
-            Some(Routing.actorOf(RoutedProps(
+            Some(Actor.actorOf(RoutedProps(
               routerFactory = routerFactory,
               connectionManager = new LocalConnectionManager(connections))))
 
