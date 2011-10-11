@@ -1,14 +1,12 @@
 package akka.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Actor._
 import akka.actor.{ ActorRef, Actor }
 import collection.mutable.LinkedList
 import akka.routing.Routing.Broadcast
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import akka.testkit.AkkaSpec
 
 object RoutingSpec {
 
@@ -20,23 +18,23 @@ object RoutingSpec {
   }
 }
 
-class RoutingSpec extends WordSpec with MustMatchers {
+class RoutingSpec extends AkkaSpec {
 
   import akka.routing.RoutingSpec._
 
   "direct router" must {
     "be started when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps(() ⇒ new DirectRouter, List(actor1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
         val props = RoutedProps(() ⇒ new DirectRouter, List())
-        Routing.actorOf(props, "foo")
+        app.routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -47,7 +45,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter = new AtomicInteger(0)
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter.incrementAndGet
@@ -55,7 +53,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new DirectRouter, List(connection1))
-      val routedActor = Routing.actorOf(props, "foo")
+      val routedActor = app.routing.actorOf(props, "foo")
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -68,7 +66,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -76,7 +74,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new DirectRouter, List(connection1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! "end"
@@ -90,17 +88,17 @@ class RoutingSpec extends WordSpec with MustMatchers {
   "round robin router" must {
 
     "be started when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps(() ⇒ new RoundRobinRouter, List(actor1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
         val props = RoutedProps(() ⇒ new RoundRobinRouter, List())
-        Routing.actorOf(props, "foo")
+        app.routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -122,7 +120,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
-        val connection = actorOf(new Actor {
+        val connection = createActor(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
@@ -133,7 +131,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       //create the routed actor.
       val props = RoutedProps(() ⇒ new RoundRobinRouter, connections)
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
@@ -156,7 +154,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -164,7 +162,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -172,7 +170,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new RoundRobinRouter, List(connection1, connection2))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -187,7 +185,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter1.incrementAndGet()
@@ -195,7 +193,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new RoundRobinRouter, List(connection1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       try {
         actor ? Broadcast(1)
@@ -214,17 +212,17 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
     "be started when constructed" in {
 
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps(() ⇒ new RandomRouter, List(actor1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw IllegalArgumentException at construction when no connections" in {
       try {
         val props = RoutedProps(() ⇒ new RandomRouter, List())
-        Routing.actorOf(props, "foo")
+        app.routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -239,7 +237,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -247,7 +245,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -255,7 +253,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new RandomRouter, List(connection1, connection2))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -270,7 +268,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter1.incrementAndGet()
@@ -278,7 +276,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps(() ⇒ new RandomRouter, List(connection1))
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       try {
         actor ? Broadcast(1)

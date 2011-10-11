@@ -108,32 +108,22 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     val REMOTE_SERVER_PORT = getInt("akka.remote.server.port", 2552)
   }
 
+  // Java API
+  val akkaConfig = AkkaConfig
+
+  object MistSettings {
+    val JettyServer = "jetty"
+    val TimeoutAttribute = "timeout"
+
+    val ConnectionClose = config.getBool("akka.http.connection-close", true)
+    val RootActorBuiltin = config.getBool("akka.http.root-actor-builtin", true)
+    val RootActorID = config.getString("akka.http.root-actor-id", "_httproot")
+    val DefaultTimeout = config.getLong("akka.http.timeout", 1000)
+    val ExpiredHeaderName = config.getString("akka.http.expired-header-name", "Async-Timeout")
+    val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
+  }
+
   import AkkaConfig._
-
-  if (CONFIG_VERSION != VERSION)
-    throw new ConfigurationException("Akka JAR version [" + VERSION +
-      "] does not match the provided config version [" + CONFIG_VERSION + "]")
-
-  // TODO correctly pull its config from the config
-  val dispatcherFactory = new Dispatchers(this)
-
-  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val provider: ActorRefProvider = new LocalActorRefProvider(this)
-
-  /**
-   * Handle to the ActorRegistry.
-   * TODO: delete me!
-   */
-  val registry = new ActorRegistry
-
-  // TODO check memory consistency issues
-  val reflective = new ReflectiveAccess(this)
-
-  val routing = new Routing(this)
-
-  val serialization = new Serialization(this)
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
@@ -147,5 +137,38 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case null | "" ⇒ InetAddress.getLocalHost.getHostName
     case value     ⇒ value
   }
+
+  if (CONFIG_VERSION != VERSION)
+    throw new ConfigurationException("Akka JAR version [" + VERSION +
+      "] does not match the provided config version [" + CONFIG_VERSION + "]")
+
+  // TODO correctly pull its config from the config
+  val dispatcherFactory = new Dispatchers(this)
+
+  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+
+  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
+  val deployer = new Deployer(this)
+  val deployment = new DeploymentConfig(this)
+
+  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
+  val provider: ActorRefProvider = new LocalActorRefProvider(this, deployer)
+
+  /**
+   * Handle to the ActorRegistry.
+   * TODO: delete me!
+   */
+  val registry = new ActorRegistry
+
+  // TODO check memory consistency issues
+  val reflective = new ReflectiveAccess(this)
+
+  val routing = new Routing(this)
+
+  val remote = reflective.RemoteModule.defaultRemoteSupport map (_.apply) getOrElse null
+
+  val typedActor = new TypedActor(this)
+
+  val serialization = new Serialization(this)
 
 }

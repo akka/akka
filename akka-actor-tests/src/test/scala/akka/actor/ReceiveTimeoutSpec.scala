@@ -4,24 +4,19 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.util.duration._
 
-import Actor._
 import java.util.concurrent.atomic.AtomicInteger
 
-class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
-  import Actor._
+class ReceiveTimeoutSpec extends AkkaSpec {
 
   "An actor with receive timeout" must {
 
     "get timeout" in {
       val timeoutLatch = TestLatch()
 
-      val timeoutActor = actorOf(new Actor {
+      val timeoutActor = createActor(new Actor {
         receiveTimeout = Some(500L)
 
         protected def receive = {
@@ -36,7 +31,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
     "get timeout when swapped" in {
       val timeoutLatch = TestLatch()
 
-      val timeoutActor = actorOf(new Actor {
+      val timeoutActor = createActor(new Actor {
         receiveTimeout = Some(500L)
 
         protected def receive = {
@@ -60,7 +55,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       val timeoutLatch = TestLatch()
       case object Tick
 
-      val timeoutActor = actorOf(new Actor {
+      val timeoutActor = createActor(new Actor {
         receiveTimeout = Some(500L)
 
         protected def receive = {
@@ -80,7 +75,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
       val timeoutLatch = TestLatch()
       case object Tick
 
-      val timeoutActor = actorOf(new Actor {
+      val timeoutActor = createActor(new Actor {
         receiveTimeout = Some(500L)
 
         protected def receive = {
@@ -102,7 +97,7 @@ class ReceiveTimeoutSpec extends WordSpec with MustMatchers {
     "not receive timeout message when not specified" in {
       val timeoutLatch = TestLatch()
 
-      val timeoutActor = actorOf(new Actor {
+      val timeoutActor = createActor(new Actor {
         protected def receive = {
           case ReceiveTimeout ⇒ timeoutLatch.open
         }

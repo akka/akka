@@ -3,13 +3,11 @@
  */
 package akka.actor
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
-import org.scalatest.matchers.MustMatchers
-import akka.testkit.{ TestKit, TestActorRef, EventFilter, TestEvent }
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+import akka.testkit.{ TestKit, TestActorRef, EventFilter, TestEvent, ImplicitSender }
 import akka.event.EventHandler
-import Actor._
 import akka.util.duration._
-import akka.config.Config.config
+import akka.testkit.AkkaSpec
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -17,12 +15,7 @@ object LoggingReceiveSpec {
   }
 }
 
-class LoggingReceiveSpec
-  extends WordSpec
-  with BeforeAndAfterEach
-  with BeforeAndAfterAll
-  with MustMatchers
-  with TestKit {
+class LoggingReceiveSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll with ImplicitSender {
   import LoggingReceiveSpec._
 
   val level = EventHandler.level
@@ -68,10 +61,10 @@ class LoggingReceiveSpec
   "A LoggingReceive" must {
 
     "decorate a Receive" in {
-      val r: Receive = {
+      val r: Actor.Receive = {
         case null ⇒
       }
-      val log = LoggingReceive(this, r)
+      val log = Actor.LoggingReceive(this, r)
       log.isDefinedAt("hallo")
       expectMsg(1 second, EventHandler.Debug(this, "received unhandled message hallo"))
     }
@@ -90,7 +83,7 @@ class LoggingReceiveSpec
         expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
         expectMsg("x")
       }
-      val r: Receive = {
+      val r: Actor.Receive = {
         case null ⇒
       }
       actor ! HotSwap(_ ⇒ r, false)

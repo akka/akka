@@ -90,9 +90,7 @@ class TestKit(_app: AkkaApplication) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val application = _app
-  implicit val defaultFutureTimeout = _app.AkkaConfig.TIMEOUT
-  implicit val defaultFutureDispatcher = _app.dispatcher
+  implicit val app = _app
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -101,7 +99,7 @@ class TestKit(_app: AkkaApplication) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  implicit val testActor: ActorRef = new LocalActorRef(application, Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
+  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
 
   private var end: Duration = Duration.Inf
 
@@ -579,4 +577,8 @@ class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
 
 object TestProbe {
   def apply()(implicit application: AkkaApplication) = new TestProbe(application)
+}
+
+trait ImplicitSender { this: TestKit ⇒
+  implicit def implicitSenderTestActor = testActor
 }

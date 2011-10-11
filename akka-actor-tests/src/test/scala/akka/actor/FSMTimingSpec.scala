@@ -4,18 +4,15 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
-import akka.testkit.TestKit
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.Duration
 import akka.util.duration._
 
-class FSMTimingSpec extends WordSpec with MustMatchers with TestKit {
+class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   import FSMTimingSpec._
   import FSM._
 
-  val fsm = Actor.actorOf(new StateMachine(testActor))
+  val fsm = createActor(new StateMachine(testActor))
   fsm ! SubscribeTransitionCallBack(testActor)
   expectMsg(200 millis, CurrentState(fsm, Initial))
 

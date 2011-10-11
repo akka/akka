@@ -58,6 +58,8 @@ object Props {
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
   def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
+
+  def apply(faultHandler: FaultHandlingStrategy): Props = apply(new Actor { def receive = { case _ ⇒ } }).withFaultHandler(faultHandler)
 }
 
 /**

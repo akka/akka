@@ -51,6 +51,12 @@ trait ActorRefFactory {
     provider.actorOf(p, address).get
   }
 
+  def createActor[T <: Actor](implicit m: Manifest[T]): ActorRef = createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
+
+  def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
+
+  def createActor(factory: ⇒ Actor): ActorRef = createActor(Props(() ⇒ factory))
+
   def findActor(address: String): Option[ActorRef] = provider.findActorRef(address)
 
 }
@@ -67,12 +73,11 @@ object ActorRefProvider {
 /**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider(application: AkkaApplication) extends ActorRefProvider {
+class LocalActorRefProvider(val application: AkkaApplication, val deployer: Deployer) extends ActorRefProvider {
 
   import application.dispatcher
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
-  private val deployer = new Deployer(application)
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
 

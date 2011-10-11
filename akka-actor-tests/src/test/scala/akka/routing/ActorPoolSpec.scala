@@ -1,17 +1,14 @@
 package akka.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.actor.Actor._
 import akka.testkit.Testing._
-import akka.actor.{ TypedActor, Actor, Props }
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import akka.testkit.AkkaSpec
 
-object ActorPoolSpec {
+class ActorPoolSpec extends AkkaSpec {
 
   trait Foo {
     def sq(x: Int, sleep: Long): Future[Int]
@@ -25,10 +22,6 @@ object ActorPoolSpec {
   }
 
   val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
-}
-
-class ActorPoolSpec extends WordSpec with MustMatchers {
-  import akka.routing.ActorPoolSpec._
 
   "Actor Pool" must {
 
@@ -36,9 +29,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
       val latch = TestLatch(2)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = createActor(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with SmallestMailboxSelector {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 count.incrementAndGet
@@ -54,7 +47,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         }).withFaultHandler(faultHandler))
 
       val successes = TestLatch(2)
-      val successCounter = actorOf(new Actor {
+      val successCounter = createActor(new Actor {
         def receive = {
           case "success" ⇒ successes.countDown()
         }
@@ -75,7 +68,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
     }
 
     "pass ticket #705" in {
-      val pool = actorOf(
+      val pool = createActor(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicFilter {
           def lowerBound = 2
           def upperBound = 20
@@ -86,7 +79,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
           def selectionCount = 1
           def receive = _route
           def pressureThreshold = 1
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
@@ -112,9 +105,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = createActor(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -176,9 +169,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = createActor(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -229,10 +222,10 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
       val latch1 = TestLatch(2)
       val delegates = new java.util.concurrent.ConcurrentHashMap[String, String]
 
-      val pool1 = actorOf(
+      val pool1 = createActor(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
 
-          def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
+          def instance(p: Props): ActorRef = createActor(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
@@ -258,9 +251,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
       val latch2 = TestLatch(2)
       delegates.clear()
 
-      val pool2 = actorOf(
+      val pool2 = createActor(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
@@ -287,9 +280,9 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
     "backoff" in {
       val latch = TestLatch(10)
 
-      val pool = actorOf(
+      val pool = createActor(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = createActor(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -332,7 +325,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "support typed actors" in {
       import RoutingSpec._
-      import TypedActor._
+      import app.typedActor._
       def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5
@@ -359,7 +352,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
         val deathCount = new AtomicInteger(0)
         val keepDying = new AtomicBoolean(false)
 
-        val pool1 = actorOf(
+        val pool1 = createActor(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -370,7 +363,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
+            def instance(p: Props) = createActor(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -382,7 +375,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             }))
           }).withFaultHandler(faultHandler))
 
-        val pool2 = actorOf(
+        val pool2 = createActor(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -393,7 +386,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
+            def instance(p: Props) = createActor(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -405,7 +398,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             }))
           }).withFaultHandler(faultHandler))
 
-        val pool3 = actorOf(
+        val pool3 = createActor(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -416,7 +409,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
+            def instance(p: Props) = createActor(p.withCreator(new Actor {
 
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
@@ -503,7 +496,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
         object BadState
 
-        val pool1 = actorOf(
+        val pool1 = createActor(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -514,7 +507,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
+            def instance(p: Props) = createActor(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {

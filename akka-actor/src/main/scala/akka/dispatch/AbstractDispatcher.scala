@@ -60,6 +60,8 @@ object MessageDispatcher {
   val UNSCHEDULED = 0
   val SCHEDULED = 1
   val RESCHEDULED = 2
+
+  implicit def defaultDispatcher(implicit application: AkkaApplication) = application.dispatcher
 }
 
 /**

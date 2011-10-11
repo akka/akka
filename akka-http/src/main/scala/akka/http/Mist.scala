@@ -6,30 +6,17 @@ package akka.http
 
 import akka.event.EventHandler
 import akka.config.ConfigurationException
-
 import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
 import java.lang.UnsupportedOperationException
 import akka.actor.{ NullChannel, ActorRef, Actor }
+import Types._
+import akka.AkkaApplication
 
 /**
  * @author Garrick Evans
  */
-object MistSettings {
-  import akka.config.Config._
-
-  val JettyServer = "jetty"
-  val TimeoutAttribute = "timeout"
-
-  val ConnectionClose = config.getBool("akka.http.connection-close", true)
-  val RootActorBuiltin = config.getBool("akka.http.root-actor-builtin", true)
-  val RootActorID = config.getString("akka.http.root-actor-id", "_httproot")
-  val DefaultTimeout = config.getLong("akka.http.timeout", 1000)
-  val ExpiredHeaderName = config.getString("akka.http.expired-header-name", "Async-Timeout")
-  val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
-}
-
 /**
  * Structural type alias's required to work with both Servlet 3.0 and Jetty's Continuation API
  *
@@ -60,14 +47,15 @@ object Types {
   def Headers(): Headers = Nil
 }
 
-import Types._
+
 
 /**
  *
  */
 trait Mist {
   import javax.servlet.ServletContext
-  import MistSettings._
+  
+  protected def application: AkkaApplication
 
   /**
    * The root endpoint actor
@@ -113,7 +101,7 @@ trait Mist {
 
     // shoot the message to the root endpoint for processing
     // IMPORTANT: the suspend method is invoked on the server thread not in the actor
-    val method = builder(() ⇒ suspend(ConnectionClose))
+    val method = builder(() ⇒ suspend(application.MistSettings.ConnectionClose))
     if (method.go) root ! method
   }
 
@@ -125,9 +113,9 @@ trait Mist {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
     factory = if (major >= 3) {
-      Some(Servlet30ContextMethodFactory)
-    } else if (server.toLowerCase startsWith JettyServer) {
-      Some(JettyContinuationMethodFactory)
+      Some(new Servlet30ContextMethodFactory(application))
+    } else if (server.toLowerCase startsWith application.MistSettings.JettyServer) {
+      Some(new JettyContinuationMethodFactory(application))
     } else {
       None
     }
@@ -136,13 +124,15 @@ trait Mist {
 
 trait RootEndpointLocator {
   var root: ActorRef = null
+  
+  protected def application: AkkaApplication
 
   def configureRoot(address: String) {
     def findRoot(address: String): ActorRef =
-      Actor.registry.actorFor(address).getOrElse(
+      application.registry.actorFor(address).getOrElse(
         throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + address + "]"))
 
-    root = if ((address eq null) || address == "") findRoot(MistSettings.RootActorID) else findRoot(address)
+    root = if ((address eq null) || address == "") findRoot(application.MistSettings.RootActorID) else findRoot(address)
   }
 }
 
@@ -150,7 +140,7 @@ trait RootEndpointLocator {
  * AkkaMistServlet adds support to bridge Http and Actors in an asynchronous fashion
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
-class AkkaMistServlet extends HttpServlet with Mist with RootEndpointLocator {
+class AkkaMistServlet(val application: AkkaApplication) extends HttpServlet with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletConfig }
 
   /**
@@ -169,7 +159,7 @@ class AkkaMistServlet extends HttpServlet with Mist with RootEndpointLocator {
  * Proof-of-concept, use at own risk
  * Will be officially supported in a later release
  */
-class AkkaMistFilter extends Filter with Mist with RootEndpointLocator {
+class AkkaMistFilter(val application: AkkaApplication) extends Filter with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletRequest, ServletResponse, FilterConfig, FilterChain }
 
   /**
@@ -205,7 +195,7 @@ object Endpoint {
   /**
    * leverage the akka config to tweak the dispatcher for our endpoints
    */
-  lazy val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
+  //lazy val Dispatcher = Dispatchers.fromConfig("akka.http.mist-dispatcher")
 
   type Hook = PartialFunction[String, ActorRef]
 
@@ -276,7 +266,6 @@ trait Endpoint { this: Actor ⇒
 
 class RootEndpoint extends Actor with Endpoint {
   import Endpoint._
-  import MistSettings._
 
   final val Root = "/"
 

@@ -4,8 +4,7 @@
 
 package akka.actor
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.testkit._
 import TestEvent.{ Mute, UnMuteAll }
@@ -97,7 +96,7 @@ object FSMActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
-class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAndAfterAll with BeforeAndAfterEach {
+class FSMActorSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach with ImplicitSender {
   import FSMActorSpec._
 
   val eh_level = EventHandler.level
@@ -134,9 +133,9 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
     "unlock the lock" in {
 
       // lock that locked after being open for 1 sec
-      val lock = Actor.actorOf(new Lock("33221", 1 second))
+      val lock = createActor(new Lock("33221", 1 second))
 
-      val transitionTester = Actor.actorOf(new Actor {
+      val transitionTester = createActor(new Actor {
         def receive = {
           case Transition(_, _, _)     ⇒ transitionCallBackLatch.open
           case CurrentState(_, Locked) ⇒ initialStateLatch.open
@@ -168,7 +167,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
       val answerLatch = TestLatch()
       object Hello
       object Bye
-      val tester = Actor.actorOf(new Actor {
+      val tester = createActor(new Actor {
         protected def receive = {
           case Hello   ⇒ lock ! "hello"
           case "world" ⇒ answerLatch.open
@@ -189,7 +188,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case Ev("go") ⇒ goto(2)
         }
       })
-      logger = Actor.actorOf(new Actor {
+      logger = createActor(new Actor {
         def receive = {
           case x ⇒ testActor forward x
         }
@@ -211,7 +210,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
           case x ⇒ testActor ! x
         }
       }
-      val ref = Actor.actorOf(fsm)
+      val ref = createActor(fsm)
       started.await
       ref.stop()
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
@@ -235,7 +234,7 @@ class FSMActorSpec extends WordSpec with MustMatchers with TestKit with BeforeAn
         }
       })
       val fsm = fsmref.underlyingActor
-      logger = Actor.actorOf(new Actor {
+      logger = createActor(new Actor {
         def receive = {
           case x ⇒ testActor forward x
         }

@@ -10,7 +10,8 @@ import scala.annotation.{ tailrec }
 import akka.actor.Timeout
 
 object PromiseStream {
-  def apply[A](implicit dispatcher: MessageDispatcher, timeout: Timeout): PromiseStream[A] = new PromiseStream[A]
+  def apply[A]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): PromiseStream[A] = new PromiseStream[A]
+  def apply[A](timeout: Long)(implicit dispatcher: MessageDispatcher): PromiseStream[A] = new PromiseStream[A]()(dispatcher, Timeout(timeout))
 
   private sealed trait State
   private case object Normal extends State

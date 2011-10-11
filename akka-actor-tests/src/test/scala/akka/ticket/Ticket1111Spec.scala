@@ -1,16 +1,13 @@
 package akka.ticket
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.routing._
-import akka.actor.Actor._
 import akka.actor.{ ActorRef, Actor }
 import java.util.concurrent.atomic.AtomicInteger
 import collection.mutable.LinkedList
 import akka.routing.Routing.Broadcast
 import akka.testkit._
 
-class Ticket1111Spec extends WordSpec with MustMatchers {
+class Ticket1111Spec extends AkkaSpec {
 
   "Scatter-gather router" must {
 
@@ -22,7 +19,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(Stop(Some(0)))
 
@@ -39,7 +36,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(Stop())
 
@@ -57,7 +54,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(List(newActor(0), newActor(1)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       (actor ? Broadcast("Hi!")).get.asInstanceOf[Int] must be(0)
 
@@ -68,7 +65,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(List(newActor(0), newActor(1)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
 
@@ -78,7 +75,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
       val props = RoutedProps()
         .withConnections(List(newActor(0)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor.isShutdown must be(false)
 
@@ -90,7 +87,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
       try {
-        Routing.actorOf(props, "foo")
+        app.routing.actorOf(props, "foo")
         fail()
       } catch {
         case e: IllegalArgumentException ⇒
@@ -107,7 +104,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
-        val connection = actorOf(new Actor {
+        val connection = createActor(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
@@ -120,7 +117,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(connections)
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -142,7 +139,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
       val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -150,7 +147,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -161,7 +158,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
         .withConnections(List(connection1, connection2))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Routing.actorOf(props, "foo")
+      val actor = app.routing.actorOf(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -174,7 +171,7 @@ class Ticket1111Spec extends WordSpec with MustMatchers {
 
     case class Stop(id: Option[Int] = None)
 
-    def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = actorOf(new Actor {
+    def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = createActor(new Actor {
       def receive = {
         case Stop(None)                     ⇒ self.stop()
         case Stop(Some(_id)) if (_id == id) ⇒ self.stop()

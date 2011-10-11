@@ -4,10 +4,9 @@
 
 package akka.serialization
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
 import akka.serialization.Serialization._
 import scala.reflect._
+import akka.testkit.AkkaSpec
 
 object SerializeSpec {
   @BeanInfo
@@ -18,46 +17,48 @@ object SerializeSpec {
   case class Record(id: Int, person: Person)
 }
 
-class SerializeSpec extends JUnitSuite {
+class SerializeSpec extends AkkaSpec {
   import SerializeSpec._
 
-  @Test
-  def shouldSerializeAddress {
-    val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
-    val b = serialize(addr) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(bytes)    ⇒ bytes
-    }
-    deserialize(b.asInstanceOf[Array[Byte]], classOf[Address], None) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(add)      ⇒ assert(add === addr)
-    }
-  }
+  import app.serialization._
 
-  @Test
-  def shouldSerializePerson {
-    val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
-    val b = serialize(person) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(bytes)    ⇒ bytes
-    }
-    deserialize(b.asInstanceOf[Array[Byte]], classOf[Person], None) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(p)        ⇒ assert(p === person)
-    }
-  }
+  "Serialization" must {
 
-  @Test
-  def shouldSerializeRecordWithDefaultSerializer {
-    val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
-    val r = Record(100, person)
-    val b = serialize(r) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(bytes)    ⇒ bytes
+    "serialize Address" in {
+      val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
+      val b = serialize(addr) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(bytes)    ⇒ bytes
+      }
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Address], None) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(add)      ⇒ assert(add === addr)
+      }
     }
-    deserialize(b.asInstanceOf[Array[Byte]], classOf[Record], None) match {
-      case Left(exception) ⇒ fail(exception)
-      case Right(p)        ⇒ assert(p === r)
+
+    "serialize Person" in {
+      val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+      val b = serialize(person) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(bytes)    ⇒ bytes
+      }
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Person], None) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(p)        ⇒ assert(p === person)
+      }
+    }
+
+    "serialize record with default serializer" in {
+      val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+      val r = Record(100, person)
+      val b = serialize(r) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(bytes)    ⇒ bytes
+      }
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Record], None) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(p)        ⇒ assert(p === r)
+      }
     }
   }
 }

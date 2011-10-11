@@ -139,11 +139,31 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
+  implicit def defaultTimeout(implicit application: AkkaApplication) = application.AkkaConfig.TIMEOUT
 }
 
 object Actor {
 
   type Receive = PartialFunction[Any, Unit]
+
+  /**
+   * This decorator adds invocation logging to a Receive function.
+   */
+  class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
+    def isDefinedAt(o: Any) = {
+      val handled = r.isDefinedAt(o)
+      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      handled
+    }
+    def apply(o: Any): Unit = r(o)
+  }
+
+  object LoggingReceive {
+    def apply(source: AnyRef, r: Receive): Receive = r match {
+      case _: LoggingReceive ⇒ r
+      case _                 ⇒ new LoggingReceive(source, r)
+    }
+  }
 
 }
 
@@ -164,6 +184,9 @@ object Actor {
  */
 trait Actor {
 
+  import Actor._
+
+  // to make type Receive known in subclasses without import
   type Receive = Actor.Receive
 
   /**
@@ -188,33 +211,14 @@ trait Actor {
     context
   }
 
-  implicit def application = context.application
+  implicit def app = context.application
 
-  private def config = application.AkkaConfig
+  private def config = context.application.AkkaConfig
 
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
   implicit val defaultTimeout = config.TIMEOUT
-
-  /**
-   * This decorator adds invocation logging to a Receive function.
-   */
-  class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
-    def isDefinedAt(o: Any) = {
-      val handled = r.isDefinedAt(o)
-      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
-      handled
-    }
-    def apply(o: Any): Unit = r(o)
-  }
-
-  object LoggingReceive {
-    def apply(source: AnyRef, r: Receive): Receive = r match {
-      case _: LoggingReceive ⇒ r
-      case _                 ⇒ new LoggingReceive(source, r)
-    }
-  }
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a

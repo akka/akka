@@ -1,27 +1,24 @@
 package akka.performance.trading.common
 
-import org.junit._
-import Assert._
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import akka.performance.trading.domain._
 import akka.performance.trading.common._
-import akka.actor.Actor.actorOf
-import akka.dispatch.Dispatchers
 import akka.event.EventHandler
 import akka.actor.{ Props, ActorRef, Actor, PoisonPill }
+import akka.AkkaApplication
 
-abstract class AkkaPerformanceTest extends BenchmarkScenarios {
+abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkScenarios {
 
   type TS = AkkaTradingSystem
 
-  val clientDispatcher = Dispatchers.newDispatcher("client-dispatcher")
+  val clientDispatcher = app.dispatcherFactory.newDispatcher("client-dispatcher")
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .setMaxPoolSize(maxClients)
     .build
 
-  override def createTradingSystem: TS = new AkkaTradingSystem
+  override def createTradingSystem: TS = new AkkaTradingSystem(app)
 
   /**
    * Implemented in subclass
@@ -38,14 +35,14 @@ abstract class AkkaPerformanceTest extends BenchmarkScenarios {
     val clients = (for (i ← 0 until numberOfClients) yield {
       val receiver = receivers(i % receivers.size)
       Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs)).withDispatcher(clientDispatcher)
-    }).toList.map(actorOf(_))
+    }).toList.map(app.createActor(_))
 
     clients.foreach(_ ! "run")
     val ok = latch.await((5000 + (2 + delayMs) * totalNumberOfRequests) * timeDilation, TimeUnit.MILLISECONDS)
     val durationNs = (System.nanoTime - start)
 
-    assertTrue(ok)
-    assertEquals((orders.size / 2) * repeat, TotalTradeCounter.counter.get)
+    assert(ok)
+    assert((orders.size / 2) * repeat == TotalTradeCounter.counter.get)
     logMeasurement(scenario, numberOfClients, durationNs)
     clients.foreach(_ ! PoisonPill)
   }

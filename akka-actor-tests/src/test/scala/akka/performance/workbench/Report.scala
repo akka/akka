@@ -3,17 +3,14 @@ package akka.performance.workbench
 import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
-
 import akka.event.EventHandler
-import akka.config.Config
-import akka.config.Config.config
+import akka.AkkaApplication
 
-class Report(
-  resultRepository: BenchResultRepository,
-  compareResultWith: Option[String] = None) {
+class Report(app: AkkaApplication,
+             resultRepository: BenchResultRepository,
+             compareResultWith: Option[String] = None) {
 
   private def log = System.getProperty("benchmark.logResult", "true").toBoolean
 
@@ -189,11 +186,11 @@ class Report(
     sb.append("Args:\n  ").append(args)
     sb.append("\n")
 
-    sb.append("Akka version: ").append(Config.CONFIG_VERSION)
+    sb.append("Akka version: ").append(app.AkkaConfig.CONFIG_VERSION)
     sb.append("\n")
     sb.append("Akka config:")
-    for (key ← config.keys) {
-      sb.append("\n  ").append(key).append("=").append(config(key))
+    for (key ← app.config.keys) {
+      sb.append("\n  ").append(key).append("=").append(app.config(key))
     }
 
     sb.toString
