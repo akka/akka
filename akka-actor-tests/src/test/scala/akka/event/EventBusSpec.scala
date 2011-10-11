@@ -125,7 +125,7 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
 
 object ActorEventBusSpec {
   class ComposedActorEventBus extends ActorEventBus with LookupClassification with EventType[String] with ClassifierType[String] {
-    def classify(event: String) = event.charAt(0).toString
+    def classify(event: String) = event
     def publish(event: String, subscriber: ActorRef) = subscriber ! event
   }
 
@@ -146,7 +146,7 @@ class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
 
   def createSubscriber(pipeTo: ActorRef) = actorOf(Props(new TestActorWrapperActor(pipeTo)))
 
-  def classifierFor(event: BusType#Event) = event.charAt(0).toString
+  def classifierFor(event: BusType#Event) = event
 
   def disposeSubscriber(subscriber: BusType#Subscriber): Unit = subscriber.stop()
 }
