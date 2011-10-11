@@ -11,7 +11,7 @@ import akka.actor.Actor._
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
-import akka.actor.ActorRef
+import akka.actor.{ Props, Actor, ActorRef }
 
 object EventBusSpec {
 
@@ -90,6 +90,14 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       bus.unsubscribe(subscriber, classifier)
     }
 
+    "publish the given event to all intended subscribers" in {
+      val subscribers = Vector.fill(10)(createNewSubscriber())
+      subscribers foreach { s ⇒ bus.subscribe(s, classifier) must be === true }
+      bus.publish(event)
+      (1 to 10) foreach { _ ⇒ expectMsg(event) }
+      subscribers foreach disposeSubscriber
+    }
+
     "not publish the given event to any other subscribers than the intended ones" in {
       val otherSubscriber = createNewSubscriber()
       val otherClassifier = getClassifierFor(events.drop(1).head)
@@ -99,6 +107,14 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       expectMsg(event)
       bus.unsubscribe(subscriber, classifier)
       bus.unsubscribe(otherSubscriber, otherClassifier)
+      expectNoMsg(1 second)
+    }
+
+    "not publish the given event to a former subscriber" in {
+      bus.subscribe(subscriber, classifier)
+      bus.unsubscribe(subscriber, classifier)
+      bus.publish(event)
+      expectNoMsg(1 second)
     }
 
     "cleanup subscriber" in {
@@ -112,19 +128,25 @@ object ActorEventBusSpec {
     def classify(event: String) = event.charAt(0).toString
     def publish(event: String, subscriber: ActorRef) = subscriber ! event
   }
+
+  class TestActorWrapperActor(testActor: ActorRef) extends Actor {
+    def receive = {
+      case x ⇒ testActor forward x
+    }
+  }
 }
 
 class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
-  import akka.event.ActorEventBusSpec.ComposedActorEventBus
+  import akka.event.ActorEventBusSpec._
 
   type BusType = ComposedActorEventBus
   def createNewEventBus(): BusType = new ComposedActorEventBus
 
   def createEvents(numberOfEvents: Int) = (0 until numberOfEvents) map { _.toString }
 
-  def createSubscriber(pipeTo: ActorRef) = pipeTo
+  def createSubscriber(pipeTo: ActorRef) = actorOf(Props(new TestActorWrapperActor(pipeTo)))
 
   def classifierFor(event: BusType#Event) = event.charAt(0).toString
 
-  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = ()
+  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = subscriber.stop()
 }
