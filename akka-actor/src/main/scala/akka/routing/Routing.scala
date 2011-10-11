@@ -89,6 +89,24 @@ object Routing {
     if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     else new RoutedActorRef(props, address)
   }
+
+  def createCustomRouter(implClass: String): Router = {
+    ReflectiveAccess.createInstance(
+      implClass,
+      Array[Class[_]](),
+      Array[AnyRef]()) match {
+        case Right(router) ⇒ router.asInstanceOf[Router]
+        case Left(exception) ⇒
+          val cause = exception match {
+            case i: InvocationTargetException ⇒ i.getTargetException
+            case _                            ⇒ exception
+          }
+          throw new ConfigurationException(
+            "Could not instantiate custom Router of [" +
+              implClass + "] due to: " +
+              cause, cause)
+      }
+  }
 }
 
 /**

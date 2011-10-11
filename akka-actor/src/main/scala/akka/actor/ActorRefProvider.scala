@@ -158,14 +158,14 @@ class LocalActorRefProvider extends ActorRefProvider {
           // create a routed actor ref
           case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
             val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-              case RouterType.Direct        ⇒ () ⇒ new DirectRouter
-              case RouterType.Random        ⇒ () ⇒ new RandomRouter
-              case RouterType.RoundRobin    ⇒ () ⇒ new RoundRobinRouter
-              case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
-              case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
-              case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
-              case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
-              case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+              case RouterType.Direct            ⇒ () ⇒ new DirectRouter
+              case RouterType.Random            ⇒ () ⇒ new RandomRouter
+              case RouterType.RoundRobin        ⇒ () ⇒ new RoundRobinRouter
+              case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
+              case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+              case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+              case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+              case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
             }
 
             val connections: Iterable[ActorRef] =

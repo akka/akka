@@ -138,12 +138,7 @@ object Deployer extends ActorDeployer {
           case "least-cpu"      ⇒ LeastCPU
           case "least-ram"      ⇒ LeastRAM
           case "least-messages" ⇒ LeastMessages
-          case customRouterClassName ⇒
-            createInstance[AnyRef](customRouterClassName, emptyParams, emptyArguments).fold(
-              e ⇒ throw new ConfigurationException(
-                "Config option [" + addressPath + ".router] needs to be one of " +
-                  "[\"direct\", \"round-robin\", \"random\", \"scatter-gather\", \"least-cpu\", \"least-ram\", \"least-messages\" or the fully qualified name of Router class]", e),
-              CustomRouter(_))
+          case routerClassName  ⇒ CustomRouter(routerClassName)
         }
 
         // --------------------------------

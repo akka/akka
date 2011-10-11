@@ -91,10 +91,10 @@ class RemoteActorRefProvider extends ActorRefProvider {
                       .format(address, remoteAddresses.mkString(", ")))
                   () ⇒ new ScatterGatherFirstCompletedRouter
 
-                case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
-                case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
-                case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
-                case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+                case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+                case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+                case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+                case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
               }
 
               var connections = Map.empty[InetSocketAddress, ActorRef]

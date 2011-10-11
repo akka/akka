@@ -71,7 +71,7 @@ object RouterType {
   /**
    * A user-defined custom RouterType.
    */
-  object Custom extends RouterType
+  case class Custom(implClass: String) extends RouterType
 
 }
 
