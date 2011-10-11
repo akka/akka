@@ -90,6 +90,17 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       bus.unsubscribe(subscriber, classifier)
     }
 
+    "publish to the only subscriber multiple times" in {
+      bus.subscribe(subscriber, classifier)
+      bus.publish(event)
+      bus.publish(event)
+      bus.publish(event)
+      expectMsg(event)
+      expectMsg(event)
+      expectMsg(event)
+      bus.unsubscribe(subscriber, classifier)
+    }
+
     "publish the given event to all intended subscribers" in {
       val subscribers = Vector.fill(10)(createNewSubscriber())
       subscribers foreach { s ⇒ bus.subscribe(s, classifier) must be === true }
