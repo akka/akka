@@ -35,9 +35,10 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
 
     def createNewSubscriber() = createSubscriber(testActor).asInstanceOf[bus.Subscriber]
     def getClassifierFor(event: BusType#Event) = classifierFor(event).asInstanceOf[bus.Classifier]
+    def createNewEvents(numberOfEvents: Int): Iterable[bus.Event] = createEvents(numberOfEvents).asInstanceOf[Iterable[bus.Event]]
 
     val bus = createNewEventBus()
-    val events = createEvents(100)
+    val events = createNewEvents(100)
     val event = events.head
     val classifier = getClassifierFor(event)
     val subscriber = createNewSubscriber()
@@ -76,6 +77,28 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       subscribers.zip(classifiers) forall { case (s, c) ⇒ bus.unsubscribe(s, c) } must be === true
 
       subscribers foreach disposeSubscriber
+    }
+
+    "publishing events without any subscribers shouldn't be a problem" in {
+      bus.publish(event)
+    }
+
+    "publish the given event to the only subscriber" in {
+      bus.subscribe(subscriber, classifier)
+      bus.publish(event)
+      expectMsg(event)
+      bus.unsubscribe(subscriber, classifier)
+    }
+
+    "not publish the given event to any other subscribers than the intended ones" in {
+      val otherSubscriber = createNewSubscriber()
+      val otherClassifier = getClassifierFor(events.drop(1).head)
+      bus.subscribe(subscriber, classifier)
+      bus.subscribe(otherSubscriber, otherClassifier)
+      bus.publish(event)
+      expectMsg(event)
+      bus.unsubscribe(subscriber, classifier)
+      bus.unsubscribe(otherSubscriber, otherClassifier)
     }
 
     "cleanup subscriber" in {
