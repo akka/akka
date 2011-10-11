@@ -336,6 +336,11 @@ object Actor {
   def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, address)
 
   /**
+   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
+   */
+  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = provider.actorOf(props, address)
+
+  /**
    * Use to spawn out a block of code in an event-driven actor. Will shut actor down when
    * the block has been executed.
    * <p/>

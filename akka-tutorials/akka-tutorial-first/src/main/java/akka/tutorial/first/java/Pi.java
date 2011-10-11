@@ -9,6 +9,7 @@ import static akka.actor.Actors.poisonPill;
 import static java.util.Arrays.asList;
 
 import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.routing.RoutedProps;
@@ -110,7 +111,7 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = Routing.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+      router = Actors.provider().actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     // message handler

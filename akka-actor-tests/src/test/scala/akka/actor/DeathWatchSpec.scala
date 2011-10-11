@@ -84,10 +84,7 @@ class DeathWatchSpec extends WordSpec with MustMatchers with TestKit with Before
 
         terminal ! Kill
         terminal ! Kill
-        terminal ! "foo"
-
-        expectMsg("foo") //Make sure that it's still alive
-
+        (terminal ? "foo").as[String] must be === Some("foo")
         terminal ! Kill
 
         expectTerminationOf(terminal)

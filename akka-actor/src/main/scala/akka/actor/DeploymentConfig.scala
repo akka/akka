@@ -40,7 +40,7 @@ object DeploymentConfig {
   // --- Routing
   // --------------------------------
   sealed trait Routing
-  case class CustomRouter(router: AnyRef) extends Routing
+  case class CustomRouter(routerClassName: String) extends Routing
 
   // For Java API
   case class Direct() extends Routing
@@ -194,21 +194,21 @@ object DeploymentConfig {
   }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
-    case Direct          ⇒ RouterType.Direct
-    case Direct()        ⇒ RouterType.Direct
-    case RoundRobin      ⇒ RouterType.RoundRobin
-    case RoundRobin()    ⇒ RouterType.RoundRobin
-    case Random          ⇒ RouterType.Random
-    case Random()        ⇒ RouterType.Random
-    case ScatterGather   ⇒ RouterType.ScatterGather
-    case ScatterGather() ⇒ RouterType.ScatterGather
-    case LeastCPU        ⇒ RouterType.LeastCPU
-    case LeastCPU()      ⇒ RouterType.LeastCPU
-    case LeastRAM        ⇒ RouterType.LeastRAM
-    case LeastRAM()      ⇒ RouterType.LeastRAM
-    case LeastMessages   ⇒ RouterType.LeastMessages
-    case LeastMessages() ⇒ RouterType.LeastMessages
-    case c: CustomRouter ⇒ throw new UnsupportedOperationException("Unknown Router [" + c + "]")
+    case Direct                  ⇒ RouterType.Direct
+    case Direct()                ⇒ RouterType.Direct
+    case RoundRobin              ⇒ RouterType.RoundRobin
+    case RoundRobin()            ⇒ RouterType.RoundRobin
+    case Random                  ⇒ RouterType.Random
+    case Random()                ⇒ RouterType.Random
+    case ScatterGather           ⇒ RouterType.ScatterGather
+    case ScatterGather()         ⇒ RouterType.ScatterGather
+    case LeastCPU                ⇒ RouterType.LeastCPU
+    case LeastCPU()              ⇒ RouterType.LeastCPU
+    case LeastRAM                ⇒ RouterType.LeastRAM
+    case LeastRAM()              ⇒ RouterType.LeastRAM
+    case LeastMessages           ⇒ RouterType.LeastMessages
+    case LeastMessages()         ⇒ RouterType.LeastMessages
+    case CustomRouter(implClass) ⇒ RouterType.Custom(implClass)
   }
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {

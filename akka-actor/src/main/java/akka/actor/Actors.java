@@ -27,14 +27,6 @@ public class Actors {
 
     /**
      *
-     * @return The actor registry
-     */
-    public static ActorRefProviders registry() {
-        return Actor$.MODULE$.provider();
-    }
-
-    /**
-     *
      * @return
      * @throws UnsupportedOperationException If remoting isn't configured
      * @throws ModuleNotAvailableException If the class for the remote support cannot be loaded
