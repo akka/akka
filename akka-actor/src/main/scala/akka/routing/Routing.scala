@@ -72,24 +72,6 @@ object Routing {
    */
   case class Broadcast(message: Any) extends RoutingMessage
 
-  /**
-   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
-   *
-   * FIXME: will very likely be moved to the ActorRefProvider.
-   */
-  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
-    //TODO Implement support for configuring by deployment ID etc
-    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
-    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
-    //TODO If the actor deployed uses a different config, then ignore or throw exception?
-    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
-    val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
-    val localOnly = props.localOnly
-
-    if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
-    else new RoutedActorRef(props, address)
-  }
-
   def createCustomRouter(implClass: String): Router = {
     ReflectiveAccess.createInstance(
       implClass,

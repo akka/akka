@@ -14,6 +14,7 @@ import akka.routing.Routing;
 import akka.routing.LocalConnectionManager;
 import scala.Option;
 import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.Channel;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -104,7 +105,7 @@ public class Pi {
          workers.add(worker);
       }
 
-      router = Routing.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+      router = Actors.provider().actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     @Override

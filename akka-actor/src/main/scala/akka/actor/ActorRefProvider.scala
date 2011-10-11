@@ -5,8 +5,10 @@
 package akka.actor
 
 import akka.event.EventHandler
-import akka.AkkaException
+import akka.config.ConfigurationException
+import akka.util.ReflectiveAccess
 import akka.routing._
+import akka.AkkaException
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -88,6 +90,22 @@ private[akka] class ActorRefProviders(
     }
 
     actorFor(address, providersAsList)
+  }
+
+  /**
+   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
+   */
+  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
+    //TODO Implement support for configuring by deployment ID etc
+    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
+    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
+    //TODO If the actor deployed uses a different config, then ignore or throw exception?
+    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
+    val localOnly = props.localOnly
+
+    if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
+    else new RoutedActorRef(props, address)
   }
 
   /**
@@ -173,7 +191,7 @@ class LocalActorRefProvider extends ActorRefProvider {
                 Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
               else Nil
 
-            Some(Routing.actorOf(RoutedProps(
+            Some(Actor.actorOf(RoutedProps(
               routerFactory = routerFactory,
               connectionManager = new LocalConnectionManager(connections))))
 

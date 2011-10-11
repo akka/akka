@@ -107,7 +107,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
 
               connections.keys foreach { useActorOnNode(_, address, props.creator) }
 
-              Some(Routing.actorOf(RoutedProps(
+              Some(Actor.actorOf(RoutedProps(
                 routerFactory = routerFactory,
                 connectionManager = connectionManager)))
             }
