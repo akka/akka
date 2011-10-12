@@ -17,6 +17,11 @@ import java.util.{ Comparator, Set ⇒ JSet }
  * @author Viktor Klang
  */
 class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
+
+  def this(mapSize: Int, cmp: (V, V) ⇒ Int) = this(mapSize, new Comparator[V] {
+    def compare(a: V, b: V): Int = cmp(a, b)
+  })
+
   private val container = new ConcurrentHashMap[K, JSet[V]](mapSize)
   private val emptySet = new ConcurrentSkipListSet[V]
 

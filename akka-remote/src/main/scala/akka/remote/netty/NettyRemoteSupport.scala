@@ -35,6 +35,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
+import java.util.Comparator
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
@@ -57,7 +58,7 @@ object RemoteEncoder {
 trait NettyRemoteClientModule extends RemoteClientModule {
   self: ListenerManagement ⇒
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
-  private val remoteActors = new Index[RemoteAddress, Uuid]
+  private val remoteActors = new Index[RemoteAddress, Uuid](1024, _ compareTo _)
   private val lock = new ReadWriteGuard
 
   protected[akka] def send[T](message: Any,
