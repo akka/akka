@@ -176,7 +176,7 @@ abstract class RemoteFailureDetectorBase(remote: Remote, initialConnections: Map
  * Simple failure detector that removes the failing connection permanently on first error.
  */
 class RemoveConnectionOnFirstFailureRemoteFailureDetector(_remote: Remote,
-  initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
+                                                          initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
   extends RemoteFailureDetectorBase(_remote, initialConnections) {
 
   protected def newState() = State(Long.MinValue, initialConnections)
@@ -214,8 +214,8 @@ class RemoveConnectionOnFirstFailureRemoteFailureDetector(_remote: Remote,
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class BannagePeriodFailureDetector(_remote: Remote,
-  initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef],
-  timeToBan: Duration)
+                                   initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef],
+                                   timeToBan: Duration)
   extends RemoteFailureDetectorBase(_remote, initialConnections) {
 
   // FIXME considering adding a Scheduler event to notify the BannagePeriodFailureDetector unban the banned connection after the timeToBan have exprired

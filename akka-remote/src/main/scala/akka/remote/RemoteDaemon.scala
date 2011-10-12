@@ -28,13 +28,13 @@ import com.eaio.uuid.UUID
 class Remote(val app: AkkaApplication) extends RemoteService {
 
   import app.config
-  import app.AkkaConfig.TIME_UNIT
+  import app.AkkaConfig.DefaultTimeUnit
 
   val shouldCompressData = config.getBool("akka.remote.use-compression", false)
-  val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), TIME_UNIT).toMillis.toInt
+  val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), DefaultTimeUnit).toMillis.toInt
 
   val hostname = app.hostname
-  val port = app.AkkaConfig.REMOTE_SERVER_PORT
+  val port = app.AkkaConfig.RemoteServerPort
 
   val remoteDaemonServiceName = "akka-remote-daemon".intern
 
@@ -58,7 +58,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
       case _                                         ⇒ //ignore other
     }
   }), "akka.cluster.RemoteClientLifeCycleListener")
-  
+
   lazy val eventStream = new NetworkEventStream(app)
 
   lazy val server: RemoteSupport = {
@@ -96,9 +96,9 @@ class Remote(val app: AkkaApplication) extends RemoteService {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteDaemon(val remote: Remote) extends Actor {
-  
+
   import remote._
-  
+
   override def preRestart(reason: Throwable, msg: Option[Any]) {
     EventHandler.debug(this, "RemoteDaemon failed due to [%s] restarting...".format(reason))
   }

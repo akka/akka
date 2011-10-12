@@ -333,10 +333,10 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
 trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   def actorFor(address: String, hostname: String, port: Int): ActorRef =
-    actorFor(address, app.AkkaConfig.TimeoutMillis, hostname, port, None)
+    actorFor(address, app.AkkaConfig.ActorTimeoutMillis, hostname, port, None)
 
   def actorFor(address: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, app.AkkaConfig.TimeoutMillis, hostname, port, Some(loader))
+    actorFor(address, app.AkkaConfig.ActorTimeoutMillis, hostname, port, Some(loader))
 
   def actorFor(address: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(address, timeout, hostname, port, None)

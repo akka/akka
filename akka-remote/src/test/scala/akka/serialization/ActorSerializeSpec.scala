@@ -9,7 +9,7 @@ import akka.serialization.SerializeSpec.Person
 case class MyMessage(id: Long, name: String, status: Boolean)
 
 class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
-  
+
   val serialization = new ActorSerialization(app)
 
   "Serializable actor" must {
@@ -76,9 +76,9 @@ class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
   "serialize protobuf" must {
     "must serialize" ignore {
       val msg = MyMessage(123, "debasish ghosh", true)
-      
+
       val ser = new Serialization(app)
-      
+
       val b = ser.serialize(ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build) match {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes

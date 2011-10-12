@@ -86,6 +86,6 @@ class AkkaLoader(application: AkkaApplication) {
 ==============================================================================
                       Running version %s
 ==============================================================================
-""".format(AkkaApplication.VERSION))
+""".format(AkkaApplication.Version))
   }
 }

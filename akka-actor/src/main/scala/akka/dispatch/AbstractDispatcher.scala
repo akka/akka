@@ -322,7 +322,7 @@ abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
     else {
       val duration = Duration(
         config.getInt("mailbox-push-timeout-time", application.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
-        application.AkkaConfig.TIME_UNIT)
+        application.AkkaConfig.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -332,7 +332,7 @@ abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
 
     //Apply the following options to the config if they are present in the config
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, application.AkkaConfig.TIME_UNIT))),
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, application.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),

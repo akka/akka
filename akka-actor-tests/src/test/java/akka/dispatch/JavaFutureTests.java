@@ -20,7 +20,7 @@ import scala.Right;
 public class JavaFutureTests {
   
     private final AkkaApplication app = new AkkaApplication();
-    private final Timeout t = app.akkaConfig().TIMEOUT();
+    private final Timeout t = app.akkaConfig().ActorTimeout();
     private final FutureFactory ff = new FutureFactory(app.dispatcher(), t);
 
     @Test public void mustBeAbleToMapAFuture() {

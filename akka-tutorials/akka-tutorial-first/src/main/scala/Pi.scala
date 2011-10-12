@@ -12,7 +12,7 @@ import akka.routing.{ RoutedProps, Routing }
 import akka.AkkaApplication
 
 object Pi extends App {
-  
+
   val app = AkkaApplication()
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)

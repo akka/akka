@@ -27,7 +27,7 @@ import com.eaio.uuid.UUID
  */
 class ActorSerialization(val app: AkkaApplication) {
   implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
-  
+
   val remoteActorSerialization = new RemoteActorSerialization(app)
 
   def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress): ActorRef =
@@ -70,7 +70,7 @@ class ActorSerialization(val app: AkkaApplication) {
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
-      .setTimeout(app.AkkaConfig.TimeoutMillis)
+      .setTimeout(app.AkkaConfig.ActorTimeoutMillis)
 
     replicationScheme match {
       case _: Transient | Transient ⇒
@@ -104,7 +104,7 @@ class ActorSerialization(val app: AkkaApplication) {
                 Option(m.receiver.ref),
                 Left(actorRef.uuid),
                 actorRef.address,
-                app.AkkaConfig.TimeoutMillis,
+                app.AkkaConfig.ActorTimeoutMillis,
                 Right(m.message),
                 false,
                 m.channel match {
@@ -201,7 +201,7 @@ class ActorSerialization(val app: AkkaApplication) {
     }
 
     val props = Props(creator = factory,
-      timeout = if (protocol.hasTimeout) protocol.getTimeout else app.AkkaConfig.TIMEOUT,
+      timeout = if (protocol.hasTimeout) protocol.getTimeout else app.AkkaConfig.ActorTimeout,
       supervisor = storedSupervisor //TODO what dispatcher should it use?
       //TODO what faultHandler should it use?
       //
@@ -243,7 +243,7 @@ class RemoteActorSerialization(val app: AkkaApplication) {
     EventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
 
     val ref = RemoteActorRef(
-        app, app.remote,
+      app, app.remote,
       JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       loader)
@@ -272,7 +272,7 @@ class RemoteActorSerialization(val app: AkkaApplication) {
     RemoteActorRefProtocol.newBuilder
       .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))
       .setAddress(actor.address)
-      .setTimeout(app.AkkaConfig.TimeoutMillis)
+      .setTimeout(app.AkkaConfig.ActorTimeoutMillis)
       .build
   }
 

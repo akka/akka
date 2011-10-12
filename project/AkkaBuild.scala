@@ -65,7 +65,7 @@ object AkkaBuild extends Build {
   lazy val stm = Project(
     id = "akka-stm",
     base = file("akka-stm"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.stm
     )
@@ -74,7 +74,7 @@ object AkkaBuild extends Build {
   lazy val remote = Project(
     id = "akka-remote",
     base = file("akka-remote"),
-    dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
+    dependencies = Seq(stm, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -108,7 +108,7 @@ object AkkaBuild extends Build {
   lazy val http = Project(
     id = "akka-http",
     base = file("akka-http"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.http
     )
@@ -117,7 +117,7 @@ object AkkaBuild extends Build {
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )

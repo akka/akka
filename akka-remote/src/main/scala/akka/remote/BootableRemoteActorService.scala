@@ -15,7 +15,7 @@ import akka.event.EventHandler
  */
 trait BootableRemoteActorService extends Bootable {
   self: BootableActorLoaderService ⇒
-  
+
   def settings: RemoteServerSettings
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {

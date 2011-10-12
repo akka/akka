@@ -69,7 +69,7 @@ class DispatcherActorSpec extends AkkaSpec {
 
     "respect the throughput setting" in {
       val throughputDispatcher = app.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 101, 0, app.dispatcherFactory.MAILBOX_TYPE).
+        newDispatcher("THROUGHPUT", 101, 0, app.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
 
@@ -98,7 +98,7 @@ class DispatcherActorSpec extends AkkaSpec {
     "respect throughput deadline" in {
       val deadlineMs = 100
       val throughputDispatcher = app.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 2, deadlineMs, app.dispatcherFactory.MAILBOX_TYPE).
+        newDispatcher("THROUGHPUT", 2, deadlineMs, app.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
       val works = new AtomicBoolean(true)

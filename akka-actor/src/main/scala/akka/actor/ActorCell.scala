@@ -333,7 +333,7 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(created, "started")
+      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(created, "started")
     } catch {
       case e ⇒ try {
         EventHandler.error(e, this, "error while creating actor")
@@ -347,7 +347,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(failedActor, "restarting")
+      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(failedActor, "restarting")
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -361,7 +361,7 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(freshActor, "restarted")
+      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(freshActor, "restarted")
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
@@ -390,7 +390,7 @@ private[akka] class ActorCell(
 
       try {
         val a = actor
-        if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(a, "stopping")
+        if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(a, "stopping")
         if (a ne null) a.postStop()
 
         //Stop supervised actors
@@ -416,7 +416,7 @@ private[akka] class ActorCell(
       val links = _children
       if (!links.exists(_.child == child)) {
         _children = links :+ ChildRestartStats(child)
-        if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "now supervising " + child)
+        if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "now supervising " + child)
       } else EventHandler.warning(actor, "Already supervising " + child)
     }
 
@@ -428,10 +428,10 @@ private[akka] class ActorCell(
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
             akka.event.InVMMonitoring.link(self, subject)
-            if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "now monitoring " + subject)
+            if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
           case Unlink(subject) ⇒
             akka.event.InVMMonitoring.unlink(self, subject)
-            if (application.AkkaConfig.DEBUG_LIFECYCLE) EventHandler.debug(actor, "stopped monitoring " + subject)
+            if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()
           case Terminate        ⇒ terminate()

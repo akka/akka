@@ -222,7 +222,7 @@ class TypedActor(val application: AkkaApplication) {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
-      case Timeout(Duration.MinusInf) ⇒ application.AkkaConfig.TIMEOUT
+      case Timeout(Duration.MinusInf) ⇒ application.AkkaConfig.ActorTimeout
       case x                          ⇒ x
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]

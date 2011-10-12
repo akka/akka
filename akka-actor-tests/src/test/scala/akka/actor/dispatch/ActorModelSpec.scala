@@ -489,8 +489,8 @@ abstract class ActorModelSpec extends AkkaSpec {
 class DispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new Dispatcher("foo", app.AkkaConfig.DispatcherThroughput,
-      app.dispatcherFactory.THROUGHPUT_DEADLINE_TIME_MILLIS, app.dispatcherFactory.MAILBOX_TYPE,
-      config, app.dispatcherFactory.DISPATCHER_SHUTDOWN_TIMEOUT) with MessageDispatcherInterceptor,
+      app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
+      config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
   def dispatcherType = "Dispatcher"
 }
@@ -498,8 +498,8 @@ class DispatcherModelTest extends ActorModelSpec {
 class BalancingDispatcherModelTest extends ActorModelSpec {
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new BalancingDispatcher("foo", 1, // TODO check why 1 here? (came from old test)
-      app.dispatcherFactory.THROUGHPUT_DEADLINE_TIME_MILLIS, app.dispatcherFactory.MAILBOX_TYPE,
-      config, app.dispatcherFactory.DISPATCHER_SHUTDOWN_TIMEOUT) with MessageDispatcherInterceptor,
+      app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
+      config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
   def dispatcherType = "Balancing Dispatcher"
 

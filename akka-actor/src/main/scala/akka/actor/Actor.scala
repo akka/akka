@@ -139,7 +139,7 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit application: AkkaApplication) = application.AkkaConfig.TIMEOUT
+  implicit def defaultTimeout(implicit application: AkkaApplication) = application.AkkaConfig.ActorTimeout
 }
 
 object Actor {
@@ -218,7 +218,7 @@ trait Actor {
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit val defaultTimeout = config.TIMEOUT
+  implicit val defaultTimeout = config.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -234,7 +234,7 @@ trait Actor {
    * This method does NOT modify the given Receive unless
    * akka.actor.debug.receive is set within akka.conf.
    */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (config.ADD_LOGGING_RECEIVE) LoggingReceive(self, r) else r
+  def loggable(self: AnyRef)(r: Receive): Receive = if (config.AddLoggingReceive) LoggingReceive(self, r) else r
 
   /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
@@ -423,7 +423,7 @@ trait Actor {
       throw new InvalidMessageException("Message from [" + channel + "] to [" + self.toString + "] is null")
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (config.DEBUG_AUTO_RECEIVE) EventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      if (config.DebugAutoReceive) EventHandler.debug(this, "received AutoReceiveMessage " + msg)
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)

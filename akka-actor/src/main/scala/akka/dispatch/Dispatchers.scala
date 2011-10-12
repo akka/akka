@@ -44,14 +44,14 @@ import akka.AkkaApplication
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Dispatchers(val application: AkkaApplication) {
-  val THROUGHPUT_DEADLINE_TIME_MILLIS = application.AkkaConfig.ThroughputDeadlineTime.toMillis.toInt
-  val MAILBOX_TYPE: MailboxType =
+  val ThroughputDeadlineTimeMillis = application.AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt
+  val MailboxType: MailboxType =
     if (application.AkkaConfig.MailboxCapacity < 1) UnboundedMailbox()
     else BoundedMailbox(application.AkkaConfig.MailboxCapacity, application.AkkaConfig.MailboxPushTimeout)
-  val DISPATCHER_SHUTDOWN_TIMEOUT = application.AkkaConfig.DispatcherDefaultShutdown.toMillis
+  val DispatcherShutdownMillis = application.AkkaConfig.DispatcherDefaultShutdown.toMillis
 
   lazy val defaultGlobalDispatcher =
-    application.config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MAILBOX_TYPE).build
+    application.config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -60,8 +60,8 @@ class Dispatchers(val application: AkkaApplication) {
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(actor: LocalActorRef) = actor match {
-    case null ⇒ new PinnedDispatcher(null, "anon", MAILBOX_TYPE, DISPATCHER_SHUTDOWN_TIMEOUT)
-    case some ⇒ new PinnedDispatcher(some.underlying, some.underlying.uuid.toString, MAILBOX_TYPE, DISPATCHER_SHUTDOWN_TIMEOUT)
+    case null ⇒ new PinnedDispatcher(null, "anon", MailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(some.underlying, some.underlying.uuid.toString, MailboxType, DispatcherShutdownMillis)
   }
 
   /**
@@ -71,8 +71,8 @@ class Dispatchers(val application: AkkaApplication) {
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
-    case null ⇒ new PinnedDispatcher(null, "anon", mailboxType, DISPATCHER_SHUTDOWN_TIMEOUT)
-    case some ⇒ new PinnedDispatcher(some.underlying, some.underlying.uuid.toString, mailboxType, DISPATCHER_SHUTDOWN_TIMEOUT)
+    case null ⇒ new PinnedDispatcher(null, "anon", mailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(some.underlying, some.underlying.uuid.toString, mailboxType, DispatcherShutdownMillis)
   }
 
   /**
@@ -81,7 +81,7 @@ class Dispatchers(val application: AkkaApplication) {
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(name: String, mailboxType: MailboxType) =
-    new PinnedDispatcher(null, name, mailboxType, DISPATCHER_SHUTDOWN_TIMEOUT)
+    new PinnedDispatcher(null, name, mailboxType, DispatcherShutdownMillis)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -89,7 +89,7 @@ class Dispatchers(val application: AkkaApplication) {
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(name: String) =
-    new PinnedDispatcher(null, name, MAILBOX_TYPE, DISPATCHER_SHUTDOWN_TIMEOUT)
+    new PinnedDispatcher(null, name, MailboxType, DispatcherShutdownMillis)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -98,7 +98,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newDispatcher(name: String) =
     ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(name, application.AkkaConfig.DispatcherThroughput,
-      THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -107,7 +107,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      new Dispatcher(name, throughput, ThroughputDeadlineTimeMillis, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -116,7 +116,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(name, throughput, throughputDeadlineMs, mailboxType, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      new Dispatcher(name, throughput, throughputDeadlineMs, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -125,7 +125,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newBalancingDispatcher(name: String) =
     ThreadPoolConfigDispatcherBuilder(config ⇒ new BalancingDispatcher(name, application.AkkaConfig.DispatcherThroughput,
-      THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -134,7 +134,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newBalancingDispatcher(name: String, throughput: Int) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, MAILBOX_TYPE, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -143,7 +143,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newBalancingDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(name, throughput, THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, ThroughputDeadlineTimeMillis, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -152,7 +152,7 @@ class Dispatchers(val application: AkkaApplication) {
    */
   def newBalancingDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config, DISPATCHER_SHUTDOWN_TIMEOUT), ThreadPoolConfig())
+      new BalancingDispatcher(name, throughput, throughputDeadlineMs, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
@@ -211,7 +211,7 @@ class DispatcherConfigurator(application: AkkaApplication) extends MessageDispat
     configureThreadPool(config, threadPoolConfig ⇒ new Dispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", application.AkkaConfig.DispatcherThroughput),
-      config.getInt("throughput-deadline-time", application.AkkaConfig.ThroughputDeadlineTime.toMillis.toInt),
+      config.getInt("throughput-deadline-time", application.AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt),
       mailboxType(config),
       threadPoolConfig,
       application.AkkaConfig.DispatcherDefaultShutdown.toMillis)).build
@@ -223,7 +223,7 @@ class BalancingDispatcherConfigurator(application: AkkaApplication) extends Mess
     configureThreadPool(config, threadPoolConfig ⇒ new BalancingDispatcher(
       config.getString("name", newUuid.toString),
       config.getInt("throughput", application.AkkaConfig.DispatcherThroughput),
-      config.getInt("throughput-deadline-time", application.AkkaConfig.ThroughputDeadlineTime.toMillis.toInt),
+      config.getInt("throughput-deadline-time", application.AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt),
       mailboxType(config),
       threadPoolConfig,
       application.AkkaConfig.DispatcherDefaultShutdown.toMillis)).build

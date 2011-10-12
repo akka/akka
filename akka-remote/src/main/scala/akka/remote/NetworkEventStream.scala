@@ -36,9 +36,9 @@ object NetworkEventStream {
 }
 
 class NetworkEventStream(val app: AkkaApplication) {
-  
+
   import NetworkEventStream._
-  
+
   /**
    * Channel actor with a registry of listeners.
    */

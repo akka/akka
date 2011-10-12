@@ -17,12 +17,12 @@ trait BootableActorLoaderService extends Bootable {
 
   def app: AkkaApplication
 
-  val BOOT_CLASSES = app.AkkaConfig.BOOT_CLASSES
+  val BOOT_CLASSES = app.AkkaConfig.BootClasses
   lazy val applicationLoader = createApplicationClassLoader()
 
   protected def createApplicationClassLoader(): Option[ClassLoader] = Some({
-    if (app.AkkaConfig.HOME.isDefined) {
-      val DEPLOY = app.AkkaConfig.HOME.get + "/deploy"
+    if (app.AkkaConfig.Home.isDefined) {
+      val DEPLOY = app.AkkaConfig.Home.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         System.exit(-1)

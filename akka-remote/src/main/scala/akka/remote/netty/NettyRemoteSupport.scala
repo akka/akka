@@ -50,7 +50,7 @@ object RemoteEncoder {
 
 trait NettyRemoteClientModule extends RemoteClientModule {
   self: RemoteSupport ⇒
-  
+
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val remoteActors = new Index[RemoteAddress, Uuid]
   private val lock = new ReadWriteGuard
@@ -58,12 +58,12 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   def app: AkkaApplication
 
   protected[akka] def send[T](message: Any,
-    senderOption: Option[ActorRef],
-    senderFuture: Option[Promise[T]],
-    remoteAddress: InetSocketAddress,
-    isOneWay: Boolean,
-    actorRef: ActorRef,
-    loader: Option[ClassLoader]): Option[Promise[T]] =
+                              senderOption: Option[ActorRef],
+                              senderFuture: Option[Promise[T]],
+                              remoteAddress: InetSocketAddress,
+                              isOneWay: Boolean,
+                              actorRef: ActorRef,
+                              loader: Option[ClassLoader]): Option[Promise[T]] =
     withClientFor(remoteAddress, loader) { client ⇒
       client.send[T](message, senderOption, senderFuture, remoteAddress, isOneWay, actorRef)
     }
@@ -197,7 +197,7 @@ abstract class RemoteClient private[akka] (
     isOneWay: Boolean,
     actorRef: ActorRef): Option[Promise[T]] = {
     val messageProtocol = serialization.createRemoteMessageProtocolBuilder(
-      Some(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.TimeoutMillis, Right(message), isOneWay, senderOption).build
+      Some(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.ActorTimeoutMillis, Right(message), isOneWay, senderOption).build
     send(messageProtocol, senderFuture)
   }
 
@@ -475,7 +475,7 @@ class ActiveRemoteClientPipelineFactory(
   remoteAddress: InetSocketAddress,
   timer: HashedWheelTimer,
   client: ActiveRemoteClient) extends ChannelPipelineFactory {
-  
+
   import settings._
 
   def getPipeline: ChannelPipeline = {
@@ -654,10 +654,10 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
 }
 
 class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) {
-  
+
   val settings = new RemoteServerSettings(app)
   import settings._
-  
+
   val serialization = new RemoteActorSerialization(app)
 
   val name = "NettyRemoteServer@" + host + ":" + port
@@ -712,7 +712,7 @@ class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerMod
 
 trait NettyRemoteServerModule extends RemoteServerModule {
   self: RemoteSupport ⇒
-  
+
   def app: AkkaApplication
 
   private[akka] val currentServer = new AtomicReference[Option[NettyRemoteServer]](None)
@@ -903,7 +903,7 @@ class RemoteServerHandler(
   val server: NettyRemoteServerModule) extends SimpleChannelUpstreamHandler {
 
   import settings._
-  
+
   implicit def app = server.app
 
   // applicationLoader.foreach(MessageSerializer.setClassLoader(_)) //TODO: REVISIT: THIS FEELS A BIT DODGY

@@ -186,7 +186,7 @@ class Report(app: AkkaApplication,
     sb.append("Args:\n  ").append(args)
     sb.append("\n")
 
-    sb.append("Akka version: ").append(app.AkkaConfig.CONFIG_VERSION)
+    sb.append("Akka version: ").append(app.AkkaConfig.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
     for (key ← app.config.keys) {

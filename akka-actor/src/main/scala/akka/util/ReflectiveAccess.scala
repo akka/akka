@@ -133,7 +133,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = application.AkkaConfig.CLUSTER_ENABLED //&& clusterInstance.isDefined
+    lazy val isEnabled = application.AkkaConfig.ClusterEnabled //&& clusterInstance.isDefined
 
     lazy val clusterRefClass: Class[_] = getClassFor("akka.cluster.ClusterActorRef") match {
       case Left(e)  ⇒ throw e
@@ -239,9 +239,9 @@ class ReflectiveAccess(val application: AkkaApplication) {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object RemoteModule {
-    val TRANSPORT = application.AkkaConfig.REMOTE_TRANSPORT
+    val TRANSPORT = application.AkkaConfig.RemoteTransport
 
-    val configDefaultAddress = new InetSocketAddress(application.hostname, application.AkkaConfig.REMOTE_SERVER_PORT)
+    val configDefaultAddress = new InetSocketAddress(application.hostname, application.AkkaConfig.RemoteServerPort)
 
     lazy val isEnabled = remoteSupportClass.isDefined
 

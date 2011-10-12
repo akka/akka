@@ -163,7 +163,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
  * Alright, here's our test-harness
  */
 object DiningHakkersOnFsm {
-  
+
   val app = AkkaApplication()
 
   def run = {

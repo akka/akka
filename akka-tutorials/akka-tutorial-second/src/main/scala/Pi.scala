@@ -10,8 +10,11 @@ import System.{ currentTimeMillis ⇒ now }
 import akka.routing.Routing.Broadcast
 import akka.actor.{ Timeout, Channel, Actor, PoisonPill }
 import akka.routing.{ RoutedProps, Routing }
+import akka.AkkaApplication
 
 object Pi extends App {
+
+  val app = AkkaApplication()
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
@@ -50,10 +53,10 @@ object Pi extends App {
     var nrOfResults: Int = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(app.createActor[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOf(RoutedProps().withConnections(workers).withRoundRobinRouter, "pi")
+    val router = app.routing.actorOf(RoutedProps().withConnections(workers).withRoundRobinRouter, "pi")
 
     // phase 1, can accept a Calculate message
     def scatter: Receive = {
@@ -96,7 +99,7 @@ object Pi extends App {
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
     // create the master
-    val master = actorOf(new Master(nrOfWorkers, nrOfElements, nrOfMessages))
+    val master = app.createActor(new Master(nrOfWorkers, nrOfElements, nrOfMessages))
 
     //start the calculation
     val start = now

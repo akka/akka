@@ -30,7 +30,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
-  
+
   implicit def _app = app
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
