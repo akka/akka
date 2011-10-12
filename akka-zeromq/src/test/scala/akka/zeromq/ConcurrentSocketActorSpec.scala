@@ -11,10 +11,10 @@ import java.util.Arrays
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.WordSpec
 
-class PubSubConnectionSpec extends WordSpec with MustMatchers with TestKit {
+class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit {
   val endpoint = "inproc://PubSubConnectionSpec"
-  "Pub-sub connection" should {
-    "send / receive messages" in {
+  "ConcurrentSocketActor" should {
+    "support pub-sub connections" in {
       val message = ZMQMessage("hello".getBytes)
       var context: Option[Context] = None
       var publisher: Option[ActorRef] = None
