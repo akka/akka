@@ -14,7 +14,7 @@ import akka.AkkaApplication
  */
 trait Servlet30Context extends AsyncListener {
   import javax.servlet.http.HttpServletResponse
-  
+
   protected def application: AkkaApplication
 
   val builder: () ⇒ tAsyncRequestContext

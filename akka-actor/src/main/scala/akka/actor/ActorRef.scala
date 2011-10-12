@@ -388,17 +388,22 @@ case class SerializedActorRef(uuid: Uuid,
   import akka.serialization.Serialization._
 
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = application.value.registry.local.actorFor(uuid) match {
-    case Some(actor) ⇒ actor
-    case None ⇒
-      //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
-      val remote = application.value.reflective.RemoteModule
-      if (remote.isEnabled)
-        RemoteActorRef(application.value, remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
-      else
-        throw new IllegalStateException(
-          "Trying to deserialize ActorRef [" + this +
-            "] but it's not found in the local registry and remoting is not enabled.")
+  def readResolve(): AnyRef = {
+    if (application.value eq null) throw new IllegalStateException(
+      "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+        " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")
+    application.value.registry.local.actorFor(uuid) match {
+      case Some(actor) ⇒ actor
+      case None ⇒
+        //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
+        val remote = application.value.reflective.RemoteModule
+        if (remote.isEnabled)
+          RemoteActorRef(application.value, remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
+        else
+          throw new IllegalStateException(
+            "Trying to deserialize ActorRef [" + this +
+              "] but it's not found in the local registry and remoting is not enabled.")
+    }
   }
 }
 

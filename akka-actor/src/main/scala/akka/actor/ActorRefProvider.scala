@@ -56,8 +56,8 @@ trait ActorRefFactory {
   def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
 
   def createActor(factory: ⇒ Actor): ActorRef = createActor(Props(() ⇒ factory))
-  
-  def createActor(creator: UntypedActorFactory): ActorRef = createActor(Props(() => creator.create()))
+
+  def createActor(creator: UntypedActorFactory): ActorRef = createActor(Props(() ⇒ creator.create()))
 
   def findActor(address: String): Option[ActorRef] = provider.findActorRef(address)
 

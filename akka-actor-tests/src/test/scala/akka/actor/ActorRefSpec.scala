@@ -13,6 +13,7 @@ import akka.testkit.Testing.sleepFor
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.dispatch.{ DefaultPromise, Promise, Future }
+import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
@@ -248,12 +249,35 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      val readA = in.readObject
+      Serialization.application.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        val readA = in.readObject
 
-      a.isInstanceOf[LocalActorRef] must be === true
-      readA.isInstanceOf[LocalActorRef] must be === true
-      (readA eq a) must be === true
+        a.isInstanceOf[LocalActorRef] must be === true
+        readA.isInstanceOf[LocalActorRef] must be === true
+        (readA eq a) must be === true
+      }
+    }
+
+    "throw an exception on deserialize if no application in scope" in {
+      val a = createActor[InnerActor]
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
+      (intercept[java.lang.IllegalStateException] {
+        in.readObject
+      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+        " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }"
     }
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
@@ -287,10 +311,12 @@ class ActorRefSpec extends AkkaSpec {
       a.stop()
       latch.await(5, TimeUnit.SECONDS) must be === true
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      (intercept[java.lang.IllegalStateException] {
-        in.readObject
-      }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
+      Serialization.application.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        (intercept[java.lang.IllegalStateException] {
+          in.readObject
+        }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
+      }
     }
 
     "support nested createActors" in {
