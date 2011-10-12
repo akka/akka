@@ -46,7 +46,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
       val actor = try {
         app.deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, _, router, nrOfInstances, _, app.deployment.RemoteScope(remoteAddresses))) ⇒
+          case Some(Deploy(_, _, router, nrOfInstances, _, app.deployer.deploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
             val thisHostname = remote.address.getHostName
             val thisPort = remote.address.getPort
