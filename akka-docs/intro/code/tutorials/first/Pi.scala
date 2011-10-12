@@ -5,8 +5,8 @@
 //#imports
 package akka.tutorial.first.scala
 
+import akka.AkkaApplication
 import akka.actor.{ Actor, PoisonPill }
-import akka.actor.Actor._
 import akka.routing.Routing.Broadcast
 import akka.routing.{ RoutedProps, Routing }
 import java.util.concurrent.CountDownLatch
@@ -14,6 +14,8 @@ import java.util.concurrent.CountDownLatch
 
 //#app
 object Pi extends App {
+
+  val app = AkkaApplication()
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
@@ -66,10 +68,10 @@ object Pi extends App {
 
     //#create-workers
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(app.createActor[Worker])
 
     // wrap them with a load-balancing router
-    val router = Routing.actorOf(RoutedProps().withRoundRobinRouter.withConnections(workers), "pi")
+    val router = app.routing.actorOf(RoutedProps().withRoundRobinRouter.withConnections(workers), "pi")
     //#create-workers
 
     //#master-receive
@@ -119,7 +121,7 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+    val master = app.createActor(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
 
     // start the calculation
     master ! Calculate

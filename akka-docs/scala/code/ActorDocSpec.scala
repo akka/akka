@@ -20,11 +20,11 @@ class MyActor extends Actor {
 }
 //#my-actor
 
-class ActorDocSpec extends WordSpec with MustMatchers with TestKit {
+class ActorDocSpec extends AkkaSpec {
 
-  "creating actor with Actor.actorOf" in {
+  "creating actor with AkkaSpec.createActor" in {
     //#creating-actorOf
-    val myActor = Actor.actorOf[MyActor]
+    val myActor = createActor[MyActor]
     //#creating-actorOf
 
     // testing the actor
@@ -50,26 +50,14 @@ class ActorDocSpec extends WordSpec with MustMatchers with TestKit {
     myActor.stop()
   }
 
-  "creating actor with imported Actor._" in {
-    //#creating-imported
-    import akka.actor.Actor._
-
-    val myActor = actorOf[MyActor]
-    //#creating-imported
-
-    myActor.stop()
-  }
-
   "creating actor with constructor" in {
     class MyActor(arg: String) extends Actor {
       def receive = { case _ ⇒ () }
     }
 
-    import akka.actor.Actor.actorOf
-
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = actorOf(new MyActor("..."))
+    val myActor = createActor(new MyActor("..."))
     //#creating-constructor
 
     myActor.stop()
