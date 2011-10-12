@@ -110,9 +110,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     val RemoteServerPort = getInt("akka.remote.server.port", 2552)
   }
 
-  // Java API
-  val akkaConfig = AkkaConfig
-
   object MistSettings {
     val JettyServer = "jetty"
     val TimeoutAttribute = "timeout"
