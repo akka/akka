@@ -31,7 +31,8 @@ private[zeromq] class ConcurrentSocketActor(
         if (poller.pollin(0)) {
           receiveFrames match {
             case frames if (frames.length > 0) => listener.foreach { listener => 
-              listener ! deserializer(frames)
+              if (listener.isRunning)
+                listener ! deserializer(frames)
             }
           }
         }
@@ -63,7 +64,9 @@ private[zeromq] class ConcurrentSocketActor(
   }
   private def connect(endpoint: String) {
     socket.connect(endpoint)
-    listener.foreach(_ ! Connected)
+    listener.foreach { listener => 
+      listener ! Connected
+    }
   }
   private def bind(endpoint: String) {
     socket.bind(endpoint)
@@ -96,7 +99,10 @@ private[zeromq] class ConcurrentSocketActor(
   private def closeSocket = if (!socketClosed) {
     socketClosed = true
     socket.close
-    listener.foreach(_ ! Closed)
+    listener.foreach { listener =>
+      if (listener.isRunning)
+        listener ! Closed
+    }
   }
   @tailrec private def addRequest(request: Request) {
     val requests = this.requests.get
