@@ -47,14 +47,12 @@ object Types {
   def Headers(): Headers = Nil
 }
 
-
-
 /**
  *
  */
 trait Mist {
   import javax.servlet.ServletContext
-  
+
   protected def application: AkkaApplication
 
   /**
@@ -124,7 +122,7 @@ trait Mist {
 
 trait RootEndpointLocator {
   var root: ActorRef = null
-  
+
   protected def application: AkkaApplication
 
   def configureRoot(address: String) {
