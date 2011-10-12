@@ -3,6 +3,7 @@
  */
 package akka.testkit
 
+import akka.config.Configuration
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.AkkaApplication
@@ -11,6 +12,8 @@ import akka.dispatch.MessageDispatcher
 
 abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
   extends TestKit(_application) with WordSpec with MustMatchers {
+
+  def this(config: Configuration) = this(new AkkaApplication(getClass.getSimpleName, AkkaApplication.defaultConfig ++ config))
 
   def createActor(props: Props): ActorRef = app.createActor(props)
 

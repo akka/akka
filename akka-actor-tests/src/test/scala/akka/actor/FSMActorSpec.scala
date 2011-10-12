@@ -12,6 +12,9 @@ import FSM._
 import akka.util.Duration
 import akka.util.duration._
 import akka.event._
+import akka.AkkaApplication
+import akka.AkkaApplication.defaultConfig
+import akka.config.Configuration
 
 object FSMActorSpec {
 
@@ -96,7 +99,7 @@ object FSMActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
-class FSMActorSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach with ImplicitSender {
+class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true)) with BeforeAndAfterAll with BeforeAndAfterEach with ImplicitSender {
   import FSMActorSpec._
 
   val eh_level = EventHandler.level
@@ -108,24 +111,6 @@ class FSMActorSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEa
       EventHandler.removeListener(logger)
       logger = null
     }
-  }
-
-  override def beforeAll {
-    EventHandler notify Mute(EventFilter[EventHandler.EventHandlerException]("Next state 2 does not exist"),
-      EventFilter.custom {
-        case _: EventHandler.Debug ⇒ true
-        case _                     ⇒ false
-      })
-    val f = FSM.getClass.getDeclaredField("debugEvent")
-    f.setAccessible(true)
-    f.setBoolean(FSM, true)
-  }
-
-  override def afterAll {
-    EventHandler notify UnMuteAll
-    val f = FSM.getClass.getDeclaredField("debugEvent")
-    f.setAccessible(true)
-    f.setBoolean(FSM, false)
   }
 
   "An FSM Actor" must {
