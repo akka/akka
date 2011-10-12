@@ -144,7 +144,10 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
 }
 
 object ActorEventBusSpec {
-  class ComposedActorEventBus extends ActorEventBus with LookupClassification with EventType[Int] with ClassifierType[String] {
+  class ComposedActorEventBus extends ActorEventBus with LookupClassification {
+    type Event = Int
+    type Classifier = String
+
     def classify(event: Event) = event.toString
     protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = a compareTo b
     protected def mapSize = 32
