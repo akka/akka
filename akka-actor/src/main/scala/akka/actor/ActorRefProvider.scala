@@ -38,18 +38,11 @@ trait ActorRefFactory {
   def createActor(props: Props): ActorRef = createActor(props, new UUID().toString)
 
   /*
-   * TODO this will have to go at some point, because creating two actors with 
-   * the same address can race on the cluster, and then you never know which 
-   * implementation wins 
+   * TODO this will have to go at some point, because creating two actors with
+   * the same address can race on the cluster, and then you never know which
+   * implementation wins
    */
-  def createActor(props: Props, address: String): ActorRef = {
-    val p =
-      if (props.dispatcher == Props.defaultDispatcher)
-        props.copy(dispatcher = dispatcher)
-      else
-        props
-    provider.actorOf(p, address).get
-  }
+  def createActor(props: Props, address: String): ActorRef = provider.actorOf(props, address).get
 
   def createActor[T <: Actor](implicit m: Manifest[T]): ActorRef = createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
@@ -77,8 +70,6 @@ object ActorRefProvider {
  */
 class LocalActorRefProvider(val application: AkkaApplication, val deployer: Deployer) extends ActorRefProvider {
 
-  import application.dispatcher
-
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
   def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
@@ -93,7 +84,13 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): Option[ActorRef] = {
     Address.validate(address)
 
-    val newFuture = Promise[Option[ActorRef]](5000) // FIXME is this proper timeout?
+    val localProps =
+      if (props.dispatcher == Props.defaultDispatcher)
+        props.copy(dispatcher = application.dispatcher)
+      else
+        props
+
+    val newFuture = Promise[Option[ActorRef]](5000)(application.dispatcher) // FIXME is this proper timeout?
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
@@ -103,7 +100,7 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
 
           // create a local actor
           case None | Some(Deploy(_, _, Direct, _, _, LocalScope)) ⇒
-            Some(new LocalActorRef(application, props, address, systemService)) // create a local actor
+            Some(new LocalActorRef(application, localProps, address, systemService)) // create a local actor
 
           // create a routed actor ref
           case deploy @ Some(Deploy(_, _, router, nrOfInstances, _, LocalScope)) ⇒
@@ -120,7 +117,7 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
             }
             val connections: Iterable[ActorRef] =
               if (nrOfInstances.factor > 0)
-                Vector.fill(nrOfInstances.factor)(new LocalActorRef(application, props, new UUID().toString, systemService))
+                Vector.fill(nrOfInstances.factor)(new LocalActorRef(application, localProps, new UUID().toString, systemService))
               else Nil
 
             Some(application.routing.actorOf(RoutedProps(

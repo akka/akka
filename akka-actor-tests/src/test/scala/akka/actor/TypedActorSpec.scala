@@ -8,11 +8,12 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
+import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
 
-class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+object TypedActorSpec {
 
   class CyclicIterator[T](val items: Seq[T]) extends Iterator[T] {
 
@@ -42,7 +43,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
   trait Foo {
     def pigdog(): String
 
-    def self = app.typedActor.self[Foo]
+    def self = TypedActor.self[Foo]
 
     def futurePigdog(): Future[String]
 
@@ -74,6 +75,8 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
   }
 
   class Bar extends Foo with Serializable {
+
+    import TypedActor.{ dispatcher, timeout }
 
     def pigdog = "Pigdog"
 
@@ -130,6 +133,11 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
   class StackedImpl extends Stacked {
     override def stacked: String = "FOOBAR" //Uppercase
   }
+}
+
+class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+
+  import TypedActorSpec._
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
@@ -164,7 +172,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
       filterEvents(EventFilter[IllegalStateException]("Calling")) {
         (intercept[IllegalStateException] {
-          app.typedActor.self[Foo]
+          TypedActor.self[Foo]
         }).getMessage must equal("Calling TypedActor.self outside of a TypedActor implementation method!")
       }
     }
@@ -321,7 +329,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to serialize and deserialize invocations" in {
       import java.io._
-      val m = app.typedActor.MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
+      val m = TypedActor.MethodCall(app, classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
       val baos = new ByteArrayOutputStream(8192 * 4)
       val out = new ObjectOutputStream(baos)
 
@@ -330,15 +338,17 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      val mNew = in.readObject().asInstanceOf[app.typedActor.MethodCall]
+      Serialization.application.withValue(app) {
+        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
-      mNew.method must be(m.method)
+        mNew.method must be(m.method)
+      }
     }
 
     "be able to serialize and deserialize invocations' parameters" in {
       import java.io._
       val someFoo: Foo = new Bar
-      val m = app.typedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
+      val m = TypedActor.MethodCall(app, classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
       val baos = new ByteArrayOutputStream(8192 * 4)
       val out = new ObjectOutputStream(baos)
 
@@ -347,15 +357,17 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      val mNew = in.readObject().asInstanceOf[app.typedActor.MethodCall]
+      Serialization.application.withValue(app) {
+        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
-      mNew.method must be(m.method)
-      mNew.parameters must have size 3
-      mNew.parameters(0) must not be null
-      mNew.parameters(0).getClass must be === classOf[Bar]
-      mNew.parameters(1) must be(null)
-      mNew.parameters(2) must not be null
-      mNew.parameters(2).asInstanceOf[Int] must be === 1
+        mNew.method must be(m.method)
+        mNew.parameters must have size 3
+        mNew.parameters(0) must not be null
+        mNew.parameters(0).getClass must be === classOf[Bar]
+        mNew.parameters(1) must be(null)
+        mNew.parameters(2) must not be null
+        mNew.parameters(2).asInstanceOf[Int] must be === 1
+      }
     }
   }
 }

@@ -8,13 +8,14 @@ import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.AkkaSpec
 
-class ActorPoolSpec extends AkkaSpec {
+object ActorPoolSpec {
 
   trait Foo {
     def sq(x: Int, sleep: Long): Future[Int]
   }
 
   class FooImpl extends Foo {
+    import TypedActor.dispatcher
     def sq(x: Int, sleep: Long): Future[Int] = {
       if (sleep > 0) Thread.sleep(sleep)
       new KeptPromise(Right(x * x))
@@ -22,6 +23,10 @@ class ActorPoolSpec extends AkkaSpec {
   }
 
   val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
+}
+
+class ActorPoolSpec extends AkkaSpec {
+  import ActorPoolSpec._
 
   "Actor Pool" must {
 

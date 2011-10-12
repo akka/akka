@@ -21,7 +21,7 @@ class DeployerSpec extends AkkaSpec {
           LeastCPU,
           NrOfInstances(3),
           BannagePeriodFailureDetector(10),
-          app.deployment.RemoteScope(List(
+          app.deployer.deploymentConfig.RemoteScope(List(
             RemoteAddress("wallace", 2552), RemoteAddress("gromit", 2552))))))
       // ClusterScope(
       //   List(Node("node1")),

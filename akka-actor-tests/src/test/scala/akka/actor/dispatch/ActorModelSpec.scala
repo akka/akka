@@ -16,7 +16,7 @@ import akka.actor._
 import util.control.NoStackTrace
 import akka.AkkaApplication
 
-abstract class ActorModelSpec extends AkkaSpec {
+object ActorModelSpec {
 
   sealed trait ActorModelMessage
 
@@ -238,8 +238,13 @@ abstract class ActorModelSpec extends AkkaSpec {
     }
     throw new AssertionError("await failed")
   }
+}
 
-  def newTestActor(implicit app: AkkaApplication) = app.createActor(Props[DispatcherActor].withDispatcher(app.dispatcher))
+abstract class ActorModelSpec extends AkkaSpec {
+
+  import ActorModelSpec._
+
+  def newTestActor(dispatcher: MessageDispatcher) = app.createActor(Props[DispatcherActor].withDispatcher(dispatcher))
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String
@@ -249,7 +254,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "must dynamically handle its own life cycle" in {
       implicit val dispatcher = newInterceptedDispatcher
       assertDispatcher(dispatcher)(starts = 0, stops = 0)
-      val a = newTestActor
+      val a = newTestActor(dispatcher)
       assertDispatcher(dispatcher)(starts = 1, stops = 0)
       a.stop()
       assertDispatcher(dispatcher)(starts = 1, stops = 1)
@@ -267,7 +272,7 @@ abstract class ActorModelSpec extends AkkaSpec {
       }
       assertDispatcher(dispatcher)(starts = 2, stops = 2)
 
-      val a2 = newTestActor
+      val a2 = newTestActor(dispatcher)
       val futures2 = for (i ← 1 to 10) yield Future { i }
 
       assertDispatcher(dispatcher)(starts = 3, stops = 2)
@@ -279,7 +284,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "process messages one at a time" in {
       implicit val dispatcher = newInterceptedDispatcher
       val start, oneAtATime = new CountDownLatch(1)
-      val a = newTestActor
+      val a = newTestActor(dispatcher)
 
       a ! CountDown(start)
       assertCountDown(start, Testing.testTime(3000), "Should process first message within 3 seconds")
@@ -298,7 +303,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "handle queueing from multiple threads" in {
       implicit val dispatcher = newInterceptedDispatcher
       val counter = new CountDownLatch(200)
-      val a = newTestActor
+      val a = newTestActor(dispatcher)
 
       for (i ← 1 to 10) {
         spawn {
@@ -329,7 +334,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "process messages in parallel" in {
       implicit val dispatcher = newInterceptedDispatcher
       val aStart, aStop, bParallel = new CountDownLatch(1)
-      val a, b = newTestActor
+      val a, b = newTestActor(dispatcher)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, Testing.testTime(3000), "Should process first message within 3 seconds")
@@ -351,7 +356,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "suspend and resume a failing non supervised permanent actor" in {
       filterEvents(EventFilter[Exception]("Restart")) {
         implicit val dispatcher = newInterceptedDispatcher
-        val a = newTestActor
+        val a = newTestActor(dispatcher)
         val done = new CountDownLatch(1)
         a ! Restart
         a ! CountDown(done)
@@ -364,7 +369,7 @@ abstract class ActorModelSpec extends AkkaSpec {
 
     "not process messages for a suspended actor" in {
       implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor.asInstanceOf[LocalActorRef]
+      val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
       val done = new CountDownLatch(1)
       a.suspend
       a ! CountDown(done)
@@ -387,7 +392,7 @@ abstract class ActorModelSpec extends AkkaSpec {
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         (1 to num) foreach { _ ⇒
-          newTestActor ! cachedMessage
+          newTestActor(dispatcher) ! cachedMessage
         }
         try {
           assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
@@ -421,25 +426,10 @@ abstract class ActorModelSpec extends AkkaSpec {
       }
     }
 
-    "complete all uncompleted sender futures on deregister" in {
-      implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor.asInstanceOf[LocalActorRef]
-      a.suspend
-      val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
-      val stopped = a ? PoisonPill
-      val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
-      a.resume
-      assert(f1.get == "foo")
-      stopped.await
-      for (each ← shouldBeCompleted)
-        assert(each.await.exception.get.isInstanceOf[ActorKilledException])
-      a.stop()
-    }
-
     "continue to process messages when a thread gets interrupted" in {
       filterEvents(EventFilter[InterruptedException]("Ping!"), EventFilter[akka.event.EventHandler.EventHandlerException]) {
         implicit val dispatcher = newInterceptedDispatcher
-        val a = newTestActor
+        val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
         val f3 = a ? Interrupt
@@ -463,7 +453,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     "continue to process messages when exception is thrown" in {
       filterEvents(EventFilter[IndexOutOfBoundsException], EventFilter[RemoteException]) {
         implicit val dispatcher = newInterceptedDispatcher
-        val a = newTestActor
+        val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
         val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
@@ -486,25 +476,43 @@ abstract class ActorModelSpec extends AkkaSpec {
   }
 }
 
-class DispatcherModelTest extends ActorModelSpec {
+class DispatcherModelSpec extends ActorModelSpec {
+  import ActorModelSpec._
+
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new Dispatcher("foo", app.AkkaConfig.DispatcherThroughput,
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
+
   def dispatcherType = "Dispatcher"
+
+  "A " + dispatcherType must {
+    "complete all uncompleted sender futures on deregister" in {
+      implicit val dispatcher = newInterceptedDispatcher
+      val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
+      a.suspend
+      val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
+      val stopped = a ? PoisonPill
+      val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
+      a.resume
+      assert(f1.get == "foo")
+      stopped.await
+      for (each ← shouldBeCompleted)
+        assert(each.await.exception.get.isInstanceOf[ActorKilledException])
+      a.stop()
+    }
+  }
 }
 
-class BalancingDispatcherModelTest extends ActorModelSpec {
+class BalancingDispatcherModelSpec extends ActorModelSpec {
+  import ActorModelSpec._
+
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new BalancingDispatcher("foo", 1, // TODO check why 1 here? (came from old test)
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
-  def dispatcherType = "Balancing Dispatcher"
 
-  // TOOD: fix this: disabling tests in this way does not work anymore with WordSpec
-  //override def dispatcherShouldCompleteAllUncompletedSenderFuturesOnDeregister {
-  //This is not true for the BalancingDispatcher
-  //}
+  def dispatcherType = "Balancing Dispatcher"
 }

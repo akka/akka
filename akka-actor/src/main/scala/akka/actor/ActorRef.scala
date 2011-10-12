@@ -385,7 +385,7 @@ case class SerializedActorRef(uuid: Uuid,
                               address: String,
                               hostname: String,
                               port: Int) {
-  import akka.serialization.Serialization._
+  import akka.serialization.Serialization.application
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {

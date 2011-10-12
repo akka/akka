@@ -12,54 +12,12 @@ import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
 import akka.AkkaApplication
 
-//TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
-/**
- * A TypedActor in Akka is an implementation of the Active Objects Pattern, i.e. an object with asynchronous method dispatch
- *
- * It consists of 2 parts:
- *   The Interface
- *   The Implementation
- *
- *   Given a combination of Interface and Implementation, a JDK Dynamic Proxy object with the Interface will be returned
- *
- *   The semantics is as follows,
- *     any methods in the Interface that returns Unit/void will use fire-and-forget semantics (same as Actor !)
- *     any methods in the Interface that returns Option/JOption will use ask + block-with-timeout-return-none-if-timeout semantics
- *     any methods in the Interface that returns anything else will use ask + block-with-timeout-throw-if-timeout semantics
- *
- *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
- */
-class TypedActor(val application: AkkaApplication) {
-  private val selfReference = new ThreadLocal[AnyRef]
-
-  /**
-   * Returns the reference to the proxy when called inside a method call in a TypedActor
-   *
-   * Example:
-   * <p/>
-   * class FooImpl extends Foo {
-   *   def doFoo {
-   *     val myself = self[Foo]
-   *   }
-   * }
-   *
-   * Useful when you want to send a reference to this TypedActor to someone else.
-   *
-   * NEVER EXPOSE "this" to someone else, always use "self[TypeOfInterface(s)]"
-   *
-   * @throws IllegalStateException if called outside of the scope of a method on this TypedActor
-   * @throws ClassCastException if the supplied type T isn't the type of the proxy associated with this TypedActor
-   */
-  def self[T <: AnyRef] = selfReference.get.asInstanceOf[T] match {
-    case null ⇒ throw new IllegalStateException("Calling TypedActor.self outside of a TypedActor implementation method!")
-    case some ⇒ some
-  }
-
+object TypedActor {
   /**
    * This class represents a Method call, and has a reference to the Method to be called and the parameters to supply
    * It's sent to the ActorRef backing the TypedActor and can be serialized and deserialized
    */
-  case class MethodCall(method: Method, parameters: Array[AnyRef]) {
+  case class MethodCall(application: AkkaApplication, method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
     def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
@@ -96,21 +54,94 @@ class TypedActor(val application: AkkaApplication) {
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Serializer.Identifier], serializedParameters: Array[Array[Byte]]) {
+
+    import akka.serialization.Serialization.application
+
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
+      val app = application.value
+      if (app eq null) throw new IllegalStateException(
+        "Trying to deserialize a SerializedMethodCall without an AkkaApplication in scope." +
+          " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")
+      MethodCall(app, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
-          for (i ← 0 until a.length)
-            deserializedParameters(i) = application.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
-
+          for (i ← 0 until a.length) {
+            deserializedParameters(i) = app.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+          }
           deserializedParameters
       })
     }
   }
+
+  private val selfReference = new ThreadLocal[AnyRef]
+  private val appReference = new ThreadLocal[AkkaApplication]
+
+  /**
+   * Returns the reference to the proxy when called inside a method call in a TypedActor
+   *
+   * Example:
+   * <p/>
+   * class FooImpl extends Foo {
+   *   def doFoo {
+   *     val myself = TypedActor.self[Foo]
+   *   }
+   * }
+   *
+   * Useful when you want to send a reference to this TypedActor to someone else.
+   *
+   * NEVER EXPOSE "this" to someone else, always use "self[TypeOfInterface(s)]"
+   *
+   * @throws IllegalStateException if called outside of the scope of a method on this TypedActor
+   * @throws ClassCastException if the supplied type T isn't the type of the proxy associated with this TypedActor
+   */
+  def self[T <: AnyRef] = selfReference.get.asInstanceOf[T] match {
+    case null ⇒ throw new IllegalStateException("Calling TypedActor.self outside of a TypedActor implementation method!")
+    case some ⇒ some
+  }
+
+  /**
+   * Returns the akka application (for a TypedActor) when inside a method call in a TypedActor.
+   */
+  def app = appReference.get match {
+    case null ⇒ throw new IllegalStateException("Calling TypedActor.app outside of a TypedActor implementation method!")
+    case some ⇒ some
+  }
+
+  /**
+   * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
+   */
+  implicit def dispatcher = app.dispatcher
+
+  /**
+   * Returns the default timeout (for a TypedActor) when inside a method call in a TypedActor.
+   */
+  implicit def timeout = app.AkkaConfig.ActorTimeout
+}
+
+//TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
+/**
+ * A TypedActor in Akka is an implementation of the Active Objects Pattern, i.e. an object with asynchronous method dispatch
+ *
+ * It consists of 2 parts:
+ *   The Interface
+ *   The Implementation
+ *
+ *   Given a combination of Interface and Implementation, a JDK Dynamic Proxy object with the Interface will be returned
+ *
+ *   The semantics is as follows,
+ *     any methods in the Interface that returns Unit/void will use fire-and-forget semantics (same as Actor !)
+ *     any methods in the Interface that returns Option/JOption will use ask + block-with-timeout-return-none-if-timeout semantics
+ *     any methods in the Interface that returns anything else will use ask + block-with-timeout-throw-if-timeout semantics
+ *
+ *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
+ */
+class TypedActor(val application: AkkaApplication) {
+
+  import TypedActor.MethodCall
 
   /**
    * Creates a new TypedActor proxy using the supplied Props,
@@ -242,7 +273,8 @@ class TypedActor(val application: AkkaApplication) {
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
-        selfReference set proxyVar.get
+        TypedActor.selfReference set proxyVar.get
+        TypedActor.appReference set application
         try {
           if (m.isOneWay) m(me)
           else if (m.returnsFuture_?) {
@@ -252,7 +284,10 @@ class TypedActor(val application: AkkaApplication) {
             }
           } else reply(m(me))
 
-        } finally { selfReference set null }
+        } finally {
+          TypedActor.selfReference set null
+          TypedActor.appReference set null
+        }
     }
   }
 
@@ -264,7 +299,7 @@ class TypedActor(val application: AkkaApplication) {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        MethodCall(method, args) match {
+        MethodCall(application, method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
           case m if m.returnsFuture_? ⇒ actor ? m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒

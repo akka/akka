@@ -38,14 +38,6 @@ class DispatcherActorSpec extends AkkaSpec {
       actor.stop()
     }
 
-    "support sendReplySync" in {
-      val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
-      val result = (actor.?("Hello", 10000)).as[String]
-      assert("World" === result.get)
-      actor.stop()
-      sys.error("what sense does this test make?")
-    }
-
     "support ask/reply" in {
       val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
       val result = (actor ? "Hello").as[String]

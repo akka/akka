@@ -42,14 +42,6 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
       actor.stop()
     }
 
-    "support ask/reply sync" in {
-      val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
-      val result = (actor.?("Hello", 10000)).as[String]
-      assert("World" === result.get)
-      actor.stop()
-      sys.error("why does this test make sense?")
-    }
-
     "support ask/reply" in {
       val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       val result = (actor ? "Hello").as[String]

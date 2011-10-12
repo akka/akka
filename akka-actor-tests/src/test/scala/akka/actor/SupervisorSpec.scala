@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import akka.testkit.AkkaSpec
 
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+object SupervisorSpec {
   val Timeout = 5 seconds
   val TimeoutMillis = Timeout.dilated.toMillis.toInt
 
@@ -57,11 +57,16 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     val temp = context.createActor(Props[PingPongActor].withSupervisor(self))
 
-    override def receive = {
+    def receive = {
       case Die           ⇒ (temp.?(Die, TimeoutMillis)).get
       case _: Terminated ⇒
     }
   }
+}
+
+class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+
+  import SupervisorSpec._
 
   // =====================================================
   // Creating actors and supervisors
