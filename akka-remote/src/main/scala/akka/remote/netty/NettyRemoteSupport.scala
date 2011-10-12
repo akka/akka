@@ -58,7 +58,6 @@ object RemoteEncoder {
 trait NettyRemoteClientModule extends RemoteClientModule {
   self: ListenerManagement ⇒
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
-  private val remoteActors = new Index[RemoteAddress, Uuid](1024, _ compareTo _)
   private val lock = new ReadWriteGuard
 
   protected[akka] def send[T](message: Any,
