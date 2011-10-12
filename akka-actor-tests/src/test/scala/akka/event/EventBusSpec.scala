@@ -12,9 +12,15 @@ import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 import akka.actor.{ Props, Actor, ActorRef }
+import java.util.Comparator
+import akka.japi.{ Procedure, Function }
 
 object EventBusSpec {
-
+  class TestActorWrapperActor(testActor: ActorRef) extends Actor {
+    def receive = {
+      case x ⇒ testActor forward x
+    }
+  }
 }
 
 abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers with TestKit with BeforeAndAfterEach {
@@ -87,6 +93,7 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       bus.subscribe(subscriber, classifier)
       bus.publish(event)
       expectMsg(event)
+      expectNoMsg(1 second)
       bus.unsubscribe(subscriber, classifier)
     }
 
@@ -98,15 +105,17 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
       expectMsg(event)
       expectMsg(event)
       expectMsg(event)
+      expectNoMsg(1 second)
       bus.unsubscribe(subscriber, classifier)
     }
 
     "publish the given event to all intended subscribers" in {
-      val subscribers = Vector.fill(10)(createNewSubscriber())
+      val range = 0 until 10
+      val subscribers = range map (_ ⇒ createNewSubscriber())
       subscribers foreach { s ⇒ bus.subscribe(s, classifier) must be === true }
       bus.publish(event)
-      (1 to 10) foreach { _ ⇒ expectMsg(event) }
-      subscribers foreach disposeSubscriber
+      range foreach { _ ⇒ expectMsg(event) }
+      subscribers foreach { s ⇒ bus.unsubscribe(s, classifier) must be === true; disposeSubscriber(s) }
     }
 
     "not publish the given event to any other subscribers than the intended ones" in {
@@ -135,29 +144,80 @@ abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers 
 }
 
 object ActorEventBusSpec {
-  class ComposedActorEventBus extends ActorEventBus with LookupClassification with EventType[String] with ClassifierType[String] {
-    def classify(event: String) = event
-    def publish(event: String, subscriber: ActorRef) = subscriber ! event
-  }
-
-  class TestActorWrapperActor(testActor: ActorRef) extends Actor {
-    def receive = {
-      case x ⇒ testActor forward x
-    }
+  class ComposedActorEventBus extends ActorEventBus with LookupClassification with EventType[Int] with ClassifierType[String] {
+    def classify(event: Event) = event.toString
+    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = a compareTo b
+    protected def mapSize = 32
+    def publish(event: Event, subscriber: Subscriber) = subscriber ! event
   }
 }
 
 class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
   import akka.event.ActorEventBusSpec._
+  import EventBusSpec.TestActorWrapperActor
 
   type BusType = ComposedActorEventBus
   def createNewEventBus(): BusType = new ComposedActorEventBus
 
-  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents) map { _.toString }
+  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
 
   def createSubscriber(pipeTo: ActorRef) = actorOf(Props(new TestActorWrapperActor(pipeTo)))
 
-  def classifierFor(event: BusType#Event) = event
+  def classifierFor(event: BusType#Event) = event.toString
 
   def disposeSubscriber(subscriber: BusType#Subscriber): Unit = subscriber.stop()
+}
+
+object ScanningEventBusSpec {
+  import akka.event.japi.ScanningEventBus
+
+  class MyScanningEventBus extends ScanningEventBus[Int, akka.japi.Procedure[Int], String] {
+    protected def compareClassifiers(a: Classifier, b: Classifier): Int = a compareTo b
+    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = System.identityHashCode(a) - System.identityHashCode(b)
+
+    protected def matches(classifier: Classifier, event: Event): Boolean = event.toString == classifier
+
+    protected def publish(event: Event, subscriber: Subscriber): Unit = subscriber(event)
+  }
+}
+
+class ScanningEventBusSpec extends EventBusSpec("ScanningEventBus") {
+  import ScanningEventBusSpec._
+
+  type BusType = MyScanningEventBus
+
+  def createNewEventBus(): BusType = new MyScanningEventBus
+
+  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
+
+  def createSubscriber(pipeTo: ActorRef) = new Procedure[Int] { def apply(i: Int) = pipeTo ! i }
+
+  def classifierFor(event: BusType#Event) = event.toString
+
+  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = ()
+}
+
+object LookupEventBusSpec {
+  class MyLookupEventBus extends akka.event.japi.LookupEventBus[Int, akka.japi.Procedure[Int], String] {
+    protected def classify(event: Event): Classifier = event.toString
+    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = System.identityHashCode(a) - System.identityHashCode(b)
+    protected def mapSize = 32
+    protected def publish(event: Event, subscriber: Subscriber): Unit = subscriber(event)
+  }
+}
+
+class LookupEventBusSpec extends EventBusSpec("LookupEventBus") {
+  import LookupEventBusSpec._
+
+  type BusType = MyLookupEventBus
+
+  def createNewEventBus(): BusType = new MyLookupEventBus
+
+  def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
+
+  def createSubscriber(pipeTo: ActorRef) = new Procedure[Int] { def apply(i: Int) = pipeTo ! i }
+
+  def classifierFor(event: BusType#Event) = event.toString
+
+  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = ()
 }

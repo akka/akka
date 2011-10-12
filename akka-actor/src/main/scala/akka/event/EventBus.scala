@@ -42,7 +42,14 @@ trait ClassifierType[T] { self: EventBus ⇒
 }
 
 trait LookupClassification { self: EventBus ⇒
-  protected final val subscribers = new Index[Classifier, Subscriber]
+
+  protected final val subscribers = new Index[Classifier, Subscriber](mapSize(), new Comparator[Subscriber] {
+    def compare(a: Subscriber, b: Subscriber): Int = compareSubscribers(a, b)
+  })
+
+  protected def mapSize(): Int
+
+  protected def compareSubscribers(a: Subscriber, b: Subscriber): Int
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscribers.put(to, subscriber)
   def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = subscribers.remove(from, subscriber)
@@ -52,12 +59,20 @@ trait LookupClassification { self: EventBus ⇒
 
   protected def publish(event: Event, subscriber: Subscriber): Unit
 
-  def publish(event: Event): Unit =
-    subscribers.valueIterator(classify(event)).foreach(publish(event, _))
+  def publish(event: Event): Unit = {
+    val i = subscribers.valueIterator(classify(event))
+    while (i.hasNext) publish(event, i.next())
+  }
 }
 
 trait ScanningClassification { self: EventBus ⇒
-  protected final val subscribers = new ConcurrentSkipListSet[(Classifier, Subscriber)](ordering)
+  protected final val subscribers = new ConcurrentSkipListSet[(Classifier, Subscriber)](new Comparator[(Classifier, Subscriber)] {
+    def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int = {
+      val cM = compareClassifiers(a._1, b._1)
+      if (cM != 0) cM
+      else compareSubscribers(a._2, b._2)
+    }
+  })
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscribers.add((to, subscriber))
   def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = subscribers.remove((from, subscriber))
@@ -65,11 +80,13 @@ trait ScanningClassification { self: EventBus ⇒
     val i = subscribers.iterator()
     while (i.hasNext) {
       val e = i.next()
-      if (subscriber == e._2) i.remove()
+      if (compareSubscribers(subscriber, e._2) == 0) i.remove()
     }
   }
 
-  protected def ordering: Comparator[(Classifier, Subscriber)]
+  protected def compareClassifiers(a: Classifier, b: Classifier): Int
+
+  protected def compareSubscribers(a: Subscriber, b: Subscriber): Int
 
   protected def matches(classifier: Classifier, event: Event): Boolean
 
@@ -79,7 +96,8 @@ trait ScanningClassification { self: EventBus ⇒
     val currentSubscribers = subscribers.iterator()
     while (currentSubscribers.hasNext) {
       val (classifier, subscriber) = currentSubscribers.next()
-      if (matches(classifier, event)) publish(event, subscriber)
+      if (matches(classifier, event))
+        publish(event, subscriber)
     }
   }
 }
