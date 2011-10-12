@@ -185,12 +185,12 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val application: AkkaApplication) extends ListenerManagement with RemoteServerModule with RemoteClientModule {
+abstract class RemoteSupport(val app: AkkaApplication) extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
   val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
     val clazz = classOf[RemoteEventHandler]
-    val handler = new LocalActorRef(application, Props(clazz), clazz.getName, true)
+    val handler = new LocalActorRef(app, Props(clazz), clazz.getName, true)
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
@@ -243,16 +243,16 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
    *  Starts the server up
    */
   def start(): RemoteServerModule =
-    start(application.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      application.reflective.RemoteModule.configDefaultAddress.getPort,
+    start(app.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
+      app.reflective.RemoteModule.configDefaultAddress.getPort,
       None)
 
   /**
    *  Starts the server up
    */
   def start(loader: ClassLoader): RemoteServerModule =
-    start(application.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      application.reflective.RemoteModule.configDefaultAddress.getPort,
+    start(app.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
+      app.reflective.RemoteModule.configDefaultAddress.getPort,
       Option(loader))
 
   /**
@@ -333,10 +333,10 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
 trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   def actorFor(address: String, hostname: String, port: Int): ActorRef =
-    actorFor(address, application.AkkaConfig.TimeoutMillis, hostname, port, None)
+    actorFor(address, app.AkkaConfig.TimeoutMillis, hostname, port, None)
 
   def actorFor(address: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, application.AkkaConfig.TimeoutMillis, hostname, port, Some(loader))
+    actorFor(address, app.AkkaConfig.TimeoutMillis, hostname, port, Some(loader))
 
   def actorFor(address: String, timeout: Long, hostname: String, port: Int): ActorRef =
     actorFor(address, timeout, hostname, port, None)

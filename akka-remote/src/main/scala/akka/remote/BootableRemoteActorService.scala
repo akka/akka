@@ -15,15 +15,17 @@ import akka.event.EventHandler
  */
 trait BootableRemoteActorService extends Bootable {
   self: BootableActorLoaderService ⇒
+  
+  def settings: RemoteServerSettings
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
-    def run = Actor.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
+    def run = app.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
   }, "Akka RemoteModule Service")
 
   def startRemoteService() { remoteServerThread.start() }
 
   abstract override def onLoad() {
-    if (ReflectiveAccess.ClusterModule.isEnabled && RemoteServerSettings.isRemotingEnabled) {
+    if (app.reflective.ClusterModule.isEnabled && settings.isRemotingEnabled) {
       EventHandler.info(this, "Initializing Remote Actors Service...")
       startRemoteService()
       EventHandler.info(this, "Remote Actors Service initialized")
@@ -34,7 +36,7 @@ trait BootableRemoteActorService extends Bootable {
   abstract override def onUnload() {
     EventHandler.info(this, "Shutting down Remote Actors Service")
 
-    Actor.remote.shutdown()
+    app.remote.shutdown()
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
     EventHandler.info(this, "Remote Actors Service has been shut down")
     super.onUnload()

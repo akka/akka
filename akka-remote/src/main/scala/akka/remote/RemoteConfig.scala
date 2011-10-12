@@ -5,10 +5,14 @@
 package akka.remote
 
 import akka.util.Duration
-import akka.config.Config._
 import akka.config.ConfigurationException
+import akka.AkkaApplication
 
-object RemoteClientSettings {
+class RemoteClientSettings(val app: AkkaApplication) {
+  
+  import app.config
+  import app.AkkaConfig.TIME_UNIT
+  
   val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie", "") match {
     case ""     ⇒ None
     case cookie ⇒ Some(cookie)
@@ -21,7 +25,11 @@ object RemoteClientSettings {
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
 }
 
-object RemoteServerSettings {
+class RemoteServerSettings(val app: AkkaApplication) {
+  
+  import app.config
+  import app.AkkaConfig.TIME_UNIT
+  
   val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE = config.getString("akka.remote.secure-cookie")

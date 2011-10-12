@@ -6,6 +6,6 @@ package akka.util
 import akka.AkkaApplication
 
 trait Bootable {
-  def onLoad(application: AkkaApplication) {}
-  def onUnload(application: AkkaApplication) {}
+  def onLoad() {}
+  def onUnload() {}
 }

@@ -22,7 +22,7 @@ class AkkaLoader(application: AkkaApplication) {
   def boot(withBanner: Boolean, b: Bootable): Unit = hasBooted switchOn {
     if (withBanner) printBanner()
     println("Starting Akka...")
-    b.onLoad(application)
+    b.onLoad()
     Thread.currentThread.setContextClassLoader(getClass.getClassLoader)
     _bundles = Some(b)
     println("Akka started successfully")
@@ -34,7 +34,7 @@ class AkkaLoader(application: AkkaApplication) {
   def shutdown() {
     hasBooted switchOff {
       println("Shutting down Akka...")
-      _bundles.foreach(_.onUnload(application))
+      _bundles.foreach(_.onUnload())
       _bundles = None
       println("Akka succesfully shut down")
     }

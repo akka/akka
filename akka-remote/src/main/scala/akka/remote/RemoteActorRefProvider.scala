@@ -17,24 +17,25 @@ import RemoteProtocol._
 import RemoteDaemonMessageType._
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import Compression.LZF
-
 import java.net.InetSocketAddress
-
 import com.google.protobuf.ByteString
+import akka.AkkaApplication
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteActorRefProvider extends ActorRefProvider {
+class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) extends ActorRefProvider {
 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
+  
+  implicit def _app = app
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
-  private val failureDetector = new BannagePeriodFailureDetector(timeToBan = 60 seconds) // FIXME make timeToBan configurable
+  private val failureDetector = new BannagePeriodFailureDetector(remote, timeToBan = 60 seconds) // FIXME make timeToBan configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
     Address.validate(address)
@@ -44,11 +45,11 @@ class RemoteActorRefProvider extends ActorRefProvider {
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
       val actor = try {
-        Deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, _, router, nrOfInstances, _, RemoteScope(remoteAddresses))) ⇒
+        app.deployer.lookupDeploymentFor(address) match {
+          case Some(Deploy(_, _, router, nrOfInstances, _, app.deployment.RemoteScope(remoteAddresses))) ⇒
 
-            val thisHostname = Remote.address.getHostName
-            val thisPort = Remote.address.getPort
+            val thisHostname = remote.address.getHostName
+            val thisPort = remote.address.getPort
 
             def isReplicaNode: Boolean = remoteAddresses exists { remoteAddress ⇒
               remoteAddress.hostname == thisHostname && remoteAddress.port == thisPort
@@ -56,7 +57,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
 
             if (isReplicaNode) {
               // we are on one of the replica node for this remote actor
-              Some(new LocalActorRef(props, address, false)) // create a local actor
+              Some(new LocalActorRef(app, props, address, false)) // create a local actor
             } else {
 
               // we are on the single "reference" node uses the remote actors on the replica nodes
@@ -89,12 +90,12 @@ class RemoteActorRefProvider extends ActorRefProvider {
               def provisionActorToNode(remoteAddress: RemoteAddress): RemoteActorRef = {
                 val inetSocketAddress = new InetSocketAddress(remoteAddress.hostname, remoteAddress.port)
                 useActorOnNode(inetSocketAddress, address, props.creator)
-                RemoteActorRef(inetSocketAddress, address, Actor.TIMEOUT, None)
+                RemoteActorRef(app, app.remote, inetSocketAddress, address, None)
               }
 
               val connections: Iterable[ActorRef] = remoteAddresses map { provisionActorToNode(_) }
 
-              Some(Routing.actorOf(RoutedProps(
+              Some(app.routing.actorOf(RoutedProps(
                 routerFactory = routerFactory,
                 connections = connections)))
             }
@@ -107,7 +108,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
           throw e
       }
 
-      actor foreach Actor.registry.register // only for ActorRegistry backward compat, will be removed later
+      actor foreach app.registry.register // only for ActorRegistry backward compat, will be removed later
 
       newFuture completeWithResult actor
       actor
@@ -131,10 +132,10 @@ class RemoteActorRefProvider extends ActorRefProvider {
     EventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
 
     val actorFactoryBytes =
-      Serialization.serialize(actorFactory) match {
+      app.serialization.serialize(actorFactory) match {
         case Left(error) ⇒ throw error
         case Right(bytes) ⇒
-          if (Remote.shouldCompressData) LZF.compress(bytes)
+          if (remote.shouldCompressData) LZF.compress(bytes)
           else bytes
       }
 
@@ -145,8 +146,8 @@ class RemoteActorRefProvider extends ActorRefProvider {
       .build()
 
     val connectionFactory =
-      () ⇒ Remote.server.actorFor(
-        Remote.remoteDaemonServiceName, remoteAddress.getHostName, remoteAddress.getPort)
+      () ⇒ remote.server.actorFor(
+        remote.remoteDaemonServiceName, remoteAddress.getHostName, remoteAddress.getPort)
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = failureDetector.putIfAbsent(remoteAddress, connectionFactory)
@@ -161,7 +162,7 @@ class RemoteActorRefProvider extends ActorRefProvider {
 
     if (withACK) {
       try {
-        (connection ? (command, Remote.remoteDaemonAckTimeout)).as[Status] match {
+        (connection ? (command, remote.remoteDaemonAckTimeout)).as[Status] match {
           case Some(Success(receiver)) ⇒
             EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
 

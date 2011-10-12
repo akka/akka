@@ -11,6 +11,7 @@ import akka.util.{ ReflectiveAccess, Duration }
 import akka.event.EventHandler
 import akka.remote.{ RemoteProtocol, RemoteClientSettings, MessageSerializer }
 import RemoteProtocol._
+import akka.AkkaApplication
 
 import scala.collection.immutable.Stack
 
@@ -24,8 +25,10 @@ import com.eaio.uuid.UUID
 /**
  * Module for local actor serialization.
  */
-object ActorSerialization {
+class ActorSerialization(val app: AkkaApplication) {
   implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
+  
+  val remoteActorSerialization = new RemoteActorSerialization(app)
 
   def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress): ActorRef =
     fromBinaryToLocalActorRef(bytes, None, Some(homeAddress))
@@ -67,7 +70,7 @@ object ActorSerialization {
     val builder = SerializedActorRefProtocol.newBuilder
       .setUuid(UuidProtocol.newBuilder.setHigh(actorRef.uuid.getTime).setLow(actorRef.uuid.getClockSeqAndNode).build)
       .setAddress(actorRef.address)
-      .setTimeout(actorRef.timeout)
+      .setTimeout(app.AkkaConfig.TimeoutMillis)
 
     replicationScheme match {
       case _: Transient | Transient ⇒
@@ -97,11 +100,11 @@ object ActorSerialization {
             while (it.hasNext) l += it.next.asInstanceOf[Envelope]
 
             l map { m ⇒
-              RemoteActorSerialization.createRemoteMessageProtocolBuilder(
+              remoteActorSerialization.createRemoteMessageProtocolBuilder(
                 Option(m.receiver.ref),
                 Left(actorRef.uuid),
                 actorRef.address,
-                actorRef.timeout,
+                app.AkkaConfig.TimeoutMillis,
                 Right(m.message),
                 false,
                 m.channel match {
@@ -116,7 +119,7 @@ object ActorSerialization {
 
       l.underlying.receiveTimeout.foreach(builder.setReceiveTimeout(_))
       val actorInstance = l.underlyingActorInstance
-      Serialization.serialize(actorInstance.asInstanceOf[T]) match {
+      app.serialization.serialize(actorInstance.asInstanceOf[T]) match {
         case Right(bytes)    ⇒ builder.setActorInstance(ByteString.copyFrom(bytes))
         case Left(exception) ⇒ throw new Exception("Error serializing : " + actorInstance.getClass.getName)
       }
@@ -167,7 +170,7 @@ object ActorSerialization {
 
     val storedHotswap =
       try {
-        Serialization.deserialize(
+        app.serialization.deserialize(
           protocol.getHotswapStack.toByteArray,
           classOf[Stack[PartialFunction[Any, Unit]]],
           loader) match {
@@ -179,14 +182,14 @@ object ActorSerialization {
       }
 
     val storedSupervisor =
-      if (protocol.hasSupervisor) Some(RemoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
+      if (protocol.hasSupervisor) Some(remoteActorSerialization.fromProtobufToRemoteActorRef(protocol.getSupervisor, loader))
       else None
 
     val classLoader = loader.getOrElse(this.getClass.getClassLoader)
     val bytes = protocol.getActorInstance.toByteArray
     val actorClass = classLoader.loadClass(protocol.getActorClassname)
     val factory = () ⇒ {
-      Serialization.deserialize(bytes, actorClass, loader) match {
+      app.serialization.deserialize(bytes, actorClass, loader) match {
         case Right(r) ⇒ r.asInstanceOf[Actor]
         case Left(ex) ⇒ throw new Exception("Cannot de-serialize : " + actorClass)
       }
@@ -198,7 +201,7 @@ object ActorSerialization {
     }
 
     val props = Props(creator = factory,
-      timeout = if (protocol.hasTimeout) protocol.getTimeout else Timeout.default,
+      timeout = if (protocol.hasTimeout) protocol.getTimeout else app.AkkaConfig.TIMEOUT,
       supervisor = storedSupervisor //TODO what dispatcher should it use?
       //TODO what faultHandler should it use?
       //
@@ -206,20 +209,20 @@ object ActorSerialization {
 
     val receiveTimeout = if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None //TODO FIXME, I'm expensive and slow
 
-    val ar = new LocalActorRef(actorUuid, protocol.getAddress, props, receiveTimeout, storedHotswap)
+    val ar = new LocalActorRef(app, props, protocol.getAddress, false, actorUuid, receiveTimeout, storedHotswap)
 
     //Deserialize messages
     {
       val iterator = protocol.getMessagesList.iterator()
       while (iterator.hasNext())
-        ar ! MessageSerializer.deserialize(iterator.next().getMessage, Some(classLoader)) //TODO This is broken, why aren't we preserving the sender?
+        ar ! MessageSerializer.deserialize(app, iterator.next().getMessage, Some(classLoader)) //TODO This is broken, why aren't we preserving the sender?
     }
 
     ar
   }
 }
 
-object RemoteActorSerialization {
+class RemoteActorSerialization(val app: AkkaApplication) {
 
   /**
    * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
@@ -240,9 +243,9 @@ object RemoteActorSerialization {
     EventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
 
     val ref = RemoteActorRef(
+        app, app.remote,
       JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
-      protocol.getTimeout,
       loader)
 
     EventHandler.debug(this, "Newly deserialized RemoteActorRef has uuid: %s".format(ref.uuid))
@@ -258,10 +261,10 @@ object RemoteActorSerialization {
       case ar: RemoteActorRef ⇒
         ar.remoteAddress
       case ar: LocalActorRef ⇒
-        Actor.remote.registerByUuid(ar)
-        ReflectiveAccess.RemoteModule.configDefaultAddress
+        app.remote.registerByUuid(ar)
+        app.reflective.RemoteModule.configDefaultAddress
       case _ ⇒
-        ReflectiveAccess.RemoteModule.configDefaultAddress
+        app.reflective.RemoteModule.configDefaultAddress
     }
 
     EventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))
@@ -269,7 +272,7 @@ object RemoteActorSerialization {
     RemoteActorRefProtocol.newBuilder
       .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))
       .setAddress(actor.address)
-      .setTimeout(actor.timeout)
+      .setTimeout(app.AkkaConfig.TimeoutMillis)
       .build
   }
 
@@ -303,7 +306,7 @@ object RemoteActorSerialization {
 
     message match {
       case Right(message) ⇒
-        messageBuilder.setMessage(MessageSerializer.serialize(message.asInstanceOf[AnyRef]))
+        messageBuilder.setMessage(MessageSerializer.serialize(app, message.asInstanceOf[AnyRef]))
       case Left(exception) ⇒
         messageBuilder.setException(ExceptionProtocol.newBuilder
           .setClassname(exception.getClass.getName)

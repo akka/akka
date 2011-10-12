@@ -10,11 +10,9 @@ import akka.routing._
 import akka.dispatch.PinnedDispatcher
 import akka.event.EventHandler
 import akka.util.{ ListenerManagement, Duration }
-
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.annotation.tailrec
-
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import System.{ currentTimeMillis ⇒ newTimestamp }
@@ -24,7 +22,7 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddress, ActorRef])
+abstract class RemoteFailureDetectorBase(remote: Remote, initialConnections: Map[InetSocketAddress, ActorRef])
   extends FailureDetector
   with NetworkEventStream.Listener {
 
@@ -41,7 +39,7 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
   protected val state: AtomicReference[State] = new AtomicReference[State](newState())
 
   // register all initial connections - e.g listen to events from them
-  initialConnections.keys foreach (NetworkEventStream.register(this, _))
+  initialConnections.keys foreach (remote.eventStream.register(this, _))
 
   /**
    * State factory. To be defined by subclass that wants to add extra info in the 'meta: T' field.
@@ -135,7 +133,7 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
         remove(faultyConnection) // recur
       } else {
         EventHandler.debug(this, "Removing connection [%s]".format(faultyAddress))
-        NetworkEventStream.unregister(this, faultyAddress) // unregister the connections - e.g stop listen to events from it
+        remote.eventStream.unregister(this, faultyAddress) // unregister the connections - e.g stop listen to events from it
       }
     }
   }
@@ -163,23 +161,23 @@ abstract class RemoteFailureDetectorBase(initialConnections: Map[InetSocketAddre
         } else {
           // we succeeded
           EventHandler.debug(this, "Adding connection [%s]".format(address))
-          NetworkEventStream.register(this, address) // register the connection - e.g listen to events from it
+          remote.eventStream.register(this, address) // register the connection - e.g listen to events from it
           newConnection // return new connection actor
         }
     }
   }
 
   private[remote] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
-    RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
+    RemoteActorRef(remote.app, remote.server, inetSocketAddress, actorAddress, None)
   }
 }
 
 /**
  * Simple failure detector that removes the failing connection permanently on first error.
  */
-class RemoveConnectionOnFirstFailureRemoteFailureDetector(
+class RemoveConnectionOnFirstFailureRemoteFailureDetector(_remote: Remote,
   initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
-  extends RemoteFailureDetectorBase(initialConnections) {
+  extends RemoteFailureDetectorBase(_remote, initialConnections) {
 
   protected def newState() = State(Long.MinValue, initialConnections)
 
@@ -215,10 +213,10 @@ class RemoveConnectionOnFirstFailureRemoteFailureDetector(
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BannagePeriodFailureDetector(
+class BannagePeriodFailureDetector(_remote: Remote,
   initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef],
   timeToBan: Duration)
-  extends RemoteFailureDetectorBase(initialConnections) {
+  extends RemoteFailureDetectorBase(_remote, initialConnections) {
 
   // FIXME considering adding a Scheduler event to notify the BannagePeriodFailureDetector unban the banned connection after the timeToBan have exprired
 

@@ -15,9 +15,14 @@ import akka.AkkaApplication
  */
 trait BootableActorLoaderService extends Bootable {
 
-  protected def createApplicationClassLoader(application: AkkaApplication): Option[ClassLoader] = Some({
-    if (application.AkkaConfig.HOME.isDefined) {
-      val DEPLOY = application.AkkaConfig.HOME.get + "/deploy"
+  def app: AkkaApplication
+
+  val BOOT_CLASSES = app.AkkaConfig.BOOT_CLASSES
+  lazy val applicationLoader = createApplicationClassLoader()
+
+  protected def createApplicationClassLoader(): Option[ClassLoader] = Some({
+    if (app.AkkaConfig.HOME.isDefined) {
+      val DEPLOY = app.AkkaConfig.HOME.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         System.exit(-1)
@@ -41,11 +46,8 @@ trait BootableActorLoaderService extends Bootable {
     } else Thread.currentThread.getContextClassLoader
   })
 
-  abstract override def onLoad(application: AkkaApplication) = {
-    super.onLoad(application)
-
-    val BOOT_CLASSES = application.AkkaConfig.BOOT_CLASSES
-    val applicationLoader = createApplicationClassLoader(application)
+  abstract override def onLoad() = {
+    super.onLoad()
 
     applicationLoader foreach Thread.currentThread.setContextClassLoader
 
@@ -54,13 +56,13 @@ trait BootableActorLoaderService extends Bootable {
     }
   }
 
-  abstract override def onUnload(application: AkkaApplication) = {
-    super.onUnload(application)
-    application.registry.local.shutdownAll
+  abstract override def onUnload() = {
+    super.onUnload()
+    app.registry.local.shutdownAll
   }
 }
 
 /**
  * Java API for the default JAX-RS/Mist Initializer
  */
-class DefaultBootableActorLoaderService extends BootableActorLoaderService
+class DefaultBootableActorLoaderService(val app: AkkaApplication) extends BootableActorLoaderService
