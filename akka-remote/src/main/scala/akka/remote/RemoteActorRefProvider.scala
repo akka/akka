@@ -6,9 +6,8 @@ package akka.remote
 
 import akka.actor._
 import akka.routing._
-import DeploymentConfig._
-import Actor._
-import Status._
+import akka.actor.Actor._
+import akka.actor.Status._
 import akka.event.EventHandler
 import akka.util.duration._
 import akka.config.ConfigurationException
@@ -35,7 +34,9 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
-  private val failureDetector = new BannagePeriodFailureDetector(remote, timeToBan = 60 seconds) // FIXME make timeToBan configurable
+  private val remoteDaemonConnectionManager = new RemoteConnectionManager(
+    remote = remote,
+    failureDetector = new BannagePeriodFailureDetector(60 seconds)) // FIXME make timeout configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
     Address.validate(address)
@@ -44,9 +45,17 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
+      val deploymentConfig = app.deployer.deploymentConfig
       val actor = try {
         app.deployer.lookupDeploymentFor(address) match {
-          case Some(Deploy(_, _, router, nrOfInstances, _, app.deployer.deploymentConfig.RemoteScope(remoteAddresses))) ⇒
+          case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, deploymentConfig.RemoteScope(remoteAddresses))) ⇒
+
+            val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
+              case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
+              case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
+              case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
+              case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
+            }
 
             val thisHostname = remote.address.getHostName
             val thisPort = remote.address.getPort
@@ -61,8 +70,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
             } else {
 
               // we are on the single "reference" node uses the remote actors on the replica nodes
-              val routerType = DeploymentConfig.routerTypeFor(router)
-              val routerFactory: () ⇒ Router = routerType match {
+              val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
                 case RouterType.Direct ⇒
                   if (remoteAddresses.size != 1) throw new ConfigurationException(
                     "Actor [%s] configured with Direct router must have exactly 1 remote node configured. Found [%s]"
@@ -81,23 +89,31 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
                       .format(address, remoteAddresses.mkString(", ")))
                   () ⇒ new RoundRobinRouter
 
-                case RouterType.LeastCPU      ⇒ sys.error("Router LeastCPU not supported yet")
-                case RouterType.LeastRAM      ⇒ sys.error("Router LeastRAM not supported yet")
-                case RouterType.LeastMessages ⇒ sys.error("Router LeastMessages not supported yet")
-                case RouterType.Custom        ⇒ sys.error("Router Custom not supported yet")
+                case RouterType.ScatterGather ⇒
+                  if (remoteAddresses.size < 1) throw new ConfigurationException(
+                    "Actor [%s] configured with ScatterGather router must have at least 1 remote node configured. Found [%s]"
+                      .format(address, remoteAddresses.mkString(", ")))
+                  () ⇒ new ScatterGatherFirstCompletedRouter
+
+                case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+                case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+                case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+                case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
               }
 
-              def provisionActorToNode(remoteAddress: RemoteAddress): RemoteActorRef = {
+              var connections = Map.empty[InetSocketAddress, ActorRef]
+              remoteAddresses foreach { remoteAddress: DeploymentConfig.RemoteAddress ⇒
                 val inetSocketAddress = new InetSocketAddress(remoteAddress.hostname, remoteAddress.port)
-                useActorOnNode(inetSocketAddress, address, props.creator)
-                RemoteActorRef(app, app.remote, inetSocketAddress, address, None)
+                connections += (inetSocketAddress -> RemoteActorRef(app.remote, inetSocketAddress, address, None))
               }
 
-              val connections: Iterable[ActorRef] = remoteAddresses map { provisionActorToNode(_) }
+              val connectionManager = new RemoteConnectionManager(remote, connections, failureDetector)
 
-              Some(app.routing.actorOf(RoutedProps(
+              connections.keys foreach { useActorOnNode(_, address, props.creator) }
+
+              Some(app.createActor(RoutedProps(
                 routerFactory = routerFactory,
-                connections = connections)))
+                connectionManager = connectionManager)))
             }
 
           case deploy ⇒ None // non-remote actor
@@ -108,7 +124,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
           throw e
       }
 
-      actor foreach app.registry.register // only for ActorRegistry backward compat, will be removed later
+      // actor foreach app.registry.register // only for ActorRegistry backward compat, will be removed later
 
       newFuture completeWithResult actor
       actor
@@ -118,7 +134,18 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
     }
   }
 
-  def findActorRef(address: String): Option[ActorRef] = throw new UnsupportedOperationException
+  /**
+   * Copied from LocalActorRefProvider...
+   */
+  def actorOf(props: RoutedProps, address: String): Option[ActorRef] = {
+    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    Some(new RoutedActorRef(props, address))
+  }
+
+  def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
+    case null   ⇒ None
+    case future ⇒ future.await.resultOrException.getOrElse(None)
+  }
 
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
@@ -150,7 +177,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
         remote.remoteDaemonServiceName, remoteAddress.getHostName, remoteAddress.getPort)
 
     // try to get the connection for the remote address, if not already there then create it
-    val connection = failureDetector.putIfAbsent(remoteAddress, connectionFactory)
+    val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
 
     sendCommandToRemoteNode(connection, command, withACK = true) // ensure we get an ACK on the USE command
   }

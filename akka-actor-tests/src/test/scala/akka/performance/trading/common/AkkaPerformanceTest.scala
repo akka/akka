@@ -34,7 +34,7 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
     val start = System.nanoTime
     val clients = (for (i ← 0 until numberOfClients) yield {
       val receiver = receivers(i % receivers.size)
-      Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), delayMs)).withDispatcher(clientDispatcher)
+      Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), sampling, delayMs)).withDispatcher(clientDispatcher)
     }).toList.map(app.createActor(_))
 
     clients.foreach(_ ! "run")
@@ -47,28 +47,35 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
     clients.foreach(_ ! PoisonPill)
   }
 
-  class Client(orderReceiver: ActorRef, orders: List[Order], latch: CountDownLatch, repeat: Int, delayMs: Int) extends Actor {
-    def this(orderReceiver: ActorRef, orders: List[Order], latch: CountDownLatch, repeat: Int) {
-      this(orderReceiver, orders, latch, repeat, 0)
-    }
+  class Client(
+    orderReceiver: ActorRef,
+    orders: List[Order],
+    latch: CountDownLatch,
+    repeat: Int,
+    sampling: Int,
+    delayMs: Int = 0) extends Actor {
 
     def receive = {
       case "run" ⇒
-        (1 to repeat).foreach(i ⇒
-          {
-            for (o ← orders) {
+        var n = 0
+        for (r ← 1 to repeat; o ← orders) {
+          n += 1
+          val rsp =
+            if (n % sampling == 0) {
               val t0 = System.nanoTime
               val rsp = placeOrder(orderReceiver, o)
               val duration = System.nanoTime - t0
               stat.addValue(duration)
-              if (!rsp.status) {
-                EventHandler.error(this, "Invalid rsp")
-              }
-              delay(delayMs)
+              rsp
+            } else {
+              placeOrder(orderReceiver, o)
             }
-          })
+          if (!rsp.status) {
+            EventHandler.error(this, "Invalid rsp")
+          }
+          delay(delayMs)
+        }
         latch.countDown()
-
     }
   }
 

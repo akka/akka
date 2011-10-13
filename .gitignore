@@ -42,6 +42,7 @@ run-codefellow
 .cache
 .idea
 .scala_dependencies
+.cache
 multiverse.log
 .eprj
 .*.swp

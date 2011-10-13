@@ -21,7 +21,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           RoundRobin,
           NrOfInstances(5),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val helloLatch = new CountDownLatch(5)
@@ -57,7 +57,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           RoundRobin,
           NrOfInstances(10),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val connectionCount = 10
@@ -102,7 +102,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           RoundRobin,
           NrOfInstances(5),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val helloLatch = new CountDownLatch(5)
@@ -137,7 +137,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           Random,
           NrOfInstances(7),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val stopLatch = new CountDownLatch(7)
@@ -171,7 +171,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           Random,
           NrOfInstances(10),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val connectionCount = 10
@@ -216,7 +216,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           None,
           Random,
           NrOfInstances(6),
-          RemoveConnectionOnFirstFailureLocalFailureDetector,
+          NoOpFailureDetector,
           LocalScope))
 
       val helloLatch = new CountDownLatch(6)

@@ -13,6 +13,7 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
 import akka.remote.RemoteSupport
 import scala.util.DynamicVariable
+import akka.event.{ EventHandler, InVMMonitoring }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -263,7 +264,6 @@ object RemoteActorSystemMessage {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  val application: AkkaApplication,
   val remote: RemoteSupport,
   val remoteAddress: InetSocketAddress,
   val address: String,
@@ -274,8 +274,6 @@ private[akka] case class RemoteActorRef private[akka] (
   private var running: Boolean = true
 
   def isShutdown: Boolean = !running
-
-  application.reflective.RemoteModule.ensureEnabled()
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel) {
     val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
@@ -392,13 +390,14 @@ case class SerializedActorRef(uuid: Uuid,
     if (application.value eq null) throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
         " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")
-    application.value.registry.local.actorFor(uuid) match {
+    application.value.provider.actorFor(address) match {
       case Some(actor) ⇒ actor
       case None ⇒
-        //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
+        // TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
+        // TODO FIXME the remote should only be in the remote actor ref provider
         val remote = application.value.reflective.RemoteModule
         if (remote.isEnabled)
-          RemoteActorRef(application.value, remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
+          RemoteActorRef(remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
         else
           throw new IllegalStateException(
             "Trying to deserialize ActorRef [" + this +
@@ -423,4 +422,24 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   protected[akka] def restart(cause: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
+}
+
+class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
+  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
+  val address: String = "akka:internal:DeadLetterActorRef"
+
+  override def link(actorRef: ActorRef): ActorRef = actorRef
+
+  override def unlink(actorRef: ActorRef): ActorRef = actorRef
+
+  def isShutdown(): Boolean = true
+
+  def stop(): Unit = ()
+
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = EventHandler.debug(this, message)
+
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: Any,
+    timeout: Timeout,
+    channel: UntypedChannel): Future[Any] = { EventHandler.debug(this, message); brokenPromise }
 }

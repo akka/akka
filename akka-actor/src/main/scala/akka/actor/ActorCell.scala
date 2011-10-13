@@ -251,7 +251,6 @@ private[akka] class ActorCell(
       }
     }
 
-    application.registry.register(self)
     dispatcher.attach(this)
   }
 
@@ -385,7 +384,6 @@ private[akka] class ActorCell(
       receiveTimeout = None
       cancelReceiveTimeout
       application.provider.evict(self.address)
-      application.registry.unregister(self)
       dispatcher.detach(this)
 
       try {
@@ -405,7 +403,7 @@ private[akka] class ActorCell(
 
         if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
 
-        InVMMonitoring.signal(Terminated(self, cause))
+        InVMMonitoring.publish(Terminated(self, cause))
 
         currentMessage = null
         clearActorContext()
@@ -427,10 +425,10 @@ private[akka] class ActorCell(
           case Create          ⇒ create()
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
-            akka.event.InVMMonitoring.link(self, subject)
+            akka.event.InVMMonitoring.subscribe(self, subject)
             if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
           case Unlink(subject) ⇒
-            akka.event.InVMMonitoring.unlink(self, subject)
+            akka.event.InVMMonitoring.unsubscribe(self, subject)
             if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()

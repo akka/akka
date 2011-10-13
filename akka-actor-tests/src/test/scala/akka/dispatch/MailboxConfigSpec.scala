@@ -8,7 +8,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
-import akka.actor.{ LocalActorRef, Actor, ActorRegistry, NullChannel }
+import akka.actor.{ LocalActorRef, Actor, NullChannel }
 import akka.testkit.AkkaSpec
 
 @RunWith(classOf[JUnitRunner])

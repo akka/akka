@@ -8,10 +8,12 @@ import static akka.actor.Actors.poisonPill;
 import static java.util.Arrays.asList;
 
 import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.routing.RoutedProps;
 import akka.routing.RouterType;
+import akka.routing.LocalConnectionManager;
 import akka.routing.Routing;
 import akka.routing.Routing.Broadcast;
 import scala.collection.JavaConversions;
@@ -22,7 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import akka.AkkaApplication;
 
 public class Pi {
-  
+
   private static final AkkaApplication app = new AkkaApplication();
 
   public static void main(String[] args) throws Exception {
@@ -112,7 +114,7 @@ public class Pi {
           workers.add(worker);
       }
 
-      router = app.routing().actorOf(RoutedProps.apply().withRoundRobinRouter().withConnections(workers), "pi");
+      router = app.createActor(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     // message handler

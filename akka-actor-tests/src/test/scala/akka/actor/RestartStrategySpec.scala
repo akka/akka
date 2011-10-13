@@ -44,6 +44,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
           case Ping  ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
+
         override def postRestart(reason: Throwable) = {
           if (!restartLatch.isOpen)
             restartLatch.open
@@ -61,17 +62,17 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(restartLatch.tryAwait(10, TimeUnit.SECONDS))
 
       // now crash again... should not restart
       slave ! Crash
       slave ! Ping
 
-      assert(secondRestartLatch.tryAwait(1, TimeUnit.SECONDS))
-      assert(countDownLatch.await(1, TimeUnit.SECONDS))
+      assert(secondRestartLatch.tryAwait(10, TimeUnit.SECONDS))
+      assert(countDownLatch.await(10, TimeUnit.SECONDS))
 
       slave ! Crash
-      assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(stopLatch.tryAwait(10, TimeUnit.SECONDS))
     }
 
     "ensure that slave is immortal without max restarts and time range" in {
@@ -134,14 +135,14 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       slave ! Ping
       slave ! Crash
 
-      assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
-      assert(pingLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(restartLatch.tryAwait(10, TimeUnit.SECONDS))
+      assert(pingLatch.tryAwait(10, TimeUnit.SECONDS))
 
       slave ! Ping
       slave ! Crash
 
-      assert(secondRestartLatch.tryAwait(1, TimeUnit.SECONDS))
-      assert(secondPingLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(secondRestartLatch.tryAwait(10, TimeUnit.SECONDS))
+      assert(secondPingLatch.tryAwait(10, TimeUnit.SECONDS))
 
       // sleep to go out of the restart strategy's time range
       sleep(700L)
@@ -188,7 +189,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(restartLatch.tryAwait(10, TimeUnit.SECONDS))
 
       assert(!slave.isShutdown)
 
@@ -196,13 +197,13 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       slave ! Crash
       slave ! Ping
 
-      assert(secondRestartLatch.tryAwait(1, TimeUnit.SECONDS))
-      assert(countDownLatch.await(1, TimeUnit.SECONDS))
+      assert(secondRestartLatch.tryAwait(10, TimeUnit.SECONDS))
+      assert(countDownLatch.await(10, TimeUnit.SECONDS))
 
       sleep(700L)
 
       slave ! Crash
-      assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(stopLatch.tryAwait(10, TimeUnit.SECONDS))
       sleep(500L)
       assert(slave.isShutdown)
     }
@@ -238,7 +239,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(restartLatch.tryAwait(10, TimeUnit.SECONDS))
 
       assert(!slave.isShutdown)
 
@@ -247,14 +248,14 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
 
       // may not be running
       slave ! Ping
-      assert(countDownLatch.await(1, TimeUnit.SECONDS))
+      assert(countDownLatch.await(10, TimeUnit.SECONDS))
 
       // may not be running
       slave ! Crash
 
-      assert(stopLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(stopLatch.tryAwait(10, TimeUnit.SECONDS))
 
-      assert(maxNoOfRestartsLatch.tryAwait(1, TimeUnit.SECONDS))
+      assert(maxNoOfRestartsLatch.tryAwait(10, TimeUnit.SECONDS))
       sleep(500L)
       assert(slave.isShutdown)
     }

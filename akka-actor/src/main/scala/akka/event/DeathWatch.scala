@@ -6,116 +6,31 @@ package akka.event
 
 import akka.actor._
 
-trait DeathWatch {
-  def signal(terminated: Terminated): Unit
+/**
+ * The contract of DeathWatch is not properly expressed using the type system
+ * Whenever there is a publish, all listeners to the Terminated Actor should be atomically removed
+ * A failed subscribe should also only mean that the Classifier (ActorRef) that is listened to is already shut down
+ * See InVMMonitoring for semantics
+ */
+trait DeathWatch extends ActorEventBus with ActorClassifier {
+  type Event = Terminated
+
+  protected final def classify(event: Event): Classifier = event.actor
 }
 
-trait Monitoring {
+object InVMMonitoring extends DeathWatch with ActorClassification {
 
-  def link(monitor: ActorRef, monitored: ActorRef): Unit
+  def mapSize = 1024
 
-  def unlink(monitor: ActorRef, monitored: ActorRef): Unit
-}
-
-object InVMMonitoring extends DeathWatch with Monitoring {
-
-  class MonitoringBook(mapSize: Int = 1024) {
-    import java.util.concurrent.ConcurrentHashMap
-    import scala.annotation.tailrec
-
-    val mappings = new ConcurrentHashMap[ActorRef, Vector[ActorRef]](mapSize)
-
-    @tailrec
-    final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
-      val current = mappings get monitored
-      current match {
-        case null ⇒
-          if (monitored.isShutdown) false
-          else {
-            if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
-            else {
-              if (monitored.isShutdown) !dissociate(monitored, monitor)
-              else true
-            }
-          }
-        case raw: Vector[_] ⇒
-          val v = raw.asInstanceOf[Vector[ActorRef]]
-          if (monitored.isShutdown) false
-          if (v.contains(monitor)) true
-          else {
-            val added = v :+ monitor
-            if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
-            else {
-              if (monitored.isShutdown) !dissociate(monitored, monitor)
-              else true
-            }
-          }
-      }
-    }
-
-    final def dissociate(monitored: ActorRef): Iterable[ActorRef] = {
-      @tailrec
-      def dissociateAsMonitored(monitored: ActorRef): Iterable[ActorRef] = {
-        val current = mappings get monitored
-        current match {
-          case null ⇒ Vector.empty[ActorRef]
-          case raw: Vector[_] ⇒
-            val v = raw.asInstanceOf[Vector[ActorRef]]
-            if (!mappings.remove(monitored, v)) dissociateAsMonitored(monitored)
-            else v
-        }
-      }
-
-      def dissociateAsMonitor(monitor: ActorRef): Unit = {
-        val i = mappings.entrySet.iterator
-        while (i.hasNext()) {
-          val entry = i.next()
-          val v = entry.getValue
-          v match {
-            case raw: Vector[_] ⇒
-              val monitors = raw.asInstanceOf[Vector[ActorRef]]
-              if (monitors.contains(monitor))
-                dissociate(entry.getKey, monitor)
-            case _ ⇒ //Dun care
-          }
-        }
-      }
-
-      try { dissociateAsMonitored(monitored) } finally { dissociateAsMonitor(monitored) }
-    }
-
-    @tailrec
-    final def dissociate(monitored: ActorRef, monitor: ActorRef): Boolean = {
-      val current = mappings get monitored
-      current match {
-        case null ⇒ false
-        case raw: Vector[_] ⇒
-          val v = raw.asInstanceOf[Vector[ActorRef]]
-          val removed = v.filterNot(monitor ==)
-          if (removed eq v) false
-          else if (removed.isEmpty) {
-            if (!mappings.remove(monitored, v)) dissociate(monitored, monitor)
-            else true
-          } else {
-            if (!mappings.replace(monitored, v, removed)) dissociate(monitored, monitor)
-            else true
-          }
-      }
-    }
+  override def publish(event: Event): Unit = {
+    val monitors = dissociate(classify(event))
+    if (monitors.nonEmpty) monitors.foreach(_ ! event)
   }
 
-  val monitoring = new MonitoringBook(1024) //Key == monitored, Values == monitors
-
-  def signal(terminated: Terminated): Unit = {
-    val monitors = monitoring.dissociate(terminated.actor)
-    if (monitors.nonEmpty) monitors.foreach(_ ! terminated)
+  override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
+    if (!super.subscribe(subscriber, to)) {
+      subscriber ! Terminated(subscriber, new ActorKilledException("Already terminated when linking"))
+      false
+    } else true
   }
-
-  def link(monitor: ActorRef, monitored: ActorRef): Unit = {
-    if (!monitoring.associate(monitored, monitor))
-      monitor ! Terminated(monitored, new ActorKilledException("Already terminated when linking"))
-  }
-
-  def unlink(monitor: ActorRef, monitored: ActorRef): Unit =
-    monitoring.dissociate(monitored, monitor)
 }

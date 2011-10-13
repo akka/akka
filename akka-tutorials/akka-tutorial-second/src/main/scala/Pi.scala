@@ -9,7 +9,7 @@ import akka.event.EventHandler
 import System.{ currentTimeMillis ⇒ now }
 import akka.routing.Routing.Broadcast
 import akka.actor.{ Timeout, Channel, Actor, PoisonPill }
-import akka.routing.{ RoutedProps, Routing }
+import akka.routing._
 import akka.AkkaApplication
 
 object Pi extends App {
@@ -56,7 +56,9 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(app.createActor[Worker])
 
     // wrap them with a load-balancing router
-    val router = app.routing.actorOf(RoutedProps().withConnections(workers).withRoundRobinRouter, "pi")
+    val router = app.createActor(RoutedProps(
+      routerFactory = () ⇒ new RoundRobinRouter,
+      connectionManager = new LocalConnectionManager(workers)), "pi")
 
     // phase 1, can accept a Calculate message
     def scatter: Receive = {

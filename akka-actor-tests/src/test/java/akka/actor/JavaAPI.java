@@ -10,15 +10,10 @@ import static org.junit.Assert.*;
 public class JavaAPI {
 
   private AkkaApplication app = new AkkaApplication();
-  
+
   @Test void mustBeAbleToUseUntypedActor() {
       final RemoteSupport remote = app.remote();
       assertNotNull(remote);
-  }
-
-  @Test void mustInteractWithActorRegistry() {
-      final ActorRegistry registry = app.registry();
-      assertNotNull(registry);
   }
 
   @Test void mustBeAbleToCreateActorRefFromClass() {

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic._
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   "The Death Watch" must {
-    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, "stopped") {
+    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, "stopped") {
       case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
     }
 
@@ -26,7 +26,6 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
 
       terminal.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
@@ -46,7 +45,6 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
@@ -67,7 +65,6 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       terminal.stop()
       monitor1.stop()
       monitor2.stop()
-      expectNoMsg(2 seconds) //Shouldn't get more terminations
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
@@ -79,16 +76,12 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
         terminal ! Kill
         terminal ! Kill
-        terminal ! "foo"
-
-        expectMsg("foo") //Make sure that it's still alive
-
+        (terminal ? "foo").as[String] must be === Some("foo")
         terminal ! Kill
 
         expectTerminationOf(terminal)
 
         terminal.stop()
-        expectNoMsg(2 seconds) //Shouldn't get more terminations
         supervisor.stop()
       }
     }

@@ -7,7 +7,7 @@ package akka.remote
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.remote.netty.NettyRemoteSupport
-import akka.actor.{ Actor, ActorRegistry }
+import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.dispatch.Future
 

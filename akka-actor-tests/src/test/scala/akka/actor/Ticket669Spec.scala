@@ -16,7 +16,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
   override def beforeAll = Thread.interrupted() //remove interrupted status.
 
   override def afterAll = {
-    app.registry.local.shutdownAll
+    // app.registry.local.shutdownAll
     akka.event.EventHandler.start()
   }
 
