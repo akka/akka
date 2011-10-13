@@ -164,7 +164,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  */
 class LocalActorRef private[akka] (
   private[this] val props: Props,
-  val address: String,
+  givenAddress: String,
   val systemService: Boolean = false,
   override private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
@@ -182,6 +182,11 @@ class LocalActorRef private[akka] (
     this(__props, __address, false, __uuid, __receiveTimeout, __hotswap)
 
     actorCell.setActorContext(actorCell) // this is needed for deserialization - why?
+  }
+
+  final def address: String = givenAddress match {
+    case null | "" ⇒ uuid.toString
+    case other     ⇒ other
   }
 
   private[this] val actorCell = new ActorCell(this, props, receiveTimeout, hotswap)

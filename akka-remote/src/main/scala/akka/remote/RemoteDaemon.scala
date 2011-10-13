@@ -46,7 +46,7 @@ object Remote extends RemoteService {
   private[remote] lazy val remoteDaemon =
     new LocalActorRef(
       props = Props(new RemoteDaemon).withDispatcher(new PinnedDispatcher()).withSupervisor(remoteDaemonSupervisor),
-      address = Remote.remoteDaemonServiceName,
+      givenAddress = Remote.remoteDaemonServiceName,
       systemService = true)
 
   private[remote] lazy val remoteClientLifeCycleHandler = actorOf(Props(new Actor {
