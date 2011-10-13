@@ -31,6 +31,8 @@ class AccrualFailureDetector(
   val threshold: Int = 8, // FIXME make these configurable
   val maxSampleSize: Int = 1000) extends FailureDetector {
 
+  final val PhiFactor = 1.0 / math.log(10.0)
+
   private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
 
   // Implement using optimistic lockless concurrency, all state is represented
@@ -130,18 +132,16 @@ class AccrualFailureDetector(
    * If a connection does not have any records in failure detector then it is
    * considered dead. This is true either if the heartbeat have not started
    * yet or the connection have been explicitly removed.
+   * <p/>
+   * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
+   * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
    */
   def phi(connection: InetSocketAddress): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
-
-    if (oldTimestamp.isEmpty) Double.MaxValue
+    if (oldTimestamp.isEmpty) Double.MaxValue // treat unmanaged connections, e.g. with zero heartbeats, as dead connections
     else {
-      -1 * math.log10(
-        probability(
-          connection,
-          newTimestamp - oldTimestamp.get,
-          oldState))
+      PhiFactor * (newTimestamp - oldTimestamp.get) / oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
     }
   }
 
@@ -167,14 +167,7 @@ class AccrualFailureDetector(
     }
   }
 
-  private def probability(connection: InetSocketAddress, timestamp: Long, oldState: State): Double = {
-    val statsForConnection = oldState.failureStats.get(connection).getOrElse(FailureStats())
-    val exponent = -1.0 * timestamp / statsForConnection.mean
-    1 - (1.0 - math.pow(math.E, exponent))
-  }
-
   def recordSuccess(connection: InetSocketAddress, timestamp: Long) {}
   def recordFailure(connection: InetSocketAddress, timestamp: Long) {}
   def notify(event: RemoteLifeCycleEvent) {}
 }
-

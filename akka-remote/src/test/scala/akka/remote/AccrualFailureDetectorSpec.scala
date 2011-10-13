@@ -58,6 +58,7 @@ class AccrualFailureDetectorSpec extends WordSpec with MustMatchers {
       fd.isAvailable(conn) must be(true)
 
       Thread.sleep(5000)
+
       fd.isAvailable(conn) must be(false)
     }
 
