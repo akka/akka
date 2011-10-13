@@ -15,10 +15,6 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 
   override def beforeAll = Thread.interrupted() //remove interrupted status.
 
-  override def afterAll = {
-    app.registry.local.shutdownAll
-  }
-
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
       filterEvents(EventFilter[Exception]("test")) {

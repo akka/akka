@@ -163,12 +163,12 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
    * Handle to the ActorRegistry.
    * TODO: delete me!
    */
-  val registry = new ActorRegistry
+  // val registry = new ActorRegistry
 
   // TODO check memory consistency issues
   val reflective = new ReflectiveAccess(this)
 
-  val routing = new Routing(this)
+  // val routing = new Routing(this)
 
   val remote = reflective.RemoteModule.defaultRemoteSupport map (_.apply) getOrElse null
 

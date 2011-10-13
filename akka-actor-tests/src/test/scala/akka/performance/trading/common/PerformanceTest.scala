@@ -49,6 +49,10 @@ trait PerformanceTest extends JUnitSuite {
     System.getProperty("benchmark.timeDilation", "1").toLong
   }
 
+  def sampling = {
+    System.getProperty("benchmark.sampling", "100").toInt
+  }
+
   var stat: DescriptiveStatistics = _
 
   val resultRepository = BenchResultRepository(app)
@@ -113,16 +117,18 @@ trait PerformanceTest extends JUnitSuite {
       75 -> (stat.getPercentile(75.0) / 1000).toLong,
       95 -> (stat.getPercentile(95.0) / 1000).toLong)
 
+    val n = stat.getN * sampling
+
     val stats = Stats(
       name,
       load = numberOfClients,
       timestamp = TestStart.startTime,
       durationNanos = durationNs,
-      n = stat.getN,
+      n = n,
       min = (stat.getMin / 1000).toLong,
       max = (stat.getMax / 1000).toLong,
       mean = (stat.getMean / 1000).toLong,
-      tps = (stat.getN.toDouble / durationS),
+      tps = (n.toDouble / durationS),
       percentiles)
 
     resultRepository.add(stats)

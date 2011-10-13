@@ -25,7 +25,7 @@ class TestFSMRefSpec extends AkkaSpec {
         when(2) {
           case Ev("back") ⇒ goto(1) using "back"
         }
-      })
+      }, "test-fsm-ref-1")
       fsm.stateName must be(1)
       fsm.stateData must be("")
       fsm ! "go"
@@ -49,14 +49,12 @@ class TestFSMRefSpec extends AkkaSpec {
         when(1) {
           case x ⇒ stay
         }
-      })
+      }, "test-fsm-ref-2")
       fsm.timerActive_?("test") must be(false)
       fsm.setTimer("test", 12, 10 millis, true)
       fsm.timerActive_?("test") must be(true)
       fsm.cancelTimer("test")
       fsm.timerActive_?("test") must be(false)
     }
-
   }
-
 }

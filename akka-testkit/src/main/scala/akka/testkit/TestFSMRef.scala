@@ -85,5 +85,4 @@ object TestFSMRef {
 
   def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D], application: AkkaApplication): TestFSMRef[S, D, T] =
     new TestFSMRef(application, Props(creator = () ⇒ factory), address)
-
 }

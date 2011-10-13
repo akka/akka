@@ -285,7 +285,7 @@ class ActorRefSpec extends AkkaSpec {
       val latch = new CountDownLatch(1)
       val a = createActor(new InnerActor {
         override def postStop {
-          app.registry.unregister(self)
+          // app.registry.unregister(self)
           latch.countDown
         }
       })

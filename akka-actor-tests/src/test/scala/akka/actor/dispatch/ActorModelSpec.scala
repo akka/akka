@@ -408,17 +408,18 @@ abstract class ActorModelSpec extends AkkaSpec {
         } catch {
           case e ⇒
 
-            app.registry.local.foreach {
-              case actor: LocalActorRef ⇒
-                val cell = actor.underlying
-                val mbox = cell.mailbox
-                System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.isScheduled)
-                var message = mbox.dequeue()
-                while (message ne null) {
-                  System.err.println("Lingering message for " + cell + " " + message)
-                  message = mbox.dequeue()
-                }
-            }
+            // FIXME: registry has been removed
+            // app.registry.local.foreach {
+            //   case actor: LocalActorRef ⇒
+            //     val cell = actor.underlying
+            //     val mbox = cell.mailbox
+            //     System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.isScheduled)
+            //     var message = mbox.dequeue()
+            //     while (message ne null) {
+            //       System.err.println("Lingering message for " + cell + " " + message)
+            //       message = mbox.dequeue()
+            //     }
+            // }
 
             throw e
         }

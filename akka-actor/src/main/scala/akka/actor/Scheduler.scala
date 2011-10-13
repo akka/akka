@@ -28,13 +28,7 @@ object Scheduler {
   private[akka] val service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
 
   private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = {
-    new Runnable {
-      def run =
-        if (receiver.isShutdown && throwWhenReceiverExpired)
-          throw new RuntimeException("Receiver not found, unregistered")
-        else
-          receiver ! message
-    }
+    new Runnable { def run = receiver ! message }
   }
 
   /**

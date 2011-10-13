@@ -16,7 +16,6 @@ import com.eaio.uuid.UUID;
  *  - locating actors
  */
 public class Actors {
-
     /**
      * The message that is sent when an Actor gets a receive timeout.
      * <pre>

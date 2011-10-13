@@ -164,7 +164,6 @@ object Actor {
       case _                 ⇒ new LoggingReceive(source, r)
     }
   }
-
 }
 
 /**

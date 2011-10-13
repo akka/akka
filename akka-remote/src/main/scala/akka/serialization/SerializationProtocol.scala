@@ -243,7 +243,7 @@ class RemoteActorSerialization(val app: AkkaApplication) {
     app.eventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
 
     val ref = RemoteActorRef(
-      app, app.remote,
+      app.remote,
       JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       loader)

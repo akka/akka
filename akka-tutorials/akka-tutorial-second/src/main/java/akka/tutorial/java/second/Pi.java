@@ -11,8 +11,10 @@ import static java.util.Arrays.asList;
 import akka.AkkaApplication;
 import akka.routing.RoutedProps;
 import akka.routing.Routing;
+import akka.routing.LocalConnectionManager;
 import scala.Option;
 import akka.actor.ActorRef;
+import akka.actor.Actors;
 import akka.actor.Channel;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -24,7 +26,7 @@ import scala.collection.JavaConversions;
 import java.util.LinkedList;
 
 public class Pi {
-  
+
   private static final AkkaApplication app = new AkkaApplication();
 
   public static void main(String[] args) throws Exception {
@@ -105,7 +107,7 @@ public class Pi {
          workers.add(worker);
       }
 
-      router = app.routing().actorOf(RoutedProps.apply().withConnections(workers).withRoundRobinRouter(), "pi");
+      router = app.createActor(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     @Override

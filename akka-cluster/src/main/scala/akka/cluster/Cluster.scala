@@ -1370,7 +1370,7 @@ class DefaultClusterNode private[akka] (
 
   private[cluster] def failOverClusterActorRefConnections(from: InetSocketAddress, to: InetSocketAddress) {
     EventHandler.info(this, "Failing over ClusterActorRef from %s to %s".format(from, to))
-    clusterActorRefs.values(from) foreach (_.failOver(from, to))
+    clusterActorRefs.valueIterator(from) foreach (_.failOver(from, to))
   }
 
   private[cluster] def migrateActorsOnFailedNodes(
