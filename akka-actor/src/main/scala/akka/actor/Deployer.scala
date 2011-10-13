@@ -260,7 +260,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 }
             }
 
-            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.RemoteScope(remoteAddresses)))
+            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, RemoteScope(remoteAddresses)))
 
           case None ⇒ // check for 'cluster' config section
 

@@ -34,7 +34,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   val remoteDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), DefaultTimeUnit).toMillis.toInt
 
   val hostname = app.hostname
-  val port = app.AkkaConfig.RemoteServerPort
+  val port = app.port
 
   val remoteDaemonServiceName = "akka-remote-daemon".intern
 

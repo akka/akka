@@ -1,29 +1,27 @@
 package akka.remote.random_routed
 
+import akka.actor.Actor
 import akka.remote._
 import akka.routing._
-import Routing.Broadcast
-
-import akka.actor.Actor
-import akka.config.Config
+import akka.routing.Routing.Broadcast
 
 object RandomRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ reply(Config.nodename)
+      case "hit" ⇒ reply(app.nodename)
       case "end" ⇒ self.stop()
     }
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
+class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -32,13 +30,13 @@ class RandomRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
+class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -47,13 +45,13 @@ class RandomRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode3 extends MultiJvmSync {
+class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -62,17 +60,17 @@ class RandomRoutedRemoteActorMultiJvmNode3 extends MultiJvmSync {
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode4 extends MultiJvmSync {
+class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a Random router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       barrier("setup")
-      Remote.start()
+      remote.start()
 
       barrier("start")
-      val actor = Actor.actorOf[SomeActor]("service-hello")
+      val actor = app.createActor[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

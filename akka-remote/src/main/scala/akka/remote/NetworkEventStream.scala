@@ -33,11 +33,6 @@ object NetworkEventStream {
   trait Listener {
     def notify(event: RemoteLifeCycleEvent)
   }
-}
-
-class NetworkEventStream(val app: AkkaApplication) {
-
-  import NetworkEventStream._
 
   /**
    * Channel actor with a registry of listeners.
@@ -63,8 +58,13 @@ class NetworkEventStream(val app: AkkaApplication) {
       case _ ⇒ //ignore other
     }
   }
+}
 
-  private[akka] val channel = new LocalActorRef(app,
+class NetworkEventStream(val app: AkkaApplication) {
+
+  import NetworkEventStream._
+
+  private[akka] val channel = app.provider.actorOf(
     Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")), newUuid.toString, systemService = true)
 
   /**

@@ -3,6 +3,7 @@ package akka.serialization
 import org.scalatest.BeforeAndAfterAll
 import com.google.protobuf.Message
 import akka.actor._
+import akka.remote._
 import akka.testkit.AkkaSpec
 import akka.serialization.SerializeSpec.Person
 
@@ -10,7 +11,14 @@ case class MyMessage(id: Long, name: String, status: Boolean)
 
 class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
 
-  val serialization = new ActorSerialization(app)
+  lazy val remote: Remote = {
+    app.provider match {
+      case r: RemoteActorRefProvider ⇒ r.remote
+      case _                         ⇒ throw new Exception("Remoting is not enabled")
+    }
+  }
+
+  lazy val serialization = new ActorSerialization(app, remote.server)
 
   "Serializable actor" must {
     "must be able to serialize and de-serialize a stateful actor with a given serializer" ignore {

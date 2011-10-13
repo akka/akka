@@ -281,7 +281,6 @@ class ActorRefSpec extends AkkaSpec {
     }
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
-      app.reflective.RemoteModule.isEnabled must be === false
       val latch = new CountDownLatch(1)
       val a = createActor(new InnerActor {
         override def postStop {
@@ -290,7 +289,7 @@ class ActorRefSpec extends AkkaSpec {
         }
       })
 
-      val inetAddress = app.reflective.RemoteModule.configDefaultAddress
+      val inetAddress = app.defaultAddress
 
       val expectedSerializedRepresentation = SerializedActorRef(
         a.uuid,
@@ -315,7 +314,7 @@ class ActorRefSpec extends AkkaSpec {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         (intercept[java.lang.IllegalStateException] {
           in.readObject
-        }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
+        }).getMessage must be === "Could not deserialize ActorRef"
       }
     }
 

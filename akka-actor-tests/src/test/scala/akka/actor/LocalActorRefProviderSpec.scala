@@ -38,19 +38,19 @@ class LocalActorRefProviderSpec extends AkkaSpec {
         val address = "new-actor" + i
 
         spawn {
-          a1 = provider.actorOf(Props(creator = () ⇒ new NewActor), address)
+          a1 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a2 = provider.actorOf(Props(creator = () ⇒ new NewActor), address)
+          a2 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a3 = provider.actorOf(Props(creator = () ⇒ new NewActor), address)
+          a3 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a4 = provider.actorOf(Props(creator = () ⇒ new NewActor), address)
+          a4 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
 
@@ -61,7 +61,7 @@ class LocalActorRefProviderSpec extends AkkaSpec {
         a3.isDefined must be(true)
         a4.isDefined must be(true)
         (a1 == a2) must be(true)
-        (a1 == a2) must be(true)
+        (a1 == a3) must be(true)
         (a1 == a4) must be(true)
       }
     }

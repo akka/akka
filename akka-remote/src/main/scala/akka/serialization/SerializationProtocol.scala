@@ -9,7 +9,7 @@ import akka.actor.DeploymentConfig._
 import akka.dispatch.Envelope
 import akka.util.{ ReflectiveAccess, Duration }
 import akka.event.EventHandler
-import akka.remote.{ RemoteProtocol, RemoteClientSettings, MessageSerializer }
+import akka.remote._
 import RemoteProtocol._
 import akka.AkkaApplication
 
@@ -25,10 +25,10 @@ import com.eaio.uuid.UUID
 /**
  * Module for local actor serialization.
  */
-class ActorSerialization(val app: AkkaApplication) {
+class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
   implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
 
-  val remoteActorSerialization = new RemoteActorSerialization(app)
+  val remoteActorSerialization = new RemoteActorSerialization(app, remote)
 
   def fromBinary[T <: Actor](bytes: Array[Byte], homeAddress: InetSocketAddress): ActorRef =
     fromBinaryToLocalActorRef(bytes, None, Some(homeAddress))
@@ -222,7 +222,7 @@ class ActorSerialization(val app: AkkaApplication) {
   }
 }
 
-class RemoteActorSerialization(val app: AkkaApplication) {
+class RemoteActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
 
   /**
    * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
@@ -243,7 +243,7 @@ class RemoteActorSerialization(val app: AkkaApplication) {
     app.eventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
 
     val ref = RemoteActorRef(
-      app.remote,
+      remote,
       JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
       protocol.getAddress,
       loader)
@@ -261,10 +261,10 @@ class RemoteActorSerialization(val app: AkkaApplication) {
       case ar: RemoteActorRef ⇒
         ar.remoteAddress
       case ar: LocalActorRef ⇒
-        app.remote.registerByUuid(ar)
-        app.reflective.RemoteModule.configDefaultAddress
+        remote.registerByUuid(ar)
+        app.defaultAddress
       case _ ⇒
-        app.reflective.RemoteModule.configDefaultAddress
+        app.defaultAddress
     }
 
     app.eventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))

@@ -19,6 +19,7 @@ import akka.serialization.Serialization
 import akka.event.EventHandler
 import akka.event.EventHandlerLogging
 import akka.event.Logging
+import java.net.InetSocketAddress
 
 object AkkaApplication {
 
@@ -82,6 +83,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   object AkkaConfig {
     import config._
     val ConfigVersion = getString("akka.version", Version)
+
+    val ProviderClass = getString("akka.actor.provider", "akka.actor.LocalActorRefProvider")
+
     val DefaultTimeUnit = getString("akka.time-unit", "seconds")
     val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout", 5), DefaultTimeUnit))
     val ActorTimeoutMillis = ActorTimeout.duration.toMillis
@@ -131,49 +135,48 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     throw new ConfigurationException("Akka JAR version [" + Version +
       "] does not match the provided config version [" + ConfigVersion + "]")
 
+  val startTime = System.currentTimeMillis
+  def uptime = (System.currentTimeMillis - startTime) / 1000
+
+  val nodename: String = System.getProperty("akka.cluster.nodename") match {
+    case null | "" ⇒ new UUID().toString
+    case value     ⇒ value
+  }
+
+  val hostname: String = System.getProperty("akka.remote.hostname") match {
+    case null | "" ⇒ InetAddress.getLocalHost.getHostName
+    case value     ⇒ value
+  }
+
+  val port: Int = System.getProperty("akka.remote.port") match {
+    case null | "" ⇒ AkkaConfig.RemoteServerPort
+    case value     ⇒ value.toInt
+  }
+
+  val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
+
+  if (ConfigVersion != Version)
+    throw new ConfigurationException("Akka JAR version [" + Version +
+      "] does not match the provided config version [" + ConfigVersion + "]")
+
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
+
+  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   val eventHandler = new EventHandler(this)
 
   val log: Logging = new EventHandlerLogging(eventHandler, this)
 
-  val startTime = System.currentTimeMillis
-  def uptime = (System.currentTimeMillis - startTime) / 1000
-
-  val nodename = System.getProperty("akka.cluster.nodename") match {
-    case null | "" ⇒ new UUID().toString
-    case value     ⇒ value
-  }
-
-  val hostname = System.getProperty("akka.remote.hostname") match {
-    case null | "" ⇒ InetAddress.getLocalHost.getHostName
-    case value     ⇒ value
-  }
-
-  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+  val reflective = new ReflectiveAccess(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val provider: ActorRefProvider = new LocalActorRefProvider(this, deployer)
-
-  /**
-   * Handle to the ActorRegistry.
-   * TODO: delete me!
-   */
-  // val registry = new ActorRegistry
-
-  // TODO check memory consistency issues
-  val reflective = new ReflectiveAccess(this)
-
-  // val routing = new Routing(this)
-
-  val remote = reflective.RemoteModule.defaultRemoteSupport map (_.apply) getOrElse null
+  val provider: ActorRefProvider = reflective.createProvider
 
   val typedActor = new TypedActor(this)
 
   val serialization = new Serialization(this)
-
 }

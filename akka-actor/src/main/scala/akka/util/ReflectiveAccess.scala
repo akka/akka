@@ -123,6 +123,23 @@ class ReflectiveAccess(val app: AkkaApplication) {
 
   import ReflectiveAccess._
 
+  def providerClass: Class[_] = {
+    getClassFor(app.AkkaConfig.ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+  }
+
+  def createProvider: ActorRefProvider = {
+    val params: Array[Class[_]] = Array(classOf[AkkaApplication])
+    val args: Array[AnyRef] = Array(app)
+
+    createInstance[ActorRefProvider](providerClass, params, args) match {
+      case Right(p) ⇒ p
+      case Left(e)  ⇒ throw e
+    }
+  }
+
   /**
    * Reflective access to the Cluster module.
    *
@@ -228,61 +245,4 @@ class ReflectiveAccess(val app: AkkaApplication) {
       def close()
     }
   }
-
-  /**
-   * Reflective access to the RemoteClient module.
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object RemoteModule {
-    val TRANSPORT = app.AkkaConfig.RemoteTransport
-
-    val configDefaultAddress = new InetSocketAddress(app.hostname, app.AkkaConfig.RemoteServerPort)
-
-    lazy val isEnabled = remoteSupportClass.isDefined
-
-    def ensureEnabled() = {
-      if (!isEnabled) {
-        val e = new ModuleNotAvailableException(
-          "Can't load the remote module, make sure it is enabled in the config ('akka.enabled-modules = [\"remote\"])' and that akka-remote.jar is on the classpath")
-        app.eventHandler.debug(this, e.toString)
-        throw e
-      }
-    }
-
-    lazy val remoteInstance: Option[RemoteService] = getObjectFor("akka.remote.Remote$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        app.eventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val remoteService: RemoteService = {
-      ensureEnabled()
-      remoteInstance.get
-    }
-
-    val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        app.eventHandler.debug(this, exception.toString)
-        None
-    }
-
-    protected[akka] val defaultRemoteSupport: Option[() ⇒ RemoteSupport] =
-      remoteSupportClass map { remoteClass ⇒
-        () ⇒ createInstance[RemoteSupport](
-          remoteClass,
-          Array[Class[_]](),
-          Array[AnyRef]()) match {
-            case Right(value) ⇒ value
-            case Left(exception) ⇒
-              val e = new ModuleNotAvailableException(
-                "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
-              app.eventHandler.debug(this, e.toString)
-              throw e
-          }
-      }
-  }
-
 }

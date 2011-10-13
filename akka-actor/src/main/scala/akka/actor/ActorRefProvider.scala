@@ -20,13 +20,17 @@ import akka.AkkaException
  */
 trait ActorRefProvider {
 
-  def actorOf(props: Props, address: String): Option[ActorRef]
+  def actorOf(props: Props, address: String): ActorRef
 
-  def actorOf(props: RoutedProps, address: String): Option[ActorRef]
+  def actorOf(props: RoutedProps, address: String): ActorRef
 
   def actorFor(address: String): Option[ActorRef]
 
+  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef
+
   private[akka] def evict(address: String): Boolean
+
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
 }
 
 /**
@@ -45,9 +49,12 @@ trait ActorRefFactory {
    * the same address can race on the cluster, and then you never know which
    * implementation wins
    */
-  def createActor(props: Props, address: String): ActorRef = provider.actorOf(props, address).get
+  def createActor(props: Props, address: String): ActorRef = provider.actorOf(props, address)
 
   def createActor[T <: Actor](implicit m: Manifest[T]): ActorRef = createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
+
+  def createActor[T <: Actor](address: String)(implicit m: Manifest[T]): ActorRef =
+    createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), address)
 
   def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
 
@@ -57,7 +64,7 @@ trait ActorRefFactory {
 
   def createActor(props: RoutedProps): ActorRef = createActor(props, new UUID().toString)
 
-  def createActor(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address).get
+  def createActor(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
 
   def findActor(address: String): Option[ActorRef] = provider.actorFor(address)
 
@@ -65,25 +72,18 @@ trait ActorRefFactory {
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
 
-object ActorRefProvider {
-  sealed trait ProviderType
-  object LocalProvider extends ProviderType
-  object RemoteProvider extends ProviderType
-  object ClusterProvider extends ProviderType
-}
-
 /**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) extends ActorRefProvider {
+class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
-  private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
+  private val actors = new ConcurrentHashMap[String, Promise[ActorRef]]
 
-  def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
+  def actorOf(props: Props, address: String): ActorRef = actorOf(props, address, false)
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
     case null   ⇒ None
-    case future ⇒ future.await.resultOrException.getOrElse(None)
+    case future ⇒ Some(future.get)
   }
 
   /**
@@ -91,7 +91,7 @@ class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) ex
    */
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
-  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): Option[ActorRef] = {
+  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
     Address.validate(address)
 
     val localProps =
@@ -102,17 +102,17 @@ class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) ex
 
     val defaultTimeout = app.AkkaConfig.ActorTimeout
 
-    val newFuture = Promise[Option[ActorRef]](5000)(app.dispatcher) // FIXME is this proper timeout?
+    val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
 
-      val actor = try {
-        deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+      val actor: ActorRef = try {
+        app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
           // create a local actor
           case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-            Some(new LocalActorRef(app, localProps, address, systemService)) // create a local actor
+            new LocalActorRef(app, localProps, address, systemService) // create a local actor
 
           // create a routed actor ref
           case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
@@ -134,7 +134,7 @@ class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) ex
 
             actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
 
-          case _ ⇒ None // non-local actor - pass it on
+          case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
         }
       } catch {
         case e: Exception ⇒
@@ -146,14 +146,14 @@ class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) ex
       actor
 
     } else { // we lost the race -- wait for future to complete
-      oldFuture.await.resultOrException.getOrElse(None)
+      oldFuture.await.resultOrException.get
     }
   }
 
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(props: RoutedProps, address: String): Option[ActorRef] = {
+  def actorOf(props: RoutedProps, address: String): ActorRef = {
     //FIXME clustering should be implemented by cluster actor ref provider
     //TODO Implement support for configuring by deployment ID etc
     //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
@@ -164,6 +164,8 @@ class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) ex
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     // else new RoutedActorRef(props, address)
-    Some(new RoutedActorRef(props, address))
+    new RoutedActorRef(props, address)
   }
+
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
 }

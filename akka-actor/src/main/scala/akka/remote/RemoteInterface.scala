@@ -187,10 +187,10 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
 
 abstract class RemoteSupport(val app: AkkaApplication) extends ListenerManagement with RemoteServerModule with RemoteClientModule {
 
-  val eventHandler: ActorRef = {
+  lazy val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
     val clazz = classOf[RemoteEventHandler]
-    val handler = new LocalActorRef(app, Props(clazz), clazz.getName, true)
+    val handler = app.provider.actorOf(Props(clazz), clazz.getName, true)
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler
@@ -243,16 +243,16 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
    *  Starts the server up
    */
   def start(): RemoteServerModule =
-    start(app.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      app.reflective.RemoteModule.configDefaultAddress.getPort,
+    start(app.defaultAddress.getAddress.getHostAddress,
+      app.defaultAddress.getPort,
       None)
 
   /**
    *  Starts the server up
    */
   def start(loader: ClassLoader): RemoteServerModule =
-    start(app.reflective.RemoteModule.configDefaultAddress.getAddress.getHostAddress,
-      app.reflective.RemoteModule.configDefaultAddress.getPort,
+    start(app.defaultAddress.getAddress.getHostAddress,
+      app.defaultAddress.getPort,
       Option(loader))
 
   /**

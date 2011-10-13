@@ -11,11 +11,6 @@ public class JavaAPI {
 
   private AkkaApplication app = new AkkaApplication();
 
-  @Test void mustBeAbleToUseUntypedActor() {
-      final RemoteSupport remote = app.remote();
-      assertNotNull(remote);
-  }
-
   @Test void mustBeAbleToCreateActorRefFromClass() {
       ActorRef ref = app.createActor(JavaAPITestActor.class);
       assertNotNull(ref);

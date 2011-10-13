@@ -8,11 +8,14 @@ import akka.actor.{ Actor, BootableActorLoaderService }
 import akka.util.{ ReflectiveAccess, Bootable }
 import akka.event.EventHandler
 
+// TODO: remove me - remoting is enabled through the RemoteActorRefProvider
+
 /**
  * This bundle/service is responsible for booting up and shutting down the remote actors facility.
  * <p/>
  * It is used in Kernel.
  */
+/*
 trait BootableRemoteActorService extends Bootable {
   self: BootableActorLoaderService ⇒
 
@@ -42,3 +45,4 @@ trait BootableRemoteActorService extends Bootable {
     super.onUnload()
   }
 }
+*/

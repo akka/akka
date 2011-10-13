@@ -2,9 +2,8 @@ package akka.remote.direct_routed
 
 import akka.remote._
 import akka.routing._
-
 import akka.actor.Actor
-import akka.config.Config
+import akka.testkit._
 
 object DirectRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 2
@@ -12,13 +11,13 @@ object DirectRoutedRemoteActorMultiJvmSpec {
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "identify" ⇒ {
-        reply(Config.nodename)
+        reply(app.nodename)
       }
     }
   }
 }
 
-class DirectRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
+class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
 
   import DirectRoutedRemoteActorMultiJvmSpec._
 
@@ -27,14 +26,16 @@ class DirectRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+
+      remote.start()
+
       barrier("start")
       barrier("done")
     }
   }
 }
 
-class DirectRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
+class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
 
   import DirectRoutedRemoteActorMultiJvmSpec._
 
@@ -43,10 +44,12 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
   "A new remote actor configured with a Direct router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
       barrier("setup")
-      Remote.start()
+
+      remote.start()
+
       barrier("start")
 
-      val actor = Actor.actorOf[SomeActor]("service-hello")
+      val actor = app.createActor[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val result = (actor ? "identify").get

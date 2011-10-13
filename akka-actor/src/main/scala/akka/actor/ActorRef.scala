@@ -243,7 +243,7 @@ class LocalActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
     // TODO: this was used to really send LocalActorRef across the network, which is broken now
-    val inetaddr = app.reflective.RemoteModule.configDefaultAddress
+    val inetaddr = app.defaultAddress
     SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
   }
 }
@@ -255,69 +255,6 @@ class LocalActorRef private[akka] (
  */
 object RemoteActorSystemMessage {
   val Stop = "RemoteActorRef:stop".intern
-}
-
-/**
- * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
- * This reference is network-aware (remembers its origin) and immutable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] case class RemoteActorRef private[akka] (
-  val remote: RemoteSupport,
-  val remoteAddress: InetSocketAddress,
-  val address: String,
-  loader: Option[ClassLoader])
-  extends ActorRef with ScalaActorRef {
-
-  @volatile
-  private var running: Boolean = true
-
-  def isShutdown: Boolean = !running
-
-  def postMessageToMailbox(message: Any, channel: UntypedChannel) {
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    remote.send[Any](message, chSender, None, remoteAddress, true, this, loader)
-  }
-
-  def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
-
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    val chFuture = if (channel.isInstanceOf[Promise[_]]) Some(channel.asInstanceOf[Promise[Any]]) else None
-    val future = remote.send[Any](message, chSender, chFuture, remoteAddress, false, this, loader)
-
-    if (future.isDefined) ActorPromise(future.get)(timeout)
-    else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-  }
-
-  def suspend(): Unit = unsupported
-
-  def resume(): Unit = unsupported
-
-  def stop() { //FIXME send the cause as well!
-    synchronized {
-      if (running) {
-        running = false
-        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
-      }
-    }
-  }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
-  }
-
-  def link(actorRef: ActorRef): ActorRef = unsupported
-
-  def unlink(actorRef: ActorRef): ActorRef = unsupported
-
-  protected[akka] def restart(cause: Throwable): Unit = unsupported
-
-  private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
 
 /**
@@ -379,10 +316,9 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRe
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-case class SerializedActorRef(uuid: Uuid,
-                              address: String,
-                              hostname: String,
-                              port: Int) {
+
+case class SerializedActorRef(uuid: Uuid, address: String, hostname: String, port: Int) {
+
   import akka.serialization.Serialization.app
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -390,18 +326,9 @@ case class SerializedActorRef(uuid: Uuid,
     if (app.value eq null) throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
         " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
-    app.value.provider.actorFor(address) match {
+    app.value.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
-      case None ⇒
-        // TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
-        // TODO FIXME the remote should only be in the remote actor ref provider
-        val remote = app.value.reflective.RemoteModule
-        if (remote.isEnabled)
-          RemoteActorRef(remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
-        else
-          throw new IllegalStateException(
-            "Trying to deserialize ActorRef [" + this +
-              "] but it's not found in the local registry and remoting is not enabled.")
+      case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
     }
   }
 }

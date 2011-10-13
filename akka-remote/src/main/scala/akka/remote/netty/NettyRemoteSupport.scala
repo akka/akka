@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, RemoteActorRef, PoisonPill, RemoteActorSystemMessage, AutoReceivedMessage }
+import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, RemoteActorSystemMessage, AutoReceivedMessage }
 import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
 import akka.remote._
 import RemoteProtocol._
@@ -83,7 +83,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
                 //Recheck for addition, race between upgrades
                 case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(app, this, address, loader, self.notifyListeners _)
+                  val client = new ActiveRemoteClient(app, self, this, address, loader, self.notifyListeners _)
                   client.connect()
                   remoteClients += key -> client
                   client
@@ -139,6 +139,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
  */
 abstract class RemoteClient private[akka] (
   val app: AkkaApplication,
+  val remoteSupport: RemoteSupport,
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
@@ -146,7 +147,7 @@ abstract class RemoteClient private[akka] (
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 
-  val serialization = new RemoteActorSerialization(app)
+  val serialization = new RemoteActorSerialization(app, remoteSupport)
 
   protected val futures = new ConcurrentHashMap[Uuid, Promise[_]]
 
@@ -248,11 +249,12 @@ abstract class RemoteClient private[akka] (
  */
 class ActiveRemoteClient private[akka] (
   _app: AkkaApplication,
+  remoteSupport: RemoteSupport,
   module: NettyRemoteClientModule,
   remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None,
   notifyListenersFun: (⇒ Any) ⇒ Unit)
-  extends RemoteClient(_app, module, remoteAddress) {
+  extends RemoteClient(_app, remoteSupport, module, remoteAddress) {
 
   val settings = new RemoteClientSettings(app)
   import settings._
@@ -576,7 +578,7 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
     app.eventHandler.debug(this,
       "Creating RemoteActorRef with address [%s] connected to [%s]"
         .format(actorAddress, remoteInetSocketAddress))
-    RemoteActorRef(app.remote, remoteInetSocketAddress, actorAddress, loader)
+    RemoteActorRef(this, remoteInetSocketAddress, actorAddress, loader)
   }
 }
 
@@ -585,7 +587,7 @@ class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerMod
   val settings = new RemoteServerSettings(app)
   import settings._
 
-  val serialization = new RemoteActorSerialization(app)
+  val serialization = new RemoteActorSerialization(app, serverModule.remoteSupport)
 
   val name = "NettyRemoteServer@" + host + ":" + port
   val address = new InetSocketAddress(host, port)
@@ -641,18 +643,19 @@ trait NettyRemoteServerModule extends RemoteServerModule {
   self: RemoteSupport ⇒
 
   def app: AkkaApplication
+  def remoteSupport = self
 
   private[akka] val currentServer = new AtomicReference[Option[NettyRemoteServer]](None)
 
   def address = currentServer.get match {
     case Some(server) ⇒ server.address
-    case None         ⇒ app.reflective.RemoteModule.configDefaultAddress
+    case None         ⇒ app.defaultAddress
   }
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
     case None ⇒
-      val a = app.reflective.RemoteModule.configDefaultAddress
+      val a = app.defaultAddress
       "NettyRemoteServer@" + a.getAddress.getHostAddress + ":" + a.getPort
   }
 

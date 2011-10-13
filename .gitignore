@@ -56,3 +56,4 @@ Makefile
 akka.sublime-project
 akka.sublime-workspace
 .target
+.multi-jvm
