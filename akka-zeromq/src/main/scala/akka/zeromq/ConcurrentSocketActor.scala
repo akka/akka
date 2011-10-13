@@ -25,7 +25,7 @@ private[zeromq] class ConcurrentSocketActor(
   private var socketClosed: Boolean = false
   self.dispatcher = dispatcher
   poller.register(socket, Poller.POLLIN)
-  private val select = { () =>
+  private val selectTask = { () =>
     if (!socketClosed) {
       if (poller.poll(pollTimeoutMsec) > 0) {
         if (poller.pollin(0)) {
@@ -46,11 +46,11 @@ private[zeromq] class ConcurrentSocketActor(
         case Unsubscribe(topic) => socket.unsubscribe(topic.toArray)
       }
       if (!socketClosed) 
-        run()
+        select()
     }
   }
   override def preStart {
-    run
+    select
   }
   override def postStop = if (!socketClosed) {
     addRequest(Close)
@@ -59,8 +59,8 @@ private[zeromq] class ConcurrentSocketActor(
     case ZMQMessage(frames) => addRequest(Send(frames))
     case request: Request => addRequest(request)
   }
-  private def run() {
-    self.dispatcher.dispatchTask(select)
+  private def select() {
+    self.dispatcher.dispatchTask(selectTask)
   }
   private def connect(endpoint: String) {
     socket.connect(endpoint)
