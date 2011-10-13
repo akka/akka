@@ -96,7 +96,7 @@ class IndexSpec extends WordSpec with MustMatchers {
       //Fill
       for (key ← 1 to 10; value ← 1 to 10)
         index.put(key, value)
-      //Perform operations in parallell
+      //Perform operations in parallel
       for (_ ← 1 to iterations) {
         //Put actors
         actor {
