@@ -16,7 +16,7 @@ case class NoSerializerFoundException(m: String) extends AkkaException(m)
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
-class Serialization(val application: AkkaApplication) {
+class Serialization(val app: AkkaApplication) {
 
   //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
@@ -28,7 +28,7 @@ class Serialization(val application: AkkaApplication) {
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
     try {
-      Serialization.application.withValue(application) {
+      Serialization.app.withValue(app) {
         Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader))
       }
     } catch { case e: Exception ⇒ Left(e) }
@@ -70,7 +70,7 @@ class Serialization(val application: AkkaApplication) {
    * But "default" can be overridden in config
    */
   val serializers: Map[String, Serializer] =
-    application.config.getSection("akka.actor.serializers")
+    app.config.getSection("akka.actor.serializers")
       .map(_.map)
       .getOrElse(Map())
       .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
@@ -81,7 +81,7 @@ class Serialization(val application: AkkaApplication) {
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
-  val bindings: Map[String, String] = application.config.getSection("akka.actor.serialization-bindings") map {
+  val bindings: Map[String, String] = app.config.getSection("akka.actor.serialization-bindings") map {
     _.map.foldLeft(Map[String, String]()) {
       case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
       case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
@@ -102,6 +102,6 @@ class Serialization(val application: AkkaApplication) {
 
 object Serialization {
   // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
-  val application = new DynamicVariable[AkkaApplication](null)
+  val app = new DynamicVariable[AkkaApplication](null)
 }
 

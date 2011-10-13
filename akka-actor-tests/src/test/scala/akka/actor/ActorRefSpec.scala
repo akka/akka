@@ -249,7 +249,7 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      Serialization.application.withValue(app) {
+      Serialization.app.withValue(app) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         val readA = in.readObject
 
@@ -259,7 +259,7 @@ class ActorRefSpec extends AkkaSpec {
       }
     }
 
-    "throw an exception on deserialize if no application in scope" in {
+    "throw an exception on deserialize if no app in scope" in {
       val a = createActor[InnerActor]
 
       import java.io._
@@ -277,7 +277,7 @@ class ActorRefSpec extends AkkaSpec {
       (intercept[java.lang.IllegalStateException] {
         in.readObject
       }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
-        " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }"
+        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
@@ -311,7 +311,7 @@ class ActorRefSpec extends AkkaSpec {
       a.stop()
       latch.await(5, TimeUnit.SECONDS) must be === true
 
-      Serialization.application.withValue(app) {
+      Serialization.app.withValue(app) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         (intercept[java.lang.IllegalStateException] {
           in.readObject

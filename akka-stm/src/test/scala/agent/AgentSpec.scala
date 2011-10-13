@@ -20,7 +20,7 @@ class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
 
 class AgentSpec extends WordSpec with MustMatchers {
 
-  implicit val application = AkkaApplication("AgentSpec")
+  implicit val app = AkkaApplication("AgentSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
   "Agent" should {

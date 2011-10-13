@@ -35,7 +35,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
   private val remoteDaemonConnectionManager = new RemoteConnectionManager(
-      app,
+    app,
     remote = remote,
     failureDetector = new BannagePeriodFailureDetector(60 seconds)) // FIXME make timeout configurable
 

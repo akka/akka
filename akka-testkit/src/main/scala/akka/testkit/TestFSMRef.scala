@@ -34,8 +34,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](application: AkkaApplication, props: Props, address: String)(implicit ev: T <:< FSM[S, D])
-  extends TestActorRef(application, props, address) {
+class TestFSMRef[S, D, T <: Actor](app: AkkaApplication, props: Props, address: String)(implicit ev: T <:< FSM[S, D])
+  extends TestActorRef(app, props, address) {
 
   private def fsm: T = underlyingActor
 
@@ -80,9 +80,9 @@ class TestFSMRef[S, D, T <: Actor](application: AkkaApplication, props: Props, a
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], application: AkkaApplication): TestFSMRef[S, D, T] =
-    new TestFSMRef(application, Props(creator = () ⇒ factory), new UUID().toString)
+  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
+    new TestFSMRef(app, Props(creator = () ⇒ factory), new UUID().toString)
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D], application: AkkaApplication): TestFSMRef[S, D, T] =
-    new TestFSMRef(application, Props(creator = () ⇒ factory), address)
+  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
+    new TestFSMRef(app, Props(creator = () ⇒ factory), address)
 }

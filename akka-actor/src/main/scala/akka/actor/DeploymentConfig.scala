@@ -246,17 +246,17 @@ object DeploymentConfig {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DeploymentConfig(val application: AkkaApplication) {
+class DeploymentConfig(val app: AkkaApplication) {
 
   import DeploymentConfig._
 
   case class ClusterScope(
-    preferredNodes: Iterable[Home] = Vector(Node(application.nodename)),
+    preferredNodes: Iterable[Home] = Vector(Node(app.nodename)),
     replication: ReplicationScheme = Transient) extends Scope
 
   case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
-  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == application.nodename)
+  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == app.nodename)
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
     case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)

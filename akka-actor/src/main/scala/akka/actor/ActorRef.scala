@@ -148,7 +148,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  application: AkkaApplication,
+  app: AkkaApplication,
   private[this] val props: Props,
   val address: String,
   val systemService: Boolean = false,
@@ -157,7 +157,7 @@ class LocalActorRef private[akka] (
   hotswap: Stack[PartialFunction[Any, Unit]] = Stack.empty)
   extends ActorRef with ScalaActorRef {
 
-  private[this] val actorCell = new ActorCell(application, this, props, receiveTimeout, hotswap)
+  private[this] val actorCell = new ActorCell(app, this, props, receiveTimeout, hotswap)
   actorCell.start()
 
   /**
@@ -243,7 +243,7 @@ class LocalActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
     // TODO: this was used to really send LocalActorRef across the network, which is broken now
-    val inetaddr = application.reflective.RemoteModule.configDefaultAddress
+    val inetaddr = app.reflective.RemoteModule.configDefaultAddress
     SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
   }
 }
@@ -383,19 +383,19 @@ case class SerializedActorRef(uuid: Uuid,
                               address: String,
                               hostname: String,
                               port: Int) {
-  import akka.serialization.Serialization.application
+  import akka.serialization.Serialization.app
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
-    if (application.value eq null) throw new IllegalStateException(
+    if (app.value eq null) throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
-        " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")
-    application.value.provider.actorFor(address) match {
+        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
+    app.value.provider.actorFor(address) match {
       case Some(actor) ⇒ actor
       case None ⇒
         // TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
         // TODO FIXME the remote should only be in the remote actor ref provider
-        val remote = application.value.reflective.RemoteModule
+        val remote = app.value.reflective.RemoteModule
         if (remote.isEnabled)
           RemoteActorRef(remote.defaultRemoteSupport.get(), new InetSocketAddress(hostname, port), address, None)
         else

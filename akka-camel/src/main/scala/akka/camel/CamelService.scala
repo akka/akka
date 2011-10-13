@@ -58,7 +58,7 @@ trait CamelService extends Bootable {
    * Starts this CamelService.
    */
   def start: CamelService = {
-    // Only init and start if not already done by application
+    // Only init and start if not already done by app
     if (!CamelContextManager.initialized) CamelContextManager.init
     if (!CamelContextManager.started) CamelContextManager.start
 

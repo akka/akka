@@ -8,7 +8,7 @@ import akka.AkkaApplication
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
  */
-class AkkaLoader(application: AkkaApplication) {
+class AkkaLoader(app: AkkaApplication) {
   private val hasBooted = new Switch(false)
 
   @volatile

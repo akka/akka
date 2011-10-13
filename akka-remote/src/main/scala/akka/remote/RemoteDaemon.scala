@@ -67,7 +67,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     remote.register(remoteDaemonServiceName, remoteDaemon)
     remote.addListener(eventStream.channel)
     remote.addListener(remoteClientLifeCycleHandler)
-    // TODO actually register this provider in application in remote mode
+    // TODO actually register this provider in app in remote mode
     //app.provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
     remote
   }

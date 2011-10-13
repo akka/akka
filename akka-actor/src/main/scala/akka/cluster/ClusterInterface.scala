@@ -103,7 +103,7 @@ class NodeAddress(val clusterName: String, val nodeName: String) {
  */
 object NodeAddress {
   def apply(clusterName: String, nodeName: String): NodeAddress = new NodeAddress(clusterName, nodeName)
-  def apply(application: AkkaApplication): NodeAddress = new NodeAddress(application.AkkaConfig.ClusterName, application.nodename)
+  def apply(app: AkkaApplication): NodeAddress = new NodeAddress(app.AkkaConfig.ClusterName, app.nodename)
 
   def unapply(other: Any) = other match {
     case address: NodeAddress ⇒ Some((address.clusterName, address.nodeName))

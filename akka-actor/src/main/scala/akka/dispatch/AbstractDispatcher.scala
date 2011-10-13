@@ -61,7 +61,7 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultDispatcher(implicit application: AkkaApplication) = application.dispatcher
+  implicit def defaultDispatcher(implicit app: AkkaApplication) = app.dispatcher
 }
 
 /**
@@ -310,19 +310,19 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
+abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", application.AkkaConfig.MailboxCapacity)
+    val capacity = config.getInt("mailbox-capacity", app.AkkaConfig.MailboxCapacity)
     if (capacity < 1) UnboundedMailbox()
     else {
       val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", application.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
-        application.AkkaConfig.DefaultTimeUnit)
+        config.getInt("mailbox-push-timeout-time", app.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
+        app.AkkaConfig.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -331,8 +331,8 @@ abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(application)).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, application.AkkaConfig.DefaultTimeUnit))),
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(app)).configure(
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, app.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),

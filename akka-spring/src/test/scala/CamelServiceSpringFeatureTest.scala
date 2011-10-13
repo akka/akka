@@ -17,7 +17,7 @@ class CamelServiceSpringFeatureTest extends FeatureSpec with BeforeAndAfterEach 
     Actor.registry.shutdownAll
   }
 
-  feature("start CamelService from Spring application context") {
+  feature("start CamelService from Spring app context") {
     import CamelContextManager._
     scenario("with a custom CamelContext and access a registered typed actor") {
       val appctx = new ClassPathXmlApplicationContext("/appContextCamelServiceCustom.xml")

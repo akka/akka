@@ -75,7 +75,7 @@ object ActorRefProvider {
 /**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider(val application: AkkaApplication, val deployer: Deployer) extends ActorRefProvider {
+class LocalActorRefProvider(val app: AkkaApplication, val deployer: Deployer) extends ActorRefProvider {
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
@@ -96,13 +96,13 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
 
     val localProps =
       if (props.dispatcher == Props.defaultDispatcher)
-        props.copy(dispatcher = application.dispatcher)
+        props.copy(dispatcher = app.dispatcher)
       else
         props
 
-    val defaultTimeout = application.AkkaConfig.ActorTimeout
+    val defaultTimeout = app.AkkaConfig.ActorTimeout
 
-    val newFuture = Promise[Option[ActorRef]](5000)(application.dispatcher) // FIXME is this proper timeout?
+    val newFuture = Promise[Option[ActorRef]](5000)(app.dispatcher) // FIXME is this proper timeout?
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
@@ -112,7 +112,7 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
 
           // create a local actor
           case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-            Some(new LocalActorRef(application, localProps, address, systemService)) // create a local actor
+            Some(new LocalActorRef(app, localProps, address, systemService)) // create a local actor
 
           // create a routed actor ref
           case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
@@ -129,7 +129,7 @@ class LocalActorRefProvider(val application: AkkaApplication, val deployer: Depl
 
             val connections: Iterable[ActorRef] =
               if (nrOfInstances.factor > 0)
-                Vector.fill(nrOfInstances.factor)(new LocalActorRef(application, localProps, new UUID().toString, systemService))
+                Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, localProps, new UUID().toString, systemService))
               else Nil
 
             actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)

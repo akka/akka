@@ -576,7 +576,7 @@ class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
 }
 
 object TestProbe {
-  def apply()(implicit application: AkkaApplication) = new TestProbe(application)
+  def apply()(implicit app: AkkaApplication) = new TestProbe(app)
 }
 
 trait ImplicitSender { this: TestKit ⇒

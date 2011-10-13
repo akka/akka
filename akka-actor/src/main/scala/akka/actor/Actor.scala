@@ -139,7 +139,7 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit application: AkkaApplication) = application.AkkaConfig.ActorTimeout
+  implicit def defaultTimeout(implicit app: AkkaApplication) = app.AkkaConfig.ActorTimeout
 }
 
 object Actor {

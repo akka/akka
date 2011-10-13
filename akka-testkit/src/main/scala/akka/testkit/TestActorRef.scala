@@ -42,17 +42,17 @@ class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: Str
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit application: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), new UUID().toString)
+  def apply[T <: Actor](factory: ⇒ T)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), new UUID().toString)
 
-  def apply[T <: Actor](factory: ⇒ T, address: String)(implicit application: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), address)
+  def apply[T <: Actor](factory: ⇒ T, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), address)
 
-  def apply[T <: Actor](props: Props)(implicit application: AkkaApplication): TestActorRef[T] = apply[T](props, new UUID().toString)
+  def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, new UUID().toString)
 
-  def apply[T <: Actor](props: Props, address: String)(implicit application: AkkaApplication): TestActorRef[T] = new TestActorRef(application, props, address)
+  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = new TestActorRef(app, props, address)
 
-  def apply[T <: Actor](implicit m: Manifest[T], application: AkkaApplication): TestActorRef[T] = apply[T](new UUID().toString)
+  def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](new UUID().toString)
 
-  def apply[T <: Actor](address: String)(implicit m: Manifest[T], application: AkkaApplication): TestActorRef[T] = apply[T](Props({
+  def apply[T <: Actor](address: String)(implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value

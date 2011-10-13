@@ -119,7 +119,7 @@ object ReflectiveAccess {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class ReflectiveAccess(val application: AkkaApplication) {
+class ReflectiveAccess(val app: AkkaApplication) {
 
   import ReflectiveAccess._
 
@@ -129,7 +129,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object ClusterModule {
-    lazy val isEnabled = application.AkkaConfig.ClusterEnabled //&& clusterInstance.isDefined
+    lazy val isEnabled = app.AkkaConfig.ClusterEnabled //&& clusterInstance.isDefined
 
     lazy val clusterRefClass: Class[_] = getClassFor("akka.cluster.ClusterActorRef") match {
       case Left(e)  ⇒ throw e
@@ -150,7 +150,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
       if (!isEnabled) {
         val e = new ModuleNotAvailableException(
           "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
-        application.eventHandler.debug(this, e.toString)
+        app.eventHandler.debug(this, e.toString)
         throw e
       }
     }
@@ -158,21 +158,21 @@ class ReflectiveAccess(val application: AkkaApplication) {
     lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        application.eventHandler.debug(this, exception.toString)
+        app.eventHandler.debug(this, exception.toString)
         None
     }
 
     lazy val clusterDeployerInstance: Option[ActorDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        application.eventHandler.debug(this, exception.toString)
+        app.eventHandler.debug(this, exception.toString)
         None
     }
 
     lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        application.eventHandler.debug(this, exception.toString)
+        app.eventHandler.debug(this, exception.toString)
         None
     }
 
@@ -235,9 +235,9 @@ class ReflectiveAccess(val application: AkkaApplication) {
    * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
    */
   object RemoteModule {
-    val TRANSPORT = application.AkkaConfig.RemoteTransport
+    val TRANSPORT = app.AkkaConfig.RemoteTransport
 
-    val configDefaultAddress = new InetSocketAddress(application.hostname, application.AkkaConfig.RemoteServerPort)
+    val configDefaultAddress = new InetSocketAddress(app.hostname, app.AkkaConfig.RemoteServerPort)
 
     lazy val isEnabled = remoteSupportClass.isDefined
 
@@ -245,7 +245,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
       if (!isEnabled) {
         val e = new ModuleNotAvailableException(
           "Can't load the remote module, make sure it is enabled in the config ('akka.enabled-modules = [\"remote\"])' and that akka-remote.jar is on the classpath")
-        application.eventHandler.debug(this, e.toString)
+        app.eventHandler.debug(this, e.toString)
         throw e
       }
     }
@@ -253,7 +253,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
     lazy val remoteInstance: Option[RemoteService] = getObjectFor("akka.remote.Remote$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        application.eventHandler.debug(this, exception.toString)
+        app.eventHandler.debug(this, exception.toString)
         None
     }
 
@@ -265,7 +265,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
     val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        application.eventHandler.debug(this, exception.toString)
+        app.eventHandler.debug(this, exception.toString)
         None
     }
 
@@ -279,7 +279,7 @@ class ReflectiveAccess(val application: AkkaApplication) {
             case Left(exception) ⇒
               val e = new ModuleNotAvailableException(
                 "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
-              application.eventHandler.debug(this, e.toString)
+              app.eventHandler.debug(this, e.toString)
               throw e
           }
       }

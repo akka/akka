@@ -65,7 +65,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       assert(target.getStringFromVal === entry.value)
     }
 
-    it("should create an application context and verify dependency injection for typed") {
+    it("should create an app context and verify dependency injection for typed") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml");
       val ta = ctx.getBean("typedActor").asInstanceOf[PojoInf];
       assert(ta.isPreStartInvoked)
@@ -75,7 +75,7 @@ class ActorFactoryBeanTest extends Spec with ShouldMatchers with BeforeAndAfterA
       ctx.close
     }
 
-    it("should create an application context and verify dependency injection for untyped actors") {
+    it("should create an app context and verify dependency injection for untyped actors") {
       var ctx = new ClassPathXmlApplicationContext("appContext.xml")
       val uta = ctx.getBean("untypedActor").asInstanceOf[ActorRef]
       val ping = uta.actor.asInstanceOf[PingActor]

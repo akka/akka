@@ -17,7 +17,7 @@ object TypedActor {
    * This class represents a Method call, and has a reference to the Method to be called and the parameters to supply
    * It's sent to the ActorRef backing the TypedActor and can be serialized and deserialized
    */
-  case class MethodCall(application: AkkaApplication, method: Method, parameters: Array[AnyRef]) {
+  case class MethodCall(app: AkkaApplication, method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
     def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
@@ -41,7 +41,7 @@ object TypedActor {
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Serializer.Identifier](), Array[Array[Byte]]())
       case ps ⇒
-        val serializers: Array[Serializer] = ps map application.serialization.findSerializerFor
+        val serializers: Array[Serializer] = ps map app.serialization.findSerializerFor
         val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
         for (i ← 0 until serializers.length)
           serializedParameters(i) = serializers(i) toBinary parameters(i) //Mutable for the sake of sanity
@@ -58,10 +58,10 @@ object TypedActor {
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val app = akka.serialization.Serialization.application.value
+      val app = akka.serialization.Serialization.app.value
       if (app eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an AkkaApplication in scope." +
-          " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")
+          " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
       MethodCall(app, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
@@ -102,7 +102,7 @@ object TypedActor {
   }
 
   /**
-   * Returns the akka application (for a TypedActor) when inside a method call in a TypedActor.
+   * Returns the akka app (for a TypedActor) when inside a method call in a TypedActor.
    */
   def app = appReference.get match {
     case null ⇒ throw new IllegalStateException("Calling TypedActor.app outside of a TypedActor implementation method!")
@@ -137,7 +137,7 @@ object TypedActor {
  *
  *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
  */
-class TypedActor(val application: AkkaApplication) {
+class TypedActor(val app: AkkaApplication) {
 
   import TypedActor.MethodCall
 
@@ -251,12 +251,12 @@ class TypedActor(val application: AkkaApplication) {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
-      case Timeout(Duration.MinusInf) ⇒ application.AkkaConfig.ActorTimeout
+      case Timeout(Duration.MinusInf) ⇒ app.AkkaConfig.ActorTimeout
       case x                          ⇒ x
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    val ref = application.createActor(props)
+    val ref = app.createActor(props)
     actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
     proxyVar.get
   }
@@ -266,14 +266,14 @@ class TypedActor(val application: AkkaApplication) {
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
 
     // FIXME TypedActor register/unregister on postStop/preStart
-    // override def preStart = application.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
-    // override def postStop = application.registry.unregisterTypedActor(self, proxyVar.get)
+    // override def preStart = app.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
+    // override def postStop = app.registry.unregisterTypedActor(self, proxyVar.get)
 
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
         TypedActor.selfReference set proxyVar.get
-        TypedActor.appReference set application
+        TypedActor.appReference set app
         try {
           if (m.isOneWay) m(me)
           else if (m.returnsFuture_?) {
@@ -298,7 +298,7 @@ class TypedActor(val application: AkkaApplication) {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        MethodCall(application, method, args) match {
+        MethodCall(app, method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
           case m if m.returnsFuture_? ⇒ actor ? m
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
