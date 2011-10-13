@@ -18,6 +18,7 @@ private[zeromq] class ConcurrentSocketActor(
     listener: Option[ActorRef], 
     deserializer: Deserializer,
     dispatcher: MessageDispatcher) extends Actor {
+  private val noBytes = Array[Byte]()
   private val pollTimeoutMsec = 10
   private val requests = new AtomicReference(List.empty[Request])
   private val socket: Socket = context.socket(socketType)
@@ -80,22 +81,22 @@ private[zeromq] class ConcurrentSocketActor(
     socket.send(bytes.toArray, flags)
   }
   private def receiveFrames: Seq[Frame] = receiveBytes match {
-    case Some(bytes) => { 
+    case this.noBytes => Array[Frame]()
+    case bytes => { 
       val frames = MutableList(Frame(bytes))
       while (socket.hasReceiveMore) {
-        receiveBytes match { 
-          case Some(bytes) => frames += Frame(bytes)
-          case None => Unit 
+        receiveBytes match {
+          case this.noBytes => Unit
+          case bytes => frames += Frame(bytes)
         }
       }
       frames.toSeq
     }
-    case _ => Array[Frame]()
   }
-  private def receiveBytes: Option[Array[Byte]] = socket.recv(0) match {
-    case null => None
-    case bytes: Array[Byte] => Some(bytes)
-    case _ => None                        
+  @inline private final def receiveBytes(): Array[Byte] = socket.recv(0) match {
+    case null => noBytes
+    case bytes: Array[Byte] if bytes.length > 0 => bytes
+    case _ => noBytes
   }
   private def closeSocket = if (!socketClosed) {
     socketClosed = true
