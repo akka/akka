@@ -31,7 +31,7 @@ private[zeromq] class ConcurrentSocketActor(
         if (poller.pollin(0)) {
           receiveFrames match {
             case frames if (frames.length > 0) => listener.foreach { listener => 
-              if (listener.isRunning)
+              if (!listener.isShutdown)
                 listener ! deserializer(frames)
             }
           }
@@ -65,7 +65,7 @@ private[zeromq] class ConcurrentSocketActor(
   private def connect(endpoint: String) {
     socket.connect(endpoint)
     listener.foreach { listener =>
-      if (listener.isRunning)
+      if (!listener.isShutdown)
         listener ! Connected
     }
   }
@@ -101,7 +101,7 @@ private[zeromq] class ConcurrentSocketActor(
     socketClosed = true
     socket.close
     listener.foreach { listener =>
-      if (listener.isRunning)
+      if (!listener.isShutdown)
         listener ! Closed
     }
   }
