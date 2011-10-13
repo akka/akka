@@ -30,19 +30,20 @@ class PinnedDispatcher(_actor: ActorCell, _name: String, _mailboxType: MailboxTy
 
   def this() = this(Dispatchers.MAILBOX_TYPE)
 
-  protected[akka] val owner = new AtomicReference[ActorCell](_actor)
+  @volatile
+  protected[akka] var owner: ActorCell = _actor
 
   //Relies on an external lock provided by MessageDispatcher.attach
   protected[akka] override def register(actorCell: ActorCell) = {
-    val actor = owner.get()
+    val actor = owner
     if ((actor ne null) && actorCell != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
-    owner.compareAndSet(null, actorCell) //Register if unregistered
+    owner = actorCell
     super.register(actorCell)
   }
   //Relies on an external lock provided by MessageDispatcher.detach
   protected[akka] override def unregister(actor: ActorCell) = {
     super.unregister(actor)
-    owner.compareAndSet(actor, null) //Unregister (prevent memory leak)
+    owner = null
   }
 }
 
