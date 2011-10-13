@@ -16,7 +16,7 @@ import akka.AkkaApplication
  */
 trait JettyContinuation extends ContinuationListener {
   import javax.servlet.http.HttpServletResponse
-  
+
   def app: AkkaApplication
 
   val builder: () ⇒ tAsyncRequestContext

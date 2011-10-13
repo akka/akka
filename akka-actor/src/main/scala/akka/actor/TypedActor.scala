@@ -55,12 +55,10 @@ object TypedActor {
    */
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Serializer.Identifier], serializedParameters: Array[Array[Byte]]) {
 
-    import akka.serialization.Serialization.application
-
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val app = application.value
+      val app = akka.serialization.Serialization.application.value
       if (app eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an AkkaApplication in scope." +
           " Use akka.serialization.Serialization.application.withValue(akkaApplication) { ... }")

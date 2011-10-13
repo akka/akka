@@ -28,7 +28,7 @@ import akka.AkkaApplication
  * @author Viktor Klang
  */
 class BalancingDispatcher(
-    _app: AkkaApplication,
+  _app: AkkaApplication,
   _name: String,
   throughput: Int,
   throughputDeadlineTime: Int,

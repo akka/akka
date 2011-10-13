@@ -50,7 +50,7 @@ private[akka] trait ActorContext extends ActorRefFactory {
   def handleChildTerminated(child: ActorRef): Unit
 
   def app: AkkaApplication
-  
+
 }
 
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {

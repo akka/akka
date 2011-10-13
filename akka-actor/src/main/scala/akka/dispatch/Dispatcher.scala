@@ -64,7 +64,7 @@ import akka.AkkaApplication
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-    _app: AkkaApplication,
+  _app: AkkaApplication,
   _name: String,
   val throughput: Int,
   val throughputDeadlineTime: Int,

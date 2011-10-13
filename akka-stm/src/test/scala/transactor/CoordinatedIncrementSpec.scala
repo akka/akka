@@ -56,15 +56,14 @@ object CoordinatedIncrement {
 class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
-  val application = AkkaApplication("CoordinatedIncrementSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
   val numCounters = 5
 
   def createActors = {
-    def createCounter(i: Int) = application.createActor(Props(new Counter("counter" + i)))
+    def createCounter(i: Int) = app.createActor(Props(new Counter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val failer = application.createActor(Props(new Failer))
+    val failer = app.createActor(Props(new Failer))
     (counters, failer)
   }
 

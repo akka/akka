@@ -101,15 +101,14 @@ object FickleFriends {
 class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   import FickleFriends._
 
-  val application = AkkaApplication("FickleFriendsSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
   val numCounters = 2
 
   def createActors = {
-    def createCounter(i: Int) = application.createActor(Props(new FickleCounter("counter" + i)))
+    def createCounter(i: Int) = app.createActor(Props(new FickleCounter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val coordinator = application.createActor(Props(new Coordinator("coordinator")))
+    val coordinator = app.createActor(Props(new Coordinator("coordinator")))
     (counters, coordinator)
   }
 

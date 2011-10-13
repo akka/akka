@@ -69,7 +69,7 @@ trait Logging {
 
 }
 
-trait ActorLogging extends Logging { this: Actor =>
+trait ActorLogging extends Logging { this: Actor ⇒
 
   import EventHandler._
 

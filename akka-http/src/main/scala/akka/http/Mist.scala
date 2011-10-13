@@ -294,7 +294,7 @@ class RootEndpoint extends Actor with Endpoint {
 trait RequestMethod {
   import java.io.IOException
   import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
-  
+
   def app: AkkaApplication
 
   // required implementations

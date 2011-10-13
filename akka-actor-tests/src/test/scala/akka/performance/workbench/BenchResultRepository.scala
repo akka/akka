@@ -14,7 +14,6 @@ import java.util.Date
 import scala.collection.mutable.{ Map ⇒ MutableMap }
 import akka.AkkaApplication
 
-
 trait BenchResultRepository {
   def add(stats: Stats)
 

@@ -14,8 +14,8 @@ import akka.event.EventHandler
 //#my-actor
 class MyActor extends Actor {
   def receive = {
-    case "test" ⇒ EventHandler.info(this, "received test")
-    case _      ⇒ EventHandler.info(this, "received unknown message")
+    case "test" ⇒ app.eventHandler.info(this, "received test")
+    case _      ⇒ app.eventHandler.info(this, "received unknown message")
   }
 }
 //#my-actor
@@ -29,13 +29,14 @@ class ActorDocSpec extends AkkaSpec {
 
     // testing the actor
 
-    EventHandler.notify(TestEvent.Mute(EventFilter.custom {
+    // TODO: convert docs to AkkaSpec(Configuration(...))
+    app.eventHandler.notify(TestEvent.Mute(EventFilter.custom {
       case e: EventHandler.Info ⇒ true
       case _                    ⇒ false
     }))
-    EventHandler.addListener(testActor)
-    val eventLevel = EventHandler.level
-    EventHandler.level = EventHandler.InfoLevel
+    app.eventHandler.addListener(testActor)
+    val eventLevel = app.eventHandler.level
+    app.eventHandler.level = EventHandler.InfoLevel
 
     myActor ! "test"
     expectMsgPF(1 second) { case EventHandler.Info(_, "received test") ⇒ true }
@@ -43,9 +44,9 @@ class ActorDocSpec extends AkkaSpec {
     myActor ! "unknown"
     expectMsgPF(1 second) { case EventHandler.Info(_, "received unknown message") ⇒ true }
 
-    EventHandler.level = eventLevel
-    EventHandler.removeListener(testActor)
-    EventHandler.notify(TestEvent.UnMuteAll)
+    app.eventHandler.level = eventLevel
+    app.eventHandler.removeListener(testActor)
+    app.eventHandler.notify(TestEvent.UnMuteAll)
 
     myActor.stop()
   }
