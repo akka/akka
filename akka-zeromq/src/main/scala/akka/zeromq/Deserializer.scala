@@ -3,7 +3,7 @@
  */
 package akka.zeromq
 
-case class Frame(val payload: Seq[Byte])
+case class Frame(payload: Seq[Byte])
 object Frame { def apply(s: String): Frame = Frame(s.getBytes) }
 
 trait Deserializer {
