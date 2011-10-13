@@ -127,7 +127,7 @@ trait RootEndpointLocator {
 
   def configureRoot(address: String) {
     def findRoot(address: String): ActorRef =
-      app.registry.actorFor(address).getOrElse(
+      app.provider.actorFor(address).getOrElse(
         throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + address + "]"))
 
     root = if ((address eq null) || address == "") findRoot(app.MistSettings.RootActorID) else findRoot(address)
