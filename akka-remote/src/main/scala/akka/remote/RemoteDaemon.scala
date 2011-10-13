@@ -48,7 +48,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     new LocalActorRef(
       app,
       props = Props(new RemoteDaemon(this)).withDispatcher(app.dispatcherFactory.newPinnedDispatcher("Remote")).withSupervisor(remoteDaemonSupervisor),
-      address = remoteDaemonServiceName,
+      givenAddress = remoteDaemonServiceName,
       systemService = true)
 
   private[remote] lazy val remoteClientLifeCycleHandler = app.createActor(Props(new Actor {
