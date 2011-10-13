@@ -5,6 +5,7 @@ package akka.zeromq
 
 import akka.actor.{Actor, ActorRef}
 import akka.dispatch.MessageDispatcher
+import akka.util.Duration
 import akka.zeromq.SocketType._
 import java.util.concurrent.atomic.AtomicReference
 import org.zeromq.ZMQ.{Socket, Poller}
@@ -17,9 +18,9 @@ private[zeromq] class ConcurrentSocketActor(
     socketType: SocketType, 
     listener: Option[ActorRef], 
     deserializer: Deserializer,
-    dispatcher: MessageDispatcher) extends Actor {
+    dispatcher: MessageDispatcher,
+    pollTimeoutDuration: Duration) extends Actor {
   private val noBytes = Array[Byte]()
-  private val pollTimeoutMsec = 10
   private val requests = new AtomicReference(List.empty[Request])
   private val socket: Socket = context.socket(socketType)
   private val poller: Poller = context.poller
@@ -28,7 +29,7 @@ private[zeromq] class ConcurrentSocketActor(
   poller.register(socket, Poller.POLLIN)
   private val selectTask = { () =>
     if (!socketClosed) {
-      if (poller.poll(pollTimeoutMsec) > 0) {
+      if (poller.poll(pollTimeoutDuration.toMillis) > 0) {
         if (poller.pollin(0)) {
           receiveFrames match {
             case frames if (frames.length > 0) => listener.foreach { listener => 
