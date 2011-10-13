@@ -6,8 +6,8 @@ package akka.util
 
 import annotation.tailrec
 
-import java.util.{ Set ⇒ JSet }
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
+import java.util.{ Comparator, Set ⇒ JSet }
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -16,8 +16,13 @@ import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
  *
  * @author Viktor Klang
  */
-class Index[K, V] {
-  private val container = new ConcurrentHashMap[K, JSet[V]]
+class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
+
+  def this(mapSize: Int, cmp: (V, V) ⇒ Int) = this(mapSize, new Comparator[V] {
+    def compare(a: V, b: V): Int = cmp(a, b)
+  })
+
+  private val container = new ConcurrentHashMap[K, JSet[V]](mapSize)
   private val emptySet = new ConcurrentSkipListSet[V]
 
   /**
@@ -41,7 +46,7 @@ class Index[K, V] {
           }
         }
       } else {
-        val newSet = new ConcurrentSkipListSet[V]
+        val newSet = new ConcurrentSkipListSet[V](valueComparator)
         newSet add v
 
         // Parry for two simultaneous putIfAbsent(id,newSet)
@@ -172,4 +177,4 @@ class Index[K, V] {
  *
  * @author Viktor Klang
  */
-class ConcurrentMultiMap[K, V] extends Index[K, V]
+class ConcurrentMultiMap[K, V](mapSize: Int, valueComparator: Comparator[V]) extends Index[K, V](mapSize, valueComparator)

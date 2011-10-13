@@ -48,17 +48,22 @@ htmlhelp_basename = 'Akkadoc'
 
 # -- Options for LaTeX output --------------------------------------------------
 
+def setup(app):
+     from sphinx.util.texescape import tex_replacements
+     tex_replacements.append((u'⇒', ur'\(\Rightarrow\)'))
+
 latex_paper_size = 'a4'
 latex_font_size = '10pt'
 
 latex_documents = [
   ('index', 'Akka.tex', u' Akka Documentation',
-   u'Scalable Solutions AB', 'manual'),
+   u'Typesafe Inc', 'manual'),
 ]
 
 latex_elements = {
     'classoptions': ',oneside,openany',
     'babel': '\\usepackage[english]{babel}',
+    'fontpkg': '\\PassOptionsToPackage{warn}{textcomp} \\usepackage{times}',
     'preamble': '\\definecolor{VerbatimColor}{rgb}{0.935,0.935,0.935}'
     }
 
