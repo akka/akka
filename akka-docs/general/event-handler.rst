@@ -37,6 +37,33 @@ Example of creating a listener from Scala (from Java you just have to create an 
     }
   })
 
+A simpler approach would be:
+
+.. code-block:: scala
+
+  val errorHandlerEventListener = Actor.actorOf(new Actor {
+    self.dispatcher = EventHandler.EventHandlerDispatcher
+
+    def receive = {
+      case EventHandler.Error(cause, instance, message) => ...
+      case EventHandler.Event(instance, message) => ... // matches Warning, Info and Debug
+      case genericEvent => ...
+    }
+  })
+
+If you don't even care about the stack trace of errors, just the messages:
+
+.. code-block:: scala
+
+  val errorHandlerEventListener = Actor.actorOf(new Actor {
+    self.dispatcher = EventHandler.EventHandlerDispatcher
+
+    def receive = {
+      case EventHandler.Event(instance, message) => ... // matches Error, Warning, Info and Debug
+      case genericEvent => ...
+    }
+  })
+
 To add the listener:
 
 .. code-block:: scala

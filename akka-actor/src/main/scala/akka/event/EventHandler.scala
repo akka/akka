@@ -64,25 +64,68 @@ object EventHandler extends ListenerManagement {
   val InfoLevel = 3
   val DebugLevel = 4
 
+  /**
+   * Very simple `Event` extractor.
+   *
+   * Useful for listeners that don't really care which type of event it is:
+   *
+   * {{{
+   * def receive = {
+   *   case Event(instance, message) → println(instance.toString + " " + message.toString)
+   *   case anyEvent → println(anyEvent)
+   * }
+   * }}}
+   *
+   * Also useful to use like this:
+   *
+   * {{{
+   * def receive = {
+   *   case Error(cause, instance, message) → println(stackTraceFor(cause))
+   *   case Event(instance, message) → println(instance.toString + " " + message.toString)
+   *   case anyEvent → println(anyEvent)
+   * }
+   * }}}
+   */
+  object Event {
+    def unapply(e: Event): Option[(AnyRef, Any)] =
+      Some((e.instance, e.message))
+  }
+
   sealed trait Event {
+    /** Returns the thread that created this event. */
     @transient
     val thread: Thread = Thread.currentThread
+
+    /** Returns the instance that created this event. */
+    def instance: AnyRef
+
+    /** Returns the message describing this event. */
+    def message: Any
+
+    /** Returns the log level. */
     def level: Int
   }
 
+  /**
+   * @param cause Returns the cause of this error.
+   */
   case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.ErrorLevel]]. */
     def level = ErrorLevel
   }
 
   case class Warning(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.WarningLevel]]. */
     def level = WarningLevel
   }
 
   case class Info(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.InfoLevel]]. */
     def level = InfoLevel
   }
 
   case class Debug(instance: AnyRef, message: Any = "") extends Event {
+    /** Returns [[akka.event.EventHandler.DebugLevel]]. */
     def level = DebugLevel
   }
 
