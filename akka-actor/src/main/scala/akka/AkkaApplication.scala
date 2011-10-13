@@ -131,6 +131,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     throw new ConfigurationException("Akka JAR version [" + Version +
       "] does not match the provided config version [" + ConfigVersion + "]")
 
+  // TODO correctly pull its config from the config
+  val dispatcherFactory = new Dispatchers(this)
+
   val eventHandler = new EventHandler(this)
 
   val log: Logging = new EventHandlerLogging(eventHandler, this)
@@ -147,9 +150,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case null | "" ⇒ InetAddress.getLocalHost.getHostName
     case value     ⇒ value
   }
-
-  // TODO correctly pull its config from the config
-  val dispatcherFactory = new Dispatchers(this)
 
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 

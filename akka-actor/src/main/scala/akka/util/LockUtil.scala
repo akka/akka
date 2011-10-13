@@ -106,8 +106,10 @@ class Switch(startAsOn: Boolean = false) {
     if (switch.compareAndSet(from, !from)) {
       try {
         action
-      } finally {
-        switch.compareAndSet(!from, from) // revert status
+      } catch {
+        case e ⇒
+          switch.compareAndSet(!from, from) // revert status
+          throw e
       }
       true
     } else false
