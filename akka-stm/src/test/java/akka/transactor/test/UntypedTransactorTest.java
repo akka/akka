@@ -76,7 +76,7 @@ public class UntypedTransactorTest {
         EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
         EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
         Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
-        EventHandler.notify(new TestEvent.Mute(ignoreExceptions));
+        application.eventHandler().notify(new TestEvent.Mute(ignoreExceptions));
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
@@ -97,7 +97,7 @@ public class UntypedTransactorTest {
                 }
             }
         }
-        EventHandler.notify(new TestEvent.UnMute(ignoreExceptions));
+        application.eventHandler().notify(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {

@@ -149,17 +149,17 @@ object Actor {
   /**
    * This decorator adds invocation logging to a Receive function.
    */
-  class LoggingReceive(source: AnyRef, r: Receive) extends Receive {
+  class LoggingReceive(source: AnyRef, r: Receive)(implicit app: AkkaApplication) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      EventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      app.eventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
       handled
     }
     def apply(o: Any): Unit = r(o)
   }
 
   object LoggingReceive {
-    def apply(source: AnyRef, r: Receive): Receive = r match {
+    def apply(source: AnyRef, r: Receive)(implicit app: AkkaApplication): Receive = r match {
       case _: LoggingReceive ⇒ r
       case _                 ⇒ new LoggingReceive(source, r)
     }
@@ -211,9 +211,9 @@ trait Actor {
     context
   }
 
-  implicit def app = context.application
+  implicit def app = context.app
 
-  private def config = context.application.AkkaConfig
+  private def config = context.app.AkkaConfig
 
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
@@ -423,7 +423,7 @@ trait Actor {
       throw new InvalidMessageException("Message from [" + channel + "] to [" + self.toString + "] is null")
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (config.DebugAutoReceive) EventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      if (config.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
@@ -468,7 +468,6 @@ object Address {
   def validate(address: String) {
     if (!validAddressPattern.matcher(address).matches) {
       val e = new IllegalArgumentException("Address [" + address + "] is not valid, need to follow pattern: " + validAddressPattern.pattern)
-      EventHandler.error(e, this, e.getMessage)
       throw e
     }
   }

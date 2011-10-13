@@ -106,11 +106,8 @@ class Switch(startAsOn: Boolean = false) {
     if (switch.compareAndSet(from, !from)) {
       try {
         action
-      } catch {
-        case e: Throwable ⇒
-          EventHandler.error(e, this, e.getMessage)
-          switch.compareAndSet(!from, from) // revert status
-          throw e
+      } finally {
+        switch.compareAndSet(!from, from) // revert status
       }
       true
     } else false

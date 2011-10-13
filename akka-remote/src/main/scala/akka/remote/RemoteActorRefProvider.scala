@@ -35,7 +35,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
 
   private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
 
-  private val failureDetector = new BannagePeriodFailureDetector(remote, timeToBan = 60 seconds) // FIXME make timeToBan configurable
+  private val failureDetector = new BannagePeriodFailureDetector(app, remote, timeToBan = 60 seconds) // FIXME make timeToBan configurable
 
   def actorOf(props: Props, address: String): Option[ActorRef] = {
     Address.validate(address)
@@ -129,7 +129,7 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
-    EventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
+    app.eventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {
@@ -164,20 +164,20 @@ class RemoteActorRefProvider(val app: AkkaApplication, val remote: Remote) exten
       try {
         (connection ? (command, remote.remoteDaemonAckTimeout)).as[Status] match {
           case Some(Success(receiver)) ⇒
-            EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
+            app.eventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
 
           case Some(Failure(cause)) ⇒
-            EventHandler.error(cause, this, cause.toString)
+            app.eventHandler.error(cause, this, cause.toString)
             throw cause
 
           case None ⇒
             val error = new RemoteException("Remote command to [%s] timed out".format(connection.address))
-            EventHandler.error(error, this, error.toString)
+            app.eventHandler.error(error, this, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          EventHandler.error(e, this, "Could not send remote command to [%s] due to: %s".format(connection.address, e.toString))
+          app.eventHandler.error(e, this, "Could not send remote command to [%s] due to: %s".format(connection.address, e.toString))
           throw e
       }
     } else {

@@ -12,7 +12,6 @@ import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
-import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import java.util.concurrent.atomic.AtomicInteger
@@ -123,13 +122,13 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
   }
 
   override def beforeAll() = {
-    EventHandler notify Mute(EventFilter[Exception]("Die"),
+    app.eventHandler notify Mute(EventFilter[Exception]("Die"),
       EventFilter[IllegalStateException]("Don't wanna!"),
       EventFilter[RuntimeException]("Expected"))
   }
 
   override def afterAll() = {
-    EventHandler notify UnMuteAll
+    app.eventHandler notify UnMuteAll
   }
 
   override def beforeEach() = {

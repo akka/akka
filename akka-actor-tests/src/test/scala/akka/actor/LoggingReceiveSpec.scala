@@ -5,13 +5,13 @@ package akka.actor
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit.{ TestKit, TestActorRef, EventFilter, TestEvent, ImplicitSender }
-import akka.event.EventHandler
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 import org.scalatest.WordSpec
 import akka.AkkaApplication
 import akka.AkkaApplication.defaultConfig
 import akka.config.Configuration
+import akka.event.EventHandler
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -29,9 +29,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
   val appLifecycle = AkkaApplication("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
 
   //  override def beforeAll {
-  //    EventHandler.notify(TestEvent.Mute(EventFilter[UnhandledMessageException],
+  //    app.eventHandler.notify(TestEvent.Mute(EventFilter[UnhandledMessageException],
   //      EventFilter[ActorKilledException], EventFilter.custom {
-  //        case d: EventHandler.Debug ⇒ true
+  //        case d: app.eventHandler.Debug ⇒ true
   //        case _                     ⇒ false
   //      }))
   //  }
@@ -43,14 +43,14 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
   //        !s.startsWith("now monitoring") && !s.startsWith("stopped monitoring")
   //    case EventHandler.Debug(_, _)                               ⇒ true
   //    case EventHandler.Error(_: UnhandledMessageException, _, _) ⇒ false
-  //    case _: EventHandler.Error                                  ⇒ true
+  //    case _: app.eventHandler.Error                                  ⇒ true
   //  }
 
   "A LoggingReceive" ignore {
 
     "decorate a Receive" in {
       new TestKit(appLogging) {
-        EventHandler.addListener(testActor)
+        app.eventHandler.addListener(testActor)
         val r: Actor.Receive = {
           case null ⇒
         }
@@ -62,7 +62,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "be added on Actor if requested" in {
       new TestKit(appLogging) with ImplicitSender {
-        EventHandler.addListener(testActor)
+        app.eventHandler.addListener(testActor)
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
             case _ ⇒ reply("x")
@@ -89,7 +89,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "not duplicate logging" in {
       new TestKit(appLogging) with ImplicitSender {
-        EventHandler.addListener(testActor)
+        app.eventHandler.addListener(testActor)
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
             case _ ⇒ reply("x")
@@ -109,7 +109,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "log AutoReceiveMessages if requested" in {
       new TestKit(appAuto) {
-        EventHandler.addListener(testActor)
+        app.eventHandler.addListener(testActor)
         val actor = TestActorRef(new Actor {
           def receive = {
             case _ ⇒
@@ -123,7 +123,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "log LifeCycle changes if requested" in {
       new TestKit(appLifecycle) {
-        EventHandler.addListener(testActor)
+        app.eventHandler.addListener(testActor)
         within(2 seconds) {
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 

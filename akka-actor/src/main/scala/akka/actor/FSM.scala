@@ -420,7 +420,7 @@ trait FSM[S, D] extends ListenerManagement {
    */
   private val handleEventDefault: StateFunction = {
     case Event(value, stateData) ⇒
-      EventHandler.warning(this, "unhandled event " + value + " in state " + stateName)
+      app.eventHandler.warning(context.self, "unhandled event " + value + " in state " + stateName)
       stay
   }
   private var handleEvent: StateFunction = handleEventDefault
@@ -471,7 +471,7 @@ trait FSM[S, D] extends ListenerManagement {
         actorRef ! CurrentState(self, currentState.stateName)
       } catch {
         case e: ActorInitializationException ⇒
-          EventHandler.warning(this, "trying to register not running listener")
+          app.eventHandler.warning(context.self, "trying to register not running listener")
       }
     case UnsubscribeTransitionCallBack(actorRef) ⇒
       removeListener(actorRef)
@@ -537,8 +537,8 @@ trait FSM[S, D] extends ListenerManagement {
     if (!currentState.stopReason.isDefined) {
       val reason = nextState.stopReason.get
       reason match {
-        case Failure(ex: Throwable) ⇒ EventHandler.error(ex, this, "terminating due to Failure")
-        case Failure(msg)           ⇒ EventHandler.error(this, msg)
+        case Failure(ex: Throwable) ⇒ app.eventHandler.error(ex, context.self, "terminating due to Failure")
+        case Failure(msg)           ⇒ app.eventHandler.error(context.self, msg)
         case _                      ⇒
       }
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
@@ -568,7 +568,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   def logDepth: Int = 0
 
-  private val debugEvent = context.application.AkkaConfig.FsmDebugEvent
+  private val debugEvent = context.app.AkkaConfig.FsmDebugEvent
 
   private val events = new Array[Event](logDepth)
   private val states = new Array[AnyRef](logDepth)
@@ -587,13 +587,13 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   protected[akka] abstract override def setTimer(name: String, msg: Any, timeout: Duration, repeat: Boolean): State = {
     if (debugEvent)
-      EventHandler.debug(this, "setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
+      app.eventHandler.debug(context.self, "setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     super.setTimer(name, msg, timeout, repeat)
   }
 
   protected[akka] abstract override def cancelTimer(name: String) = {
     if (debugEvent)
-      EventHandler.debug(this, "canceling timer '" + name + "'")
+      app.eventHandler.debug(context.self, "canceling timer '" + name + "'")
     super.cancelTimer(name)
   }
 
@@ -605,7 +605,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
         case c: UntypedChannel    ⇒ c.toString
         case _                    ⇒ "unknown"
       }
-      EventHandler.debug(this, "processing " + event + " from " + srcstr)
+      app.eventHandler.debug(context.self, "processing " + event + " from " + srcstr)
     }
 
     if (logDepth > 0) {
@@ -619,7 +619,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
     val newState = stateName
 
     if (debugEvent && oldState != newState)
-      EventHandler.debug(this, "transition " + oldState + " -> " + newState)
+      app.eventHandler.debug(context.self, "transition " + oldState + " -> " + newState)
   }
 
   /**

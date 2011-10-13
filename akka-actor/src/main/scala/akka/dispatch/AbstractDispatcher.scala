@@ -44,12 +44,12 @@ final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMess
   }
 }
 
-final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       function()
     } catch {
-      case e ⇒ EventHandler.error(e, this, e.getMessage)
+      case e ⇒ app.eventHandler.error(e, this, e.getMessage)
     } finally {
       cleanup()
     }
@@ -67,7 +67,7 @@ object MessageDispatcher {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class MessageDispatcher extends Serializable {
+abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -144,7 +144,7 @@ abstract class MessageDispatcher extends Serializable {
     _tasks.getAndIncrement()
     try {
       startIfUnstarted()
-      executeTask(TaskInvocation(block, taskCleanup))
+      executeTask(TaskInvocation(app, block, taskCleanup))
     } catch {
       case e ⇒
         _tasks.decrementAndGet
@@ -331,7 +331,7 @@ abstract class MessageDispatcherConfigurator(val application: AkkaApplication) {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(application)).configure(
       conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, application.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),

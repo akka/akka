@@ -9,6 +9,7 @@ import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import java.util.{ Comparator, Queue }
 import annotation.tailrec
+import akka.AkkaApplication
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -27,13 +28,14 @@ import annotation.tailrec
  * @author Viktor Klang
  */
 class BalancingDispatcher(
+    _app: AkkaApplication,
   _name: String,
   throughput: Int,
   throughputDeadlineTime: Int,
   mailboxType: MailboxType,
   config: ThreadPoolConfig,
   _timeoutMs: Long)
-  extends Dispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
+  extends Dispatcher(_app, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
   private val buddies = new ConcurrentSkipListSet[ActorCell](new Comparator[ActorCell] { def compare(a: ActorCell, b: ActorCell) = a.uuid.compareTo(b.uuid) }) //new ConcurrentLinkedQueue[ActorCell]()
 

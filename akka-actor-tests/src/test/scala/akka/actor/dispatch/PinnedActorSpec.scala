@@ -2,7 +2,6 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
@@ -25,11 +24,11 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
   private val unit = TimeUnit.MILLISECONDS
 
   override def beforeEach {
-    EventHandler.notify(Mute(EventFilter[RuntimeException]("Failure")))
+    app.eventHandler.notify(Mute(EventFilter[RuntimeException]("Failure")))
   }
 
   override def afterEach {
-    EventHandler.notify(UnMuteAll)
+    app.eventHandler.notify(UnMuteAll)
   }
 
   "A PinnedActor" must {
@@ -51,7 +50,7 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "support ask/exception" in {
       val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
-      EventHandler.notify(Mute(EventFilter[RuntimeException]("Expected exception; to test fault-tolerance")))
+      app.eventHandler.notify(Mute(EventFilter[RuntimeException]("Expected exception; to test fault-tolerance")))
       try {
         (actor ? "Failure").get
         fail("Should have thrown an exception")

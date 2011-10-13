@@ -1,7 +1,6 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import org.multiverse.api.latches.StandardLatch
@@ -18,13 +17,13 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
   }
 
   override def beforeEach {
-    EventHandler.notify(Mute(EventFilter[Exception]("CRASH")))
+    app.eventHandler.notify(Mute(EventFilter[Exception]("CRASH")))
   }
 
   override def afterEach {
     while (futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
     app.registry.local.shutdownAll
-    EventHandler.start()
+    app.eventHandler.start()
   }
 
   "A Scheduler" must {

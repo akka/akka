@@ -17,7 +17,6 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 
   override def afterAll = {
     app.registry.local.shutdownAll
-    akka.event.EventHandler.start()
   }
 
   "A supervised actor with lifecycle PERMANENT" should {

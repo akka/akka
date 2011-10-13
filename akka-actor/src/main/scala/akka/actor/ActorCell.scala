@@ -9,7 +9,7 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection.JavaConverters
-import akka.event.{ InVMMonitoring, EventHandler }
+import akka.event.InVMMonitoring
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
 import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
 import akka.AkkaApplication
@@ -49,7 +49,8 @@ private[akka] trait ActorContext extends ActorRefFactory {
 
   def handleChildTerminated(child: ActorRef): Unit
 
-  def application: AkkaApplication
+  def app: AkkaApplication
+  
 }
 
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
@@ -195,7 +196,7 @@ case class OneForOneStrategy(trapExit: List[Class[_ <: Throwable]],
           fail.actor.restart(fail.cause)
         else
           fail.actor.stop() //TODO optimization to drop child here already?
-      case None ⇒ EventHandler.warning(this, "Got Failure from non-child: " + fail)
+      case None ⇒ throw new AssertionError("Got Failure from non-child: " + fail)
     }
   }
 }
@@ -207,7 +208,7 @@ private[akka] object ActorCell {
 }
 
 private[akka] class ActorCell(
-  val application: AkkaApplication,
+  val app: AkkaApplication,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   @volatile var receiveTimeout: Option[Long],
@@ -215,7 +216,7 @@ private[akka] class ActorCell(
 
   import ActorCell._
 
-  def provider = application.provider
+  def provider = app.provider
 
   @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
@@ -251,7 +252,7 @@ private[akka] class ActorCell(
       }
     }
 
-    application.registry.register(self)
+    app.registry.register(self)
     dispatcher.attach(this)
   }
 
@@ -333,10 +334,10 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(created, "started")
+      if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "started")
     } catch {
       case e ⇒ try {
-        EventHandler.error(e, this, "error while creating actor")
+        app.eventHandler.error(e, self, "error while creating actor")
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
         envelope.channel.sendException(e)
@@ -347,7 +348,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(failedActor, "restarting")
+      if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "restarting")
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -361,14 +362,14 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(freshActor, "restarted")
+      if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "restarted")
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
       props.faultHandler.handleSupervisorRestarted(cause, self, _children)
     } catch {
       case e ⇒ try {
-        EventHandler.error(e, this, "error while creating actor")
+        app.eventHandler.error(e, self, "error while creating actor")
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
         envelope.channel.sendException(e)
@@ -384,13 +385,13 @@ private[akka] class ActorCell(
     def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
-      application.provider.evict(self.address)
-      application.registry.unregister(self)
+      app.provider.evict(self.address)
+      app.registry.unregister(self)
       dispatcher.detach(this)
 
       try {
         val a = actor
-        if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(a, "stopping")
+        if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopping")
         if (a ne null) a.postStop()
 
         //Stop supervised actors
@@ -416,8 +417,8 @@ private[akka] class ActorCell(
       val links = _children
       if (!links.exists(_.child == child)) {
         _children = links :+ ChildRestartStats(child)
-        if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "now supervising " + child)
-      } else EventHandler.warning(actor, "Already supervising " + child)
+        if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now supervising " + child)
+      } else app.eventHandler.warning(self, "Already supervising " + child)
     }
 
     try {
@@ -428,10 +429,10 @@ private[akka] class ActorCell(
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
             akka.event.InVMMonitoring.link(self, subject)
-            if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "now monitoring " + subject)
+            if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now monitoring " + subject)
           case Unlink(subject) ⇒
             akka.event.InVMMonitoring.unlink(self, subject)
-            if (application.AkkaConfig.DebugLifecycle) EventHandler.debug(actor, "stopped monitoring " + subject)
+            if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()
           case Terminate        ⇒ terminate()
@@ -440,7 +441,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        EventHandler.error(e, actor, "error while processing " + envelope.message)
+        app.eventHandler.error(e, self, "error while processing " + envelope.message)
         //TODO FIXME How should problems here be handled?
         throw e
     } finally {
@@ -461,7 +462,7 @@ private[akka] class ActorCell(
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
-              EventHandler.error(e, self, e.getMessage)
+              app.eventHandler.error(e, self, e.getMessage)
 
               // prevent any further messages to be processed until the actor has been restarted
               dispatcher.suspend(this)
@@ -480,7 +481,7 @@ private[akka] class ActorCell(
           }
         } catch {
           case e ⇒
-            EventHandler.error(e, actor, e.getMessage)
+            app.eventHandler.error(e, self, e.getMessage)
             throw e
         }
       } else {

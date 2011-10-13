@@ -75,7 +75,7 @@ object SimpleTransactor {
   }
 }
 
-class TransactorSpec extends WordSpec with MustMatchers {
+class TransactorSpec extends AkkaSpec {
   import TransactorIncrement._
   import SimpleTransactor._
 
@@ -109,7 +109,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
         EventFilter[ExpectedFailureException],
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, failer) = createTransactors
       val failLatch = TestLatch(numCounters)
       counters(0) ! Increment(counters.tail :+ failer, failLatch)
@@ -119,7 +119,7 @@ class TransactorSpec extends WordSpec with MustMatchers {
       }
       counters foreach (_.stop())
       failer.stop()
-      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 

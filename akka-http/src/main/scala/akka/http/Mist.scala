@@ -53,7 +53,7 @@ object Types {
 trait Mist {
   import javax.servlet.ServletContext
 
-  protected def application: AkkaApplication
+  protected def app: AkkaApplication
 
   /**
    * The root endpoint actor
@@ -99,7 +99,7 @@ trait Mist {
 
     // shoot the message to the root endpoint for processing
     // IMPORTANT: the suspend method is invoked on the server thread not in the actor
-    val method = builder(() ⇒ suspend(application.MistSettings.ConnectionClose))
+    val method = builder(() ⇒ suspend(app.MistSettings.ConnectionClose))
     if (method.go) root ! method
   }
 
@@ -111,9 +111,9 @@ trait Mist {
     val server = context.getServerInfo
     val (major, minor) = (context.getMajorVersion, context.getMinorVersion)
     factory = if (major >= 3) {
-      Some(new Servlet30ContextMethodFactory(application))
-    } else if (server.toLowerCase startsWith application.MistSettings.JettyServer) {
-      Some(new JettyContinuationMethodFactory(application))
+      Some(new Servlet30ContextMethodFactory(app))
+    } else if (server.toLowerCase startsWith app.MistSettings.JettyServer) {
+      Some(new JettyContinuationMethodFactory(app))
     } else {
       None
     }
@@ -123,14 +123,14 @@ trait Mist {
 trait RootEndpointLocator {
   var root: ActorRef = null
 
-  protected def application: AkkaApplication
+  protected def app: AkkaApplication
 
   def configureRoot(address: String) {
     def findRoot(address: String): ActorRef =
-      application.registry.actorFor(address).getOrElse(
+      app.registry.actorFor(address).getOrElse(
         throw new ConfigurationException("akka.http.root-actor-id configuration option does not have a valid actor address [" + address + "]"))
 
-    root = if ((address eq null) || address == "") findRoot(application.MistSettings.RootActorID) else findRoot(address)
+    root = if ((address eq null) || address == "") findRoot(app.MistSettings.RootActorID) else findRoot(address)
   }
 }
 
@@ -138,7 +138,7 @@ trait RootEndpointLocator {
  * AkkaMistServlet adds support to bridge Http and Actors in an asynchronous fashion
  * Async impls currently supported: Servlet3.0, Jetty Continuations
  */
-class AkkaMistServlet(val application: AkkaApplication) extends HttpServlet with Mist with RootEndpointLocator {
+class AkkaMistServlet(val app: AkkaApplication) extends HttpServlet with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletConfig }
 
   /**
@@ -157,7 +157,7 @@ class AkkaMistServlet(val application: AkkaApplication) extends HttpServlet with
  * Proof-of-concept, use at own risk
  * Will be officially supported in a later release
  */
-class AkkaMistFilter(val application: AkkaApplication) extends Filter with Mist with RootEndpointLocator {
+class AkkaMistFilter(val app: AkkaApplication) extends Filter with Mist with RootEndpointLocator {
   import javax.servlet.{ ServletRequest, ServletResponse, FilterConfig, FilterChain }
 
   /**
@@ -294,6 +294,8 @@ class RootEndpoint extends Actor with Endpoint {
 trait RequestMethod {
   import java.io.IOException
   import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
+  
+  def app: AkkaApplication
 
   // required implementations
   val builder: () ⇒ tAsyncRequestContext
@@ -358,7 +360,7 @@ trait RequestMethod {
           }
         } catch {
           case io: Exception ⇒
-            EventHandler.error(io, this, io.getMessage)
+            app.eventHandler.error(io, this, io.getMessage)
             false
         }
       case None ⇒ false
@@ -374,7 +376,7 @@ trait RequestMethod {
           }
         } catch {
           case io: IOException ⇒
-            EventHandler.error(io, this, io.getMessage)
+            app.eventHandler.error(io, this, io.getMessage)
         }
       case None ⇒ {}
     }
@@ -401,13 +403,13 @@ trait RequestMethod {
   def Unavailable(body: String, retry: Int): Boolean = complete(HttpServletResponse.SC_SERVICE_UNAVAILABLE, body, List(("Retry-After", retry.toString)))
 }
 
-abstract class Delete(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Get(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Head(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Options(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Post(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Put(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
-abstract class Trace(val builder: () ⇒ tAsyncRequestContext) extends RequestMethod
+abstract class Delete(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Get(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Head(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Options(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Post(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Put(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
+abstract class Trace(val builder: () ⇒ tAsyncRequestContext)(implicit val app: AkkaApplication) extends RequestMethod
 
 trait RequestMethodFactory {
   def Delete(f: () ⇒ tAsyncRequestContext): RequestMethod

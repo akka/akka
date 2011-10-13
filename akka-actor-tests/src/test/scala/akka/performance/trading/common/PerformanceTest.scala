@@ -51,7 +51,7 @@ trait PerformanceTest extends JUnitSuite {
 
   var stat: DescriptiveStatistics = _
 
-  val resultRepository = BenchResultRepository()
+  val resultRepository = BenchResultRepository(app)
   lazy val report = new Report(app, resultRepository, compareResultWith)
 
   type TS <: TradingSystem

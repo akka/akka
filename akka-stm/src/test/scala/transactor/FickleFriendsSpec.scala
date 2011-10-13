@@ -98,7 +98,7 @@ object FickleFriends {
   }
 }
 
-class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   import FickleFriends._
 
   val application = AkkaApplication("FickleFriendsSpec")
@@ -119,7 +119,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
         EventFilter[ExpectedFailureException],
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, coordinator) = createActors
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
@@ -130,7 +130,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       }
       counters foreach (_.stop())
       coordinator.stop()
-      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

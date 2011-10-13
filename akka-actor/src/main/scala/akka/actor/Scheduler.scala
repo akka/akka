@@ -48,7 +48,6 @@ object Scheduler {
     } catch {
       case e: Exception ⇒
         val error = SchedulerException(message + " could not be scheduled on " + receiver, e)
-        EventHandler.error(error, this, "%s @ %s".format(receiver, message))
         throw error
     }
   }
@@ -74,7 +73,6 @@ object Scheduler {
     } catch {
       case e: Exception ⇒
         val error = SchedulerException("Failed to schedule a Runnable", e)
-        EventHandler.error(error, this, error.getMessage)
         throw error
     }
   }
@@ -90,7 +88,6 @@ object Scheduler {
     } catch {
       case e: Exception ⇒
         val error = SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
-        EventHandler.error(e, this, receiver + " @ " + message)
         throw error
     }
   }
@@ -116,7 +113,6 @@ object Scheduler {
     } catch {
       case e: Exception ⇒
         val error = SchedulerException("Failed to scheduleOnce a Runnable", e)
-        EventHandler.error(e, this, error.getMessage)
         throw error
     }
   }

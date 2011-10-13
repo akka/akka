@@ -315,7 +315,6 @@ trait BasicRouter extends Router {
 
   private def throwNoConnectionsError = {
     val error = new RoutingException("No replica connections for router")
-    EventHandler.error(error, this, error.toString)
     throw error
   }
 }

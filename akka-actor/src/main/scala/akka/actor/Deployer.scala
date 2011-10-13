@@ -26,15 +26,15 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val application: AkkaApplication) extends ActorDeployer {
+class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
-  val deploymentConfig = new DeploymentConfig(application)
+  val deploymentConfig = new DeploymentConfig(app)
 
   //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
-    val deployer = if (application.reflective.ClusterModule.isEnabled) {
-      application.reflective.ClusterModule.clusterDeployer
+    val deployer = if (app.reflective.ClusterModule.isEnabled) {
+      app.reflective.ClusterModule.clusterDeployer
     } else {
       LocalDeployer
     }
@@ -80,14 +80,14 @@ class Deployer(val application: AkkaApplication) extends ActorDeployer {
         lookupInConfig(address)
       } catch {
         case e: ConfigurationException ⇒
-          EventHandler.error(e, this, e.getMessage)
+          app.eventHandler.error(e, this, e.getMessage)
           throw e
       }
 
       newDeployment foreach { d ⇒
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
-          EventHandler.error(e, this, e.getMessage)
+          app.eventHandler.error(e, this, e.getMessage)
           throw e
         }
         deploy(d) // deploy and cache it
@@ -106,7 +106,7 @@ class Deployer(val application: AkkaApplication) extends ActorDeployer {
 
   private[akka] def addressesInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
-    application.config.getSection(deploymentPath) match {
+    app.config.getSection(deploymentPath) match {
       case None ⇒ Nil
       case Some(addressConfig) ⇒
         addressConfig.map.keySet
@@ -118,7 +118,7 @@ class Deployer(val application: AkkaApplication) extends ActorDeployer {
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(address: String, configuration: Configuration = application.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(address: String, configuration: Configuration = app.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------
@@ -332,13 +332,13 @@ class Deployer(val application: AkkaApplication) extends ActorDeployer {
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException("Address [" + deployment.address + "] already bound to [" + deployment + "]")
-    EventHandler.error(e, this, e.getMessage)
+    app.eventHandler.error(e, this, e.getMessage)
     throw e
   }
 
   private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
-    EventHandler.error(e, this, e.getMessage)
+    app.eventHandler.error(e, this, e.getMessage)
     throw e
   }
 }

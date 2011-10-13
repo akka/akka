@@ -6,7 +6,6 @@ package akka.actor
 
 import java.lang.Thread.sleep
 import org.scalatest.BeforeAndAfterAll
-import akka.event.EventHandler
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
@@ -16,11 +15,11 @@ import akka.testkit.AkkaSpec
 class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
 
   override def beforeAll() {
-    EventHandler.notify(Mute(EventFilter[Exception]("Crashing...")))
+    app.eventHandler.notify(Mute(EventFilter[Exception]("Crashing...")))
   }
 
   override def afterAll() {
-    EventHandler.notify(UnMuteAll)
+    app.eventHandler.notify(UnMuteAll)
   }
 
   object Ping

@@ -6,14 +6,15 @@ package akka.dispatch
 
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
+import akka.AkkaApplication
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class PinnedDispatcher(_actor: ActorCell, _name: String, _mailboxType: MailboxType, _timeoutMs: Long)
-  extends Dispatcher(_name, Int.MaxValue, -1, _mailboxType, PinnedDispatcher.oneThread, _timeoutMs) {
+class PinnedDispatcher(_app: AkkaApplication, _actor: ActorCell, _name: String, _mailboxType: MailboxType, _timeoutMs: Long)
+  extends Dispatcher(_app, _name, Int.MaxValue, -1, _mailboxType, PinnedDispatcher.oneThread(_app), _timeoutMs) {
 
   protected[akka] val owner = new AtomicReference[ActorCell](_actor)
 
@@ -32,6 +33,6 @@ class PinnedDispatcher(_actor: ActorCell, _name: String, _mailboxType: MailboxTy
 }
 
 object PinnedDispatcher {
-  val oneThread: ThreadPoolConfig = ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
+  def oneThread(app: AkkaApplication): ThreadPoolConfig = ThreadPoolConfig(app, allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
 }
 

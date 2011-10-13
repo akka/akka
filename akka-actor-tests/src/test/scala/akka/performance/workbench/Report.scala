@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
-import akka.event.EventHandler
 import akka.AkkaApplication
 
 class Report(app: AkkaApplication,
@@ -53,7 +52,7 @@ class Report(app: AkkaApplication,
     resultRepository.saveHtmlReport(sb.toString, reportName)
 
     if (log) {
-      EventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
+      app.eventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
     }
 
   }

@@ -5,7 +5,6 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-import akka.event.EventHandler
 
 import FSM._
 

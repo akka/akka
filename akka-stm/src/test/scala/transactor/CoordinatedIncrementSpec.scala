@@ -1,7 +1,5 @@
 package akka.transactor.test
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
 import akka.AkkaApplication
@@ -55,7 +53,7 @@ object CoordinatedIncrement {
   }
 }
 
-class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
   val application = AkkaApplication("CoordinatedIncrementSpec")
@@ -88,7 +86,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
         EventFilter[ExpectedFailureException],
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, failer) = createActors
       val coordinated = Coordinated()
       counters(0) ! Coordinated(Increment(counters.tail :+ failer))
@@ -98,7 +96,7 @@ class CoordinatedIncrementSpec extends WordSpec with MustMatchers with BeforeAnd
       }
       counters foreach (_.stop())
       failer.stop()
-      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

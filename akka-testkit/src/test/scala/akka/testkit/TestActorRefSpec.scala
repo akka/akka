@@ -94,8 +94,6 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import TestActorRefSpec._
 
-  EventHandler.start()
-
   override def beforeEach {
     otherthread = null
   }

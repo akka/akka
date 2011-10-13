@@ -61,7 +61,7 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Ev(msg) ⇒ {
-        EventHandler.info(this, "unhandled event " + msg + " in state " + stateName + " with data " + stateData)
+        app.eventHandler.info(this, "unhandled event " + msg + " in state " + stateName + " with data " + stateData)
         unhandledLatch.open
         stay
       }
@@ -102,13 +102,13 @@ object FSMActorSpec {
 class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true)) with BeforeAndAfterAll with BeforeAndAfterEach with ImplicitSender {
   import FSMActorSpec._
 
-  val eh_level = EventHandler.level
+  val eh_level = app.eventHandler.level
   var logger: ActorRef = _
 
   override def afterEach {
-    EventHandler.level = eh_level
+    app.eventHandler.level = eh_level
     if (logger ne null) {
-      EventHandler.removeListener(logger)
+      app.eventHandler.removeListener(logger)
       logger = null
     }
   }
@@ -178,7 +178,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           case x ⇒ testActor forward x
         }
       })
-      EventHandler.addListener(logger)
+      app.eventHandler.addListener(logger)
       fsm ! "go"
       expectMsgPF(1 second) {
         case EventHandler.Error(_: EventHandler.EventHandlerException, ref, "Next state 2 does not exist") if ref eq fsm.underlyingActor ⇒ true
@@ -224,8 +224,8 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           case x ⇒ testActor forward x
         }
       })
-      EventHandler.addListener(logger)
-      EventHandler.level = EventHandler.DebugLevel
+      app.eventHandler.addListener(logger)
+      app.eventHandler.level = EventHandler.DebugLevel
       fsmref ! "go"
       expectMsgPF(1 second) {
         case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true

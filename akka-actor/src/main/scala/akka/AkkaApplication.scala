@@ -16,6 +16,9 @@ import akka.dispatch.UnboundedMailbox
 import akka.routing.Routing
 import remote.RemoteSupport
 import akka.serialization.Serialization
+import akka.event.EventHandler
+import akka.event.EventHandlerLogging
+import akka.event.Logging
 
 object AkkaApplication {
 
@@ -124,6 +127,14 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   import AkkaConfig._
 
+  if (ConfigVersion != Version)
+    throw new ConfigurationException("Akka JAR version [" + Version +
+      "] does not match the provided config version [" + ConfigVersion + "]")
+
+  val eventHandler = new EventHandler(this)
+
+  val log: Logging = new EventHandlerLogging(eventHandler, this)
+
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
@@ -136,10 +147,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case null | "" ⇒ InetAddress.getLocalHost.getHostName
     case value     ⇒ value
   }
-
-  if (ConfigVersion != Version)
-    throw new ConfigurationException("Akka JAR version [" + Version +
-      "] does not match the provided config version [" + ConfigVersion + "]")
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)

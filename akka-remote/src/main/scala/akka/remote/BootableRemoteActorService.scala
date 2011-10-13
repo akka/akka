@@ -26,19 +26,19 @@ trait BootableRemoteActorService extends Bootable {
 
   abstract override def onLoad() {
     if (app.reflective.ClusterModule.isEnabled && settings.isRemotingEnabled) {
-      EventHandler.info(this, "Initializing Remote Actors Service...")
+      app.eventHandler.info(this, "Initializing Remote Actors Service...")
       startRemoteService()
-      EventHandler.info(this, "Remote Actors Service initialized")
+      app.eventHandler.info(this, "Remote Actors Service initialized")
     }
     super.onLoad()
   }
 
   abstract override def onUnload() {
-    EventHandler.info(this, "Shutting down Remote Actors Service")
+    app.eventHandler.info(this, "Shutting down Remote Actors Service")
 
     app.remote.shutdown()
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
-    EventHandler.info(this, "Remote Actors Service has been shut down")
+    app.eventHandler.info(this, "Remote Actors Service has been shut down")
     super.onUnload()
   }
 }

@@ -12,6 +12,7 @@ import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.ActorCell
 import akka.dispatch._
+import akka.AkkaApplication
 
 /*
  * Locking rules:
@@ -31,8 +32,6 @@ import akka.dispatch._
  */
 
 object CallingThreadDispatcher {
-
-  lazy val global = new CallingThreadDispatcher("global-calling-thread")
 
   // PRIVATE DATA
 
@@ -104,7 +103,7 @@ object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher {
+class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher(_app) {
   import CallingThreadDispatcher._
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this)
@@ -157,14 +156,14 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
     val execute = mbox.suspendSwitch.fold {
       queue.push(handle)
       if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-        EventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format handle.receiver)
+        app.eventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format handle.receiver)
       }
       false
     } {
       queue.push(handle)
       if (queue.isActive) {
         if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-          EventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
+          app.eventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
         }
         false
       } else {
@@ -204,13 +203,13 @@ class CallingThreadDispatcher(val name: String = "calling-thread", val warnings:
           handle.invoke
           if (warnings) handle.channel match {
             case f: ActorPromise if !f.isCompleted ⇒
-              EventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
+              app.eventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
             case _ ⇒
           }
           true
         } catch {
           case e ⇒
-            EventHandler.error(this, e)
+            app.eventHandler.error(this, e)
             queue.leave
             false
         }

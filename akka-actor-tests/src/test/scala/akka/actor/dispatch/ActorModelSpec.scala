@@ -3,7 +3,6 @@
  */
 package akka.actor.dispatch
 
-import akka.event.EventHandler
 import org.scalatest.Assertions._
 import akka.testkit.{ Testing, filterEvents, EventFilter, AkkaSpec }
 import akka.dispatch._
@@ -153,14 +152,14 @@ object ActorModelSpec {
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
     starts: Long = dispatcher.starts.get(),
-    stops: Long = dispatcher.stops.get()) {
+    stops: Long = dispatcher.stops.get())(implicit app: AkkaApplication) {
     val deadline = System.currentTimeMillis + dispatcher.timeoutMs * 5
     try {
       await(deadline)(starts == dispatcher.starts.get)
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        EventHandler.error(e, dispatcher, "actual: starts=" + dispatcher.starts.get + ",stops=" + dispatcher.stops.get +
+        app.eventHandler.error(e, dispatcher, "actual: starts=" + dispatcher.starts.get + ",stops=" + dispatcher.stops.get +
           " required: starts=" + starts + ",stops=" + stops)
         throw e
     }
@@ -190,7 +189,7 @@ object ActorModelSpec {
     unregisters: Long = 0,
     msgsReceived: Long = 0,
     msgsProcessed: Long = 0,
-    restarts: Long = 0) {
+    restarts: Long = 0)(implicit app: AkkaApplication) {
     assertRef(actorRef, dispatcher)(
       suspensions,
       resumes,
@@ -208,7 +207,7 @@ object ActorModelSpec {
     unregisters: Long = statsFor(actorRef).unregisters.get(),
     msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
-    restarts: Long = statsFor(actorRef).restarts.get()) {
+    restarts: Long = statsFor(actorRef).restarts.get())(implicit app: AkkaApplication) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -221,7 +220,7 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        EventHandler.error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        app.eventHandler.error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
           ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts)
         throw e
@@ -324,7 +323,7 @@ abstract class ActorModelSpec extends AkkaSpec {
           try {
             f
           } catch {
-            case e ⇒ EventHandler.error(e, this, "error in spawned thread")
+            case e ⇒ app.eventHandler.error(e, this, "error in spawned thread")
           }
         }
       }
@@ -399,7 +398,7 @@ abstract class ActorModelSpec extends AkkaSpec {
         } catch {
           case e ⇒
             System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
-          //EventHandler.error(new Exception with NoStackTrace, null, cachedMessage.latch.getCount())
+          //app.eventHandler.error(new Exception with NoStackTrace, null, cachedMessage.latch.getCount())
         }
       }
       for (run ← 1 to 3) {
@@ -480,10 +479,10 @@ class DispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher("foo", app.AkkaConfig.DispatcherThroughput,
+    new Dispatcher(app, "foo", app.AkkaConfig.DispatcherThroughput,
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
+    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Dispatcher"
 
@@ -509,10 +508,10 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new BalancingDispatcher("foo", 1, // TODO check why 1 here? (came from old test)
+    new BalancingDispatcher(app, "foo", 1, // TODO check why 1 here? (came from old test)
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
+    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
 }

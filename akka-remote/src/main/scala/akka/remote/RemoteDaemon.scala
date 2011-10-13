@@ -76,7 +76,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
 
   def start() {
     val triggerLazyServerVal = address.toString
-    EventHandler.info(this, "Starting remote server on [%s]".format(triggerLazyServerVal))
+    app.eventHandler.info(this, "Starting remote server on [%s]".format(triggerLazyServerVal))
   }
 
   def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
@@ -100,12 +100,12 @@ class RemoteDaemon(val remote: Remote) extends Actor {
   import remote._
 
   override def preRestart(reason: Throwable, msg: Option[Any]) {
-    EventHandler.debug(this, "RemoteDaemon failed due to [%s] restarting...".format(reason))
+    app.eventHandler.debug(this, "RemoteDaemon failed due to [%s] restarting...".format(reason))
   }
 
   def receive: Actor.Receive = {
     case message: RemoteDaemonMessageProtocol ⇒
-      EventHandler.debug(this,
+      app.eventHandler.debug(this,
         "Received command [\n%s] to RemoteDaemon on [%s]".format(message, app.nodename))
 
       message.getMessageType match {
@@ -123,7 +123,7 @@ class RemoteDaemon(val remote: Remote) extends Actor {
         //TODO: should we not deal with unrecognized message types?
       }
 
-    case unknown ⇒ EventHandler.warning(this, "Unknown message [%s]".format(unknown))
+    case unknown ⇒ app.eventHandler.warning(this, "Unknown message [%s]".format(unknown))
   }
 
   def handleUse(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
@@ -146,7 +146,7 @@ class RemoteDaemon(val remote: Remote) extends Actor {
         remote.server.register(actorAddress, newActorRef)
 
       } else {
-        EventHandler.error(this, "Actor 'address' is not defined, ignoring remote daemon command [%s]".format(message))
+        app.eventHandler.error(this, "Actor 'address' is not defined, ignoring remote daemon command [%s]".format(message))
       }
 
       reply(Success(address.toString))

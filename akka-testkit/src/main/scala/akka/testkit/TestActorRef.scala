@@ -19,8 +19,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](application: AkkaApplication, props: Props, address: String)
-  extends LocalActorRef(application, props.withDispatcher(CallingThreadDispatcher.global), address, false) {
+class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: String)
+  extends LocalActorRef(_app, props.withDispatcher(new CallingThreadDispatcher(_app)), address, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use

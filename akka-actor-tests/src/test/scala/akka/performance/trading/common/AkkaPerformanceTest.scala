@@ -4,7 +4,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import akka.performance.trading.domain._
 import akka.performance.trading.common._
-import akka.event.EventHandler
 import akka.actor.{ Props, ActorRef, Actor, PoisonPill }
 import akka.AkkaApplication
 
@@ -62,7 +61,7 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
               val duration = System.nanoTime - t0
               stat.addValue(duration)
               if (!rsp.status) {
-                EventHandler.error(this, "Invalid rsp")
+                app.eventHandler.error(this, "Invalid rsp")
               }
               delay(delayMs)
             }
