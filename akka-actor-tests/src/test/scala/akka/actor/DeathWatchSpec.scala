@@ -19,7 +19,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
-      testActor link terminal
+      testActor startsMonitoring terminal
 
       terminal ! "anything"
 
@@ -32,9 +32,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       val monitor1, monitor2 = createActor(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
       val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
-      monitor1 link terminal
-      monitor2 link terminal
-      testActor link terminal
+      monitor1 startsMonitoring terminal
+      monitor2 startsMonitoring terminal
+      testActor startsMonitoring terminal
 
       terminal ! "anything"
 
@@ -51,11 +51,11 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       val monitor1, monitor2 = createActor(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
       val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
-      monitor1 link terminal
-      monitor2 link terminal
-      testActor link terminal
+      monitor1 startsMonitoring terminal
+      monitor2 startsMonitoring terminal
+      testActor startsMonitoring terminal
 
-      monitor2 unlink terminal
+      monitor2 stopsMonitoring terminal
 
       terminal ! "anything"
 
@@ -72,7 +72,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         val supervisor = createActor(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminal = createActor(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
 
-        testActor link terminal
+        testActor startsMonitoring terminal
 
         terminal ! Kill
         terminal ! Kill

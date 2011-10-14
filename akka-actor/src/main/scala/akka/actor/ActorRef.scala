@@ -109,19 +109,22 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def isShutdown: Boolean
 
   /**
-   * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
-   * receive a notification if the linked actor has crashed.
-   * <p/>
-   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
-   * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
-   * defined by the 'faultHandler'.
+   * Registers this actor to be a death monitor of the provided ActorRef
+   * This means that this actor will get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def link(actorRef: ActorRef): ActorRef
+  def startsMonitoring(subject: ActorRef): ActorRef
 
   /**
-   * Unlink the actor.
+   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * This means that this actor will not get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def unlink(actorRef: ActorRef): ActorRef
+  def stopsMonitoring(subject: ActorRef): ActorRef
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
 
@@ -194,25 +197,22 @@ class LocalActorRef private[akka] (
   def stop(): Unit = actorCell.stop()
 
   /**
-   * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
-   * receive a notification if the linked actor has crashed.
-   * <p/>
-   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
-   * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
-   * defined by the 'faultHandler'.
-   * <p/>
-   * To be invoked from within the actor itself.
-   * Returns the ref that was passed into it
+   * Registers this actor to be a death monitor of the provided ActorRef
+   * This means that this actor will get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def link(subject: ActorRef): ActorRef = actorCell.link(subject)
+  def startsMonitoring(subject: ActorRef): ActorRef = actorCell.startsMonitoring(subject)
 
   /**
-   * Unlink the actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   * Returns the ref that was passed into it
+   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * This means that this actor will not get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def unlink(subject: ActorRef): ActorRef = actorCell.unlink(subject)
+  def stopsMonitoring(subject: ActorRef): ActorRef = actorCell.stopsMonitoring(subject)
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -343,9 +343,9 @@ case class SerializedActorRef(uuid: Uuid, address: String, hostname: String, por
  */
 trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
-  def link(actorRef: ActorRef): ActorRef = unsupported
+  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
-  def unlink(actorRef: ActorRef): ActorRef = unsupported
+  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
   def suspend(): Unit = unsupported
 
@@ -360,9 +360,9 @@ class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   val address: String = "akka:internal:DeadLetterActorRef"
 
-  override def link(actorRef: ActorRef): ActorRef = actorRef
+  override def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
-  override def unlink(actorRef: ActorRef): ActorRef = actorRef
+  override def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
   def isShutdown(): Boolean = true
 

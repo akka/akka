@@ -231,7 +231,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
         }
       }).withSupervisor(boss))
 
-      boss.link(slave)
+      boss startsMonitoring slave
 
       slave ! Ping
       slave ! Crash

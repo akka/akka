@@ -262,12 +262,12 @@ private[akka] class ActorCell(
   private[akka] def stop(): Unit =
     dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
 
-  def link(subject: ActorRef): ActorRef = {
+  def startsMonitoring(subject: ActorRef): ActorRef = {
     dispatcher.systemDispatch(SystemEnvelope(this, Link(subject), NullChannel))
     subject
   }
 
-  def unlink(subject: ActorRef): ActorRef = {
+  def stopsMonitoring(subject: ActorRef): ActorRef = {
     dispatcher.systemDispatch(SystemEnvelope(this, Unlink(subject), NullChannel))
     subject
   }

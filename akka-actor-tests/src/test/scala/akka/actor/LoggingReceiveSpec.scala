@@ -137,13 +137,13 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
           expectMsg(EventHandler.Debug(actor, "started"))
 
-          supervisor link actor
+          supervisor startsMonitoring actor
           expectMsgPF(hint = "now monitoring") {
             case EventHandler.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
           }
 
-          supervisor unlink actor
+          supervisor stopsMonitoring actor
           expectMsgPF(hint = "stopped monitoring") {
             case EventHandler.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")

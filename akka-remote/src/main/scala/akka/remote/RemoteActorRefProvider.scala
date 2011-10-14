@@ -281,9 +281,9 @@ private[akka] case class RemoteActorRef private[akka] (
     SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
   }
 
-  def link(actorRef: ActorRef): ActorRef = unsupported
+  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
-  def unlink(actorRef: ActorRef): ActorRef = unsupported
+  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
   protected[akka] def restart(cause: Throwable): Unit = unsupported
 
