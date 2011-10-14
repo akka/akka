@@ -116,13 +116,8 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
-        _delegates ++ {
-          for (i ← 0 until requestedCapacity) yield {
-            val delegate = instance(defaultProps)
-            self link delegate
-            delegate
-          }
-        }
+        _delegates ++ Vector.fill(requestedCapacity)(self link instance(defaultProps))
+
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
           case (keep, abandon) ⇒
