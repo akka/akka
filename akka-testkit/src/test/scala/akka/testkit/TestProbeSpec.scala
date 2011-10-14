@@ -8,7 +8,7 @@ import akka.event.EventHandler
 import akka.dispatch.Future
 import akka.util.duration._
 
-class TestProbeSpec extends WordSpec with MustMatchers {
+class TestProbeSpec extends AkkaSpec {
 
   "A TestProbe" must {
 

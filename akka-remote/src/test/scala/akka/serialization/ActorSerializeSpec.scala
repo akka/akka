@@ -1,61 +1,63 @@
 package akka.serialization
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-
 import com.google.protobuf.Message
-
-import akka.serialization.ActorSerialization._
 import akka.actor._
-import Actor._
-import SerializeSpec._
+import akka.remote._
+import akka.testkit.AkkaSpec
+import akka.serialization.SerializeSpec.Person
 
 case class MyMessage(id: Long, name: String, status: Boolean)
 
-@RunWith(classOf[JUnitRunner])
-class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
+class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
 
-  "Serializable actor" should {
-    "should be able to serialize and de-serialize a stateful actor with a given serializer" ignore {
+  lazy val remote: Remote = {
+    app.provider match {
+      case r: RemoteActorRefProvider ⇒ r.remote
+      case _                         ⇒ throw new Exception("Remoting is not enabled")
+    }
+  }
 
-      val actor1 = new LocalActorRef(Props[MyJavaSerializableActor], newUuid.toString, systemService = true)
+  lazy val serialization = new ActorSerialization(app, remote.server)
 
-      (actor1 ? "hello").get should equal("world 1")
-      (actor1 ? "hello").get should equal("world 2")
+  "Serializable actor" must {
+    "must be able to serialize and de-serialize a stateful actor with a given serializer" ignore {
 
-      val bytes = toBinary(actor1)
-      val actor2 = fromBinary(bytes).asInstanceOf[LocalActorRef]
-      (actor2 ? "hello").get should equal("world 3")
+      val actor1 = new LocalActorRef(app, Props[MyJavaSerializableActor], newUuid.toString, systemService = true)
 
-      actor2.underlying.receiveTimeout should equal(Some(1000))
+      (actor1 ? "hello").get must equal("world 1")
+      (actor1 ? "hello").get must equal("world 2")
+
+      val bytes = serialization.toBinary(actor1)
+      val actor2 = serialization.fromBinary(bytes).asInstanceOf[LocalActorRef]
+      (actor2 ? "hello").get must equal("world 3")
+
+      actor2.underlying.receiveTimeout must equal(Some(1000))
       actor1.stop()
       actor2.stop()
     }
 
-    "should be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox" ignore {
+    "must be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox" ignore {
 
-      val actor1 = new LocalActorRef(Props[MyStatelessActorWithMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[MyStatelessActorWithMessagesInMailbox], newUuid.toString, systemService = true)
       for (i ← 1 to 10) actor1 ! "hello"
 
-      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      val actor2 = serialization.fromBinary(serialization.toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      (actor2 ? "hello-reply").get should equal("world")
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      (actor2 ? "hello-reply").get must equal("world")
 
-      val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
+      val actor3 = serialization.fromBinary(serialization.toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
-      (actor3 ? "hello-reply").get should equal("world")
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) must equal(0)
+      (actor3 ? "hello-reply").get must equal("world")
     }
 
-    "should be able to serialize and deserialize a PersonActorWithMessagesInMailbox" ignore {
+    "must be able to serialize and deserialize a PersonActorWithMessagesInMailbox" ignore {
 
       val p1 = Person("debasish ghosh", 25, SerializeSpec.Address("120", "Monroe Street", "Santa Clara", "95050"))
-      val actor1 = new LocalActorRef(Props[PersonActorWithMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[PersonActorWithMessagesInMailbox], newUuid.toString, systemService = true)
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
@@ -66,53 +68,55 @@ class ActorSerializeSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
-      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      val actor2 = serialization.fromBinary(serialization.toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      (actor2 ? "hello-reply").get should equal("hello")
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      (actor2 ? "hello-reply").get must equal("hello")
 
-      val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
+      val actor3 = serialization.fromBinary(serialization.toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
-      (actor3 ? "hello-reply").get should equal("hello")
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) must equal(0)
+      (actor3 ? "hello-reply").get must equal("hello")
     }
   }
 
-  "serialize protobuf" should {
-    "should serialize" ignore {
+  "serialize protobuf" must {
+    "must serialize" ignore {
       val msg = MyMessage(123, "debasish ghosh", true)
-      import akka.serialization.Serialization._
-      val b = serialize(ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build) match {
+
+      val ser = new Serialization(app)
+
+      val b = ser.serialize(ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build) match {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
       }
-      val in = deserialize(b, classOf[ProtobufProtocol.MyMessage], None) match {
+      val in = ser.deserialize(b, classOf[ProtobufProtocol.MyMessage], None) match {
         case Left(exception) ⇒ fail(exception)
         case Right(i)        ⇒ i
       }
       val m = in.asInstanceOf[ProtobufProtocol.MyMessage]
-      MyMessage(m.getId, m.getName, m.getStatus) should equal(msg)
+      MyMessage(m.getId, m.getName, m.getStatus) must equal(msg)
     }
   }
 
   "serialize actor that accepts protobuf message" ignore {
-    "should serialize" ignore {
+    "must serialize" ignore {
 
-      val actor1 = new LocalActorRef(Props[MyActorWithProtobufMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[MyActorWithProtobufMessagesInMailbox], newUuid.toString, systemService = true)
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
       for (i ← 1 to 10) actor1 ! b
-      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      val actor2 = fromBinary(toBinary(actor1)).asInstanceOf[LocalActorRef]
+      actor1.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      val actor2 = serialization.fromBinary(serialization.toBinary(actor1)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) should be > (0)
-      (actor2 ? "hello-reply").get should equal("world")
+      actor2.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
+      (actor2 ? "hello-reply").get must equal("world")
 
-      val actor3 = fromBinary(toBinary(actor1, false)).asInstanceOf[LocalActorRef]
+      val actor3 = serialization.fromBinary(serialization.toBinary(actor1, false)).asInstanceOf[LocalActorRef]
       Thread.sleep(1000)
-      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) should equal(0)
-      (actor3 ? "hello-reply").get should equal("world")
+      actor3.underlying.dispatcher.mailboxSize(actor1.underlying) must equal(0)
+      (actor3 ? "hello-reply").get must equal("world")
     }
   }
 }

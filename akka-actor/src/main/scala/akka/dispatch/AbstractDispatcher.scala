@@ -8,10 +8,10 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventHandler
 import akka.config.Configuration
-import akka.config.Config.TIME_UNIT
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
+import akka.AkkaApplication
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -44,12 +44,12 @@ final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMess
   }
 }
 
-final case class TaskInvocation(function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       function()
     } catch {
-      case e ⇒ EventHandler.error(e, this, e.getMessage)
+      case e ⇒ app.eventHandler.error(e, this, e.getMessage)
     } finally {
       cleanup()
     }
@@ -61,13 +61,13 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultGlobalDispatcher = Dispatchers.defaultGlobalDispatcher
+  implicit def defaultDispatcher(implicit app: AkkaApplication) = app.dispatcher
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class MessageDispatcher extends Serializable {
+abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable {
   import MessageDispatcher._
 
   protected val uuids = new ConcurrentSkipListSet[Uuid]
@@ -144,7 +144,7 @@ abstract class MessageDispatcher extends Serializable {
     _tasks.getAndIncrement()
     try {
       startIfUnstarted()
-      executeTask(TaskInvocation(block, taskCleanup))
+      executeTask(TaskInvocation(app, block, taskCleanup))
     } catch {
       case e ⇒
         _tasks.decrementAndGet
@@ -238,7 +238,7 @@ abstract class MessageDispatcher extends Serializable {
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
    * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
    */
-  protected[akka] def timeoutMs: Long = Dispatchers.DEFAULT_SHUTDOWN_TIMEOUT.toMillis
+  protected[akka] def timeoutMs: Long
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -310,19 +310,19 @@ abstract class MessageDispatcher extends Serializable {
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator {
+abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", Dispatchers.MAILBOX_CAPACITY)
+    val capacity = config.getInt("mailbox-capacity", app.AkkaConfig.MailboxCapacity)
     if (capacity < 1) UnboundedMailbox()
     else {
       val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", Dispatchers.MAILBOX_PUSH_TIME_OUT.toMillis.toInt),
-        TIME_UNIT)
+        config.getInt("mailbox-push-timeout-time", app.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
+        app.AkkaConfig.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -331,8 +331,8 @@ abstract class MessageDispatcherConfigurator {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, TIME_UNIT))),
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(app)).configure(
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, app.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),

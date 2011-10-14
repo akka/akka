@@ -8,7 +8,7 @@ import org.scalatest.tools.StandardOutReporter
 import org.scalatest.events._
 import java.lang.Boolean.getBoolean
 
-class QuietReporter(inColor: Boolean) extends StandardOutReporter(false, inColor, false, false) {
+class QuietReporter(inColor: Boolean) extends StandardOutReporter(false, inColor, false, true) {
   def this() = this(!getBoolean("akka.test.nocolor"))
 
   override def apply(event: Event): Unit = event match {

@@ -5,6 +5,7 @@ import akka.performance.trading.domain.OrderbookRepository
 import akka.actor.Actor._
 import akka.dispatch.MessageDispatcher
 import akka.actor.{ Props, ActorRef, PoisonPill }
+import akka.AkkaApplication
 
 trait TradingSystem {
   type ME
@@ -33,7 +34,7 @@ trait TradingSystem {
   case class MatchingEngineInfo(primary: ME, standby: Option[ME], orderbooks: List[Orderbook])
 }
 
-class AkkaTradingSystem extends TradingSystem {
+class AkkaTradingSystem(val app: AkkaApplication) extends TradingSystem {
   type ME = ActorRef
   type OR = ActorRef
 
@@ -69,8 +70,8 @@ class AkkaTradingSystem extends TradingSystem {
 
   def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
     meDispatcher match {
-      case Some(d) ⇒ actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)).withDispatcher(d))
-      case _       ⇒ actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)))
+      case Some(d) ⇒ app.createActor(Props(new AkkaMatchingEngine(meId, orderbooks)).withDispatcher(d))
+      case _       ⇒ app.createActor(Props(new AkkaMatchingEngine(meId, orderbooks)))
     }
 
   override def createOrderReceivers: List[ActorRef] = {
@@ -90,8 +91,8 @@ class AkkaTradingSystem extends TradingSystem {
   }
 
   def createOrderReceiver() = orDispatcher match {
-    case Some(d) ⇒ actorOf(Props(new AkkaOrderReceiver()).withDispatcher(d))
-    case _       ⇒ actorOf(Props(new AkkaOrderReceiver()))
+    case Some(d) ⇒ app.createActor(Props(new AkkaOrderReceiver()).withDispatcher(d))
+    case _       ⇒ app.createActor(Props(new AkkaOrderReceiver()))
   }
 
   override def start() {

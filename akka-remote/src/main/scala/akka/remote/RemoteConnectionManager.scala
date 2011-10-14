@@ -5,9 +5,8 @@
 package akka.remote
 
 import akka.actor._
-import akka.actor.Actor._
 import akka.routing._
-import akka.event.EventHandler
+import akka.AkkaApplication
 
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
@@ -21,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteConnectionManager(
+  app: AkkaApplication,
+  remote: Remote,
   initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef],
   failureDetector: FailureDetector = new NoOpFailureDetector)
   extends ConnectionManager {
@@ -33,7 +34,7 @@ class RemoteConnectionManager(
   private val state: AtomicReference[State] = new AtomicReference[State](newState())
 
   // register all initial connections - e.g listen to events from them
-  initialConnections.keys foreach (NetworkEventStream.register(failureDetector, _))
+  initialConnections.keys foreach (remote.eventStream.register(failureDetector, _))
 
   /**
    * This method is using the FailureDetector to filter out connections that are considered not available.
@@ -57,7 +58,7 @@ class RemoteConnectionManager(
 
   @tailrec
   final def failOver(from: InetSocketAddress, to: InetSocketAddress) {
-    EventHandler.debug(this, "Failing over connection from [%s] to [%s]".format(from, to))
+    app.eventHandler.debug(this, "Failing over connection from [%s] to [%s]".format(from, to))
 
     val oldState = state.get
     var changed = false
@@ -108,8 +109,8 @@ class RemoteConnectionManager(
       if (!state.compareAndSet(oldState, newState)) {
         remove(faultyConnection) // recur
       } else {
-        EventHandler.debug(this, "Removing connection [%s]".format(faultyAddress))
-        NetworkEventStream.unregister(failureDetector, faultyAddress) // unregister the connections - e.g stop listen to events from it
+        app.eventHandler.debug(this, "Removing connection [%s]".format(faultyAddress))
+        remote.eventStream.unregister(failureDetector, faultyAddress) // unregister the connections - e.g stop listen to events from it
       }
     }
   }
@@ -136,14 +137,14 @@ class RemoteConnectionManager(
           putIfAbsent(address, newConnectionFactory) // recur
         } else {
           // we succeeded
-          EventHandler.debug(this, "Adding connection [%s]".format(address))
-          NetworkEventStream.register(failureDetector, address) // register the connection - e.g listen to events from it
+          app.eventHandler.debug(this, "Adding connection [%s]".format(address))
+          remote.eventStream.register(failureDetector, address) // register the connection - e.g listen to events from it
           newConnection // return new connection actor
         }
     }
   }
 
   private[remote] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
-    RemoteActorRef(inetSocketAddress, actorAddress, Actor.TIMEOUT, None)
+    RemoteActorRef(remote.server, inetSocketAddress, actorAddress, None)
   }
 }

@@ -1,15 +1,12 @@
 package akka.performance.trading.common
 
 import java.util.Random
-
 import scala.collection.immutable.TreeMap
-
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
 import org.junit.After
 import org.junit.Before
 import org.scalatest.junit.JUnitSuite
-
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
 import akka.performance.trading.domain.Order
@@ -17,8 +14,11 @@ import akka.performance.trading.domain.TotalTradeCounter
 import akka.performance.workbench.BenchResultRepository
 import akka.performance.workbench.Report
 import akka.performance.workbench.Stats
+import akka.AkkaApplication
 
 trait PerformanceTest extends JUnitSuite {
+
+  def app: AkkaApplication
 
   //    jvm parameters
   //    -server -Xms512m -Xmx1024m -XX:+UseConcMarkSweepGC
@@ -55,8 +55,8 @@ trait PerformanceTest extends JUnitSuite {
 
   var stat: DescriptiveStatistics = _
 
-  val resultRepository = BenchResultRepository()
-  lazy val report = new Report(resultRepository, compareResultWith)
+  val resultRepository = BenchResultRepository(app)
+  lazy val report = new Report(app, resultRepository, compareResultWith)
 
   type TS <: TradingSystem
 

@@ -1,10 +1,10 @@
 package akka.transactor.example;
 
-import akka.transactor.Coordinated;
+import akka.AkkaApplication;
 import akka.actor.ActorRef;
-import akka.actor.Actors;
+import akka.actor.Props;
 import akka.dispatch.Future;
-import akka.dispatch.Futures;
+import akka.transactor.Coordinated;
 
 public class UntypedCoordinatedExample {
     public static void main(String[] args) throws InterruptedException {
@@ -12,15 +12,19 @@ public class UntypedCoordinatedExample {
         System.out.println("Untyped transactor example");
         System.out.println();
 
-        ActorRef counter1 = Actors.actorOf(UntypedCoordinatedCounter.class);
-        ActorRef counter2 = Actors.actorOf(UntypedCoordinatedCounter.class);
+        AkkaApplication application = new AkkaApplication("UntypedCoordinatedExample");
+
+        ActorRef counter1 = application.createActor(new Props().withCreator(UntypedCoordinatedCounter.class));
+        ActorRef counter2 = application.createActor(new Props().withCreator(UntypedCoordinatedCounter.class));
 
         counter1.tell(new Coordinated(new Increment(counter2)));
 
         Thread.sleep(3000);
 
-        Future future1 = counter1.ask("GetCount");
-        Future future2 = counter2.ask("GetCount");
+        long timeout = 5000;
+
+        Future future1 = counter1.ask("GetCount", timeout);
+        Future future2 = counter2.ask("GetCount", timeout);
 
         future1.await();
         if (future1.isCompleted()) {

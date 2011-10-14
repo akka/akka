@@ -4,10 +4,7 @@
 
 package akka.event
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
-import org.scalatest.matchers.MustMatchers
-
-import akka.actor.Actor._
+import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
@@ -23,7 +20,7 @@ object EventBusSpec {
   }
 }
 
-abstract class EventBusSpec(busName: String) extends WordSpec with MustMatchers with TestKit with BeforeAndAfterEach {
+abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfterEach {
   import EventBusSpec._
   type BusType <: EventBus
 
@@ -164,7 +161,7 @@ class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
 
   def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
 
-  def createSubscriber(pipeTo: ActorRef) = actorOf(Props(new TestActorWrapperActor(pipeTo)))
+  def createSubscriber(pipeTo: ActorRef) = createActor(Props(new TestActorWrapperActor(pipeTo)))
 
   def classifierFor(event: BusType#Event) = event.toString
 

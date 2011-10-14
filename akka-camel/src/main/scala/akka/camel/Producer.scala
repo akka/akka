@@ -50,7 +50,7 @@ trait ProducerSupport { this: Actor ⇒
   /**
    * Returns the names of message headers to copy from a request message to a response message.
    * By default only the Message.MessageExchangeId is copied. Applications may override this to
-   * define an application-specific set of message headers to copy.
+   * define an app-specific set of message headers to copy.
    */
   def headersToCopy: Set[String] = headersToCopyDefault
 

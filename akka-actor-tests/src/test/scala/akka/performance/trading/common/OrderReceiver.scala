@@ -3,7 +3,6 @@ package akka.performance.trading.common
 import akka.performance.trading.domain._
 import akka.actor._
 import akka.dispatch.MessageDispatcher
-import akka.event.EventHandler
 
 trait OrderReceiver {
   type ME
@@ -32,7 +31,7 @@ class AkkaOrderReceiver extends Actor with OrderReceiver {
     case routing @ MatchingEngineRouting(mapping) ⇒
       refreshMatchingEnginePartitions(routing.asInstanceOf[MatchingEngineRouting[ActorRef]])
     case order: Order ⇒ placeOrder(order)
-    case unknown      ⇒ EventHandler.warning(this, "Received unknown message: " + unknown)
+    case unknown      ⇒ app.eventHandler.warning(this, "Received unknown message: " + unknown)
   }
 
   def placeOrder(order: Order) = {
@@ -41,7 +40,7 @@ class AkkaOrderReceiver extends Actor with OrderReceiver {
       case Some(m) ⇒
         m.forward(order)
       case None ⇒
-        EventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
+        app.eventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
         channel ! new Rsp(false)
     }
   }

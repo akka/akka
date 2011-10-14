@@ -8,10 +8,9 @@ import akka.AkkaException
 import akka.actor._
 import akka.event.EventHandler
 import akka.config.ConfigurationException
-import akka.actor.UntypedChannel._
-import akka.dispatch.{ Future, Futures }
+import akka.dispatch.{ Future, MessageDispatcher }
+import akka.AkkaApplication
 import akka.util.ReflectiveAccess
-
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
@@ -206,7 +205,6 @@ trait BasicRouter extends Router {
 
   private def throwNoConnectionsError = {
     val error = new RoutingException("No replica connections for router")
-    EventHandler.error(error, this, error.toString)
     throw error
   }
 }
@@ -389,7 +387,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
  * mode, the router would behave as {@link RoundRobinRouter}
  */
-class ScatterGatherFirstCompletedRouter extends RoundRobinRouter with ScatterGatherRouter {
+class ScatterGatherFirstCompletedRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends RoundRobinRouter with ScatterGatherRouter {
 
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Future.firstCompletedOf(results)
 }

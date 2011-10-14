@@ -5,7 +5,7 @@
 */
 package akka.actor
 
-import akka.actor.Actor._
+import akka.AkkaApplication
 
 object Chameneos {
 
@@ -78,7 +78,7 @@ object Chameneos {
     var numFaded = 0
 
     override def preStart() = {
-      for (i ← 0 until numChameneos) actorOf(new Chameneo(self, colours(i % 3), i))
+      for (i ← 0 until numChameneos) context.createActor(new Chameneo(self, colours(i % 3), i))
     }
 
     def receive = {
@@ -109,7 +109,7 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    actorOf(new Mall(1000000, 4))
+    AkkaApplication().createActor(new Mall(1000000, 4))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
   }

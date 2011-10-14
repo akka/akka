@@ -85,12 +85,12 @@ class TestEventListener extends EventHandler.DefaultListener {
 
   var filters: List[EventFilter] = Nil
 
-  override def receive: Receive = ({
+  override def receive: Actor.Receive = ({
     case Mute(filters)                 ⇒ filters foreach addFilter
     case UnMute(filters)               ⇒ filters foreach removeFilter
     case UnMuteAll                     ⇒ filters = Nil
     case event: Event if filter(event) ⇒
-  }: Receive) orElse super.receive
+  }: Actor.Receive) orElse super.receive
 
   def filter(event: Event): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
 

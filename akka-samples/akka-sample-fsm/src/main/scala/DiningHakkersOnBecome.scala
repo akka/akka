@@ -4,8 +4,8 @@ package sample.fsm.dining.become
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
 import akka.actor.{ Scheduler, ActorRef, Actor }
-import akka.actor.Actor._
 import java.util.concurrent.TimeUnit
+import akka.AkkaApplication
 
 /*
  * First we define our messages, they basically speak for themselves
@@ -123,13 +123,14 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
  * Alright, here's our test-harness
  */
 object DiningHakkers {
+  val app = AkkaApplication()
   def run {
     //Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield app.createActor(new Chopstick("Chopstick " + i))
     //Create 5 awesome hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield actorOf(new Hakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
+    } yield app.createActor(new Hakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     //Signal all hakkers that they should start thinking, and watch the show
     hakkers.foreach(_ ! Think)

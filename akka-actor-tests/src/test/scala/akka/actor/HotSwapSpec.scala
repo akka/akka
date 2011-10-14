@@ -4,14 +4,9 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 
-import Actor._
-
-class HotSwapSpec extends WordSpec with MustMatchers {
+class HotSwapSpec extends AkkaSpec {
 
   "An Actor" must {
 
@@ -19,7 +14,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = createActor(new Actor {
         def receive = { case _ ⇒ _log += "default" }
       })
       a ! HotSwap(self ⇒ {
@@ -36,7 +31,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = createActor(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"
@@ -65,7 +60,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = createActor(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"
@@ -111,7 +106,7 @@ class HotSwapSpec extends WordSpec with MustMatchers {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = createActor(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"

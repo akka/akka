@@ -268,9 +268,7 @@ case class UnboundedMailbox() extends MailboxType {
   }
 }
 
-case class BoundedMailbox(
-  final val capacity: Int = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
-  final val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends MailboxType {
+case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
@@ -289,10 +287,7 @@ case class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extend
   }
 }
 
-case class BoundedPriorityMailbox(
-  final val cmp: Comparator[Envelope],
-  final val capacity: Int = { if (Dispatchers.MAILBOX_CAPACITY < 0) Int.MaxValue else Dispatchers.MAILBOX_CAPACITY },
-  final val pushTimeOut: Duration = Dispatchers.MAILBOX_PUSH_TIME_OUT) extends MailboxType {
+case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")

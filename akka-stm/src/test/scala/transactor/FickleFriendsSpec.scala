@@ -4,8 +4,9 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 
+import akka.AkkaApplication
 import akka.transactor.Coordinated
-import akka.actor.{ Actor, ActorRef, ActorTimeoutException }
+import akka.actor._
 import akka.stm._
 import akka.util.duration._
 import akka.event.EventHandler
@@ -97,15 +98,17 @@ object FickleFriends {
   }
 }
 
-class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
+class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   import FickleFriends._
+
+  implicit val timeout = Timeout(5.seconds.dilated)
 
   val numCounters = 2
 
   def createActors = {
-    def createCounter(i: Int) = Actor.actorOf(new FickleCounter("counter" + i))
+    def createCounter(i: Int) = app.createActor(Props(new FickleCounter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val coordinator = Actor.actorOf(new Coordinator("coordinator"))
+    val coordinator = app.createActor(Props(new Coordinator("coordinator")))
     (counters, coordinator)
   }
 
@@ -115,7 +118,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
         EventFilter[ExpectedFailureException],
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
-      EventHandler.notify(TestEvent.Mute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
       val (counters, coordinator) = createActors
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
@@ -126,7 +129,7 @@ class FickleFriendsSpec extends WordSpec with MustMatchers with BeforeAndAfterAl
       }
       counters foreach (_.stop())
       coordinator.stop()
-      EventHandler.notify(TestEvent.UnMute(ignoreExceptions))
+      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

@@ -6,11 +6,129 @@ package akka.event
 
 import akka.actor._
 import akka.dispatch.Dispatchers
-import akka.config.Config._
 import akka.config.ConfigurationException
 import akka.util.{ ListenerManagement, ReflectiveAccess }
 import akka.serialization._
 import akka.AkkaException
+import akka.AkkaApplication
+
+object EventHandler {
+
+  val ErrorLevel = 1
+  val WarningLevel = 2
+  val InfoLevel = 3
+  val DebugLevel = 4
+
+  val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
+  val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
+  val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
+  val genericFormat = "[GENERIC] [%s] [%s]".intern
+
+  class EventHandlerException extends AkkaException
+
+  lazy val StandardOutLogger = new StandardOutLogger {}
+
+  sealed trait Event {
+    @transient
+    val thread: Thread = Thread.currentThread
+    def level: Int
+  }
+
+  case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
+    def level = ErrorLevel
+  }
+
+  case class Warning(instance: AnyRef, message: Any = "") extends Event {
+    def level = WarningLevel
+  }
+
+  case class Info(instance: AnyRef, message: Any = "") extends Event {
+    def level = InfoLevel
+  }
+
+  case class Debug(instance: AnyRef, message: Any = "") extends Event {
+    def level = DebugLevel
+  }
+
+  trait StandardOutLogger {
+    import java.text.SimpleDateFormat
+    import java.util.Date
+
+    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
+
+    def timestamp = dateFormat.format(new Date)
+
+    def print(event: Any) {
+      event match {
+        case e: Error   ⇒ error(e)
+        case e: Warning ⇒ warning(e)
+        case e: Info    ⇒ info(e)
+        case e: Debug   ⇒ debug(e)
+        case e          ⇒ generic(e)
+      }
+    }
+
+    def error(event: Error) =
+      println(errorFormat.format(
+        timestamp,
+        event.thread.getName,
+        instanceName(event.instance),
+        event.message,
+        stackTraceFor(event.cause)))
+
+    def warning(event: Warning) =
+      println(warningFormat.format(
+        timestamp,
+        event.thread.getName,
+        instanceName(event.instance),
+        event.message))
+
+    def info(event: Info) =
+      println(infoFormat.format(
+        timestamp,
+        event.thread.getName,
+        instanceName(event.instance),
+        event.message))
+
+    def debug(event: Debug) =
+      println(debugFormat.format(
+        timestamp,
+        event.thread.getName,
+        instanceName(event.instance),
+        event.message))
+
+    def generic(event: Any) =
+      println(genericFormat.format(timestamp, event.toString))
+
+    def instanceName(instance: AnyRef): String = instance match {
+      case null        ⇒ "NULL"
+      case a: ActorRef ⇒ a.address
+      case _           ⇒ instance.getClass.getSimpleName
+    }
+  }
+
+  class DefaultListener extends Actor with StandardOutLogger {
+    def receive = { case event ⇒ print(event) }
+  }
+
+  def stackTraceFor(e: Throwable) = {
+    import java.io.{ StringWriter, PrintWriter }
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    e.printStackTrace(pw)
+    sw.toString
+  }
+
+  private def levelFor(eventClass: Class[_ <: Event]) = {
+    if (classOf[Error].isAssignableFrom(eventClass)) ErrorLevel
+    else if (classOf[Warning].isAssignableFrom(eventClass)) WarningLevel
+    else if (classOf[Info].isAssignableFrom(eventClass)) InfoLevel
+    else if (classOf[Debug].isAssignableFrom(eventClass)) DebugLevel
+    else DebugLevel
+  }
+
+}
 
 /**
  * Event handler.
@@ -53,56 +171,22 @@ import akka.AkkaException
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object EventHandler extends ListenerManagement {
+class EventHandler(app: AkkaApplication) extends ListenerManagement {
+
+  import EventHandler._
+
   val synchronousLogging: Boolean = System.getProperty("akka.event.force-sync") match {
     case null | "" ⇒ false
     case _         ⇒ true
   }
 
-  val ErrorLevel = 1
-  val WarningLevel = 2
-  val InfoLevel = 3
-  val DebugLevel = 4
-
-  sealed trait Event {
-    @transient
-    val thread: Thread = Thread.currentThread
-    def level: Int
-  }
-
-  case class Error(cause: Throwable, instance: AnyRef, message: Any = "") extends Event {
-    def level = ErrorLevel
-  }
-
-  case class Warning(instance: AnyRef, message: Any = "") extends Event {
-    def level = WarningLevel
-  }
-
-  case class Info(instance: AnyRef, message: Any = "") extends Event {
-    def level = InfoLevel
-  }
-
-  case class Debug(instance: AnyRef, message: Any = "") extends Event {
-    def level = DebugLevel
-  }
-
-  val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
-  val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
-  val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
-  val genericFormat = "[GENERIC] [%s] [%s]".intern
-
-  class EventHandlerException extends AkkaException
-
-  lazy val StandardOutLogger = new StandardOutLogger {}
-
   lazy val EventHandlerDispatcher =
-    Dispatchers.fromConfig("akka.event-handler-dispatcher", Dispatchers.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
+    app.dispatcherFactory.fromConfig("akka.event-handler-dispatcher", app.dispatcherFactory.newDispatcher("event-handler-dispatcher").setCorePoolSize(2).build)
 
   implicit object defaultListenerFormat extends StatelessActorFormat[DefaultListener]
 
   @volatile
-  var level: Int = config.getString("akka.event-handler-level", "INFO") match {
+  var level: Int = app.AkkaConfig.LogLevel match {
     case "ERROR" | "error"     ⇒ ErrorLevel
     case "WARNING" | "warning" ⇒ WarningLevel
     case "INFO" | "info"       ⇒ InfoLevel
@@ -113,14 +197,14 @@ object EventHandler extends ListenerManagement {
 
   def start() {
     try {
-      val defaultListeners = config.getList("akka.event-handlers") match {
+      val defaultListeners = app.AkkaConfig.EventHandlers match {
         case Nil       ⇒ "akka.event.EventHandler$DefaultListener" :: Nil
         case listeners ⇒ listeners
       }
       defaultListeners foreach { listenerName ⇒
         try {
           ReflectiveAccess.getClassFor[Actor](listenerName) match {
-            case Right(actorClass) ⇒ addListener(new LocalActorRef(Props(actorClass).withDispatcher(EventHandlerDispatcher), newUuid.toString, systemService = true))
+            case Right(actorClass) ⇒ addListener(new LocalActorRef(app, Props(actorClass).withDispatcher(EventHandlerDispatcher), newUuid.toString, systemService = true))
             case Left(exception)   ⇒ throw exception
           }
         } catch {
@@ -203,86 +287,9 @@ object EventHandler extends ListenerManagement {
 
   def isDebugEnabled = level >= DebugLevel
 
-  def stackTraceFor(e: Throwable) = {
-    import java.io.{ StringWriter, PrintWriter }
-    val sw = new StringWriter
-    val pw = new PrintWriter(sw)
-    e.printStackTrace(pw)
-    sw.toString
-  }
-
-  private def levelFor(eventClass: Class[_ <: Event]) = {
-    if (classOf[Error].isAssignableFrom(eventClass)) ErrorLevel
-    else if (classOf[Warning].isAssignableFrom(eventClass)) WarningLevel
-    else if (classOf[Info].isAssignableFrom(eventClass)) InfoLevel
-    else if (classOf[Debug].isAssignableFrom(eventClass)) DebugLevel
-    else DebugLevel
-  }
-
   private def log(event: Any) {
     if (synchronousLogging) StandardOutLogger.print(event)
     else notifyListeners(event)
-  }
-
-  trait StandardOutLogger {
-    import java.text.SimpleDateFormat
-    import java.util.Date
-
-    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
-
-    def timestamp = dateFormat.format(new Date)
-
-    def print(event: Any) {
-      event match {
-        case e: Error   ⇒ error(e)
-        case e: Warning ⇒ warning(e)
-        case e: Info    ⇒ info(e)
-        case e: Debug   ⇒ debug(e)
-        case e          ⇒ generic(e)
-      }
-    }
-
-    def error(event: Error) =
-      println(errorFormat.format(
-        timestamp,
-        event.thread.getName,
-        instanceName(event.instance),
-        event.message,
-        stackTraceFor(event.cause)))
-
-    def warning(event: Warning) =
-      println(warningFormat.format(
-        timestamp,
-        event.thread.getName,
-        instanceName(event.instance),
-        event.message))
-
-    def info(event: Info) =
-      println(infoFormat.format(
-        timestamp,
-        event.thread.getName,
-        instanceName(event.instance),
-        event.message))
-
-    def debug(event: Debug) =
-      println(debugFormat.format(
-        timestamp,
-        event.thread.getName,
-        instanceName(event.instance),
-        event.message))
-
-    def generic(event: Any) =
-      println(genericFormat.format(timestamp, event.toString))
-
-    def instanceName(instance: AnyRef): String = instance match {
-      case null        ⇒ "NULL"
-      case a: ActorRef ⇒ a.address
-      case _           ⇒ instance.getClass.getSimpleName
-    }
-  }
-
-  class DefaultListener extends Actor with StandardOutLogger {
-    def receive = { case event ⇒ print(event) }
   }
 
   start()

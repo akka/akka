@@ -4,16 +4,15 @@
 package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-
-import akka.config.Configuration
 import scala.reflect.{ Manifest }
 import akka.dispatch._
+import akka.testkit.AkkaSpec
+import akka.config.Configuration
 
-object DispatchersSpec {
-  import Dispatchers._
-  //
+class DispatchersSpec extends AkkaSpec {
+
+  import app.dispatcherFactory._
+
   val tipe = "type"
   val keepalivems = "keep-alive-time"
   val corepoolsizefactor = "core-pool-size-factor"
@@ -35,34 +34,29 @@ object DispatchersSpec {
   lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
     validTypes.map(t ⇒ (t, from(Configuration.fromMap(Map(tipe -> t))))).toMap
   }
-}
 
-class DispatchersSpec extends JUnitSuite {
+  "Dispatchers" must {
 
-  import Dispatchers._
-  import DispatchersSpec._
+    "yield None if type is missing" in {
+      assert(from(Configuration.fromMap(Map())) === None)
+    }
 
-  @Test
-  def shouldYieldNoneIfTypeIsMissing {
-    assert(from(Configuration.fromMap(Map())) === None)
-  }
+    "throw IllegalArgumentException if type does not exist" in {
+      intercept[IllegalArgumentException] {
+        from(Configuration.fromMap(Map(tipe -> "typedoesntexist")))
+      }
+    }
 
-  @Test(expected = classOf[IllegalArgumentException])
-  def shouldThrowIllegalArgumentExceptionIfTypeDoesntExist {
-    from(Configuration.fromMap(Map(tipe -> "typedoesntexist")))
-  }
+    "get the correct types of dispatchers" in {
+      //It can create/obtain all defined types
+      assert(allDispatchers.values.forall(_.isDefined))
+      //All created/obtained dispatchers are of the expeced type/instance
+      assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1).get)))
+    }
 
-  @Test
-  def shouldGetTheCorrectTypesOfDispatchers {
-    //It can create/obtain all defined types
-    assert(allDispatchers.values.forall(_.isDefined))
-    //All created/obtained dispatchers are of the expeced type/instance
-    assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1).get)))
-  }
-
-  @Test
-  def defaultingToDefaultWhileLoadingTheDefaultShouldWork {
-    assert(from(Configuration.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
+    "default to default while loading the default" in {
+      assert(from(Configuration.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
+    }
   }
 
 }

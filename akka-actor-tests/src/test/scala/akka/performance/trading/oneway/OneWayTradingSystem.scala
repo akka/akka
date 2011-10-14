@@ -1,20 +1,20 @@
 package akka.performance.trading.oneway
 
-import akka.actor.Actor.actorOf
 import akka.performance.trading.common.AkkaTradingSystem
 import akka.performance.trading.domain.Orderbook
 import akka.actor.{ Props, ActorRef }
+import akka.AkkaApplication
 
-class OneWayTradingSystem extends AkkaTradingSystem {
+class OneWayTradingSystem(_app: AkkaApplication) extends AkkaTradingSystem(_app) {
 
   override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
-    case Some(d) ⇒ actorOf(Props(new OneWayMatchingEngine(meId, orderbooks)).withDispatcher(d))
-    case _       ⇒ actorOf(Props(new OneWayMatchingEngine(meId, orderbooks)))
+    case Some(d) ⇒ app.createActor(Props(new OneWayMatchingEngine(meId, orderbooks)).withDispatcher(d))
+    case _       ⇒ app.createActor(Props(new OneWayMatchingEngine(meId, orderbooks)))
   }
 
   override def createOrderReceiver() = orDispatcher match {
-    case Some(d) ⇒ actorOf(Props[OneWayOrderReceiver].withDispatcher(d))
-    case _       ⇒ actorOf(Props[OneWayOrderReceiver])
+    case Some(d) ⇒ app.createActor(Props[OneWayOrderReceiver].withDispatcher(d))
+    case _       ⇒ app.createActor(Props[OneWayOrderReceiver])
   }
 
 }

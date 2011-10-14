@@ -10,10 +10,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.EventHandler
 import akka.actor.DeploymentConfig._
+import akka.{ AkkaException, AkkaApplication }
+import akka.config.{ Configuration, ConfigurationException }
 import akka.util.Duration
-import akka.util.ReflectiveAccess._
-import akka.AkkaException
-import akka.config.{ Configuration, ConfigurationException, Config }
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -28,12 +27,18 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object Deployer extends ActorDeployer {
+class Deployer(val app: AkkaApplication) extends ActorDeployer {
+
+  val deploymentConfig = new DeploymentConfig(app)
 
   //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
-    val deployer = if (ClusterModule.isEnabled) ClusterModule.clusterDeployer else LocalDeployer
+    val deployer = if (app.reflective.ClusterModule.isEnabled) {
+      app.reflective.ClusterModule.clusterDeployer
+    } else {
+      LocalDeployer
+    }
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -76,14 +81,14 @@ object Deployer extends ActorDeployer {
         lookupInConfig(address)
       } catch {
         case e: ConfigurationException ⇒
-          EventHandler.error(e, this, e.getMessage)
+          app.eventHandler.error(e, this, e.getMessage)
           throw e
       }
 
       newDeployment foreach { d ⇒
         if (d eq null) {
           val e = new IllegalStateException("Deployment for address [" + address + "] is null")
-          EventHandler.error(e, this, e.getMessage)
+          app.eventHandler.error(e, this, e.getMessage)
           throw e
         }
         deploy(d) // deploy and cache it
@@ -102,7 +107,7 @@ object Deployer extends ActorDeployer {
 
   private[akka] def addressesInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
-    Config.config.getSection(deploymentPath) match {
+    app.config.getSection(deploymentPath) match {
       case None ⇒ Nil
       case Some(addressConfig) ⇒
         addressConfig.map.keySet
@@ -114,7 +119,7 @@ object Deployer extends ActorDeployer {
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(address: String, configuration: Configuration = Config.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(address: String, configuration: Configuration = app.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------
@@ -186,7 +191,7 @@ object Deployer extends ActorDeployer {
 
                   case "bannage-period.time-to-ban" ⇒
                     failureDetectorConfig.getSection("bannage-period") map { section ⇒
-                      val timeToBan = Duration(section.getInt("time-to-ban", 60), Config.TIME_UNIT)
+                      val timeToBan = Duration(section.getInt("time-to-ban", 60), app.AkkaConfig.DefaultTimeUnit)
                       BannagePeriodFailureDetector(timeToBan)
                     }
 
@@ -301,7 +306,7 @@ object Deployer extends ActorDeployer {
                 // --------------------------------
                 clusterConfig.getSection("replication") match {
                   case None ⇒
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Transient)))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
                     val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -320,7 +325,7 @@ object Deployer extends ActorDeployer {
                           ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                           unknown + "]")
                     }
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, ClusterScope(preferredNodes, Replication(storage, strategy))))
+                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
                 }
             }
         }
@@ -329,13 +334,13 @@ object Deployer extends ActorDeployer {
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException("Address [" + deployment.address + "] already bound to [" + deployment + "]")
-    EventHandler.error(e, this, e.getMessage)
+    app.eventHandler.error(e, this, e.getMessage)
     throw e
   }
 
   private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
-    EventHandler.error(e, this, e.getMessage)
+    app.eventHandler.error(e, this, e.getMessage)
     throw e
   }
 }

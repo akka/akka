@@ -53,7 +53,7 @@ object AkkaBuild extends Build {
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
-    dependencies = Seq(testkit),
+    dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
@@ -65,7 +65,7 @@ object AkkaBuild extends Build {
   lazy val stm = Project(
     id = "akka-stm",
     base = file("akka-stm"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.stm
     )
@@ -74,7 +74,7 @@ object AkkaBuild extends Build {
   lazy val remote = Project(
     id = "akka-remote",
     base = file("akka-remote"),
-    dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
+    dependencies = Seq(stm, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -108,7 +108,7 @@ object AkkaBuild extends Build {
   lazy val http = Project(
     id = "akka-http",
     base = file("akka-http"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.http
     )
@@ -117,7 +117,7 @@ object AkkaBuild extends Build {
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
-    dependencies = Seq(actor, testkit % "test"),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
@@ -304,7 +304,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit, stm, http, remote, slf4j),
+    dependencies = Seq(actor, testkit % "test->test", stm, http, remote, slf4j),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,

@@ -2,9 +2,9 @@ package sample.fsm.dining.fsm
 
 import akka.actor.{ ActorRef, Actor, FSM, UntypedChannel, NullChannel }
 import akka.actor.FSM._
-import akka.actor.Actor._
 import akka.util.Duration
 import akka.util.duration._
+import akka.AkkaApplication
 
 /*
  * Some messages for the chopstick
@@ -164,13 +164,15 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
  */
 object DiningHakkersOnFsm {
 
+  val app = AkkaApplication()
+
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield app.createActor(new Chopstick("Chopstick " + i))
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
+    } yield app.createActor(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     hakkers.foreach(_ ! Think)
   }

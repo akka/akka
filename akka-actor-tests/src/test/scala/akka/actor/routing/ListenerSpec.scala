@@ -1,15 +1,12 @@
 package akka.actor.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
 
-class ListenerSpec extends WordSpec with MustMatchers {
+class ListenerSpec extends AkkaSpec {
 
   "Listener" must {
 
@@ -18,13 +15,13 @@ class ListenerSpec extends WordSpec with MustMatchers {
       val barLatch = TestLatch(2)
       val barCount = new AtomicInteger(0)
 
-      val broadcast = actorOf(new Actor with Listeners {
+      val broadcast = createActor(new Actor with Listeners {
         def receive = listenerManagement orElse {
           case "foo" ⇒ gossip("bar")
         }
       })
 
-      def newListener = actorOf(new Actor {
+      def newListener = createActor(new Actor {
         def receive = {
           case "bar" ⇒
             barCount.incrementAndGet

@@ -6,8 +6,8 @@ package akka.testkit
 
 import akka.actor._
 import akka.util._
-
 import com.eaio.uuid.UUID
+import akka.AkkaApplication
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -34,7 +34,8 @@ import com.eaio.uuid.UUID
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](props: Props, address: String)(implicit ev: T <:< FSM[S, D]) extends TestActorRef(props, address) {
+class TestFSMRef[S, D, T <: Actor](app: AkkaApplication, props: Props, address: String)(implicit ev: T <:< FSM[S, D])
+  extends TestActorRef(app, props, address) {
 
   private def fsm: T = underlyingActor
 
@@ -79,7 +80,9 @@ class TestFSMRef[S, D, T <: Actor](props: Props, address: String)(implicit ev: T
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(Props(creator = () ⇒ factory), new UUID().toString)
+  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
+    new TestFSMRef(app, Props(creator = () ⇒ factory), new UUID().toString)
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D]): TestFSMRef[S, D, T] = new TestFSMRef(Props(creator = () ⇒ factory), address)
+  def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
+    new TestFSMRef(app, Props(creator = () ⇒ factory), address)
 }

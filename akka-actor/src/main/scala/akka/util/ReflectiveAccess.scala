@@ -4,189 +4,22 @@
 
 package akka.util
 import akka.dispatch.Envelope
-import akka.config.{ Config, ModuleNotAvailableException }
+import akka.config.ModuleNotAvailableException
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
-import akka.config.{ Config, ModuleNotAvailableException }
+import akka.config.ModuleNotAvailableException
 import akka.event.EventHandler
 import akka.cluster.ClusterNode
 import akka.remote.{ RemoteSupport, RemoteService }
 import akka.routing.{ RoutedProps, Router }
-
 import java.net.InetSocketAddress
+import akka.AkkaApplication
 
-/**
- * Helper class for reflective access to different modules in order to allow optional loading of modules.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
   val emptyParams: Array[Class[_]] = Array()
   val emptyArguments: Array[AnyRef] = Array()
-
-  /**
-   * Reflective access to the Cluster module.
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object ClusterModule {
-    lazy val isEnabled = Config.isClusterEnabled //&& clusterInstance.isDefined
-
-    lazy val clusterRefClass: Class[_] = getClassFor("akka.cluster.ClusterActorRef") match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-
-    def newClusteredActorRef(props: RoutedProps): ActorRef = {
-      val params: Array[Class[_]] = Array(classOf[RoutedProps])
-      val args: Array[AnyRef] = Array(props)
-
-      createInstance(clusterRefClass, params, args) match {
-        case Left(e)  ⇒ throw e
-        case Right(b) ⇒ b.asInstanceOf[ActorRef]
-      }
-    }
-
-    def ensureEnabled() {
-      if (!isEnabled) {
-        val e = new ModuleNotAvailableException(
-          "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
-        EventHandler.debug(this, e.toString)
-        throw e
-      }
-    }
-
-    lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val clusterDeployerInstance: Option[ActorDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val node: ClusterNode = {
-      ensureEnabled()
-      clusterInstance.get.node
-    }
-
-    lazy val clusterDeployer: ActorDeployer = {
-      ensureEnabled()
-      clusterDeployerInstance.get
-    }
-
-    lazy val transactionLog: TransactionLogObject = {
-      ensureEnabled()
-      transactionLogInstance.get
-    }
-
-    type Cluster = {
-      def node: ClusterNode
-    }
-
-    type Mailbox = {
-      def enqueue(message: Envelope)
-      def dequeue: Envelope
-    }
-
-    type TransactionLogObject = {
-      def newLogFor(
-        id: String,
-        isAsync: Boolean,
-        replicationScheme: ReplicationScheme): TransactionLog
-
-      def logFor(
-        id: String,
-        isAsync: Boolean,
-        replicationScheme: ReplicationScheme): TransactionLog
-
-      def shutdown()
-    }
-
-    type TransactionLog = {
-      def recordEntry(messageHandle: Envelope, actorRef: LocalActorRef)
-      def recordEntry(entry: Array[Byte])
-      def recordSnapshot(snapshot: Array[Byte])
-      def entries: Vector[Array[Byte]]
-      def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
-      def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
-      def latestSnapshotAndSubsequentEntries: (Option[Array[Byte]], Vector[Array[Byte]])
-      def latestEntryId: Long
-      def latestSnapshotId: Long
-      def delete()
-      def close()
-    }
-  }
-
-  /**
-   * Reflective access to the RemoteClient module.
-   *
-   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
-   */
-  object RemoteModule {
-    val TRANSPORT = Config.config.getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
-
-    val configDefaultAddress = new InetSocketAddress(Config.hostname, Config.remoteServerPort)
-
-    lazy val isEnabled = remoteSupportClass.isDefined
-
-    def ensureEnabled() = {
-      if (!isEnabled) {
-        val e = new ModuleNotAvailableException(
-          "Can't load the remote module, make sure it is enabled in the config ('akka.enabled-modules = [\"remote\"])' and that akka-remote.jar is on the classpath")
-        EventHandler.debug(this, e.toString)
-        throw e
-      }
-    }
-
-    lazy val remoteInstance: Option[RemoteService] = getObjectFor("akka.remote.Remote$") match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    lazy val remoteService: RemoteService = {
-      ensureEnabled()
-      remoteInstance.get
-    }
-
-    val remoteSupportClass = getClassFor[RemoteSupport](TRANSPORT) match {
-      case Right(value) ⇒ Some(value)
-      case Left(exception) ⇒
-        EventHandler.debug(this, exception.toString)
-        None
-    }
-
-    protected[akka] val defaultRemoteSupport: Option[() ⇒ RemoteSupport] =
-      remoteSupportClass map { remoteClass ⇒
-        () ⇒ createInstance[RemoteSupport](
-          remoteClass,
-          Array[Class[_]](),
-          Array[AnyRef]()) match {
-            case Right(value) ⇒ value
-            case Left(exception) ⇒
-              val e = new ModuleNotAvailableException(
-                "Can't instantiate [%s] - make sure that akka-remote.jar is on the classpath".format(remoteClass.getName), exception)
-              EventHandler.debug(this, e.toString)
-              throw e
-          }
-      }
-  }
 
   val noParams = Array[Class[_]]()
   val noArgs = Array[AnyRef]()
@@ -201,11 +34,7 @@ object ReflectiveAccess {
     ctor.setAccessible(true)
     Right(ctor.newInstance(args: _*).asInstanceOf[T])
   } catch {
-    case e: java.lang.reflect.InvocationTargetException ⇒
-      EventHandler.debug(this, e.getCause.toString)
-      Left(e)
     case e: Exception ⇒
-      EventHandler.debug(this, e.toString)
       Left(e)
   }
 
@@ -281,5 +110,139 @@ object ReflectiveAccess {
     }
   } catch {
     case e: Exception ⇒ Left(e)
+  }
+
+}
+
+/**
+ * Helper class for reflective access to different modules in order to allow optional loading of modules.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class ReflectiveAccess(val app: AkkaApplication) {
+
+  import ReflectiveAccess._
+
+  def providerClass: Class[_] = {
+    getClassFor(app.AkkaConfig.ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+  }
+
+  def createProvider: ActorRefProvider = {
+    val params: Array[Class[_]] = Array(classOf[AkkaApplication])
+    val args: Array[AnyRef] = Array(app)
+
+    createInstance[ActorRefProvider](providerClass, params, args) match {
+      case Right(p) ⇒ p
+      case Left(e)  ⇒ throw e
+    }
+  }
+
+  /**
+   * Reflective access to the Cluster module.
+   *
+   * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+   */
+  object ClusterModule {
+    lazy val isEnabled = app.AkkaConfig.ClusterEnabled //&& clusterInstance.isDefined
+
+    lazy val clusterRefClass: Class[_] = getClassFor("akka.cluster.ClusterActorRef") match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+
+    def newClusteredActorRef(props: RoutedProps): ActorRef = {
+      val params: Array[Class[_]] = Array(classOf[RoutedProps])
+      val args: Array[AnyRef] = Array(props)
+
+      createInstance(clusterRefClass, params, args) match {
+        case Left(e)  ⇒ throw e
+        case Right(b) ⇒ b.asInstanceOf[ActorRef]
+      }
+    }
+
+    def ensureEnabled() {
+      if (!isEnabled) {
+        val e = new ModuleNotAvailableException(
+          "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
+        app.eventHandler.debug(this, e.toString)
+        throw e
+      }
+    }
+
+    lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        app.eventHandler.debug(this, exception.toString)
+        None
+    }
+
+    lazy val clusterDeployerInstance: Option[ActorDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        app.eventHandler.debug(this, exception.toString)
+        None
+    }
+
+    lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
+      case Right(value) ⇒ Some(value)
+      case Left(exception) ⇒
+        app.eventHandler.debug(this, exception.toString)
+        None
+    }
+
+    lazy val node: ClusterNode = {
+      ensureEnabled()
+      clusterInstance.get.node
+    }
+
+    lazy val clusterDeployer: ActorDeployer = {
+      ensureEnabled()
+      clusterDeployerInstance.get
+    }
+
+    lazy val transactionLog: TransactionLogObject = {
+      ensureEnabled()
+      transactionLogInstance.get
+    }
+
+    type Cluster = {
+      def node: ClusterNode
+    }
+
+    type Mailbox = {
+      def enqueue(message: Envelope)
+      def dequeue: Envelope
+    }
+
+    type TransactionLogObject = {
+      def newLogFor(
+        id: String,
+        isAsync: Boolean,
+        replicationScheme: ReplicationScheme): TransactionLog
+
+      def logFor(
+        id: String,
+        isAsync: Boolean,
+        replicationScheme: ReplicationScheme): TransactionLog
+
+      def shutdown()
+    }
+
+    type TransactionLog = {
+      def recordEntry(messageHandle: Envelope, actorRef: LocalActorRef)
+      def recordEntry(entry: Array[Byte])
+      def recordSnapshot(snapshot: Array[Byte])
+      def entries: Vector[Array[Byte]]
+      def entriesFromLatestSnapshot: Tuple2[Array[Byte], Vector[Array[Byte]]]
+      def entriesInRange(from: Long, to: Long): Vector[Array[Byte]]
+      def latestSnapshotAndSubsequentEntries: (Option[Array[Byte]], Vector[Array[Byte]])
+      def latestEntryId: Long
+      def latestSnapshotId: Long
+      def delete()
+      def close()
+    }
   }
 }

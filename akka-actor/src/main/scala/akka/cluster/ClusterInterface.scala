@@ -7,13 +7,12 @@ package akka.cluster
 import akka.actor._
 import DeploymentConfig._
 import akka.dispatch.Future
-import akka.config.Config
 import akka.routing._
 import akka.serialization.Serializer
 import akka.cluster.metrics._
 import akka.util.Duration
 import akka.util.duration._
-import akka.AkkaException
+import akka.{ AkkaException, AkkaApplication }
 
 import com.eaio.uuid.UUID
 
@@ -103,7 +102,8 @@ class NodeAddress(val clusterName: String, val nodeName: String) {
  * NodeAddress companion object and factory.
  */
 object NodeAddress {
-  def apply(clusterName: String = Config.clusterName, nodeName: String = Config.nodename): NodeAddress = new NodeAddress(clusterName, nodeName)
+  def apply(clusterName: String, nodeName: String): NodeAddress = new NodeAddress(clusterName, nodeName)
+  def apply(app: AkkaApplication): NodeAddress = new NodeAddress(app.AkkaConfig.ClusterName, app.nodename)
 
   def unapply(other: Any) = other match {
     case address: NodeAddress ⇒ Some((address.clusterName, address.nodeName))

@@ -8,6 +8,11 @@ import akka.event.EventHandler
 import akka.config.ConfigurationException
 import akka.util.ReflectiveAccess
 import akka.routing._
+import akka.AkkaApplication
+import akka.dispatch.MessageDispatcher
+import java.util.concurrent.ConcurrentHashMap
+import akka.dispatch.Promise
+import com.eaio.uuid.UUID
 import akka.AkkaException
 
 /**
@@ -15,142 +20,70 @@ import akka.AkkaException
  */
 trait ActorRefProvider {
 
-  def actorOf(props: Props, address: String): Option[ActorRef]
+  def actorOf(props: Props, address: String): ActorRef
+
+  def actorOf(props: RoutedProps, address: String): ActorRef
 
   def actorFor(address: String): Option[ActorRef]
 
+  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef
+
   private[akka] def evict(address: String): Boolean
+
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
+}
+
+/**
+ * Interface implemented by AkkaApplication and AkkaContext, the only two places from which you can get fresh actors
+ */
+trait ActorRefFactory {
+
+  def provider: ActorRefProvider
+
+  def dispatcher: MessageDispatcher
+
+  def createActor(props: Props): ActorRef = createActor(props, new UUID().toString)
+
+  /*
+   * TODO this will have to go at some point, because creating two actors with
+   * the same address can race on the cluster, and then you never know which
+   * implementation wins
+   */
+  def createActor(props: Props, address: String): ActorRef = provider.actorOf(props, address)
+
+  def createActor[T <: Actor](implicit m: Manifest[T]): ActorRef = createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
+
+  def createActor[T <: Actor](address: String)(implicit m: Manifest[T]): ActorRef =
+    createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), address)
+
+  def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
+
+  def createActor(factory: ⇒ Actor): ActorRef = createActor(Props(() ⇒ factory))
+
+  def createActor(creator: UntypedActorFactory): ActorRef = createActor(Props(() ⇒ creator.create()))
+
+  def createActor(props: RoutedProps): ActorRef = createActor(props, new UUID().toString)
+
+  def createActor(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
+
+  def findActor(address: String): Option[ActorRef] = provider.actorFor(address)
+
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
 
-object ActorRefProvider {
-  sealed trait ProviderType
-  object LocalProvider extends ProviderType
-  object RemoteProvider extends ProviderType
-  object ClusterProvider extends ProviderType
-}
-
-/**
- * Container for all ActorRef providers.
- */
-private[akka] class ActorRefProviders(
-  @volatile private var localProvider: Option[ActorRefProvider] = Some(new LocalActorRefProvider),
-  @volatile private var remoteProvider: Option[ActorRefProvider] = None,
-  @volatile private var clusterProvider: Option[ActorRefProvider] = None) {
-
-  import ActorRefProvider._
-
-  def register(providerType: ProviderType, provider: ActorRefProvider) = {
-    EventHandler.info(this, "Registering ActorRefProvider [%s]".format(provider.getClass.getName))
-    providerType match {
-      case LocalProvider   ⇒ localProvider = Option(provider)
-      case RemoteProvider  ⇒ remoteProvider = Option(provider)
-      case ClusterProvider ⇒ clusterProvider = Option(provider)
-    }
-  }
-
-  //FIXME Implement support for configuring by deployment ID etc
-  //FIXME If address matches an already created actor (Ahead-of-time deployed) return that actor
-  //FIXME If address exists in config, it will override the specified Props (should we attempt to merge?)
-
-  def actorOf(props: Props, address: String): ActorRef = {
-
-    @annotation.tailrec
-    def actorOf(props: Props, address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
-      providers match {
-        case Nil ⇒ None
-        case provider :: rest ⇒
-          provider.actorOf(props, address) match {
-            case None ⇒ actorOf(props, address, rest) // recur
-            case ref  ⇒ ref
-          }
-      }
-    }
-
-    actorOf(props, address, providersAsList).getOrElse(throw new ActorRefProviderException(
-      "Actor [" +
-        address +
-        "] could not be found in or created by any of the registered 'ActorRefProvider's [" +
-        providersAsList.map(_.getClass.getName).mkString(", ") + "]"))
-  }
-
-  def actorFor(address: String): Option[ActorRef] = {
-
-    @annotation.tailrec
-    def actorFor(address: String, providers: List[ActorRefProvider]): Option[ActorRef] = {
-      providers match {
-        case Nil ⇒ None
-        case provider :: rest ⇒
-          provider.actorFor(address) match {
-            case None ⇒ actorFor(address, rest) // recur
-            case ref  ⇒ ref
-          }
-      }
-    }
-
-    actorFor(address, providersAsList)
-  }
-
-  /**
-   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
-   */
-  def actorOf(props: RoutedProps, address: String = newUuid().toString): ActorRef = {
-    //TODO Implement support for configuring by deployment ID etc
-    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
-    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
-    //TODO If the actor deployed uses a different config, then ignore or throw exception?
-    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
-    val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
-    val localOnly = props.localOnly
-
-    if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
-    else new RoutedActorRef(props, address)
-  }
-
-  /**
-   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
-   */
-  private[akka] def evict(address: String): Boolean = {
-
-    @annotation.tailrec
-    def evict(address: String, providers: List[ActorRefProvider]): Boolean = {
-      providers match {
-        case Nil ⇒ false
-        case provider :: rest ⇒
-          if (provider.evict(address)) true // done
-          else evict(address, rest) // recur
-      }
-    }
-
-    evict(address, providersAsList)
-  }
-
-  private[akka] def systemActorOf(props: Props, address: String): Option[ActorRef] = {
-    localProvider
-      .getOrElse(throw new IllegalStateException("No LocalActorRefProvider available"))
-      .asInstanceOf[LocalActorRefProvider]
-      .actorOf(props, address, true)
-  }
-
-  private def providersAsList = List(localProvider, remoteProvider, clusterProvider).flatten
-}
-
 /**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider extends ActorRefProvider {
-  import java.util.concurrent.ConcurrentHashMap
-  import akka.dispatch.Promise
-  import com.eaio.uuid.UUID
+class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
-  private val actors = new ConcurrentHashMap[String, Promise[Option[ActorRef]]]
+  private val actors = new ConcurrentHashMap[String, Promise[ActorRef]]
 
-  def actorOf(props: Props, address: String): Option[ActorRef] = actorOf(props, address, false)
+  def actorOf(props: Props, address: String): ActorRef = actorOf(props, address, false)
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
     case null   ⇒ None
-    case future ⇒ future.await.resultOrException.getOrElse(None)
+    case future ⇒ Some(future.get)
   }
 
   /**
@@ -158,20 +91,28 @@ class LocalActorRefProvider extends ActorRefProvider {
    */
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
-  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): Option[ActorRef] = {
+  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
     Address.validate(address)
 
-    val newFuture = Promise[Option[ActorRef]](5000) // FIXME is this proper timeout?
+    val localProps =
+      if (props.dispatcher == Props.defaultDispatcher)
+        props.copy(dispatcher = app.dispatcher)
+      else
+        props
+
+    val defaultTimeout = app.AkkaConfig.ActorTimeout
+
+    val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
     val oldFuture = actors.putIfAbsent(address, newFuture)
 
     if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
 
-      val actor = try {
-        Deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+      val actor: ActorRef = try {
+        app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
           // create a local actor
           case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-            Some(new LocalActorRef(props, address, systemService)) // create a local actor
+            new LocalActorRef(app, localProps, address, systemService) // create a local actor
 
           // create a routed actor ref
           case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
@@ -179,7 +120,7 @@ class LocalActorRefProvider extends ActorRefProvider {
               case RouterType.Direct            ⇒ () ⇒ new DirectRouter
               case RouterType.Random            ⇒ () ⇒ new RandomRouter
               case RouterType.RoundRobin        ⇒ () ⇒ new RoundRobinRouter
-              case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
+              case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(props.dispatcher, defaultTimeout)
               case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
               case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
               case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
@@ -188,14 +129,12 @@ class LocalActorRefProvider extends ActorRefProvider {
 
             val connections: Iterable[ActorRef] =
               if (nrOfInstances.factor > 0)
-                Vector.fill(nrOfInstances.factor)(new LocalActorRef(props, new UUID().toString, systemService))
+                Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, localProps, new UUID().toString, systemService))
               else Nil
 
-            Some(Actor.actorOf(RoutedProps(
-              routerFactory = routerFactory,
-              connectionManager = new LocalConnectionManager(connections))))
+            actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
 
-          case _ ⇒ None // non-local actor - pass it on
+          case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
         }
       } catch {
         case e: Exception ⇒
@@ -207,7 +146,26 @@ class LocalActorRefProvider extends ActorRefProvider {
       actor
 
     } else { // we lost the race -- wait for future to complete
-      oldFuture.await.resultOrException.getOrElse(None)
+      oldFuture.await.resultOrException.get
     }
   }
+
+  /**
+   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
+   */
+  def actorOf(props: RoutedProps, address: String): ActorRef = {
+    //FIXME clustering should be implemented by cluster actor ref provider
+    //TODO Implement support for configuring by deployment ID etc
+    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
+    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
+    //TODO If the actor deployed uses a different config, then ignore or throw exception?
+    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    // val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
+    // val localOnly = props.localOnly
+    // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
+    // else new RoutedActorRef(props, address)
+    new RoutedActorRef(props, address)
+  }
+
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
 }

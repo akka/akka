@@ -3,6 +3,7 @@
  */
 
 package akka.util
+import akka.AkkaApplication
 
 trait Bootable {
   def onLoad() {}

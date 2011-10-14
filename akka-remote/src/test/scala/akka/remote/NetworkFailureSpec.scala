@@ -4,19 +4,17 @@
 
 package akka.remote
 
-import org.scalatest.{ Spec, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.junit.JUnitRunner
-
-import org.junit.runner.RunWith
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.remote.netty.NettyRemoteSupport
 import akka.actor.Actor
+import akka.testkit.AkkaSpec
+import akka.dispatch.Future
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
 
-trait NetworkFailureSpec { self: WordSpec ⇒
+trait NetworkFailureSpec { self: AkkaSpec ⇒
   import Actor._
   import akka.util.Duration
 
@@ -25,7 +23,7 @@ trait NetworkFailureSpec { self: WordSpec ⇒
   val PortRang = "1024-65535"
 
   def replyWithTcpResetFor(duration: Duration, dead: AtomicBoolean) = {
-    spawn {
+    Future {
       try {
         enableTcpReset()
         println("===>>> Reply with [TCP RST] for [" + duration + "]")
@@ -40,7 +38,7 @@ trait NetworkFailureSpec { self: WordSpec ⇒
   }
 
   def throttleNetworkFor(duration: Duration, dead: AtomicBoolean) = {
-    spawn {
+    Future {
       try {
         enableNetworkThrottling()
         println("===>>> Throttling network with [" + BytesPerSecond + ", " + DelayMillis + "] for [" + duration + "]")
@@ -55,7 +53,7 @@ trait NetworkFailureSpec { self: WordSpec ⇒
   }
 
   def dropNetworkFor(duration: Duration, dead: AtomicBoolean) = {
-    spawn {
+    Future {
       try {
         enableNetworkDrop()
         println("===>>> Blocking network [TCP DENY] for [" + duration + "]")

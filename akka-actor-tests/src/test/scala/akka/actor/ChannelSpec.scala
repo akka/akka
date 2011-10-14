@@ -4,12 +4,11 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.dispatch._
 import akka.testkit.TestActorRef
+import akka.testkit.AkkaSpec
 
-class ChannelSpec extends WordSpec with MustMatchers {
+class ChannelSpec extends AkkaSpec {
 
   "A Channel" must {
 

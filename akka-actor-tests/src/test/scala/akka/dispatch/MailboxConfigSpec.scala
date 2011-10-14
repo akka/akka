@@ -4,15 +4,15 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.actor.Actor.{ actorOf }
 import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
 import akka.actor.{ LocalActorRef, Actor, NullChannel }
+import akka.testkit.AkkaSpec
 
 @RunWith(classOf[JUnitRunner])
-abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
+abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
   def factory: MailboxType ⇒ Mailbox
@@ -82,7 +82,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 
   def createMessageInvocation(msg: Any): Envelope = {
     new Envelope(
-      actorOf(new Actor { //Dummy actor
+      createActor(new Actor { //Dummy actor
         def receive = { case _ ⇒ }
       }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
   }

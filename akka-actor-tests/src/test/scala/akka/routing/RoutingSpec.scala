@@ -1,11 +1,8 @@
 package akka.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.routing._
 import akka.config.ConfigurationException
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Actor._
 import akka.actor.{ ActorRef, Actor }
 import collection.mutable.LinkedList
 import akka.routing.Routing.Broadcast
@@ -22,23 +19,23 @@ object RoutingSpec {
   }
 }
 
-class RoutingSpec extends WordSpec with MustMatchers {
+class RoutingSpec extends AkkaSpec {
 
   import akka.routing.RoutingSpec._
 
   "direct router" must {
     "be started when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps().withDirectRouter.withLocalConnections(List(actor1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw ConfigurationException at construction when no connections" in {
       try {
         val props = RoutedProps().withDirectRouter
-        Actor.actorOf(props, "foo")
+        app.createActor(props, "foo")
         fail()
       } catch {
         case e: ConfigurationException ⇒
@@ -49,7 +46,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter = new AtomicInteger(0)
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter.incrementAndGet
@@ -57,7 +54,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withDirectRouter.withLocalConnections(List(connection1))
-      val routedActor = Actor.actorOf(props, "foo")
+      val routedActor = app.createActor(props, "foo")
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -70,7 +67,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -78,7 +75,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withDirectRouter.withLocalConnections(List(connection1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(1)
       actor ! "end"
@@ -92,17 +89,17 @@ class RoutingSpec extends WordSpec with MustMatchers {
   "round robin router" must {
 
     "be started when constructed" in {
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps().withRoundRobinRouter.withLocalConnections(List(actor1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw ConfigurationException at construction when no connections" in {
       try {
         val props = RoutedProps().withRoundRobinRouter
-        Actor.actorOf(props, "foo")
+        app.createActor(props, "foo")
         fail()
       } catch {
         case e: ConfigurationException ⇒
@@ -124,7 +121,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
-        val connection = actorOf(new Actor {
+        val connection = createActor(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
@@ -135,7 +132,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
       //create the routed actor.
       val props = RoutedProps().withRoundRobinRouter.withLocalConnections(connections)
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
@@ -158,7 +155,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -166,7 +163,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -174,7 +171,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1, connection2))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -189,7 +186,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter1.incrementAndGet()
@@ -197,7 +194,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       try {
         actor ? Broadcast(1)
@@ -216,17 +213,17 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
     "be started when constructed" in {
 
-      val actor1 = Actor.actorOf[TestActor]
+      val actor1 = createActor[TestActor]
 
       val props = RoutedProps().withRandomRouter.withLocalConnections(List(actor1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
       actor.isShutdown must be(false)
     }
 
     "throw ConfigurationException at construction when no connections" in {
       try {
         val props = RoutedProps().withRandomRouter
-        Actor.actorOf(props, "foo")
+        app.createActor(props, "foo")
         fail()
       } catch {
         case e: ConfigurationException ⇒
@@ -241,7 +238,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -249,7 +246,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -257,7 +254,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withRandomRouter.withLocalConnections(List(connection1, connection2))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -272,7 +269,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new CountDownLatch(1)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = createActor(new Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter1.incrementAndGet()
@@ -280,7 +277,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val props = RoutedProps().withRandomRouter.withLocalConnections(List(connection1))
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       try {
         actor ? Broadcast(1)
@@ -305,7 +302,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(Stop(Some(0)))
 
@@ -322,7 +319,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch))))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(Stop())
 
@@ -340,7 +337,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(List(newActor(0), newActor(1)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       (actor ? Broadcast("Hi!")).get.asInstanceOf[Int] must be(0)
 
@@ -351,7 +348,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(List(newActor(0), newActor(1)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
     }
@@ -360,7 +357,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val props = RoutedProps()
         .withLocalConnections(List(newActor(0)))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor.isShutdown must be(false)
 
@@ -372,7 +369,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
       try {
-        Actor.actorOf(props, "foo")
+        app.createActor(props, "foo")
         fail()
       } catch {
         case e: ConfigurationException ⇒
@@ -389,7 +386,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
-        val connection = actorOf(new Actor {
+        val connection = app.createActor(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
@@ -402,7 +399,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(connections)
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -424,7 +421,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = actorOf(new Actor {
+      val connection1 = app.createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -432,7 +429,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = actorOf(new Actor {
+      val connection2 = app.createActor(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
@@ -443,7 +440,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
         .withLocalConnections(List(connection1, connection2))
         .withRouter(() ⇒ new ScatterGatherFirstCompletedRouter())
 
-      val actor = Actor.actorOf(props, "foo")
+      val actor = app.createActor(props, "foo")
 
       actor ! Broadcast(1)
       actor ! Broadcast("end")
@@ -456,7 +453,7 @@ class RoutingSpec extends WordSpec with MustMatchers {
 
     case class Stop(id: Option[Int] = None)
 
-    def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = actorOf(new Actor {
+    def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = app.createActor(new Actor {
       def receive = {
         case Stop(None)                     ⇒ self.stop()
         case Stop(Some(_id)) if (_id == id) ⇒ self.stop()

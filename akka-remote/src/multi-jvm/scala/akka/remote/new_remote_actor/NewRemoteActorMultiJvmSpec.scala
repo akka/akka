@@ -1,9 +1,7 @@
 package akka.remote.new_remote_actor
 
-import akka.remote._
-
 import akka.actor.Actor
-import akka.config.Config
+import akka.remote._
 
 object NewRemoteActorMultiJvmSpec {
   val NrOfNodes = 2
@@ -11,13 +9,13 @@ object NewRemoteActorMultiJvmSpec {
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "identify" ⇒ {
-        reply(Config.nodename)
+        reply(app.nodename)
       }
     }
   }
 }
 
-class NewRemoteActorMultiJvmNode1 extends MultiJvmSync {
+class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
 
   import NewRemoteActorMultiJvmSpec._
 
@@ -27,7 +25,7 @@ class NewRemoteActorMultiJvmNode1 extends MultiJvmSync {
     "___" in {
       barrier("setup")
 
-      Remote.start()
+      remote.start()
 
       barrier("start")
 
@@ -36,7 +34,7 @@ class NewRemoteActorMultiJvmNode1 extends MultiJvmSync {
   }
 }
 
-class NewRemoteActorMultiJvmNode2 extends MultiJvmSync {
+class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
 
   import NewRemoteActorMultiJvmSpec._
 
@@ -46,11 +44,11 @@ class NewRemoteActorMultiJvmNode2 extends MultiJvmSync {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
       barrier("setup")
 
-      Remote.start()
+      remote.start()
 
       barrier("start")
 
-      val actor = Actor.actorOf[SomeActor]("service-hello")
+      val actor = app.createActor[SomeActor]("service-hello")
       val result = (actor ? "identify").get
       result must equal("node1")
 

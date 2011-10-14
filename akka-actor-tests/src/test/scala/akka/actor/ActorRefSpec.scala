@@ -12,8 +12,8 @@ import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
-import akka.actor.Actor.actorOf
 import akka.dispatch.{ DefaultPromise, Promise, Future }
+import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
@@ -28,11 +28,11 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" ⇒ {
         replyTo = channel
-        val worker = actorOf(Props[WorkerActor])
+        val worker = context.createActor(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
-        val worker = actorOf(Props[WorkerActor])
+        val worker = context.createActor(Props[WorkerActor])
         worker ! ReplyTo(channel)
       case "workDone"      ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ reply("simpleReply")
@@ -113,7 +113,7 @@ object ActorRefSpec {
   }
 }
 
-class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
+class ActorRefSpec extends AkkaSpec {
   import akka.actor.ActorRefSpec._
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
@@ -135,7 +135,7 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
 
   "An ActorRef" must {
 
-    "not allow Actors to be created outside of an actorOf" in {
+    "not allow Actors to be created outside of an createActor" in {
       intercept[akka.actor.ActorInitializationException] {
         new Actor { def receive = { case _ ⇒ } }
       }
@@ -145,7 +145,7 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       filterException[akka.actor.ActorInitializationException] {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new Actor {
+            createActor(new Actor {
               val nested = promiseIntercept(new Actor { def receive = { case _ ⇒ } })(result)
               def receive = { case _ ⇒ }
             }))
@@ -155,49 +155,49 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(promiseIntercept(new FailingOuterActor(actorOf(new InnerActor)))(result)))
+            createActor(promiseIntercept(new FailingOuterActor(createActor(new InnerActor)))(result)))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+            createActor(new OuterActor(createActor(promiseIntercept(new FailingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(promiseIntercept(new FailingInheritingOuterActor(actorOf(new InnerActor)))(result)))
+            createActor(promiseIntercept(new FailingInheritingOuterActor(createActor(new InnerActor)))(result)))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            createActor(new FailingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            createActor(new FailingInheritingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
+            createActor(new FailingInheritingOuterActor(createActor(promiseIntercept(new FailingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new OuterActor(actorOf(new InnerActor {
+            createActor(new OuterActor(createActor(new InnerActor {
               val a = promiseIntercept(new InnerActor)(result)
             }))))
         }
@@ -206,21 +206,21 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            createActor(new FailingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            createActor(new OuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            actorOf(new OuterActor(actorOf(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
+            createActor(new OuterActor(createActor(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
         }
 
         contextStackMustBeEmpty
@@ -229,7 +229,7 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       filterException[java.lang.IllegalStateException] {
         (intercept[java.lang.IllegalStateException] {
           wrap(result ⇒
-            actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
+            createActor(new OuterActor(createActor(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
         }).getMessage must be === "Ur state be b0rked"
 
         contextStackMustBeEmpty
@@ -237,7 +237,30 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = actorOf[InnerActor]
+      val a = createActor[InnerActor]
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      Serialization.app.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        val readA = in.readObject
+
+        a.isInstanceOf[LocalActorRef] must be === true
+        readA.isInstanceOf[LocalActorRef] must be === true
+        (readA eq a) must be === true
+      }
+    }
+
+    "throw an exception on deserialize if no app in scope" in {
+      val a = createActor[InnerActor]
 
       import java.io._
 
@@ -250,31 +273,29 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       out.close
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      val readA = in.readObject
 
-      a.isInstanceOf[LocalActorRef] must be === true
-      readA.isInstanceOf[LocalActorRef] must be === true
-      (readA eq a) must be === true
+      (intercept[java.lang.IllegalStateException] {
+        in.readObject
+      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
-      ReflectiveAccess.RemoteModule.isEnabled must be === false
       val latch = new CountDownLatch(1)
-      val a = actorOf(new InnerActor {
+      val a = createActor(new InnerActor {
         override def postStop {
-          //          Actor.registry.unregister(self)
+          // app.registry.unregister(self)
           latch.countDown
         }
       })
 
-      val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
+      val inetAddress = app.defaultAddress
 
       val expectedSerializedRepresentation = SerializedActorRef(
         a.uuid,
         a.address,
         inetAddress.getAddress.getHostAddress,
-        inetAddress.getPort,
-        a.timeout)
+        inetAddress.getPort)
 
       import java.io._
 
@@ -289,15 +310,17 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       a.stop()
       latch.await(5, TimeUnit.SECONDS) must be === true
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      (intercept[java.lang.IllegalStateException] {
-        in.readObject
-      }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
+      Serialization.app.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        (intercept[java.lang.IllegalStateException] {
+          in.readObject
+        }).getMessage must be === "Could not deserialize ActorRef"
+      }
     }
 
-    "support nested actorOfs" in {
-      val a = actorOf(new Actor {
-        val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
+    "support nested createActors" in {
+      val a = createActor(new Actor {
+        val nested = createActor(new Actor { def receive = { case _ ⇒ } })
         def receive = { case _ ⇒ reply(nested) }
       })
 
@@ -307,8 +330,8 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       (a ne nested) must be === true
     }
 
-    "support advanced nested actorOfs" in {
-      val a = actorOf(Props(new OuterActor(actorOf(Props(new InnerActor)))))
+    "support advanced nested createActors" in {
+      val a = createActor(Props(new OuterActor(createActor(Props(new InnerActor)))))
       val inner = (a ? "innerself").as[Any].get
 
       (a ? a).as[ActorRef].get must be(a)
@@ -319,8 +342,8 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "support reply via channel" in {
-      val serverRef = actorOf(Props[ReplyActor])
-      val clientRef = actorOf(Props(new SenderActor(serverRef)))
+      val serverRef = createActor(Props[ReplyActor])
+      val clientRef = createActor(Props(new SenderActor(serverRef)))
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -344,7 +367,7 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
 
     "stop when sent a poison pill" in {
       val timeout = Timeout(20000)
-      val ref = actorOf(Props(new Actor {
+      val ref = createActor(Props(new Actor {
         def receive = {
           case 5    ⇒ tryReply("five")
           case null ⇒ tryReply("null")
@@ -369,9 +392,9 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       filterException[ActorKilledException] {
         val latch = new CountDownLatch(2)
 
-        val boss = actorOf(Props(new Actor {
+        val boss = createActor(Props(new Actor {
 
-          val ref = actorOf(
+          val ref = createActor(
             Props(new Actor {
               def receive = { case _ ⇒ }
               override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()

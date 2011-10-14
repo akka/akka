@@ -3,13 +3,8 @@
  */
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
-import akka.testkit._
 import akka.testkit._
 import akka.util.duration._
-import akka.event.EventHandler
 
 import FSM._
 
@@ -40,14 +35,14 @@ object FSMTransitionSpec {
 
 }
 
-class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
+class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
   import FSMTransitionSpec._
 
   "A FSM transition notifier" must {
 
     "notify listeners" in {
-      val fsm = Actor.actorOf(new MyFSM(testActor))
+      val fsm = createActor(new MyFSM(testActor))
       within(1 second) {
         fsm ! SubscribeTransitionCallBack(testActor)
         expectMsg(CurrentState(fsm, 0))
@@ -59,10 +54,9 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
     }
 
     "not fail when listener goes away" in {
-      val forward = Actor.actorOf(new Forwarder(testActor))
-      val fsm = Actor.actorOf(new MyFSM(testActor))
-      val sup = Actor.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
-      sup link fsm
+      val forward = createActor(new Forwarder(testActor))
+      val sup = createActor(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+      val fsm = sup startsMonitoring createActor(new MyFSM(testActor))
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)
         expectMsg(CurrentState(fsm, 0))

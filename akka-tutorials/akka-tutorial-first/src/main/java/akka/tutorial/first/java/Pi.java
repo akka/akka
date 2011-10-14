@@ -4,7 +4,6 @@
 
 package akka.tutorial.first.java;
 
-import static akka.actor.Actors.actorOf;
 import static akka.actor.Actors.poisonPill;
 import static java.util.Arrays.asList;
 
@@ -22,7 +21,11 @@ import scala.collection.JavaConversions;
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 
+import akka.AkkaApplication;
+
 public class Pi {
+
+  private static final AkkaApplication app = new AkkaApplication();
 
   public static void main(String[] args) throws Exception {
     Pi pi = new Pi();
@@ -107,11 +110,11 @@ public class Pi {
 
       LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
       for (int i = 0; i < nrOfWorkers; i++) {
-          ActorRef worker = actorOf(Worker.class, "worker");
+          ActorRef worker = app.createActor(Worker.class);
           workers.add(worker);
       }
 
-      router = Actors.provider().actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+      router = app.createActor(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     // message handler
@@ -165,11 +168,11 @@ public class Pi {
     final CountDownLatch latch = new CountDownLatch(1);
 
     // create the master
-    ActorRef master = actorOf(new UntypedActorFactory() {
+    ActorRef master = app.createActor(new UntypedActorFactory() {
       public UntypedActor create() {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
       }
-    }, "master");
+    });
 
     // start the calculation
     master.tell(new Calculate());

@@ -4,10 +4,11 @@
 
 package akka.serialization
 
-import akka.util.ReflectiveAccess._
-import akka.config.Config._
 import akka.AkkaException
 import akka.util.ReflectiveAccess
+import akka.AkkaApplication
+import scala.util.DynamicVariable
+import akka.remote.RemoteSupport
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -15,7 +16,7 @@ case class NoSerializerFoundException(m: String) extends AkkaException(m)
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
-object Serialization {
+class Serialization(val app: AkkaApplication) {
 
   //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
@@ -26,7 +27,11 @@ object Serialization {
     bytes: Array[Byte],
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
-    try { Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader)) } catch { case e: Exception ⇒ Left(e) }
+    try {
+      Serialization.app.withValue(app) {
+        Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader))
+      }
+    } catch { case e: Exception ⇒ Left(e) }
 
   def findSerializerFor(o: AnyRef): Serializer = o match {
     case null  ⇒ NullSerializer
@@ -41,7 +46,7 @@ object Serialization {
    * Tries to load the specified Serializer by the FQN
    */
   def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
-    createInstance(serializerFQN, ReflectiveAccess.emptyParams, ReflectiveAccess.emptyArguments)
+    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.emptyParams, ReflectiveAccess.emptyArguments)
 
   private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
     if (bindings.isEmpty)
@@ -49,7 +54,7 @@ object Serialization {
     else {
       bindings find {
         case (clazzName, _) ⇒
-          getClassFor(clazzName) match {
+          ReflectiveAccess.getClassFor(clazzName) match {
             case Right(clazz) ⇒ clazz.isAssignableFrom(cl)
             case _            ⇒ false
           }
@@ -65,7 +70,7 @@ object Serialization {
    * But "default" can be overridden in config
    */
   val serializers: Map[String, Serializer] =
-    config.getSection("akka.actor.serializers")
+    app.config.getSection("akka.actor.serializers")
       .map(_.map)
       .getOrElse(Map())
       .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
@@ -76,7 +81,7 @@ object Serialization {
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
-  val bindings: Map[String, String] = config.getSection("akka.actor.serialization-bindings") map {
+  val bindings: Map[String, String] = app.config.getSection("akka.actor.serialization-bindings") map {
     _.map.foldLeft(Map[String, String]()) {
       case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
       case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
@@ -94,3 +99,9 @@ object Serialization {
   val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
 }
+
+object Serialization {
+  // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
+  val app = new DynamicVariable[AkkaApplication](null)
+}
+

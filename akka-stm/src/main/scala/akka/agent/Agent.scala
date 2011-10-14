@@ -4,11 +4,11 @@
 
 package akka.agent
 
+import akka.AkkaApplication
+import akka.actor._
 import akka.stm._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.dispatch.{ PinnedDispatcher, DefaultPromise, Dispatchers, Future }
-import akka.actor.{ Props, LocalActorRef, Actor }
-import akka.actor.Actor._
+import akka.dispatch.{ PinnedDispatcher, UnboundedMailbox, DefaultPromise, Dispatchers, Future }
 
 /**
  * Used internally to send functions.
@@ -20,7 +20,7 @@ private[akka] case object Get
  * Factory method for creating an Agent.
  */
 object Agent {
-  def apply[T](initialValue: T) = new Agent(initialValue)
+  def apply[T](initialValue: T)(implicit app: AkkaApplication) = new Agent(initialValue, app)
 }
 
 /**
@@ -93,9 +93,9 @@ object Agent {
  * agent4.close
  * }}}
  */
-class Agent[T](initialValue: T) {
+class Agent[T](initialValue: T, app: AkkaApplication) {
   private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = actorOf(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
+  private[akka] val updater = app.createActor(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
 
   /**
    * Read the internal state of the agent.
@@ -117,13 +117,13 @@ class Agent[T](initialValue: T) {
   }
 
   /**
-   * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
-   * within the given timeout
+   * Dispatch a function to update the internal state, and return a Future where
+   * that new state can be obtained within the given timeout.
    */
-  def alter(f: T ⇒ T)(timeout: Long): Future[T] = {
+  def alter(f: T ⇒ T)(timeout: Timeout): Future[T] = {
     def dispatch = updater.?(Update(f), timeout).asInstanceOf[Future[T]]
     if (Stm.activeTransaction) {
-      val result = new DefaultPromise[T](timeout)
+      val result = new DefaultPromise[T](timeout)(app.dispatcher)
       get //Join xa
       deferred {
         result completeWith dispatch
@@ -150,12 +150,15 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `sendOff` or `send` will
    * still be executed in order.
    */
-  def sendOff(f: T ⇒ T): Unit = send((value: T) ⇒ {
-    suspend()
-    val threadBased = actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(new PinnedDispatcher()))
-    threadBased ! Update(f)
-    value
-  })
+  def sendOff(f: T ⇒ T): Unit = {
+    send((value: T) ⇒ {
+      suspend()
+      val pinnedDispatcher = new PinnedDispatcher(app, null, "agent-send-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
+      val threadBased = app.createActor(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
+      threadBased ! Update(f)
+      value
+    })
+  }
 
   /**
    * Dispatch a function to update the internal state but on its own thread,
@@ -164,11 +167,12 @@ class Agent[T](initialValue: T) {
    * or blocking operations. Dispatches using either `alterOff` or `alter` will
    * still be executed in order.
    */
-  def alterOff(f: T ⇒ T)(timeout: Long): Future[T] = {
-    val result = new DefaultPromise[T](timeout)
+  def alterOff(f: T ⇒ T)(timeout: Timeout): Future[T] = {
+    val result = new DefaultPromise[T](timeout)(app.dispatcher)
     send((value: T) ⇒ {
       suspend()
-      val threadBased = Actor.actorOf(new ThreadBasedAgentUpdater(this))
+      val pinnedDispatcher = new PinnedDispatcher(app, null, "agent-alter-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
+      val threadBased = app.createActor(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
       result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value
     })
@@ -179,18 +183,18 @@ class Agent[T](initialValue: T) {
    * A future to the current value that will be completed after any currently
    * queued updates.
    */
-  def future(): Future[T] = (updater ? Get).asInstanceOf[Future[T]]
+  def future(implicit timeout: Timeout): Future[T] = (updater ? Get).asInstanceOf[Future[T]]
 
   /**
    * Gets this agent's value after all currently queued updates have completed.
    */
-  def await(): T = future.await.result.get
+  def await(implicit timeout: Timeout): T = future.await.result.get
 
   /**
    * Map this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    */
-  def map[B](f: T ⇒ B): Agent[B] = Agent(f(get))
+  def map[B](f: T ⇒ B): Agent[B] = Agent(f(get))(app)
 
   /**
    * Flatmap this agent to a new agent, applying the function to the internal state.
@@ -260,7 +264,7 @@ class Agent[T](initialValue: T) {
    * Map this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    */
-  def map[B](f: JFunc[T, B]): Agent[B] = Agent(f(get))
+  def map[B](f: JFunc[T, B]): Agent[B] = Agent(f(get))(app)
 
   /**
    * Java API:

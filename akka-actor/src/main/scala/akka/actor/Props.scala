@@ -16,8 +16,8 @@ import akka.util._
  */
 object Props {
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher
-  final val defaultTimeout: Timeout = Timeout(Duration(Actor.TIMEOUT, "millis"))
+  final val defaultDispatcher: MessageDispatcher = null
+  final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(classOf[Exception] :: Nil, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
 
@@ -58,6 +58,8 @@ object Props {
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
   def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
+
+  def apply(faultHandler: FaultHandlingStrategy): Props = apply(new Actor { def receive = { case _ ⇒ } }).withFaultHandler(faultHandler)
 }
 
 /**
@@ -90,6 +92,12 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    *  Java API
    */
   def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
+
+  /**
+   * Returns a new Props with the specified creator set
+   *  Java API
+   */
+  def withCreator(c: Class[_ <: Actor]) = copy(creator = () ⇒ c.newInstance)
 
   /**
    * Returns a new Props with the specified dispatcher set

@@ -138,15 +138,15 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
 
   "An non auto-acknowledging consumer" when {
     "started" must {
-      "must support acknowledgements on application level" in {
+      "must support acknowledgements on app level" in {
 
         var consumer: ActorRef = null
 
         service.awaitEndpointActivation(1) {
-          consumer = actorOf(new TestAckConsumer("direct:application-ack-test"))
+          consumer = actorOf(new TestAckConsumer("direct:app-ack-test"))
         } must be(true)
 
-        val endpoint = mandatoryContext.getEndpoint("direct:application-ack-test", classOf[DirectEndpoint])
+        val endpoint = mandatoryContext.getEndpoint("direct:app-ack-test", classOf[DirectEndpoint])
         val producer = endpoint.createProducer.asInstanceOf[AsyncProcessor]
         val exchange = endpoint.createExchange
 

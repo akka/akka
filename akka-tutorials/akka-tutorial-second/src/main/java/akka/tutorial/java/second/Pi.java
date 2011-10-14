@@ -4,11 +4,11 @@
 
 package akka.tutorial.java.second;
 
-import static akka.actor.Actors.actorOf;
 import static akka.actor.Actors.poisonPill;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 
+import akka.AkkaApplication;
 import akka.routing.RoutedProps;
 import akka.routing.Routing;
 import akka.routing.LocalConnectionManager;
@@ -26,6 +26,8 @@ import scala.collection.JavaConversions;
 import java.util.LinkedList;
 
 public class Pi {
+
+  private static final AkkaApplication app = new AkkaApplication();
 
   public static void main(String[] args) throws Exception {
     Pi pi = new Pi();
@@ -101,11 +103,11 @@ public class Pi {
 
       LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
       for (int i = 0; i < nrOfWorkers; i++) {
-         ActorRef worker = actorOf(Worker.class, "worker");
+         ActorRef worker = app.createActor(Worker.class);
          workers.add(worker);
       }
 
-      router = Actors.provider().actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+      router = app.createActor(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     @Override
@@ -161,11 +163,11 @@ public class Pi {
   public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages) throws Exception {
 
     // create the master
-    ActorRef master = actorOf(new UntypedActorFactory() {
+    ActorRef master = app.createActor(new UntypedActorFactory() {
       public UntypedActor create() {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements);
       }
-    }, "worker");
+    });
 
     // start the calculation
     long start = currentTimeMillis();
