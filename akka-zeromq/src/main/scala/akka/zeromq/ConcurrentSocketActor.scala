@@ -81,17 +81,15 @@ private[zeromq] class ConcurrentSocketActor(
   private def sendBytes(bytes: Seq[Byte], flags: Int) = {
     socket.send(bytes.toArray, flags)
   }
-  private def receiveFrames: Seq[Frame] = receiveBytes match {
-    case this.noBytes => Array[Frame]()
-    case bytes => { 
-      val frames = MutableList(Frame(bytes))
-      while (socket.hasReceiveMore) {
-        receiveBytes match {
-          case this.noBytes => Unit
-          case bytes => frames += Frame(bytes)
-        }
+  private def receiveFrames: Seq[Frame] = receiveBytes() match {
+    case `noBytes` => Vector.empty
+    case someBytes => {
+      var frames = Vector(Frame(someBytes))
+      while (socket.hasReceiveMore) receiveBytes() match {
+        case `noBytes` =>
+        case someBytes => frames :+= Frame(someBytes)
       }
-      frames.toSeq
+      frames
     }
   }
   @inline private final def receiveBytes(): Array[Byte] = socket.recv(0) match {
