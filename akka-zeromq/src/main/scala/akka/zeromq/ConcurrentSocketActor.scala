@@ -26,7 +26,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
       socket.connect(endpoint)
       params.listener.foreach { listener =>
         if (!listener.isShutdown)
-          listener ! Connected
+          listener ! Connecting
       }
     }
     def bind(endpoint: String) {

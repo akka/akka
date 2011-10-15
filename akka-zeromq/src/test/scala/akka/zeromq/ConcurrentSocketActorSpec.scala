@@ -25,7 +25,7 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         publisher = newPublisher(context.get, publisherProbe.ref)
         subscriber = newSubscriber(context.get, subscriberProbe.ref)
         subscriberProbe.within(5 seconds) {
-          subscriberProbe.expectMsg(Connected)
+          subscriberProbe.expectMsg(Connecting)
           publisher ! message
           subscriberProbe.expectMsg(message)
         }

@@ -4,5 +4,5 @@
 package akka.zeromq
 
 sealed trait Response
-case object Connected extends Response
+case object Connecting extends Response
 case object Closed extends Response
