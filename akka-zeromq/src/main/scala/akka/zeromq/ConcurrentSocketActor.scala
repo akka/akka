@@ -28,6 +28,31 @@ private[zeromq] class ConcurrentSocketActor(
   self.dispatcher = dispatcher
   poller.register(socket, Poller.POLLIN)
   private val selectTask = { () =>
+    def connect(endpoint: String) {
+      socket.connect(endpoint)
+      listener.foreach { listener =>
+        if (!listener.isShutdown)
+          listener ! Connected
+      }
+    }
+    def bind(endpoint: String) {
+      socket.bind(endpoint)
+    }
+    def sendFrames(frames: Seq[Frame]) = for (i <- 0 until frames.length) {
+      val flags = if (i < frames.length - 1) JZMQ.SNDMORE else 0
+      sendBytes(frames(i).payload, flags)
+    }
+    def sendBytes(bytes: Seq[Byte], flags: Int) = {
+      socket.send(bytes.toArray, flags)
+    }
+    def closeSocket = if (!socketClosed) {
+      socketClosed = true
+      socket.close
+      listener.foreach { listener =>
+        if (!listener.isShutdown)
+          listener ! Closed
+      }
+    }
     if (!socketClosed) {
       if (poller.poll(pollTimeoutDuration.toMillis) > 0) {
         if (poller.pollin(0)) {
@@ -64,23 +89,6 @@ private[zeromq] class ConcurrentSocketActor(
   private def select() {
     self.dispatcher.dispatchTask(selectTask)
   }
-  private def connect(endpoint: String) {
-    socket.connect(endpoint)
-    listener.foreach { listener =>
-      if (!listener.isShutdown)
-        listener ! Connected
-    }
-  }
-  private def bind(endpoint: String) {
-    socket.bind(endpoint)
-  }
-  private def sendFrames(frames: Seq[Frame]) = for (i <- 0 until frames.length) {
-    val flags = if (i < frames.length - 1) JZMQ.SNDMORE else 0
-    sendBytes(frames(i).payload, flags)
-  }
-  private def sendBytes(bytes: Seq[Byte], flags: Int) = {
-    socket.send(bytes.toArray, flags)
-  }
   private def receiveFrames: Seq[Frame] = receiveBytes() match {
     case `noBytes` => Vector.empty
     case someBytes => {
@@ -96,14 +104,6 @@ private[zeromq] class ConcurrentSocketActor(
     case null => noBytes
     case bytes: Array[Byte] if bytes.length > 0 => bytes
     case _ => noBytes
-  }
-  private def closeSocket = if (!socketClosed) {
-    socketClosed = true
-    socket.close
-    listener.foreach { listener =>
-      if (!listener.isShutdown)
-        listener ! Closed
-    }
   }
   @tailrec private def addRequest(request: Request) {
     val requests = this.requests.get
