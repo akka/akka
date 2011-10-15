@@ -54,6 +54,8 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
             case frames if (frames.length > 0) => params.listener.foreach { listener => 
               if (!listener.isShutdown)
                 listener ! params.deserializer(frames)
+              else
+                closeSocket
             }
           }
         }
