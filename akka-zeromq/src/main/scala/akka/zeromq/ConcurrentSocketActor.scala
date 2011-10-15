@@ -21,7 +21,7 @@ private[zeromq] class ConcurrentSocketActor(
     dispatcher: MessageDispatcher,
     pollTimeoutDuration: Duration) extends Actor {
   private val noBytes = Array[Byte]()
-  private val requests = new AtomicReference(List.empty[Request])
+  private val requests = new AtomicReference(Vector.empty[Request])
   private val socket: Socket = context.socket(socketType)
   private val poller: Poller = context.poller
   private var socketClosed: Boolean = false
@@ -64,7 +64,7 @@ private[zeromq] class ConcurrentSocketActor(
           }
         }
       }
-      requests.getAndSet(Nil).foreach {
+      requests.getAndSet(Vector.empty).foreach {
         case Connect(endpoint) => connect(endpoint)
         case Bind(endpoint) => bind(endpoint)
         case Close => closeSocket
@@ -106,9 +106,9 @@ private[zeromq] class ConcurrentSocketActor(
     case _ => noBytes
   }
   @tailrec private def addRequest(request: Request) {
-    val requests = this.requests.get
-    if (!this.requests.compareAndSet(requests, request :: requests)) {
+    val oldRequests = requests.get
+    val newRequests = oldRequests :+ request 
+    if (!requests.compareAndSet(oldRequests, newRequests))
       addRequest(request)
-    }
   }
 }
