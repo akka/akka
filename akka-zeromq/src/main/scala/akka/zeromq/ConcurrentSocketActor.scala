@@ -13,24 +13,18 @@ import org.zeromq.{ZMQ => JZMQ}
 import scala.annotation.tailrec
 import scala.collection.mutable.MutableList
 
-private[zeromq] class ConcurrentSocketActor(
-    context: Context, 
-    socketType: SocketType, 
-    listener: Option[ActorRef], 
-    deserializer: Deserializer,
-    dispatcher: MessageDispatcher,
-    pollTimeoutDuration: Duration) extends Actor {
+private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher: MessageDispatcher) extends Actor {
   private val noBytes = Array[Byte]()
   private val requests = new AtomicReference(Vector.empty[Request])
-  private val socket: Socket = context.socket(socketType)
-  private val poller: Poller = context.poller
+  private val socket: Socket = params.context.socket(params.socketType)
+  private val poller: Poller = params.context.poller
   private var socketClosed: Boolean = false
   self.dispatcher = dispatcher
   poller.register(socket, Poller.POLLIN)
   private val selectTask = { () =>
     def connect(endpoint: String) {
       socket.connect(endpoint)
-      listener.foreach { listener =>
+      params.listener.foreach { listener =>
         if (!listener.isShutdown)
           listener ! Connected
       }
@@ -48,18 +42,18 @@ private[zeromq] class ConcurrentSocketActor(
     def closeSocket = if (!socketClosed) {
       socketClosed = true
       socket.close
-      listener.foreach { listener =>
+      params.listener.foreach { listener =>
         if (!listener.isShutdown)
           listener ! Closed
       }
     }
     if (!socketClosed) {
-      if (poller.poll(pollTimeoutDuration.toMillis) > 0) {
+      if (poller.poll(params.pollTimeoutDuration.toMillis) > 0) {
         if (poller.pollin(0)) {
           receiveFrames match {
-            case frames if (frames.length > 0) => listener.foreach { listener => 
+            case frames if (frames.length > 0) => params.listener.foreach { listener => 
               if (!listener.isShutdown)
-                listener ! deserializer(frames)
+                listener ! params.deserializer(frames)
             }
           }
         }

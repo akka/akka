@@ -55,12 +55,12 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
       }
     }
     def newPublisher(context: Context, listener: ActorRef) = {
-      val publisher = ZeroMQ.newSocket(context, SocketType.Pub, Some(listener))
+      val publisher = ZeroMQ.newSocket(SocketParameters(context, SocketType.Pub, Some(listener)))
       publisher ! Bind(endpoint)
       Some(publisher)
     }
     def newSubscriber(context: Context, listener: ActorRef) = {
-      val subscriber = ZeroMQ.newSocket(context, SocketType.Sub, Some(listener))
+      val subscriber = ZeroMQ.newSocket(SocketParameters(context, SocketType.Sub, Some(listener)))
       subscriber ! Connect(endpoint)
       subscriber ! Subscribe(Seq())
       Some(subscriber)
