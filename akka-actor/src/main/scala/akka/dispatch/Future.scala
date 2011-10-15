@@ -7,7 +7,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, UntypedChannel, Timeout, ExceptionChannel }
+import akka.actor.{ UntypedChannel, Timeout, ExceptionChannel }
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 

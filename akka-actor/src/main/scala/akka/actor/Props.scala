@@ -16,10 +16,17 @@ import collection.immutable.Stack
  * FIXME document me
  */
 object Props {
+  import FaultHandlingStrategy._
+
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
   final val defaultDispatcher: MessageDispatcher = null
   final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
-  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(classOf[Exception] :: Nil, None, None)
+  final val defaultDecider: Decider = {
+    case _: ActorInitializationException ⇒ Stop
+    case _: Exception                    ⇒ Restart
+    case _                               ⇒ Escalate
+  }
+  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
   final val defaultSupervisor: Option[ActorRef] = None
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val randomAddress: String = ""
@@ -33,6 +40,8 @@ object Props {
    * Returns a cached default implementation of Props
    */
   def apply(): Props = default
+
+  def empty = Props(context ⇒ { case null ⇒ })
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance

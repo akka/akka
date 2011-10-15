@@ -18,6 +18,7 @@ import akka.experimental
 import akka.{ AkkaApplication, AkkaException }
 
 import scala.reflect.BeanProperty
+import scala.util.control.NoStackTrace
 
 import com.eaio.uuid.UUID
 
@@ -62,34 +63,41 @@ case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
+case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable) extends PossiblyHarmful
+
 case object ReceiveTimeout extends PossiblyHarmful
 
-case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable)
-
 // Exceptions for Actors
-class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
 }
 
-class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class ActorKilledException private[akka] (message: String, cause: Throwable)
+  extends AkkaException(message, cause)
+  with NoStackTrace {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorKilledException private[akka] (message: String, cause: Throwable) extends AkkaException(message, cause) {
+class ActorInitializationException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause)
+  with NoStackTrace {
   def this(msg: String) = this(msg, null);
 }
 
-class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
-}
+case class DeathPactException private[akka] (dead: ActorRef, cause: Throwable)
+  extends AkkaException("monitored actor " + dead + " terminated", cause)
+  with NoStackTrace
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -391,8 +399,10 @@ trait Actor {
    * by default it does: EventHandler.warning(self, message)
    */
   def unhandled(message: Any) {
-    //EventHandler.warning(self, message)
-    throw new UnhandledMessageException(message, self)
+    message match {
+      case Terminated(dead, cause) ⇒ throw new DeathPactException(dead, cause)
+      case _                       ⇒ throw new UnhandledMessageException(message, self)
+    }
   }
 
   /**
@@ -444,7 +454,7 @@ trait Actor {
       msg match {
         case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
         case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-        case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
+        case unknown ⇒ unhandled(unknown)
       }
     }
   }
