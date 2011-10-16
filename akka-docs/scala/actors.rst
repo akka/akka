@@ -87,6 +87,33 @@ Here is an example:
 .. includecode:: code/ActorDocSpec.scala#creating-constructor
 
 
+Creating Actors using anonymous classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When spawning actors for specific sub-tasks from within an actor, it may be convenient to include the code to be executed directly in place, using an anonymous class::
+
+  def receive = {
+    case m: DoIt =>
+      actorOf(new Actor {
+        def receive = {
+          case DoIt(msg) =>
+            val replyMsg = doSomeDangerousWork(msg)
+            self.reply(replyMsg)
+            self.stop()
+        }
+        def doSomeDangerousWork(msg: Message) = { ... }
+      }).start() ! m
+  }
+
+.. warning::
+
+  In this case you need to carefully avoid closing over the containing actor’s
+  reference, i.e. do not call methods on the enclosing actor from within the
+  anonymous Actor class. This would break the actor encapsulation and may
+  introduce synchronization bugs and race conditions because the other actor’s
+  code will be scheduled concurrently to the enclosing actor. Unfortunately
+  there is not yet a way to detect these illegal accesses at compile time.
+
 Running a block of code asynchronously
 --------------------------------------
 
