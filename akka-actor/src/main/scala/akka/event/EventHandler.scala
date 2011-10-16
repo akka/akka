@@ -104,7 +104,7 @@ object EventHandler {
     def instanceName(instance: AnyRef): String = instance match {
       case null        ⇒ "NULL"
       case a: ActorRef ⇒ a.address
-      case _           ⇒ instance.getClass.getSimpleName
+      case _           ⇒ simpleName(instance)
     }
   }
 

@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, AutoReceivedMessage }
+import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, AutoReceivedMessage, simpleName }
 import akka.remote._
 import RemoteProtocol._
 import akka.util._
@@ -143,7 +143,7 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val name = this.getClass.getSimpleName + "@" +
+  val name = simpleName(this) + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 
