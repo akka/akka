@@ -22,4 +22,15 @@ package object actor {
     n.substring(i + 1).replaceAll("\\$+", ".")
   }
 
+  implicit def future2actor[T](f: akka.dispatch.Future[T]) = new {
+    def pipeTo(channel: Channel[T]): this.type = {
+      if (f.isCompleted) {
+        f.value.get.fold(channel.sendException(_), channel.tryTell(_))
+      } else {
+        f onComplete { _.value.get.fold(channel.sendException(_), channel.tryTell(_)) }
+      }
+      this
+    }
+  }
+
 }
