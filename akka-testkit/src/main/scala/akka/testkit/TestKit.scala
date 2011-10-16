@@ -233,7 +233,7 @@ trait TestKitLight {
    * means reception of the message as part of an expect... or receive... call,
    * not reception by the testActor.
    */
-  def reply(msg: AnyRef) { lastMessage.channel ! msg }
+  def reply(msg: AnyRef) { lastMessage.channel.!(msg)(testActor) }
 
   /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
@@ -561,7 +561,7 @@ class TestProbe extends TestKit {
    * methods.
    */
   def send(actor: ActorRef, msg: AnyRef) = {
-    actor ! msg
+    actor.!(msg)(testActor)
   }
 
   /**
