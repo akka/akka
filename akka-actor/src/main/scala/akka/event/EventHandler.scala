@@ -190,26 +190,26 @@ object EventHandler extends ListenerManagement {
         println(error.format(
           formattedTimestamp,
           event.thread.getName,
-          instance.getClass.getSimpleName,
+          simpleName(instance),
           message,
           stackTraceFor(cause)))
       case event@Warning(instance, message) ⇒
         println(warning.format(
           formattedTimestamp,
           event.thread.getName,
-          instance.getClass.getSimpleName,
+          simpleName(instance),
           message))
       case event@Info(instance, message) ⇒
         println(info.format(
           formattedTimestamp,
           event.thread.getName,
-          instance.getClass.getSimpleName,
+          simpleName(instance),
           message))
       case event@Debug(instance, message) ⇒
         println(debug.format(
           formattedTimestamp,
           event.thread.getName,
-          instance.getClass.getSimpleName,
+          simpleName(instance),
           message))
       case event ⇒
         println(generic.format(formattedTimestamp, event.toString))

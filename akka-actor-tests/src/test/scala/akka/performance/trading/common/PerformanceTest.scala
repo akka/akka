@@ -17,6 +17,7 @@ import akka.performance.trading.domain.TotalTradeCounter
 import akka.performance.workbench.BenchResultRepository
 import akka.performance.workbench.Report
 import akka.performance.workbench.Stats
+import akka.actor.simpleName
 
 trait PerformanceTest extends JUnitSuite {
 
@@ -103,7 +104,7 @@ trait PerformanceTest extends JUnitSuite {
 
   def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
 
-    val name = getClass.getSimpleName
+    val name = simpleName(this)
     val durationS = durationNs.toDouble / 1000000000.0
 
     val percentiles = TreeMap[Int, Long](

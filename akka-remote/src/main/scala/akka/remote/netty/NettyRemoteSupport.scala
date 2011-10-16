@@ -25,7 +25,8 @@ import akka.actor.{
   Uuid,
   Death,
   LifeCycleMessage,
-  ActorType ⇒ AkkaActorType
+  ActorType ⇒ AkkaActorType,
+  simpleName
 }
 import akka.actor.Actor._
 import akka.config.Config
@@ -177,7 +178,7 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) {
 
-  val name = this.getClass.getSimpleName + "@" +
+  val name = simpleName(this) + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 

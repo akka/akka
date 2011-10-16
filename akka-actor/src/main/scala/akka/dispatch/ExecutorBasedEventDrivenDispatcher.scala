@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.event.EventHandler
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
-import akka.actor.{ActorInitializationException, ActorRef}
+import akka.actor.{ActorInitializationException, ActorRef, simpleName}
 
 /**
  * Default settings are:
@@ -163,7 +163,7 @@ class ExecutorBasedEventDrivenDispatcher(
   protected[akka] def reRegisterForExecution(mbox: MessageQueue with ExecutableMailbox): Unit =
     registerForExecution(mbox)
 
-  override val toString = getClass.getSimpleName + "[" + name + "]"
+  override val toString = simpleName(this) + "[" + name + "]"
 
   def suspend(actorRef: ActorRef) {
     getMailbox(actorRef).suspended.tryLock
