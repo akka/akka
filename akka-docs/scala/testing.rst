@@ -152,7 +152,7 @@ into a :class:`TestActorRef`.
 
 .. code-block:: scala
 
-   val actorRef = TestActorRef(new MyActor)
+   val actorRef = TestActorRef(new MyActor).start()
    val result = (actorRef ? Say42).as[Int] // hypothetical message stimulating a '42' answer
    result must be (Some(42))
 
