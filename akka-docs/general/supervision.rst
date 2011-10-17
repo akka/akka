@@ -11,13 +11,13 @@ What Supervision Means
 Supervision describes a dependency relationship between actors: the supervisor
 delegates tasks to subordinates and therefore must respond to their failures.
 When a subordinate detects a failure (i.e. throws an exception), it suspends
-itself and all its children and sends a message to its supervisor, signaling
-failure.  Depending on the nature of the work to be supervised and the nature
-of the failure, the supervisor has four basic choices:
+itself and all its subordinates and sends a message to its supervisor,
+signaling failure.  Depending on the nature of the work to be supervised and
+the nature of the failure, the supervisor has four basic choices:
 
 #. Resume the subordinate, keeping its accumulated internal state
 #. Restart the subordinate, clearing out its accumulated internal state
-#. Stop the subordinate permanently
+#. Terminate the subordinate permanently
 #. Escalate the failure
 
 It is important to always view an actor as part of a supervision hierarchy,
@@ -83,7 +83,7 @@ What Lifecycle Monitoring Means
 
 In contrast to the special relationship between parent and child described
 above, each actor may monitor any other actor. Since actors emerge from
-creation fully started and restarts are not visible outside of the affected
+creation fully alive and restarts are not visible outside of the affected
 supervisors, the only state change available for monitoring is the transition
 from alive to dead. Monitoring is thus used to tie one actor to another so that
 it may react to the other actor’s termination, in contrast to supervision which
