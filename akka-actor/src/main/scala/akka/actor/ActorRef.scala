@@ -13,7 +13,7 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
 import akka.remote.RemoteSupport
 import scala.util.DynamicVariable
-import akka.event.{ EventHandler, InVMMonitoring }
+import akka.event.{ EventHandler }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.

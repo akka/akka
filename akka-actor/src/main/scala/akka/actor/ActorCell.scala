@@ -9,7 +9,6 @@ import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection.JavaConverters
-import akka.event.InVMMonitoring
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
 import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
 import akka.AkkaApplication
@@ -207,27 +206,25 @@ private[akka] object ActorCell {
   }
 }
 
+//vars don't need volatile since it's protected with the mailbox status
+//Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 private[akka] class ActorCell(
   val app: AkkaApplication,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
-  @volatile var receiveTimeout: Option[Long],
-  @volatile var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
+  var receiveTimeout: Option[Long],
+  var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
 
   def provider = app.provider
 
-  @volatile
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
 
-  @volatile
   var _children: Vector[ChildRestartStats] = Vector.empty
 
-  @volatile //TODO FIXME Might be able to make this non-volatile since it should be guarded by a mailbox.isShutdown test (which will force volatile piggyback read)
   var currentMessage: Envelope = null
 
-  @volatile //TODO FIXME Might be able to make this non-volatile since it should be guarded by a mailbox.isShutdown test (which will force volatile piggyback read)
   var actor: Actor = _ //FIXME We can most probably make this just a regular reference to Actor
 
   def ref: ActorRef with ScalaActorRef = self
@@ -238,7 +235,7 @@ private[akka] class ActorCell(
 
   def isShutdown: Boolean = mailbox.isClosed
 
-  @volatile //This must be volatile
+  @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
   def start(): Unit = {
@@ -404,7 +401,7 @@ private[akka] class ActorCell(
 
         if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
 
-        InVMMonitoring.publish(Terminated(self, cause))
+        app.deathWatch.publish(Terminated(self, cause))
 
         currentMessage = null
         clearActorContext()
@@ -426,10 +423,10 @@ private[akka] class ActorCell(
           case Create          ⇒ create()
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
-            akka.event.InVMMonitoring.subscribe(self, subject)
+            app.deathWatch.subscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now monitoring " + subject)
           case Unlink(subject) ⇒
-            akka.event.InVMMonitoring.unsubscribe(self, subject)
+            app.deathWatch.unsubscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopped monitoring " + subject)
           case Suspend          ⇒ suspend()
           case Resume           ⇒ resume()

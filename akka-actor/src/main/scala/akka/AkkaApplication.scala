@@ -176,6 +176,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val provider: ActorRefProvider = reflective.createProvider
 
+  val deathWatch = provider.createDeathWatch()
+
   val typedActor = new TypedActor(this)
 
   val serialization = new Serialization(this)

@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.event.EventHandler
 import akka.config.ConfigurationException
 import akka.util.ReflectiveAccess
 import akka.routing._
@@ -14,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.Promise
 import com.eaio.uuid.UUID
 import akka.AkkaException
+import akka.event.{ ActorClassification, DeathWatch, EventHandler }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -31,6 +31,8 @@ trait ActorRefProvider {
   private[akka] def evict(address: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
+
+  private[akka] def createDeathWatch(): DeathWatch
 }
 
 /**
@@ -168,4 +170,23 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
+
+  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
+}
+
+class LocalDeathWatch extends DeathWatch with ActorClassification {
+
+  def mapSize = 1024
+
+  override def publish(event: Event): Unit = {
+    val monitors = dissociate(classify(event))
+    if (monitors.nonEmpty) monitors.foreach(_ ! event)
+  }
+
+  override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
+    if (!super.subscribe(subscriber, to)) {
+      subscriber ! Terminated(subscriber, new ActorKilledException("Already terminated when linking"))
+      false
+    } else true
+  }
 }

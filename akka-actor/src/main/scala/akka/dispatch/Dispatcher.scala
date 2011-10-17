@@ -121,8 +121,11 @@ class Dispatcher(
           true
         } catch {
           case e: RejectedExecutionException ⇒
-            app.eventHandler.warning(this, e.toString)
-            mbox.setAsIdle()
+            try {
+              app.eventHandler.warning(this, e.toString)
+            } finally {
+              mbox.setAsIdle()
+            }
             throw e
         }
       } else false

@@ -9,7 +9,6 @@ import akka.routing._
 import akka.actor.Actor._
 import akka.actor.Status._
 import akka.dispatch._
-import akka.event.EventHandler
 import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.AkkaException
@@ -20,6 +19,7 @@ import Compression.LZF
 import java.net.InetSocketAddress
 import com.google.protobuf.ByteString
 import akka.AkkaApplication
+import akka.event.{ DeathWatch, EventHandler }
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -225,6 +225,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       connection ! command
     }
   }
+
+  private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch
 }
 
 /**
