@@ -505,7 +505,7 @@ private[akka] class ActorCell(
     val recvtimeout = receiveTimeout
     if (recvtimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
       //Only reschedule if desired and there are currently no more messages to be processed
-      futureTimeout = Some(Scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
+      futureTimeout = Some(app.scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
     }
   }
 

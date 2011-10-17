@@ -138,7 +138,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       actor
 
     } else { // we lost the race -- wait for future to complete
-      oldFuture.await.resultOrException.get
+      oldFuture.get
     }
   }
 

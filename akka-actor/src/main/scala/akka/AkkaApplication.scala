@@ -181,4 +181,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   val typedActor = new TypedActor(this)
 
   val serialization = new Serialization(this)
+
+  val scheduler = new DefaultScheduler
 }

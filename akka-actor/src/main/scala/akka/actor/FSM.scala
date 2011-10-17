@@ -8,6 +8,7 @@ import akka.event.EventHandler
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
+import akka.AkkaApplication
 
 object FSM {
 
@@ -29,14 +30,14 @@ object FSM {
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
 
-  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int) {
+  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: AkkaApplication) {
     private var ref: Option[ScheduledFuture[AnyRef]] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
-        ref = Some(Scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
+        ref = Some(app.scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
       } else {
-        ref = Some(Scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
+        ref = Some(app.scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
       }
     }
 
@@ -525,7 +526,7 @@ trait FSM[S, D] extends ListenerManagement {
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.finite_? && t.length >= 0) {
-          timeoutFuture = Some(Scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
+          timeoutFuture = Some(app.scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
         }
       }
     }

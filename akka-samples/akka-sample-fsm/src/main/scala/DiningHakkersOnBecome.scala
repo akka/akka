@@ -3,7 +3,7 @@ package sample.fsm.dining.become
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
-import akka.actor.{ Scheduler, ActorRef, Actor }
+import akka.actor.{ ActorRef, Actor }
 import java.util.concurrent.TimeUnit
 import akka.AkkaApplication
 
@@ -78,7 +78,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Taken(`chopstickToWaitFor`) ⇒
       println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
       become(eating)
-      Scheduler.scheduleOnce(self, Think, 5, TimeUnit.SECONDS)
+      app.scheduler.scheduleOnce(self, Think, 5, TimeUnit.SECONDS)
 
     case Busy(chopstick) ⇒
       become(thinking)
@@ -107,7 +107,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
       left ! Put(self)
       right ! Put(self)
       println("%s puts down his chopsticks and starts to think", name)
-      Scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
+      app.scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
   }
 
   //All hakkers start in a non-eating state
@@ -115,7 +115,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Think ⇒
       println("%s starts to think", name)
       become(thinking)
-      Scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
+      app.scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
   }
 }
 

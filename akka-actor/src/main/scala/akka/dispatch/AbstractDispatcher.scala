@@ -127,7 +127,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
         shutdownSchedule match {
           case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
-            Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+            app.scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
             shutdownSchedule = RESCHEDULED
           case RESCHEDULED ⇒ //Already marked for reschedule
@@ -159,7 +159,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
           shutdownSchedule match {
             case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
-              Scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+              app.scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
             case SCHEDULED ⇒
               shutdownSchedule = RESCHEDULED
             case RESCHEDULED ⇒ //Already marked for reschedule
@@ -220,7 +220,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
         shutdownSchedule match {
           case RESCHEDULED ⇒
             shutdownSchedule = SCHEDULED
-            Scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
+            app.scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
             if (uuids.isEmpty && _tasks.get == 0) {
               active switchOff {
