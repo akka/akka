@@ -47,6 +47,22 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
           listener ! Closed
       }
     }
+    def receiveFrames: Seq[Frame] = receiveBytes() match {
+      case `noBytes` => Vector.empty
+      case someBytes => {
+        var frames = Vector(Frame(someBytes))
+        while (socket.hasReceiveMore) receiveBytes() match {
+          case `noBytes` =>
+          case someBytes => frames :+= Frame(someBytes)
+        }
+        frames
+      }
+    }
+    @inline def receiveBytes(): Array[Byte] = socket.recv(0) match {
+      case null => noBytes
+      case bytes: Array[Byte] if bytes.length > 0 => bytes
+      case _ => noBytes
+    }
     if (!socketClosed) {
       if (poller.poll(params.pollTimeoutDuration.toMillis) > 0) {
         if (poller.pollin(0)) {
@@ -84,22 +100,6 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
   }
   private def select() {
     self.dispatcher.dispatchTask(selectTask)
-  }
-  private def receiveFrames: Seq[Frame] = receiveBytes() match {
-    case `noBytes` => Vector.empty
-    case someBytes => {
-      var frames = Vector(Frame(someBytes))
-      while (socket.hasReceiveMore) receiveBytes() match {
-        case `noBytes` =>
-        case someBytes => frames :+= Frame(someBytes)
-      }
-      frames
-    }
-  }
-  @inline private final def receiveBytes(): Array[Byte] = socket.recv(0) match {
-    case null => noBytes
-    case bytes: Array[Byte] if bytes.length > 0 => bytes
-    case _ => noBytes
   }
   @tailrec private def addRequest(request: Request) {
     val oldRequests = requests.get
