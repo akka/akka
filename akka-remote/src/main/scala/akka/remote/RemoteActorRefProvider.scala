@@ -273,7 +273,7 @@ private[akka] case class RemoteActorRef private[akka] (
     synchronized {
       if (running) {
         running = false
-        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+        postMessageToMailbox(Terminate, None)
       }
     }
   }

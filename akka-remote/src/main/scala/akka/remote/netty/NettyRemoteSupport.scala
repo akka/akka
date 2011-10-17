@@ -4,8 +4,7 @@
 
 package akka.remote.netty
 
-import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, RemoteActorSystemMessage, AutoReceivedMessage }
-import akka.dispatch.{ ActorPromise, DefaultPromise, Promise }
+import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, AutoReceivedMessage }
 import akka.remote._
 import RemoteProtocol._
 import akka.util._
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.AkkaApplication
 import akka.serialization.RemoteActorSerialization
+import akka.dispatch.{ Terminate, ActorPromise, DefaultPromise, Promise }
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
@@ -958,7 +958,7 @@ class RemoteServerHandler(
 
     message match {
       // first match on system messages
-      case RemoteActorSystemMessage.Stop ⇒
+      case Terminate ⇒
         if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor")
         else actorRef.stop()
 

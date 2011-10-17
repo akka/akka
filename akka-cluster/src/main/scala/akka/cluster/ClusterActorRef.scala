@@ -117,7 +117,7 @@ private[akka] class ClusterActorRef(props: RoutedProps, val address: String) ext
       if (_status == ActorRefInternals.RUNNING) {
         Actor.registry.local.unregisterClusterActorRef(this)
         _status = ActorRefInternals.SHUTDOWN
-        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
+        postMessageToMailbox(Terminate, None)
 
         // FIXME here we need to fire off Actor.cluster.remove(address) (which needs to be properly implemented first, see ticket)
         connections.stopAll()
