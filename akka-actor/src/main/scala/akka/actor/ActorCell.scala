@@ -385,26 +385,30 @@ private[akka] class ActorCell(
       dispatcher.detach(this)
 
       try {
-        val a = actor
-        if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopping")
-        if (a ne null) a.postStop()
-
-        //Stop supervised actors
-        val links = _children
-        if (links.nonEmpty) {
-          _children = Vector.empty
-          links.foreach(_.child.stop())
+        try {
+          val a = actor
+          if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopping")
+          if (a ne null) a.postStop()
+        } finally {
+          //Stop supervised actors
+          val links = _children
+          if (links.nonEmpty) {
+            _children = Vector.empty
+            links.foreach(_.child.stop())
+          }
         }
-
       } finally {
         val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
-
-        if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
-
-        app.deathWatch.publish(Terminated(self, cause))
-
-        currentMessage = null
-        clearActorContext()
+        try {
+          if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
+        } finally {
+          try {
+            app.deathWatch.publish(Terminated(self, cause))
+          } finally {
+            currentMessage = null
+            clearActorContext()
+          }
+        }
       }
     }
 
