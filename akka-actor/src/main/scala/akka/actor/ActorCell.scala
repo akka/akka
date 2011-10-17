@@ -443,8 +443,6 @@ private[akka] class ActorCell(
         app.eventHandler.error(e, self, "error while processing " + envelope.message)
         //TODO FIXME How should problems here be handled?
         throw e
-    } finally {
-      mailbox.acknowledgeStatus() //Volatile write
     }
   }
 
@@ -487,8 +485,6 @@ private[akka] class ActorCell(
         messageHandle.channel sendException new ActorKilledException("Actor has been stopped")
         // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
-    } finally {
-      mailbox.acknowledgeStatus()
     }
   }
 

@@ -128,7 +128,10 @@ abstract class Mailbox extends AbstractMailbox with MessageQueue with SystemMess
      */
     if (s >= Scheduled) {
       updateStatus(s, s & ~Scheduled) || setAsIdle()
-    } else false
+    } else {
+      acknowledgeStatus() // this write is needed to make memory consistent after processMailbox()
+      false
+    }
   }
 
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
