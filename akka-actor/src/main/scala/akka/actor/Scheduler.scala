@@ -67,9 +67,7 @@ class DefaultScheduler extends Scheduler {
     try {
       service.scheduleAtFixedRate(createSendRunnable(receiver, message, true), initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException(message + " could not be scheduled on " + receiver, e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
 
@@ -92,9 +90,7 @@ class DefaultScheduler extends Scheduler {
     try {
       service.scheduleAtFixedRate(runnable, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException("Failed to schedule a Runnable", e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException("Failed to schedule a Runnable", e)
     }
   }
 
@@ -107,9 +103,7 @@ class DefaultScheduler extends Scheduler {
     try {
       service.schedule(createSendRunnable(receiver, message, false), delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
     }
   }
 
@@ -132,9 +126,7 @@ class DefaultScheduler extends Scheduler {
     try {
       service.schedule(runnable, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException("Failed to scheduleOnce a Runnable", e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException("Failed to scheduleOnce a Runnable", e)
     }
   }
 
