@@ -30,8 +30,8 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
           subscriberProbe.expectMsg(message)
         }
       } finally {
-        subscriber ! Close
-        publisher ! Close
+        subscriber.foreach(_.stop)
+        publisher.foreach(_.stop)
         subscriberProbe.within(5 seconds) {
           subscriberProbe.expectMsg(Closed)
         }
@@ -47,8 +47,8 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         publisher = newPublisher(context.get, publisherProbe.ref)
         publisher ! ZMQMessage(Seq[Frame]())
       } finally {
-        publisher ! Close
-        publisherProbe.within (5 seconds) {
+        publisher.foreach(_.stop)
+        publisherProbe.within(5 seconds) {
           publisherProbe.expectMsg(Closed)
         }
         context.foreach(_.term)

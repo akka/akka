@@ -9,7 +9,7 @@ sealed trait Request
 
 case class Connect(endpoint: String) extends Request
 case class Bind(endpoint: String) extends Request
-case object Close extends Request
+private[zeromq] case object Close extends Request
 
 case class Subscribe(payload: Seq[Byte]) extends Request
 object Subscribe {
