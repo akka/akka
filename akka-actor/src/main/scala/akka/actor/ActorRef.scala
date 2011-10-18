@@ -152,12 +152,12 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  */
 class LocalActorRef private[akka] (
   app: AkkaApplication,
-  private[this] val props: Props,
+  props: Props,
   givenAddress: String,
   val systemService: Boolean = false,
   override private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
-  hotswap: Stack[PartialFunction[Any, Unit]] = Stack.empty)
+  hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
   private[this] val actorCell = new ActorCell(app, this, props, receiveTimeout, hotswap)
@@ -251,15 +251,6 @@ class LocalActorRef private[akka] (
     val inetaddr = app.defaultAddress
     SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
   }
-}
-
-/**
- * System messages for RemoteActorRef.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object RemoteActorSystemMessage {
-  val Stop = "RemoteActorRef:stop".intern
 }
 
 /**

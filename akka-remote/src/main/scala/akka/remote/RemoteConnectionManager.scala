@@ -52,6 +52,8 @@ class RemoteConnectionManager(
 
   def size: Int = connections.connections.size
 
+  def isEmpty: Boolean = connections.connections.isEmpty
+
   def shutdown() {
     state.get.iterable foreach (_.stop()) // shut down all remote connections
   }

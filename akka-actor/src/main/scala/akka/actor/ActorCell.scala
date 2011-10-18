@@ -231,7 +231,8 @@ private[akka] class ActorCell(
 
   def uuid: Uuid = self.uuid
 
-  def dispatcher: MessageDispatcher = props.dispatcher
+  @inline
+  final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
 
   def isShutdown: Boolean = mailbox.isClosed
 

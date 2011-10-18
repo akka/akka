@@ -251,8 +251,8 @@ class TypedActor(val app: AkkaApplication) {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
-      case Timeout(Duration.MinusInf) ⇒ app.AkkaConfig.ActorTimeout
-      case x                          ⇒ x
+      case Props.`defaultTimeout` ⇒ app.AkkaConfig.ActorTimeout
+      case x                      ⇒ x
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive

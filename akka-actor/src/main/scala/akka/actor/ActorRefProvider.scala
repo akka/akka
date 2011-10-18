@@ -8,12 +8,11 @@ import akka.config.ConfigurationException
 import akka.util.ReflectiveAccess
 import akka.routing._
 import akka.AkkaApplication
-import akka.dispatch.MessageDispatcher
 import java.util.concurrent.ConcurrentHashMap
-import akka.dispatch.Promise
 import com.eaio.uuid.UUID
 import akka.AkkaException
 import akka.event.{ ActorClassification, DeathWatch, EventHandler }
+import akka.dispatch.{ Future, MessageDispatcher, Promise }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -79,13 +78,14 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
-  private val actors = new ConcurrentHashMap[String, Promise[ActorRef]]
+  private val actors = new ConcurrentHashMap[String, AnyRef]
 
   def actorOf(props: Props, address: String): ActorRef = actorOf(props, address, false)
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
-    case null   ⇒ None
-    case future ⇒ Some(future.get)
+    case null              ⇒ None
+    case actor: ActorRef   ⇒ Some(actor)
+    case future: Future[_] ⇒ Some(future.get.asInstanceOf[ActorRef])
   }
 
   /**
@@ -94,61 +94,53 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
-    Address.validate(address)
-
-    val localProps =
-      if (props.dispatcher == Props.defaultDispatcher)
-        props.copy(dispatcher = app.dispatcher)
-      else
-        props
-
-    val defaultTimeout = app.AkkaConfig.ActorTimeout
 
     val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
-    val oldFuture = actors.putIfAbsent(address, newFuture)
 
-    if (oldFuture eq null) { // we won the race -- create the actor and resolve the future
+    actors.putIfAbsent(address, newFuture) match {
+      case null ⇒
+        val actor: ActorRef = try {
+          app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
-      val actor: ActorRef = try {
-        app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+            // create a local actor
+            case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
+              new LocalActorRef(app, props, address, systemService) // create a local actor
 
-          // create a local actor
-          case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-            new LocalActorRef(app, localProps, address, systemService) // create a local actor
+            // create a routed actor ref
+            case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+              val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
+                case RouterType.Direct     ⇒ () ⇒ new DirectRouter
+                case RouterType.Random     ⇒ () ⇒ new RandomRouter
+                case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
+                case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
+                  if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher, app.AkkaConfig.ActorTimeout)
+                case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+                case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+                case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+                case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
+              }
 
-          // create a routed actor ref
-          case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
-            val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-              case RouterType.Direct            ⇒ () ⇒ new DirectRouter
-              case RouterType.Random            ⇒ () ⇒ new RandomRouter
-              case RouterType.RoundRobin        ⇒ () ⇒ new RoundRobinRouter
-              case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(props.dispatcher, defaultTimeout)
-              case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
-              case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
-              case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
-              case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
-            }
+              val connections: Iterable[ActorRef] =
+                if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, "", systemService)) else Nil
 
-            val connections: Iterable[ActorRef] =
-              if (nrOfInstances.factor > 0)
-                Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, localProps, new UUID().toString, systemService))
-              else Nil
+              actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
 
-            actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
-
-          case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+            case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+          }
+        } catch {
+          case e: Exception ⇒
+            newFuture completeWithException e // so the other threads gets notified of error
+            //TODO FIXME should we remove the mapping in "actors" here?
+            throw e
         }
-      } catch {
-        case e: Exception ⇒
-          newFuture completeWithException e // so the other threads gets notified of error
-          throw e
-      }
 
-      newFuture completeWithResult actor
-      actor
-
-    } else { // we lost the race -- wait for future to complete
-      oldFuture.await.resultOrException.get
+        newFuture completeWithResult actor
+        actors.replace(address, newFuture, actor)
+        actor
+      case actor: ActorRef ⇒
+        actor
+      case future: Future[_] ⇒
+        future.get.asInstanceOf[ActorRef]
     }
   }
 
@@ -161,7 +153,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
     //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
     //TODO If the actor deployed uses a different config, then ignore or throw exception?
-    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
     // val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
