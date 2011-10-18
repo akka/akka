@@ -217,7 +217,7 @@ trait Actor {
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit val defaultTimeout = config.ActorTimeout
+  implicit def defaultTimeout = config.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -419,7 +419,7 @@ trait Actor {
 
   private[akka] final def apply(msg: Any) = {
     if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + channel + "] to [" + self.toString + "] is null")
+      throw new InvalidMessageException("Message from [" + channel + "] to [" + self + "] is null")
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
       if (config.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
@@ -449,7 +449,7 @@ trait Actor {
     }
   }
 
-  private lazy val processingBehavior = receive //ProcessingBehavior is the original behavior
+  private val processingBehavior = receive //ProcessingBehavior is the original behavior
 }
 
 /**

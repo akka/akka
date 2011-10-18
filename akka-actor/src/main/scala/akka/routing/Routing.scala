@@ -94,6 +94,7 @@ object Routing {
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
 abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) extends UnsupportedActorRef {
+  private[akka] val uuid: Uuid = newUuid
 
   val router = props.routerFactory()
 

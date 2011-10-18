@@ -237,6 +237,8 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
+  private[akka] val uuid: Uuid = newUuid
+
   @volatile
   private var running: Boolean = true
 

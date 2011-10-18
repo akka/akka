@@ -6,14 +6,9 @@ package akka.actor
 
 import akka.dispatch._
 import akka.util._
-import akka.serialization.{ Serializer, Serialization }
-import java.net.InetSocketAddress
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
-import akka.remote.RemoteSupport
-import scala.util.DynamicVariable
-import akka.event.{ EventHandler }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -49,7 +44,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
-  private[akka] val uuid = newUuid
+  private[akka] def uuid: Uuid
 
   def address: String
 
@@ -155,7 +150,7 @@ class LocalActorRef private[akka] (
   props: Props,
   givenAddress: String,
   val systemService: Boolean = false,
-  override private[akka] val uuid: Uuid = newUuid,
+  private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
   hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
@@ -350,6 +345,8 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   val address: String = "akka:internal:DeadLetterActorRef"
+
+  private[akka] val uuid: akka.actor.Uuid = new com.eaio.uuid.UUID(0L, 0L) //Nil UUID
 
   override def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
