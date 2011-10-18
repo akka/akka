@@ -120,17 +120,11 @@ object ActorModelSpec {
     protected[akka] abstract override def register(actor: ActorCell) {
       getStats(actor.ref).registers.incrementAndGet()
       super.register(actor)
-      //printMembers("after registering " + actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
       getStats(actor.ref).unregisters.incrementAndGet()
       super.unregister(actor)
-      //printMembers("after unregistering " + actor)
-    }
-
-    def printMembers(when: String) {
-      System.err.println(when + " then " + uuids.toArray.toList.map(_.toString.split("-")(0)).mkString("==> ", ", ", "<=="))
     }
 
     protected[akka] abstract override def dispatch(invocation: Envelope) {
