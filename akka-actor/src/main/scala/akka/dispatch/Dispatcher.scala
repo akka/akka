@@ -84,8 +84,8 @@ class Dispatcher(
     registerForExecution(mbox, true, false)
   }
 
-  protected[akka] def systemDispatch(invocation: SystemEnvelope) = {
-    val mbox = invocation.receiver.mailbox
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage) = {
+    val mbox = receiver.mailbox
     mbox systemEnqueue invocation
     registerForExecution(mbox, false, true)
   }
@@ -100,7 +100,7 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this)
+  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this, actor)
 
   protected[akka] def start {}
 

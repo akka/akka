@@ -54,7 +54,7 @@ class BalancingDispatcher(
 
   protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
 
-  class SharingMailbox(val actor: ActorCell) extends Mailbox with DefaultSystemMessageQueue {
+  class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
     final def enqueue(handle: Envelope) = messageQueue.enqueue(handle)
 
     final def dequeue(): Envelope = {

@@ -245,7 +245,7 @@ private[akka] class ActorCell(
     if (props.supervisor.isDefined) {
       props.supervisor.get match {
         case l: LocalActorRef ⇒
-          l.underlying.dispatcher.systemDispatch(SystemEnvelope(l.underlying, akka.dispatch.Supervise(self), NullChannel))
+          l.underlying.dispatcher.systemDispatch(l.underlying, akka.dispatch.Supervise(self))
         case other ⇒ throw new UnsupportedOperationException("Supervision failure: " + other + " cannot be a supervisor, only LocalActorRefs can")
       }
     }
@@ -253,20 +253,20 @@ private[akka] class ActorCell(
     dispatcher.attach(this)
   }
 
-  def suspend(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Suspend, NullChannel))
+  def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
 
-  def resume(): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Resume, NullChannel))
+  def resume(): Unit = dispatcher.systemDispatch(this, Resume())
 
   private[akka] def stop(): Unit =
-    dispatcher.systemDispatch(SystemEnvelope(this, Terminate, NullChannel))
+    dispatcher.systemDispatch(this, Terminate())
 
   def startsMonitoring(subject: ActorRef): ActorRef = {
-    dispatcher.systemDispatch(SystemEnvelope(this, Link(subject), NullChannel))
+    dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
   def stopsMonitoring(subject: ActorRef): ActorRef = {
-    dispatcher.systemDispatch(SystemEnvelope(this, Unlink(subject), NullChannel))
+    dispatcher.systemDispatch(this, Unlink(subject))
     subject
   }
 
@@ -324,7 +324,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def systemInvoke(envelope: SystemEnvelope) {
+  def systemInvoke(message: SystemMessage) {
 
     def create(): Unit = try {
       val created = newActor()
@@ -337,7 +337,6 @@ private[akka] class ActorCell(
         app.eventHandler.error(e, self, "error while creating actor")
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
-        envelope.channel.sendException(e)
       } finally {
         if (supervisor.isDefined) supervisor.get ! Failed(self, e) else self.stop()
       }
@@ -369,7 +368,6 @@ private[akka] class ActorCell(
         app.eventHandler.error(e, self, "error while creating actor")
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
-        envelope.channel.sendException(e)
       } finally {
         if (supervisor.isDefined) supervisor.get ! Failed(self, e) else self.stop()
       }
@@ -424,24 +422,24 @@ private[akka] class ActorCell(
     try {
       val isClosed = mailbox.isClosed //Fence plus volatile read
       if (!isClosed) {
-        envelope.message match {
-          case Create          ⇒ create()
-          case Recreate(cause) ⇒ recreate(cause)
-          case Link(subject) ⇒
+        message match {
+          case Create(_)          ⇒ create()
+          case Recreate(cause, _) ⇒ recreate(cause)
+          case Link(subject, _) ⇒
             app.deathWatch.subscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now monitoring " + subject)
-          case Unlink(subject) ⇒
+          case Unlink(subject, _) ⇒
             app.deathWatch.unsubscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopped monitoring " + subject)
-          case Suspend          ⇒ suspend()
-          case Resume           ⇒ resume()
-          case Terminate        ⇒ terminate()
-          case Supervise(child) ⇒ supervise(child)
+          case Suspend(_)          ⇒ suspend()
+          case Resume(_)           ⇒ resume()
+          case Terminate(_)        ⇒ terminate()
+          case Supervise(child, _) ⇒ supervise(child)
         }
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        app.eventHandler.error(e, self, "error while processing " + envelope.message)
+        app.eventHandler.error(e, self, "error while processing " + message)
         //TODO FIXME How should problems here be handled?
         throw e
     }
@@ -495,7 +493,7 @@ private[akka] class ActorCell(
 
   def handleChildTerminated(child: ActorRef): Unit = _children = props.faultHandler.handleChildTerminated(child, _children)
 
-  def restart(cause: Throwable): Unit = dispatcher.systemDispatch(SystemEnvelope(this, Recreate(cause), NullChannel))
+  def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
 
   def checkReceiveTimeout() {
     cancelReceiveTimeout()
