@@ -12,6 +12,7 @@ import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
 import akka.AkkaApplication
+import scala.annotation.tailrec
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -24,17 +25,45 @@ final case class Envelope(val receiver: ActorCell, val message: Any, val channel
   }
 }
 
-sealed trait SystemMessage extends PossiblyHarmful {
-  def next: SystemMessage
+object SystemMessage {
+  @tailrec
+  final def size(list: SystemMessage, acc: Int = 0): Int = {
+    if (list eq null) acc else size(list.next, acc + 1)
+  }
+
+  @tailrec
+  final def reverse(list: SystemMessage, acc: SystemMessage = null): SystemMessage = {
+    if (list eq null) acc else {
+      val next = list.next
+      list.next = acc
+      reverse(next, list)
+    }
+  }
 }
-case class Create(next: SystemMessage = null) extends SystemMessage
-case class Recreate(cause: Throwable, next: SystemMessage = null) extends SystemMessage
-case class Suspend(next: SystemMessage = null) extends SystemMessage
-case class Resume(next: SystemMessage = null) extends SystemMessage
-case class Terminate(next: SystemMessage = null) extends SystemMessage
-case class Supervise(child: ActorRef, next: SystemMessage = null) extends SystemMessage
-case class Link(subject: ActorRef, next: SystemMessage = null) extends SystemMessage
-case class Unlink(subject: ActorRef, next: SystemMessage = null) extends SystemMessage
+
+/**
+ * System messages are handled specially: they form their own queue within
+ * each actor’s mailbox. This queue is encoded in the messages themselves to
+ * avoid extra allocations and overhead. The next pointer is a normal var, and
+ * it does not need to be volatile because in the enqueuing method its update
+ * is immediately succeeded by a volatile write and all reads happen after the
+ * volatile read in the dequeuing thread. Afterwards, the obtained list of
+ * system messages is handled in a single thread only and not ever passed around,
+ * hence no further synchronization is needed.
+ *
+ * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+ */
+sealed trait SystemMessage extends PossiblyHarmful {
+  var next: SystemMessage = _
+}
+case class Create() extends SystemMessage
+case class Recreate(cause: Throwable) extends SystemMessage
+case class Suspend() extends SystemMessage
+case class Resume() extends SystemMessage
+case class Terminate() extends SystemMessage
+case class Supervise(child: ActorRef) extends SystemMessage
+case class Link(subject: ActorRef) extends SystemMessage
+case class Unlink(subject: ActorRef) extends SystemMessage
 
 final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
@@ -85,7 +114,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
     override def systemEnqueue(handle: SystemMessage): Unit = ()
-    override def systemDequeue(): SystemMessage = null
+    override def systemDrain(): SystemMessage = null
     override def hasMessages = false
     override def hasSystemMessages = false
     override def numberOfMessages = 0
@@ -172,6 +201,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
    */
   protected[akka] def register(actor: ActorCell) {
     _actors.incrementAndGet()
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     systemDispatch(actor, Create()) //FIXME should this be here or moved into ActorCell.start perhaps?
   }
 
@@ -194,10 +224,10 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
 
     if (mailBox.hasSystemMessages) {
-      var envelope = mailBox.systemDequeue()
-      while (envelope ne null) {
-        deadLetterMailbox.systemEnqueue(envelope)
-        envelope = mailBox.systemDequeue()
+      var message = mailBox.systemDrain()
+      while (message ne null) {
+        deadLetterMailbox.systemEnqueue(message)
+        message = message.next
       }
     }
 

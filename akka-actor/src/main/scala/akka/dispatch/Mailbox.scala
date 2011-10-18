@@ -134,6 +134,12 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     }
   }
 
+  /*
+   * AtomicReferenceFieldUpdater for system queue
+   */
+  protected final def systemQueueGet: SystemMessage = AbstractMailbox.systemQueueUpdater.get(this)
+  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean = AbstractMailbox.systemQueueUpdater.compareAndSet(this, _old, _new)
+
   def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case Closed           ⇒ false
@@ -184,10 +190,18 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   }
 
   def processAllSystemMessages() {
-    var nextMessage = systemDequeue()
-    while (nextMessage ne null) {
-      actor systemInvoke nextMessage
-      nextMessage = systemDequeue()
+    var nextMessage = systemDrain()
+    try {
+      while (nextMessage ne null) {
+        actor systemInvoke nextMessage
+        nextMessage = nextMessage.next
+        // don’t ever execute normal message when system message present!
+        if (nextMessage eq null) nextMessage = systemDrain()
+      }
+    } catch {
+      case e ⇒
+        actor.app.eventHandler.error(e, this, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!")
+        throw e
     }
   }
 
@@ -208,22 +222,41 @@ trait MessageQueue {
 }
 
 trait SystemMessageQueue {
+  /**
+   * Enqueue a new system message, e.g. by prepending atomically as new head of a single-linked list.
+   */
   def systemEnqueue(message: SystemMessage): Unit
 
-  def systemDequeue(): SystemMessage
+  /**
+   * Dequeue all messages from system queue and return them as single-linked list.
+   */
+  def systemDrain(): SystemMessage
 
   def hasSystemMessages: Boolean
 }
 
-trait DefaultSystemMessageQueue { self: SystemMessageQueue ⇒
+trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
-  final val systemMessages = new ConcurrentLinkedQueue[SystemMessage]()
+  @tailrec
+  final def systemEnqueue(message: SystemMessage): Unit = {
+    val head = systemQueueGet
+    /*
+     * this write is safely published by the compareAndSet contained within
+     * systemQueuePut; “Intra-Thread Semantics” on page 12 of the JSR133 spec
+     * guarantees that “head” uses the value obtained from systemQueueGet above.
+     * Hence, SystemMessage.next does not need to be volatile.
+     */
+    message.next = head
+    if (!systemQueuePut(head, message)) systemEnqueue(message)
+  }
 
-  def systemEnqueue(message: SystemMessage): Unit = systemMessages offer message
+  @tailrec
+  final def systemDrain(): SystemMessage = {
+    val head = systemQueueGet
+    if (systemQueuePut(head, null)) SystemMessage.reverse(head) else systemDrain()
+  }
 
-  def systemDequeue(): SystemMessage = systemMessages.poll()
-
-  def hasSystemMessages: Boolean = !systemMessages.isEmpty
+  def hasSystemMessages: Boolean = systemQueueGet ne null
 }
 
 trait UnboundedMessageQueueSemantics extends QueueBasedMessageQueue {

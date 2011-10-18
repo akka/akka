@@ -91,10 +91,10 @@ class BalancingDispatcher(
 
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
     if (mailBox.hasSystemMessages) {
-      var envelope = mailBox.systemDequeue()
-      while (envelope ne null) {
-        deadLetterMailbox.systemEnqueue(envelope) //Send to dead letter queue
-        envelope = mailBox.systemDequeue()
+      var messages = mailBox.systemDrain()
+      while (messages ne null) {
+        deadLetterMailbox.systemEnqueue(messages) //Send to dead letter queue
+        messages = messages.next
       }
     }
   }
