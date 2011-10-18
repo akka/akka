@@ -267,7 +267,7 @@ class TestKit(_app: AkkaApplication) {
     val _max = if (max eq Duration.MinusInf) remaining else max.dilated
     val o = receiveOne(_max)
     assert(o ne null, "timeout during expectMsg: " + hint)
-    assert(f.isDefinedAt(o), "does not match: " + o)
+    assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
   }
 
