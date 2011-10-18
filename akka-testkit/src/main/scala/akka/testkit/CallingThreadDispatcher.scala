@@ -106,7 +106,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher(_app) {
   import CallingThreadDispatcher._
 
-  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this)
+  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this, actor)
 
   private def getMailbox(actor: ActorCell) = actor.mailbox.asInstanceOf[CallingThreadMailbox]
 
@@ -140,11 +140,11 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
 
   override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor).queue.isEmpty
 
-  protected[akka] override def systemDispatch(handle: SystemEnvelope) {
-    val mbox = getMailbox(handle.receiver)
+  protected[akka] override def systemDispatch(receiver: ActorCell, message: SystemMessage) {
+    val mbox = getMailbox(receiver)
     mbox.lock.lock
     try {
-      handle.invoke()
+      receiver systemInvoke message
     } finally {
       mbox.lock.unlock
     }
@@ -241,7 +241,7 @@ class NestingQueue {
   def isActive = active
 }
 
-class CallingThreadMailbox(val dispatcher: MessageDispatcher) extends Mailbox with DefaultSystemMessageQueue {
+class CallingThreadMailbox(val dispatcher: MessageDispatcher, _receiver: ActorCell) extends Mailbox(_receiver) with DefaultSystemMessageQueue {
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = new NestingQueue

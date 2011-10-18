@@ -24,25 +24,17 @@ final case class Envelope(val receiver: ActorCell, val message: Any, val channel
   }
 }
 
-sealed trait SystemMessage extends PossiblyHarmful
-case object Create extends SystemMessage
-case class Recreate(cause: Throwable) extends SystemMessage
-case object Suspend extends SystemMessage
-case object Resume extends SystemMessage
-case object Terminate extends SystemMessage
-case class Supervise(child: ActorRef) extends SystemMessage
-case class Link(subject: ActorRef) extends SystemMessage
-case class Unlink(subject: ActorRef) extends SystemMessage
-
-final case class SystemEnvelope(val receiver: ActorCell, val message: SystemMessage, val channel: UntypedChannel) {
-  if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
-  /**
-   * @return whether to proceed with processing other messages
-   */
-  final def invoke() {
-    receiver systemInvoke this
-  }
+sealed trait SystemMessage extends PossiblyHarmful {
+  def next: SystemMessage
 }
+case class Create(next: SystemMessage = null) extends SystemMessage
+case class Recreate(cause: Throwable, next: SystemMessage = null) extends SystemMessage
+case class Suspend(next: SystemMessage = null) extends SystemMessage
+case class Resume(next: SystemMessage = null) extends SystemMessage
+case class Terminate(next: SystemMessage = null) extends SystemMessage
+case class Supervise(child: ActorRef, next: SystemMessage = null) extends SystemMessage
+case class Link(subject: ActorRef, next: SystemMessage = null) extends SystemMessage
+case class Unlink(subject: ActorRef, next: SystemMessage = null) extends SystemMessage
 
 final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
@@ -87,13 +79,13 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
    */
   protected[akka] val deadLetterMailbox: Mailbox = DeadLetterMailbox
 
-  object DeadLetterMailbox extends Mailbox {
+  object DeadLetterMailbox extends Mailbox(null) {
     becomeClosed()
     override def dispatcher = null //MessageDispatcher.this
     override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
     override def dequeue() = null
-    override def systemEnqueue(handle: SystemEnvelope): Unit = ()
-    override def systemDequeue(): SystemEnvelope = null
+    override def systemEnqueue(handle: SystemMessage): Unit = ()
+    override def systemDequeue(): SystemMessage = null
     override def hasMessages = false
     override def hasSystemMessages = false
     override def numberOfMessages = 0
@@ -174,7 +166,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
    */
   protected[akka] def register(actor: ActorCell) {
     if (uuids add actor.uuid) {
-      systemDispatch(SystemEnvelope(actor, Create, NullChannel)) //FIXME should this be here or moved into ActorCell.start perhaps?
+      systemDispatch(actor, Create()) //FIXME should this be here or moved into ActorCell.start perhaps?
     } else System.err.println("Couldn't register: " + actor)
   }
 
@@ -258,7 +250,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  protected[akka] def systemDispatch(invocation: SystemEnvelope)
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage)
 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution

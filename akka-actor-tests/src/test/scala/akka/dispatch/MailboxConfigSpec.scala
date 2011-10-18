@@ -146,8 +146,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case u: UnboundedMailbox ⇒ u.create(null)
-    case b: BoundedMailbox   ⇒ b.create(null)
+    case u: UnboundedMailbox ⇒ u.create(null, null)
+    case b: BoundedMailbox   ⇒ b.create(null, null)
   }
 }
 
@@ -155,7 +155,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
+    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null, null)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null, null)
   }
 }
