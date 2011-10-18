@@ -38,11 +38,9 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
     def sendBytes(bytes: Seq[Byte], flags: Int) = {
       socket.send(bytes.toArray, flags)
     }
-    var socketClosed = false
     def closeSocket = {
       poller.unregister(socket)
       socket.close
-      socketClosed = true
       params.listener.foreach { listener =>
         if (!listener.isShutdown)
           listener ! Closed
@@ -64,30 +62,29 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
       case bytes: Array[Byte] if bytes.length > 0 => bytes
       case _ => noBytes
     }
+    val self = this.self
     if (poller.poll(params.pollTimeoutDuration.toMillis) > 0) {
       if (poller.pollin(0)) {
         receiveFrames match {
           case frames if (frames.length > 0) => params.listener.foreach { listener => 
             if (!listener.isShutdown)
               listener ! params.deserializer(frames)
-            else
-              closeSocket
+            else if (self != null && !self.isShutdown)
+              self.stop
           }
         }
       }
     }
-    if (!socketClosed) {
-      requests.getAndSet(Vector.empty).foreach {
-        case Connect(endpoint) => connect(endpoint)
-        case Bind(endpoint) => bind(endpoint)
-        case Close => closeSocket
-        case Send(frames) => sendFrames(frames)
-        case Subscribe(topic) => socket.subscribe(topic.toArray)
-        case Unsubscribe(topic) => socket.unsubscribe(topic.toArray)
-      }
-      if (!socketClosed) 
-        select()
+    requests.getAndSet(Vector.empty).foreach {
+      case Connect(endpoint) => connect(endpoint)
+      case Bind(endpoint) => bind(endpoint)
+      case Close => closeSocket
+      case Send(frames) => sendFrames(frames)
+      case Subscribe(topic) => socket.subscribe(topic.toArray)
+      case Unsubscribe(topic) => socket.unsubscribe(topic.toArray)
     }
+    if (self != null && !self.isShutdown) 
+      select()
   }
   override def preStart {
     select
