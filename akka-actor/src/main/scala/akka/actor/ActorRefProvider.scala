@@ -95,53 +95,57 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
 
-    val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
+    if (systemService) new LocalActorRef(app, props, address, systemService = true)
+    else {
+      val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
 
-    actors.putIfAbsent(address, newFuture) match {
-      case null ⇒
-        val actor: ActorRef = try {
-          app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+      actors.putIfAbsent(address, newFuture) match {
+        case null ⇒
+          val actor: ActorRef = try {
+            app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
 
-            // create a local actor
-            case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-              new LocalActorRef(app, props, address, systemService) // create a local actor
+              // create a local actor
+              case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
+                new LocalActorRef(app, props, address, systemService) // create a local actor
 
-            // create a routed actor ref
-            case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
-              val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-                case RouterType.Direct     ⇒ () ⇒ new DirectRouter
-                case RouterType.Random     ⇒ () ⇒ new RandomRouter
-                case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
-                case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-                  if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher, app.AkkaConfig.ActorTimeout)
-                case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
-                case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
-                case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
-                case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
-              }
+              // create a routed actor ref
+              case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+                val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
+                  case RouterType.Direct     ⇒ () ⇒ new DirectRouter
+                  case RouterType.Random     ⇒ () ⇒ new RandomRouter
+                  case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
+                  case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
+                    if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher, app.AkkaConfig.ActorTimeout)
+                  case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+                  case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+                  case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+                  case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
+                }
 
-              val connections: Iterable[ActorRef] =
-                if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, "", systemService)) else Nil
+                val connections: Iterable[ActorRef] =
+                  if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, "", systemService)) else Nil
 
-              actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
+                actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
 
-            case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+              case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+            }
+          } catch {
+            case e: Exception ⇒
+              newFuture completeWithException e // so the other threads gets notified of error
+              //TODO FIXME should we remove the mapping in "actors" here?
+              throw e
           }
-        } catch {
-          case e: Exception ⇒
-            newFuture completeWithException e // so the other threads gets notified of error
-            //TODO FIXME should we remove the mapping in "actors" here?
-            throw e
-        }
 
-        newFuture completeWithResult actor
-        actors.replace(address, newFuture, actor)
-        actor
-      case actor: ActorRef ⇒
-        actor
-      case future: Future[_] ⇒
-        future.get.asInstanceOf[ActorRef]
+          newFuture completeWithResult actor
+          actors.replace(address, newFuture, actor)
+          actor
+        case actor: ActorRef ⇒
+          actor
+        case future: Future[_] ⇒
+          future.get.asInstanceOf[ActorRef]
+      }
     }
+
   }
 
   /**

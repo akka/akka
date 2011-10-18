@@ -138,7 +138,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
    * Copied from LocalActorRefProvider...
    */
   def actorOf(props: RoutedProps, address: String): ActorRef = {
-    if (props.connectionManager.size == 0) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
     new RoutedActorRef(props, address)
   }
 

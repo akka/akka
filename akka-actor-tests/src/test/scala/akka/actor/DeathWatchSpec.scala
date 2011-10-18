@@ -12,7 +12,7 @@ import java.util.concurrent.atomic._
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   "The Death Watch" must {
-    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, "stopped") {
+    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, actorRef + ": Stopped") {
       case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
     }
 
