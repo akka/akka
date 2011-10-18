@@ -227,8 +227,6 @@ private[akka] class ActorCell(
 
   var actor: Actor = _ //FIXME We can most probably make this just a regular reference to Actor
 
-  def ref: ActorRef with ScalaActorRef = self
-
   def uuid: Uuid = self.uuid
 
   @inline
@@ -245,7 +243,7 @@ private[akka] class ActorCell(
     if (props.supervisor.isDefined) {
       props.supervisor.get match {
         case l: LocalActorRef ⇒
-          l.underlying.dispatcher.systemDispatch(l.underlying, akka.dispatch.Supervise(self))
+          l.underlying.dispatcher.systemDispatch(l.underlying, akka.dispatch.Supervise(self)) //FIXME TODO Support all ActorRefs?
         case other ⇒ throw new UnsupportedOperationException("Supervision failure: " + other + " cannot be a supervisor, only LocalActorRefs can")
       }
     }

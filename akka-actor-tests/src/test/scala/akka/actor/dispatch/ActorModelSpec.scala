@@ -108,27 +108,27 @@ object ActorModelSpec {
     }
 
     abstract override def suspend(actor: ActorCell) {
-      getStats(actor.ref).suspensions.incrementAndGet()
+      getStats(actor.self).suspensions.incrementAndGet()
       super.suspend(actor)
     }
 
     abstract override def resume(actor: ActorCell) {
       super.resume(actor)
-      getStats(actor.ref).resumes.incrementAndGet()
+      getStats(actor.self).resumes.incrementAndGet()
     }
 
     protected[akka] abstract override def register(actor: ActorCell) {
-      getStats(actor.ref).registers.incrementAndGet()
+      getStats(actor.self).registers.incrementAndGet()
       super.register(actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
-      getStats(actor.ref).unregisters.incrementAndGet()
+      getStats(actor.self).unregisters.incrementAndGet()
       super.unregister(actor)
     }
 
     protected[akka] abstract override def dispatch(invocation: Envelope) {
-      val stats = getStats(invocation.receiver.ref)
+      val stats = getStats(invocation.receiver.self)
       stats.msgsReceived.incrementAndGet()
       super.dispatch(invocation)
     }

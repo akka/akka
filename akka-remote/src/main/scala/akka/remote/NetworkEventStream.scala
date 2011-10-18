@@ -65,7 +65,7 @@ class NetworkEventStream(val app: AkkaApplication) {
   import NetworkEventStream._
 
   private[akka] val channel = app.provider.actorOf(
-    Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")), newUuid.toString, systemService = true)
+    Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")), Props.randomAddress, systemService = true)
 
   /**
    * Registers a network event stream listener (asyncronously).

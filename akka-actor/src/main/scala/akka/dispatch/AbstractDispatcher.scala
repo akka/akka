@@ -113,7 +113,8 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
    * Detaches the specified actor instance from this dispatcher
    */
   final def detach(actor: ActorCell) {
-    guard withGuard {
+    guard.lock.lock()
+    try {
       unregister(actor)
       if (_tasks.get == 0 && _actors.get == 0) {
         shutdownSchedule match {
@@ -125,11 +126,15 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
           case RESCHEDULED ⇒ //Already marked for reschedule
         }
       }
-    }
+    } finally { guard.lock.unlock() }
   }
 
   protected final def startIfUnstarted() {
-    if (active.isOff) guard withGuard { active.switchOn { start() } }
+    if (active.isOff) {
+      guard.lock.lock()
+      try { active.switchOn { start() } }
+      finally { guard.lock.unlock() }
+    }
   }
 
   protected[akka] final def dispatchTask(block: () ⇒ Unit) {
@@ -146,7 +151,8 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
 
   private val taskCleanup: () ⇒ Unit =
     () ⇒ if (_tasks.decrementAndGet() == 0) {
-      guard withGuard {
+      guard.lock.lock()
+      try {
         if (_tasks.get == 0 && _actors.get == 0) {
           shutdownSchedule match {
             case UNSCHEDULED ⇒
@@ -157,7 +163,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
             case RESCHEDULED ⇒ //Already marked for reschedule
           }
         }
-      }
+      } finally { guard.lock.unlock() }
     }
 
   /**
@@ -206,7 +212,8 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
 
   private val shutdownAction = new Runnable {
     def run() {
-      guard withGuard {
+      guard.lock.lock()
+      try {
         shutdownSchedule match {
           case RESCHEDULED ⇒
             shutdownSchedule = SCHEDULED
@@ -220,7 +227,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
             shutdownSchedule = UNSCHEDULED
           case UNSCHEDULED ⇒ //Do nothing
         }
-      }
+      } finally { guard.lock.unlock() }
     }
   }
 

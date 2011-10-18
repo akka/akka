@@ -43,7 +43,7 @@ trait ActorRefFactory {
 
   def dispatcher: MessageDispatcher
 
-  def actorOf(props: Props): ActorRef = actorOf(props, new UUID().toString)
+  def actorOf(props: Props): ActorRef = actorOf(props, Props.randomAddress)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
@@ -63,7 +63,7 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def actorOf(props: RoutedProps): ActorRef = actorOf(props, new UUID().toString)
+  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomAddress)
 
   def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
 
@@ -94,15 +94,19 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
   private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
-
-    if (systemService) new LocalActorRef(app, props, address, systemService = true)
-    else {
+    if ((address eq null) || address == Props.randomAddress) {
+      val actor = new LocalActorRef(app, props, address, systemService = true)
+      actors.putIfAbsent(actor.address, actor) match {
+        case null  ⇒ actor
+        case other ⇒ throw new IllegalStateException("Same uuid generated twice for: " + actor + " and " + other)
+      }
+    } else {
       val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
 
       actors.putIfAbsent(address, newFuture) match {
         case null ⇒
           val actor: ActorRef = try {
-            app.deployer.lookupDeploymentFor(address) match { // see if the deployment already exists, if so use it, if not create actor
+            (if (systemService) None else app.deployer.lookupDeploymentFor(address)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒

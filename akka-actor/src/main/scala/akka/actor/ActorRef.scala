@@ -148,20 +148,20 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 class LocalActorRef private[akka] (
   app: AkkaApplication,
   props: Props,
-  givenAddress: String,
+  givenAddress: String, //Never refer to this internally instead use "address"
   val systemService: Boolean = false,
   private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
   hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
+  final val address: String = givenAddress match {
+    case null | Props.randomAddress ⇒ uuid.toString
+    case other                      ⇒ other
+  }
+
   private[this] val actorCell = new ActorCell(app, this, props, receiveTimeout, hotswap)
   actorCell.start()
-
-  final def address: String = givenAddress match {
-    case null | "" ⇒ uuid.toString
-    case other     ⇒ other
-  }
 
   /**
    * Is the actor shut down?

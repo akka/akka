@@ -20,9 +20,7 @@ object DeploymentConfig {
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
     failureDetector: FailureDetector = NoOpFailureDetector,
-    scope: Scope = LocalScope) {
-    Address.validate(address)
-  }
+    scope: Scope = LocalScope)
 
   // --------------------------------
   // --- Actor Recipe

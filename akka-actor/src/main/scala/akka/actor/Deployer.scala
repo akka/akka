@@ -19,6 +19,10 @@ trait ActorDeployer {
   private[akka] def shutdown(): Unit //TODO Why should we have "shutdown", should be crash only?
   private[akka] def deploy(deployment: Deploy): Unit
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy]
+  def lookupDeployment(address: String): Option[Deploy] = address match {
+    case null | Props.`randomAddress` ⇒ None
+    case some                         ⇒ lookupDeploymentFor(some)
+  }
   private[akka] def deploy(deployment: Seq[Deploy]): Unit = deployment foreach (deploy(_))
 }
 
@@ -256,9 +260,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
             // akka.actor.deployment.<address>.cluster
             // --------------------------------
             addressConfig.getSection("cluster") match {
-              case None ⇒
-                Some(Deploy(address, recipe, router, nrOfInstances, NoOpFailureDetector, LocalScope)) // deploy locally
-
+              case None ⇒ None
               case Some(clusterConfig) ⇒
 
                 // --------------------------------
