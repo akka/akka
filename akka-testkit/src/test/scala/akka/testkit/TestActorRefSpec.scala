@@ -119,7 +119,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = context.createActor(Props(self ⇒ { case _ ⇒ }))
+          val nested = context.actorOf(Props(self ⇒ { case _ ⇒ }))
           def receive = { case _ ⇒ reply(nested) }
         }))
         a must not be (null)

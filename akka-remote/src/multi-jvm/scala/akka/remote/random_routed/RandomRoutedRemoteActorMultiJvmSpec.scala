@@ -70,7 +70,7 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
       remote.start()
 
       barrier("start")
-      val actor = app.createActor[SomeActor]("service-hello")
+      val actor = app.actorOf[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

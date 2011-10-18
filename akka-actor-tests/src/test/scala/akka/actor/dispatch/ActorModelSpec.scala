@@ -237,7 +237,7 @@ abstract class ActorModelSpec extends AkkaSpec {
 
   import ActorModelSpec._
 
-  def newTestActor(dispatcher: MessageDispatcher) = app.createActor(Props[DispatcherActor].withDispatcher(dispatcher))
+  def newTestActor(dispatcher: MessageDispatcher) = app.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String

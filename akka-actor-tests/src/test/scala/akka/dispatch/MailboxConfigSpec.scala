@@ -82,7 +82,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def createMessageInvocation(msg: Any): Envelope = {
     new Envelope(
-      createActor(new Actor { //Dummy actor
+      actorOf(new Actor { //Dummy actor
         def receive = { case _ ⇒ }
       }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
   }

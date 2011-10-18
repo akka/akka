@@ -12,12 +12,12 @@ public class JavaAPI {
   private AkkaApplication app = new AkkaApplication();
 
   @Test void mustBeAbleToCreateActorRefFromClass() {
-      ActorRef ref = app.createActor(JavaAPITestActor.class);
+      ActorRef ref = app.actorOf(JavaAPITestActor.class);
       assertNotNull(ref);
   }
 
   @Test void mustBeAbleToCreateActorRefFromFactory() {
-      ActorRef ref = app.createActor(new Props().withCreator(new Creator<Actor>() {
+      ActorRef ref = app.actorOf(new Props().withCreator(new Creator<Actor>() {
           public Actor create() {
               return new JavaAPITestActor();
           }
@@ -26,7 +26,7 @@ public class JavaAPI {
   }
 
   @Test void mustAcceptSingleArgTryTell() {
-    ActorRef ref = app.createActor(JavaAPITestActor.class);
+    ActorRef ref = app.actorOf(JavaAPITestActor.class);
     ref.tryTell("hallo");
     ref.tryTell("hallo", ref);
   }

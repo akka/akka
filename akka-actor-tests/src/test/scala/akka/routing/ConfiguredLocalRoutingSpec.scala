@@ -27,7 +27,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -70,7 +70,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         replies = replies + (i -> 0)
       }
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
           case "hit" ⇒ reply(id)
@@ -108,7 +108,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -142,7 +142,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
 
       val stopLatch = new CountDownLatch(7)
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ {}
         }
@@ -184,7 +184,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         replies = replies + (i -> 0)
       }
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
           case "hit" ⇒ reply(id)
@@ -222,7 +222,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(6)
       val stopLatch = new CountDownLatch(6)
 
-      val actor = app.createActor(Props(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }

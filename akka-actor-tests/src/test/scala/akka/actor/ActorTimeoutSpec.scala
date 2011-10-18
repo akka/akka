@@ -10,7 +10,7 @@ import akka.testkit.AkkaSpec
 
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll {
 
-  def actorWithTimeout(t: Timeout): ActorRef = createActor(Props(creator = () ⇒ new Actor {
+  def actorWithTimeout(t: Timeout): ActorRef = actorOf(Props(creator = () ⇒ new Actor {
     def receive = {
       case x ⇒
     }

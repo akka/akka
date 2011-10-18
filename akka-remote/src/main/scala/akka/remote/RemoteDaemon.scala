@@ -41,7 +41,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = app.dispatcherFactory.newDispatcher("akka:compute-grid").build
 
-  private[remote] lazy val remoteDaemonSupervisor = app.createActor(Props(
+  private[remote] lazy val remoteDaemonSupervisor = app.actorOf(Props(
     OneForOneStrategy(List(classOf[Exception]), None, None))) // is infinite restart what we want?
 
   private[remote] lazy val remoteDaemon =
@@ -51,7 +51,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
       givenAddress = remoteDaemonServiceName,
       systemService = true)
 
-  private[remote] lazy val remoteClientLifeCycleHandler = app.createActor(Props(new Actor {
+  private[remote] lazy val remoteClientLifeCycleHandler = app.actorOf(Props(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -141,7 +141,7 @@ class RemoteDaemon(val remote: Remote) extends Actor {
           }
 
         val actorAddress = message.getActorAddress
-        val newActorRef = app.createActor(Props(creator = actorFactory), actorAddress)
+        val newActorRef = app.actorOf(Props(creator = actorFactory), actorAddress)
 
         remote.server.register(actorAddress, newActorRef)
 

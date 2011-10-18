@@ -17,7 +17,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
-      val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
       testActor startsMonitoring terminal
 
@@ -29,8 +29,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
-      val monitor1, monitor2 = createActor(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
-      val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val monitor1, monitor2 = actorOf(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
       monitor1 startsMonitoring terminal
       monitor2 startsMonitoring terminal
@@ -48,8 +48,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
-      val monitor1, monitor2 = createActor(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
-      val terminal = createActor(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val monitor1, monitor2 = actorOf(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
 
       monitor1 startsMonitoring terminal
       monitor2 startsMonitoring terminal
@@ -69,8 +69,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
-        val supervisor = createActor(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
-        val terminal = createActor(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
+        val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
+        val terminal = actorOf(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
 
         testActor startsMonitoring terminal
 

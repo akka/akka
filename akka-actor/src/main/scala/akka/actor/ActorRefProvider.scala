@@ -43,29 +43,29 @@ trait ActorRefFactory {
 
   def dispatcher: MessageDispatcher
 
-  def createActor(props: Props): ActorRef = createActor(props, new UUID().toString)
+  def actorOf(props: Props): ActorRef = actorOf(props, new UUID().toString)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
    * the same address can race on the cluster, and then you never know which
    * implementation wins
    */
-  def createActor(props: Props, address: String): ActorRef = provider.actorOf(props, address)
+  def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, address)
 
-  def createActor[T <: Actor](implicit m: Manifest[T]): ActorRef = createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
+  def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
-  def createActor[T <: Actor](address: String)(implicit m: Manifest[T]): ActorRef =
-    createActor(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), address)
+  def actorOf[T <: Actor](address: String)(implicit m: Manifest[T]): ActorRef =
+    actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), address)
 
-  def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
+  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
-  def createActor(factory: ⇒ Actor): ActorRef = createActor(Props(() ⇒ factory))
+  def actorOf(factory: ⇒ Actor): ActorRef = actorOf(Props(() ⇒ factory))
 
-  def createActor(creator: UntypedActorFactory): ActorRef = createActor(Props(() ⇒ creator.create()))
+  def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def createActor(props: RoutedProps): ActorRef = createActor(props, new UUID().toString)
+  def actorOf(props: RoutedProps): ActorRef = actorOf(props, new UUID().toString)
 
-  def createActor(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
+  def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
 
   def findActor(address: String): Option[ActorRef] = provider.actorFor(address)
 

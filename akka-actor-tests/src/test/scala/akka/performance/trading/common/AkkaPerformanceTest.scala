@@ -34,7 +34,7 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
     val clients = (for (i ← 0 until numberOfClients) yield {
       val receiver = receivers(i % receivers.size)
       Props(new Client(receiver, orders, latch, repeatsPerClient + (if (i < oddRepeats) 1 else 0), sampling, delayMs)).withDispatcher(clientDispatcher)
-    }).toList.map(app.createActor(_))
+    }).toList.map(app.actorOf(_))
 
     clients.foreach(_ ! "run")
     val ok = latch.await((5000 + (2 + delayMs) * totalNumberOfRequests) * timeDilation, TimeUnit.MILLISECONDS)

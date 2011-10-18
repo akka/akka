@@ -32,14 +32,14 @@ class DispatcherActorSpec extends AkkaSpec {
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
-      val actor = createActor(Props[OneWayTestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+      val actor = actorOf(Props[OneWayTestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
       val result = actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       actor.stop()
     }
 
     "support ask/reply" in {
-      val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+      val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
       actor.stop()
@@ -47,7 +47,7 @@ class DispatcherActorSpec extends AkkaSpec {
 
     "support ask/exception" in {
       filterEvents(EventFilter[RuntimeException]("Expected")) {
-        val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+        val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
         try {
           (actor ? "Failure").get
           fail("Should have thrown an exception")
@@ -68,10 +68,10 @@ class DispatcherActorSpec extends AkkaSpec {
       val works = new AtomicBoolean(true)
       val latch = new CountDownLatch(100)
       val start = new CountDownLatch(1)
-      val fastOne = createActor(
+      val fastOne = actorOf(
         Props(context ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
-      val slowOne = createActor(
+      val slowOne = actorOf(
         Props(context ⇒ {
           case "hogexecutor" ⇒ start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
@@ -98,12 +98,12 @@ class DispatcherActorSpec extends AkkaSpec {
       val start = new CountDownLatch(1)
       val ready = new CountDownLatch(1)
 
-      val fastOne = createActor(
+      val fastOne = actorOf(
         Props(context ⇒ {
           case "ping" ⇒ if (works.get) latch.countDown(); context.self.stop()
         }).withDispatcher(throughputDispatcher))
 
-      val slowOne = createActor(
+      val slowOne = actorOf(
         Props(context ⇒ {
           case "hogexecutor" ⇒ ready.countDown(); start.await
           case "ping"        ⇒ works.set(false); context.self.stop()

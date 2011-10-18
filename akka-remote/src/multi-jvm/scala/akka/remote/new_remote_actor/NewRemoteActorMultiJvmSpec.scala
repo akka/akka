@@ -48,7 +48,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
 
       barrier("start")
 
-      val actor = app.createActor[SomeActor]("service-hello")
+      val actor = app.actorOf[SomeActor]("service-hello")
       val result = (actor ? "identify").get
       result must equal("node1")
 

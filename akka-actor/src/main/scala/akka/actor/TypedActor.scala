@@ -256,7 +256,7 @@ class TypedActor(val app: AkkaApplication) {
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    val ref = app.createActor(props)
+    val ref = app.actorOf(props)
     actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
     proxyVar.get
   }

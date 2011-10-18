@@ -22,9 +22,9 @@ class MyActor extends Actor {
 
 class ActorDocSpec extends AkkaSpec {
 
-  "creating actor with AkkaSpec.createActor" in {
+  "creating actor with AkkaSpec.actorOf" in {
     //#creating-actorOf
-    val myActor = createActor[MyActor]
+    val myActor = actorOf[MyActor]
     //#creating-actorOf
 
     // testing the actor
@@ -58,7 +58,7 @@ class ActorDocSpec extends AkkaSpec {
 
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = createActor(new MyActor("..."))
+    val myActor = actorOf(new MyActor("..."))
     //#creating-constructor
 
     myActor.stop()

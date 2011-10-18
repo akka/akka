@@ -13,8 +13,8 @@ public class UntypedTransactorExample {
 
         AkkaApplication application = new AkkaApplication("UntypedTransactorExample");
 
-        ActorRef counter1 = application.createActor(new Props().withCreator(UntypedCounter.class));
-        ActorRef counter2 = application.createActor(new Props().withCreator(UntypedCounter.class));
+        ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCounter.class));
+        ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCounter.class));
 
         counter1.tell(new Increment(counter2));
 

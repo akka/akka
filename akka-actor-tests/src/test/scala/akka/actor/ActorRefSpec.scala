@@ -28,11 +28,11 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" ⇒ {
         replyTo = channel
-        val worker = context.createActor(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
-        val worker = context.createActor(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor])
         worker ! ReplyTo(channel)
       case "workDone"      ⇒ replyTo ! "complexReply"
       case "simpleRequest" ⇒ reply("simpleReply")
@@ -135,7 +135,7 @@ class ActorRefSpec extends AkkaSpec {
 
   "An ActorRef" must {
 
-    "not allow Actors to be created outside of an createActor" in {
+    "not allow Actors to be created outside of an actorOf" in {
       intercept[akka.actor.ActorInitializationException] {
         new Actor { def receive = { case _ ⇒ } }
       }
@@ -145,7 +145,7 @@ class ActorRefSpec extends AkkaSpec {
       filterException[akka.actor.ActorInitializationException] {
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new Actor {
+            actorOf(new Actor {
               val nested = promiseIntercept(new Actor { def receive = { case _ ⇒ } })(result)
               def receive = { case _ ⇒ }
             }))
@@ -155,49 +155,49 @@ class ActorRefSpec extends AkkaSpec {
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(promiseIntercept(new FailingOuterActor(createActor(new InnerActor)))(result)))
+            actorOf(promiseIntercept(new FailingOuterActor(actorOf(new InnerActor)))(result)))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new OuterActor(createActor(promiseIntercept(new FailingInnerActor)(result)))))
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(promiseIntercept(new FailingInheritingOuterActor(createActor(new InnerActor)))(result)))
+            actorOf(promiseIntercept(new FailingInheritingOuterActor(actorOf(new InnerActor)))(result)))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new FailingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new FailingInheritingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new FailingInheritingOuterActor(createActor(promiseIntercept(new FailingInnerActor)(result)))))
+            actorOf(new FailingInheritingOuterActor(actorOf(promiseIntercept(new FailingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new OuterActor(createActor(new InnerActor {
+            actorOf(new OuterActor(actorOf(new InnerActor {
               val a = promiseIntercept(new InnerActor)(result)
             }))))
         }
@@ -206,21 +206,21 @@ class ActorRefSpec extends AkkaSpec {
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new FailingOuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            actorOf(new FailingOuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new OuterActor(createActor(promiseIntercept(new FailingInheritingInnerActor)(result)))))
+            actorOf(new OuterActor(actorOf(promiseIntercept(new FailingInheritingInnerActor)(result)))))
         }
 
         contextStackMustBeEmpty
 
         intercept[akka.actor.ActorInitializationException] {
           wrap(result ⇒
-            createActor(new OuterActor(createActor(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
+            actorOf(new OuterActor(actorOf(promiseIntercept({ new InnerActor; new InnerActor })(result)))))
         }
 
         contextStackMustBeEmpty
@@ -229,7 +229,7 @@ class ActorRefSpec extends AkkaSpec {
       filterException[java.lang.IllegalStateException] {
         (intercept[java.lang.IllegalStateException] {
           wrap(result ⇒
-            createActor(new OuterActor(createActor(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
+            actorOf(new OuterActor(actorOf(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))
         }).getMessage must be === "Ur state be b0rked"
 
         contextStackMustBeEmpty
@@ -237,7 +237,7 @@ class ActorRefSpec extends AkkaSpec {
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = createActor[InnerActor]
+      val a = actorOf[InnerActor]
 
       import java.io._
 
@@ -260,7 +260,7 @@ class ActorRefSpec extends AkkaSpec {
     }
 
     "throw an exception on deserialize if no app in scope" in {
-      val a = createActor[InnerActor]
+      val a = actorOf[InnerActor]
 
       import java.io._
 
@@ -282,7 +282,7 @@ class ActorRefSpec extends AkkaSpec {
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
       val latch = new CountDownLatch(1)
-      val a = createActor(new InnerActor {
+      val a = actorOf(new InnerActor {
         override def postStop {
           // app.registry.unregister(self)
           latch.countDown
@@ -318,9 +318,9 @@ class ActorRefSpec extends AkkaSpec {
       }
     }
 
-    "support nested createActors" in {
-      val a = createActor(new Actor {
-        val nested = createActor(new Actor { def receive = { case _ ⇒ } })
+    "support nested actorOfs" in {
+      val a = actorOf(new Actor {
+        val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
         def receive = { case _ ⇒ reply(nested) }
       })
 
@@ -330,8 +330,8 @@ class ActorRefSpec extends AkkaSpec {
       (a ne nested) must be === true
     }
 
-    "support advanced nested createActors" in {
-      val a = createActor(Props(new OuterActor(createActor(Props(new InnerActor)))))
+    "support advanced nested actorOfs" in {
+      val a = actorOf(Props(new OuterActor(actorOf(Props(new InnerActor)))))
       val inner = (a ? "innerself").as[Any].get
 
       (a ? a).as[ActorRef].get must be(a)
@@ -342,8 +342,8 @@ class ActorRefSpec extends AkkaSpec {
     }
 
     "support reply via channel" in {
-      val serverRef = createActor(Props[ReplyActor])
-      val clientRef = createActor(Props(new SenderActor(serverRef)))
+      val serverRef = actorOf(Props[ReplyActor])
+      val clientRef = actorOf(Props(new SenderActor(serverRef)))
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -367,7 +367,7 @@ class ActorRefSpec extends AkkaSpec {
 
     "stop when sent a poison pill" in {
       val timeout = Timeout(20000)
-      val ref = createActor(Props(new Actor {
+      val ref = actorOf(Props(new Actor {
         def receive = {
           case 5    ⇒ tryReply("five")
           case null ⇒ tryReply("null")
@@ -392,9 +392,9 @@ class ActorRefSpec extends AkkaSpec {
       filterException[ActorKilledException] {
         val latch = new CountDownLatch(2)
 
-        val boss = createActor(Props(new Actor {
+        val boss = actorOf(Props(new Actor {
 
-          val ref = createActor(
+          val ref = actorOf(
             Props(new Actor {
               def receive = { case _ ⇒ }
               override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()

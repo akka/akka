@@ -28,7 +28,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
   "A RestartStrategy" must {
 
     "ensure that slave stays dead after max restarts within time range" in {
-      val boss = createActor(Props(new Actor {
+      val boss = actorOf(Props(new Actor {
         protected def receive = { case _ ⇒ () }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
 
@@ -37,7 +37,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       val countDownLatch = new CountDownLatch(3)
       val stopLatch = new StandardLatch
 
-      val slave = createActor(Props(new Actor {
+      val slave = actorOf(Props(new Actor {
 
         protected def receive = {
           case Ping  ⇒ countDownLatch.countDown()
@@ -75,13 +75,13 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
     }
 
     "ensure that slave is immortal without max restarts and time range" in {
-      val boss = createActor(Props(new Actor {
+      val boss = actorOf(Props(new Actor {
         def receive = { case _ ⇒ () }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
 
       val countDownLatch = new CountDownLatch(100)
 
-      val slave = createActor(Props(new Actor {
+      val slave = actorOf(Props(new Actor {
 
         protected def receive = {
           case Crash ⇒ throw new Exception("Crashing...")
@@ -98,7 +98,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
     }
 
     "ensure that slave restarts after number of crashes not within time range" in {
-      val boss = createActor(Props(new Actor {
+      val boss = actorOf(Props(new Actor {
         def receive = { case _ ⇒ () }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 500)))
 
@@ -108,7 +108,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       val pingLatch = new StandardLatch
       val secondPingLatch = new StandardLatch
 
-      val slave = createActor(Props(new Actor {
+      val slave = actorOf(Props(new Actor {
 
         protected def receive = {
           case Ping ⇒
@@ -156,7 +156,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
     }
 
     "ensure that slave is not restarted after max retries" in {
-      val boss = createActor(Props(new Actor {
+      val boss = actorOf(Props(new Actor {
         def receive = { case _ ⇒ () }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), Some(2), None)))
 
@@ -165,7 +165,7 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       val countDownLatch = new CountDownLatch(3)
       val stopLatch = new StandardLatch
 
-      val slave = createActor(Props(new Actor {
+      val slave = actorOf(Props(new Actor {
 
         protected def receive = {
           case Ping  ⇒ countDownLatch.countDown()
@@ -211,11 +211,11 @@ class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
       val restartLatch, stopLatch, maxNoOfRestartsLatch = new StandardLatch
       val countDownLatch = new CountDownLatch(2)
 
-      val boss = createActor(Props(new Actor {
+      val boss = actorOf(Props(new Actor {
         def receive = { case t: Terminated ⇒ maxNoOfRestartsLatch.open }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))
 
-      val slave = createActor(Props(new Actor {
+      val slave = actorOf(Props(new Actor {
 
         protected def receive = {
           case Ping  ⇒ countDownLatch.countDown()

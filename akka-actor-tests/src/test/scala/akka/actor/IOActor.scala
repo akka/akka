@@ -22,7 +22,7 @@ object IOActorSpec {
       started.open()
     }
 
-    def createWorker = context.createActor(Props(new Actor with IO {
+    def createWorker = context.actorOf(Props(new Actor with IO {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
@@ -43,7 +43,7 @@ object IOActorSpec {
   class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
     lazy val socket: SocketHandle = connect(ioManager, host, port, reader)
-    lazy val reader: ActorRef = context.createActor {
+    lazy val reader: ActorRef = context.actorOf {
       new Actor with IO {
         def receiveIO = {
           case length: Int ⇒
@@ -70,7 +70,7 @@ object IOActorSpec {
       started.open()
     }
 
-    def createWorker = context.createActor(Props(new Actor with IO {
+    def createWorker = context.actorOf(Props(new Actor with IO {
       def receiveIO = {
         case NewClient(server) ⇒
           val socket = server.accept()
@@ -174,10 +174,10 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
   "an IO Actor" must {
     "run echo server" in {
       val started = TestLatch(1)
-      val ioManager = createActor(new IOManager(2)) // teeny tiny buffer
-      val server = createActor(new SimpleEchoServer("localhost", 8064, ioManager, started))
+      val ioManager = actorOf(new IOManager(2)) // teeny tiny buffer
+      val server = actorOf(new SimpleEchoServer("localhost", 8064, ioManager, started))
       started.await
-      val client = createActor(new SimpleEchoClient("localhost", 8064, ioManager))
+      val client = actorOf(new SimpleEchoClient("localhost", 8064, ioManager))
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
       val f3 = client ? ByteString("Hello World!3")
@@ -191,10 +191,10 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "run echo server under high load" in {
       val started = TestLatch(1)
-      val ioManager = createActor(new IOManager())
-      val server = createActor(new SimpleEchoServer("localhost", 8065, ioManager, started))
+      val ioManager = actorOf(new IOManager())
+      val server = actorOf(new SimpleEchoServer("localhost", 8065, ioManager, started))
       started.await
-      val client = createActor(new SimpleEchoClient("localhost", 8065, ioManager))
+      val client = actorOf(new SimpleEchoClient("localhost", 8065, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
@@ -205,10 +205,10 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "run echo server under high load with small buffer" in {
       val started = TestLatch(1)
-      val ioManager = createActor(new IOManager(2))
-      val server = createActor(new SimpleEchoServer("localhost", 8066, ioManager, started))
+      val ioManager = actorOf(new IOManager(2))
+      val server = actorOf(new SimpleEchoServer("localhost", 8066, ioManager, started))
       started.await
-      val client = createActor(new SimpleEchoClient("localhost", 8066, ioManager))
+      val client = actorOf(new SimpleEchoClient("localhost", 8066, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
@@ -219,11 +219,11 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "run key-value store" in {
       val started = TestLatch(1)
-      val ioManager = createActor(new IOManager(2)) // teeny tiny buffer
-      val server = createActor(new KVStore("localhost", 8067, ioManager, started))
+      val ioManager = actorOf(new IOManager(2)) // teeny tiny buffer
+      val server = actorOf(new KVStore("localhost", 8067, ioManager, started))
       started.await
-      val client1 = createActor(new KVClient("localhost", 8067, ioManager))
-      val client2 = createActor(new KVClient("localhost", 8067, ioManager))
+      val client1 = actorOf(new KVClient("localhost", 8067, ioManager))
+      val client2 = actorOf(new KVClient("localhost", 8067, ioManager))
       val f1 = client1 ? (('set, "hello", ByteString("World")))
       val f2 = client1 ? (('set, "test", ByteString("No one will read me")))
       val f3 = client1 ? (('get, "hello"))

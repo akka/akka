@@ -24,9 +24,9 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
             def receive = { case false ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { testActor ! self.address }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
-          val headActor = createActor(p)
-          val middleActor = createActor(p.withSupervisor(headActor))
-          val lastActor = createActor(p.withSupervisor(middleActor))
+          val headActor = actorOf(p)
+          val middleActor = actorOf(p.withSupervisor(headActor))
+          val lastActor = actorOf(p.withSupervisor(middleActor))
 
           middleActor ! Kill
           expectMsg(middleActor.address)

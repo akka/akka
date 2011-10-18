@@ -1761,7 +1761,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       }
     }
 
-    def createActorRefToUseForReplay(snapshotAsBytes: Option[Array[Byte]], actorAddress: String, newActorRef: LocalActorRef): ActorRef = {
+    def actorOfRefToUseForReplay(snapshotAsBytes: Option[Array[Byte]], actorAddress: String, newActorRef: LocalActorRef): ActorRef = {
       snapshotAsBytes match {
 
         // we have a new actor ref - the snapshot
@@ -1816,7 +1816,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
                 val (snapshotAsBytes, entriesAsBytes) = readonlyTxLog.latestSnapshotAndSubsequentEntries
 
                 // deserialize and restore actor snapshot. This call will automatically recreate a transaction log.
-                val actorRef = createActorRefToUseForReplay(snapshotAsBytes, actorAddress, newActorRef)
+                val actorRef = actorOfRefToUseForReplay(snapshotAsBytes, actorAddress, newActorRef)
 
                 // deserialize the messages
                 val messages: Vector[AnyRef] = deserializeMessages(entriesAsBytes)

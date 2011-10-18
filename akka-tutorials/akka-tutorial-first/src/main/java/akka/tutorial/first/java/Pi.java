@@ -110,11 +110,11 @@ public class Pi {
 
       LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
       for (int i = 0; i < nrOfWorkers; i++) {
-          ActorRef worker = app.createActor(Worker.class);
+          ActorRef worker = app.actorOf(Worker.class);
           workers.add(worker);
       }
 
-      router = app.createActor(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+      router = app.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
     }
 
     // message handler
@@ -168,7 +168,7 @@ public class Pi {
     final CountDownLatch latch = new CountDownLatch(1);
 
     // create the master
-    ActorRef master = app.createActor(new UntypedActorFactory() {
+    ActorRef master = app.actorOf(new UntypedActorFactory() {
       public UntypedActor create() {
         return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
       }

@@ -15,15 +15,15 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
 
   def this(config: Configuration) = this(new AkkaApplication(getClass.getSimpleName, AkkaApplication.defaultConfig ++ config))
 
-  def createActor(props: Props): ActorRef = app.createActor(props)
+  def actorOf(props: Props): ActorRef = app.actorOf(props)
 
-  def createActor[T <: Actor](clazz: Class[T]): ActorRef = createActor(Props(clazz))
+  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
-  def createActor[T <: Actor: Manifest]: ActorRef = createActor(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
+  def actorOf[T <: Actor: Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
 
-  def createActor[T <: Actor](factory: ⇒ T): ActorRef = createActor(Props(factory))
+  def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(Props(factory))
 
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher) {
-    createActor(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
+    actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
   }
 }

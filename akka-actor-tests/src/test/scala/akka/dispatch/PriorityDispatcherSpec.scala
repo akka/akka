@@ -24,7 +24,7 @@ class PriorityDispatcherSpec extends AkkaSpec {
   def testOrdering(mboxType: MailboxType) {
     val dispatcher = app.dispatcherFactory.newDispatcher("Test", 1, -1, mboxType).build
 
-    val actor = createActor(Props(new Actor {
+    val actor = actorOf(Props(new Actor {
       var acc: List[Int] = Nil
 
       def receive = {

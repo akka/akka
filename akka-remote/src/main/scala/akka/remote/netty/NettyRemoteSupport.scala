@@ -942,7 +942,7 @@ class RemoteServerHandler(
 
     val actorRef =
       try {
-        createActor(actorInfo, channel)
+        actorOf(actorInfo, channel)
       } catch {
         case e: SecurityException ⇒
           app.eventHandler.error(e, this, e.getMessage)
@@ -998,7 +998,7 @@ class RemoteServerHandler(
    *
    * Does not start the actor.
    */
-  private def createActor(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
+  private def actorOf(actorInfo: ActorInfoProtocol, channel: Channel): ActorRef = {
     val uuid = actorInfo.getUuid
     val address = actorInfo.getAddress
 

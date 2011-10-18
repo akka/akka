@@ -33,9 +33,9 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
       filterException[ActorKilledException] {
         val id = newUuid().toString
-        val supervisor = createActor(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+        val supervisor = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
         val gen = new AtomicInteger(0)
-        val restarter = createActor(Props(new LifeCycleTestActor(id, gen) {
+        val restarter = actorOf(Props(new LifeCycleTestActor(id, gen) {
           override def preRestart(reason: Throwable, message: Option[Any]) { report("preRestart") }
           override def postRestart(reason: Throwable) { report("postRestart") }
         }).withSupervisor(supervisor))
@@ -66,9 +66,9 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     "default for preRestart and postRestart is to call postStop and preStart respectively" in {
       filterException[ActorKilledException] {
         val id = newUuid().toString
-        val supervisor = createActor(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+        val supervisor = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
         val gen = new AtomicInteger(0)
-        val restarter = createActor(Props(new LifeCycleTestActor(id, gen)).withSupervisor(supervisor))
+        val restarter = actorOf(Props(new LifeCycleTestActor(id, gen)).withSupervisor(supervisor))
 
         expectMsg(("preStart", id, 0))
         restarter ! Kill
@@ -95,9 +95,9 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
 
     "not invoke preRestart and postRestart when never restarted using OneForOneStrategy" in {
       val id = newUuid().toString
-      val supervisor = createActor(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+      val supervisor = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
       val gen = new AtomicInteger(0)
-      val a = createActor(Props(new LifeCycleTestActor(id, gen)).withSupervisor(supervisor))
+      val a = actorOf(Props(new LifeCycleTestActor(id, gen)).withSupervisor(supervisor))
       expectMsg(("preStart", id, 0))
       a ! "status"
       expectMsg(("OK", id, 0))

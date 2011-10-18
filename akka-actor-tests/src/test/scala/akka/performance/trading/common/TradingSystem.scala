@@ -70,8 +70,8 @@ class AkkaTradingSystem(val app: AkkaApplication) extends TradingSystem {
 
   def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
     meDispatcher match {
-      case Some(d) ⇒ app.createActor(Props(new AkkaMatchingEngine(meId, orderbooks)).withDispatcher(d))
-      case _       ⇒ app.createActor(Props(new AkkaMatchingEngine(meId, orderbooks)))
+      case Some(d) ⇒ app.actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)).withDispatcher(d))
+      case _       ⇒ app.actorOf(Props(new AkkaMatchingEngine(meId, orderbooks)))
     }
 
   override def createOrderReceivers: List[ActorRef] = {
@@ -91,8 +91,8 @@ class AkkaTradingSystem(val app: AkkaApplication) extends TradingSystem {
   }
 
   def createOrderReceiver() = orDispatcher match {
-    case Some(d) ⇒ app.createActor(Props(new AkkaOrderReceiver()).withDispatcher(d))
-    case _       ⇒ app.createActor(Props(new AkkaOrderReceiver()))
+    case Some(d) ⇒ app.actorOf(Props(new AkkaOrderReceiver()).withDispatcher(d))
+    case _       ⇒ app.actorOf(Props(new AkkaOrderReceiver()))
   }
 
   override def start() {

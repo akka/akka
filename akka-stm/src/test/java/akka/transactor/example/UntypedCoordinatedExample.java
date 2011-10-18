@@ -14,8 +14,8 @@ public class UntypedCoordinatedExample {
 
         AkkaApplication application = new AkkaApplication("UntypedCoordinatedExample");
 
-        ActorRef counter1 = application.createActor(new Props().withCreator(UntypedCoordinatedCounter.class));
-        ActorRef counter2 = application.createActor(new Props().withCreator(UntypedCoordinatedCounter.class));
+        ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
+        ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
 
         counter1.tell(new Coordinated(new Increment(counter2)));
 

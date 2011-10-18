@@ -29,7 +29,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     "schedule more than once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = createActor(new Actor {
+      val tickActor = actorOf(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
       // run every 50 millisec
@@ -49,7 +49,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     "schedule once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = createActor(new Actor {
+      val tickActor = actorOf(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
       // run every 50 millisec
@@ -69,7 +69,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     // "not create actors" in {
     //   object Ping
     //   val ticks = new CountDownLatch(1000)
-    //   val actor = createActor(new Actor {
+    //   val actor = actorOf(new Actor {
     //     def receive = { case Ping ⇒ ticks.countDown }
     //   })
     //   val numActors = app.registry.local.actors.length
@@ -85,7 +85,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       object Ping
       val ticks = new CountDownLatch(1)
 
-      val actor = createActor(new Actor {
+      val actor = actorOf(new Actor {
         def receive = { case Ping ⇒ ticks.countDown() }
       })
 
@@ -106,8 +106,8 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       val restartLatch = new StandardLatch
       val pingLatch = new CountDownLatch(6)
 
-      val supervisor = createActor(Props(context ⇒ { case _ ⇒ }).withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
-      val actor = createActor(Props(new Actor {
+      val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+      val actor = actorOf(Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()
           case Crash ⇒ throw new Exception("CRASH")

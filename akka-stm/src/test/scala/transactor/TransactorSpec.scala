@@ -84,9 +84,9 @@ class TransactorSpec extends AkkaSpec {
   val numCounters = 5
 
   def createTransactors = {
-    def createCounter(i: Int) = app.createActor(Props(new Counter("counter" + i)))
+    def createCounter(i: Int) = app.actorOf(Props(new Counter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val failer = app.createActor(Props(new Failer))
+    val failer = app.actorOf(Props(new Failer))
     (counters, failer)
   }
 
@@ -124,7 +124,7 @@ class TransactorSpec extends AkkaSpec {
 
   "Transactor" should {
     "be usable without overriding normally" in {
-      val transactor = app.createActor(Props(new Setter))
+      val transactor = app.actorOf(Props(new Setter))
       val ref = Ref(0)
       val latch = TestLatch(1)
       transactor ! Set(ref, 5, latch)

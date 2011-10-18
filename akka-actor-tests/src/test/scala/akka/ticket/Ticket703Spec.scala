@@ -8,7 +8,7 @@ class Ticket703Spec extends AkkaSpec {
 
   "A ? call to an actor pool" should {
     "reuse the proper timeout" in {
-      val actorPool = createActor(
+      val actorPool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def lowerBound = 2
           def upperBound = 20
@@ -17,7 +17,7 @@ class Ticket703Spec extends AkkaSpec {
           def selectionCount = 1
           def receive = _route
           def pressureThreshold = 1
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒
                 Thread.sleep(6000L)

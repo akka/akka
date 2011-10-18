@@ -42,14 +42,14 @@ public class UntypedCoordinatedIncrementTest {
         counters = new ArrayList<ActorRef>();
         for (int i = 1; i <= numCounters; i++) {
             final String name = "counter" + i;
-            ActorRef counter = application.createActor(new Props().withCreator(new UntypedActorFactory() {
+            ActorRef counter = application.actorOf(new Props().withCreator(new UntypedActorFactory() {
                 public UntypedActor create() {
                     return new UntypedCoordinatedCounter(name);
                 }
             }));
             counters.add(counter);
         }
-        failer = application.createActor(new Props().withCreator(UntypedFailer.class));
+        failer = application.actorOf(new Props().withCreator(UntypedFailer.class));
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {

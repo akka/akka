@@ -60,16 +60,16 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
 
   val numCounters = 5
 
-  def createActors = {
-    def createCounter(i: Int) = app.createActor(Props(new Counter("counter" + i)))
+  def actorOfs = {
+    def createCounter(i: Int) = app.actorOf(Props(new Counter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val failer = app.createActor(Props(new Failer))
+    val failer = app.actorOf(Props(new Failer))
     (counters, failer)
   }
 
   "Coordinated increment" should {
     "increment all counters by one with successful transactions" in {
-      val (counters, failer) = createActors
+      val (counters, failer) = actorOfs
       val coordinated = Coordinated()
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
@@ -86,7 +86,7 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
       app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, failer) = createActors
+      val (counters, failer) = actorOfs
       val coordinated = Coordinated()
       counters(0) ! Coordinated(Increment(counters.tail :+ failer))
       coordinated.await
