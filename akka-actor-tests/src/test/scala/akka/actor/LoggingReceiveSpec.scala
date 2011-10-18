@@ -129,7 +129,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
           expectMsg(EventHandler.Debug(supervisor, "started"))
 
-          val actor = TestActorRef[TestLogActor](Props[TestLogActor].withSupervisor(supervisor))
+          val actor = new TestActorRef[TestLogActor](app, Props[TestLogActor], supervisor, "none")
 
           expectMsgPF() {
             case EventHandler.Debug(ref, msg: String) ⇒ ref == supervisor && msg.startsWith("now supervising")

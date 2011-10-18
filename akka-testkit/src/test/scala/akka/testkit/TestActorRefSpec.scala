@@ -172,11 +172,11 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
         val boss = TestActorRef(Props(new TActor {
 
-          val ref = TestActorRef(Props(new TActor {
+          val ref = new TestActorRef(app, Props(new TActor {
             def receiveT = { case _ ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
             override def postRestart(reason: Throwable) { counter -= 1 }
-          }).withSupervisor(self))
+          }), self, "child")
 
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
         }).withFaultHandler(OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)))

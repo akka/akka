@@ -394,12 +394,12 @@ class ActorRefSpec extends AkkaSpec {
 
         val boss = actorOf(Props(new Actor {
 
-          val ref = actorOf(
+          val ref = context.actorOf(
             Props(new Actor {
               def receive = { case _ ⇒ }
               override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()
               override def postRestart(reason: Throwable) = latch.countDown()
-            }).withSupervisor(self))
+            }))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
         }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))

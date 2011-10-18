@@ -31,7 +31,7 @@ object IOActorSpec {
             socket write bytes
           }
       }
-    }).withSupervisor(optionSelf))
+    }))
 
     def receive = {
       case msg: NewClient ⇒
@@ -102,7 +102,7 @@ object IOActorSpec {
             }
           }
       }
-    }).withSupervisor(self))
+    }))
 
     def receive = {
       case msg: NewClient ⇒ createWorker forward msg

@@ -106,15 +106,16 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       val restartLatch = new StandardLatch
       val pingLatch = new CountDownLatch(6)
 
-      val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
-      val actor = actorOf(Props(new Actor {
+      val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+      val props = Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()
           case Crash ⇒ throw new Exception("CRASH")
         }
 
         override def postRestart(reason: Throwable) = restartLatch.open
-      }).withSupervisor(supervisor))
+      })
+      val actor = (supervisor ? props).as[ActorRef].get
 
       collectFuture(app.scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
       // appx 2 pings before crash

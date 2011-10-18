@@ -45,10 +45,6 @@ object ActorFireForgetRequestReplySpec {
     }
   }
 
-  class Supervisor extends Actor {
-    def receive = { case _ ⇒ () }
-  }
-
   object state {
     var s = "NIL"
     val finished = TestBarrier(2)
@@ -83,7 +79,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected")) {
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
-        val actor = actorOf(Props[CrashingActor].withSupervisor(supervisor))
+        val actor = (supervisor ? Props[CrashingActor]).as[ActorRef].get
         actor.isShutdown must be(false)
         actor ! "Die"
         state.finished.await

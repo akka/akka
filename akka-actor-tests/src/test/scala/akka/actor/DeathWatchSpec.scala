@@ -69,8 +69,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
-        val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
-        val terminal = actorOf(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
+        val terminalProps = Props(context ⇒ { case x ⇒ context.channel ! x })
+        val terminal = (supervisor ? terminalProps).as[ActorRef].get
 
         testActor startsMonitoring terminal
 
@@ -83,6 +84,21 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
         terminal.stop()
         supervisor.stop()
+      }
+    }
+
+    "fail a monitor which does not handle Terminated()" in {
+      filterEvents(EventFilter[ActorKilledException], EventFilter[DeathPactException]) {
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
+
+        val failed, brother = (supervisor ? Props.empty).as[ActorRef].get
+        brother startsMonitoring failed
+        testActor startsMonitoring brother
+
+        failed ! Kill
+        expectMsgPF() {
+          case Terminated(brother, DeathPactException(failed, _: ActorKilledException)) ⇒ true
+        }
       }
     }
   }

@@ -19,8 +19,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: String)
-  extends LocalActorRef(_app, props.withDispatcher(new CallingThreadDispatcher(_app)), address, false) {
+class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor: ActorRef, address: String)
+  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, address, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -48,7 +48,10 @@ object TestActorRef {
 
   def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, Props.randomAddress)
 
-  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = new TestActorRef(app, props, address)
+  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, app.guardian, address)
+
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, address: String)(implicit app: AkkaApplication): TestActorRef[T] =
+    new TestActorRef(app, props, supervisor, address)
 
   def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomAddress)
 

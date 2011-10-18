@@ -190,7 +190,7 @@ abstract class RemoteSupport(val app: AkkaApplication) extends ListenerManagemen
   lazy val eventHandler: ActorRef = {
     implicit object format extends StatelessActorFormat[RemoteEventHandler]
     val clazz = classOf[RemoteEventHandler]
-    val handler = app.provider.actorOf(Props(clazz), clazz.getName, true)
+    val handler = app.provider.actorOf(Props(clazz), app.guardian, clazz.getName, true)
     // add the remote client and server listener that pipes the events to the event handler system
     addListener(handler)
     handler

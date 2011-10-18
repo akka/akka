@@ -16,26 +16,23 @@ class SupervisorMiscSpec extends AkkaSpec {
       filterEvents(EventFilter[Exception]("Kill")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val supervisor = actorOf(Props(new Actor {
-          def receive = { case _ ⇒ }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
 
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
-
           protected def receive = {
             case "status" ⇒ this.reply("OK")
             case _        ⇒ this.self.stop()
           }
-        }).withSupervisor(supervisor)
+        })
 
-        val actor1 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
+        val actor1 = (supervisor ? workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
 
-        val actor2 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
+        val actor2 = (supervisor ? workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
 
-        val actor3 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+        val actor3 = (supervisor ? workerProps.withDispatcher(app.dispatcherFactory.newDispatcher("test").build)).as[ActorRef].get
 
-        val actor4 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
+        val actor4 = (supervisor ? workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
 
         actor1 ! Kill
         actor2 ! Kill

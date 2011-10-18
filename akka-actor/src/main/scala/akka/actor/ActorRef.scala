@@ -148,19 +148,20 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 class LocalActorRef private[akka] (
   app: AkkaApplication,
   props: Props,
-  givenAddress: String, //Never refer to this internally instead use "address"
+  _supervisor: ActorRef,
+  _givenAddress: String,
   val systemService: Boolean = false,
   private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
   hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
-  final val address: String = givenAddress match {
+  final val address: String = _givenAddress match {
     case null | Props.randomAddress ⇒ uuid.toString
     case other                      ⇒ other
   }
 
-  private[this] val actorCell = new ActorCell(app, this, props, receiveTimeout, hotswap)
+  private[this] val actorCell = new ActorCell(app, this, props, _supervisor, receiveTimeout, hotswap)
   actorCell.start()
 
   /**
@@ -224,6 +225,8 @@ class LocalActorRef private[akka] (
     instance
   }
 
+  protected[akka] def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
+
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorCell.postMessageToMailbox(message, channel)
 
@@ -272,6 +275,8 @@ trait ActorRefShared {
  * from ActorRef -> ScalaActorRef and back
  */
 trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRef ⇒
+
+  protected[akka] def sendSystemMessage(message: SystemMessage): Unit
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
@@ -329,6 +334,8 @@ case class SerializedActorRef(uuid: Uuid, address: String, hostname: String, por
  */
 trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
+  private[akka] def uuid: Uuid = unsupported
+
   def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
   def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
@@ -339,26 +346,38 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   protected[akka] def restart(cause: Throwable): Unit = unsupported
 
+  def stop(): Unit = unsupported
+
+  def address: String = unsupported
+
+  def isShutdown = false
+
+  protected[akka] def sendSystemMessage(message: SystemMessage) {}
+
+  protected[akka] def postMessageToMailbox(msg: Any, channel: UntypedChannel) {}
+
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(msg: Any, timeout: Timeout, channel: UntypedChannel): Future[Any] = unsupported
+
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
 class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
-  val address: String = "akka:internal:DeadLetterActorRef"
+  override val address: String = "akka:internal:DeadLetterActorRef"
 
-  private[akka] val uuid: akka.actor.Uuid = new com.eaio.uuid.UUID(0L, 0L) //Nil UUID
+  private[akka] override val uuid: akka.actor.Uuid = new com.eaio.uuid.UUID(0L, 0L) //Nil UUID
 
   override def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
   override def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
-  def isShutdown(): Boolean = true
+  override def isShutdown(): Boolean = true
 
-  def stop(): Unit = ()
+  override def stop(): Unit = ()
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.debug(this, message)
+  protected[akka] override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.debug(this, message)
 
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+  protected[akka] override def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
     channel: UntypedChannel): Future[Any] = { app.eventHandler.debug(this, message); brokenPromise }

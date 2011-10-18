@@ -80,8 +80,7 @@ object Props {
 case class Props(creator: () ⇒ Actor = Props.defaultCreator,
                  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
-                 faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
-                 supervisor: Option[ActorRef] = Props.defaultSupervisor) {
+                 faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler) {
   /**
    * No-args constructor that sets all the default values
    * Java API
@@ -90,8 +89,7 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
     creator = Props.defaultCreator,
     dispatcher = Props.defaultDispatcher,
     timeout = Props.defaultTimeout,
-    faultHandler = Props.defaultFaultHandler,
-    supervisor = Props.defaultSupervisor)
+    faultHandler = Props.defaultFaultHandler)
 
   /**
    * Returns a new Props with the specified creator set
@@ -129,21 +127,4 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    */
   def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
-  /**
-   * Returns a new Props with the specified supervisor set, if null, it's equivalent to withSupervisor(Option.none())
-   * Java API
-   */
-  def withSupervisor(s: ActorRef) = copy(supervisor = Option(s))
-
-  /**
-   * Returns a new Props with the specified supervisor set
-   * Java API
-   */
-  def withSupervisor(s: akka.japi.Option[ActorRef]) = copy(supervisor = s.asScala)
-
-  /**
-   * Returns a new Props with the specified supervisor set
-   * Scala API
-   */
-  def withSupervisor(s: scala.Option[ActorRef]) = copy(supervisor = s)
 }

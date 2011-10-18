@@ -64,10 +64,13 @@ private[akka] class ActorCell(
   val app: AkkaApplication,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
+  val supervisor: ActorRef,
   var receiveTimeout: Option[Long],
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
+
+  protected def guardian = self
 
   def provider = app.provider
 
@@ -92,14 +95,8 @@ private[akka] class ActorCell(
   def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)
 
-    if (props.supervisor.isDefined) {
-      props.supervisor.get match {
-        case l: LocalActorRef ⇒
-          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          l.underlying.dispatcher.systemDispatch(l.underlying, akka.dispatch.Supervise(self)) //FIXME TODO Support all ActorRefs?
-        case other ⇒ throw new UnsupportedOperationException("Supervision failure: " + other + " cannot be a supervisor, only LocalActorRefs can")
-      }
-    }
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    supervisor.sendSystemMessage(akka.dispatch.Supervise(self))
 
     dispatcher.attach(this)
   }
@@ -126,9 +123,6 @@ private[akka] class ActorCell(
   }
 
   def children: Iterable[ActorRef] = _children.map(_.child)
-
-  //TODO FIXME remove this method
-  def supervisor: Option[ActorRef] = props.supervisor
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher dispatch Envelope(this, message, channel)
 
@@ -193,7 +187,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        if (supervisor.isDefined) supervisor.get ! Failed(self, e) else self.stop()
+        supervisor ! Failed(self, e)
       }
     }
 
@@ -224,7 +218,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        if (supervisor.isDefined) supervisor.get ! Failed(self, e) else self.stop()
+        supervisor ! Failed(self, e)
       }
     }
 
@@ -252,16 +246,13 @@ private[akka] class ActorCell(
           }
         }
       } finally {
-        val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
         try {
-          if (supervisor.isDefined) supervisor.get ! ChildTerminated(self, cause)
+          val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
+          supervisor ! ChildTerminated(self, cause)
+          app.deathWatch.publish(Terminated(self, cause))
         } finally {
-          try {
-            app.deathWatch.publish(Terminated(self, cause))
-          } finally {
-            currentMessage = null
-            clearActorContext()
-          }
+          currentMessage = null
+          clearActorContext()
         }
       }
     }
@@ -320,11 +311,8 @@ private[akka] class ActorCell(
 
               channel.sendException(e)
 
-              if (supervisor.isDefined) {
-                props.faultHandler.handleSupervisorFailing(self, _children)
-                supervisor.get ! Failed(self, e)
-              } else
-                dispatcher.resume(this)
+              props.faultHandler.handleSupervisorFailing(self, _children)
+              supervisor ! Failed(self, e)
 
               if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
           } finally {
@@ -343,7 +331,7 @@ private[akka] class ActorCell(
   }
 
   def handleFailure(fail: Failed): Unit = if (!props.faultHandler.handleFailure(fail, _children)) {
-    if (supervisor.isDefined) throw fail.cause else self.stop()
+    throw fail.cause
   }
 
   def handleChildTerminated(child: ActorRef): Unit = _children = props.faultHandler.handleChildTerminated(child, _children)

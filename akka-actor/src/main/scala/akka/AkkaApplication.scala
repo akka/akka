@@ -155,26 +155,35 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
 
-  if (ConfigVersion != Version)
-    throw new ConfigurationException("Akka JAR version [" + Version +
-      "] does not match the provided config version [" + ConfigVersion + "]")
-
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
 
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
+  val reflective = new ReflectiveAccess(this)
+
+  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
+  val provider: ActorRefProvider = reflective.createProvider
+
+  // TODO make this configurable
+  protected[akka] val guardian: ActorRef = {
+    import akka.actor.FaultHandlingStrategy._
+    new LocalActorRef(this,
+      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
+        case _: ActorKilledException ⇒ Stop
+        case _: Exception            ⇒ Restart
+      }).withDispatcher(dispatcher),
+      provider.theOneWhoWalksTheBubblesOfSpaceTime,
+      "ApplicationSupervisor",
+      true)
+  }
+
   val eventHandler = new EventHandler(this)
 
   val log: Logging = new EventHandlerLogging(eventHandler, this)
 
-  val reflective = new ReflectiveAccess(this)
-
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
-
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val provider: ActorRefProvider = reflective.createProvider
 
   val deathWatch = provider.createDeathWatch()
 
