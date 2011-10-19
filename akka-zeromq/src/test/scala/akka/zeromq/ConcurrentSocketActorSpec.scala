@@ -3,6 +3,7 @@
  */
 package akka.zeromq
 
+import akka.actor.Actor._
 import akka.actor.{Actor, ActorRef}
 import akka.testkit.{TestKit, TestProbe}
 import akka.util.Duration
@@ -12,29 +13,37 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit {
-  val endpoint = "inproc://PubSubConnectionSpec"
+  val endpoint = "tcp://127.0.0.1:10000"
   "ConcurrentSocketActor" should {
     "support pub-sub connections" in {
       val (publisherProbe, subscriberProbe) = (TestProbe(), TestProbe())
-      val message = ZMQMessage("hello".getBytes)
       var context: Option[Context] = None
       var publisher: Option[ActorRef] = None
       var subscriber: Option[ActorRef] = None
+      var msgGenerator: Option[ActorRef] = None
       try {
         context = Some(ZeroMQ.newContext)
         publisher = newPublisher(context.get, publisherProbe.ref)
         subscriber = newSubscriber(context.get, subscriberProbe.ref)
-        subscriberProbe.within(5 seconds) {
-          subscriberProbe.expectMsg(Connecting)
-          publisher ! message
-          subscriberProbe.expectMsg(message)
-        }
+        msgGenerator = newMessageGenerator(publisher)
+        subscriberProbe.expectMsg(Connecting)
+        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) { 
+          case msg: ZMQMessage => msg 
+        }.map(_.firstFrameAsString.toInt)
+        msgNumbers.length must be > 0 
+        msgNumbers must equal(for (i <- msgNumbers.head to msgNumbers.last) yield i)
       } finally {
+        msgGenerator.foreach { msgGenerator => 
+          msgGenerator.stop
+          within(2 seconds) { 
+            awaitCond(msgGenerator.isShutdown) 
+          }
+        }
         subscriber.foreach(_.stop)
         publisher.foreach(_.stop)
-        subscriberProbe.within(5 seconds) {
-          subscriberProbe.expectMsg(Closed)
-        }
+        subscriberProbe.receiveWhile(1 seconds) { 
+          case msg => msg 
+        }.last must equal(Closed)
         context.foreach(_.term)
       }
     }
@@ -64,6 +73,19 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
       subscriber ! Connect(endpoint)
       subscriber ! Subscribe(Seq())
       Some(subscriber)
+    }
+    def newMessageGenerator(actorRef: Option[ActorRef]) = {
+      Some(actorOf(new MessageGeneratorActor(actorRef)).start)
+    }
+  }
+  class MessageGeneratorActor(actorRef: Option[ActorRef]) extends Actor {
+    var messageNumber: Int = 0
+    self.receiveTimeout = Some(10)
+    def receive: Receive = {
+      case _ => 
+        val payload = "%s".format(messageNumber)
+        messageNumber = messageNumber + 1
+        actorRef ! ZMQMessage(payload.getBytes)
     }
   }
 }

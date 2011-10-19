@@ -27,7 +27,11 @@ object Unsubscribe {
 
 case class Send(frames: Seq[Frame]) extends Request
 
-case class ZMQMessage(frames: Seq[Frame])
+case class ZMQMessage(frames: Seq[Frame]) {
+  def firstFrameAsString = {
+    new String(frames.head.payload.toArray)
+  }
+}
 object ZMQMessage { 
   def apply(bytes: Array[Byte]): ZMQMessage = {
     ZMQMessage(Seq(Frame(bytes)))
