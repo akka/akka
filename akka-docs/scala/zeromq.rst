@@ -21,7 +21,7 @@ ZeroMQ supports multiple connectivity patterns, each aimed to meet a different s
 
 .. code-block:: scala
 
-  val socket = ZeroMQ.newSocket(context, SocketType.Pub)
+  val socket = ZeroMQ.newSocket(SocketParameters(context, SocketType.Pub))
 
 after which the socket is either bound to an address and port or connected, for example:
 
@@ -41,11 +41,11 @@ Also, a socket may be created with a listener that receives received messages as
 
   val listener = actorOf(new Actor {
     def receive: Receive = {
-      case Connected => ...
+      case Connecting => ...
       case _ => ...
     }
   }).start
-  val socket = ZeroMQ.newSocket(context, SocketType.Sub, Some(listener))
+  val socket = ZeroMQ.newSocket(SocketParameters(context, SocketType.Sub, Some(listener)))
   socket ! Connect("tcp://localhost:1234")
 
 The following sub-sections describe the supported connection patterns and how they can be used in an Akka environment. However, for a comprehensive discussion of connection patterns, please refer to `ZeroMQ -- The Guide <http://zguide.zeromq.org/page:all>`_.
@@ -57,7 +57,7 @@ In a publisher-subscriber (pub-sub) connection, the publisher accepts one or mor
 
 .. code-block:: scala
 
-  val socket = ZeroMQ.newSocket(context, SocketType.Sub, Some(listener))
+  val socket = ZeroMQ.newSocket(SocketParameters(context, SocketType.Sub, Some(listener)))
   socket ! Connect("tcp://localhost:1234")
   socket ! Subscribe("SomeTopic1")
 
@@ -72,7 +72,7 @@ In an Akka environment, pub-sub connections shall be used when an actor sends me
 .. code-block:: scala
 
   import akka.zeromq._
-  val socket = ZeroMQ.newSocket(context, SocketType.Pub)
+  val socket = ZeroMQ.newSocket(SocketParameters(context, SocketType.Pub))
   socket ! Bind("tcp://127.0.0.1:1234")
   socket ! ZMQMessage("hello".getBytes)
 
@@ -87,6 +87,6 @@ In the following code, the subscriber is configured to receive messages for all 
       case _ => ...
     }
   }).start
-  val socket = ZMQ.newSocket(context, SocketType.Sub, Some(listener))
+  val socket = ZMQ.newSocket(SocketParameters(context, SocketType.Sub, Some(listener)))
   socket ! Connect("tcp://127.0.0.1:1234")
   socket ! Subscribe(Seq())
