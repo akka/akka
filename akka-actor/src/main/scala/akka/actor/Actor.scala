@@ -212,12 +212,10 @@ trait Actor {
 
   implicit def app = context.app
 
-  private def config = context.app.AkkaConfig
-
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit def defaultTimeout = config.ActorTimeout
+  implicit def defaultTimeout = app.AkkaConfig.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -233,7 +231,7 @@ trait Actor {
    * This method does NOT modify the given Receive unless
    * akka.actor.debug.receive is set within akka.conf.
    */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (config.AddLoggingReceive) LoggingReceive(self, r) else r
+  def loggable(self: AnyRef)(r: Receive): Receive = if (app.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
@@ -241,7 +239,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  def someSelf: Some[ActorRef with ScalaActorRef] = Some(context.self)
+  def someSelf: Some[ActorRef with ScalaActorRef] = Some(context.self) //TODO FIXME we might not need this when we switch to sender-in-scope-always
 
   /*
    * Option[ActorRef] representation of the 'self' ActorRef reference.
@@ -249,7 +247,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * one of the message send functions ('!' and '?').
    */
-  def optionSelf: Option[ActorRef with ScalaActorRef] = someSelf
+  def optionSelf: Option[ActorRef with ScalaActorRef] = someSelf //TODO FIXME we might not need this when we switch to sender-in-scope-always
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -272,7 +270,7 @@ trait Actor {
    */
   def channel: UntypedChannel = context.channel
 
-  // just for current compatibility
+  // TODO FIXME REMOVE ME just for current compatibility
   implicit def forwardable: ForwardableChannel = ForwardableChannel(channel)
 
   /**
@@ -387,11 +385,9 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-    if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + channel + "] to [" + self + "] is null")
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (config.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      if (app.AkkaConfig.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)

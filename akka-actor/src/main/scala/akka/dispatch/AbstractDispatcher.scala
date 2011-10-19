@@ -17,7 +17,9 @@ import scala.annotation.tailrec
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class Envelope(val message: Any, val channel: UntypedChannel)
+final case class Envelope(val message: Any, val channel: UntypedChannel) {
+  if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
+}
 
 object SystemMessage {
   @tailrec
