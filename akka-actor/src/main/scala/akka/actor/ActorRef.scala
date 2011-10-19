@@ -9,6 +9,7 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
+import akka.event.ActorEventBus
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -342,6 +343,8 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
+case class DeadLetter(message: Any, channel: UntypedChannel)
+
 class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   val address: String = "akka:internal:DeadLetterActorRef"
@@ -356,10 +359,10 @@ class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
 
   def stop(): Unit = ()
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.debug(this, message)
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.notify(DeadLetter(message, channel))
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = { app.eventHandler.debug(this, message); brokenPromise }
+    channel: UntypedChannel): Future[Any] = { app.eventHandler.notify(DeadLetter(message, channel)); brokenPromise }
 }

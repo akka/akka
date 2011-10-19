@@ -291,9 +291,9 @@ private[akka] class ActorCell(
   }
 
   def sender: ActorRef = currentMessage match {
-    case null                                      ⇒ app.deadLetterRecipient
+    case null                                      ⇒ app.deadLetters
     case msg if msg.channel.isInstanceOf[ActorRef] ⇒ msg.channel.asInstanceOf[ActorRef]
-    case _                                         ⇒ app.deadLetterRecipient
+    case _                                         ⇒ app.deadLetters
   }
 
   def channel: UntypedChannel = currentMessage match {
