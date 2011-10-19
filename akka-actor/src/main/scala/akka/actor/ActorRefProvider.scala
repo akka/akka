@@ -185,7 +185,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
 
   override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
     if (!super.subscribe(subscriber, to)) {
-      subscriber ! Terminated(subscriber, new ActorKilledException("Already terminated when linking"))
+      subscriber ! Terminated(to, new ActorKilledException("Already terminated when linking"))
       false
     } else true
   }
