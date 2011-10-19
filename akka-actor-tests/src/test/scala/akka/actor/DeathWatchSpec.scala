@@ -12,7 +12,7 @@ import java.util.concurrent.atomic._
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   "The Death Watch" must {
-    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, actorRef + ": Stopped") {
+    def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
       case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" || ex.getMessage == "Already terminated when linking" ⇒ true
     }
 
@@ -21,11 +21,12 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       testActor startsMonitoring terminal
 
+      testActor ! "ping"
+      expectMsg("ping")
+
       terminal ! PoisonPill
 
       expectTerminationOf(terminal)
-
-      terminal.stop()
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
@@ -42,7 +43,6 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      terminal.stop()
       monitor1.stop()
       monitor2.stop()
     }
