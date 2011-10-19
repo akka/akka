@@ -90,6 +90,8 @@ class BalancingDispatcher(
       while (messages ne null) {
         deadLetterMailbox.systemEnqueue(messages) //Send to dead letter queue
         messages = messages.next
+        if (messages eq null) //Make sure that any system messages received after the current drain are also sent to the dead letter mbox
+          messages = mailBox.systemDrain()
       }
     }
   }

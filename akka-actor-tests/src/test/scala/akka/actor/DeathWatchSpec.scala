@@ -17,11 +17,11 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
 
       testActor startsMonitoring terminal
 
-      terminal ! "anything"
+      terminal ! PoisonPill
 
       expectTerminationOf(terminal)
 
@@ -30,13 +30,13 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
       val monitor1, monitor2 = actorOf(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
 
       monitor1 startsMonitoring terminal
       monitor2 startsMonitoring terminal
       testActor startsMonitoring terminal
 
-      terminal ! "anything"
+      terminal ! PoisonPill
 
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
@@ -48,8 +48,11 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
-      val monitor1, monitor2 = actorOf(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ context.self.stop() }))
+      val monitor1, monitor2 = actorOf(Props(context ⇒ {
+        case t: Terminated ⇒ testActor ! t
+        case "ping"        ⇒ context.channel ! "pong"
+      }))
+      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
 
       monitor1 startsMonitoring terminal
       monitor2 startsMonitoring terminal
@@ -57,12 +60,15 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       monitor2 stopsMonitoring terminal
 
-      terminal ! "anything"
+      monitor2 ! "ping"
+
+      expectMsg("pong") //Needs to be here since startsMonitoring and stopsMonitoring are asynchronous
+
+      terminal ! PoisonPill
 
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      terminal.stop()
       monitor1.stop()
       monitor2.stop()
     }
@@ -80,8 +86,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         terminal ! Kill
 
         expectTerminationOf(terminal)
+        terminal.isShutdown must be === true
 
-        terminal.stop()
         supervisor.stop()
       }
     }
