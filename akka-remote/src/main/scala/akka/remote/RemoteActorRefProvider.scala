@@ -14,7 +14,7 @@ import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.AkkaException
 import RemoteProtocol._
-import RemoteDaemonMessageType._
+import RemoteSystemDaemonMessageType._
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import Compression.LZF
 import java.net.InetSocketAddress
@@ -36,10 +36,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
   private val actors = new ConcurrentHashMap[String, Promise[ActorRef]]
 
-  private val remoteDaemonConnectionManager = new RemoteConnectionManager(
-    app,
-    remote = remote,
-    failureDetector = new BannagePeriodFailureDetector(60 seconds)) // FIXME make timeout configurable
+  private val remoteDaemonConnectionManager = new RemoteConnectionManager(app, remote)
 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
@@ -117,7 +114,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
                 connections += (inetSocketAddress -> RemoteActorRef(remote.server, inetSocketAddress, address, None))
               }
 
-              val connectionManager = new RemoteConnectionManager(app, remote, connections, failureDetector)
+              val connectionManager = new RemoteConnectionManager(app, remote, connections)
 
               connections.keys foreach { useActorOnNode(_, address, props.creator) }
 
@@ -180,7 +177,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
           else bytes
       }
 
-    val command = RemoteDaemonMessageProtocol.newBuilder
+    val command = RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(USE)
       .setActorAddress(actorAddress)
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
@@ -198,27 +195,27 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
   private def sendCommandToRemoteNode(
     connection: ActorRef,
-    command: RemoteDaemonMessageProtocol,
+    command: RemoteSystemDaemonMessageProtocol,
     withACK: Boolean) {
 
     if (withACK) {
       try {
-        (connection ? (command, remote.remoteDaemonAckTimeout)).as[Status] match {
+        (connection ? (command, remote.remoteSystemDaemonAckTimeout)).as[Status] match {
           case Some(Success(receiver)) ⇒
-            app.eventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
+            app.eventHandler.debug(this, "Remote system command sent to [%s] successfully received".format(receiver))
 
           case Some(Failure(cause)) ⇒
             app.eventHandler.error(cause, this, cause.toString)
             throw cause
 
           case None ⇒
-            val error = new RemoteException("Remote command to [%s] timed out".format(connection.address))
+            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
             app.eventHandler.error(error, this, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          app.eventHandler.error(e, this, "Could not send remote command to [%s] due to: %s".format(connection.address, e.toString))
+          app.eventHandler.error(e, this, "Could not send remote system command to [%s] due to: %s".format(connection.address, e.toString))
           throw e
       }
     } else {

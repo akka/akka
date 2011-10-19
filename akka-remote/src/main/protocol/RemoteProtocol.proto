@@ -156,16 +156,6 @@ enum LifeCycleType {
   TEMPORARY = 2;
 }
 
-/*
-enum DispatcherType {
-  GLOBAL_EVENT_EXECUTOR_BASED = 1;
-  GLOBAL_REACTOR_SINGLE_THREAD_BASED = 2;
-  GLOBAL_REACTOR_THREAD_POOL_BASED = 3;
-  EVENT_EXECUTOR_BASED = 4;
-  THREAD_BASED = 5;
-}
-*/
-
 /**
  * Defines the life-cycle of a supervised Actor.
  */
@@ -190,10 +180,10 @@ message ExceptionProtocol {
 }
 
 /**
- * Defines the remote daemon message.
+ * Defines the remote system daemon message.
  */
-message RemoteDaemonMessageProtocol {
-  required RemoteDaemonMessageType messageType = 1;
+message RemoteSystemDaemonMessageProtocol {
+  required RemoteSystemDaemonMessageType messageType = 1;
   optional UuidProtocol actorUuid = 2;
   optional string actorAddress = 3;
   optional bytes payload = 5;
@@ -201,9 +191,9 @@ message RemoteDaemonMessageProtocol {
 }
 
 /**
- * Defines the remote daemon message type.
+ * Defines the remote system daemon message type.
  */
-enum RemoteDaemonMessageType {
+enum RemoteSystemDaemonMessageType {
   STOP = 1;
   USE = 2;
   RELEASE = 3;
@@ -212,11 +202,12 @@ enum RemoteDaemonMessageType {
   DISCONNECT = 6;
   RECONNECT = 7;
   RESIGN = 8;
-  FAIL_OVER_CONNECTIONS = 9;
-  FUNCTION_FUN0_UNIT = 10;
-  FUNCTION_FUN0_ANY = 11;
-  FUNCTION_FUN1_ARG_UNIT = 12;
-  FUNCTION_FUN1_ARG_ANY = 13;
+  GOSSIP = 9;
+  FAIL_OVER_CONNECTIONS = 20;
+  FUNCTION_FUN0_UNIT = 21;
+  FUNCTION_FUN0_ANY = 22;
+  FUNCTION_FUN1_ARG_UNIT = 23;
+  FUNCTION_FUN1_ARG_ANY = 24;
 }
 
 /**

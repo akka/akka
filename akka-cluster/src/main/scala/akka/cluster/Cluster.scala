@@ -47,7 +47,7 @@ import akka.cluster.metrics._
 import akka.cluster.zookeeper._
 import ChangeListener._
 import RemoteProtocol._
-import RemoteDaemonMessageType._
+import RemoteSystemDaemonMessageType._
 
 import com.eaio.uuid.UUID
 
@@ -818,7 +818,7 @@ class DefaultClusterNode private[akka] (
     EventHandler.debug(this,
       "Sending command to nodes [%s] for checking out actor [%s]".format(nodes.mkString(", "), actorAddress))
 
-    val builder = RemoteDaemonMessageProtocol.newBuilder
+    val builder = RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(USE)
       .setActorAddress(actorAddress)
 
@@ -882,7 +882,7 @@ class DefaultClusterNode private[akka] (
     EventHandler.debug(this,
       "Releasing (checking in) all actors with address [%s] on all nodes in cluster".format(actorAddress))
 
-    val command = RemoteDaemonMessageProtocol.newBuilder
+    val command = RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(RELEASE)
       .setActorAddress(actorAddress)
       .build
@@ -1030,7 +1030,7 @@ class DefaultClusterNode private[akka] (
     Serialization.serialize(f) match {
       case Left(error) ⇒ throw error
       case Right(bytes) ⇒
-        val message = RemoteDaemonMessageProtocol.newBuilder
+        val message = RemoteSystemDaemonMessageProtocol.newBuilder
           .setMessageType(FUNCTION_FUN0_UNIT)
           .setPayload(ByteString.copyFrom(bytes))
           .build
@@ -1046,7 +1046,7 @@ class DefaultClusterNode private[akka] (
     Serialization.serialize(f) match {
       case Left(error) ⇒ throw error
       case Right(bytes) ⇒
-        val message = RemoteDaemonMessageProtocol.newBuilder
+        val message = RemoteSystemDaemonMessageProtocol.newBuilder
           .setMessageType(FUNCTION_FUN0_ANY)
           .setPayload(ByteString.copyFrom(bytes))
           .build
@@ -1063,7 +1063,7 @@ class DefaultClusterNode private[akka] (
     Serialization.serialize((f, arg)) match {
       case Left(error) ⇒ throw error
       case Right(bytes) ⇒
-        val message = RemoteDaemonMessageProtocol.newBuilder
+        val message = RemoteSystemDaemonMessageProtocol.newBuilder
           .setMessageType(FUNCTION_FUN1_ARG_UNIT)
           .setPayload(ByteString.copyFrom(bytes))
           .build
@@ -1080,7 +1080,7 @@ class DefaultClusterNode private[akka] (
     Serialization.serialize((f, arg)) match {
       case Left(error) ⇒ throw error
       case Right(bytes) ⇒
-        val message = RemoteDaemonMessageProtocol.newBuilder
+        val message = RemoteSystemDaemonMessageProtocol.newBuilder
           .setMessageType(FUNCTION_FUN1_ARG_ANY)
           .setPayload(ByteString.copyFrom(bytes))
           .build
@@ -1151,7 +1151,7 @@ class DefaultClusterNode private[akka] (
   // Private
   // =======================================
 
-  private def sendCommandToNode(connection: ActorRef, command: RemoteDaemonMessageProtocol, async: Boolean = true) {
+  private def sendCommandToNode(connection: ActorRef, command: RemoteSystemDaemonMessageProtocol, async: Boolean = true) {
     if (async) {
       connection ! command
     } else {
@@ -1442,7 +1442,7 @@ class DefaultClusterNode private[akka] (
           case Left(error) ⇒ throw error
           case Right(bytes) ⇒
 
-            val command = RemoteDaemonMessageProtocol.newBuilder
+            val command = RemoteSystemDaemonMessageProtocol.newBuilder
               .setMessageType(FAIL_OVER_CONNECTIONS)
               .setPayload(ByteString.copyFrom(bytes))
               .build
@@ -1713,7 +1713,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
   }
 
   def receive: Receive = {
-    case message: RemoteDaemonMessageProtocol ⇒
+    case message: RemoteSystemDaemonMessageProtocol ⇒
       EventHandler.debug(this,
         "Received command [\n%s] to RemoteClusterDaemon on node [%s]".format(message, cluster.nodeAddress.nodeName))
 
@@ -1735,7 +1735,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     case unknown ⇒ EventHandler.warning(this, "Unknown message [%s]".format(unknown))
   }
 
-  def handleRelease(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handleRelease(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     if (message.hasActorUuid) {
       cluster.actorAddressForUuid(uuidProtocolToUuid(message.getActorUuid)) foreach { address ⇒
         cluster.release(address)
@@ -1748,7 +1748,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     }
   }
 
-  def handleUse(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handleUse(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     def deserializeMessages(entriesAsBytes: Vector[Array[Byte]]): Vector[AnyRef] = {
       import akka.cluster.RemoteProtocol._
       import akka.cluster.MessageSerializer
@@ -1855,7 +1855,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
     }
   }
 
-  def handle_fun0_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun0_unit(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
         self ⇒ {
@@ -1863,7 +1863,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
-  def handle_fun0_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun0_any(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
         self ⇒ {
@@ -1871,7 +1871,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
-  def handle_fun1_arg_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun1_arg_unit(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
         self ⇒ {
@@ -1879,7 +1879,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
-  def handle_fun1_arg_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handle_fun1_arg_any(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(
       Props(
         self ⇒ {
@@ -1887,12 +1887,12 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
-  def handleFailover(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
+  def handleFailover(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
     val (from, to) = payloadFor(message, classOf[(InetSocketAddress, InetSocketAddress)])
     cluster.failOverClusterActorRefConnections(from, to)
   }
 
-  private def payloadFor[T](message: RemoteDaemonMessageProtocol, clazz: Class[T]): T = {
+  private def payloadFor[T](message: RemoteSystemDaemonMessageProtocol, clazz: Class[T]): T = {
     Serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
       case Left(error)     ⇒ throw error
       case Right(instance) ⇒ instance.asInstanceOf[T]
