@@ -78,8 +78,8 @@ class Dispatcher(
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
   protected[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
 
-  protected[akka] def dispatch(invocation: Envelope) = {
-    val mbox = invocation.receiver.mailbox
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
+    val mbox = receiver.mailbox
     mbox enqueue invocation
     registerForExecution(mbox, true, false)
   }

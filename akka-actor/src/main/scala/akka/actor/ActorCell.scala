@@ -278,7 +278,7 @@ private[akka] class ActorCell(
   //TODO FIXME remove this method
   def supervisor: Option[ActorRef] = props.supervisor
 
-  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher dispatch Envelope(this, message, channel)
+  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher.dispatch(this, Envelope(message, channel))
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -288,7 +288,7 @@ private[akka] class ActorCell(
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
-    dispatcher dispatch Envelope(this, message, future)
+    dispatcher.dispatch(this, Envelope(message, future))
     future
   }
 

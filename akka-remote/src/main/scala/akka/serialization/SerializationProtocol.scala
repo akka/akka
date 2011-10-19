@@ -101,7 +101,7 @@ class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
 
             l map { m ⇒
               remoteActorSerialization.createRemoteMessageProtocolBuilder(
-                Option(m.receiver.self),
+                localRef,
                 Left(actorRef.uuid),
                 actorRef.address,
                 app.AkkaConfig.ActorTimeoutMillis,

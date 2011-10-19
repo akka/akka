@@ -127,10 +127,10 @@ object ActorModelSpec {
       super.unregister(actor)
     }
 
-    protected[akka] abstract override def dispatch(invocation: Envelope) {
-      val stats = getStats(invocation.receiver.self)
+    protected[akka] abstract override def dispatch(receiver: ActorCell, invocation: Envelope) {
+      val stats = getStats(receiver.self)
       stats.msgsReceived.incrementAndGet()
-      super.dispatch(invocation)
+      super.dispatch(receiver, invocation)
     }
 
     protected[akka] abstract override def start() {

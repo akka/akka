@@ -170,7 +170,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
           do {
-            nextMessage.invoke
+            actor invoke nextMessage
 
             processAllSystemMessages() //After we're done, process all system messages
 
@@ -182,7 +182,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
             } else null //Abort
           } while (nextMessage ne null)
         } else { //If we only run one message per process
-          nextMessage.invoke //Just run it
+          actor invoke nextMessage //Just run it
           processAllSystemMessages() //After we're done, process all system messages
         }
       }
