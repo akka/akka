@@ -57,6 +57,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
     if (pollSocket) {
       receiveFrames match {
         case frames if (frames.length > 0) => notifyListener(params.deserializer(frames))
+        case _ =>
       }
     }
   }
