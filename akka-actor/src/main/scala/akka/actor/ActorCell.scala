@@ -34,7 +34,7 @@ private[akka] trait ActorContext extends ActorRefFactory {
 
   def currentMessage_=(invocation: Envelope): Unit
 
-  def sender: Option[ActorRef]
+  def sender: ActorRef
 
   def channel: UntypedChannel
 
@@ -290,10 +290,10 @@ private[akka] class ActorCell(
     future
   }
 
-  def sender: Option[ActorRef] = currentMessage match {
-    case null                                      ⇒ None
-    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ Some(msg.channel.asInstanceOf[ActorRef])
-    case _                                         ⇒ None
+  def sender: ActorRef = currentMessage match {
+    case null                                      ⇒ app.deadLetterRecipient
+    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ msg.channel.asInstanceOf[ActorRef]
+    case _                                         ⇒ app.deadLetterRecipient
   }
 
   def channel: UntypedChannel = currentMessage match {

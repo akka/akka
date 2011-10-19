@@ -67,7 +67,7 @@ abstract class UntypedActor extends Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def getSender: Option[ActorRef] = sender
+  def getSender: ActorRef = sender
 
   /**
    * Abstraction for unification of sender and senderFuture for later reply

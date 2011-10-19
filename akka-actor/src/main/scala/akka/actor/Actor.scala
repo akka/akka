@@ -263,7 +263,8 @@ trait Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = context.sender
+  @inline
+  final def sender: ActorRef = context.sender
 
   /**
    * Abstraction for unification of sender and senderFuture for later reply

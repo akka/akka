@@ -170,6 +170,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val reflective = new ReflectiveAccess(this)
 
+  val deadLetterRecipient = new DeadLetterActorRef(this)
+
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
 
