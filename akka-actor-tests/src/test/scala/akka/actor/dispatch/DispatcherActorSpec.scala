@@ -73,11 +73,11 @@ class DispatcherActorSpec extends AkkaSpec {
 
       val slowOne = actorOf(
         Props(context ⇒ {
-          case "hogexecutor" ⇒ start.await
+          case "hogexecutor" ⇒ context.channel ! "OK"; start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
-      slowOne ! "hogexecutor"
+      assert((slowOne ? "hogexecutor").get === "OK")
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
       fastOne ! "sabotage"
       start.countDown()

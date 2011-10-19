@@ -13,7 +13,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(2 seconds, actorRef + ": Stopped") {
-      case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" ⇒ true
+      case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" || ex.getMessage == "Already terminated when linking" ⇒ true
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
