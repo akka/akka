@@ -281,7 +281,7 @@ class TypedActor(val app: AkkaApplication) {
               case p: ActorPromise ⇒ p completeWith m(me).asInstanceOf[Future[Any]]
               case _               ⇒ throw new IllegalStateException("Future-returning TypedActor didn't use ?/ask so cannot reply")
             }
-          } else reply(m(me))
+          } else channel ! m(me)
 
         } finally {
           TypedActor.selfReference set null

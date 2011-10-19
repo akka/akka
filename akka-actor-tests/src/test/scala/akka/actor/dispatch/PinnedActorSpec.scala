@@ -12,7 +12,7 @@ import org.scalatest.BeforeAndAfterEach
 object PinnedActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ reply("World")
+      case "Hello"   ⇒ channel ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }

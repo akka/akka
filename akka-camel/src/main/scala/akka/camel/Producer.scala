@@ -159,7 +159,7 @@ trait ProducerSupport { this: Actor ⇒
    * actor).
    */
   protected def receiveAfterProduce: Receive = {
-    case msg ⇒ if (!oneway) reply(msg)
+    case msg ⇒ if (!oneway) channel ! msg
   }
 
   /**

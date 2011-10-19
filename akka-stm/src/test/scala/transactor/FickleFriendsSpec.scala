@@ -56,7 +56,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ reply(count.get)
+      case GetCount ⇒ channel ! count.get
     }
   }
 
@@ -93,7 +93,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ reply(count.get)
+      case GetCount ⇒ channel ! count.get
     }
   }
 }

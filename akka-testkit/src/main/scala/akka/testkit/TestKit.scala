@@ -225,14 +225,6 @@ class TestKit(_app: AkkaApplication) {
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
-   * Send reply to the last dequeued message. Will throw
-   * IllegalActorStateException if no message has been dequeued, yet. Dequeuing
-   * means reception of the message as part of an expect... or receive... call,
-   * not reception by the testActor.
-   */
-  def reply(msg: AnyRef) { lastMessage.channel.!(msg)(testActor) }
-
-  /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
    */
   def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)

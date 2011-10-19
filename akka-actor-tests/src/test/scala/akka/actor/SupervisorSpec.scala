@@ -42,7 +42,7 @@ object SupervisorSpec {
     def receive = {
       case Ping ⇒
         messageLog.put(PingMessage)
-        tryReply(PongMessage)
+        channel.tryTell(PongMessage)
       case Die ⇒
         throw new RuntimeException(ExceptionMessage)
     }
@@ -298,7 +298,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
-          case Ping ⇒ tryReply(PongMessage)
+          case Ping ⇒ channel.tryTell(PongMessage)
           case Die  ⇒ throw new RuntimeException("Expected")
         }
       }).withSupervisor(supervisor))

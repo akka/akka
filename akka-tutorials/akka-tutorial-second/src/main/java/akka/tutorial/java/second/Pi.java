@@ -80,7 +80,7 @@ public class Pi {
     public void onReceive(Object message) {
       if (message instanceof Work) {
         Work work = (Work) message;
-        reply(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
+        getChannel().tell(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
   }

@@ -68,7 +68,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().channel().tell(...)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =

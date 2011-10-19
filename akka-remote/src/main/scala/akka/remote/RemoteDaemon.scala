@@ -149,10 +149,10 @@ class RemoteDaemon(val remote: Remote) extends Actor {
         app.eventHandler.error(this, "Actor 'address' is not defined, ignoring remote daemon command [%s]".format(message))
       }
 
-      reply(Success(address.toString))
+      channel ! Success(address.toString)
     } catch {
       case error: Throwable ⇒
-        reply(Failure(error))
+        channel ! Failure(error)
         throw error
     }
   }
@@ -184,7 +184,7 @@ class RemoteDaemon(val remote: Remote) extends Actor {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case f: Function0[_] ⇒ try { reply(f()) } finally { context.self.stop() }
+          case f: Function0[_] ⇒ try { channel ! f() } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
@@ -200,7 +200,7 @@ class RemoteDaemon(val remote: Remote) extends Actor {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case (fun: Function[_, _], param: Any) ⇒ try { reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { context.self.stop() }
+          case (fun: Function[_, _], param: Any) ⇒ try { channel ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 

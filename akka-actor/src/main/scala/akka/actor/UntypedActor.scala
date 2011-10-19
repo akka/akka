@@ -21,7 +21,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *
  *        if (msg.equals("UseReply")) {
  *          // Reply to original sender of message using the 'reply' method
- *          reply(msg + ":" + getSelf().getAddress());
+ *          getContext().getChannel().tell(msg + ":" + getSelf().getAddress());
  *
  *        } else if (msg.equals("UseSender") && getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference

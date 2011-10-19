@@ -296,31 +296,6 @@ trait Actor {
   def receiveTimeout_=(timeout: Option[Long]) = context.receiveTimeout = timeout
 
   /**
-   * Akka Scala & Java API
-   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed. This method fails if the original sender of the message could not be determined with an
-   * IllegalStateException.
-   *
-   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
-   * version.
-   *
-   * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = channel.!(message)(self)
-
-  /**
-   * Akka Scala & Java API
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean = channel.tryTell(message)(self)
-
-  /**
    * Same as ActorContext.children
    */
   def children: Iterable[ActorRef] = context.children
@@ -341,7 +316,7 @@ trait Actor {
    *   def receive = {
    *     case Ping =&gt;
    *       println("got a 'Ping' message")
-   *       reply("pong")
+   *       channel ! "pong"
    *
    *     case OneWay =&gt;
    *       println("got a 'OneWay' message")

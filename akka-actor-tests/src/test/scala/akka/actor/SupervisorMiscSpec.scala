@@ -24,7 +24,7 @@ class SupervisorMiscSpec extends AkkaSpec {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
-            case "status" ⇒ this.reply("OK")
+            case "status" ⇒ this.channel ! "OK"
             case _        ⇒ this.self.stop()
           }
         }).withSupervisor(supervisor)

@@ -83,7 +83,7 @@ public class Pi {
         double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
         // reply with the result
-        reply(new Result(result));
+        getChannel().tell(new Result(result));
 
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }

@@ -9,7 +9,7 @@ object RandomRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ reply(app.nodename)
+      case "hit" ⇒ channel ! app.nodename
       case "end" ⇒ self.stop()
     }
   }

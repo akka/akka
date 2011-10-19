@@ -41,7 +41,7 @@ object Pi extends App {
 
     def receive = {
       case Work(arg, nrOfElements) ⇒
-        reply(Result(calculatePiFor(arg, nrOfElements))) // perform the work
+        channel ! Result(calculatePiFor(arg, nrOfElements)) // perform the work
     }
   }
 
