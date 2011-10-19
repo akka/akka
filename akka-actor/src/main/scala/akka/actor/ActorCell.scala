@@ -36,8 +36,6 @@ private[akka] trait ActorContext extends ActorRefFactory {
 
   def sender: Option[ActorRef]
 
-  def senderFuture(): Option[Promise[Any]]
-
   def channel: UntypedChannel
 
   def children: Iterable[ActorRef]
@@ -296,12 +294,6 @@ private[akka] class ActorCell(
     case null                                      ⇒ None
     case msg if msg.channel.isInstanceOf[ActorRef] ⇒ Some(msg.channel.asInstanceOf[ActorRef])
     case _                                         ⇒ None
-  }
-
-  def senderFuture(): Option[Promise[Any]] = currentMessage match {
-    case null ⇒ None
-    case msg if msg.channel.isInstanceOf[ActorPromise] ⇒ Some(msg.channel.asInstanceOf[ActorPromise])
-    case _ ⇒ None
   }
 
   def channel: UntypedChannel = currentMessage match {

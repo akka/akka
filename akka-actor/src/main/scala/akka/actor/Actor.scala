@@ -268,12 +268,6 @@ trait Actor {
   def sender: Option[ActorRef] = context.sender
 
   /**
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  def senderFuture(): Option[Promise[Any]] = context.senderFuture
-
-  /**
    * Abstraction for unification of sender and senderFuture for later reply
    */
   def channel: UntypedChannel = context.channel
