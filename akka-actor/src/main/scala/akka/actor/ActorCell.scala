@@ -243,6 +243,7 @@ private[akka] class ActorCell(
     if (props.supervisor.isDefined) {
       props.supervisor.get match {
         case l: LocalActorRef ⇒
+          // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           l.underlying.dispatcher.systemDispatch(l.underlying, akka.dispatch.Supervise(self)) //FIXME TODO Support all ActorRefs?
         case other ⇒ throw new UnsupportedOperationException("Supervision failure: " + other + " cannot be a supervisor, only LocalActorRefs can")
       }
@@ -251,19 +252,23 @@ private[akka] class ActorCell(
     dispatcher.attach(this)
   }
 
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
 
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   def resume(): Unit = dispatcher.systemDispatch(this, Resume())
 
-  private[akka] def stop(): Unit =
-    dispatcher.systemDispatch(this, Terminate())
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
   def startsMonitoring(subject: ActorRef): ActorRef = {
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
   def stopsMonitoring(subject: ActorRef): ActorRef = {
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject
   }
@@ -421,18 +426,18 @@ private[akka] class ActorCell(
       val isClosed = mailbox.isClosed //Fence plus volatile read
       if (!isClosed) {
         message match {
-          case Create(_)          ⇒ create()
-          case Recreate(cause, _) ⇒ recreate(cause)
-          case Link(subject, _) ⇒
+          case Create()        ⇒ create()
+          case Recreate(cause) ⇒ recreate(cause)
+          case Link(subject) ⇒
             app.deathWatch.subscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now monitoring " + subject)
-          case Unlink(subject, _) ⇒
+          case Unlink(subject) ⇒
             app.deathWatch.unsubscribe(self, subject)
             if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "stopped monitoring " + subject)
-          case Suspend(_)          ⇒ suspend()
-          case Resume(_)           ⇒ resume()
-          case Terminate(_)        ⇒ terminate()
-          case Supervise(child, _) ⇒ supervise(child)
+          case Suspend()        ⇒ suspend()
+          case Resume()         ⇒ resume()
+          case Terminate()      ⇒ terminate()
+          case Supervise(child) ⇒ supervise(child)
         }
       }
     } catch {
@@ -491,6 +496,7 @@ private[akka] class ActorCell(
 
   def handleChildTerminated(child: ActorRef): Unit = _children = props.faultHandler.handleChildTerminated(child, _children)
 
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
 
   def checkReceiveTimeout() {
