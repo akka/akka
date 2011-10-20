@@ -55,14 +55,17 @@ object SupervisorSpec {
   class Master extends Actor {
 
     val temp = context.actorOf(Props[PingPongActor])
+    self startsMonitoring temp
+    var s: UntypedChannel = _
 
     def receive = {
-      case Die           ⇒ (temp.?(Die, TimeoutMillis)).get
-      case _: Terminated ⇒
+      case Die                       ⇒ temp ! Die; s = context.channel
+      case Terminated(`temp`, cause) ⇒ s ! cause
     }
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import SupervisorSpec._
@@ -147,12 +150,12 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
     "not restart programmatically linked temporary actor" in {
       val master = actorOf(Props[Master].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
-      intercept[RuntimeException] {
-        (master.?(Die, TimeoutMillis)).get
+      (master.?(Die, TimeoutMillis)).get match {
+        case r: RuntimeException ⇒ r === ExceptionMessage
       }
 
       sleepFor(1 second)
-      messageLog.size must be(0)
+      messageLogPoll must be(null)
     }
 
     "not restart temporary actor" in {

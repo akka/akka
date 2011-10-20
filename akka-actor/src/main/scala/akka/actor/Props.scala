@@ -23,6 +23,7 @@ object Props {
   final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
+    case _: ActorKilledException         ⇒ Stop
     case _: Exception                    ⇒ Restart
     case _                               ⇒ Escalate
   }

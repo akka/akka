@@ -7,6 +7,7 @@ package akka.actor
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
+import akka.util.duration._
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
@@ -145,10 +146,10 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     newFooBar(Props().withTimeout(Timeout(d)))
 
   def newFooBar(props: Props): Foo =
-    app.typedActor.typedActorOf(classOf[Foo], classOf[Bar], props)
+    app.typedActorOf(classOf[Foo], classOf[Bar], props)
 
   def newStacked(props: Props = Props().withTimeout(Timeout(2000))): Stacked =
-    app.typedActor.typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
+    app.typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
 
   def mustStop(typedActor: AnyRef) = app.typedActor.stop(typedActor) must be(true)
 
@@ -260,7 +261,12 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
-        val t = newFooBar
+        val boss = actorOf(Props(context ⇒ {
+          case p: Props ⇒ context.channel ! context.typedActorOf(classOf[Foo], classOf[Bar], p)
+        }).withFaultHandler(OneForOneStrategy {
+          case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
+        }))
+        val t = (boss ? Props().withTimeout(2 seconds)).as[Foo].get
 
         t.incr()
         t.failingPigdog()
@@ -292,7 +298,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "be able to support implementation only typed actors" in {
-      val t = app.typedActor.typedActorOf[Foo, Bar](Props())
+      val t = app.typedActorOf[Foo, Bar](Props())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
@@ -302,7 +308,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t = app.typedActor.typedActorOf[Stackable1 with Stackable2, StackedImpl]()
+      val t = app.typedActorOf[Stackable1 with Stackable2, StackedImpl]()
       t.stackable1 must be("foo")
       t.stackable2 must be("bar")
       mustStop(t)

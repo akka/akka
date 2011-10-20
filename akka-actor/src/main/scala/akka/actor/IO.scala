@@ -394,12 +394,8 @@ private[akka] class IOWorker(app: AkkaApplication, ioManager: ActorRef, val buff
       case Some(channel) ⇒
         channel.close
         channels -= handle
-        try {
-          handle.owner ! IO.Closed(handle, cause)
-        } catch {
-          case e: ActorInitializationException ⇒
-            app.eventHandler debug (ioManager, "IO.Handle's owner not running")
-        }
+        // TODO: what if handle.owner is no longer running?
+        handle.owner ! IO.Closed(handle, cause)
       case None ⇒
     }
   }

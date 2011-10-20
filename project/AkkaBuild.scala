@@ -394,7 +394,7 @@ object AkkaBuild extends Build {
 object Dependencies {
   import Dependency._
 
-  val testkit = Seq(Test.scalatest)
+  val testkit = Seq(Test.scalatest, Test.junit)
 
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.multiverse, Test.commonsMath, Test.mockito,

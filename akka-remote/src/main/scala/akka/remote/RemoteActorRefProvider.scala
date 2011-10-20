@@ -32,6 +32,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   import akka.dispatch.Promise
 
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {}
+  private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
 
   val local = new LocalActorRefProvider(app)
   val remote = new Remote(app)

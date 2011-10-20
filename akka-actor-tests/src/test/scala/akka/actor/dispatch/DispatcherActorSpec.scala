@@ -67,24 +67,26 @@ class DispatcherActorSpec extends AkkaSpec {
 
       val works = new AtomicBoolean(true)
       val latch = new CountDownLatch(100)
+      val thereWeAre = new CountDownLatch(1)
       val start = new CountDownLatch(1)
       val fastOne = actorOf(
         Props(context ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
       val slowOne = actorOf(
         Props(context ⇒ {
-          case "hogexecutor" ⇒ start.await
+          case "hogexecutor" ⇒ thereWeAre.countDown(); start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
       slowOne ! "hogexecutor"
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
+      assert(thereWeAre.await(2, TimeUnit.SECONDS))
       fastOne ! "sabotage"
       start.countDown()
-      val result = latch.await(10, TimeUnit.SECONDS)
+      latch.await(10, TimeUnit.SECONDS)
       fastOne.stop()
       slowOne.stop()
-      assert(result === true)
+      assert(latch.getCount() === 0)
     }
 
     "respect throughput deadline" in {

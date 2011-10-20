@@ -79,9 +79,9 @@ class ActorKilledException private[akka] (message: String, cause: Throwable)
   def this(msg: String) = this(msg, null);
 }
 
-class ActorInitializationException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
+case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) with NoStackTrace {
+  def this(msg: String) = this(null, msg, null);
 }
 
 class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)

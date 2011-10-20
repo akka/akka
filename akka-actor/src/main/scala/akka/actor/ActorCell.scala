@@ -18,7 +18,7 @@ import akka.AkkaApplication
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
  */
-private[akka] trait ActorContext extends ActorRefFactory {
+private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def self: ActorRef with ScalaActorRef
 
@@ -71,6 +71,8 @@ private[akka] class ActorCell(
   import ActorCell._
 
   protected def guardian = self
+
+  protected def typedActor = app.typedActor
 
   def provider = app.provider
 
@@ -163,7 +165,7 @@ private[akka] class ActorCell(
       val instance = props.creator()
 
       if (instance eq null)
-        throw new ActorInitializationException("Actor instance passed to actorOf can't be 'null'")
+        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       instance
     } finally {
@@ -182,13 +184,14 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "started")
     } catch {
-      case e ⇒ try {
-        app.eventHandler.error(e, self, "error while creating actor")
-        // prevent any further messages to be processed until the actor has been restarted
-        dispatcher.suspend(this)
-      } finally {
-        supervisor ! Failed(self, e)
-      }
+      case e ⇒
+        try {
+          app.eventHandler.error(e, self, "error while creating actor")
+          // prevent any further messages to be processed until the actor has been restarted
+          dispatcher.suspend(this)
+        } finally {
+          supervisor ! Failed(self, ActorInitializationException(self, "exception during creation", e))
+        }
     }
 
     def recreate(cause: Throwable): Unit = try {
@@ -218,7 +221,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        supervisor ! Failed(self, e)
+        supervisor ! Failed(self, ActorInitializationException(self, "exception during re-creation", e))
       }
     }
 

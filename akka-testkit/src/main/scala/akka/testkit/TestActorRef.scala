@@ -59,7 +59,7 @@ object TestActorRef {
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value
-      case Left(exception) ⇒ throw new ActorInitializationException(
+      case Left(exception) ⇒ throw new ActorInitializationException(null,
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +

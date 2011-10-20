@@ -120,6 +120,76 @@ object TypedActor {
   implicit def timeout = app.AkkaConfig.ActorTimeout
 }
 
+trait TypedActorFactory { this: ActorRefFactory ⇒
+
+  protected def typedActor: TypedActor
+
+  /**
+   * Creates a new TypedActor proxy using the supplied Props,
+   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
+   * all interfaces (Class.getInterfaces) if it's not an interface class
+   */
+  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props): R =
+    typedActor.createProxyAndTypedActor(this, interface, impl.newInstance, props, interface.getClassLoader)
+
+  /**
+   * Creates a new TypedActor proxy using the supplied Props,
+   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
+   * all interfaces (Class.getInterfaces) if it's not an interface class
+   */
+  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props): R =
+    typedActor.createProxyAndTypedActor(this, interface, impl.create, props, interface.getClassLoader)
+
+  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props, loader: ClassLoader): R =
+    typedActor.createProxyAndTypedActor(this, interface, impl.newInstance, props, loader)
+
+  /**
+   * Creates a new TypedActor proxy using the supplied Props,
+   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
+   * all interfaces (Class.getInterfaces) if it's not an interface class
+   */
+  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props, loader: ClassLoader): R =
+    typedActor.createProxyAndTypedActor(this, interface, impl.create, props, loader)
+
+  /**
+   * Creates a new TypedActor proxy using the supplied Props,
+   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
+   */
+  def typedActorOf[R <: AnyRef, T <: R](impl: Class[T], props: Props, loader: ClassLoader): R =
+    typedActor.createProxyAndTypedActor(this, impl, impl.newInstance, props, loader)
+
+  /**
+   * Creates a new TypedActor proxy using the supplied Props,
+   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
+   */
+  def typedActorOf[R <: AnyRef, T <: R](props: Props = Props(), loader: ClassLoader = null)(implicit m: Manifest[T]): R = {
+    val clazz = m.erasure.asInstanceOf[Class[T]]
+    typedActor.createProxyAndTypedActor(this, clazz, clazz.newInstance, props, if (loader eq null) clazz.getClassLoader else loader)
+  }
+
+  /**
+   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
+   * to create TypedActor proxies, use typedActorOf
+   */
+  def createProxy[R <: AnyRef](constructor: ⇒ Actor, props: Props = Props(), loader: ClassLoader = null)(implicit m: Manifest[R]): R =
+    typedActor.createProxy[R](this, typedActor.extractInterfaces(m.erasure), (ref: AtomVar[R]) ⇒ constructor, props, if (loader eq null) m.erasure.getClassLoader else loader)
+
+  /**
+   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
+   * to create TypedActor proxies, use typedActorOf
+   */
+  def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: Creator[Actor], props: Props, loader: ClassLoader): R =
+    typedActor.createProxy(this, interfaces, (ref: AtomVar[R]) ⇒ constructor.create, props, loader)
+
+  /**
+   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
+   * to create TypedActor proxies, use typedActorOf
+   */
+  def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: ⇒ Actor, props: Props, loader: ClassLoader): R =
+    typedActor.createProxy[R](this, interfaces, (ref: AtomVar[R]) ⇒ constructor, props, loader)
+
+}
+
 //TODO Document this class, not only in Scaladoc, but also in a dedicated typed-actor.rst, for both java and scala
 /**
  * A TypedActor in Akka is an implementation of the Active Objects Pattern, i.e. an object with asynchronous method dispatch
@@ -140,50 +210,6 @@ object TypedActor {
 class TypedActor(val app: AkkaApplication) {
 
   import TypedActor.MethodCall
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props): R =
-    createProxyAndTypedActor(interface, impl.newInstance, props, interface.getClassLoader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props): R =
-    createProxyAndTypedActor(interface, impl.create, props, interface.getClassLoader)
-
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props, loader: ClassLoader): R =
-    createProxyAndTypedActor(interface, impl.newInstance, props, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props, loader: ClassLoader): R =
-    createProxyAndTypedActor(interface, impl.create, props, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
-   */
-  def typedActorOf[R <: AnyRef, T <: R](impl: Class[T], props: Props, loader: ClassLoader): R =
-    createProxyAndTypedActor(impl, impl.newInstance, props, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
-   */
-  def typedActorOf[R <: AnyRef, T <: R](props: Props = Props(), loader: ClassLoader = null)(implicit m: Manifest[T]): R = {
-    val clazz = m.erasure.asInstanceOf[Class[T]]
-    createProxyAndTypedActor(clazz, clazz.newInstance, props, if (loader eq null) clazz.getClassLoader else loader)
-  }
-
   /**
    * Stops the underlying ActorRef for the supplied TypedActor proxy, if any, returns whether it could stop it or not
    */
@@ -205,27 +231,6 @@ class TypedActor(val app: AkkaApplication) {
    */
   def isTypedActor(proxyOrNot: AnyRef): Boolean = invocationHandlerFor(proxyOrNot) ne null
 
-  /**
-   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
-   * to create TypedActor proxies, use typedActorOf
-   */
-  def createProxy[R <: AnyRef](constructor: ⇒ Actor, props: Props = Props(), loader: ClassLoader = null)(implicit m: Manifest[R]): R =
-    createProxy[R](extractInterfaces(m.erasure), (ref: AtomVar[R]) ⇒ constructor, props, if (loader eq null) m.erasure.getClassLoader else loader)
-
-  /**
-   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
-   * to create TypedActor proxies, use typedActorOf
-   */
-  def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: Creator[Actor], props: Props, loader: ClassLoader): R =
-    createProxy(interfaces, (ref: AtomVar[R]) ⇒ constructor.create, props, loader)
-
-  /**
-   * Creates a proxy given the supplied Props, this is not a TypedActor, so you'll need to implement the MethodCall handling yourself,
-   * to create TypedActor proxies, use typedActorOf
-   */
-  def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: ⇒ Actor, props: Props, loader: ClassLoader): R =
-    createProxy[R](interfaces, (ref: AtomVar[R]) ⇒ constructor, props, loader)
-
   /* Internal API */
 
   private[akka] def invocationHandlerFor(typedActor_? : AnyRef): TypedActorInvocationHandler =
@@ -239,15 +244,15 @@ class TypedActor(val app: AkkaApplication) {
     }
     else null
 
-  private[akka] def createProxy[R <: AnyRef](interfaces: Array[Class[_]], constructor: (AtomVar[R]) ⇒ Actor, props: Props, loader: ClassLoader): R = {
+  private[akka] def createProxy[R <: AnyRef](supervisor: ActorRefFactory, interfaces: Array[Class[_]], constructor: (AtomVar[R]) ⇒ Actor, props: Props, loader: ClassLoader): R = {
     val proxyVar = new AtomVar[R]
-    configureAndProxyLocalActorRef[R](interfaces, proxyVar, props.withCreator(constructor(proxyVar)), loader)
+    configureAndProxyLocalActorRef[R](supervisor, interfaces, proxyVar, props.withCreator(constructor(proxyVar)), loader)
   }
 
-  private[akka] def createProxyAndTypedActor[R <: AnyRef, T <: R](interface: Class[_], constructor: ⇒ T, props: Props, loader: ClassLoader): R =
-    createProxy[R](extractInterfaces(interface), (ref: AtomVar[R]) ⇒ new TypedActor[R, T](ref, constructor), props, loader)
+  private[akka] def createProxyAndTypedActor[R <: AnyRef, T <: R](supervisor: ActorRefFactory, interface: Class[_], constructor: ⇒ T, props: Props, loader: ClassLoader): R =
+    createProxy[R](supervisor, extractInterfaces(interface), (ref: AtomVar[R]) ⇒ new TypedActor[R, T](ref, constructor), props, loader)
 
-  private[akka] def configureAndProxyLocalActorRef[T <: AnyRef](interfaces: Array[Class[_]], proxyVar: AtomVar[T], props: Props, loader: ClassLoader): T = {
+  private[akka] def configureAndProxyLocalActorRef[T <: AnyRef](supervisor: ActorRefFactory, interfaces: Array[Class[_]], proxyVar: AtomVar[T], props: Props, loader: ClassLoader): T = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
@@ -256,7 +261,7 @@ class TypedActor(val app: AkkaApplication) {
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    val ref = app.actorOf(props)
+    val ref = supervisor.actorOf(props)
     actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
     proxyVar.get
   }

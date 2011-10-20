@@ -77,7 +77,7 @@ object AkkaApplication {
 
 }
 
-class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory {
+class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
 
   def this(name: String) = this(name, AkkaApplication.defaultConfig)
   def this() = this("default")
@@ -177,8 +177,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     import akka.actor.FaultHandlingStrategy._
     new LocalActorRef(this,
       Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
-        case _: ActorKilledException ⇒ Stop
-        case _: Exception            ⇒ Restart
+        case _: ActorKilledException         ⇒ Stop
+        case _: ActorInitializationException ⇒ Stop
+        case _: Exception                    ⇒ Restart
       }).withDispatcher(dispatcher),
       provider.theOneWhoWalksTheBubblesOfSpaceTime,
       "ApplicationSupervisor",
