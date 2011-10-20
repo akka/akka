@@ -33,7 +33,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
       val monitor1, monitor2, monitor3 =
         actorOf(Props(new Actor {
-          self startsMonitoring terminal
+          watch(terminal)
           def receive = { case t: Terminated ⇒ testActor ! t }
         }))
 
@@ -52,12 +52,12 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
       val monitor1, monitor3 =
         actorOf(Props(new Actor {
-          self startsMonitoring terminal
+          watch(terminal)
           def receive = { case t: Terminated ⇒ testActor ! t }
         }))
       val monitor2 = actorOf(Props(new Actor {
-        self startsMonitoring terminal
-        self stopsMonitoring terminal
+        watch(terminal)
+        unwatch(terminal)
         def receive = {
           case "ping"        ⇒ sender ! "pong"
           case t: Terminated ⇒ testActor ! t
@@ -83,7 +83,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminal = actorOf(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
         val monitor = actorOf(Props(new Actor {
-          self startsMonitoring terminal
+          watch(terminal)
           def receive = { case t: Terminated ⇒ testActor ! t }
         }).withSupervisor(supervisor))
 

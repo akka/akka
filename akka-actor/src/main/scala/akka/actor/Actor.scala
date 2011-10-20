@@ -381,6 +381,18 @@ trait Actor {
     if (h.nonEmpty) context.hotswap = h.pop
   }
 
+  /**
+   * Registers this actor as a Monitor for the provided ActorRef
+   * @returns the provided ActorRef
+   */
+  def watch(subject: ActorRef): ActorRef = self startsMonitoring subject
+
+  /**
+   * Unregisters this actor as Monitor for the provided ActorRef
+   * @returns the provided ActorRef
+   */
+  def unwatch(subject: ActorRef): ActorRef = self stopsMonitoring subject
+
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
