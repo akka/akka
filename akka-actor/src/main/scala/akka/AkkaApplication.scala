@@ -113,6 +113,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val RemoteTransport = getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
     val RemoteServerPort = getInt("akka.remote.server.port", 2552)
+
+    val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
+    val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
   }
 
   object MistSettings {

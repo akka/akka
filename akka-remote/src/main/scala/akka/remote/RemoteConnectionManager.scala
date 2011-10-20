@@ -22,14 +22,16 @@ import java.util.concurrent.atomic.AtomicReference
 class RemoteConnectionManager(
   app: AkkaApplication,
   remote: Remote,
-  initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef],
-  failureDetector: FailureDetector = new NoOpFailureDetector)
+  initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
   extends ConnectionManager {
 
+  // FIXME is this VersionedIterable really needed? It is not used I think. Complicates API. See 'def connections' etc.
   case class State(version: Long, connections: Map[InetSocketAddress, ActorRef])
     extends VersionedIterable[ActorRef] {
     def iterable: Iterable[ActorRef] = connections.values
   }
+
+  val failureDetector = remote.failureDetector
 
   private val state: AtomicReference[State] = new AtomicReference[State](newState())
 
@@ -48,9 +50,12 @@ class RemoteConnectionManager(
 
   def version: Long = state.get.version
 
+  // FIXME should not return State value but a Seq with connections
   def connections = filterAvailableConnections(state.get)
 
   def size: Int = connections.connections.size
+
+  def connectionFor(address: InetSocketAddress): Option[ActorRef] = connections.connections.get(address)
 
   def isEmpty: Boolean = connections.connections.isEmpty
 

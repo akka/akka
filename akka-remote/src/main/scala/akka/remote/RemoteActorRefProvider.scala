@@ -4,22 +4,24 @@
 
 package akka.remote
 
+import akka.{ AkkaException, AkkaApplication }
 import akka.actor._
-import akka.routing._
 import akka.actor.Actor._
 import akka.actor.Status._
+import akka.routing._
 import akka.dispatch._
 import akka.util.duration._
 import akka.config.ConfigurationException
-import akka.AkkaException
-import RemoteProtocol._
-import RemoteDaemonMessageType._
-import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
-import Compression.LZF
-import java.net.InetSocketAddress
-import com.google.protobuf.ByteString
-import akka.AkkaApplication
 import akka.event.{ DeathWatch, EventHandler }
+import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
+import akka.serialization.Compression.LZF
+import akka.remote.RemoteProtocol._
+import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
+
+import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
+
+import com.google.protobuf.ByteString
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -28,18 +30,12 @@ import akka.event.{ DeathWatch, EventHandler }
  */
 class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
-  import java.util.concurrent.ConcurrentHashMap
-  import akka.dispatch.Promise
-
   val local = new LocalActorRefProvider(app)
   val remote = new Remote(app)
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
 
-  private val remoteDaemonConnectionManager = new RemoteConnectionManager(
-    app,
-    remote = remote,
-    failureDetector = new BannagePeriodFailureDetector(60 seconds)) // FIXME make timeout configurable
+  private val remoteDaemonConnectionManager = new RemoteConnectionManager(app, remote)
 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
@@ -57,12 +53,13 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
             app.deployer.lookupDeploymentFor(address) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
-                val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
-                  case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
-                  case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
-                  case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
-                  case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
-                }
+                // FIXME move to AccrualFailureDetector as soon as we have the Gossiper up and running and remove the option to select impl in the akka.conf file since we only have one
+                // val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
+                //   case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
+                //   case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
+                //   case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
+                //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
+                // }
 
                 val thisHostname = remote.address.getHostName
                 val thisPort = remote.address.getPort
@@ -111,7 +108,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
                     conns + (inetAddr -> RemoteActorRef(remote.server, inetAddr, address, None))
                   }
 
-                  val connectionManager = new RemoteConnectionManager(app, remote, connections, failureDetector)
+                  val connectionManager = new RemoteConnectionManager(app, remote, connections)
 
                   connections.keys foreach { useActorOnNode(_, address, props.creator) }
 
@@ -175,7 +172,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
           else bytes
       }
 
-    val command = RemoteDaemonMessageProtocol.newBuilder
+    val command = RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(USE)
       .setActorAddress(actorAddress)
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
@@ -191,29 +188,25 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
     sendCommandToRemoteNode(connection, command, withACK = true) // ensure we get an ACK on the USE command
   }
 
-  private def sendCommandToRemoteNode(
-    connection: ActorRef,
-    command: RemoteDaemonMessageProtocol,
-    withACK: Boolean) {
-
+  private def sendCommandToRemoteNode(connection: ActorRef, command: RemoteSystemDaemonMessageProtocol, withACK: Boolean) {
     if (withACK) {
       try {
-        (connection ? (command, remote.remoteDaemonAckTimeout)).as[Status] match {
+        (connection ? (command, remote.remoteSystemDaemonAckTimeout)).as[Status] match {
           case Some(Success(receiver)) ⇒
-            app.eventHandler.debug(this, "Remote command sent to [%s] successfully received".format(receiver))
+            app.eventHandler.debug(this, "Remote system command sent to [%s] successfully received".format(receiver))
 
           case Some(Failure(cause)) ⇒
             app.eventHandler.error(cause, this, cause.toString)
             throw cause
 
           case None ⇒
-            val error = new RemoteException("Remote command to [%s] timed out".format(connection.address))
+            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
             app.eventHandler.error(error, this, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          app.eventHandler.error(e, this, "Could not send remote command to [%s] due to: %s".format(connection.address, e.toString))
+          app.eventHandler.error(e, this, "Could not send remote system command to [%s] due to: %s".format(connection.address, e.toString))
           throw e
       }
     } else {
