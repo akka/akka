@@ -44,7 +44,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
 
   val failureDetector = new AccrualFailureDetector(FailureDetectorThreshold, FailureDetectorMaxSampleSize)
 
-  val gossiper = new Gossiper(this)
+  //  val gossiper = new Gossiper(this)
 
   val remoteDaemonServiceName = "akka-system-remote-daemon".intern
 
@@ -177,20 +177,20 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
   }
 
   def handleGossip(message: RemoteSystemDaemonMessageProtocol) {
-    try {
-      val gossip = serialization.deserialize(message.getPayload.toByteArray, classOf[Gossip], None) match {
-        case Left(error)     ⇒ throw error
-        case Right(instance) ⇒ instance.asInstanceOf[Gossip]
-      }
+    // try {
+    //   val gossip = serialization.deserialize(message.getPayload.toByteArray, classOf[Gossip], None) match {
+    //     case Left(error)     ⇒ throw error
+    //     case Right(instance) ⇒ instance.asInstanceOf[Gossip]
+    //   }
 
-      gossiper tell gossip
+    //   gossiper tell gossip
 
-      channel ! Success(address.toString)
-    } catch {
-      case error: Throwable ⇒
-        channel ! Failure(error)
-        throw error
-    }
+    //   channel ! Success(address.toString)
+    // } catch {
+    //   case error: Throwable ⇒
+    //     channel ! Failure(error)
+    //     throw error
+    // }
   }
 
   def handle_fun0_unit(message: RemoteSystemDaemonMessageProtocol) {
