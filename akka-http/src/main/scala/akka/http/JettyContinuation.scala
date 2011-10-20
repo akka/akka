@@ -9,13 +9,15 @@ package akka.http
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.continuation._
 import Types._
+import akka.AkkaApplication
 
 /**
  * @author Garrick Evans
  */
 trait JettyContinuation extends ContinuationListener {
   import javax.servlet.http.HttpServletResponse
-  import MistSettings._
+
+  def app: AkkaApplication
 
   val builder: () ⇒ tAsyncRequestContext
   val context: Option[tAsyncRequestContext] = Some(builder())
@@ -33,7 +35,7 @@ trait JettyContinuation extends ContinuationListener {
         // the fresh continuation (coming through getAsyncContinuation)
         //
         case (true, false, false) ⇒ {
-          continuation.setTimeout(DefaultTimeout)
+          continuation.setTimeout(app.MistSettings.DefaultTimeout)
 
           continuation.addContinuationListener(this)
           continuation.suspend
@@ -45,7 +47,7 @@ trait JettyContinuation extends ContinuationListener {
         //
         case (true, true, false) ⇒ {
 
-          continuation.setTimeout(DefaultTimeout)
+          continuation.setTimeout(app.MistSettings.DefaultTimeout)
           continuation.addContinuationListener(this)
 
           Some(continuation)
@@ -56,9 +58,9 @@ trait JettyContinuation extends ContinuationListener {
         //
         case (false, false, false) ⇒ {
 
-          continuation.setTimeout(continuation.getAttribute(TimeoutAttribute).asInstanceOf[Long])
+          continuation.setTimeout(continuation.getAttribute(app.MistSettings.TimeoutAttribute).asInstanceOf[Long])
           continuation.suspend
-          continuation.removeAttribute(TimeoutAttribute)
+          continuation.removeAttribute(app.MistSettings.TimeoutAttribute)
 
           None
         }
@@ -68,8 +70,8 @@ trait JettyContinuation extends ContinuationListener {
         //
         case (false, true, false) ⇒ {
 
-          continuation.setTimeout(continuation.getAttribute(TimeoutAttribute).asInstanceOf[Long])
-          continuation.removeAttribute(TimeoutAttribute)
+          continuation.setTimeout(continuation.getAttribute(app.MistSettings.TimeoutAttribute).asInstanceOf[Long])
+          continuation.removeAttribute(app.MistSettings.TimeoutAttribute)
 
           None
         }
@@ -85,13 +87,13 @@ trait JettyContinuation extends ContinuationListener {
 
   def suspended: Boolean = _continuation match {
     case None               ⇒ false
-    case Some(continuation) ⇒ (continuation.isSuspended || (continuation.getAttribute(TimeoutAttribute) ne null))
+    case Some(continuation) ⇒ (continuation.isSuspended || (continuation.getAttribute(app.MistSettings.TimeoutAttribute) ne null))
   }
 
   def timeout(ms: Long): Boolean = _continuation match {
     case None ⇒ false
     case Some(continuation) ⇒
-      continuation.setAttribute(TimeoutAttribute, ms)
+      continuation.setAttribute(app.MistSettings.TimeoutAttribute, ms)
       continuation.resume
       true
   }
@@ -101,12 +103,13 @@ trait JettyContinuation extends ContinuationListener {
   //
   def onComplete(c: Continuation) = {}
   def onTimeout(c: Continuation) = {
-    c.getServletResponse.asInstanceOf[HttpServletResponse].addHeader(ExpiredHeaderName, ExpiredHeaderValue)
+    c.getServletResponse.asInstanceOf[HttpServletResponse].addHeader(app.MistSettings.ExpiredHeaderName, app.MistSettings.ExpiredHeaderValue)
     c.complete
   }
 }
 
-object JettyContinuationMethodFactory extends RequestMethodFactory {
+class JettyContinuationMethodFactory(_app: AkkaApplication) extends RequestMethodFactory {
+  implicit val app = _app
   def Delete(f: () ⇒ tAsyncRequestContext): RequestMethod = new Delete(f) with JettyContinuation
   def Get(f: () ⇒ tAsyncRequestContext): RequestMethod = new Get(f) with JettyContinuation
   def Head(f: () ⇒ tAsyncRequestContext): RequestMethod = new Head(f) with JettyContinuation
