@@ -12,13 +12,13 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import org.multiverse.api.latches.StandardLatch
 import akka.testkit.AkkaSpec
 
-class RestartStrategySpec extends AkkaSpec with BeforeAndAfterAll {
+class RestartStrategySpec extends AkkaSpec {
 
-  override def beforeAll() {
+  override def atStartup() {
     app.eventHandler.notify(Mute(EventFilter[Exception]("Crashing...")))
   }
 
-  override def afterAll() {
+  override def atTermination() {
     app.eventHandler.notify(UnMuteAll)
   }
 

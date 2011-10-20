@@ -99,6 +99,9 @@ case class DeathPactException private[akka] (dead: ActorRef, cause: Throwable)
   extends AkkaException("monitored actor " + dead + " terminated", cause)
   with NoStackTrace
 
+// must not pass InterruptedException to other threads
+case class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
+
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */

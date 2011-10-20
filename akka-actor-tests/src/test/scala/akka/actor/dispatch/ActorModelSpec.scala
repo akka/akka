@@ -14,6 +14,7 @@ import org.junit.{ After, Test }
 import akka.actor._
 import util.control.NoStackTrace
 import akka.AkkaApplication
+import akka.util.duration._
 
 object ActorModelSpec {
 
@@ -346,20 +347,6 @@ abstract class ActorModelSpec extends AkkaSpec {
       assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
     }
 
-    "suspend and resume a failing non supervised permanent actor" in {
-      filterEvents(EventFilter[Exception]("Restart")) {
-        implicit val dispatcher = newInterceptedDispatcher
-        val a = newTestActor(dispatcher)
-        val done = new CountDownLatch(1)
-        a ! Restart
-        a ! CountDown(done)
-        assertCountDown(done, Testing.testTime(3000), "Should be suspended+resumed and done with next message within 3 seconds")
-        a.stop()
-        assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 2,
-          msgsProcessed = 2, suspensions = 1, resumes = 1)
-      }
-    }
-
     "not process messages for a suspended actor" in {
       implicit val dispatcher = newInterceptedDispatcher
       val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
@@ -380,13 +367,15 @@ abstract class ActorModelSpec extends AkkaSpec {
     }
 
     "handle waves of actors" in {
-      implicit val dispatcher = newInterceptedDispatcher
+      val dispatcher = newInterceptedDispatcher
+      val props = Props[DispatcherActor].withDispatcher(dispatcher)
 
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
-        (1 to num) foreach { _ ⇒
-          newTestActor(dispatcher) ! cachedMessage
-        }
+        val boss = actorOf(Props(context ⇒ {
+          case "run" ⇒
+            for (_ ← 1 to num) context.actorOf(props) ! cachedMessage
+        })) ! "run"
         try {
           assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
         } catch {
@@ -421,8 +410,9 @@ abstract class ActorModelSpec extends AkkaSpec {
     }
 
     "continue to process messages when a thread gets interrupted" in {
-      filterEvents(EventFilter[InterruptedException]("Ping!"), EventFilter[akka.event.EventHandler.EventHandlerException]) {
+      filterEvents(EventFilter[InterruptedException], EventFilter[akka.event.EventHandler.EventHandlerException]) {
         implicit val dispatcher = newInterceptedDispatcher
+        implicit val timeout = Timeout(5 seconds)
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
@@ -433,11 +423,11 @@ abstract class ActorModelSpec extends AkkaSpec {
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
-        assert((intercept[InterruptedException] {
+        assert((intercept[ActorInterruptedException] {
           f3.get
         }).getMessage === "Ping!")
         assert(f4.get === "foo2")
-        assert((intercept[InterruptedException] {
+        assert((intercept[ActorInterruptedException] {
           f5.get
         }).getMessage === "Ping!")
         assert(f6.get === "bar2")

@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
 
-case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
+case class ChildRestartStats(var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
 
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
@@ -51,8 +51,8 @@ object FaultHandlingStrategy {
   case object Stop extends Action
   case object Escalate extends Action
 
-  type Decider = PartialFunction[Class[_ <: Throwable], Action]
-  type JDecider = akka.japi.Function[Class[_ <: Throwable], Action]
+  type Decider = PartialFunction[Throwable, Action]
+  type JDecider = akka.japi.Function[Throwable, Action]
   type CauseAction = (Class[_ <: Throwable], Action)
 
   /**
@@ -60,14 +60,14 @@ object FaultHandlingStrategy {
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: Array[Class[_ <: Throwable]]): Decider =
-    { case x ⇒ if (trapExit exists (_ isAssignableFrom x)) Restart else Escalate }
+    { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
 
   /**
    * Backwards compatible Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: List[Class[_ <: Throwable]]): Decider =
-    { case x ⇒ if (trapExit exists (_ isAssignableFrom x)) Restart else Escalate }
+    { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
 
   /**
    * Backwards compatible Decider builder which just checks whether one of
@@ -83,7 +83,7 @@ object FaultHandlingStrategy {
    */
   def makeDecider(flat: Iterable[CauseAction]): Decider = {
     val actions = sort(flat)
-    return { case x ⇒ actions find (_._1 isAssignableFrom x) map (_._2) getOrElse Escalate }
+    return { case x ⇒ actions find (_._1 isInstance x) map (_._2) getOrElse Escalate }
   }
 
   def makeDecider(func: JDecider): Decider = {
@@ -110,30 +110,36 @@ abstract class FaultHandlingStrategy {
 
   def decider: Decider
 
-  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats]
+  /**
+   * This method is called after the child has been removed from the set of children.
+   */
+  def handleChildTerminated(child: ActorRef, children: Iterable[ActorRef]): Unit
 
-  def processFailure(restart: Boolean, fail: Failed, children: Vector[ChildRestartStats]): Unit
+  /**
+   * This method is called to act on the failure of a child: restart if the flag is true, stop otherwise.
+   */
+  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit
 
-  def handleSupervisorFailing(supervisor: ActorRef, children: Vector[ChildRestartStats]): Unit = {
+  def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
-      children.foreach(_.child.suspend())
+      children.foreach(_.suspend())
   }
 
-  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Vector[ChildRestartStats]): Unit = {
+  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
-      children.foreach(_.child.restart(cause))
+      children.foreach(_.restart(cause))
   }
 
   /**
    * Returns whether it processed the failure or not
    */
-  final def handleFailure(fail: Failed, children: Vector[ChildRestartStats]): Boolean = {
-    val cause = fail.cause.getClass
+  final def handleFailure(fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
+    val cause = fail.cause
     val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
     action match {
       case Resume   ⇒ fail.actor.resume(); true
-      case Restart  ⇒ processFailure(true, fail, children); true
-      case Stop     ⇒ processFailure(false, fail, children); true
+      case Restart  ⇒ processFailure(true, fail, stats, children); true
+      case Stop     ⇒ processFailure(false, fail, stats, children); true
       case Escalate ⇒ false
     }
   }
@@ -181,18 +187,17 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
    */
   val retriesWindow = (maxNrOfRetries, withinTimeRange)
 
-  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats] = {
-    children collect {
-      case stats if stats.child != child ⇒ stats.child.stop(); stats //2 birds with one stone: remove the child + stop the other children
-    } //TODO optimization to drop all children here already?
+  def handleChildTerminated(child: ActorRef, children: Iterable[ActorRef]): Unit = {
+    children foreach (_.stop())
+    //TODO optimization to drop all children here already?
   }
 
-  def processFailure(restart: Boolean, fail: Failed, children: Vector[ChildRestartStats]): Unit = {
+  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
     if (children.nonEmpty) {
-      if (restart && children.forall(_.requestRestartPermission(retriesWindow)))
-        children.foreach(_.child.restart(fail.cause))
+      if (restart && children.forall(_._2.requestRestartPermission(retriesWindow)))
+        children.foreach(_._1.restart(fail.cause))
       else
-        children.foreach(_.child.stop())
+        children.foreach(_._1.stop())
     }
   }
 }
@@ -239,18 +244,13 @@ case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
    */
   val retriesWindow = (maxNrOfRetries, withinTimeRange)
 
-  def handleChildTerminated(child: ActorRef, children: Vector[ChildRestartStats]): Vector[ChildRestartStats] =
-    children.filterNot(_.child == child) // TODO: check: I think this copies the whole vector in addition to allocating a closure ...
+  def handleChildTerminated(child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 
-  def processFailure(restart: Boolean, fail: Failed, children: Vector[ChildRestartStats]): Unit = {
-    children.find(_.child == fail.actor) match {
-      case Some(stats) ⇒
-        if (restart && stats.requestRestartPermission(retriesWindow))
-          fail.actor.restart(fail.cause)
-        else
-          fail.actor.stop() //TODO optimization to drop child here already?
-      case None ⇒ throw new AssertionError("Got Failure from non-child: " + fail)
-    }
+  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
+    if (restart && stats.requestRestartPermission(retriesWindow))
+      fail.actor.restart(fail.cause)
+    else
+      fail.actor.stop() //TODO optimization to drop child here already?
   }
 }
 

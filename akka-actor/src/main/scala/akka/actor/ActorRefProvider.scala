@@ -34,6 +34,8 @@ trait ActorRefProvider {
   private[akka] def createDeathWatch(): DeathWatch
 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef
+
+  private[akka] def terminationFuture: Future[AkkaApplication.ExitStatus]
 }
 
 /**
@@ -85,6 +87,8 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
+  val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
+
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
    * receive only Supervise/ChildTerminated system messages or Failure message.
@@ -96,9 +100,12 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
     protected[akka] override def postMessageToMailbox(msg: Any, channel: UntypedChannel) {
       msg match {
-        case Failed(child, ex)          ⇒ child.stop()
-        case ChildTerminated(child, ex) ⇒ // TODO execute any installed termination handlers
-        case _                          ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
+        case Failed(child, ex) ⇒ child.stop()
+        case ChildTerminated(child, ex) ⇒ ex match {
+          case a: ActorKilledException if a.getMessage == "Stopped" ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
+          case x ⇒ terminationFuture.completeWithResult(AkkaApplication.Failed(x))
+        }
+        case _ ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
       }
     }
 

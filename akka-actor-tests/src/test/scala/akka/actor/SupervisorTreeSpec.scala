@@ -20,7 +20,12 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
     "be able to kill the middle actor and see itself and its child restarted" in {
       filterException[ActorKilledException] {
         within(5 seconds) {
-          val p = Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
+          val p = Props(new Actor {
+            def receive = {
+              case p: Props ⇒ this reply context.actorOf(p)
+            }
+            override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.address }
+          }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
           val headActor = actorOf(p)
           val middleActor = (headActor ? p).as[ActorRef].get
           val lastActor = (middleActor ? p).as[ActorRef].get

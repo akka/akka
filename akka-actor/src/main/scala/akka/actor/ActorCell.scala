@@ -7,7 +7,7 @@ package akka.actor
 import akka.dispatch._
 import akka.util._
 import scala.annotation.tailrec
-import scala.collection.immutable.Stack
+import scala.collection.immutable.{ Stack, TreeMap }
 import scala.collection.JavaConverters
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
 import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
@@ -76,7 +76,7 @@ private[akka] class ActorCell(
 
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
 
-  var _children: Vector[ChildRestartStats] = Vector.empty
+  var _children = TreeMap[ActorRef, ChildRestartStats]()
 
   var currentMessage: Envelope = null
 
@@ -122,7 +122,7 @@ private[akka] class ActorCell(
     subject
   }
 
-  def children: Iterable[ActorRef] = _children.map(_.child)
+  def children: Iterable[ActorRef] = _children.keys
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher dispatch Envelope(this, message, channel)
 
@@ -211,7 +211,7 @@ private[akka] class ActorCell(
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
-      props.faultHandler.handleSupervisorRestarted(cause, self, _children)
+      props.faultHandler.handleSupervisorRestarted(cause, self, children)
     } catch {
       case e ⇒ try {
         app.eventHandler.error(e, self, "error while creating actor")
@@ -239,14 +239,15 @@ private[akka] class ActorCell(
           if (a ne null) a.postStop()
         } finally {
           //Stop supervised actors
-          val links = _children
-          if (links.nonEmpty) {
-            _children = Vector.empty
-            links.foreach(_.child.stop())
+          val c = children
+          if (c.nonEmpty) {
+            _children = TreeMap.empty
+            for (child ← c) child.stop()
           }
         }
       } finally {
         try {
+          // when changing this, remember to update the match in the BubbleWalker
           val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
           supervisor ! ChildTerminated(self, cause)
           app.deathWatch.publish(Terminated(self, cause))
@@ -259,8 +260,8 @@ private[akka] class ActorCell(
 
     def supervise(child: ActorRef): Unit = {
       val links = _children
-      if (!links.exists(_.child == child)) {
-        _children = links :+ ChildRestartStats(child)
+      if (!links.contains(child)) {
+        _children = _children.updated(child, ChildRestartStats())
         if (app.AkkaConfig.DebugLifecycle) app.eventHandler.debug(self, "now supervising " + child)
       } else app.eventHandler.warning(self, "Already supervising " + child)
     }
@@ -309,12 +310,18 @@ private[akka] class ActorCell(
               // prevent any further messages to be processed until the actor has been restarted
               dispatcher.suspend(this)
 
-              channel.sendException(e)
-
-              props.faultHandler.handleSupervisorFailing(self, _children)
-              supervisor ! Failed(self, e)
-
-              if (e.isInstanceOf[InterruptedException]) throw e //Re-throw InterruptedExceptions as expected
+              // make sure that InterruptedException does not leave this thread
+              if (e.isInstanceOf[InterruptedException]) {
+                val ex = ActorInterruptedException(e)
+                channel.sendException(ex)
+                props.faultHandler.handleSupervisorFailing(self, children)
+                supervisor ! Failed(self, ex)
+                throw e //Re-throw InterruptedExceptions as expected
+              } else {
+                channel.sendException(e)
+                props.faultHandler.handleSupervisorFailing(self, children)
+                supervisor ! Failed(self, e)
+              }
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
           }
@@ -330,11 +337,15 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleFailure(fail: Failed): Unit = if (!props.faultHandler.handleFailure(fail, _children)) {
-    throw fail.cause
+  def handleFailure(fail: Failed): Unit = _children.get(fail.actor) match {
+    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, _children)) throw fail.cause
+    case None        ⇒ app.eventHandler.warning(self, "dropping " + fail + " from unknown child")
   }
 
-  def handleChildTerminated(child: ActorRef): Unit = _children = props.faultHandler.handleChildTerminated(child, _children)
+  def handleChildTerminated(child: ActorRef): Unit = {
+    _children -= child
+    props.faultHandler.handleChildTerminated(child, children)
+  }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))

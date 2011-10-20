@@ -29,6 +29,9 @@ private[dispatch] object Mailbox {
   final val Closed = 2
   // secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 4
+
+  // static constant for enabling println debugging of message processing (for hardcore bugs)
+  final val debug = false
 }
 
 /**
@@ -147,9 +150,8 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   }
 
   final def run = {
-    try { processMailbox() } catch {
-      case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
-    } finally {
+    try processMailbox()
+    finally {
       setAsIdle()
       dispatcher.registerForExecution(this, false, false)
     }
@@ -170,6 +172,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
           do {
+            if (debug) println(actor + " processing message " + nextMessage.message + " from " + nextMessage.channel)
             nextMessage.invoke
 
             processAllSystemMessages() //After we're done, process all system messages
@@ -193,11 +196,13 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
+        if (debug) println(actor + " processing system message " + nextMessage)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
         if (nextMessage eq null) nextMessage = systemDrain()
       }
+      if (debug) println(actor + " has finished processing system messages")
     } catch {
       case e ⇒
         actor.app.eventHandler.error(e, this, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!")
@@ -239,6 +244,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   @tailrec
   final def systemEnqueue(message: SystemMessage): Unit = {
+    if (Mailbox.debug) println(actor + " having system message enqueued: " + message)
     val head = systemQueueGet
     /*
      * this write is safely published by the compareAndSet contained within

@@ -63,7 +63,7 @@ object SupervisorSpec {
   }
 }
 
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import SupervisorSpec._
 
@@ -118,13 +118,13 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 
-  override def beforeAll() = {
+  override def atStartup() = {
     app.eventHandler notify Mute(EventFilter[Exception]("Die"),
       EventFilter[IllegalStateException]("Don't wanna!"),
       EventFilter[RuntimeException]("Expected"))
   }
 
-  override def afterAll() = {
+  override def atTermination() = {
     app.eventHandler notify UnMuteAll
   }
 

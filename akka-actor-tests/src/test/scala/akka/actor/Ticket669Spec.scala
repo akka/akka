@@ -13,7 +13,10 @@ import akka.testkit.ImplicitSender
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender {
   import Ticket669Spec._
 
-  override def beforeAll = Thread.interrupted() //remove interrupted status.
+  // TODO: does this really make sense?
+  override def atStartup() {
+    Thread.interrupted() //remove interrupted status.
+  }
 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
