@@ -66,7 +66,7 @@ object HttpConcurrencyTestStress {
     var correlationIds = Set[Any]()
 
     override protected def receive = {
-      case "getCorrelationIdCount" ⇒ reply(correlationIds.size)
+      case "getCorrelationIdCount" ⇒ channel ! correlationIds.size
       case msg                     ⇒ super.receive(msg)
     }
 
@@ -93,7 +93,7 @@ object HttpConcurrencyTestStress {
 
   class HttpServerWorker extends Actor {
     protected def receive = {
-      case msg ⇒ reply(msg)
+      case msg ⇒ channel ! msg
     }
   }
 }

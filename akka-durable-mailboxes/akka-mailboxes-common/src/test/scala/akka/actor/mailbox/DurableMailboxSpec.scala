@@ -31,7 +31,7 @@ abstract class DurableMailboxSpec(val backendName: String, val storage: DurableM
     "should handle reply to ! for 1 message" in {
       val latch = new CountDownLatch(1)
       val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = new LocalActorRef(Props(self ⇒ { case "sum" ⇒ latch.countDown }), newUuid.toString, true)
+      val sender = new LocalActorRef(Props(self ⇒ { case "sum" ⇒ latch.countDown }), Props.randomAddress, true)
 
       queueActor.!("sum")(Some(sender))
       latch.await(10, TimeUnit.SECONDS) must be(true)
@@ -40,7 +40,7 @@ abstract class DurableMailboxSpec(val backendName: String, val storage: DurableM
     "should handle reply to ! for multiple messages" in {
       val latch = new CountDownLatch(5)
       val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = new LocalActorRef(Props(self ⇒ { case "sum" ⇒ latch.countDown }), newUuid.toString, true)
+      val sender = new LocalActorRef(Props(self ⇒ { case "sum" ⇒ latch.countDown }), Props.randomAddress, true)
 
       for (i ← 1 to 5) queueActor.!("sum")(Some(sender))
 

@@ -27,12 +27,12 @@ class SupervisorHierarchySpec extends AkkaSpec {
     "restart manager and workers in AllForOne" in {
       val countDown = new CountDownLatch(4)
 
-      val boss = createActor(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
+      val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
 
-      val manager = createActor(Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None)).withSupervisor(boss))
+      val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None)).withSupervisor(boss))
 
       val workerProps = Props(new CountDownActor(countDown)).withSupervisor(manager)
-      val workerOne, workerTwo, workerThree = createActor(workerProps)
+      val workerOne, workerTwo, workerThree = actorOf(workerProps)
 
       filterException[ActorKilledException] {
         workerOne ! Kill
@@ -47,8 +47,8 @@ class SupervisorHierarchySpec extends AkkaSpec {
     "send notification to supervisor when permanent failure" in {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
-      val boss = createActor(Props(new Actor {
-        val crasher = self startsMonitoring createActor(Props(new CountDownActor(countDownMessages)).withSupervisor(self))
+      val boss = actorOf(Props(new Actor {
+        val crasher = self startsMonitoring actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(self))
 
         protected def receive = {
           case "killCrasher"    ⇒ crasher ! Kill

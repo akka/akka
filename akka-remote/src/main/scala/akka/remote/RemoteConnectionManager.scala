@@ -57,6 +57,8 @@ class RemoteConnectionManager(
 
   def connectionFor(address: InetSocketAddress): Option[ActorRef] = connections.connections.get(address)
 
+  def isEmpty: Boolean = connections.connections.isEmpty
+
   def shutdown() {
     state.get.iterable foreach (_.stop()) // shut down all remote connections
   }

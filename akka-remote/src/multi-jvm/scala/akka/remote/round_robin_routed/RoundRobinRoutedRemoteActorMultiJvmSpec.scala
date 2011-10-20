@@ -9,7 +9,7 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ reply(app.nodename)
+      case "hit" ⇒ channel ! app.nodename
       case "end" ⇒ self.stop()
     }
   }
@@ -70,7 +70,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
       remote.start()
 
       barrier("start")
-      val actor = app.createActor[SomeActor]("service-hello")
+      val actor = app.actorOf[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

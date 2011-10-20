@@ -15,7 +15,7 @@ public class EitherOrElseExample {
         final Ref<Integer> left = new Ref<Integer>(100);
         final Ref<Integer> right = new Ref<Integer>(100);
 
-        ActorRef brancher = application.createActor(new Props().withCreator(Brancher.class));
+        ActorRef brancher = application.actorOf(new Props().withCreator(Brancher.class));
 
         brancher.tell(new Branch(left, right, 500));
 

@@ -15,7 +15,7 @@ object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
     def receive = {
       case "Send" ⇒
-        reply("Reply")
+        channel ! "Reply"
       case "SendImplicit" ⇒
         channel ! "ReplyImplicit"
     }
@@ -65,16 +65,16 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
   "An Actor" must {
 
     "reply to bang message using reply" in {
-      val replyActor = createActor[ReplyActor]
-      val senderActor = createActor(new SenderActor(replyActor))
+      val replyActor = actorOf[ReplyActor]
+      val senderActor = actorOf(new SenderActor(replyActor))
       senderActor ! "Init"
       state.finished.await
       state.s must be("Reply")
     }
 
     "reply to bang message using implicit sender" in {
-      val replyActor = createActor[ReplyActor]
-      val senderActor = createActor(new SenderActor(replyActor))
+      val replyActor = actorOf[ReplyActor]
+      val senderActor = actorOf(new SenderActor(replyActor))
       senderActor ! "InitImplicit"
       state.finished.await
       state.s must be("ReplyImplicit")
@@ -82,8 +82,8 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
 
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected")) {
-        val supervisor = createActor(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
-        val actor = createActor(Props[CrashingActor].withSupervisor(supervisor))
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
+        val actor = actorOf(Props[CrashingActor].withSupervisor(supervisor))
         actor.isShutdown must be(false)
         actor ! "Die"
         state.finished.await

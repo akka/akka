@@ -34,14 +34,14 @@ class ActorPoolSpec extends AkkaSpec {
       val latch = TestLatch(2)
       val count = new AtomicInteger(0)
 
-      val pool = createActor(
+      val pool = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with SmallestMailboxSelector {
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                tryReply("success")
+                channel.tryTell("success")
             }
           }))
 
@@ -52,7 +52,7 @@ class ActorPoolSpec extends AkkaSpec {
         }).withFaultHandler(faultHandler))
 
       val successes = TestLatch(2)
-      val successCounter = createActor(new Actor {
+      val successCounter = actorOf(new Actor {
         def receive = {
           case "success" ⇒ successes.countDown()
         }
@@ -73,7 +73,7 @@ class ActorPoolSpec extends AkkaSpec {
     }
 
     "pass ticket #705" in {
-      val pool = createActor(
+      val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicFilter {
           def lowerBound = 2
           def upperBound = 20
@@ -84,11 +84,11 @@ class ActorPoolSpec extends AkkaSpec {
           def selectionCount = 1
           def receive = _route
           def pressureThreshold = 1
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                tryReply("Response")
+                channel.tryTell("Response")
               }
             }
           }))
@@ -110,9 +110,9 @@ class ActorPoolSpec extends AkkaSpec {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = createActor(
+      val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -174,9 +174,9 @@ class ActorPoolSpec extends AkkaSpec {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = createActor(
+      val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -227,10 +227,10 @@ class ActorPoolSpec extends AkkaSpec {
       val latch1 = TestLatch(2)
       val delegates = new java.util.concurrent.ConcurrentHashMap[String, String]
 
-      val pool1 = createActor(
+      val pool1 = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
 
-          def instance(p: Props): ActorRef = createActor(p.withCreator(new Actor {
+          def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
@@ -256,9 +256,9 @@ class ActorPoolSpec extends AkkaSpec {
       val latch2 = TestLatch(2)
       delegates.clear()
 
-      val pool2 = createActor(
+      val pool2 = actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.uuid.toString, "")
@@ -285,9 +285,9 @@ class ActorPoolSpec extends AkkaSpec {
     "backoff" in {
       val latch = TestLatch(10)
 
-      val pool = createActor(
+      val pool = actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-          def instance(p: Props) = createActor(p.withCreator(new Actor {
+          def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 sleepFor(n millis)
@@ -357,7 +357,7 @@ class ActorPoolSpec extends AkkaSpec {
         val deathCount = new AtomicInteger(0)
         val keepDying = new AtomicBoolean(false)
 
-        val pool1 = createActor(
+        val pool1 = actorOf(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -368,7 +368,7 @@ class ActorPoolSpec extends AkkaSpec {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = createActor(p.withCreator(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -380,7 +380,7 @@ class ActorPoolSpec extends AkkaSpec {
             }))
           }).withFaultHandler(faultHandler))
 
-        val pool2 = createActor(
+        val pool2 = actorOf(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -391,7 +391,7 @@ class ActorPoolSpec extends AkkaSpec {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = createActor(p.withCreator(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {
@@ -403,7 +403,7 @@ class ActorPoolSpec extends AkkaSpec {
             }))
           }).withFaultHandler(faultHandler))
 
-        val pool3 = createActor(
+        val pool3 = actorOf(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -414,7 +414,7 @@ class ActorPoolSpec extends AkkaSpec {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = createActor(p.withCreator(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
 
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
@@ -501,7 +501,7 @@ class ActorPoolSpec extends AkkaSpec {
 
         object BadState
 
-        val pool1 = createActor(
+        val pool1 = actorOf(
           Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
@@ -512,7 +512,7 @@ class ActorPoolSpec extends AkkaSpec {
             def selectionCount = 1
             def receive = _route
             def pressureThreshold = 1
-            def instance(p: Props) = createActor(p.withCreator(new Actor {
+            def instance(p: Props) = actorOf(p.withCreator(new Actor {
               if (deathCount.get > 5) deathCount.set(0)
               if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
               def receive = {

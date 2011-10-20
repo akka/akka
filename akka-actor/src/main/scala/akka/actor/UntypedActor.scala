@@ -21,16 +21,12 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *
  *        if (msg.equals("UseReply")) {
  *          // Reply to original sender of message using the 'reply' method
- *          reply(msg + ":" + getSelf().getAddress());
+ *          getContext().getChannel().tell(msg + ":" + getSelf().getAddress());
  *
  *        } else if (msg.equals("UseSender") && getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
  *          // also passing along my own reference (the self)
  *          getSender().get().tell(msg, getSelf());
- *
- *        } else if (msg.equals("UseSenderFuture") && getSenderFuture().isDefined()) {
- *          // Reply to original sender of message using the sender future reference
- *          getSenderFuture().get().completeWithResult(msg);
  *
  *        } else if (msg.equals("SendToSelf")) {
  *          // Send message to the actor itself recursively
@@ -71,13 +67,7 @@ abstract class UntypedActor extends Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def getSender: Option[ActorRef] = sender
-
-  /**
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  def getSenderFuture: Option[Promise[Any]] = senderFuture
+  def getSender: ActorRef = sender
 
   /**
    * Abstraction for unification of sender and senderFuture for later reply

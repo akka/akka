@@ -95,7 +95,7 @@ object Agent {
  */
 class Agent[T](initialValue: T, app: AkkaApplication) {
   private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = app.createActor(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
+  private[akka] val updater = app.actorOf(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
 
   /**
    * Read the internal state of the agent.
@@ -154,7 +154,7 @@ class Agent[T](initialValue: T, app: AkkaApplication) {
     send((value: T) ⇒ {
       suspend()
       val pinnedDispatcher = new PinnedDispatcher(app, null, "agent-send-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
-      val threadBased = app.createActor(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
+      val threadBased = app.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
       threadBased ! Update(f)
       value
     })
@@ -172,7 +172,7 @@ class Agent[T](initialValue: T, app: AkkaApplication) {
     send((value: T) ⇒ {
       suspend()
       val pinnedDispatcher = new PinnedDispatcher(app, null, "agent-alter-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
-      val threadBased = app.createActor(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
+      val threadBased = app.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
       result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value
     })
@@ -288,8 +288,8 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[_] ⇒
-      tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
-    case Get ⇒ reply(agent.get)
+      channel.tryTell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
+    case Get ⇒ channel ! agent.get
     case _   ⇒ ()
   }
 }
@@ -302,7 +302,7 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[_] ⇒ try {
-      tryReply(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
+      channel.tryTell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
     } finally {
       agent.resume()
       self.stop()

@@ -15,21 +15,48 @@
  */
 package akka.actor
 
-import akka.event.EventHandler
 import akka.AkkaException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent._
-import java.lang.RuntimeException
+import akka.util.Duration
 
-object Scheduler {
+case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e) {
+  def this(msg: String) = this(msg, null)
+}
 
-  case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e)
+trait JScheduler {
+  def schedule(receiver: ActorRef, message: Any, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef]
+  def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef]
+  def scheduleOnce(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef]
+}
+
+abstract class Scheduler extends JScheduler {
+
+  def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef]
+  def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): ScheduledFuture[AnyRef]
+
+  def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): ScheduledFuture[AnyRef] =
+    schedule(receiver, message, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
+
+  def schedule(f: () ⇒ Unit, initialDelay: Duration, delay: Duration): ScheduledFuture[AnyRef] =
+    schedule(f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
+
+  def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): ScheduledFuture[AnyRef] =
+    scheduleOnce(receiver, message, delay.length, delay.unit)
+
+  def scheduleOnce(f: () ⇒ Unit, delay: Duration): ScheduledFuture[AnyRef] =
+    scheduleOnce(f, delay.length, delay.unit)
+}
+
+class DefaultScheduler extends Scheduler {
+  private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = new Runnable {
+    def run = {
+      receiver ! message
+      if (throwWhenReceiverExpired && receiver.isShutdown) throw new ActorKilledException("Receiver was terminated")
+    }
+  }
 
   private[akka] val service = Executors.newSingleThreadScheduledExecutor(SchedulerThreadFactory)
-
-  private def createSendRunnable(receiver: ActorRef, message: Any, throwWhenReceiverExpired: Boolean): Runnable = {
-    new Runnable { def run = receiver ! message }
-  }
 
   /**
    * Schedules to send the specified message to the receiver after initialDelay and then repeated after delay.
@@ -40,9 +67,7 @@ object Scheduler {
     try {
       service.scheduleAtFixedRate(createSendRunnable(receiver, message, true), initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException(message + " could not be scheduled on " + receiver, e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException(message + " could not be scheduled on " + receiver, e)
     }
   }
 
@@ -65,9 +90,7 @@ object Scheduler {
     try {
       service.scheduleAtFixedRate(runnable, initialDelay, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException("Failed to schedule a Runnable", e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException("Failed to schedule a Runnable", e)
     }
   }
 
@@ -80,9 +103,7 @@ object Scheduler {
     try {
       service.schedule(createSendRunnable(receiver, message, false), delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException(message + " could not be scheduleOnce'd on " + receiver, e)
     }
   }
 
@@ -105,9 +126,7 @@ object Scheduler {
     try {
       service.schedule(runnable, delay, timeUnit).asInstanceOf[ScheduledFuture[AnyRef]]
     } catch {
-      case e: Exception ⇒
-        val error = SchedulerException("Failed to scheduleOnce a Runnable", e)
-        throw error
+      case e: Exception ⇒ throw SchedulerException("Failed to scheduleOnce a Runnable", e)
     }
   }
 

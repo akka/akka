@@ -23,7 +23,7 @@ class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
   "Serializable actor" must {
     "must be able to serialize and de-serialize a stateful actor with a given serializer" ignore {
 
-      val actor1 = new LocalActorRef(app, Props[MyJavaSerializableActor], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[MyJavaSerializableActor], Props.randomAddress, systemService = true)
 
       (actor1 ? "hello").get must equal("world 1")
       (actor1 ? "hello").get must equal("world 2")
@@ -39,7 +39,7 @@ class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
 
     "must be able to serialize and deserialize a MyStatelessActorWithMessagesInMailbox" ignore {
 
-      val actor1 = new LocalActorRef(app, Props[MyStatelessActorWithMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[MyStatelessActorWithMessagesInMailbox], Props.randomAddress, systemService = true)
       for (i ← 1 to 10) actor1 ! "hello"
 
       actor1.underlying.dispatcher.mailboxSize(actor1.underlying) must be > (0)
@@ -57,7 +57,7 @@ class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
     "must be able to serialize and deserialize a PersonActorWithMessagesInMailbox" ignore {
 
       val p1 = Person("debasish ghosh", 25, SerializeSpec.Address("120", "Monroe Street", "Santa Clara", "95050"))
-      val actor1 = new LocalActorRef(app, Props[PersonActorWithMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[PersonActorWithMessagesInMailbox], Props.randomAddress, systemService = true)
       (actor1 ! p1)
       (actor1 ! p1)
       (actor1 ! p1)
@@ -103,7 +103,7 @@ class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
   "serialize actor that accepts protobuf message" ignore {
     "must serialize" ignore {
 
-      val actor1 = new LocalActorRef(app, Props[MyActorWithProtobufMessagesInMailbox], newUuid.toString, systemService = true)
+      val actor1 = new LocalActorRef(app, Props[MyActorWithProtobufMessagesInMailbox], Props.randomAddress, systemService = true)
       val msg = MyMessage(123, "debasish ghosh", true)
       val b = ProtobufProtocol.MyMessage.newBuilder.setId(msg.id).setName(msg.name).setStatus(msg.status).build
       for (i ← 1 to 10) actor1 ! b
@@ -128,7 +128,7 @@ class MyJavaSerializableActor extends Actor with scala.Serializable {
   def receive = {
     case "hello" ⇒
       count = count + 1
-      reply("world " + count)
+      channel ! "world " + count
   }
 }
 
@@ -136,7 +136,7 @@ class MyStatelessActorWithMessagesInMailbox extends Actor with scala.Serializabl
   def receive = {
     case "hello" ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ reply("world")
+    case "hello-reply" ⇒ channel ! "world"
   }
 }
 
@@ -144,7 +144,7 @@ class MyActorWithProtobufMessagesInMailbox extends Actor with scala.Serializable
   def receive = {
     case m: Message ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ reply("world")
+    case "hello-reply" ⇒ channel ! "world"
   }
 }
 
@@ -152,6 +152,6 @@ class PersonActorWithMessagesInMailbox extends Actor with scala.Serializable {
   def receive = {
     case p: Person ⇒
       Thread.sleep(500)
-    case "hello-reply" ⇒ reply("hello")
+    case "hello-reply" ⇒ channel ! "hello"
   }
 }

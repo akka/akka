@@ -32,7 +32,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
         } else if (incoming instanceof String) {
             String message = (String) incoming;
             if (message.equals("GetCount")) {
-                reply(count.get());
+                getChannel().tell(count.get());
             }
         }
     }

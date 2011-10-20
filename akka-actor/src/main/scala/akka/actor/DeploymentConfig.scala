@@ -20,9 +20,7 @@ object DeploymentConfig {
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
     failureDetector: FailureDetector = NoOpFailureDetector,
-    scope: Scope = LocalScope) {
-    Address.validate(address)
-  }
+    scope: Scope = LocalScope)
 
   // --------------------------------
   // --- Actor Recipe
@@ -103,7 +101,12 @@ object DeploymentConfig {
   }
 
   object NrOfInstances {
-    def apply(factor: Int): NrOfInstances = new NrOfInstances(factor)
+    def apply(factor: Int): NrOfInstances = factor match {
+      case -1 ⇒ AutoNrOfInstances
+      case 0  ⇒ ZeroNrOfInstances
+      case 1  ⇒ OneNrOfInstances
+      case x  ⇒ new NrOfInstances(x)
+    }
     def unapply(other: Any) = other match {
       case x: NrOfInstances ⇒ import x._; Some(factor)
       case _                ⇒ None
@@ -113,10 +116,12 @@ object DeploymentConfig {
   // For Java API
   class AutoNrOfInstances extends NrOfInstances(-1)
   class ZeroNrOfInstances extends NrOfInstances(0)
+  class OneNrOfInstances extends NrOfInstances(0)
 
   // For Scala API
   case object AutoNrOfInstances extends AutoNrOfInstances
   case object ZeroNrOfInstances extends ZeroNrOfInstances
+  case object OneNrOfInstances extends OneNrOfInstances
 
   // --------------------------------
   // --- Replication
@@ -252,9 +257,7 @@ class DeploymentConfig(val app: AkkaApplication) {
 
   import DeploymentConfig._
 
-  case class ClusterScope(
-    preferredNodes: Iterable[Home] = Vector(Node(app.nodename)),
-    replication: ReplicationScheme = Transient) extends Scope
+  case class ClusterScope(preferredNodes: Iterable[Home] = Vector(Node(app.nodename)), replication: ReplicationScheme = Transient) extends Scope
 
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == app.nodename)
 

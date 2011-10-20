@@ -56,7 +56,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ reply(count.get)
+      case GetCount ⇒ channel ! count.get
     }
   }
 
@@ -93,7 +93,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ reply(count.get)
+      case GetCount ⇒ channel ! count.get
     }
   }
 }
@@ -105,10 +105,10 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
 
   val numCounters = 2
 
-  def createActors = {
-    def createCounter(i: Int) = app.createActor(Props(new FickleCounter("counter" + i)))
+  def actorOfs = {
+    def createCounter(i: Int) = app.actorOf(Props(new FickleCounter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val coordinator = app.createActor(Props(new Coordinator("coordinator")))
+    val coordinator = app.actorOf(Props(new Coordinator("coordinator")))
     (counters, coordinator)
   }
 
@@ -119,7 +119,7 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
       app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, coordinator) = createActors
+      val (counters, coordinator) = actorOfs
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
       latch.await // this could take a while

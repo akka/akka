@@ -7,7 +7,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ Actor, UntypedChannel, Scheduler, Timeout, ExceptionChannel }
+import akka.actor.{ Actor, UntypedChannel, Timeout, ExceptionChannel }
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
@@ -947,12 +947,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) Scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.app.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
                 else func(DefaultPromise.this)
               }
             }
           }
-          Scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
           false
         } else true
       } else false
@@ -973,12 +973,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) Scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.app.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
                 else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) })
               }
             }
           }
-          Scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
           promise
       }
     } else this

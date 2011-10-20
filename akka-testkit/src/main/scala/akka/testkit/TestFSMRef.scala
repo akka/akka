@@ -81,7 +81,7 @@ class TestFSMRef[S, D, T <: Actor](app: AkkaApplication, props: Props, address: 
 object TestFSMRef {
 
   def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, Props(creator = () ⇒ factory), new UUID().toString)
+    new TestFSMRef(app, Props(creator = () ⇒ factory), Props.randomAddress)
 
   def apply[S, D, T <: Actor](factory: ⇒ T, address: String)(implicit ev: T <:< FSM[S, D], app: AkkaApplication): TestFSMRef[S, D, T] =
     new TestFSMRef(app, Props(creator = () ⇒ factory), address)

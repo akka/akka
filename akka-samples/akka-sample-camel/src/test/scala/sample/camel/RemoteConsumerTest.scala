@@ -94,8 +94,8 @@ object RemoteConsumerTest {
     def endpointUri = "direct:remote-consumer"
 
     protected def receive = {
-      case "init"     ⇒ reply("done")
-      case m: Message ⇒ reply("remote actor: %s" format m.body)
+      case "init"     ⇒ channel ! "done"
+      case m: Message ⇒ channel ! ("remote actor: %s" format m.body)
     }
   }
 }

@@ -15,7 +15,7 @@ public class RetryExample {
         final Ref<Double> account1 = new Ref<Double>(100.0);
         final Ref<Double> account2 = new Ref<Double>(100.0);
 
-        ActorRef transferer = application.createActor(new Props().withCreator(Transferer.class));
+        ActorRef transferer = application.actorOf(new Props().withCreator(Transferer.class));
 
         transferer.tell(new Transfer(account1, account2, 500.0));
         // Transferer: not enough money - retrying

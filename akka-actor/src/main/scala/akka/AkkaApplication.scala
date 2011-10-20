@@ -5,6 +5,7 @@ package akka
 
 import akka.config._
 import akka.actor._
+import event._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
 import dispatch.{ Dispatcher, Dispatchers }
@@ -16,9 +17,6 @@ import akka.dispatch.UnboundedMailbox
 import akka.routing.Routing
 import remote.RemoteSupport
 import akka.serialization.Serialization
-import akka.event.EventHandler
-import akka.event.EventHandlerLogging
-import akka.event.Logging
 import java.net.InetSocketAddress
 
 object AkkaApplication {
@@ -173,13 +171,19 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val reflective = new ReflectiveAccess(this)
 
+  val deadLetters = new DeadLetterActorRef(this)
+
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val provider: ActorRefProvider = reflective.createProvider
 
+  val deathWatch = provider.createDeathWatch()
+
   val typedActor = new TypedActor(this)
 
   val serialization = new Serialization(this)
+
+  val scheduler = new DefaultScheduler
 }

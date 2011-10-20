@@ -42,6 +42,12 @@ trait ConnectionManager {
   def size: Int
 
   /**
+   * Returns if the number of 'available' is 0 or not. Value could be stale as soon as received, and this method can't be combined (easily)
+   * with an atomic read of and isEmpty and version.
+   */
+  def isEmpty: Boolean
+
+  /**
    * Shuts the connection manager down, which stops all managed actors
    */
   def shutdown()
@@ -90,6 +96,8 @@ class LocalConnectionManager(initialConnections: Iterable[ActorRef]) extends Con
   def version: Long = state.get.version
 
   def size: Int = state.get.connections.size
+
+  def isEmpty: Boolean = state.get.connections.isEmpty
 
   def connections = state.get
 

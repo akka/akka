@@ -17,7 +17,7 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
         String header = msg.getHeaderAs("test", String.class);
-        tryReply(String.format("%s %s", body, header));
+        channel.tryTell(String.format("%s %s", body, header));
    }
 
 }

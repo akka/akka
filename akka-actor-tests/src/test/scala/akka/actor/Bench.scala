@@ -44,7 +44,7 @@ object Chameneos {
 
       case Exit ⇒
         colour = FADED
-        sender.get ! MeetingCount(meetings)
+        sender ! MeetingCount(meetings)
     }
 
     def complement(otherColour: Colour): Colour = colour match {
@@ -78,7 +78,7 @@ object Chameneos {
     var numFaded = 0
 
     override def preStart() = {
-      for (i ← 0 until numChameneos) context.createActor(new Chameneo(self, colours(i % 3), i))
+      for (i ← 0 until numChameneos) context.actorOf(new Chameneo(self, colours(i % 3), i))
     }
 
     def receive = {
@@ -97,7 +97,7 @@ object Chameneos {
               n -= 1
               chameneo ! msg
               waitingChameneo = None
-            case None ⇒ waitingChameneo = sender
+            case None ⇒ waitingChameneo = Some(sender)
           }
         } else {
           waitingChameneo.foreach(_ ! Exit)
@@ -109,7 +109,7 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    AkkaApplication().createActor(new Mall(1000000, 4))
+    AkkaApplication().actorOf(new Mall(1000000, 4))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
   }

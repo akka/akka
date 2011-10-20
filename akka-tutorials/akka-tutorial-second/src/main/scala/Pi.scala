@@ -41,7 +41,7 @@ object Pi extends App {
 
     def receive = {
       case Work(arg, nrOfElements) ⇒
-        reply(Result(calculatePiFor(arg, nrOfElements))) // perform the work
+        channel ! Result(calculatePiFor(arg, nrOfElements)) // perform the work
     }
   }
 
@@ -53,10 +53,10 @@ object Pi extends App {
     var nrOfResults: Int = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(app.createActor[Worker])
+    val workers = Vector.fill(nrOfWorkers)(app.actorOf[Worker])
 
     // wrap them with a load-balancing router
-    val router = app.createActor(RoutedProps(
+    val router = app.actorOf(RoutedProps(
       routerFactory = () ⇒ new RoundRobinRouter,
       connectionManager = new LocalConnectionManager(workers)), "pi")
 
@@ -101,7 +101,7 @@ object Pi extends App {
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
     // create the master
-    val master = app.createActor(new Master(nrOfWorkers, nrOfElements, nrOfMessages))
+    val master = app.actorOf(new Master(nrOfWorkers, nrOfElements, nrOfMessages))
 
     //start the calculation
     val start = now

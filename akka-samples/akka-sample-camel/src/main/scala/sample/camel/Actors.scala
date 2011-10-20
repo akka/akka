@@ -12,7 +12,7 @@ class RemoteActor1 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-1"
 
   protected def receive = {
-    case msg: Message ⇒ reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote1")))
+    case msg: Message ⇒ channel ! Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote1"))
   }
 }
 
@@ -23,7 +23,7 @@ class RemoteActor2 extends Actor with Consumer {
   def endpointUri = "jetty:http://localhost:6644/camel/remote-actor-2"
 
   protected def receive = {
-    case msg: Message ⇒ reply(Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote2")))
+    case msg: Message ⇒ channel ! Message("hello %s" format msg.bodyAs[String], Map("sender" -> "remote2"))
   }
 }
 
@@ -44,7 +44,7 @@ class Consumer2 extends Actor with Consumer {
   def endpointUri = "jetty:http://0.0.0.0:8877/camel/default"
 
   def receive = {
-    case msg: Message ⇒ reply("Hello %s" format msg.bodyAs[String])
+    case msg: Message ⇒ channel ! ("Hello %s" format msg.bodyAs[String])
   }
 }
 
@@ -62,10 +62,10 @@ class Consumer4 extends Actor with Consumer {
   def receive = {
     case msg: Message ⇒ msg.bodyAs[String] match {
       case "stop" ⇒ {
-        reply("Consumer4 stopped")
+        channel ! "Consumer4 stopped"
         self.stop
       }
-      case body ⇒ reply(body)
+      case body ⇒ channel ! body
     }
   }
 }
@@ -76,7 +76,7 @@ class Consumer5 extends Actor with Consumer {
   def receive = {
     case _ ⇒ {
       Actor.actorOf[Consumer4]
-      reply("Consumer4 started")
+      channel ! "Consumer4 started"
     }
   }
 }
@@ -106,7 +106,7 @@ class PublisherBridge(uri: String, publisher: ActorRef) extends Actor with Consu
   protected def receive = {
     case msg: Message ⇒ {
       publisher ! msg.bodyAs[String]
-      reply("message published")
+      channel ! "message published"
     }
   }
 }
@@ -135,8 +135,8 @@ class HttpProducer(transformer: ActorRef) extends Actor with Producer {
 
 class HttpTransformer extends Actor {
   protected def receive = {
-    case msg: Message ⇒ reply(msg.transformBody { body: String ⇒ body replaceAll ("Akka ", "AKKA ") })
-    case msg: Failure ⇒ reply(msg)
+    case msg: Message ⇒ channel ! (msg.transformBody { body: String ⇒ body replaceAll ("Akka ", "AKKA ") })
+    case msg: Failure ⇒ channel ! msg
   }
 }
 
@@ -150,11 +150,11 @@ class FileConsumer extends Actor with Consumer {
     case msg: Message ⇒ {
       if (counter == 2) {
         println("received %s" format msg.bodyAs[String])
-        reply(Ack)
+        channel ! Ack
       } else {
         println("rejected %s" format msg.bodyAs[String])
         counter += 1
-        reply(Failure(new Exception("message number %s not accepted" format counter)))
+        channel ! Failure(new Exception("message number %s not accepted" format counter))
       }
     }
   }

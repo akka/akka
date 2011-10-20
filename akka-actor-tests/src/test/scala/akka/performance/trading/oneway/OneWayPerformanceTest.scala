@@ -12,8 +12,8 @@ class OneWayPerformanceTest extends AkkaPerformanceTest(AkkaApplication()) {
 
   override def createTradingSystem: TS = new OneWayTradingSystem(app) {
     override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
-      case Some(d) ⇒ app.createActor(Props(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown).withDispatcher(d))
-      case _       ⇒ app.createActor(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown)
+      case Some(d) ⇒ app.actorOf(Props(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown).withDispatcher(d))
+      case _       ⇒ app.actorOf(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown)
     }
   }
 

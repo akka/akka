@@ -12,7 +12,7 @@ import org.scalatest.BeforeAndAfterEach
 object PinnedActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ reply("World")
+      case "Hello"   ⇒ channel ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -35,21 +35,21 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "support tell" in {
       var oneWay = new CountDownLatch(1)
-      val actor = createActor(Props(self ⇒ { case "OneWay" ⇒ oneWay.countDown() }).withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
+      val actor = actorOf(Props(self ⇒ { case "OneWay" ⇒ oneWay.countDown() }).withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       val result = actor ! "OneWay"
       assert(oneWay.await(1, TimeUnit.SECONDS))
       actor.stop()
     }
 
     "support ask/reply" in {
-      val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
+      val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
       actor.stop()
     }
 
     "support ask/exception" in {
-      val actor = createActor(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
+      val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       app.eventHandler.notify(Mute(EventFilter[RuntimeException]("Expected exception; to test fault-tolerance")))
       try {
         (actor ? "Failure").get

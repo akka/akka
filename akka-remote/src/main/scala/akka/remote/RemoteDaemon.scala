@@ -51,8 +51,8 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = dispatcherFactory.newDispatcher("akka:compute-grid").build
 
-  private[remote] lazy val remoteDaemonSupervisor = createActor(Props(
-    OneForOneStrategy(List(classOf[Exception]), None, None))) // is infinite restart of RemoteSystemDaemon what we want?
+  private[remote] lazy val remoteDaemonSupervisor = app.actorOf(Props(
+    OneForOneStrategy(List(classOf[Exception]), None, None))) // is infinite restart what we want?
 
   private[remote] lazy val remoteDaemon =
     new LocalActorRef(
@@ -64,7 +64,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
       givenAddress = remoteDaemonServiceName,
       systemService = true)
 
-  private[remote] lazy val remoteClientLifeCycleHandler = createActor(Props(new Actor {
+  private[remote] lazy val remoteClientLifeCycleHandler = app.actorOf(Props(new Actor {
     def receive = {
       case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
       case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
@@ -156,7 +156,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
           }
 
         val actorAddress = message.getActorAddress
-        val newActorRef = createActor(Props(creator = actorFactory), actorAddress)
+        val newActorRef = app.actorOf(Props(creator = actorFactory), actorAddress)
 
         server.register(actorAddress, newActorRef)
 
@@ -164,10 +164,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         eventHandler.error(this, "Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [%s]".format(message))
       }
 
-      reply(Success(address.toString))
+      channel ! Success(address.toString)
     } catch {
       case error: Throwable ⇒
-        reply(Failure(error))
+        channel ! Failure(error)
         throw error
     }
   }
@@ -185,10 +185,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
       gossiper tell gossip
 
-      reply(Success(address.toString))
+      channel ! Success(address.toString)
     } catch {
       case error: Throwable ⇒
-        reply(Failure(error))
+        channel ! Failure(error)
         throw error
     }
   }
@@ -198,15 +198,15 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       Props(
         context ⇒ {
           case f: Function0[_] ⇒ try { f() } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case f: Function0[_] ⇒ try { reply(f()) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
+          case f: Function0[_] ⇒ try { channel ! f() } finally { context.self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: RemoteSystemDaemonMessageProtocol) {
@@ -214,15 +214,15 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       Props(
         context ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case (fun: Function[_, _], param: Any) ⇒ try { reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+          case (fun: Function[_, _], param: Any) ⇒ try { channel ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteSystemDaemonMessageProtocol) {

@@ -8,13 +8,13 @@ import akka.AkkaApplication
 class OneWayTradingSystem(_app: AkkaApplication) extends AkkaTradingSystem(_app) {
 
   override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
-    case Some(d) ⇒ app.createActor(Props(new OneWayMatchingEngine(meId, orderbooks)).withDispatcher(d))
-    case _       ⇒ app.createActor(Props(new OneWayMatchingEngine(meId, orderbooks)))
+    case Some(d) ⇒ app.actorOf(Props(new OneWayMatchingEngine(meId, orderbooks)).withDispatcher(d))
+    case _       ⇒ app.actorOf(Props(new OneWayMatchingEngine(meId, orderbooks)))
   }
 
   override def createOrderReceiver() = orDispatcher match {
-    case Some(d) ⇒ app.createActor(Props[OneWayOrderReceiver].withDispatcher(d))
-    case _       ⇒ app.createActor(Props[OneWayOrderReceiver])
+    case Some(d) ⇒ app.actorOf(Props[OneWayOrderReceiver].withDispatcher(d))
+    case _       ⇒ app.actorOf(Props[OneWayOrderReceiver])
   }
 
 }

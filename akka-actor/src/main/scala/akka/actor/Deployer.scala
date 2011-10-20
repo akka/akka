@@ -19,6 +19,10 @@ trait ActorDeployer {
   private[akka] def shutdown(): Unit //TODO Why should we have "shutdown", should be crash only?
   private[akka] def deploy(deployment: Deploy): Unit
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy]
+  def lookupDeployment(address: String): Option[Deploy] = address match {
+    case null | Props.`randomAddress` ⇒ None
+    case some                         ⇒ lookupDeploymentFor(some)
+  }
   private[akka] def deploy(deployment: Seq[Deploy]): Unit = deployment foreach (deploy(_))
 }
 
@@ -34,11 +38,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   //  val defaultAddress = Node(Config.nodename)
 
   lazy val instance: ActorDeployer = {
-    val deployer = if (app.reflective.ClusterModule.isEnabled) {
-      app.reflective.ClusterModule.clusterDeployer
-    } else {
-      LocalDeployer
-    }
+    val deployer = if (app.reflective.ClusterModule.isEnabled) app.reflective.ClusterModule.clusterDeployer else LocalDeployer
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -47,7 +47,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   private[akka] def init(deployments: Seq[Deploy]) = instance.init(deployments)
 
-  def shutdown(): Unit = instance.shutdown() //TODO Why should we have "shutdown", should be crash only?
+  def shutdown(): Unit = instance.shutdown() //TODO FIXME Why should we have "shutdown", should be crash only?
 
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
@@ -81,20 +81,14 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         lookupInConfig(address)
       } catch {
         case e: ConfigurationException ⇒
-          app.eventHandler.error(e, this, e.getMessage)
+          app.eventHandler.error(e, this, e.getMessage) //TODO FIXME I do not condone log AND rethrow
           throw e
       }
 
-      newDeployment foreach { d ⇒
-        if (d eq null) {
-          val e = new IllegalStateException("Deployment for address [" + address + "] is null")
-          app.eventHandler.error(e, this, e.getMessage)
-          throw e
-        }
-        deploy(d) // deploy and cache it
+      newDeployment match {
+        case None | Some(null) ⇒ None
+        case Some(d)           ⇒ deploy(d); newDeployment // deploy and cache it
       }
-
-      newDeployment
     }
   }
 
@@ -127,9 +121,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
     // --------------------------------
     val addressPath = "akka.actor.deployment." + address
     configuration.getSection(addressPath) match {
-      case None ⇒
-        Some(Deploy(address, None, Direct, NrOfInstances(1), NoOpFailureDetector, LocalScope))
-
+      case None ⇒ None
       case Some(addressConfig) ⇒
 
         // --------------------------------
@@ -150,11 +142,11 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         // akka.actor.deployment.<address>.nr-of-instances
         // --------------------------------
         val nrOfInstances = {
-          if (router == Direct) NrOfInstances(1)
+          if (router == Direct) OneNrOfInstances
           else {
             addressConfig.getAny("nr-of-instances", "1") match {
               case "auto" ⇒ AutoNrOfInstances
-              case "1"    ⇒ NrOfInstances(1)
+              case "1"    ⇒ OneNrOfInstances
               case "0"    ⇒ ZeroNrOfInstances
               case nrOfReplicas: String ⇒
                 try {
@@ -268,9 +260,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
             // akka.actor.deployment.<address>.cluster
             // --------------------------------
             addressConfig.getSection("cluster") match {
-              case None ⇒
-                Some(Deploy(address, recipe, router, nrOfInstances, NoOpFailureDetector, LocalScope)) // deploy locally
-
+              case None ⇒ None
               case Some(clusterConfig) ⇒
 
                 // --------------------------------

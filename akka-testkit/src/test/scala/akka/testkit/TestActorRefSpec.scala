@@ -48,14 +48,14 @@ object TestActorRefSpec {
         val worker = TestActorRef(Props[WorkerActor])
         worker ! channel
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ reply("simpleReply")
+      case "simpleRequest" ⇒ channel ! "simpleReply"
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
       case "work" ⇒ {
-        reply("workDone")
+        channel ! "workDone"
         self.stop()
       }
       case replyTo: UntypedChannel ⇒ {
@@ -109,7 +109,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ reply(nested) }
+          def receive = { case _ ⇒ channel ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -119,8 +119,8 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = context.createActor(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ reply(nested) }
+          val nested = context.actorOf(Props(self ⇒ { case _ ⇒ }))
+          def receive = { case _ ⇒ channel ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
