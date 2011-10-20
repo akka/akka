@@ -55,8 +55,12 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
     "not fail when listener goes away" in {
       val forward = actorOf(new Forwarder(testActor))
-      val sup = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
-      val fsm = sup startsMonitoring actorOf(new MyFSM(testActor))
+      val fsm = actorOf(new MyFSM(testActor))
+      val sup = actorOf(Props(new Actor {
+        self startsMonitoring fsm
+        def receive = { case _ ⇒ }
+      }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)
         expectMsg(CurrentState(fsm, 0))

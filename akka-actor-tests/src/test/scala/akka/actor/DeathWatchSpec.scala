@@ -30,12 +30,12 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
-      val monitor1, monitor2 = actorOf(Props(context ⇒ { case t: Terminated ⇒ testActor ! t }))
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
-
-      monitor1 startsMonitoring terminal
-      monitor2 startsMonitoring terminal
-      testActor startsMonitoring terminal
+      val monitor1, monitor2, monitor3 =
+        actorOf(Props(new Actor {
+          self startsMonitoring terminal
+          def receive = { case t: Terminated ⇒ testActor ! t }
+        }))
 
       terminal ! PoisonPill
 
@@ -45,20 +45,24 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       monitor1.stop()
       monitor2.stop()
+      monitor3.stop()
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
-      val monitor1, monitor2 = actorOf(Props(context ⇒ {
-        case t: Terminated ⇒ testActor ! t
-        case "ping"        ⇒ context.channel ! "pong"
-      }))
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
-
-      monitor1 startsMonitoring terminal
-      monitor2 startsMonitoring terminal
-      testActor startsMonitoring terminal
-
-      monitor2 stopsMonitoring terminal
+      val monitor1, monitor3 =
+        actorOf(Props(new Actor {
+          self startsMonitoring terminal
+          def receive = { case t: Terminated ⇒ testActor ! t }
+        }))
+      val monitor2 = actorOf(Props(new Actor {
+        self startsMonitoring terminal
+        self stopsMonitoring terminal
+        def receive = {
+          case "ping"        ⇒ sender ! "pong"
+          case t: Terminated ⇒ testActor ! t
+        }
+      }))
 
       monitor2 ! "ping"
 
@@ -71,14 +75,17 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       monitor1.stop()
       monitor2.stop()
+      monitor3.stop()
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
         val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminal = actorOf(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
-
-        testActor startsMonitoring terminal
+        val monitor = actorOf(Props(new Actor {
+          self startsMonitoring terminal
+          def receive = { case t: Terminated ⇒ testActor ! t }
+        }).withSupervisor(supervisor))
 
         terminal ! Kill
         terminal ! Kill
