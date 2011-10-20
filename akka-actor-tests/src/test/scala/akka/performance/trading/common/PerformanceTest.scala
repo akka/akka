@@ -110,7 +110,7 @@ trait PerformanceTest extends JUnitSuite {
     try {
       val name = simpleName(this)
       val durationS = durationNs.toDouble / 1000000000.0
-      
+
       val percentiles = TreeMap[Int, Long](
         5 -> (stat.getPercentile(5.0) / 1000).toLong,
         25 -> (stat.getPercentile(25.0) / 1000).toLong,

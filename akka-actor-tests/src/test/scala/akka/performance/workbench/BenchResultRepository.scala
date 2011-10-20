@@ -22,6 +22,8 @@ trait BenchResultRepository {
 
   def getWithHistorical(name: String, load: Int): Seq[Stats]
 
+  def isBaseline(stats: Stats): Boolean
+
   def saveHtmlReport(content: String, name: String): Unit
 
   def htmlReportUrl(name: String): String
@@ -59,13 +61,18 @@ class FileBenchResultRepository extends BenchResultRepository {
     get(name).find(_.load == load)
   }
 
+  def isBaseline(stats: Stats): Boolean = {
+    baselineStats.get(Key(stats.name, stats.load)) == Some(stats)
+  }
+
   def getWithHistorical(name: String, load: Int): Seq[Stats] = {
     val key = Key(name, load)
     val historical = historicalStats.getOrElse(key, IndexedSeq.empty)
     val baseline = baselineStats.get(key)
     val current = get(name, load)
 
-    (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    val limited = (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    limited.sortBy(_.timestamp)
   }
 
   private def loadFiles() {
