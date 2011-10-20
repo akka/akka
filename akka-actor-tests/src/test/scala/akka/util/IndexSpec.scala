@@ -3,14 +3,14 @@
  */
 package akka.util
 
-import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import scala.actors.Actor._
-import java.util.concurrent.CountDownLatch
+import akka.dispatch.Future
+import akka.testkit.AkkaSpec
+import scala.util.Random
 
-class IndexSpec extends WordSpec with MustMatchers {
+class IndexSpec extends AkkaSpec with MustMatchers {
 
-  private def emptyIndex = new Index[String, Int](100, (a, b) ⇒ a.compareTo(b))
+  private def emptyIndex = new Index[String, Int](100, _ compareTo _)
 
   private def indexWithValues = {
     val index = emptyIndex
@@ -90,47 +90,42 @@ class IndexSpec extends WordSpec with MustMatchers {
       index.isEmpty must be === true
     }
     "be able to be accessed in parallel" in {
-      val index = new Index[Int, Int](100, (a, b) ⇒ a.compareTo(b))
-      val iterations = 500
-      val latch = new CountDownLatch(List(100, 50, 2, 100).map(_ * iterations).fold(0)(_ + _))
-      //Fill
-      for (key ← 1 to 10; value ← 1 to 10)
+      val index = new Index[Int, Int](100, _ compareTo _)
+      val nrOfTasks = 10000
+      val nrOfKeys = 10
+      val nrOfValues = 10
+      //Fill index
+      for (key ← 0 until nrOfKeys; value ← 0 until nrOfValues)
         index.put(key, value)
-      //Perform operations in parallel
-      for (_ ← 1 to iterations) {
-        //Put actors
-        actor {
-          for (key ← 1 to 10; value ← 1 to 10)
-            actor {
-              index.put(key, value)
-              latch.countDown() //100
-            }
-        }
-        //Remove actors
-        actor {
-          for (key ← 1 to 10; value ← 1 to 5)
-            actor {
-              index.remove(key, value)
-              latch.countDown() //50
-            }
-          for (key ← 9 to 10)
-            actor {
-              index.remove(key)
-              latch.countDown() //2
-            }
-        }
-        //Read actors
-        actor {
-          for (key ← 1 to 10; value ← 1 to 10)
-            actor {
-              val values = index.valueIterator(key)
-              if (key < 9 && value > 5)
-                (values contains value) must be === true
-              latch.countDown() //100
-            }
+      //Tasks to be executed in parallel
+      def putTask() = Future {
+        index.put(Random.nextInt(nrOfKeys), Random.nextInt(nrOfValues))
+      }
+      def removeTask1() = Future {
+        index.remove(Random.nextInt(nrOfKeys / 2), Random.nextInt(nrOfValues))
+      }
+      def removeTask2() = Future {
+        index.remove(Random.nextInt(nrOfKeys / 2))
+      }
+      def readTask() = Future {
+        val key = Random.nextInt(nrOfKeys)
+        val values = index.valueIterator(key)
+        if (key >= nrOfKeys / 2) {
+          values.isEmpty must be === false
         }
       }
-      latch.await()
+
+      def executeRandomTask() = Random.nextInt(4) match {
+        case 0 ⇒ putTask()
+        case 1 ⇒ removeTask1()
+        case 2 ⇒ removeTask2()
+        case 3 ⇒ readTask()
+      }
+
+      val tasks = List.fill(nrOfTasks)(executeRandomTask)
+
+      tasks.foreach(_.await)
+      tasks.foreach(_.exception.map(throw _))
     }
   }
 }
