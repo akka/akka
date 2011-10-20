@@ -1,29 +1,27 @@
 package akka.remote.round_robin_routed
 
+import akka.actor.Actor
 import akka.remote._
 import akka.routing._
-import Routing.Broadcast
-
-import akka.actor.Actor
-import akka.config.Config
+import akka.routing.Routing.Broadcast
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ reply(Config.nodename)
+      case "hit" ⇒ channel ! app.nodename
       case "end" ⇒ self.stop()
     }
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
+class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -32,13 +30,13 @@ class RoundRobinRoutedRemoteActorMultiJvmNode1 extends MultiJvmSync {
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
+class RoundRobinRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -47,13 +45,13 @@ class RoundRobinRoutedRemoteActorMultiJvmNode2 extends MultiJvmSync {
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode3 extends MultiJvmSync {
+class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
     "___" in {
       barrier("setup")
-      Remote.start()
+      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -62,17 +60,17 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends MultiJvmSync {
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode4 extends MultiJvmSync {
+class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a RoundRobin router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       barrier("setup")
-      Remote.start()
+      remote.start()
 
       barrier("start")
-      val actor = Actor.actorOf[SomeActor]("service-hello")
+      val actor = app.actorOf[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

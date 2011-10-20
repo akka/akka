@@ -4,15 +4,15 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
-import akka.actor.Actor.{ actorOf }
 import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
 import akka.actor.{ LocalActorRef, Actor, NullChannel }
+import akka.testkit.AkkaSpec
 
 @RunWith(classOf[JUnitRunner])
-abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
+abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
   def factory: MailboxType ⇒ Mailbox
@@ -80,12 +80,7 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = {
-    new Envelope(
-      actorOf(new Actor { //Dummy actor
-        def receive = { case _ ⇒ }
-      }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
-  }
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, NullChannel)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null
@@ -146,8 +141,8 @@ abstract class MailboxSpec extends WordSpec with MustMatchers with BeforeAndAfte
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case u: UnboundedMailbox ⇒ u.create(null)
-    case b: BoundedMailbox   ⇒ b.create(null)
+    case u: UnboundedMailbox ⇒ u.create(null, null)
+    case b: BoundedMailbox   ⇒ b.create(null, null)
   }
 }
 
@@ -155,7 +150,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
+    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null, null)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null, null)
   }
 }

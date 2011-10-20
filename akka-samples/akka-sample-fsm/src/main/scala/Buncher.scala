@@ -1,5 +1,6 @@
 package sample.fsm.buncher
 
+import akka.actor.ActorRefFactory
 import scala.reflect.ClassManifest
 import akka.util.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
@@ -81,10 +82,6 @@ object Buncher {
 
   val Stop = GenericBuncher.Stop // make special message objects visible for Buncher clients
   val Flush = GenericBuncher.Flush
-
-  def apply[A: Manifest](singleTimeout: Duration,
-                         multiTimeout: Duration) =
-    Actor.actorOf(new Buncher[A](singleTimeout, multiTimeout))
 }
 
 class Buncher[A: Manifest](singleTimeout: Duration, multiTimeout: Duration)

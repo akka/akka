@@ -1,5 +1,6 @@
 package akka.stm.example;
 
+import akka.AkkaApplication;
 import akka.stm.*;
 import akka.actor.*;
 
@@ -9,10 +10,12 @@ public class EitherOrElseExample {
         System.out.println("EitherOrElse example");
         System.out.println();
 
+        AkkaApplication application = new AkkaApplication("UntypedTransactorExample");
+
         final Ref<Integer> left = new Ref<Integer>(100);
         final Ref<Integer> right = new Ref<Integer>(100);
 
-        ActorRef brancher = Actors.actorOf(Brancher.class);
+        ActorRef brancher = application.actorOf(new Props().withCreator(Brancher.class));
 
         brancher.tell(new Branch(left, right, 500));
 

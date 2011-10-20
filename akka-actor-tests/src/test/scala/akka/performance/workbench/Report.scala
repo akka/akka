@@ -3,17 +3,13 @@ package akka.performance.workbench
 import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
+import akka.AkkaApplication
 
-import akka.event.EventHandler
-import akka.config.Config
-import akka.config.Config.config
-
-class Report(
-  resultRepository: BenchResultRepository,
-  compareResultWith: Option[String] = None) {
+class Report(app: AkkaApplication,
+             resultRepository: BenchResultRepository,
+             compareResultWith: Option[String] = None) {
 
   private def log = System.getProperty("benchmark.logResult", "true").toBoolean
 
@@ -56,7 +52,7 @@ class Report(
     resultRepository.saveHtmlReport(sb.toString, reportName)
 
     if (log) {
-      EventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
+      app.eventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
     }
 
   }
@@ -189,11 +185,11 @@ class Report(
     sb.append("Args:\n  ").append(args)
     sb.append("\n")
 
-    sb.append("Akka version: ").append(Config.CONFIG_VERSION)
+    sb.append("Akka version: ").append(app.AkkaConfig.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
-    for (key ← config.keys) {
-      sb.append("\n  ").append(key).append("=").append(config(key))
+    for (key ← app.config.keys) {
+      sb.append("\n  ").append(key).append("=").append(app.config(key))
     }
 
     sb.toString

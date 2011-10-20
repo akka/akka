@@ -4,24 +4,21 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.util.duration._
-
 import Actor._
 import akka.util.Duration
+import akka.AkkaApplication
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
-  def createForwardingChain(): ActorRef = {
-    val replier = actorOf(new Actor {
-      def receive = { case x ⇒ reply(x) }
+  def createForwardingChain(app: AkkaApplication): ActorRef = {
+    val replier = app.actorOf(new Actor {
+      def receive = { case x ⇒ channel ! x }
     })
 
-    def mkforwarder(forwardTo: ActorRef) = actorOf(
+    def mkforwarder(forwardTo: ActorRef) = app.actorOf(
       new Actor {
         def receive = { case x ⇒ forwardTo forward x }
       })
@@ -30,7 +27,7 @@ object ForwardActorSpec {
   }
 }
 
-class ForwardActorSpec extends WordSpec with MustMatchers {
+class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
 
   "A Forward Actor" must {
@@ -40,14 +37,14 @@ class ForwardActorSpec extends WordSpec with MustMatchers {
 
       val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
 
-      val chain = createForwardingChain()
+      val chain = createForwardingChain(app)
 
       chain.tell(ExpectedMessage, replyTo)
       latch.await(Duration(5, "s")) must be === true
     }
 
     "forward actor reference when invoking forward on bang bang" in {
-      val chain = createForwardingChain()
+      val chain = createForwardingChain(app)
       chain.ask(ExpectedMessage, 5000).get must be === ExpectedMessage
     }
   }

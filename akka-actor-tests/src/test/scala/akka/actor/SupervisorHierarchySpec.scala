@@ -4,10 +4,6 @@
 
 package akka.actor
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-
-import Actor._
 import akka.testkit._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
@@ -23,51 +19,50 @@ object SupervisorHierarchySpec {
   }
 }
 
-class SupervisorHierarchySpec extends JUnitSuite {
+class SupervisorHierarchySpec extends AkkaSpec {
   import SupervisorHierarchySpec._
 
-  @Test
-  def killWorkerShouldRestartMangerAndOtherWorkers = {
-    val countDown = new CountDownLatch(4)
+  "A Supervisor Hierarchy" must {
 
-    val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)), "boss")
+    "restart manager and workers in AllForOne" in {
+      val countDown = new CountDownLatch(4)
 
-    val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None)).withSupervisor(boss), "manager")
+      val boss = actorOf(Props(self ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
 
-    val workerProps = Props(new CountDownActor(countDown)).withSupervisor(manager)
-    val workerOne = actorOf(workerProps, "workerOne")
-    val workerTwo = actorOf(workerProps, "workerTwo")
-    val workerThree = actorOf(workerProps, "workerThree")
+      val manager = actorOf(Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None)).withSupervisor(boss))
 
-    filterException[ActorKilledException] {
-      workerOne ! Kill
+      val workerProps = Props(new CountDownActor(countDown)).withSupervisor(manager)
+      val workerOne, workerTwo, workerThree = actorOf(workerProps)
 
-      // manager + all workers should be restarted by only killing a worker
-      // manager doesn't trap exits, so boss will restart manager
+      filterException[ActorKilledException] {
+        workerOne ! Kill
 
-      assert(countDown.await(2, TimeUnit.SECONDS))
-    }
-  }
+        // manager + all workers should be restarted by only killing a worker
+        // manager doesn't trap exits, so boss will restart manager
 
-  @Test
-  def supervisorShouldReceiveNotificationMessageWhenMaximumNumberOfRestartsWithinTimeRangeIsReached = {
-    val countDownMessages = new CountDownLatch(1)
-    val countDownMax = new CountDownLatch(1)
-    val boss = actorOf(Props(new Actor {
-      val crasher = self.link(actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(self)))
-
-      protected def receive = {
-        case "killCrasher"    ⇒ crasher ! Kill
-        case Terminated(_, _) ⇒ countDownMax.countDown()
+        assert(countDown.await(2, TimeUnit.SECONDS))
       }
-    }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
+    }
 
-    filterException[ActorKilledException] {
-      boss ! "killCrasher"
-      boss ! "killCrasher"
+    "send notification to supervisor when permanent failure" in {
+      val countDownMessages = new CountDownLatch(1)
+      val countDownMax = new CountDownLatch(1)
+      val boss = actorOf(Props(new Actor {
+        val crasher = self startsMonitoring actorOf(Props(new CountDownActor(countDownMessages)).withSupervisor(self))
 
-      assert(countDownMessages.await(2, TimeUnit.SECONDS))
-      assert(countDownMax.await(2, TimeUnit.SECONDS))
+        protected def receive = {
+          case "killCrasher"    ⇒ crasher ! Kill
+          case Terminated(_, _) ⇒ countDownMax.countDown()
+        }
+      }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
+
+      filterException[ActorKilledException] {
+        boss ! "killCrasher"
+        boss ! "killCrasher"
+
+        assert(countDownMessages.await(2, TimeUnit.SECONDS))
+        assert(countDownMax.await(2, TimeUnit.SECONDS))
+      }
     }
   }
 }

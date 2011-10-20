@@ -26,9 +26,9 @@ import TypedCamelAccess._
  * @author Martin Krasser
  */
 trait CamelService extends Bootable {
-  private[camel] val activationTracker = new LocalActorRef(Props[ActivationTracker], newUuid.toString, true)
-  private[camel] val consumerPublisher = new LocalActorRef(Props(new ConsumerPublisher(activationTracker)), newUuid.toString, true)
-  private[camel] val publishRequestor = new LocalActorRef(Props(new ConsumerPublishRequestor), newUuid.toString, true)
+  private[camel] val activationTracker = new LocalActorRef(Props[ActivationTracker], Props.randomAddress, true)
+  private[camel] val consumerPublisher = new LocalActorRef(Props(new ConsumerPublisher(activationTracker)), Props.randomAddress, true)
+  private[camel] val publishRequestor = new LocalActorRef(Props(new ConsumerPublishRequestor), Props.randomAddress, true)
 
   private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 
@@ -58,7 +58,7 @@ trait CamelService extends Bootable {
    * Starts this CamelService.
    */
   def start: CamelService = {
-    // Only init and start if not already done by application
+    // Only init and start if not already done by app
     if (!CamelContextManager.initialized) CamelContextManager.init
     if (!CamelContextManager.started) CamelContextManager.start
 

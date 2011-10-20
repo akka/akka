@@ -45,7 +45,6 @@ object Helpers {
         while (root.getCause ne null) root = e.getCause
         root.printStackTrace(new java.io.PrintWriter(sw))
         System.err.println(sw.toString)
-        EventHandler.error(e, this, e.toString)
         throw e
     }
   }

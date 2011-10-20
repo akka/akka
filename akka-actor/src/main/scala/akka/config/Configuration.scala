@@ -55,11 +55,17 @@ object Configuration {
   def fromString(data: String): Configuration = {
     load(data)
   }
+
+  def apply(pairs: (String, Any)*) = {
+    new Configuration(Map(pairs: _*))
+  }
 }
 
 class Configuration(val map: Map[String, Any]) {
   private val trueValues = Set("true", "on")
   private val falseValues = Set("false", "off")
+
+  def ++(other: Configuration) = new Configuration(map ++ other.map)
 
   private def outputIfDesiredAndReturnInput[T](key: String, t: T): T = {
     if (Configuration.outputConfigSources)

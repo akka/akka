@@ -3,20 +3,20 @@
  */
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ filterEvents, EventFilter }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import akka.testkit.AkkaSpec
 
-class SupervisorMiscSpec extends WordSpec with MustMatchers {
-  "A Supervisor" should {
+class SupervisorMiscSpec extends AkkaSpec {
+
+  "A Supervisor" must {
 
     "restart a crashing actor and its dispatcher for any dispatcher" in {
       filterEvents(EventFilter[Exception]("Kill")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val supervisor = Actor.actorOf(Props(new Actor {
+        val supervisor = actorOf(Props(new Actor {
           def receive = { case _ ⇒ }
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
 
@@ -24,18 +24,18 @@ class SupervisorMiscSpec extends WordSpec with MustMatchers {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
 
           protected def receive = {
-            case "status" ⇒ this.reply("OK")
+            case "status" ⇒ this.channel ! "OK"
             case _        ⇒ this.self.stop()
           }
         }).withSupervisor(supervisor)
 
-        val actor1 = Actor.actorOf(workerProps.withDispatcher(new PinnedDispatcher()))
+        val actor1 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
 
-        val actor2 = Actor.actorOf(workerProps.withDispatcher(new PinnedDispatcher()))
+        val actor2 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
 
-        val actor3 = Actor.actorOf(workerProps.withDispatcher(Dispatchers.newDispatcher("test").build))
+        val actor3 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
 
-        val actor4 = Actor.actorOf(workerProps.withDispatcher(new PinnedDispatcher()))
+        val actor4 = actorOf(workerProps.withDispatcher(app.dispatcherFactory.newPinnedDispatcher("pinned")))
 
         actor1 ! Kill
         actor2 ! Kill

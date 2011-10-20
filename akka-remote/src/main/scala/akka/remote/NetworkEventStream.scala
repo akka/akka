@@ -5,12 +5,11 @@
 package akka.remote
 
 import akka.dispatch.PinnedDispatcher
-
 import scala.collection.mutable
-
 import java.net.InetSocketAddress
 import akka.actor.{ LocalActorRef, Actor, ActorRef, Props, newUuid }
 import akka.actor.Actor._
+import akka.AkkaApplication
 
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
@@ -59,9 +58,14 @@ object NetworkEventStream {
       case _ ⇒ //ignore other
     }
   }
+}
 
-  private[akka] val channel = new LocalActorRef(
-    Props[Channel].copy(dispatcher = new PinnedDispatcher()), newUuid.toString, systemService = true)
+class NetworkEventStream(val app: AkkaApplication) {
+
+  import NetworkEventStream._
+
+  private[akka] val channel = app.provider.actorOf(
+    Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")), Props.randomAddress, systemService = true)
 
   /**
    * Registers a network event stream listener (asyncronously).

@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
@@ -16,7 +16,7 @@ object ActorLifeCycleSpec {
 
 }
 
-class ActorLifeCycleSpec extends WordSpec with MustMatchers with TestKit with BeforeAndAfterEach {
+class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
   import ActorLifeCycleSpec._
 
   class LifeCycleTestActor(id: String, generationProvider: AtomicInteger) extends Actor {
@@ -25,7 +25,7 @@ class ActorLifeCycleSpec extends WordSpec with MustMatchers with TestKit with Be
     val currentGen = generationProvider.getAndIncrement()
     override def preStart() { report("preStart") }
     override def postStop() { report("postStop") }
-    def receive = { case "status" ⇒ this reply message("OK") }
+    def receive = { case "status" ⇒ channel ! message("OK") }
   }
 
   "An Actor" must {

@@ -5,14 +5,15 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import akka.dispatch.Dispatchers
 import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 
-class SupervisorTreeSpec extends WordSpec with MustMatchers with TestKit {
+class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
 
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 
@@ -23,9 +24,9 @@ class SupervisorTreeSpec extends WordSpec with MustMatchers with TestKit {
             def receive = { case false ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { testActor ! self.address }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
-          val headActor = actorOf(p, "headActor")
-          val middleActor = actorOf(p.withSupervisor(headActor), "middleActor")
-          val lastActor = actorOf(p.withSupervisor(middleActor), "lastActor")
+          val headActor = actorOf(p)
+          val middleActor = actorOf(p.withSupervisor(headActor))
+          val lastActor = actorOf(p.withSupervisor(middleActor))
 
           middleActor ! Kill
           expectMsg(middleActor.address)

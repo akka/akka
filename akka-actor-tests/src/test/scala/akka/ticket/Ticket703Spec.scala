@@ -1,12 +1,10 @@
 package akka.ticket
 
 import akka.actor._
-import akka.actor.Actor._
 import akka.routing._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import akka.testkit.AkkaSpec
 
-class Ticket703Spec extends WordSpec with MustMatchers {
+class Ticket703Spec extends AkkaSpec {
 
   "A ? call to an actor pool" should {
     "reuse the proper timeout" in {
@@ -23,7 +21,7 @@ class Ticket703Spec extends WordSpec with MustMatchers {
             def receive = {
               case req: String ⇒
                 Thread.sleep(6000L)
-                tryReply("Response")
+                channel.tryTell("Response")
             }
           }))
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))

@@ -4,18 +4,11 @@
 
 package akka.actor
 
-import akka.config.Config
+import akka.AkkaApplication
 import akka.util.Duration
 import akka.routing.{ RouterType, FailureDetectorType }
 import akka.routing.FailureDetectorType._
 
-/**
- * Module holding the programmatic deployment configuration classes.
- * Defines the deployment specification.
- * Most values have defaults and can be left out.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object DeploymentConfig {
 
   // --------------------------------
@@ -27,9 +20,7 @@ object DeploymentConfig {
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
     failureDetector: FailureDetector = NoOpFailureDetector,
-    scope: Scope = LocalScope) {
-    Address.validate(address)
-  }
+    scope: Scope = LocalScope)
 
   // --------------------------------
   // --- Actor Recipe
@@ -79,17 +70,14 @@ object DeploymentConfig {
   // --- Scope
   // --------------------------------
   sealed trait Scope
-  case class ClusterScope(
-    preferredNodes: Iterable[Home] = Vector(Node(Config.nodename)),
-    replication: ReplicationScheme = Transient) extends Scope
-
-  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
   // For Java API
   case class LocalScope() extends Scope
 
   // For Scala API
   case object LocalScope extends Scope
+
+  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
   case class RemoteAddress(hostname: String, port: Int)
 
@@ -113,7 +101,12 @@ object DeploymentConfig {
   }
 
   object NrOfInstances {
-    def apply(factor: Int): NrOfInstances = new NrOfInstances(factor)
+    def apply(factor: Int): NrOfInstances = factor match {
+      case -1 ⇒ AutoNrOfInstances
+      case 0  ⇒ ZeroNrOfInstances
+      case 1  ⇒ OneNrOfInstances
+      case x  ⇒ new NrOfInstances(x)
+    }
     def unapply(other: Any) = other match {
       case x: NrOfInstances ⇒ import x._; Some(factor)
       case _                ⇒ None
@@ -123,10 +116,12 @@ object DeploymentConfig {
   // For Java API
   class AutoNrOfInstances extends NrOfInstances(-1)
   class ZeroNrOfInstances extends NrOfInstances(0)
+  class OneNrOfInstances extends NrOfInstances(0)
 
   // For Scala API
   case object AutoNrOfInstances extends AutoNrOfInstances
   case object ZeroNrOfInstances extends ZeroNrOfInstances
+  case object OneNrOfInstances extends OneNrOfInstances
 
   // --------------------------------
   // --- Replication
@@ -181,8 +176,6 @@ object DeploymentConfig {
     //    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
-  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == Config.nodename)
-
   def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
     case NoOpFailureDetector                             ⇒ FailureDetectorType.NoOp
     case NoOpFailureDetector()                           ⇒ FailureDetectorType.NoOp
@@ -209,16 +202,6 @@ object DeploymentConfig {
     case LeastMessages           ⇒ RouterType.LeastMessages
     case LeastMessages()         ⇒ RouterType.LeastMessages
     case CustomRouter(implClass) ⇒ RouterType.Custom(implClass)
-  }
-
-  def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
-    case _ ⇒ None
-  }
-
-  def isReplicated(deployment: Deploy): Boolean = replicationSchemeFor(deployment) match {
-    case Some(replicationScheme) ⇒ isReplicated(replicationScheme)
-    case _                       ⇒ false
   }
 
   def isReplicated(replicationScheme: ReplicationScheme): Boolean =
@@ -260,4 +243,32 @@ object DeploymentConfig {
         case _: DataGrid | DataGrid             ⇒ throw new UnsupportedOperationException("ReplicationStorage 'DataGrid' is no supported yet")
       }
   }
+
+}
+
+/**
+ * Module holding the programmatic deployment configuration classes.
+ * Defines the deployment specification.
+ * Most values have defaults and can be left out.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+class DeploymentConfig(val app: AkkaApplication) {
+
+  import DeploymentConfig._
+
+  case class ClusterScope(preferredNodes: Iterable[Home] = Vector(Node(app.nodename)), replication: ReplicationScheme = Transient) extends Scope
+
+  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == app.nodename)
+
+  def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
+    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
+    case _ ⇒ None
+  }
+
+  def isReplicated(deployment: Deploy): Boolean = replicationSchemeFor(deployment) match {
+    case Some(replicationScheme) ⇒ DeploymentConfig.isReplicated(replicationScheme)
+    case _                       ⇒ false
+  }
+
 }

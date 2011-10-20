@@ -1,39 +1,32 @@
 package akka.dispatch
 
-import org.scalatest.junit.JUnitSuite
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.prop.Checkers
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
-
 import akka.actor.{ Actor, ActorRef, Timeout }
-import Actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.util.duration._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import akka.testkit.AkkaSpec
+import org.scalatest.junit.JUnitSuite
 
 object FutureSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello" ⇒
-        reply("World")
-      case "NoReply" ⇒ {}
-      case "Failure" ⇒
-        throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "Hello"   ⇒ channel ! "World"
+      case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "NoReply" ⇒
     }
   }
 
   class TestDelayActor(await: StandardLatch) extends Actor {
     def receive = {
-      case "Hello" ⇒
-        await.await
-        reply("World")
-      case "NoReply" ⇒ { await.await }
+      case "Hello"   ⇒ await.await; channel ! "World"
+      case "NoReply" ⇒ await.await
       case "Failure" ⇒
         await.await
         throw new RuntimeException("Expected exception; to test fault-tolerance")
@@ -43,7 +36,7 @@ object FutureSpec {
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
-class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAndAfterAll {
+class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
   import FutureSpec._
 
   "A Promise" when {
@@ -143,7 +136,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       "will return a result" must {
         behave like futureWithResult { test ⇒
           val actor1 = actorOf[TestActor]
-          val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.toUpperCase) } })
+          val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ channel ! s.toUpperCase } })
           val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           future.await
           test(future, "WORLD")
@@ -155,7 +148,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithException[ArithmeticException] { test ⇒
           filterException[ArithmeticException] {
             val actor1 = actorOf[TestActor]
-            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.length / 0) } })
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ channel ! s.length / 0 } })
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
@@ -168,7 +161,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         behave like futureWithException[MatchError] { test ⇒
           filterException[MatchError] {
             val actor1 = actorOf[TestActor]
-            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ reply(s.toUpperCase) } })
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ channel ! s.toUpperCase } })
             val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
             future.await
             test(future, "World (of class java.lang.String)")
@@ -185,8 +178,8 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         filterException[ClassCastException] {
           val actor = actorOf(new Actor {
             def receive = {
-              case s: String ⇒ reply(s.length)
-              case i: Int    ⇒ reply((i * 2).toString)
+              case s: String ⇒ channel ! s.length
+              case i: Int    ⇒ channel ! (i * 2).toString
             }
           })
 
@@ -217,8 +210,8 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           case class Res[T](res: T)
           val actor = actorOf(new Actor {
             def receive = {
-              case Req(s: String) ⇒ reply(Res(s.length))
-              case Req(i: Int)    ⇒ reply(Res((i * 2).toString))
+              case Req(s: String) ⇒ channel ! Res(s.length)
+              case Req(i: Int)    ⇒ channel ! Res((i * 2).toString)
             }
           })
 
@@ -294,28 +287,28 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
       "find" in {
         val futures = for (i ← 1 to 10) yield Future { i }
-        val result = Future.find[Int](_ == 3)(futures)
+        val result = Future.find[Int](futures)(_ == 3)
         result.get must be(Some(3))
 
-        val notFound = Future.find[Int](_ == 11)(futures)
+        val notFound = Future.find[Int](futures)(_ == 11)
         notFound.get must be(None)
       }
 
       "fold" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); channel.tryTell(add) }
           })
         }
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
-        Future.fold(0, timeout)(futures)(_ + _).get must be(45)
+        Future.fold(futures, timeout)(0)(_ + _).get must be(45)
       }
 
       "fold by composing" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); channel.tryTell(add) }
           })
         }
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
@@ -330,13 +323,13 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
                   if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  tryReply(add)
+                  channel.tryTell(add)
               }
             })
           }
           val timeout = 10000
           def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-          Future.fold(0, timeout)(futures)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
+          Future.fold(futures, timeout)(0)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -344,7 +337,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         import scala.collection.mutable.ArrayBuffer
         def test(testNumber: Int) {
           val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
-          val result = Future.fold(ArrayBuffer.empty[AnyRef], 10000)(fs) {
+          val result = Future.fold(fs, 10000)(ArrayBuffer.empty[AnyRef]) {
             case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
             case (l, _)               ⇒ l
           }.get.asInstanceOf[ArrayBuffer[Int]].sum
@@ -356,13 +349,13 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
       }
 
       "return zero value if folding empty list" in {
-        Future.fold(0)(List[Future[Int]]())(_ + _).get must be(0)
+        Future.fold(List[Future[Int]]())(0)(_ + _).get must be(0)
       }
 
       "shouldReduceResults" in {
         val actors = (1 to 10).toList map { _ ⇒
           actorOf(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); tryReply(add) }
+            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); channel.tryTell(add) }
           })
         }
         val timeout = 10000
@@ -378,7 +371,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
                   if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  tryReply(add)
+                  channel.tryTell(add)
               }
             })
           }
@@ -407,7 +400,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           var counter = 1
           def receive = {
             case 'GetNext ⇒
-              reply(counter)
+              channel ! counter
               counter += 2
           }
         })
@@ -445,7 +438,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
           Thread sleep 100
 
           // make sure all futures are completed in dispatcher
-          assert(Dispatchers.defaultGlobalDispatcher.tasks === 0)
+          assert(implicitly[MessageDispatcher].tasks === 0)
         }
       }
 
@@ -566,7 +559,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
         Thread.sleep(100)
 
         // make sure all futures are completed in dispatcher
-        assert(Dispatchers.defaultGlobalDispatcher.tasks === 0)
+        assert(implicitly[MessageDispatcher].tasks === 0)
       }
 
       "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
@@ -777,7 +770,7 @@ class FutureSpec extends WordSpec with MustMatchers with Checkers with BeforeAnd
 
       "ticket812FutureDispatchCleanup" in {
         filterException[FutureTimeoutException] {
-          implicit val dispatcher = new Dispatcher("ticket812FutureDispatchCleanup")
+          implicit val dispatcher = app.dispatcherFactory.newDispatcher("ticket812FutureDispatchCleanup").build
           assert(dispatcher.tasks === 0)
           val future = Future({ Thread.sleep(100); "Done" }, 10)
           intercept[FutureTimeoutException] { future.await }

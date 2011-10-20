@@ -180,9 +180,8 @@ The messages that it prevents are all that extends 'LifeCycleMessage':
 It also prevents the client from invoking any life-cycle and side-effecting methods, such as:
 * start
 * stop
-* link
-* unlink
-* spawnLink
+* startsMonitoring
+* stopsMonitoring
 * etc.
 
 Using secure cookie for remote client authentication

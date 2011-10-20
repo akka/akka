@@ -1,25 +1,21 @@
 package akka.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.actor._
-import Actor._
-import DeploymentConfig._
 import akka.routing._
-import Routing.Broadcast
-
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import akka.testkit.AkkaSpec
+import akka.actor.DeploymentConfig._
+import akka.routing.Routing.Broadcast
 
-class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
+class ConfiguredLocalRoutingSpec extends AkkaSpec {
 
   "round robin router" must {
 
     "be able to shut down its instance" in {
       val address = "round-robin-0"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -31,7 +27,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -39,7 +35,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         override def postStop() {
           stopLatch.countDown()
         }
-      }, address)
+      }), address)
 
       actor ! "hello"
       actor ! "hello"
@@ -55,7 +51,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
     "deliver messages in a round robin fashion" in {
       val address = "round-robin-1"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -74,13 +70,13 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         replies = replies + (i -> 0)
       }
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ reply(id)
+          case "hit" ⇒ channel ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }, address)
+      }), address)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -100,7 +96,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
     "deliver a broadcast message using the !" in {
       val address = "round-robin-2"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -112,7 +108,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -120,7 +116,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         override def postStop() {
           stopLatch.countDown()
         }
-      }, address)
+      }), address)
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
@@ -135,7 +131,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
     "be able to shut down its instance" in {
       val address = "random-0"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -146,7 +142,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
 
       val stopLatch = new CountDownLatch(7)
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ {}
         }
@@ -154,7 +150,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         override def postStop() {
           stopLatch.countDown()
         }
-      }, address)
+      }), address)
 
       actor ! "hello"
       actor ! "hello"
@@ -169,7 +165,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
     "deliver messages in a random fashion" in {
       val address = "random-1"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -188,13 +184,13 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         replies = replies + (i -> 0)
       }
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ reply(id)
+          case "hit" ⇒ channel ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }, address)
+      }), address)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -214,7 +210,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
     "deliver a broadcast message using the !" in {
       val address = "random-2"
 
-      Deployer.deploy(
+      app.deployer.deploy(
         Deploy(
           address,
           None,
@@ -226,7 +222,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
       val helloLatch = new CountDownLatch(6)
       val stopLatch = new CountDownLatch(6)
 
-      val actor = actorOf(new Actor {
+      val actor = app.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -234,7 +230,7 @@ class ConfiguredLocalRoutingSpec extends WordSpec with MustMatchers {
         override def postStop() {
           stopLatch.countDown()
         }
-      }, address)
+      }), address)
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)

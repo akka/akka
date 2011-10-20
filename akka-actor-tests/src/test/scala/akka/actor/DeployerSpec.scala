@@ -4,16 +4,15 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
 
-class DeployerSpec extends WordSpec with MustMatchers {
+class DeployerSpec extends AkkaSpec {
 
   "A Deployer" must {
     "be able to parse 'akka.actor.deployment._' config elements" in {
-      val deployment = Deployer.lookupInConfig("service-ping")
+      val deployment = app.deployer.lookupInConfig("service-ping")
       deployment must be('defined)
 
       deployment must equal(Some(

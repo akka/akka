@@ -12,8 +12,8 @@ import akka.util.duration._
 import akka.testkit.Testing.sleepFor
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
-import akka.actor.Actor.actorOf
 import akka.dispatch.{ DefaultPromise, Promise, Future }
+import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
@@ -28,14 +28,14 @@ object ActorRefSpec {
     def receive = {
       case "complexRequest" ⇒ {
         replyTo = channel
-        val worker = actorOf(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
-        val worker = actorOf(Props[WorkerActor])
+        val worker = context.actorOf(Props[WorkerActor])
         worker ! ReplyTo(channel)
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ reply("simpleReply")
+      case "simpleRequest" ⇒ channel ! "simpleReply"
     }
   }
 
@@ -43,7 +43,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work
-        reply("workDone")
+        channel ! "workDone"
         self.stop()
       }
       case ReplyTo(replyTo) ⇒ {
@@ -74,7 +74,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ reply(self)
+      case "self" ⇒ channel ! self
       case x      ⇒ inner forward x
     }
   }
@@ -83,7 +83,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ reply(self)
+      case "self" ⇒ channel ! self
       case x      ⇒ inner forward x
     }
   }
@@ -94,8 +94,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ reply(self)
-      case other       ⇒ reply(other)
+      case "innerself" ⇒ channel ! self
+      case other       ⇒ channel ! other
     }
   }
 
@@ -103,8 +103,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ reply(self)
-      case other       ⇒ reply(other)
+      case "innerself" ⇒ channel ! self
+      case other       ⇒ channel ! other
     }
   }
 
@@ -113,7 +113,7 @@ object ActorRefSpec {
   }
 }
 
-class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
+class ActorRefSpec extends AkkaSpec {
   import akka.actor.ActorRefSpec._
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
@@ -249,32 +249,53 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       out.flush
       out.close
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      val readA = in.readObject
+      Serialization.app.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        val readA = in.readObject
 
-      a.isInstanceOf[LocalActorRef] must be === true
-      readA.isInstanceOf[LocalActorRef] must be === true
-      (readA eq a) must be === true
+        a.isInstanceOf[LocalActorRef] must be === true
+        readA.isInstanceOf[LocalActorRef] must be === true
+        (readA eq a) must be === true
+      }
+    }
+
+    "throw an exception on deserialize if no app in scope" in {
+      val a = actorOf[InnerActor]
+
+      import java.io._
+
+      val baos = new ByteArrayOutputStream(8192 * 32)
+      val out = new ObjectOutputStream(baos)
+
+      out.writeObject(a)
+
+      out.flush
+      out.close
+
+      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
+      (intercept[java.lang.IllegalStateException] {
+        in.readObject
+      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 
     "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
-      ReflectiveAccess.RemoteModule.isEnabled must be === false
       val latch = new CountDownLatch(1)
       val a = actorOf(new InnerActor {
         override def postStop {
-          //          Actor.registry.unregister(self)
+          // app.registry.unregister(self)
           latch.countDown
         }
       })
 
-      val inetAddress = ReflectiveAccess.RemoteModule.configDefaultAddress
+      val inetAddress = app.defaultAddress
 
       val expectedSerializedRepresentation = SerializedActorRef(
         a.uuid,
         a.address,
         inetAddress.getAddress.getHostAddress,
-        inetAddress.getPort,
-        a.timeout)
+        inetAddress.getPort)
 
       import java.io._
 
@@ -289,16 +310,18 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       a.stop()
       latch.await(5, TimeUnit.SECONDS) must be === true
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-      (intercept[java.lang.IllegalStateException] {
-        in.readObject
-      }).getMessage must be === "Trying to deserialize ActorRef [" + expectedSerializedRepresentation + "] but it's not found in the local registry and remoting is not enabled."
+      Serialization.app.withValue(app) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+        (intercept[java.lang.IllegalStateException] {
+          in.readObject
+        }).getMessage must be === "Could not deserialize ActorRef"
+      }
     }
 
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
         val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
-        def receive = { case _ ⇒ reply(nested) }
+        def receive = { case _ ⇒ channel ! nested }
       })
 
       val nested = (a ? "any").as[ActorRef].get
@@ -346,8 +369,8 @@ class ActorRefSpec extends WordSpec with MustMatchers with TestKit {
       val timeout = Timeout(20000)
       val ref = actorOf(Props(new Actor {
         def receive = {
-          case 5    ⇒ tryReply("five")
-          case null ⇒ tryReply("null")
+          case 5    ⇒ channel.tryTell("five")
+          case null ⇒ channel.tryTell("null")
         }
       }))
 

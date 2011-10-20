@@ -11,10 +11,8 @@ import java.io.ObjectOutputStream
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import scala.collection.mutable.{ Map ⇒ MutableMap }
-
-import akka.event.EventHandler
+import akka.AkkaApplication
 
 trait BenchResultRepository {
   def add(stats: Stats)
@@ -32,11 +30,10 @@ trait BenchResultRepository {
 }
 
 object BenchResultRepository {
-  private val repository = new FileBenchResultRepository
-  def apply(): BenchResultRepository = repository
+  def apply(app: AkkaApplication): BenchResultRepository = new FileBenchResultRepository(app)
 }
 
-class FileBenchResultRepository extends BenchResultRepository {
+class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRepository {
   private val statsByName = MutableMap[String, Seq[Stats]]()
   private val baselineStats = MutableMap[Key, Stats]()
   private val historicalStats = MutableMap[Key, Seq[Stats]]()
@@ -105,7 +102,7 @@ class FileBenchResultRepository extends BenchResultRepository {
       out.writeObject(stats)
     } catch {
       case e: Exception ⇒
-        EventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
+        app.eventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
           format(stats, f.getAbsolutePath, e.getMessage))
     } finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
@@ -122,7 +119,7 @@ class FileBenchResultRepository extends BenchResultRepository {
           Some(stats)
         } catch {
           case e: Throwable ⇒
-            EventHandler.error(this, "Failed to load from [%s], due to [%s]".
+            app.eventHandler.error(this, "Failed to load from [%s], due to [%s]".
               format(f.getAbsolutePath, e.getMessage))
             None
         } finally {
@@ -146,7 +143,7 @@ class FileBenchResultRepository extends BenchResultRepository {
       writer.flush()
     } catch {
       case e: Exception ⇒
-        EventHandler.error(this, "Failed to save report to [%s], due to [%s]".
+        app.eventHandler.error(this, "Failed to save report to [%s], due to [%s]".
           format(f.getAbsolutePath, e.getMessage))
     } finally {
       if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }

@@ -4,9 +4,11 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.Before;
 
+import akka.AkkaApplication;
 import akka.transactor.Coordinated;
 import akka.actor.Actors;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
@@ -27,24 +29,27 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedCoordinatedIncrementTest {
+    AkkaApplication application = new AkkaApplication("UntypedCoordinatedIncrementTest");
+
     List<ActorRef> counters;
     ActorRef failer;
 
     int numCounters = 5;
     int timeout = 5;
+    int askTimeout = 5000;
 
     @Before public void initialise() {
         counters = new ArrayList<ActorRef>();
         for (int i = 1; i <= numCounters; i++) {
             final String name = "counter" + i;
-            ActorRef counter = Actors.actorOf(new UntypedActorFactory() {
+            ActorRef counter = application.actorOf(new Props().withCreator(new UntypedActorFactory() {
                 public UntypedActor create() {
                     return new UntypedCoordinatedCounter(name);
                 }
-            });
+            }));
             counters.add(counter);
         }
-        failer = Actors.actorOf(UntypedFailer.class);
+        failer = application.actorOf(new Props().withCreator(UntypedFailer.class));
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {
@@ -55,7 +60,7 @@ public class UntypedCoordinatedIncrementTest {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
-            Future future = counter.ask("GetCount");
+            Future future = counter.ask("GetCount", askTimeout);
             future.await();
             if (future.isCompleted()) {
                 Option resultOption = future.result();
@@ -72,7 +77,7 @@ public class UntypedCoordinatedIncrementTest {
         EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
         EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
         Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
-        EventHandler.notify(new TestEvent.Mute(ignoreExceptions));
+        application.eventHandler().notify(new TestEvent.Mute(ignoreExceptions));
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
@@ -82,7 +87,7 @@ public class UntypedCoordinatedIncrementTest {
             incrementLatch.await(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
-            Future future = counter.ask("GetCount");
+            Future future = counter.ask("GetCount", askTimeout);
             future.await();
             if (future.isCompleted()) {
                 Option resultOption = future.result();
@@ -93,7 +98,7 @@ public class UntypedCoordinatedIncrementTest {
                 }
             }
         }
-        EventHandler.notify(new TestEvent.UnMute(ignoreExceptions));
+        application.eventHandler().notify(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {

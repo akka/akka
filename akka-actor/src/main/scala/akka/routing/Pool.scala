@@ -100,10 +100,10 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     _delegates = Vector.empty
   }
 
-  protected def _route(): Receive = {
+  protected def _route(): Actor.Receive = {
     // for testing...
     case Stat ⇒
-      tryReply(Stats(_delegates length))
+      channel.tryTell(Stats(_delegates length))
     case Terminated(victim, _) ⇒
       _delegates = _delegates filterNot { victim == }
     case msg ⇒
@@ -116,13 +116,8 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
-        _delegates ++ {
-          for (i ← 0 until requestedCapacity) yield {
-            val delegate = instance(defaultProps)
-            self link delegate
-            delegate
-          }
-        }
+        _delegates ++ Vector.fill(requestedCapacity)(self startsMonitoring instance(defaultProps))
+
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
           case (keep, abandon) ⇒

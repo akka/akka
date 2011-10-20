@@ -8,9 +8,9 @@ import java.util.Collection
 import java.util.concurrent._
 import atomic.{ AtomicLong, AtomicInteger }
 import ThreadPoolExecutor.CallerRunsPolicy
-
 import akka.util.Duration
 import akka.event.EventHandler
+import akka.AkkaApplication
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -68,7 +68,8 @@ trait ExecutorServiceFactoryProvider {
 /**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
-case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
+case class ThreadPoolConfig(app: AkkaApplication,
+                            allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
                             corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
@@ -85,7 +86,7 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
       case Right(bounds) ⇒
         val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory)
         service.allowCoreThreadTimeOut(allowCorePoolTimeout)
-        new BoundedExecutorDecorator(service, bounds)
+        new BoundedExecutorDecorator(app, service, bounds)
     }
   }
 }
@@ -209,7 +210,7 @@ class MonitorableThread(runnable: Runnable, name: String)
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
+class BoundedExecutorDecorator(val app: AkkaApplication, val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
   protected val semaphore = new Semaphore(bound)
 
   override def execute(command: Runnable) = {
@@ -226,10 +227,10 @@ class BoundedExecutorDecorator(val executor: ExecutorService, bound: Int) extend
       })
     } catch {
       case e: RejectedExecutionException ⇒
-        EventHandler.warning(this, e.toString)
+        app.eventHandler.warning(this, e.toString)
         semaphore.release
       case e: Throwable ⇒
-        EventHandler.error(e, this, e.getMessage)
+        app.eventHandler.error(e, this, e.getMessage)
         throw e
     }
   }

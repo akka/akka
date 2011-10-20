@@ -8,6 +8,7 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.EventHandler
 import akka.dispatch.{ Future, Promise }
+import akka.AkkaApplication
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
@@ -47,14 +48,14 @@ object TestActorRefSpec {
         val worker = TestActorRef(Props[WorkerActor])
         worker ! channel
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ reply("simpleReply")
+      case "simpleRequest" ⇒ channel ! "simpleReply"
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
       case "work" ⇒ {
-        reply("workDone")
+        channel ! "workDone"
         self.stop()
       }
       case replyTo: UntypedChannel ⇒ {
@@ -89,11 +90,9 @@ object TestActorRefSpec {
 
 }
 
-class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEach {
+class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import TestActorRefSpec._
-
-  EventHandler.start()
 
   override def beforeEach {
     otherthread = null
@@ -110,7 +109,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ reply(nested) }
+          def receive = { case _ ⇒ channel ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -120,8 +119,8 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = Actor.actorOf(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ reply(nested) }
+          val nested = context.actorOf(Props(self ⇒ { case _ ⇒ }))
+          def receive = { case _ ⇒ channel ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -225,7 +224,7 @@ class TestActorRefSpec extends WordSpec with MustMatchers with BeforeAndAfterEac
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       intercept[IllegalActorStateException] { ref("work") }
-      val ch = Promise.channel()
+      val ch = Promise.channel(5000)
       ref ! ch
       ch must be('completed)
       ch.get must be("complexReply")

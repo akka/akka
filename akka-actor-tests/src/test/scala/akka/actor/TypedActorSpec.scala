@@ -4,17 +4,14 @@ package akka.actor
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import org.scalatest.{ BeforeAndAfterAll, WordSpec, BeforeAndAfterEach }
-import akka.actor.TypedActor._
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
+import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
-import akka.testkit.{ EventFilter, filterEvents }
+import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
 
 object TypedActorSpec {
 
@@ -79,6 +76,8 @@ object TypedActorSpec {
 
   class Bar extends Foo with Serializable {
 
+    import TypedActor.{ dispatcher, timeout }
+
     def pigdog = "Pigdog"
 
     def futurePigdog(): Future[String] = new KeptPromise(Right(pigdog))
@@ -134,13 +133,11 @@ object TypedActorSpec {
   class StackedImpl extends Stacked {
     override def stacked: String = "FOOBAR" //Uppercase
   }
-
 }
 
-@RunWith(classOf[JUnitRunner])
-class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
+class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
-  import akka.actor.TypedActorSpec._
+  import TypedActorSpec._
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
@@ -148,18 +145,18 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     newFooBar(Props().withTimeout(Timeout(d)))
 
   def newFooBar(props: Props): Foo =
-    typedActorOf(classOf[Foo], classOf[Bar], props)
+    app.typedActor.typedActorOf(classOf[Foo], classOf[Bar], props)
 
   def newStacked(props: Props = Props().withTimeout(Timeout(2000))): Stacked =
-    typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
+    app.typedActor.typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
 
-  def mustStop(typedActor: AnyRef) = stop(typedActor) must be(true)
+  def mustStop(typedActor: AnyRef) = app.typedActor.stop(typedActor) must be(true)
 
   "TypedActors" must {
 
     "be able to instantiate" in {
       val t = newFooBar
-      isTypedActor(t) must be(true)
+      app.typedActor.isTypedActor(t) must be(true)
       mustStop(t)
     }
 
@@ -169,7 +166,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "not stop non-started ones" in {
-      stop(null) must be(false)
+      app.typedActor.stop(null) must be(false)
     }
 
     "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
@@ -188,7 +185,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "be able to call toString" in {
       val t = newFooBar
-      t.toString must be(getActorRefFor(t).toString)
+      t.toString must be(app.typedActor.getActorRefFor(t).toString)
       mustStop(t)
     }
 
@@ -201,7 +198,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "be able to call hashCode" in {
       val t = newFooBar
-      t.hashCode must be(getActorRefFor(t).hashCode)
+      t.hashCode must be(app.typedActor.getActorRefFor(t).hashCode)
       mustStop(t)
     }
 
@@ -295,7 +292,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "be able to support implementation only typed actors" in {
-      val t = typedActorOf[Foo, Bar](Props())
+      val t = app.typedActor.typedActorOf[Foo, Bar](Props())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
@@ -305,7 +302,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t = typedActorOf[Stackable1 with Stackable2, StackedImpl]()
+      val t = app.typedActor.typedActorOf[Stackable1 with Stackable2, StackedImpl]()
       t.stackable1 must be("foo")
       t.stackable2 must be("bar")
       mustStop(t)
@@ -314,7 +311,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
     "be able to use work-stealing dispatcher" in {
       val props = Props(
         timeout = Timeout(6600),
-        dispatcher = Dispatchers.newBalancingDispatcher("pooled-dispatcher")
+        dispatcher = app.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher")
           .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
           .setCorePoolSize(60)
           .setMaxPoolSize(60)
@@ -332,7 +329,7 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
     "be able to serialize and deserialize invocations" in {
       import java.io._
-      val m = MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
+      val m = TypedActor.MethodCall(app, classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
       val baos = new ByteArrayOutputStream(8192 * 4)
       val out = new ObjectOutputStream(baos)
 
@@ -341,15 +338,17 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      val mNew = in.readObject().asInstanceOf[MethodCall]
+      Serialization.app.withValue(app) {
+        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
-      mNew.method must be(m.method)
+        mNew.method must be(m.method)
+      }
     }
 
     "be able to serialize and deserialize invocations' parameters" in {
       import java.io._
       val someFoo: Foo = new Bar
-      val m = MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
+      val m = TypedActor.MethodCall(app, classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
       val baos = new ByteArrayOutputStream(8192 * 4)
       val out = new ObjectOutputStream(baos)
 
@@ -358,15 +357,17 @@ class TypedActorSpec extends WordSpec with MustMatchers with BeforeAndAfterEach 
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      val mNew = in.readObject().asInstanceOf[MethodCall]
+      Serialization.app.withValue(app) {
+        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
-      mNew.method must be(m.method)
-      mNew.parameters must have size 3
-      mNew.parameters(0) must not be null
-      mNew.parameters(0).getClass must be === classOf[Bar]
-      mNew.parameters(1) must be(null)
-      mNew.parameters(2) must not be null
-      mNew.parameters(2).asInstanceOf[Int] must be === 1
+        mNew.method must be(m.method)
+        mNew.parameters must have size 3
+        mNew.parameters(0) must not be null
+        mNew.parameters(0).getClass must be === classOf[Bar]
+        mNew.parameters(1) must be(null)
+        mNew.parameters(2) must not be null
+        mNew.parameters(2).asInstanceOf[Int] must be === 1
+      }
     }
   }
 }

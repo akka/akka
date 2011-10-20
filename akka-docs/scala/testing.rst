@@ -742,7 +742,7 @@ options:
 
 * *Logging of the actor lifecycle*
 
-  Actor creation, start, restart, link, unlink and stop may be traced by
+  Actor creation, start, restart, monitor start, monitor stop and stop may be traced by
   enabling the setting ``akka.actor.debug.lifecycle``; this, too, is enabled
   uniformly on all actors.
 

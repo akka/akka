@@ -1,15 +1,12 @@
 package akka.performance.trading.common
 
 import java.util.Random
-
 import scala.collection.immutable.TreeMap
-
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
 import org.junit.After
 import org.junit.Before
 import org.scalatest.junit.JUnitSuite
-
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
 import akka.performance.trading.domain.Order
@@ -17,8 +14,11 @@ import akka.performance.trading.domain.TotalTradeCounter
 import akka.performance.workbench.BenchResultRepository
 import akka.performance.workbench.Report
 import akka.performance.workbench.Stats
+import akka.AkkaApplication
 
 trait PerformanceTest extends JUnitSuite {
+
+  def app: AkkaApplication
 
   //    jvm parameters
   //    -server -Xms512m -Xmx1024m -XX:+UseConcMarkSweepGC
@@ -49,10 +49,14 @@ trait PerformanceTest extends JUnitSuite {
     System.getProperty("benchmark.timeDilation", "1").toLong
   }
 
+  def sampling = {
+    System.getProperty("benchmark.sampling", "100").toInt
+  }
+
   var stat: DescriptiveStatistics = _
 
-  val resultRepository = BenchResultRepository()
-  lazy val report = new Report(resultRepository, compareResultWith)
+  val resultRepository = BenchResultRepository(app)
+  lazy val report = new Report(app, resultRepository, compareResultWith)
 
   type TS <: TradingSystem
 
@@ -113,16 +117,18 @@ trait PerformanceTest extends JUnitSuite {
       75 -> (stat.getPercentile(75.0) / 1000).toLong,
       95 -> (stat.getPercentile(95.0) / 1000).toLong)
 
+    val n = stat.getN * sampling
+
     val stats = Stats(
       name,
       load = numberOfClients,
       timestamp = TestStart.startTime,
       durationNanos = durationNs,
-      n = stat.getN,
+      n = n,
       min = (stat.getMin / 1000).toLong,
       max = (stat.getMax / 1000).toLong,
       mean = (stat.getMean / 1000).toLong,
-      tps = (stat.getN.toDouble / durationS),
+      tps = (n.toDouble / durationS),
       percentiles)
 
     resultRepository.add(stats)

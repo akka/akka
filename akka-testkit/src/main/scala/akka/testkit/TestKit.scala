@@ -7,11 +7,10 @@ import akka.actor._
 import Actor._
 import akka.util.Duration
 import akka.util.duration._
-
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
-
 import scala.annotation.tailrec
+import akka.AkkaApplication
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -87,9 +86,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
  * @author Roland Kuhn
  * @since 1.1
  */
-trait TestKitLight {
+class TestKit(_app: AkkaApplication) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
+
+  implicit val app = _app
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -98,14 +99,7 @@ trait TestKitLight {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor = new LocalActorRef(Props(new TestActor(queue)).copy(dispatcher = CallingThreadDispatcher.global), "testActor" + TestKit.testActorId.incrementAndGet(), true)
-
-  /**
-   * Implicit sender reference so that replies are possible for messages sent
-   * from the test class.
-   */
-  @deprecated("will be removed after 1.2, replaced by implicit testActor", "1.2")
-  val senderOption = Some(testActor)
+  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)), "testActor" + TestKit.testActorId.incrementAndGet(), true)
 
   private var end: Duration = Duration.Inf
 
@@ -231,14 +225,6 @@ trait TestKitLight {
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
-   * Send reply to the last dequeued message. Will throw
-   * IllegalActorStateException if no message has been dequeued, yet. Dequeuing
-   * means reception of the message as part of an expect... or receive... call,
-   * not reception by the testActor.
-   */
-  def reply(msg: AnyRef) { lastMessage.channel ! msg }
-
-  /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
    */
   def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)
@@ -273,8 +259,29 @@ trait TestKitLight {
     val _max = if (max eq Duration.MinusInf) remaining else max.dilated
     val o = receiveOne(_max)
     assert(o ne null, "timeout during expectMsg: " + hint)
-    assert(f.isDefinedAt(o), "does not match: " + o)
+    assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
+  }
+
+  /**
+   * Hybrid of expectMsgPF and receiveWhile: receive messages while the
+   * partial function matches and returns false. Use it to ignore certain
+   * messages while waiting for a specific message.
+   *
+   * @return the last received messsage, i.e. the first one for which the
+   *         partial function returned true
+   */
+  def fishForMessage(max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
+    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+    val end = now + _max
+    @tailrec
+    def recv: Any = {
+      val o = receiveOne(end - now)
+      assert(o ne null, "timeout during fishForMessage, hint: " + hint)
+      assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
+      if (f(o)) o else recv
+    }
+    recv
   }
 
   /**
@@ -548,14 +555,10 @@ object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 }
 
-trait TestKit extends TestKitLight {
-  implicit val self = testActor
-}
-
 /**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe extends TestKit {
+class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
 
   /**
    * Shorthand to get the testActor.
@@ -568,7 +571,7 @@ class TestProbe extends TestKit {
    * methods.
    */
   def send(actor: ActorRef, msg: AnyRef) = {
-    actor ! msg
+    actor.!(msg)(testActor)
   }
 
   /**
@@ -586,5 +589,9 @@ class TestProbe extends TestKit {
 }
 
 object TestProbe {
-  def apply() = new TestProbe
+  def apply()(implicit app: AkkaApplication) = new TestProbe(app)
+}
+
+trait ImplicitSender { this: TestKit ⇒
+  implicit def implicitSenderTestActor = testActor
 }

@@ -7,21 +7,22 @@ package akka.actor
 import java.io.File
 import java.net.{ URL, URLClassLoader }
 import java.util.jar.JarFile
-
-import akka.util.{ Bootable }
-import akka.config.Config._
+import akka.util.Bootable
+import akka.AkkaApplication
 
 /**
  * Handles all modules in the deploy directory (load and unload)
  */
 trait BootableActorLoaderService extends Bootable {
 
-  val BOOT_CLASSES = config.getList("akka.boot")
-  lazy val applicationLoader: Option[ClassLoader] = createApplicationClassLoader
+  def app: AkkaApplication
 
-  protected def createApplicationClassLoader: Option[ClassLoader] = Some({
-    if (HOME.isDefined) {
-      val DEPLOY = HOME.get + "/deploy"
+  val BOOT_CLASSES = app.AkkaConfig.BootClasses
+  lazy val applicationLoader = createApplicationClassLoader()
+
+  protected def createApplicationClassLoader(): Option[ClassLoader] = Some({
+    if (app.AkkaConfig.Home.isDefined) {
+      val DEPLOY = app.AkkaConfig.Home.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         System.exit(-1)
@@ -45,8 +46,8 @@ trait BootableActorLoaderService extends Bootable {
     } else Thread.currentThread.getContextClassLoader
   })
 
-  abstract override def onLoad = {
-    super.onLoad
+  abstract override def onLoad() = {
+    super.onLoad()
 
     applicationLoader foreach Thread.currentThread.setContextClassLoader
 
@@ -55,15 +56,15 @@ trait BootableActorLoaderService extends Bootable {
     }
   }
 
-  abstract override def onUnload = {
-    super.onUnload
+  abstract override def onUnload() = {
+    super.onUnload()
 
     // FIXME shutdown all actors
-    //Actor.registry.local.shutdownAll
+    // app.registry.local.shutdownAll
   }
 }
 
 /**
  * Java API for the default JAX-RS/Mist Initializer
  */
-class DefaultBootableActorLoaderService extends BootableActorLoaderService
+class DefaultBootableActorLoaderService(val app: AkkaApplication) extends BootableActorLoaderService

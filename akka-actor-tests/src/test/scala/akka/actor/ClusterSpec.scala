@@ -1,14 +1,15 @@
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import akka.config.Config
+import akka.testkit.AkkaSpec
 
-class ClusterSpec extends WordSpec with MustMatchers {
+class ClusterSpec extends AkkaSpec {
 
   "ClusterSpec: A Deployer" must {
     "be able to parse 'akka.actor.cluster._' config elements" in {
-      import Config.config._
+
+      // TODO: make it use its own special config?
+      val config = app.config
+      import config._
 
       //akka.cluster
       getString("akka.cluster.name") must equal(Some("test-cluster"))

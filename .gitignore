@@ -39,8 +39,10 @@ run-codefellow
 .project
 .settings
 .classpath
+.cache
 .idea
 .scala_dependencies
+.cache
 multiverse.log
 .eprj
 .*.swp
@@ -54,3 +56,4 @@ Makefile
 akka.sublime-project
 akka.sublime-workspace
 .target
+.multi-jvm

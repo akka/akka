@@ -1,15 +1,12 @@
 package akka.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.actor.Actor._
 import akka.testkit.Testing._
-import akka.actor.{ TypedActor, Actor, Props }
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import akka.testkit.AkkaSpec
 
 object ActorPoolSpec {
 
@@ -18,6 +15,7 @@ object ActorPoolSpec {
   }
 
   class FooImpl extends Foo {
+    import TypedActor.dispatcher
     def sq(x: Int, sleep: Long): Future[Int] = {
       if (sleep > 0) Thread.sleep(sleep)
       new KeptPromise(Right(x * x))
@@ -27,8 +25,8 @@ object ActorPoolSpec {
   val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
 }
 
-class ActorPoolSpec extends WordSpec with MustMatchers {
-  import akka.routing.ActorPoolSpec._
+class ActorPoolSpec extends AkkaSpec {
+  import ActorPoolSpec._
 
   "Actor Pool" must {
 
@@ -43,7 +41,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                tryReply("success")
+                channel.tryTell("success")
             }
           }))
 
@@ -90,7 +88,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                tryReply("Response")
+                channel.tryTell("Response")
               }
             }
           }))
@@ -332,7 +330,7 @@ class ActorPoolSpec extends WordSpec with MustMatchers {
 
     "support typed actors" in {
       import RoutingSpec._
-      import TypedActor._
+      import app.typedActor._
       def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5

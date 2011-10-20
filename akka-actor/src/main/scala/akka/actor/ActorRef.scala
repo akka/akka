@@ -6,13 +6,10 @@ package akka.actor
 
 import akka.dispatch._
 import akka.util._
-import akka.serialization.{ Serializer, Serialization }
-import ReflectiveAccess._
-import ClusterModule._
-import java.net.InetSocketAddress
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
-import akka.event.{ EventHandler, InVMMonitoring }
+import akka.AkkaApplication
+import akka.event.ActorEventBus
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -48,7 +45,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
-  private[akka] val uuid = newUuid
+  private[akka] def uuid: Uuid
 
   def address: String
 
@@ -56,15 +53,6 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    * Comparison only takes address into account.
    */
   def compareTo(other: ActorRef) = this.address compareTo other.address
-
-  protected[akka] def timeout: Long = Props.defaultTimeout.duration.toMillis //TODO Remove me if possible
-
-  /**
-   * Akka Java API. <p/>
-   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
-   * Uses the Actors default timeout (setTimeout()) and omits the sender
-   */
-  def ask(message: AnyRef): Future[AnyRef] = ask(message, timeout, null)
 
   /**
    * Akka Java API. <p/>
@@ -75,20 +63,13 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
 
   /**
    * Akka Java API. <p/>
-   * @see ask(message: AnyRef, sender: ActorRef): Future[_]
-   * Uses the Actors default timeout (setTimeout())
-   */
-  def ask(message: AnyRef, sender: ActorRef): Future[AnyRef] = ask(message, timeout, sender)
-
-  /**
-   * Akka Java API. <p/>
    * Sends a message asynchronously returns a future holding the eventual reply message.
    * <p/>
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().channel().tell(...)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =
@@ -124,19 +105,22 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   def isShutdown: Boolean
 
   /**
-   * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
-   * receive a notification if the linked actor has crashed.
-   * <p/>
-   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
-   * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
-   * defined by the 'faultHandler'.
+   * Registers this actor to be a death monitor of the provided ActorRef
+   * This means that this actor will get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def link(actorRef: ActorRef): ActorRef
+  def startsMonitoring(subject: ActorRef): ActorRef
 
   /**
-   * Unlink the actor.
+   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * This means that this actor will not get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def unlink(actorRef: ActorRef): ActorRef
+  def stopsMonitoring(subject: ActorRef): ActorRef
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
 
@@ -163,28 +147,21 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  private[this] val props: Props,
-  val address: String,
+  app: AkkaApplication,
+  props: Props,
+  givenAddress: String, //Never refer to this internally instead use "address"
   val systemService: Boolean = false,
-  override private[akka] val uuid: Uuid = newUuid,
+  private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
-  hotswap: Stack[PartialFunction[Any, Unit]] = Stack.empty)
+  hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
-  // used only for deserialization
-  private[akka] def this(
-    __uuid: Uuid,
-    __address: String,
-    __props: Props,
-    __receiveTimeout: Option[Long],
-    __hotswap: Stack[PartialFunction[Any, Unit]]) = {
-
-    this(__props, __address, false, __uuid, __receiveTimeout, __hotswap)
-
-    actorCell.setActorContext(actorCell) // this is needed for deserialization - why?
+  final val address: String = givenAddress match {
+    case null | Props.randomAddress ⇒ uuid.toString
+    case other                      ⇒ other
   }
 
-  private[this] val actorCell = new ActorCell(this, props, receiveTimeout, hotswap)
+  private[this] val actorCell = new ActorCell(app, this, props, receiveTimeout, hotswap)
   actorCell.start()
 
   /**
@@ -216,25 +193,22 @@ class LocalActorRef private[akka] (
   def stop(): Unit = actorCell.stop()
 
   /**
-   * Links an other actor to this actor. Links are unidirectional and means that a the linking actor will
-   * receive a notification if the linked actor has crashed.
-   * <p/>
-   * If the 'trapExit' member field of the 'faultHandler' has been set to at contain at least one exception class then it will
-   * 'trap' these exceptions and automatically restart the linked actors according to the restart strategy
-   * defined by the 'faultHandler'.
-   * <p/>
-   * To be invoked from within the actor itself.
-   * Returns the ref that was passed into it
+   * Registers this actor to be a death monitor of the provided ActorRef
+   * This means that this actor will get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def link(subject: ActorRef): ActorRef = actorCell.link(subject)
+  def startsMonitoring(subject: ActorRef): ActorRef = actorCell.startsMonitoring(subject)
 
   /**
-   * Unlink the actor.
-   * <p/>
-   * To be invoked from within the actor itself.
-   * Returns the ref that was passed into it
+   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * This means that this actor will not get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def unlink(subject: ActorRef): ActorRef = actorCell.unlink(subject)
+  def stopsMonitoring(subject: ActorRef): ActorRef = actorCell.stopsMonitoring(subject)
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -250,8 +224,6 @@ class LocalActorRef private[akka] (
     }
     instance
   }
-
-  protected[akka] override def timeout: Long = props.timeout.duration.toMillis // TODO: remove this if possible
 
   protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit =
     actorCell.postMessageToMailbox(message, channel)
@@ -271,87 +243,10 @@ class LocalActorRef private[akka] (
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = {
-    val inetaddr =
-      if (ReflectiveAccess.RemoteModule.isEnabled) Actor.remote.address
-      else ReflectiveAccess.RemoteModule.configDefaultAddress
-    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort, timeout)
+    // TODO: this was used to really send LocalActorRef across the network, which is broken now
+    val inetaddr = app.defaultAddress
+    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
   }
-}
-
-/**
- * System messages for RemoteActorRef.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object RemoteActorSystemMessage {
-  val Stop = "RemoteActorRef:stop".intern
-}
-
-/**
- * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
- * This reference is network-aware (remembers its origin) and immutable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] case class RemoteActorRef private[akka] (
-  val remoteAddress: InetSocketAddress,
-  val address: String,
-  _timeout: Long,
-  loader: Option[ClassLoader])
-  extends ActorRef with ScalaActorRef {
-
-  @volatile
-  private var running: Boolean = true
-
-  def isShutdown: Boolean = !running
-
-  RemoteModule.ensureEnabled()
-
-  protected[akka] override def timeout: Long = _timeout
-
-  def postMessageToMailbox(message: Any, channel: UntypedChannel) {
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    Actor.remote.send[Any](message, chSender, None, remoteAddress, timeout, true, this, loader)
-  }
-
-  def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
-
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    val chFuture = if (channel.isInstanceOf[Promise[_]]) Some(channel.asInstanceOf[Promise[Any]]) else None
-    val future = Actor.remote.send[Any](message, chSender, chFuture, remoteAddress, timeout.duration.toMillis, false, this, loader)
-
-    if (future.isDefined) ActorPromise(future.get)
-    else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-  }
-
-  def suspend(): Unit = unsupported
-
-  def resume(): Unit = unsupported
-
-  def stop() { //FIXME send the cause as well!
-    synchronized {
-      if (running) {
-        running = false
-        postMessageToMailbox(RemoteActorSystemMessage.Stop, None)
-      }
-    }
-  }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, timeout)
-  }
-
-  def link(actorRef: ActorRef): ActorRef = unsupported
-
-  def unlink(actorRef: ActorRef): ActorRef = unsupported
-
-  protected[akka] def restart(cause: Throwable): Unit = unsupported
-
-  private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
 
 /**
@@ -413,22 +308,20 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRe
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-case class SerializedActorRef(uuid: Uuid,
-                              address: String,
-                              hostname: String,
-                              port: Int,
-                              timeout: Long) {
+
+case class SerializedActorRef(uuid: Uuid, address: String, hostname: String, port: Int) {
+
+  import akka.serialization.Serialization.app
+
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = Actor.provider.actorFor(address) match {
-    case Some(actor) ⇒ actor
-    case None ⇒
-      //TODO FIXME Add case for when hostname+port == remote.address.hostname+port, should return a DeadActorRef or something
-      if (ReflectiveAccess.RemoteModule.isEnabled)
-        RemoteActorRef(new InetSocketAddress(hostname, port), address, timeout, None)
-      else
-        throw new IllegalStateException(
-          "Trying to deserialize ActorRef [" + this +
-            "] but it's not found in the local registry and remoting is not enabled.")
+  def readResolve(): AnyRef = {
+    if (app.value eq null) throw new IllegalStateException(
+      "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
+    app.value.provider.deserialize(this) match {
+      case Some(actor) ⇒ actor
+      case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
+    }
   }
 }
 
@@ -437,9 +330,9 @@ case class SerializedActorRef(uuid: Uuid,
  */
 trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
-  def link(actorRef: ActorRef): ActorRef = unsupported
+  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
-  def unlink(actorRef: ActorRef): ActorRef = unsupported
+  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
   def suspend(): Unit = unsupported
 
@@ -450,22 +343,26 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
-object DeadLetterActorRef extends UnsupportedActorRef {
-  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))
+case class DeadLetter(message: Any, channel: UntypedChannel)
+
+class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
+  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   val address: String = "akka:internal:DeadLetterActorRef"
 
-  override def link(actorRef: ActorRef): ActorRef = actorRef
+  private[akka] val uuid: akka.actor.Uuid = new com.eaio.uuid.UUID(0L, 0L) //Nil UUID
 
-  override def unlink(actorRef: ActorRef): ActorRef = actorRef
+  override def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
+
+  override def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
 
   def isShutdown(): Boolean = true
 
   def stop(): Unit = ()
 
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = EventHandler.debug(this, message)
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.notify(DeadLetter(message, channel))
 
   protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = { EventHandler.debug(this, message); brokenPromise }
+    channel: UntypedChannel): Future[Any] = { app.eventHandler.notify(DeadLetter(message, channel)); brokenPromise }
 }

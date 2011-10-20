@@ -3,30 +3,26 @@
  */
 package akka.actor
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
-import org.scalatest.matchers.MustMatchers
-import akka.testkit.TestKit
+import org.scalatest.BeforeAndAfterAll
 import akka.dispatch.FutureTimeoutException
 import akka.util.duration._
+import akka.testkit.AkkaSpec
 
-class ActorTimeoutSpec
-  extends WordSpec
-  with BeforeAndAfterAll
-  with MustMatchers
-  with TestKit {
+class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll {
 
-  def actorWithTimeout(t: Timeout): ActorRef = Actor.actorOf(Props(creator = () ⇒ new Actor {
+  def actorWithTimeout(t: Timeout): ActorRef = actorOf(Props(creator = () ⇒ new Actor {
     def receive = {
       case x ⇒
     }
   }, timeout = t))
 
-  val testTimeout = if (Timeout.default.duration < 400.millis) 500 millis else 100 millis
+  val defaultTimeout = app.AkkaConfig.ActorTimeout.duration
+  val testTimeout = if (app.AkkaConfig.ActorTimeout.duration < 400.millis) 500 millis else 100 millis
 
   "An Actor-based Future" must {
 
     "use the global default timeout if no implicit in scope" in {
-      within((Actor.TIMEOUT - 100).millis, (Actor.TIMEOUT + 400).millis) {
+      within(defaultTimeout - 100.millis, defaultTimeout + 400.millis) {
         val echo = actorWithTimeout(Timeout(12))
         try {
           val f = echo ? "hallo"

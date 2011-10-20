@@ -4,13 +4,9 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.util.duration._
 import akka.testkit.Testing.sleepFor
-import akka.actor.Actor._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
@@ -23,13 +19,13 @@ object LocalActorRefProviderSpec {
   }
 }
 
-class LocalActorRefProviderSpec extends WordSpec with MustMatchers {
+class LocalActorRefProviderSpec extends AkkaSpec {
   import akka.actor.LocalActorRefProviderSpec._
 
   "An LocalActorRefProvider" must {
 
     "only create one instance of an actor with a specific address in a concurrent environment" in {
-      val provider = new LocalActorRefProvider
+      val provider = app.provider
 
       for (i ← 0 until 100) { // 100 concurrent runs
         val latch = new CountDownLatch(4)
@@ -42,19 +38,19 @@ class LocalActorRefProviderSpec extends WordSpec with MustMatchers {
         val address = "new-actor" + i
 
         spawn {
-          a1 = provider.actorOf(Props(creator = () ⇒ new NewActor), address, false)
+          a1 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a2 = provider.actorOf(Props(creator = () ⇒ new NewActor), address, false)
+          a2 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a3 = provider.actorOf(Props(creator = () ⇒ new NewActor), address, false)
+          a3 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
         spawn {
-          a4 = provider.actorOf(Props(creator = () ⇒ new NewActor), address, false)
+          a4 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
           latch.countDown()
         }
 
@@ -65,7 +61,7 @@ class LocalActorRefProviderSpec extends WordSpec with MustMatchers {
         a3.isDefined must be(true)
         a4.isDefined must be(true)
         (a1 == a2) must be(true)
-        (a1 == a2) must be(true)
+        (a1 == a3) must be(true)
         (a1 == a4) must be(true)
       }
     }

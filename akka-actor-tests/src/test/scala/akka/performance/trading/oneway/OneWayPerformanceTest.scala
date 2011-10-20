@@ -1,21 +1,19 @@
 package akka.performance.trading.oneway
 
 import java.util.concurrent.TimeUnit
-
 import org.junit.Test
-
-import akka.actor.Actor.actorOf
 import akka.performance.trading.common.AkkaPerformanceTest
 import akka.performance.trading.common.Rsp
 import akka.performance.trading.domain._
 import akka.actor.{ Props, ActorRef }
+import akka.AkkaApplication
 
-class OneWayPerformanceTest extends AkkaPerformanceTest {
+class OneWayPerformanceTest extends AkkaPerformanceTest(AkkaApplication()) {
 
-  override def createTradingSystem: TS = new OneWayTradingSystem {
+  override def createTradingSystem: TS = new OneWayTradingSystem(app) {
     override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
-      case Some(d) ⇒ actorOf(Props(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown).withDispatcher(d))
-      case _       ⇒ actorOf(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown)
+      case Some(d) ⇒ app.actorOf(Props(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown).withDispatcher(d))
+      case _       ⇒ app.actorOf(new OneWayMatchingEngine(meId, orderbooks) with LatchMessageCountDown)
     }
   }
 

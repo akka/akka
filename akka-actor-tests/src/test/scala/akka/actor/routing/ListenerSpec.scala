@@ -1,15 +1,12 @@
 package akka.actor.routing
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
 
-class ListenerSpec extends WordSpec with MustMatchers {
+class ListenerSpec extends AkkaSpec {
 
   "Listener" must {
 

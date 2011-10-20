@@ -5,7 +5,6 @@
 package akka.transactor
 
 import akka.AkkaException
-import akka.config.Config
 import akka.stm.{ Atomic, DefaultTransactionConfig, TransactionFactory }
 
 import org.multiverse.commitbarriers.CountDownCommitBarrier
@@ -26,13 +25,12 @@ class CoordinatedTransactionException(message: String, cause: Throwable = null) 
  */
 object Coordinated {
   val DefaultFactory = TransactionFactory(DefaultTransactionConfig, "DefaultCoordinatedTransaction")
-  val Fair = Config.config.getBool("akka.stm.fair", true)
 
   def apply(message: Any = null) = new Coordinated(message, createBarrier)
 
   def unapply(c: Coordinated): Option[Any] = Some(c.message)
 
-  def createBarrier = new CountDownCommitBarrier(1, Fair)
+  def createBarrier = new CountDownCommitBarrier(1, true)
 }
 
 /**

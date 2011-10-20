@@ -4,14 +4,9 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import akka.testkit._
 
-import Actor._
-
-class HotSwapSpec extends WordSpec with MustMatchers {
+class HotSwapSpec extends AkkaSpec {
 
   "An Actor" must {
 

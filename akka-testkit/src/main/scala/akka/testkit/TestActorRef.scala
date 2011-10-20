@@ -7,9 +7,9 @@ package akka.testkit
 import akka.actor._
 import akka.util.ReflectiveAccess
 import akka.event.EventHandler
-
 import com.eaio.uuid.UUID
 import akka.actor.Props._
+import akka.AkkaApplication
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -19,7 +19,8 @@ import akka.actor.Props._
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActorRef(props.withDispatcher(CallingThreadDispatcher.global), address, false) {
+class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: String)
+  extends LocalActorRef(_app, props.withDispatcher(new CallingThreadDispatcher(_app)), address, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -41,19 +42,19 @@ class TestActorRef[T <: Actor](props: Props, address: String) extends LocalActor
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: ⇒ T): TestActorRef[T] = apply[T](Props(factory), new UUID().toString)
+  def apply[T <: Actor](factory: ⇒ T)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), Props.randomAddress)
 
-  def apply[T <: Actor](factory: ⇒ T, address: String): TestActorRef[T] = apply[T](Props(factory), address)
+  def apply[T <: Actor](factory: ⇒ T, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), address)
 
-  def apply[T <: Actor](props: Props): TestActorRef[T] = apply[T](props, new UUID().toString)
+  def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, Props.randomAddress)
 
-  def apply[T <: Actor](props: Props, address: String): TestActorRef[T] = new TestActorRef(props, address)
+  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = new TestActorRef(app, props, address)
 
-  def apply[T <: Actor: Manifest]: TestActorRef[T] = apply[T](new UUID().toString)
+  def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomAddress)
 
-  def apply[T <: Actor: Manifest](address: String): TestActorRef[T] = apply[T](Props({
+  def apply[T <: Actor](address: String)(implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[T](manifest[T].erasure, noParams, noArgs) match {
+    createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value
       case Left(exception) ⇒ throw new ActorInitializationException(
         "Could not instantiate Actor" +

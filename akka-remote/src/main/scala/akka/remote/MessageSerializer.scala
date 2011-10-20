@@ -6,20 +6,20 @@ package akka.remote
 
 import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
-
 import com.google.protobuf.ByteString
+import akka.AkkaApplication
 
 object MessageSerializer {
 
-  def deserialize(messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
+  def deserialize(app: AkkaApplication, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
     val clazz = loadManifest(classLoader, messageProtocol)
-    Serialization.deserialize(messageProtocol.getMessage.toByteArray,
+    app.serialization.deserialize(messageProtocol.getMessage.toByteArray,
       clazz, classLoader).fold(x ⇒ throw x, o ⇒ o)
   }
 
-  def serialize(message: AnyRef): MessageProtocol = {
+  def serialize(app: AkkaApplication, message: AnyRef): MessageProtocol = {
     val builder = MessageProtocol.newBuilder
-    val bytes = Serialization.serialize(message).fold(x ⇒ throw x, b ⇒ b)
+    val bytes = app.serialization.serialize(message).fold(x ⇒ throw x, b ⇒ b)
     builder.setMessage(ByteString.copyFrom(bytes))
     builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
     builder.build

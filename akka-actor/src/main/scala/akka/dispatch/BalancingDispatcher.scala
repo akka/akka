@@ -9,6 +9,7 @@ import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import java.util.{ Comparator, Queue }
 import annotation.tailrec
+import akka.AkkaApplication
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -27,30 +28,14 @@ import annotation.tailrec
  * @author Viktor Klang
  */
 class BalancingDispatcher(
+  _app: AkkaApplication,
   _name: String,
-  throughput: Int = Dispatchers.THROUGHPUT,
-  throughputDeadlineTime: Int = Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS,
-  mailboxType: MailboxType = Dispatchers.MAILBOX_TYPE,
-  config: ThreadPoolConfig = ThreadPoolConfig())
-  extends Dispatcher(_name, throughput, throughputDeadlineTime, mailboxType, config) {
-
-  def this(_name: String, throughput: Int, throughputDeadlineTime: Int, mailboxType: MailboxType) =
-    this(_name, throughput, throughputDeadlineTime, mailboxType, ThreadPoolConfig()) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int, mailboxType: MailboxType) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
-
-  def this(_name: String, throughput: Int) =
-    this(_name, throughput, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-
-  def this(_name: String, _config: ThreadPoolConfig) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE, _config)
-
-  def this(_name: String, memberType: Class[_ <: Actor]) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, Dispatchers.MAILBOX_TYPE) // Needed for Java API usage
-
-  def this(_name: String, mailboxType: MailboxType) =
-    this(_name, Dispatchers.THROUGHPUT, Dispatchers.THROUGHPUT_DEADLINE_TIME_MILLIS, mailboxType) // Needed for Java API usage
+  throughput: Int,
+  throughputDeadlineTime: Int,
+  mailboxType: MailboxType,
+  config: ThreadPoolConfig,
+  _timeoutMs: Long)
+  extends Dispatcher(_app, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
   private val buddies = new ConcurrentSkipListSet[ActorCell](new Comparator[ActorCell] { def compare(a: ActorCell, b: ActorCell) = a.uuid.compareTo(b.uuid) }) //new ConcurrentLinkedQueue[ActorCell]()
 
@@ -69,15 +54,10 @@ class BalancingDispatcher(
 
   protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
 
-  class SharingMailbox(val actor: ActorCell) extends Mailbox with DefaultSystemMessageQueue {
+  class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
     final def enqueue(handle: Envelope) = messageQueue.enqueue(handle)
 
-    final def dequeue(): Envelope = {
-      val envelope = messageQueue.dequeue()
-      if (envelope eq null) null
-      else if (envelope.receiver eq actor) envelope
-      else envelope.copy(receiver = actor)
-    }
+    final def dequeue(): Envelope = messageQueue.dequeue()
 
     final def numberOfMessages: Int = messageQueue.numberOfMessages
 
@@ -106,10 +86,12 @@ class BalancingDispatcher(
 
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
     if (mailBox.hasSystemMessages) {
-      var envelope = mailBox.systemDequeue()
-      while (envelope ne null) {
-        deadLetterMailbox.systemEnqueue(envelope) //Send to dead letter queue
-        envelope = mailBox.systemDequeue()
+      var messages = mailBox.systemDrain()
+      while (messages ne null) {
+        deadLetterMailbox.systemEnqueue(messages) //Send to dead letter queue
+        messages = messages.next
+        if (messages eq null) //Make sure that any system messages received after the current drain are also sent to the dead letter mbox
+          messages = mailBox.systemDrain()
       }
     }
   }
@@ -121,8 +103,7 @@ class BalancingDispatcher(
     } else true
   }
 
-  override protected[akka] def dispatch(invocation: Envelope) = {
-    val receiver = invocation.receiver
+  override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue enqueue invocation
 
     val buddy = buddies.pollFirst()

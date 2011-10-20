@@ -189,7 +189,6 @@
     override def postStop() {
       EventHandler.info(this, "Chat server is shutting down...")
       shutdownSessions()
-      self.unlink(storage)
       storage.stop()
     }
   }

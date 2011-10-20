@@ -9,24 +9,24 @@ import java.lang.{ Boolean ⇒ JBoolean }
 import akka.util.Duration
 
 import org.multiverse.api.{ TraceLevel ⇒ MTraceLevel }
-import org.multiverse.api.{ PropagationLevel ⇒ MPropagation }
+import org.multiverse.api.PropagationLevel
 
 /**
  * For more easily creating TransactionConfig from Java.
  */
 class TransactionConfigBuilder {
-  var familyName: String = TransactionConfig.FAMILY_NAME
-  var readonly: JBoolean = TransactionConfig.READONLY
-  var maxRetries: Int = TransactionConfig.MAX_RETRIES
-  var timeout: Duration = TransactionConfig.DefaultTimeout
-  var trackReads: JBoolean = TransactionConfig.TRACK_READS
-  var writeSkew: Boolean = TransactionConfig.WRITE_SKEW
-  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
-  var interruptible: Boolean = TransactionConfig.INTERRUPTIBLE
-  var speculative: Boolean = TransactionConfig.SPECULATIVE
-  var quickRelease: Boolean = TransactionConfig.QUICK_RELEASE
-  var propagation: MPropagation = TransactionConfig.PROPAGATION
-  var traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL
+  var familyName: String = TransactionConfig.Default.FamilyName
+  var readonly: JBoolean = TransactionConfig.Default.Readonly
+  var maxRetries: Int = TransactionConfig.Default.MaxRetries
+  var timeout: Duration = TransactionConfig.Default.Timeout
+  var trackReads: JBoolean = TransactionConfig.Default.TrackReads
+  var writeSkew: Boolean = TransactionConfig.Default.WriteSkew
+  var blockingAllowed: Boolean = TransactionConfig.Default.BlockingAllowed
+  var interruptible: Boolean = TransactionConfig.Default.Interruptible
+  var speculative: Boolean = TransactionConfig.Default.Speculative
+  var quickRelease: Boolean = TransactionConfig.Default.QuickRelease
+  var propagation: PropagationLevel = TransactionConfig.Default.Propagation
+  var traceLevel: MTraceLevel = TransactionConfig.Default.TraceLevel
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }
@@ -38,7 +38,7 @@ class TransactionConfigBuilder {
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
-  def setPropagation(propagation: MPropagation) = { this.propagation = propagation; this }
+  def setPropagation(propagation: PropagationLevel) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: MTraceLevel) = { this.traceLevel = traceLevel; this }
 
   def build() = new TransactionConfig(
@@ -50,18 +50,18 @@ class TransactionConfigBuilder {
  * For more easily creating TransactionFactory from Java.
  */
 class TransactionFactoryBuilder {
-  var familyName: String = TransactionConfig.FAMILY_NAME
-  var readonly: JBoolean = TransactionConfig.READONLY
-  var maxRetries: Int = TransactionConfig.MAX_RETRIES
-  var timeout: Duration = TransactionConfig.DefaultTimeout
-  var trackReads: JBoolean = TransactionConfig.TRACK_READS
-  var writeSkew: Boolean = TransactionConfig.WRITE_SKEW
-  var blockingAllowed: Boolean = TransactionConfig.BLOCKING_ALLOWED
-  var interruptible: Boolean = TransactionConfig.INTERRUPTIBLE
-  var speculative: Boolean = TransactionConfig.SPECULATIVE
-  var quickRelease: Boolean = TransactionConfig.QUICK_RELEASE
-  var propagation: MPropagation = TransactionConfig.PROPAGATION
-  var traceLevel: MTraceLevel = TransactionConfig.TRACE_LEVEL
+  var familyName: String = TransactionConfig.Default.FamilyName
+  var readonly: JBoolean = TransactionConfig.Default.Readonly
+  var maxRetries: Int = TransactionConfig.Default.MaxRetries
+  var timeout: Duration = TransactionConfig.Default.Timeout
+  var trackReads: JBoolean = TransactionConfig.Default.TrackReads
+  var writeSkew: Boolean = TransactionConfig.Default.WriteSkew
+  var blockingAllowed: Boolean = TransactionConfig.Default.BlockingAllowed
+  var interruptible: Boolean = TransactionConfig.Default.Interruptible
+  var speculative: Boolean = TransactionConfig.Default.Speculative
+  var quickRelease: Boolean = TransactionConfig.Default.QuickRelease
+  var propagation: PropagationLevel = TransactionConfig.Default.Propagation
+  var traceLevel: MTraceLevel = TransactionConfig.Default.TraceLevel
 
   def setFamilyName(familyName: String) = { this.familyName = familyName; this }
   def setReadonly(readonly: JBoolean) = { this.readonly = readonly; this }
@@ -73,7 +73,7 @@ class TransactionFactoryBuilder {
   def setInterruptible(interruptible: Boolean) = { this.interruptible = interruptible; this }
   def setSpeculative(speculative: Boolean) = { this.speculative = speculative; this }
   def setQuickRelease(quickRelease: Boolean) = { this.quickRelease = quickRelease; this }
-  def setPropagation(propagation: MPropagation) = { this.propagation = propagation; this }
+  def setPropagation(propagation: PropagationLevel) = { this.propagation = propagation; this }
   def setTraceLevel(traceLevel: MTraceLevel) = { this.traceLevel = traceLevel; this }
 
   def build() = {

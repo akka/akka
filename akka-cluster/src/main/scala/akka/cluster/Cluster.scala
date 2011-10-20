@@ -1761,7 +1761,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       }
     }
 
-    def createActorRefToUseForReplay(snapshotAsBytes: Option[Array[Byte]], actorAddress: String, newActorRef: LocalActorRef): ActorRef = {
+    def actorOfRefToUseForReplay(snapshotAsBytes: Option[Array[Byte]], actorAddress: String, newActorRef: LocalActorRef): ActorRef = {
       snapshotAsBytes match {
 
         // we have a new actor ref - the snapshot
@@ -1816,7 +1816,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
                 val (snapshotAsBytes, entriesAsBytes) = readonlyTxLog.latestSnapshotAndSubsequentEntries
 
                 // deserialize and restore actor snapshot. This call will automatically recreate a transaction log.
-                val actorRef = createActorRefToUseForReplay(snapshotAsBytes, actorAddress, newActorRef)
+                val actorRef = actorOfRefToUseForReplay(snapshotAsBytes, actorAddress, newActorRef)
 
                 // deserialize the messages
                 val messages: Vector[AnyRef] = deserializeMessages(entriesAsBytes)
@@ -1860,7 +1860,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case f: Function0[_] ⇒ try { f() } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
@@ -1868,7 +1868,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
@@ -1876,7 +1876,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
@@ -1884,7 +1884,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), newUuid.toString, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteProtocol.RemoteDaemonMessageProtocol) {
