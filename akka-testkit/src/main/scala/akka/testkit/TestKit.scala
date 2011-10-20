@@ -264,6 +264,27 @@ class TestKit(_app: AkkaApplication) {
   }
 
   /**
+   * Hybrid of expectMsgPF and receiveWhile: receive messages while the
+   * partial function matches and returns false. Use it to ignore certain
+   * messages while waiting for a specific message.
+   *
+   * @return the last received messsage, i.e. the first one for which the
+   *         partial function returned true
+   */
+  def fishForMessage(max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
+    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+    val end = now + _max
+    @tailrec
+    def recv: Any = {
+      val o = receiveOne(end - now)
+      assert(o ne null, "timeout during fishForMessage, hint: " + hint)
+      assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
+      if (f(o)) o else recv
+    }
+    recv
+  }
+
+  /**
    * Same as `expectMsgType[T](remaining)`, but correctly treating the timeFactor.
    */
   def expectMsgType[T](implicit m: Manifest[T]): T = expectMsgClass_internal(remaining, m.erasure.asInstanceOf[Class[T]])
