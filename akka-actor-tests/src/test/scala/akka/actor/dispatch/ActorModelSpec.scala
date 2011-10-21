@@ -243,6 +243,9 @@ abstract class ActorModelSpec extends AkkaSpec {
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String
 
+  // BalancingDispatcher of course does not work when another actor is in the pool, so overridden below
+  protected def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = dispatcher
+
   "A " + dispatcherType must {
 
     "must dynamically handle its own life cycle" in {
@@ -325,28 +328,6 @@ abstract class ActorModelSpec extends AkkaSpec {
       thread.start()
     }
 
-    "process messages in parallel" in {
-      implicit val dispatcher = newInterceptedDispatcher
-      val aStart, aStop, bParallel = new CountDownLatch(1)
-      val a, b = newTestActor(dispatcher)
-
-      a ! Meet(aStart, aStop)
-      assertCountDown(aStart, Testing.testTime(3000), "Should process first message within 3 seconds")
-
-      b ! CountDown(bParallel)
-      assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
-
-      aStop.countDown()
-
-      a.stop
-      b.stop
-
-      while (!a.isShutdown && !b.isShutdown) {} //Busy wait for termination
-
-      assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
-      assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
-    }
-
     "not process messages for a suspended actor" in {
       implicit val dispatcher = newInterceptedDispatcher
       val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
@@ -375,13 +356,15 @@ abstract class ActorModelSpec extends AkkaSpec {
         val boss = actorOf(Props(context ⇒ {
           case "run" ⇒
             for (_ ← 1 to num) context.actorOf(props) ! cachedMessage
-        })) ! "run"
+        }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
+        boss ! "run"
         try {
           assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
         } catch {
           case e ⇒
             System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
         }
+        boss.stop()
       }
       for (run ← 1 to 3) {
         flood(40000)
@@ -467,6 +450,28 @@ class DispatcherModelSpec extends ActorModelSpec {
         assert(each.await.exception.get.isInstanceOf[ActorKilledException])
       a.stop()
     }
+
+    "process messages in parallel" in {
+      implicit val dispatcher = newInterceptedDispatcher
+      val aStart, aStop, bParallel = new CountDownLatch(1)
+      val a, b = newTestActor(dispatcher)
+
+      a ! Meet(aStart, aStop)
+      assertCountDown(aStart, Testing.testTime(3000), "Should process first message within 3 seconds")
+
+      b ! CountDown(bParallel)
+      assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
+
+      aStop.countDown()
+
+      a.stop
+      b.stop
+
+      while (!a.isShutdown && !b.isShutdown) {} //Busy wait for termination
+
+      assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+      assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+    }
   }
 }
 
@@ -481,4 +486,30 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
     ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
+
+  override def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = app.dispatcher
+
+  "A " + dispatcherType must {
+    "process messages in parallel" in {
+      implicit val dispatcher = newInterceptedDispatcher
+      val aStart, aStop, bParallel = new CountDownLatch(1)
+      val a, b = newTestActor(dispatcher)
+
+      a ! Meet(aStart, aStop)
+      assertCountDown(aStart, Testing.testTime(3000), "Should process first message within 3 seconds")
+
+      b ! CountDown(bParallel)
+      assertCountDown(bParallel, Testing.testTime(3000), "Should process other actors in parallel")
+
+      aStop.countDown()
+
+      a.stop
+      b.stop
+
+      while (!a.isShutdown && !b.isShutdown) {} //Busy wait for termination
+
+      assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+      assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
+    }
+  }
 }

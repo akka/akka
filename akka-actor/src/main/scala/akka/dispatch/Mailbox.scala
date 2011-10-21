@@ -15,7 +15,7 @@ import annotation.tailrec
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
-private[dispatch] object Mailbox {
+object Mailbox {
 
   type Status = Int
 
