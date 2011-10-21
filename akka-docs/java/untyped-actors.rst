@@ -26,10 +26,10 @@ Here is an example:
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-      if (message instanceof String) 
+      if (message instanceof String)
         EventHandler.info(this, String.format("Received String message: %s",
           message));
-      else 
+      else
         throw new IllegalArgumentException("Unknown message: " + message);
     }
   }
@@ -215,9 +215,9 @@ Here is an example:
   public class SampleUntypedActor extends UntypedActor {
 
     public void onReceive(Object message) throws Exception {
-      if (message instanceof String) 
+      if (message instanceof String)
         EventHandler.info(this, String.format("Received String message: %s", message));
-      else 
+      else
         throw new IllegalArgumentException("Unknown message: " + message);
     }
   }
@@ -364,7 +364,7 @@ Use it like this:
 .. code-block:: java
 
   import static akka.actor.Actors.*;
-  
+
   actor.tell(poisonPill());
 
 Killing an Actor

@@ -3,7 +3,7 @@
 # Copy the akka-version.xsd file to akka.io, renaming it for a release.
 #
 # Example usage:
-# 
+#
 # sh project/scripts/copy-xsd.sh 1.1-RC1
 
 RELEASE=$1

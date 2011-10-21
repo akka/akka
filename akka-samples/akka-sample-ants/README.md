@@ -13,8 +13,8 @@ To build and run Ants you need [Simple Build Tool][sbt] (sbt).
 Running
 -------
 
-First time, 'sbt update' to get dependencies, then to run Ants use 'sbt run'. 
-Here is an example. First type 'sbt' to start SBT interactively, the run 'update' and 'run': 
+First time, 'sbt update' to get dependencies, then to run Ants use 'sbt run'.
+Here is an example. First type 'sbt' to start SBT interactively, the run 'update' and 'run':
 > cd $AKKA_HOME
 
 > % sbt

@@ -154,7 +154,7 @@ Using Akka with Eclipse
 Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
 can be found in the :ref:`getting-started-first-scala-eclipse`.
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project. 
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------

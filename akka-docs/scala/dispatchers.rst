@@ -6,7 +6,7 @@ Dispatchers (Scala)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
@@ -146,13 +146,13 @@ Creating a Dispatcher using PriorityGenerator:
 
   import akka.dispatch._
   import akka.actor._
-  
+
   val gen = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
       case 'highpriority => 0   // 'highpriority messages should be treated first if possible
       case 'lowpriority  => 100 // 'lowpriority messages should be treated last if possible
       case otherwise     => 50    // We default to 50
    }
-  
+
    val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
        Props(new Actor {
          def receive = {

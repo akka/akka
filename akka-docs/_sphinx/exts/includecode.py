@@ -32,7 +32,7 @@ class IncludeCode(Directive):
         document = self.state.document
         arg0 = self.arguments[0]
         (filename, sep, section) = arg0.partition('#')
-        
+
         if not document.settings.file_insertion_enabled:
             return [document.reporter.warning('File insertion disabled',
                                               line=self.lineno)]

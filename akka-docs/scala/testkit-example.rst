@@ -9,7 +9,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
 .. code-block:: scala
 
    package unit.akka
-   
+
    import org.scalatest.matchers.ShouldMatchers
    import org.scalatest.{WordSpec, BeforeAndAfterAll}
    import akka.actor.Actor._
@@ -18,11 +18,11 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
    import java.util.concurrent.TimeUnit
    import akka.actor.{ActorRef, Actor}
    import util.Random
-   
+
    /**
     * a Test to show some TestKit examples
     */
-   
+
    class TestKitUsageSpec extends WordSpec with BeforeAndAfterAll with ShouldMatchers with TestKit {
      val echoRef = actorOf(new EchoActor)
      val forwardRef = actorOf(new ForwardingActor(testActor))
@@ -32,7 +32,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
      val headList = List().padTo(randomHead, "0")
      val tailList = List().padTo(randomTail, "1")
      val seqRef = actorOf(new SequencingActor(testActor, headList, tailList))
-   
+
      override protected def afterAll(): scala.Unit = {
        stopTestActor
        echoRef.stop()
@@ -40,7 +40,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
        filterRef.stop()
        seqRef.stop()
      }
-   
+
      "An EchoActor" should {
        "Respond with the same message it receives" in {
          within(100 millis) {
@@ -70,7 +70,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
            filterRef ! 1
            filterRef ! "text"
            filterRef ! 1
-   
+
            receiveWhile(500 millis) {
              case msg: String => messages = msg :: messages
            }
@@ -95,7 +95,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
        }
      }
    }
-   
+
    /**
     * An Actor that echoes everything you send to it
     */
@@ -106,7 +106,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
        }
      }
    }
-   
+
    /**
     * An Actor that forwards every message to a next Actor
     */
@@ -117,7 +117,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
        }
      }
    }
-   
+
    /**
     * An Actor that only forwards certain messages to a next Actor
     */
@@ -129,7 +129,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
        case _ => None
      }
    }
-   
+
    /**
     * An actor that sends a sequence of messages with a random head list, an interesting value and a random tail list
     * The idea is that you would like to test that the interesting value is received and that you cant be bothered with the rest

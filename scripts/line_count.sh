@@ -1,1 +1,1 @@
-wc -l `find . -name \*.scala -print` 
+wc -l `find . -name \*.scala -print`

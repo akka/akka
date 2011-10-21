@@ -88,7 +88,7 @@ So your listener Actor needs to be able to handle these messages. Example:
   class RegistryListener extends Actor {
     def receive = {
       case event: ActorRegistered =>
-        EventHandler.info(this, "Actor registered: %s - %s".format( 
+        EventHandler.info(this, "Actor registered: %s - %s".format(
           event.actor.actorClassName, event.actor.uuid))
       case event: ActorUnregistered =>
         // ...

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#Original /etc/init.d/skeleton modified for http://mydebian.blogdns.org 
+#Original /etc/init.d/skeleton modified for http://mydebian.blogdns.org
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh
 script

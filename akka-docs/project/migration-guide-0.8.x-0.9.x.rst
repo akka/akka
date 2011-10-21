@@ -166,7 +166,7 @@ They will be removed in 1.0. Instead use
 
 Usage example:
 .. code-block:: scala
-  
+
   val m = Message(1.4)
   val b = m.bodyAs[String]
 

@@ -11,7 +11,7 @@ import akka.actor.Actor
 trait Logging {
 
   /*
-   * implement these as precisely as needed/possible: always returning true 
+   * implement these as precisely as needed/possible: always returning true
    * just makes the notify... methods be called every time.
    */
   def isErrorEnabled: Boolean
@@ -20,7 +20,7 @@ trait Logging {
   def isDebugEnabled: Boolean
 
   /*
-   * These actually implement the passing on of the messages to be logged. 
+   * These actually implement the passing on of the messages to be logged.
    * Will not be called if is...Enabled returned false.
    */
   protected def notifyError(cause: Throwable, message: String)

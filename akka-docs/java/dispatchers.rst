@@ -6,7 +6,7 @@ Dispatchers (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
@@ -148,10 +148,10 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
 .. code-block:: java
 
   package some.pkg;
-  
+
   import akka.actor.*;
   import akka.dispatch.*;
-  
+
   public class Main {
       // A simple Actor that just prints the messages it processes
       public static class MyActor extends UntypedActor {
@@ -161,7 +161,7 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
     }
 
     public static void main(String[] args) {
-        // Create a new PriorityGenerator, lower prio means more important 
+        // Create a new PriorityGenerator, lower prio means more important
         PriorityGenerator gen = new PriorityGenerator() {
           public int gen(Object message) {
             if (message.equals("highpriority")) return 0;       // "highpriority" messages should be treated first if possible
