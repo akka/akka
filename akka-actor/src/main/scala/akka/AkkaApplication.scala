@@ -5,15 +5,13 @@ package akka
 
 import akka.config._
 import akka.actor._
+import dispatch._
 import event._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import dispatch.{ Dispatcher, Dispatchers }
 import akka.util.Duration
 import util.ReflectiveAccess
 import java.util.concurrent.TimeUnit
-import akka.dispatch.BoundedMailbox
-import akka.dispatch.UnboundedMailbox
 import akka.routing.Routing
 import remote.RemoteSupport
 import akka.serialization.Serialization

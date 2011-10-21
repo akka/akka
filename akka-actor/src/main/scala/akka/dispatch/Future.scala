@@ -952,7 +952,8 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
               }
             }
           }
-          dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          val timeoutFuture = dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          onComplete(_ ⇒ timeoutFuture.cancel(true))
           false
         } else true
       } else false

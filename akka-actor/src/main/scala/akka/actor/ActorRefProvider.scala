@@ -32,6 +32,8 @@ trait ActorRefProvider {
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
 
   private[akka] def createDeathWatch(): DeathWatch
+
+  private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
 }
 
 /**
@@ -172,6 +174,19 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
+
+  private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
+    import akka.dispatch.{ Future, Promise, DefaultPromise }
+    (if (within == null) app.AkkaConfig.ActorTimeout else within) match {
+      case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
+      case other ⇒
+        val result = new DefaultPromise[Any](other)(app.dispatcher)
+        val a = new AskActorRef(result, app) { def whenDone() = actors.remove(this) }
+        assert(actors.putIfAbsent(a.address, a) eq null) //If this fails, we're in deep trouble
+        recipient.tell(message, a)
+        result
+    }
+  }
 }
 
 class LocalDeathWatch extends DeathWatch with ActorClassification {

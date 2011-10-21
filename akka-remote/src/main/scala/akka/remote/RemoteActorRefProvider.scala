@@ -215,6 +215,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   }
 
   private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch
+
+  private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
 }
 
 /**

@@ -41,13 +41,16 @@ import akka.event.ActorEventBus
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] with Serializable {
+abstract class ActorRef extends UntypedChannel with ReplyChannel[Any] with java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: ScalaActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
-  private[akka] def uuid: Uuid
-
+  /**
+   * Returns the address for the actor.
+   */
   def address: String
+
+  private[akka] def uuid: Uuid //TODO FIXME REMOVE THIS
 
   /**
    * Comparison only takes address into account.
@@ -241,29 +244,11 @@ class LocalActorRef private[akka] (
 }
 
 /**
- * This trait represents the common (external) methods for all ActorRefs
- * Needed because implicit conversions aren't applied when instance imports are used
- *
- * i.e.
- * var self: ScalaActorRef = ...
- * import self._
- * //can't call ActorRef methods here unless they are declared in a common
- * //superclass, which ActorRefShared is.
- */
-trait ActorRefShared {
-
-  /**
-   * Returns the address for the actor.
-   */
-  def address: String
-}
-
-/**
  * This trait represents the Scala Actor API
  * There are implicit conversions in ../actor/Implicits.scala
  * from ActorRef -> ScalaActorRef and back
  */
-trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRef ⇒
+trait ScalaActorRef extends ReplyChannel[Any] { ref: ActorRef ⇒
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
@@ -365,4 +350,42 @@ class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
     message: Any,
     timeout: Timeout,
     channel: UntypedChannel): Future[Any] = { app.eventHandler.notify(DeadLetter(message, channel)); brokenPromise }
+}
+
+abstract class AskActorRef(promise: Promise[Any], app: AkkaApplication) extends ActorRef with ScalaActorRef {
+  private[akka] final val uuid: akka.actor.Uuid = newUuid()
+  final val address: String = uuid.toString
+
+  promise onComplete { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this, new ActorKilledException("Stopped"))); whenDone() }
+  promise onTimeout { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this, new FutureTimeoutException("Timed out"))); whenDone() }
+
+  protected def whenDone(): Unit
+
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = message match {
+    case akka.actor.Status.Success(r) ⇒ promise.completeWithResult(r)
+    case akka.actor.Status.Failure(f) ⇒ promise.completeWithException(f)
+    case other                        ⇒ promise.completeWithResult(other)
+  }
+
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: Any,
+    timeout: Timeout,
+    channel: UntypedChannel): Future[Any] = {
+    postMessageToMailbox(message, channel)
+    promise
+  }
+
+  def isShutdown = promise.isCompleted || promise.isExpired
+
+  def stop(): Unit = if (!isShutdown) promise.completeWithException(new ActorKilledException("Stopped"))
+
+  def resume(): Unit = ()
+
+  def suspend(): Unit = ()
+
+  def restart(t: Throwable): Unit = ()
+
+  def startsMonitoring(subject: ActorRef): ActorRef = subject
+
+  def stopsMonitoring(subject: ActorRef): ActorRef = subject
 }
