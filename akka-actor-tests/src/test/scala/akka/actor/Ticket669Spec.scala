@@ -10,6 +10,7 @@ import akka.testkit.{ TestKit, filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender {
   import Ticket669Spec._
 

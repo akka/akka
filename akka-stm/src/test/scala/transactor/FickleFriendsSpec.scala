@@ -98,6 +98,7 @@ object FickleFriends {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   import FickleFriends._
 

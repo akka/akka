@@ -440,6 +440,7 @@ abstract class ActorModelSpec extends AkkaSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
@@ -469,6 +470,7 @@ class DispatcherModelSpec extends ActorModelSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 

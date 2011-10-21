@@ -9,6 +9,7 @@ import akka.serialization.SerializeSpec.Person
 
 case class MyMessage(id: Long, name: String, status: Boolean)
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSerializeSpec extends AkkaSpec with BeforeAndAfterAll {
 
   lazy val remote: Remote = {

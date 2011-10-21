@@ -8,6 +8,7 @@ import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeployerSpec extends AkkaSpec {
 
   "A Deployer" must {

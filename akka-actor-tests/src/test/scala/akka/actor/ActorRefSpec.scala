@@ -113,6 +113,7 @@ object ActorRefSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorRefSpec extends AkkaSpec {
   import akka.actor.ActorRefSpec._
 

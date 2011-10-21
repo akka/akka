@@ -8,6 +8,7 @@ import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorMiscSpec extends AkkaSpec {
 
   "A Supervisor" must {

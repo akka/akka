@@ -20,6 +20,7 @@ object EventBusSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfterEach {
   import EventBusSpec._
   type BusType <: EventBus

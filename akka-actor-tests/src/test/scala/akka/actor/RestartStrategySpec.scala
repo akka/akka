@@ -12,6 +12,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import org.multiverse.api.latches.StandardLatch
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RestartStrategySpec extends AkkaSpec {
 
   override def atStartup() {

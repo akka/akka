@@ -75,6 +75,7 @@ object SimpleTransactor {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TransactorSpec extends AkkaSpec {
   import TransactorIncrement._
   import SimpleTransactor._

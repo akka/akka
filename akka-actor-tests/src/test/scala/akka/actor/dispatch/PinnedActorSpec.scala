@@ -18,6 +18,7 @@ object PinnedActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
   import PinnedActorSpec._
 

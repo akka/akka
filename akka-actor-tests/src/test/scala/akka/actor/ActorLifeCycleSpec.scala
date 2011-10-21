@@ -16,6 +16,7 @@ object ActorLifeCycleSpec {
 
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
   import ActorLifeCycleSpec._
 

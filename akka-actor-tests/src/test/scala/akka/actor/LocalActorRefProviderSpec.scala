@@ -19,6 +19,7 @@ object LocalActorRefProviderSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalActorRefProviderSpec extends AkkaSpec {
   import akka.actor.LocalActorRefProviderSpec._
 

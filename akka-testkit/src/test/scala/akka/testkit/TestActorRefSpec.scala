@@ -90,6 +90,7 @@ object TestActorRefSpec {
 
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
   import TestActorRefSpec._

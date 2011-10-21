@@ -136,6 +136,7 @@ object TypedActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
   import TypedActorSpec._

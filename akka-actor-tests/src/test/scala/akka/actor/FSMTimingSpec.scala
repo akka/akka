@@ -8,6 +8,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.Duration
 import akka.util.duration._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   import FSMTimingSpec._
   import FSM._

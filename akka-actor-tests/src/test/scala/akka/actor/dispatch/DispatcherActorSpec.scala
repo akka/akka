@@ -24,6 +24,7 @@ object DispatcherActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherActorSpec extends AkkaSpec {
   import DispatcherActorSpec._
 

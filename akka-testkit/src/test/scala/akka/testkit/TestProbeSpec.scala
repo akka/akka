@@ -8,6 +8,7 @@ import akka.event.EventHandler
 import akka.dispatch.Future
 import akka.util.duration._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestProbeSpec extends AkkaSpec {
 
   "A TestProbe" must {

@@ -21,6 +21,7 @@ object SupervisorHierarchySpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorHierarchySpec extends AkkaSpec {
   import SupervisorHierarchySpec._
 

@@ -99,6 +99,7 @@ object FSMActorSpec {
   case class CodeState(soFar: String, code: String)
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true)) with ImplicitSender {
   import FSMActorSpec._
 

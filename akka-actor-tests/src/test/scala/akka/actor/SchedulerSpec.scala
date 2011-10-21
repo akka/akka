@@ -7,6 +7,7 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ ScheduledFuture, ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
   private val futures = new ConcurrentLinkedQueue[ScheduledFuture[AnyRef]]()
 

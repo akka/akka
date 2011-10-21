@@ -4,6 +4,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.util.Duration
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestTimeSpec extends AkkaSpec with BeforeAndAfterEach {
 
   val tf = Duration.timeFactor

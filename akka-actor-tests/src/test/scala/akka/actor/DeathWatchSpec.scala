@@ -9,6 +9,7 @@ import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   "The Death Watch" must {

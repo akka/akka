@@ -25,6 +25,7 @@ object ActorPoolSpec {
   val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPoolSpec extends AkkaSpec {
   import ActorPoolSpec._
 

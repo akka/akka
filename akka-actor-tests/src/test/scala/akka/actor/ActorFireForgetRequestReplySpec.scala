@@ -51,6 +51,7 @@ object ActorFireForgetRequestReplySpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
   import ActorFireForgetRequestReplySpec._
 

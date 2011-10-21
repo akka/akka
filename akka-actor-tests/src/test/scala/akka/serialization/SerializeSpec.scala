@@ -17,6 +17,7 @@ object SerializeSpec {
   case class Record(id: Int, person: Person)
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SerializeSpec extends AkkaSpec {
   import SerializeSpec._
 

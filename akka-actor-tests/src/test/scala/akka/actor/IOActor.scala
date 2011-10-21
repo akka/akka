@@ -170,6 +170,7 @@ object IOActorSpec {
 
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
   import IOActorSpec._
 

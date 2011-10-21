@@ -2,6 +2,7 @@ package akka.actor
 
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterSpec extends AkkaSpec {
 
   "ClusterSpec: A Deployer" must {

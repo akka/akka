@@ -8,6 +8,7 @@ import akka.dispatch._
 import akka.testkit.TestActorRef
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ChannelSpec extends AkkaSpec {
 
   "A Channel" must {
