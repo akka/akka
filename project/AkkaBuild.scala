@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, akkaSbtPlugin, samples, tutorials, docs)
     //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
@@ -227,6 +227,14 @@ object AkkaBuild extends Build {
   //     libraryDependencies ++= Dependencies.kernel
   //   )
   // )
+
+  lazy val akkaSbtPlugin = Project(
+    id = "akka-sbt-plugin",
+    base = file("akka-sbt-plugin"),
+    settings = defaultSettings ++ Seq(
+      sbtPlugin := true
+    )
+  )
 
   lazy val samples = Project(
     id = "akka-samples",

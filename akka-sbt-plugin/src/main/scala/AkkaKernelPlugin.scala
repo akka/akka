@@ -11,7 +11,7 @@ import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
 import sbt.CommandSupport._
 import java.io.File
-import scala.collection.mutable.{ Set => MutableSet }
+import scala.collection.mutable.{ Set ⇒ MutableSet }
 
 object AkkaKernelPlugin extends Plugin {
 
@@ -58,8 +58,7 @@ object AkkaKernelPlugin extends Plugin {
         dist <<= (dist in Dist).identity, distNeedsPackageBin)
 
   private def distTask: Initialize[Task[File]] =
-    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map {
-    (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
+    (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
 
       if (isKernelProject(allDeps)) {
         val log = logger(st)
@@ -78,7 +77,7 @@ object AkkaKernelPlugin extends Plugin {
 
         copyFiles(libFiles(cp, conf.libFilter), distLibPath)
         copyFiles(conf.additionalLibs, distLibPath)
-        for (subTarget <- subProjectDependencies.map(_.target)) {
+        for (subTarget ← subProjectDependencies.map(_.target)) {
           copyJars(subTarget, distLibPath)
         }
         log.info("Distribution created.")
@@ -97,7 +96,7 @@ object AkkaKernelPlugin extends Plugin {
     }
 
   def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
-    dependencies.exists(moduleId => moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
+    dependencies.exists(moduleId ⇒ moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
   }
 
   private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
@@ -180,25 +179,25 @@ object AkkaKernelPlugin extends Plugin {
     val buildUnit = buildStruct.units(buildStruct.root)
     val uri = buildStruct.root
     val allProjects = buildUnit.defined.map {
-      case (id, proj) => (ProjectRef(uri, id) -> proj)
+      case (id, proj) ⇒ (ProjectRef(uri, id) -> proj)
     }
 
     val projDepsNames = projDeps.map(_.name)
     def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects: Seq[SubProjectInfo] = allProjects.collect {
-      case (projRef, project) if include(project) => projectInfo(projRef, project, buildStruct, state, allProjects)
+      case (projRef, project) if include(project) ⇒ projectInfo(projRef, project, buildStruct, state, allProjects)
     }.toList
 
     val allSubProjects = subProjects.map(_.recursiveSubProjects).flatten.toSet
     allSubProjects
-}
+  }
 
   private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State,
-      allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
+                          allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
 
     def optionalSetting[A](key: ScopedSetting[A]) = key in projectRef get buildStruct.data
 
-    def setting[A](key: ScopedSetting[A], errorMessage: => String) = {
+    def setting[A](key: ScopedSetting[A], errorMessage: ⇒ String) = {
       optionalSetting(key) getOrElse {
         logger(state).error(errorMessage);
         throw new IllegalArgumentException()
@@ -210,14 +209,14 @@ object AkkaKernelPlugin extends Plugin {
     }
 
     val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
-      case Some(Value(moduleIds)) => moduleIds
-      case _ => Seq.empty
+      case Some(Value(moduleIds)) ⇒ moduleIds
+      case _                      ⇒ Seq.empty
     }
 
     val projDepsNames = projDeps.map(_.name)
     def include(project: ResolvedProject): Boolean = projDepsNames.exists(_ == project.id)
     val subProjects = allProjects.collect {
-      case (projRef, proj) if include(proj) => projectInfo(projRef, proj, buildStruct, state, allProjects)
+      case (projRef, proj) if include(proj) ⇒ projectInfo(projRef, proj, buildStruct, state, allProjects)
     }.toList
 
     val target = setting(Keys.crossTarget, "Missing crossTarget directory")
@@ -228,8 +227,8 @@ object AkkaKernelPlugin extends Plugin {
 
     def recursiveSubProjects: Set[SubProjectInfo] = {
       val flatSubProjects = for {
-        x <- subProjects
-        y <- x.recursiveSubProjects
+        x ← subProjects
+        y ← x.recursiveSubProjects
       } yield y
 
       flatSubProjects.toSet + this
