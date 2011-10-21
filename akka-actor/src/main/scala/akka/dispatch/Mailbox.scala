@@ -31,6 +31,7 @@ object Mailbox {
   final val Scheduled = 4
 
   // mailbox debugging helper using println (see below)
+  // TODO take this out before release
   final val debug = false
 }
 
