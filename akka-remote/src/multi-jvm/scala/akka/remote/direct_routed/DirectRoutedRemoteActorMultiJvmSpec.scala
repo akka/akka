@@ -10,9 +10,7 @@ object DirectRoutedRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ {
-        reply(app.nodename)
-      }
+      case "identify" ⇒ channel ! app.nodename
     }
   }
 }

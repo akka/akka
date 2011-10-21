@@ -16,7 +16,7 @@ class TestProbeSpec extends AkkaSpec {
       val tk = TestProbe()
       val future = tk.ref ? "hello"
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
-      tk.reply("world")
+      tk.lastMessage.channel ! "world"
       future must be('completed)
       future.get must equal("world")
     }
@@ -26,7 +26,7 @@ class TestProbeSpec extends AkkaSpec {
       val tk2 = TestProbe()
       tk1.ref.!("hello")(tk2.ref)
       tk1.expectMsg(0 millis, "hello")
-      tk1.reply("world")
+      tk1.lastMessage.channel ! "world"
       tk2.expectMsg(0 millis, "world")
     }
 
@@ -35,7 +35,7 @@ class TestProbeSpec extends AkkaSpec {
       val probe2 = TestProbe()
       probe1.send(probe2.ref, "hello")
       probe2.expectMsg(0 millis, "hello")
-      probe2.reply("world")
+      probe2.lastMessage.channel ! "world"
       probe1.expectMsg(0 millis, "world")
     }
 

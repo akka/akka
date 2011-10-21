@@ -34,9 +34,7 @@ private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory 
 
   def currentMessage_=(invocation: Envelope): Unit
 
-  def sender: Option[ActorRef]
-
-  def senderFuture(): Option[Promise[Any]]
+  def sender: ActorRef
 
   def channel: UntypedChannel
 
@@ -126,7 +124,7 @@ private[akka] class ActorCell(
 
   def children: Iterable[ActorRef] = _children.keys
 
-  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher dispatch Envelope(this, message, channel)
+  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher.dispatch(this, Envelope(message, channel))
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
@@ -136,20 +134,14 @@ private[akka] class ActorCell(
       case f: ActorPromise ⇒ f
       case _               ⇒ new ActorPromise(timeout)(dispatcher)
     }
-    dispatcher dispatch Envelope(this, message, future)
+    dispatcher.dispatch(this, Envelope(message, future))
     future
   }
 
-  def sender: Option[ActorRef] = currentMessage match {
-    case null                                      ⇒ None
-    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ Some(msg.channel.asInstanceOf[ActorRef])
-    case _                                         ⇒ None
-  }
-
-  def senderFuture(): Option[Promise[Any]] = currentMessage match {
-    case null ⇒ None
-    case msg if msg.channel.isInstanceOf[ActorPromise] ⇒ Some(msg.channel.asInstanceOf[ActorPromise])
-    case _ ⇒ None
+  def sender: ActorRef = currentMessage match {
+    case null                                      ⇒ app.deadLetters
+    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ msg.channel.asInstanceOf[ActorRef]
+    case _                                         ⇒ app.deadLetters
   }
 
   def channel: UntypedChannel = currentMessage match {
@@ -250,10 +242,8 @@ private[akka] class ActorCell(
         }
       } finally {
         try {
-          // when changing this, remember to update the match in the BubbleWalker
-          val cause = new ActorKilledException("Stopped") //FIXME TODO make this an object, can be reused everywhere
-          supervisor ! ChildTerminated(self, cause)
-          app.deathWatch.publish(Terminated(self, cause))
+          supervisor ! ChildTerminated(self)
+          app.deathWatch.publish(Terminated(self))
         } finally {
           currentMessage = null
           clearActorContext()

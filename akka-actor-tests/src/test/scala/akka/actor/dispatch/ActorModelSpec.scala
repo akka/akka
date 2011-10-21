@@ -71,8 +71,8 @@ object ActorModelSpec {
       case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
-      case Reply(msg)                   ⇒ ack; reply(msg); busy.switchOff()
-      case TryReply(msg)                ⇒ ack; tryReply(msg); busy.switchOff()
+      case Reply(msg)                   ⇒ ack; channel ! msg; busy.switchOff()
+      case TryReply(msg)                ⇒ ack; channel.tryTell(msg); busy.switchOff()
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
@@ -128,10 +128,10 @@ object ActorModelSpec {
       super.unregister(actor)
     }
 
-    protected[akka] abstract override def dispatch(invocation: Envelope) {
-      val stats = getStats(invocation.receiver.self)
+    protected[akka] abstract override def dispatch(receiver: ActorCell, invocation: Envelope) {
+      val stats = getStats(receiver.self)
       stats.msgsReceived.incrementAndGet()
-      super.dispatch(invocation)
+      super.dispatch(receiver, invocation)
     }
 
     protected[akka] abstract override def start() {
@@ -381,31 +381,11 @@ abstract class ActorModelSpec extends AkkaSpec {
         } catch {
           case e ⇒
             System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
-          //app.eventHandler.error(new Exception with NoStackTrace, null, cachedMessage.latch.getCount())
         }
       }
       for (run ← 1 to 3) {
         flood(40000)
-        try {
-          assertDispatcher(dispatcher)(starts = run, stops = run)
-        } catch {
-          case e ⇒
-
-            // FIXME: registry has been removed
-            // app.registry.local.foreach {
-            //   case actor: LocalActorRef ⇒
-            //     val cell = actor.underlying
-            //     val mbox = cell.mailbox
-            //     System.err.println("Left in the registry: " + actor.address + " => " + cell + " => " + mbox.hasMessages + " " + mbox.hasSystemMessages + " " + mbox.numberOfMessages + " " + mbox.isScheduled)
-            //     var message = mbox.dequeue()
-            //     while (message ne null) {
-            //       System.err.println("Lingering message for " + cell + " " + message)
-            //       message = mbox.dequeue()
-            //     }
-            // }
-
-            throw e
-        }
+        assertDispatcher(dispatcher)(starts = run, stops = run)
       }
     }
 

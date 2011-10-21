@@ -9,7 +9,7 @@ import akka.actor.{ Props, Actor }
 object DispatcherActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ reply("World")
+      case "Hello"   ⇒ channel ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -67,20 +67,18 @@ class DispatcherActorSpec extends AkkaSpec {
 
       val works = new AtomicBoolean(true)
       val latch = new CountDownLatch(100)
-      val thereWeAre = new CountDownLatch(1)
       val start = new CountDownLatch(1)
       val fastOne = actorOf(
         Props(context ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
       val slowOne = actorOf(
         Props(context ⇒ {
-          case "hogexecutor" ⇒ thereWeAre.countDown(); start.await
+          case "hogexecutor" ⇒ context.channel ! "OK"; start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
-      slowOne ! "hogexecutor"
+      assert((slowOne ? "hogexecutor").get === "OK")
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
-      assert(thereWeAre.await(2, TimeUnit.SECONDS))
       fastOne ! "sabotage"
       start.countDown()
       latch.await(10, TimeUnit.SECONDS)

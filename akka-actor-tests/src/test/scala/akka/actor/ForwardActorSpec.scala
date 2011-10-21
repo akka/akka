@@ -15,7 +15,7 @@ object ForwardActorSpec {
 
   def createForwardingChain(app: AkkaApplication): ActorRef = {
     val replier = app.actorOf(new Actor {
-      def receive = { case x ⇒ reply(x) }
+      def receive = { case x ⇒ channel ! x }
     })
 
     def mkforwarder(forwardTo: ActorRef) = app.actorOf(

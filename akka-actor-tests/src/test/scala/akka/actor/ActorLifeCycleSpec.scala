@@ -25,7 +25,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     val currentGen = generationProvider.getAndIncrement()
     override def preStart() { report("preStart") }
     override def postStop() { report("postStop") }
-    def receive = { case "status" ⇒ this reply message("OK") }
+    def receive = { case "status" ⇒ channel ! message("OK") }
   }
 
   "An Actor" must {

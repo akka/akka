@@ -4,16 +4,13 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.BeforeAndAfterAll
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
 import akka.testkit.TestEvent._
-import akka.testkit.EventFilter
+import akka.testkit.{ EventFilter, ImplicitSender }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import akka.testkit.AkkaSpec
@@ -42,7 +39,7 @@ object SupervisorSpec {
     def receive = {
       case Ping ⇒
         messageLog.put(PingMessage)
-        tryReply(PongMessage)
+        channel.tryTell(PongMessage)
       case Die ⇒
         throw new RuntimeException(ExceptionMessage)
     }
@@ -59,14 +56,14 @@ object SupervisorSpec {
     var s: UntypedChannel = _
 
     def receive = {
-      case Die                       ⇒ temp ! Die; s = context.channel
-      case Terminated(`temp`, cause) ⇒ s ! cause
+      case Die                ⇒ temp ! Die; s = context.channel
+      case Terminated(`temp`) ⇒ s ! "terminated"
     }
   }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
+class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   import SupervisorSpec._
 
@@ -150,9 +147,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
     "not restart programmatically linked temporary actor" in {
       val master = actorOf(Props[Master].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
-      (master.?(Die, TimeoutMillis)).get match {
-        case r: RuntimeException ⇒ r === ExceptionMessage
-      }
+      master ! Die
+      expectMsg(3 seconds, "terminated")
 
       sleepFor(1 second)
       messageLogPoll must be(null)
@@ -298,7 +294,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach {
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
-          case Ping ⇒ tryReply(PongMessage)
+          case Ping ⇒ channel.tryTell(PongMessage)
           case Die  ⇒ throw new RuntimeException("Expected")
         }
       })

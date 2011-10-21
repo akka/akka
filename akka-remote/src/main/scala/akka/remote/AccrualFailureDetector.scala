@@ -28,7 +28,7 @@ import scala.annotation.tailrec
  * Default threshold is 8 (taken from Cassandra defaults), but can be configured in the Akka config.
  */
 class AccrualFailureDetector(
-  val threshold: Int = 8, // FIXME make these configurable
+  val threshold: Int = 8,
   val maxSampleSize: Int = 1000) extends FailureDetector {
 
   final val PhiFactor = 1.0 / math.log(10.0)
@@ -139,7 +139,7 @@ class AccrualFailureDetector(
   def phi(connection: InetSocketAddress): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
-    if (oldTimestamp.isEmpty) Double.MaxValue // treat unmanaged connections, e.g. with zero heartbeats, as dead connections
+    if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
     else {
       PhiFactor * (newTimestamp - oldTimestamp.get) / oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
     }

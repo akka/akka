@@ -17,12 +17,8 @@ import scala.annotation.tailrec
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class Envelope(val receiver: ActorCell, val message: Any, val channel: UntypedChannel) {
-  if (receiver eq null) throw new IllegalArgumentException("Receiver can't be null")
-
-  final def invoke() {
-    receiver invoke this
-  }
+final case class Envelope(val message: Any, val channel: UntypedChannel) {
+  if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
 }
 
 object SystemMessage {
@@ -295,7 +291,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   /**
    *   Will be called when the dispatcher is to queue an invocation for execution
    */
-  protected[akka] def dispatch(invocation: Envelope)
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope)
 
   /**
    * Suggest to register the provided mailbox for execution

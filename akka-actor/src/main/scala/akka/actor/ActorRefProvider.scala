@@ -100,12 +100,9 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
     protected[akka] override def postMessageToMailbox(msg: Any, channel: UntypedChannel) {
       msg match {
-        case Failed(child, ex) ⇒ child.stop()
-        case ChildTerminated(child, ex) ⇒ ex match {
-          case a: ActorKilledException if a.getMessage == "Stopped" ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
-          case x ⇒ terminationFuture.completeWithResult(AkkaApplication.Failed(x))
-        }
-        case _ ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
+        case Failed(child, ex)      ⇒ child.stop()
+        case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
+        case _                      ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
       }
     }
 
@@ -224,7 +221,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
 
   override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
     if (!super.subscribe(subscriber, to)) {
-      subscriber ! Terminated(subscriber, new ActorKilledException("Already terminated when linking"))
+      subscriber ! Terminated(to)
       false
     } else true
   }

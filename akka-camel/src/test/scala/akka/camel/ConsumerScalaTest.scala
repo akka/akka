@@ -211,7 +211,7 @@ object ConsumerScalaTest {
   class TestConsumer(uri: String) extends Actor with Consumer {
     def endpointUri = uri
     protected def receive = {
-      case msg: Message ⇒ reply("received %s" format msg.body)
+      case msg: Message ⇒ channel ! "received %s" format msg.body
     }
   }
 
@@ -226,7 +226,7 @@ object ConsumerScalaTest {
     def endpointUri = uri
     override def autoack = false
     protected def receive = {
-      case msg: Message ⇒ reply(Ack)
+      case msg: Message ⇒ channel ! Ack
     }
   }
 
@@ -247,15 +247,15 @@ object ConsumerScalaTest {
 
     protected def receive = {
       case "fail"    ⇒ { throw new Exception("test") }
-      case "succeed" ⇒ reply("ok")
+      case "succeed" ⇒ channel ! "ok"
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
-      tryReply("pr")
+      channel.tryTell("pr")
     }
 
     override def postStop {
-      tryReply("ps")
+      channel.tryTell("ps")
     }
   }
 
@@ -288,7 +288,7 @@ object ConsumerScalaTest {
     }
 
     private def respondTo(msg: Message) =
-      if (valid) reply("accepted: %s" format msg.body)
+      if (valid) channel ! ("accepted: %s" format msg.body)
       else throw new Exception("rejected: %s" format msg.body)
 
   }

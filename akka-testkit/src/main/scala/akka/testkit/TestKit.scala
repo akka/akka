@@ -225,14 +225,6 @@ class TestKit(_app: AkkaApplication) {
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
-   * Send reply to the last dequeued message. Will throw
-   * IllegalActorStateException if no message has been dequeued, yet. Dequeuing
-   * means reception of the message as part of an expect... or receive... call,
-   * not reception by the testActor.
-   */
-  def reply(msg: AnyRef) { lastMessage.channel.!(msg)(testActor) }
-
-  /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
    */
   def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)
@@ -269,6 +261,27 @@ class TestKit(_app: AkkaApplication) {
     assert(o ne null, "timeout during expectMsg: " + hint)
     assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
+  }
+
+  /**
+   * Hybrid of expectMsgPF and receiveWhile: receive messages while the
+   * partial function matches and returns false. Use it to ignore certain
+   * messages while waiting for a specific message.
+   *
+   * @return the last received messsage, i.e. the first one for which the
+   *         partial function returned true
+   */
+  def fishForMessage(max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
+    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+    val end = now + _max
+    @tailrec
+    def recv: Any = {
+      val o = receiveOne(end - now)
+      assert(o ne null, "timeout during fishForMessage, hint: " + hint)
+      assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
+      if (f(o)) o else recv
+    }
+    recv
   }
 
   /**
@@ -462,12 +475,13 @@ class TestKit(_app: AkkaApplication) {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf)(f: PartialFunction[AnyRef, T]): Seq[T] = {
+  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
     val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
-    def doit(acc: List[T]): List[T] = {
+    def doit(acc: List[T], count: Int): List[T] = {
+      if (count >= messages) return acc.reverse
       receiveOne((stop - now) min idle)
       lastMessage match {
         case NullMessage ⇒
@@ -475,7 +489,7 @@ class TestKit(_app: AkkaApplication) {
           acc.reverse
         case RealMessage(o, _) if (f isDefinedAt o) ⇒
           msg = lastMessage
-          doit(f(o) :: acc)
+          doit(f(o) :: acc, count + 1)
         case RealMessage(o, _) ⇒
           queue.offerFirst(lastMessage)
           lastMessage = msg
@@ -483,7 +497,7 @@ class TestKit(_app: AkkaApplication) {
       }
     }
 
-    val ret = doit(Nil)
+    val ret = doit(Nil, 0)
     lastWasNoMsg = true
     ret
   }

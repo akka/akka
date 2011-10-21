@@ -5,6 +5,7 @@ package akka
 
 import akka.config._
 import akka.actor._
+import event._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatcher, Dispatchers, Future, DefaultPromise }
@@ -16,9 +17,6 @@ import akka.dispatch.UnboundedMailbox
 import akka.routing.Routing
 import akka.remote.RemoteSupport
 import akka.serialization.Serialization
-import akka.event.EventHandler
-import akka.event.EventHandlerLogging
-import akka.event.Logging
 import java.net.InetSocketAddress
 
 object AkkaApplication {
@@ -119,6 +117,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val RemoteTransport = getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
     val RemoteServerPort = getInt("akka.remote.server.port", 2552)
+
+    val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
+    val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
   }
 
   object MistSettings {
@@ -193,6 +194,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   val log: Logging = new EventHandlerLogging(eventHandler, this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
+  val deadLetters = new DeadLetterActorRef(this)
+
+  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
 
   val deathWatch = provider.createDeathWatch()

@@ -21,7 +21,7 @@ class Ticket703Spec extends AkkaSpec {
             def receive = {
               case req: String ⇒
                 Thread.sleep(6000L)
-                tryReply("Response")
+                channel.tryTell("Response")
             }
           }))
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))

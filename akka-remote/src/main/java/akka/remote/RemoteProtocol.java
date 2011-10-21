@@ -365,7 +365,7 @@ public final class RemoteProtocol {
     // @@protoc_insertion_point(enum_scope:LifeCycleType)
   }
   
-  public enum RemoteDaemonMessageType
+  public enum RemoteSystemDaemonMessageType
       implements com.google.protobuf.ProtocolMessageEnum {
     STOP(0, 1),
     USE(1, 2),
@@ -375,11 +375,13 @@ public final class RemoteProtocol {
     DISCONNECT(5, 6),
     RECONNECT(6, 7),
     RESIGN(7, 8),
-    FAIL_OVER_CONNECTIONS(8, 9),
-    FUNCTION_FUN0_UNIT(9, 10),
-    FUNCTION_FUN0_ANY(10, 11),
-    FUNCTION_FUN1_ARG_UNIT(11, 12),
-    FUNCTION_FUN1_ARG_ANY(12, 13),
+    GOSSIP(8, 9),
+    GOSSIP_ACK(9, 10),
+    FAIL_OVER_CONNECTIONS(10, 20),
+    FUNCTION_FUN0_UNIT(11, 21),
+    FUNCTION_FUN0_ANY(12, 22),
+    FUNCTION_FUN1_ARG_UNIT(13, 23),
+    FUNCTION_FUN1_ARG_ANY(14, 24),
     ;
     
     public static final int STOP_VALUE = 1;
@@ -390,16 +392,18 @@ public final class RemoteProtocol {
     public static final int DISCONNECT_VALUE = 6;
     public static final int RECONNECT_VALUE = 7;
     public static final int RESIGN_VALUE = 8;
-    public static final int FAIL_OVER_CONNECTIONS_VALUE = 9;
-    public static final int FUNCTION_FUN0_UNIT_VALUE = 10;
-    public static final int FUNCTION_FUN0_ANY_VALUE = 11;
-    public static final int FUNCTION_FUN1_ARG_UNIT_VALUE = 12;
-    public static final int FUNCTION_FUN1_ARG_ANY_VALUE = 13;
+    public static final int GOSSIP_VALUE = 9;
+    public static final int GOSSIP_ACK_VALUE = 10;
+    public static final int FAIL_OVER_CONNECTIONS_VALUE = 20;
+    public static final int FUNCTION_FUN0_UNIT_VALUE = 21;
+    public static final int FUNCTION_FUN0_ANY_VALUE = 22;
+    public static final int FUNCTION_FUN1_ARG_UNIT_VALUE = 23;
+    public static final int FUNCTION_FUN1_ARG_ANY_VALUE = 24;
     
     
     public final int getNumber() { return value; }
     
-    public static RemoteDaemonMessageType valueOf(int value) {
+    public static RemoteSystemDaemonMessageType valueOf(int value) {
       switch (value) {
         case 1: return STOP;
         case 2: return USE;
@@ -409,24 +413,26 @@ public final class RemoteProtocol {
         case 6: return DISCONNECT;
         case 7: return RECONNECT;
         case 8: return RESIGN;
-        case 9: return FAIL_OVER_CONNECTIONS;
-        case 10: return FUNCTION_FUN0_UNIT;
-        case 11: return FUNCTION_FUN0_ANY;
-        case 12: return FUNCTION_FUN1_ARG_UNIT;
-        case 13: return FUNCTION_FUN1_ARG_ANY;
+        case 9: return GOSSIP;
+        case 10: return GOSSIP_ACK;
+        case 20: return FAIL_OVER_CONNECTIONS;
+        case 21: return FUNCTION_FUN0_UNIT;
+        case 22: return FUNCTION_FUN0_ANY;
+        case 23: return FUNCTION_FUN1_ARG_UNIT;
+        case 24: return FUNCTION_FUN1_ARG_ANY;
         default: return null;
       }
     }
     
-    public static com.google.protobuf.Internal.EnumLiteMap<RemoteDaemonMessageType>
+    public static com.google.protobuf.Internal.EnumLiteMap<RemoteSystemDaemonMessageType>
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static com.google.protobuf.Internal.EnumLiteMap<RemoteDaemonMessageType>
+    private static com.google.protobuf.Internal.EnumLiteMap<RemoteSystemDaemonMessageType>
         internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<RemoteDaemonMessageType>() {
-            public RemoteDaemonMessageType findValueByNumber(int number) {
-              return RemoteDaemonMessageType.valueOf(number);
+          new com.google.protobuf.Internal.EnumLiteMap<RemoteSystemDaemonMessageType>() {
+            public RemoteSystemDaemonMessageType findValueByNumber(int number) {
+              return RemoteSystemDaemonMessageType.valueOf(number);
             }
           };
     
@@ -443,11 +449,11 @@ public final class RemoteProtocol {
       return akka.remote.RemoteProtocol.getDescriptor().getEnumTypes().get(5);
     }
     
-    private static final RemoteDaemonMessageType[] VALUES = {
-      STOP, USE, RELEASE, MAKE_AVAILABLE, MAKE_UNAVAILABLE, DISCONNECT, RECONNECT, RESIGN, FAIL_OVER_CONNECTIONS, FUNCTION_FUN0_UNIT, FUNCTION_FUN0_ANY, FUNCTION_FUN1_ARG_UNIT, FUNCTION_FUN1_ARG_ANY, 
+    private static final RemoteSystemDaemonMessageType[] VALUES = {
+      STOP, USE, RELEASE, MAKE_AVAILABLE, MAKE_UNAVAILABLE, DISCONNECT, RECONNECT, RESIGN, GOSSIP, GOSSIP_ACK, FAIL_OVER_CONNECTIONS, FUNCTION_FUN0_UNIT, FUNCTION_FUN0_ANY, FUNCTION_FUN1_ARG_UNIT, FUNCTION_FUN1_ARG_ANY, 
     };
     
-    public static RemoteDaemonMessageType valueOf(
+    public static RemoteSystemDaemonMessageType valueOf(
         com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new java.lang.IllegalArgumentException(
@@ -459,12 +465,12 @@ public final class RemoteProtocol {
     private final int index;
     private final int value;
     
-    private RemoteDaemonMessageType(int index, int value) {
+    private RemoteSystemDaemonMessageType(int index, int value) {
       this.index = index;
       this.value = value;
     }
     
-    // @@protoc_insertion_point(enum_scope:RemoteDaemonMessageType)
+    // @@protoc_insertion_point(enum_scope:RemoteSystemDaemonMessageType)
   }
   
   public interface AkkaRemoteProtocolOrBuilder
@@ -696,7 +702,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1490,7 +1496,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2862,7 +2868,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3337,7 +3343,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4164,7 +4170,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5530,7 +5536,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -6038,7 +6044,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -6503,7 +6509,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7050,7 +7056,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7483,7 +7489,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7886,7 +7892,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -8289,7 +8295,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -8759,7 +8765,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -8983,12 +8989,12 @@ public final class RemoteProtocol {
     // @@protoc_insertion_point(class_scope:ExceptionProtocol)
   }
   
-  public interface RemoteDaemonMessageProtocolOrBuilder
+  public interface RemoteSystemDaemonMessageProtocolOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required .RemoteDaemonMessageType messageType = 1;
+    // required .RemoteSystemDaemonMessageType messageType = 1;
     boolean hasMessageType();
-    akka.remote.RemoteProtocol.RemoteDaemonMessageType getMessageType();
+    akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType getMessageType();
     
     // optional .UuidProtocol actorUuid = 2;
     boolean hasActorUuid();
@@ -9008,42 +9014,42 @@ public final class RemoteProtocol {
     akka.remote.RemoteProtocol.UuidProtocol getReplicateActorFromUuid();
     akka.remote.RemoteProtocol.UuidProtocolOrBuilder getReplicateActorFromUuidOrBuilder();
   }
-  public static final class RemoteDaemonMessageProtocol extends
+  public static final class RemoteSystemDaemonMessageProtocol extends
       com.google.protobuf.GeneratedMessage
-      implements RemoteDaemonMessageProtocolOrBuilder {
-    // Use RemoteDaemonMessageProtocol.newBuilder() to construct.
-    private RemoteDaemonMessageProtocol(Builder builder) {
+      implements RemoteSystemDaemonMessageProtocolOrBuilder {
+    // Use RemoteSystemDaemonMessageProtocol.newBuilder() to construct.
+    private RemoteSystemDaemonMessageProtocol(Builder builder) {
       super(builder);
     }
-    private RemoteDaemonMessageProtocol(boolean noInit) {}
+    private RemoteSystemDaemonMessageProtocol(boolean noInit) {}
     
-    private static final RemoteDaemonMessageProtocol defaultInstance;
-    public static RemoteDaemonMessageProtocol getDefaultInstance() {
+    private static final RemoteSystemDaemonMessageProtocol defaultInstance;
+    public static RemoteSystemDaemonMessageProtocol getDefaultInstance() {
       return defaultInstance;
     }
     
-    public RemoteDaemonMessageProtocol getDefaultInstanceForType() {
+    public RemoteSystemDaemonMessageProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
     
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return akka.remote.RemoteProtocol.internal_static_RemoteDaemonMessageProtocol_descriptor;
+      return akka.remote.RemoteProtocol.internal_static_RemoteSystemDaemonMessageProtocol_descriptor;
     }
     
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return akka.remote.RemoteProtocol.internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable;
+      return akka.remote.RemoteProtocol.internal_static_RemoteSystemDaemonMessageProtocol_fieldAccessorTable;
     }
     
     private int bitField0_;
-    // required .RemoteDaemonMessageType messageType = 1;
+    // required .RemoteSystemDaemonMessageType messageType = 1;
     public static final int MESSAGETYPE_FIELD_NUMBER = 1;
-    private akka.remote.RemoteProtocol.RemoteDaemonMessageType messageType_;
+    private akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType messageType_;
     public boolean hasMessageType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public akka.remote.RemoteProtocol.RemoteDaemonMessageType getMessageType() {
+    public akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType getMessageType() {
       return messageType_;
     }
     
@@ -9116,7 +9122,7 @@ public final class RemoteProtocol {
     }
     
     private void initFields() {
-      messageType_ = akka.remote.RemoteProtocol.RemoteDaemonMessageType.STOP;
+      messageType_ = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.STOP;
       actorUuid_ = akka.remote.RemoteProtocol.UuidProtocol.getDefaultInstance();
       actorAddress_ = "";
       payload_ = com.google.protobuf.ByteString.EMPTY;
@@ -9206,41 +9212,41 @@ public final class RemoteProtocol {
       return super.writeReplace();
     }
     
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(byte[] data)
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(java.io.InputStream input)
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseDelimitedFrom(java.io.InputStream input)
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       Builder builder = newBuilder();
       if (builder.mergeDelimitedFrom(input)) {
@@ -9249,7 +9255,7 @@ public final class RemoteProtocol {
         return null;
       }
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseDelimitedFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -9260,12 +9266,12 @@ public final class RemoteProtocol {
         return null;
       }
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol parseFrom(
+    public static akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -9275,7 +9281,7 @@ public final class RemoteProtocol {
     
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol prototype) {
+    public static Builder newBuilder(akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -9288,23 +9294,23 @@ public final class RemoteProtocol {
     }
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.RemoteProtocol.RemoteDaemonMessageProtocolOrBuilder {
+       implements akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocolOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return akka.remote.RemoteProtocol.internal_static_RemoteDaemonMessageProtocol_descriptor;
+        return akka.remote.RemoteProtocol.internal_static_RemoteSystemDaemonMessageProtocol_descriptor;
       }
       
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return akka.remote.RemoteProtocol.internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable;
+        return akka.remote.RemoteProtocol.internal_static_RemoteSystemDaemonMessageProtocol_fieldAccessorTable;
       }
       
-      // Construct using akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.newBuilder()
+      // Construct using akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -9320,7 +9326,7 @@ public final class RemoteProtocol {
       
       public Builder clear() {
         super.clear();
-        messageType_ = akka.remote.RemoteProtocol.RemoteDaemonMessageType.STOP;
+        messageType_ = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.STOP;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (actorUuidBuilder_ == null) {
           actorUuid_ = akka.remote.RemoteProtocol.UuidProtocol.getDefaultInstance();
@@ -9347,24 +9353,24 @@ public final class RemoteProtocol {
       
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.getDescriptor();
+        return akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.getDescriptor();
       }
       
-      public akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol getDefaultInstanceForType() {
-        return akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.getDefaultInstance();
+      public akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol getDefaultInstanceForType() {
+        return akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.getDefaultInstance();
       }
       
-      public akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol build() {
-        akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol result = buildPartial();
+      public akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol build() {
+        akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
       
-      private akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol buildParsed()
+      private akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol result = buildPartial();
+        akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
@@ -9372,8 +9378,8 @@ public final class RemoteProtocol {
         return result;
       }
       
-      public akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol buildPartial() {
-        akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol result = new akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol(this);
+      public akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol buildPartial() {
+        akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol result = new akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -9410,16 +9416,16 @@ public final class RemoteProtocol {
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol) {
-          return mergeFrom((akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol)other);
+        if (other instanceof akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
+          return mergeFrom((akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
       
-      public Builder mergeFrom(akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol other) {
-        if (other == akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.getDefaultInstance()) return this;
+      public Builder mergeFrom(akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol other) {
+        if (other == akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.getDefaultInstance()) return this;
         if (other.hasMessageType()) {
           setMessageType(other.getMessageType());
         }
@@ -9484,7 +9490,7 @@ public final class RemoteProtocol {
             }
             case 8: {
               int rawValue = input.readEnum();
-              akka.remote.RemoteProtocol.RemoteDaemonMessageType value = akka.remote.RemoteProtocol.RemoteDaemonMessageType.valueOf(rawValue);
+              akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType value = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -9527,15 +9533,15 @@ public final class RemoteProtocol {
       
       private int bitField0_;
       
-      // required .RemoteDaemonMessageType messageType = 1;
-      private akka.remote.RemoteProtocol.RemoteDaemonMessageType messageType_ = akka.remote.RemoteProtocol.RemoteDaemonMessageType.STOP;
+      // required .RemoteSystemDaemonMessageType messageType = 1;
+      private akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType messageType_ = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.STOP;
       public boolean hasMessageType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public akka.remote.RemoteProtocol.RemoteDaemonMessageType getMessageType() {
+      public akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType getMessageType() {
         return messageType_;
       }
-      public Builder setMessageType(akka.remote.RemoteProtocol.RemoteDaemonMessageType value) {
+      public Builder setMessageType(akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -9546,7 +9552,7 @@ public final class RemoteProtocol {
       }
       public Builder clearMessageType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        messageType_ = akka.remote.RemoteProtocol.RemoteDaemonMessageType.STOP;
+        messageType_ = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.STOP;
         onChanged();
         return this;
       }
@@ -9791,15 +9797,15 @@ public final class RemoteProtocol {
         return replicateActorFromUuidBuilder_;
       }
       
-      // @@protoc_insertion_point(builder_scope:RemoteDaemonMessageProtocol)
+      // @@protoc_insertion_point(builder_scope:RemoteSystemDaemonMessageProtocol)
     }
     
     static {
-      defaultInstance = new RemoteDaemonMessageProtocol(true);
+      defaultInstance = new RemoteSystemDaemonMessageProtocol(true);
       defaultInstance.initFields();
     }
     
-    // @@protoc_insertion_point(class_scope:RemoteDaemonMessageProtocol)
+    // @@protoc_insertion_point(class_scope:RemoteSystemDaemonMessageProtocol)
   }
   
   public interface DurableMailboxMessageProtocolOrBuilder
@@ -10117,7 +10123,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -10568,10 +10574,10 @@ public final class RemoteProtocol {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ExceptionProtocol_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_RemoteDaemonMessageProtocol_descriptor;
+    internal_static_RemoteSystemDaemonMessageProtocol_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable;
+      internal_static_RemoteSystemDaemonMessageProtocol_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_DurableMailboxMessageProtocol_descriptor;
   private static
@@ -10625,30 +10631,32 @@ public final class RemoteProtocol {
       "feCycleType\"1\n\017AddressProtocol\022\020\n\010hostna" +
       "me\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"7\n\021ExceptionProto" +
       "col\022\021\n\tclassname\030\001 \002(\t\022\017\n\007message\030\002 \002(\t\"" +
-      "\304\001\n\033RemoteDaemonMessageProtocol\022-\n\013messa",
-      "geType\030\001 \002(\0162\030.RemoteDaemonMessageType\022 " +
-      "\n\tactorUuid\030\002 \001(\0132\r.UuidProtocol\022\024\n\014acto" +
-      "rAddress\030\003 \001(\t\022\017\n\007payload\030\005 \001(\014\022-\n\026repli" +
-      "cateActorFromUuid\030\006 \001(\0132\r.UuidProtocol\"\212" +
-      "\001\n\035DurableMailboxMessageProtocol\022\031\n\021owne" +
-      "rActorAddress\030\001 \002(\t\022\032\n\022senderActorAddres" +
-      "s\030\002 \001(\t\022!\n\nfutureUuid\030\003 \001(\0132\r.UuidProtoc" +
-      "ol\022\017\n\007message\030\004 \002(\014*(\n\013CommandType\022\013\n\007CO" +
-      "NNECT\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026ReplicationStor" +
-      "ageType\022\r\n\tTRANSIENT\020\001\022\023\n\017TRANSACTION_LO",
-      "G\020\002\022\r\n\tDATA_GRID\020\003*>\n\027ReplicationStrateg" +
-      "yType\022\021\n\rWRITE_THROUGH\020\001\022\020\n\014WRITE_BEHIND" +
-      "\020\002*]\n\027SerializationSchemeType\022\010\n\004JAVA\020\001\022" +
-      "\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003\022\r\n\tJAVA_JSO" +
-      "N\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCycleType\022\r\n\tPE" +
-      "RMANENT\020\001\022\r\n\tTEMPORARY\020\002*\217\002\n\027RemoteDaemo" +
-      "nMessageType\022\010\n\004STOP\020\001\022\007\n\003USE\020\002\022\013\n\007RELEA" +
-      "SE\020\003\022\022\n\016MAKE_AVAILABLE\020\004\022\024\n\020MAKE_UNAVAIL" +
-      "ABLE\020\005\022\016\n\nDISCONNECT\020\006\022\r\n\tRECONNECT\020\007\022\n\n" +
-      "\006RESIGN\020\010\022\031\n\025FAIL_OVER_CONNECTIONS\020\t\022\026\n\022",
-      "FUNCTION_FUN0_UNIT\020\n\022\025\n\021FUNCTION_FUN0_AN" +
-      "Y\020\013\022\032\n\026FUNCTION_FUN1_ARG_UNIT\020\014\022\031\n\025FUNCT" +
-      "ION_FUN1_ARG_ANY\020\rB\017\n\013akka.remoteH\001"
+      "\320\001\n!RemoteSystemDaemonMessageProtocol\0223\n",
+      "\013messageType\030\001 \002(\0162\036.RemoteSystemDaemonM" +
+      "essageType\022 \n\tactorUuid\030\002 \001(\0132\r.UuidProt" +
+      "ocol\022\024\n\014actorAddress\030\003 \001(\t\022\017\n\007payload\030\005 " +
+      "\001(\014\022-\n\026replicateActorFromUuid\030\006 \001(\0132\r.Uu" +
+      "idProtocol\"\212\001\n\035DurableMailboxMessageProt" +
+      "ocol\022\031\n\021ownerActorAddress\030\001 \002(\t\022\032\n\022sende" +
+      "rActorAddress\030\002 \001(\t\022!\n\nfutureUuid\030\003 \001(\0132" +
+      "\r.UuidProtocol\022\017\n\007message\030\004 \002(\014*(\n\013Comma" +
+      "ndType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026Rep" +
+      "licationStorageType\022\r\n\tTRANSIENT\020\001\022\023\n\017TR",
+      "ANSACTION_LOG\020\002\022\r\n\tDATA_GRID\020\003*>\n\027Replic" +
+      "ationStrategyType\022\021\n\rWRITE_THROUGH\020\001\022\020\n\014" +
+      "WRITE_BEHIND\020\002*]\n\027SerializationSchemeTyp" +
+      "e\022\010\n\004JAVA\020\001\022\013\n\007SBINARY\020\002\022\016\n\nSCALA_JSON\020\003" +
+      "\022\r\n\tJAVA_JSON\020\004\022\014\n\010PROTOBUF\020\005*-\n\rLifeCyc" +
+      "leType\022\r\n\tPERMANENT\020\001\022\r\n\tTEMPORARY\020\002*\261\002\n" +
+      "\035RemoteSystemDaemonMessageType\022\010\n\004STOP\020\001" +
+      "\022\007\n\003USE\020\002\022\013\n\007RELEASE\020\003\022\022\n\016MAKE_AVAILABLE" +
+      "\020\004\022\024\n\020MAKE_UNAVAILABLE\020\005\022\016\n\nDISCONNECT\020\006" +
+      "\022\r\n\tRECONNECT\020\007\022\n\n\006RESIGN\020\010\022\n\n\006GOSSIP\020\t\022",
+      "\016\n\nGOSSIP_ACK\020\n\022\031\n\025FAIL_OVER_CONNECTIONS" +
+      "\020\024\022\026\n\022FUNCTION_FUN0_UNIT\020\025\022\025\n\021FUNCTION_F" +
+      "UN0_ANY\020\026\022\032\n\026FUNCTION_FUN1_ARG_UNIT\020\027\022\031\n" +
+      "\025FUNCTION_FUN1_ARG_ANY\020\030B\017\n\013akka.remoteH" +
+      "\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -10759,14 +10767,14 @@ public final class RemoteProtocol {
               new java.lang.String[] { "Classname", "Message", },
               akka.remote.RemoteProtocol.ExceptionProtocol.class,
               akka.remote.RemoteProtocol.ExceptionProtocol.Builder.class);
-          internal_static_RemoteDaemonMessageProtocol_descriptor =
+          internal_static_RemoteSystemDaemonMessageProtocol_descriptor =
             getDescriptor().getMessageTypes().get(13);
-          internal_static_RemoteDaemonMessageProtocol_fieldAccessorTable = new
+          internal_static_RemoteSystemDaemonMessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteDaemonMessageProtocol_descriptor,
+              internal_static_RemoteSystemDaemonMessageProtocol_descriptor,
               new java.lang.String[] { "MessageType", "ActorUuid", "ActorAddress", "Payload", "ReplicateActorFromUuid", },
-              akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.class,
-              akka.remote.RemoteProtocol.RemoteDaemonMessageProtocol.Builder.class);
+              akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.class,
+              akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.Builder.class);
           internal_static_DurableMailboxMessageProtocol_descriptor =
             getDescriptor().getMessageTypes().get(14);
           internal_static_DurableMailboxMessageProtocol_fieldAccessorTable = new

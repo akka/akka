@@ -13,7 +13,7 @@ object SupervisorHierarchySpec {
 
   class CountDownActor(countDown: CountDownLatch) extends Actor {
     protected def receive = {
-      case p: Props ⇒ reply(context.actorOf(p))
+      case p: Props ⇒ channel ! context.actorOf(p)
     }
     override def postRestart(reason: Throwable) = {
       countDown.countDown()
@@ -55,8 +55,8 @@ class SupervisorHierarchySpec extends AkkaSpec {
         self startsMonitoring crasher
 
         protected def receive = {
-          case "killCrasher"    ⇒ crasher ! Kill
-          case Terminated(_, _) ⇒ countDownMax.countDown()
+          case "killCrasher" ⇒ crasher ! Kill
+          case Terminated(_) ⇒ countDownMax.countDown()
         }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 1, 5000)))
 

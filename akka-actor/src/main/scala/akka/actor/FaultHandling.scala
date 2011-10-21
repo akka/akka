@@ -133,7 +133,7 @@ abstract class FaultHandlingStrategy {
   /**
    * Returns whether it processed the failure or not
    */
-  final def handleFailure(fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
+  def handleFailure(fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
     val cause = fail.cause
     val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
     action match {

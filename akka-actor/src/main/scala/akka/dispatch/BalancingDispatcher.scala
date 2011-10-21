@@ -57,12 +57,7 @@ class BalancingDispatcher(
   class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
     final def enqueue(handle: Envelope) = messageQueue.enqueue(handle)
 
-    final def dequeue(): Envelope = {
-      val envelope = messageQueue.dequeue()
-      if (envelope eq null) null
-      else if (envelope.receiver eq actor) envelope
-      else envelope.copy(receiver = actor)
-    }
+    final def dequeue(): Envelope = messageQueue.dequeue()
 
     final def numberOfMessages: Int = messageQueue.numberOfMessages
 
@@ -95,6 +90,8 @@ class BalancingDispatcher(
       while (messages ne null) {
         deadLetterMailbox.systemEnqueue(messages) //Send to dead letter queue
         messages = messages.next
+        if (messages eq null) //Make sure that any system messages received after the current drain are also sent to the dead letter mbox
+          messages = mailBox.systemDrain()
       }
     }
   }
@@ -106,8 +103,7 @@ class BalancingDispatcher(
     } else true
   }
 
-  override protected[akka] def dispatch(invocation: Envelope) = {
-    val receiver = invocation.receiver
+  override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue enqueue invocation
 
     val buddy = buddies.pollFirst()

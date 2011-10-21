@@ -22,7 +22,7 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
         within(5 seconds) {
           val p = Props(new Actor {
             def receive = {
-              case p: Props ⇒ this reply context.actorOf(p)
+              case p: Props ⇒ channel ! context.actorOf(p)
             }
             override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.address }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))

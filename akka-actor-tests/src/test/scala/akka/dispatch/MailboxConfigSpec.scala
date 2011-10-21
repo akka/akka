@@ -80,12 +80,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = {
-    new Envelope(
-      actorOf(new Actor { //Dummy actor
-        def receive = { case _ ⇒ }
-      }).asInstanceOf[LocalActorRef].underlying, msg, NullChannel)
-  }
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, NullChannel)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null

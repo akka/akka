@@ -35,7 +35,7 @@ object ActorRefSpec {
         val worker = context.actorOf(Props[WorkerActor])
         worker ! ReplyTo(channel)
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ reply("simpleReply")
+      case "simpleRequest" ⇒ channel ! "simpleReply"
     }
   }
 
@@ -43,7 +43,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work
-        reply("workDone")
+        channel ! "workDone"
         self.stop()
       }
       case ReplyTo(replyTo) ⇒ {
@@ -74,7 +74,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ reply(self)
+      case "self" ⇒ channel ! self
       case x      ⇒ inner forward x
     }
   }
@@ -83,7 +83,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ reply(self)
+      case "self" ⇒ channel ! self
       case x      ⇒ inner forward x
     }
   }
@@ -94,8 +94,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ reply(self)
-      case other       ⇒ reply(other)
+      case "innerself" ⇒ channel ! self
+      case other       ⇒ channel ! other
     }
   }
 
@@ -103,8 +103,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ reply(self)
-      case other       ⇒ reply(other)
+      case "innerself" ⇒ channel ! self
+      case other       ⇒ channel ! other
     }
   }
 
@@ -321,7 +321,7 @@ class ActorRefSpec extends AkkaSpec {
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
         val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
-        def receive = { case _ ⇒ reply(nested) }
+        def receive = { case _ ⇒ channel ! nested }
       })
 
       val nested = (a ? "any").as[ActorRef].get
@@ -369,8 +369,8 @@ class ActorRefSpec extends AkkaSpec {
       val timeout = Timeout(20000)
       val ref = actorOf(Props(new Actor {
         def receive = {
-          case 5    ⇒ tryReply("five")
-          case null ⇒ tryReply("null")
+          case 5    ⇒ channel.tryTell("five")
+          case null ⇒ channel.tryTell("null")
         }
       }))
 

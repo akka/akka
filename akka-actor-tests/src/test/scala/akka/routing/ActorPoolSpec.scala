@@ -41,7 +41,7 @@ class ActorPoolSpec extends AkkaSpec {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                tryReply("success")
+                channel.tryTell("success")
             }
           }))
 
@@ -88,7 +88,7 @@ class ActorPoolSpec extends AkkaSpec {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                tryReply("Response")
+                channel.tryTell("Response")
               }
             }
           }))

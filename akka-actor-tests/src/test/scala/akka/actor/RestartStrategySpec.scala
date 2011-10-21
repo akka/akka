@@ -209,7 +209,7 @@ class RestartStrategySpec extends AkkaSpec {
 
       val boss = actorOf(Props(new Actor {
         def receive = {
-          case p: Props      ⇒ reply(context.actorOf(p))
+          case p: Props      ⇒ channel ! context.actorOf(p)
           case t: Terminated ⇒ maxNoOfRestartsLatch.open
         }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))

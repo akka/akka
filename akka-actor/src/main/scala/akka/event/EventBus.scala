@@ -182,10 +182,7 @@ trait ActorClassification { self: ActorEventBus with ActorClassifier ⇒
         if (monitored.isShutdown) false
         else {
           if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
-          else {
-            if (monitored.isShutdown) !dissociate(monitored, monitor)
-            else true
-          }
+          else if (monitored.isShutdown) !dissociate(monitored, monitor) else true
         }
       case raw: Vector[_] ⇒
         val v = raw.asInstanceOf[Vector[ActorRef]]
@@ -194,10 +191,7 @@ trait ActorClassification { self: ActorEventBus with ActorClassifier ⇒
         else {
           val added = v :+ monitor
           if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
-          else {
-            if (monitored.isShutdown) !dissociate(monitored, monitor)
-            else true
-          }
+          else if (monitored.isShutdown) !dissociate(monitored, monitor) else true
         }
     }
   }
@@ -241,13 +235,11 @@ trait ActorClassification { self: ActorEventBus with ActorClassifier ⇒
       case raw: Vector[_] ⇒
         val v = raw.asInstanceOf[Vector[ActorRef]]
         val removed = v.filterNot(monitor ==)
-        if (removed eq v) false
+        if (removed eq raw) false
         else if (removed.isEmpty) {
-          if (!mappings.remove(monitored, v)) dissociate(monitored, monitor)
-          else true
+          if (!mappings.remove(monitored, v)) dissociate(monitored, monitor) else true
         } else {
-          if (!mappings.replace(monitored, v, removed)) dissociate(monitored, monitor)
-          else true
+          if (!mappings.replace(monitored, v, removed)) dissociate(monitored, monitor) else true
         }
     }
   }
@@ -263,10 +255,8 @@ trait ActorClassification { self: ActorEventBus with ActorClassifier ⇒
   protected def mapSize: Int
 
   def publish(event: Event): Unit = mappings.get(classify(event)) match {
-    case null ⇒
-    case raw: Vector[_] ⇒
-      val v = raw.asInstanceOf[Vector[ActorRef]]
-      v foreach { _ ! event }
+    case null           ⇒
+    case raw: Vector[_] ⇒ raw.asInstanceOf[Vector[ActorRef]] foreach { _ ! event }
   }
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = associate(to, subscriber)

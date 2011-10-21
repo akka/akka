@@ -55,7 +55,7 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
 case class Failed(@BeanProperty actor: ActorRef,
                   @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case class ChildTerminated(@BeanProperty child: ActorRef, @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+case class ChildTerminated(@BeanProperty child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
@@ -63,7 +63,7 @@ case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
-case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable) extends PossiblyHarmful
+case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
 
 case object ReceiveTimeout extends PossiblyHarmful
 
@@ -95,8 +95,8 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
   def this(msg: String) = this(msg, null);
 }
 
-case class DeathPactException private[akka] (dead: ActorRef, cause: Throwable)
-  extends AkkaException("monitored actor " + dead + " terminated", cause)
+case class DeathPactException private[akka] (dead: ActorRef)
+  extends AkkaException("monitored actor " + dead + " terminated")
   with NoStackTrace
 
 // must not pass InterruptedException to other threads
@@ -175,6 +175,11 @@ object Actor {
       case _                 ⇒ new LoggingReceive(source, r)
     }
   }
+
+  object emptyBehavior extends Receive {
+    def isDefinedAt(x: Any) = false
+    def apply(x: Any) = throw new UnsupportedOperationException("empty behavior apply()")
+  }
 }
 
 /**
@@ -223,12 +228,10 @@ trait Actor {
 
   implicit def app = context.app
 
-  private def config = context.app.AkkaConfig
-
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit def defaultTimeout = config.ActorTimeout
+  implicit def defaultTimeout = app.AkkaConfig.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -244,7 +247,7 @@ trait Actor {
    * This method does NOT modify the given Receive unless
    * akka.actor.debug.receive is set within akka.conf.
    */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (config.AddLoggingReceive) LoggingReceive(self, r) else r
+  def loggable(self: AnyRef)(r: Receive): Receive = if (app.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.
@@ -252,7 +255,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * the 'forward' function.
    */
-  def someSelf: Some[ActorRef with ScalaActorRef] = Some(context.self)
+  def someSelf: Some[ActorRef with ScalaActorRef] = Some(context.self) //TODO FIXME we might not need this when we switch to sender-in-scope-always
 
   /*
    * Option[ActorRef] representation of the 'self' ActorRef reference.
@@ -260,7 +263,7 @@ trait Actor {
    * Mainly for internal use, functions as the implicit sender references when invoking
    * one of the message send functions ('!' and '?').
    */
-  def optionSelf: Option[ActorRef with ScalaActorRef] = someSelf
+  def optionSelf: Option[ActorRef with ScalaActorRef] = someSelf //TODO FIXME we might not need this when we switch to sender-in-scope-always
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -276,20 +279,15 @@ trait Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def sender: Option[ActorRef] = context.sender
-
-  /**
-   * The reference sender future of the last received message.
-   * Is defined if the message was sent with sent with '?'/'ask', else None.
-   */
-  def senderFuture(): Option[Promise[Any]] = context.senderFuture
+  @inline
+  final def sender: ActorRef = context.sender
 
   /**
    * Abstraction for unification of sender and senderFuture for later reply
    */
   def channel: UntypedChannel = context.channel
 
-  // just for current compatibility
+  // TODO FIXME REMOVE ME just for current compatibility
   implicit def forwardable: ForwardableChannel = ForwardableChannel(channel)
 
   /**
@@ -305,31 +303,6 @@ trait Actor {
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
    */
   def receiveTimeout_=(timeout: Option[Long]) = context.receiveTimeout = timeout
-
-  /**
-   * Akka Scala & Java API
-   * Use <code>reply(..)</code> to reply with a message to the original sender of the message currently
-   * being processed. This method fails if the original sender of the message could not be determined with an
-   * IllegalStateException.
-   *
-   * If you don't want deal with this IllegalStateException, but just a boolean, just use the <code>tryReply(...)</code>
-   * version.
-   *
-   * <p/>
-   * Throws an IllegalStateException if unable to determine what to reply to.
-   */
-  def reply(message: Any) = channel.!(message)(self)
-
-  /**
-   * Akka Scala & Java API
-   * Use <code>tryReply(..)</code> to try reply with a message to the original sender of the message currently
-   * being processed. This method
-   * <p/>
-   * Returns true if reply was sent, and false if unable to determine what to reply to.
-   *
-   * If you would rather have an exception, check the <code>reply(..)</code> version.
-   */
-  def tryReply(message: Any): Boolean = channel.tryTell(message)(self)
 
   /**
    * Same as ActorContext.children
@@ -352,7 +325,7 @@ trait Actor {
    *   def receive = {
    *     case Ping =&gt;
    *       println("got a 'Ping' message")
-   *       reply("pong")
+   *       channel ! "pong"
    *
    *     case OneWay =&gt;
    *       println("got a 'OneWay' message")
@@ -403,8 +376,8 @@ trait Actor {
    */
   def unhandled(message: Any) {
     message match {
-      case Terminated(dead, cause) ⇒ throw new DeathPactException(dead, cause)
-      case _                       ⇒ throw new UnhandledMessageException(message, self)
+      case Terminated(dead) ⇒ throw new DeathPactException(dead)
+      case _                ⇒ throw new UnhandledMessageException(message, self)
     }
   }
 
@@ -426,16 +399,26 @@ trait Actor {
     if (h.nonEmpty) context.hotswap = h.pop
   }
 
+  /**
+   * Registers this actor as a Monitor for the provided ActorRef
+   * @returns the provided ActorRef
+   */
+  def watch(subject: ActorRef): ActorRef = self startsMonitoring subject
+
+  /**
+   * Unregisters this actor as Monitor for the provided ActorRef
+   * @returns the provided ActorRef
+   */
+  def unwatch(subject: ActorRef): ActorRef = self stopsMonitoring subject
+
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-    if (msg.isInstanceOf[AnyRef] && (msg.asInstanceOf[AnyRef] eq null))
-      throw new InvalidMessageException("Message from [" + channel + "] to [" + self + "] is null")
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (config.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      if (app.AkkaConfig.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)

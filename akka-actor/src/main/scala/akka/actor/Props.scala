@@ -42,7 +42,7 @@ object Props {
    */
   def apply(): Props = default
 
-  def empty = Props(context ⇒ { case null ⇒ })
+  val empty = Props(new Actor { def receive = Actor.emptyBehavior })
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance

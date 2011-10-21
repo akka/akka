@@ -70,7 +70,7 @@ public class UntypedCounter extends UntypedTransactor {
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            reply(count.get());
+            getChannel().tell(count.get());
             return true;
         } else return false;
     }

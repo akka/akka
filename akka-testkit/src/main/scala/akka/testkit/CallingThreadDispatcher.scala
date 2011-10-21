@@ -150,20 +150,20 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
     }
   }
 
-  protected[akka] override def dispatch(handle: Envelope) {
-    val mbox = getMailbox(handle.receiver)
+  protected[akka] override def dispatch(receiver: ActorCell, handle: Envelope) {
+    val mbox = getMailbox(receiver)
     val queue = mbox.queue
     val execute = mbox.suspendSwitch.fold {
       queue.push(handle)
       if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-        app.eventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format handle.receiver)
+        app.eventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format receiver)
       }
       false
     } {
       queue.push(handle)
       if (queue.isActive) {
         if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-          app.eventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format handle.receiver)
+          app.eventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format receiver)
         }
         false
       } else {
@@ -200,10 +200,10 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
       }
       if (handle ne null) {
         try {
-          handle.invoke
+          mbox.actor.invoke(handle)
           if (warnings) handle.channel match {
             case f: ActorPromise if !f.isCompleted ⇒
-              app.eventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (handle.receiver, handle.message))
+              app.eventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (mbox.actor, handle.message))
             case _ ⇒
           }
           true

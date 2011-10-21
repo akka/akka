@@ -21,7 +21,7 @@ class SupervisorMiscSpec extends AkkaSpec {
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
           protected def receive = {
-            case "status" ⇒ this.reply("OK")
+            case "status" ⇒ this.channel ! "OK"
             case _        ⇒ this.self.stop()
           }
         })

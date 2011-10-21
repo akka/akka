@@ -9,6 +9,7 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
+import akka.event.ActorEventBus
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -68,7 +69,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
    * implement request/response message exchanges.
    * <p/>
-   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().reply(..)</code>
+   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().channel().tell(...)</code>
    * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
    */
   def ask(message: AnyRef, timeout: Long, sender: ActorRef): Future[AnyRef] =
@@ -361,6 +362,8 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
+case class DeadLetter(message: Any, channel: UntypedChannel)
+
 class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   override val address: String = "akka:internal:DeadLetterActorRef"
@@ -375,10 +378,10 @@ class DeadLetterActorRef(app: AkkaApplication) extends UnsupportedActorRef {
 
   override def stop(): Unit = ()
 
-  protected[akka] override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.debug(this, message)
+  protected[akka] override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.notify(DeadLetter(message, channel))
 
   protected[akka] override def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = { app.eventHandler.debug(this, message); brokenPromise }
+    channel: UntypedChannel): Future[Any] = { app.eventHandler.notify(DeadLetter(message, channel)); brokenPromise }
 }
