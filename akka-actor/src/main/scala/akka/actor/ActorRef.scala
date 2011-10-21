@@ -87,12 +87,12 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
   /**
    * Suspends the actor. It will not process messages while suspended.
    */
-  def suspend(): Unit
+  def suspend(): Unit //TODO FIXME REMOVE THIS
 
   /**
    * Resumes a suspended actor.
    */
-  def resume(): Unit
+  def resume(): Unit //TODO FIXME REMOVE THIS
 
   /**
    * Shuts down the actor its dispatcher and message queue.
@@ -111,7 +111,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    *
    * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def startsMonitoring(subject: ActorRef): ActorRef
+  def startsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
   /**
    * Deregisters this actor from being a death monitor of the provided ActorRef
@@ -120,16 +120,7 @@ abstract class ActorRef extends ActorRefShared with UntypedChannel with ReplyCha
    *
    * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def stopsMonitoring(subject: ActorRef): ActorRef
-
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
-
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any]
-
-  protected[akka] def restart(cause: Throwable): Unit
+  def stopsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -303,6 +294,15 @@ trait ScalaActorRef extends ActorRefShared with ReplyChannel[Any] { ref: ActorRe
    * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit forwardable: ForwardableChannel) = postMessageToMailbox(message, forwardable.channel)
+
+  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit
+
+  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(
+    message: Any,
+    timeout: Timeout,
+    channel: UntypedChannel): Future[Any]
+
+  protected[akka] def restart(cause: Throwable): Unit
 }
 
 /**
