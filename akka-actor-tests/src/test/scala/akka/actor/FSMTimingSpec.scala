@@ -44,7 +44,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "receive single-shot timer" in {
-      within(50 millis, 150 millis) {
+      within(50 millis, 250 millis) {
         fsm ! TestSingleTimer
         expectMsg(Tick)
         expectMsg(Transition(fsm, TestSingleTimer, Initial))
