@@ -103,7 +103,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
   protected def _route(): Actor.Receive = {
     // for testing...
     case Stat ⇒
-      channel.tryTell(Stats(_delegates length))
+      sender ! Stats(_delegates length)
     case Terminated(victim) ⇒
       _delegates = _delegates filterNot { victim == }
     case msg ⇒
@@ -285,16 +285,14 @@ trait MailboxPressureCapacitor {
 
 /**
  * Implements pressure() to return the number of actors currently processing a
- * message whose reply will be sent to a [[akka.dispatch.Future]].
+ * message.
  * In other words, this capacitor counts how many
- * delegates are tied up actively processing a message, as long as the
- * messages have somebody waiting on the result. "One way" messages with
- * no reply would not be counted.
+ * delegates are tied up actively processing a message
  */
-trait ActiveFuturesPressureCapacitor {
+trait ActiveActorsPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ a.underlying.channel.isInstanceOf[Promise[_]]
+      case a: LocalActorRef ⇒ !a.underlying.sender.isShutdown
       case _                ⇒ false
     }
 }

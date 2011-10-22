@@ -13,7 +13,7 @@ import akka.AkkaApplication
 
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
- * Also provides API for channel listener management.
+ * Also provides API for sender listener management.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -65,7 +65,7 @@ class NetworkEventStream(val app: AkkaApplication) {
   import NetworkEventStream._
 
   // FIXME: check that this supervision is correct
-  private[akka] val channel = app.provider.actorOf(
+  private[akka] val sender = app.provider.actorOf(
     Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")),
     app.guardian, Props.randomAddress, systemService = true)
 
@@ -73,11 +73,11 @@ class NetworkEventStream(val app: AkkaApplication) {
    * Registers a network event stream listener (asyncronously).
    */
   def register(listener: Listener, connectionAddress: InetSocketAddress) =
-    channel ! Register(listener, connectionAddress)
+    sender ! Register(listener, connectionAddress)
 
   /**
    * Unregisters a network event stream listener (asyncronously) .
    */
   def unregister(listener: Listener, connectionAddress: InetSocketAddress) =
-    channel ! Unregister(listener, connectionAddress)
+    sender ! Unregister(listener, connectionAddress)
 }

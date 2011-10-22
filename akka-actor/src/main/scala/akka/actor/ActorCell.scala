@@ -36,8 +36,6 @@ private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory 
 
   def sender: ActorRef
 
-  def channel: UntypedChannel
-
   def children: Iterable[ActorRef]
 
   def dispatcher: MessageDispatcher
@@ -126,29 +124,12 @@ private[akka] class ActorCell(
 
   def children: Iterable[ActorRef] = _children.keys
 
-  def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = dispatcher.dispatch(this, Envelope(message, channel))
-
-  def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
-    val future = channel match {
-      case f: ActorPromise ⇒ f
-      case _               ⇒ new ActorPromise(timeout)(dispatcher)
-    }
-    dispatcher.dispatch(this, Envelope(message, future))
-    future
-  }
+  def postMessageToMailbox(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
 
   def sender: ActorRef = currentMessage match {
-    case null                                      ⇒ app.deadLetters
-    case msg if msg.channel.isInstanceOf[ActorRef] ⇒ msg.channel.asInstanceOf[ActorRef]
-    case _                                         ⇒ app.deadLetters
-  }
-
-  def channel: UntypedChannel = currentMessage match {
-    case null ⇒ NullChannel
-    case msg  ⇒ msg.channel
+    case null                      ⇒ app.deadLetters
+    case msg if msg.sender ne null ⇒ msg.sender
+    case _                         ⇒ app.deadLetters
   }
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
@@ -308,12 +289,10 @@ private[akka] class ActorCell(
               // make sure that InterruptedException does not leave this thread
               if (e.isInstanceOf[InterruptedException]) {
                 val ex = ActorInterruptedException(e)
-                channel.sendException(ex)
                 props.faultHandler.handleSupervisorFailing(self, children)
                 supervisor ! Failed(self, ex)
                 throw e //Re-throw InterruptedExceptions as expected
               } else {
-                channel.sendException(e)
                 props.faultHandler.handleSupervisorFailing(self, children)
                 supervisor ! Failed(self, e)
               }
@@ -325,9 +304,6 @@ private[akka] class ActorCell(
             app.eventHandler.error(e, self, e.getMessage)
             throw e
         }
-      } else {
-        messageHandle.channel sendException new ActorKilledException("Actor has been stopped")
-        // throwing away message if actor is shut down, no use throwing an exception in receiving actor's thread, isShutdown is enforced on caller side
       }
     }
   }

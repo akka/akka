@@ -42,7 +42,7 @@ class ActorPoolSpec extends AkkaSpec {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                channel.tryTell("success")
+                sender.tell("success")
             }
           }))
 
@@ -89,7 +89,7 @@ class ActorPoolSpec extends AkkaSpec {
             def receive = {
               case req: String ⇒ {
                 sleepFor(10 millis)
-                channel.tryTell("Response")
+                sender.tell("Response")
               }
             }
           }))
@@ -112,7 +112,7 @@ class ActorPoolSpec extends AkkaSpec {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
+        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
@@ -359,7 +359,7 @@ class ActorPoolSpec extends AkkaSpec {
         val keepDying = new AtomicBoolean(false)
 
         val pool1, pool2 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1
@@ -382,7 +382,7 @@ class ActorPoolSpec extends AkkaSpec {
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with RoundRobinSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1
@@ -480,7 +480,7 @@ class ActorPoolSpec extends AkkaSpec {
         object BadState
 
         val pool1 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1

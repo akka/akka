@@ -101,7 +101,7 @@ object Chameneos {
           }
         } else {
           waitingChameneo.foreach(_ ! Exit)
-          channel ! Exit
+          sender ! Exit
         }
     }
   }

@@ -15,7 +15,6 @@ import akka.routing.LocalConnectionManager;
 import scala.Option;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
-import akka.actor.Channel;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
@@ -80,7 +79,7 @@ public class Pi {
     public void onReceive(Object message) {
       if (message instanceof Work) {
         Work work = (Work) message;
-        getChannel().tell(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
+        getSender().tell(new Result(calculatePiFor(work.getArg(), work.getNrOfElements()))); // perform the work
       } else throw new IllegalArgumentException("Unknown message [" + message + "]");
     }
   }
@@ -127,11 +126,11 @@ public class Pi {
           router.tell(new Work(arg, nrOfElements), getSelf());
         }
         // Assume the gathering behavior
-        become(gather(getChannel()));
+        become(gather(getSender()));
       }
     };
 
-    private Procedure<Object> gather(final Channel<Object> recipient) {
+    private Procedure<Object> gather(final ActorRef recipient) {
       return new Procedure<Object>() {
         public void apply(Object msg) {
           // handle result from the worker
@@ -174,7 +173,7 @@ public class Pi {
 
     // send calculate message
     long timeout = 60000;
-    Future<Object> replyFuture = master.ask(new Calculate(), timeout, null);
+    Future<Object> replyFuture = master.ask(new Calculate(), timeout);
     Option<Object> result = replyFuture.await().resultOrException();
     if (result.isDefined()) {
       double pi = (Double) result.get();

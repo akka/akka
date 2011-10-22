@@ -48,7 +48,7 @@ object IOActorSpec {
         def receiveIO = {
           case length: Int ⇒
             val bytes = socket.read(length)
-            channel ! bytes
+            sender ! bytes
         }
       }
     }
@@ -108,9 +108,9 @@ object IOActorSpec {
       case msg: NewClient ⇒ createWorker forward msg
       case ('set, key: String, value: ByteString) ⇒
         kvs += (key -> value)
-        channel.tryTell(())(self)
-      case ('get, key: String) ⇒ channel.tryTell(kvs.get(key))(self)
-      case 'getall             ⇒ channel.tryTell(kvs)(self)
+        sender.tell((), self)
+      case ('get, key: String) ⇒ sender.tell(kvs.get(key), self)
+      case 'getall             ⇒ sender.tell(kvs, self)
     }
 
   }
@@ -123,7 +123,7 @@ object IOActorSpec {
       socket = connect(ioManager, host, port)
     }
 
-    def reply(msg: Any) = channel.tryTell(msg)(self)
+    def reply(msg: Any) = sender.tell(msg, self)
 
     def receiveIO = {
       case ('set, key: String, value: ByteString) ⇒

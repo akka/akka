@@ -34,7 +34,7 @@ object CoordinatedIncrement {
         }
       }
 
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 

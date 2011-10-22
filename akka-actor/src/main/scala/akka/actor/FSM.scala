@@ -478,7 +478,7 @@ trait FSM[S, D] extends ListenerManagement {
         timeoutFuture = None
       }
       generation += 1
-      processMsg(value, channel)
+      processMsg(value, sender)
     }
   }
 
@@ -502,7 +502,7 @@ trait FSM[S, D] extends ListenerManagement {
     nextState.stopReason match {
       case None ⇒ makeTransition(nextState)
       case _ ⇒
-        nextState.replies.reverse foreach { r ⇒ channel ! r }
+        nextState.replies.reverse foreach { r ⇒ sender ! r }
         terminate(nextState)
         self.stop()
     }
@@ -512,7 +512,7 @@ trait FSM[S, D] extends ListenerManagement {
     if (!stateFunctions.contains(nextState.stateName)) {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
-      nextState.replies.reverse foreach { r ⇒ channel ! r }
+      nextState.replies.reverse foreach { r ⇒ sender ! r }
       if (currentState.stateName != nextState.stateName) {
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
@@ -599,7 +599,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
       val srcstr = source match {
         case s: String            ⇒ s
         case Timer(name, _, _, _) ⇒ "timer " + name
-        case c: UntypedChannel    ⇒ c.toString
+        case a: ActorRef          ⇒ a.toString
         case _                    ⇒ "unknown"
       }
       app.eventHandler.debug(context.self, "processing " + event + " from " + srcstr)

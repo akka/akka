@@ -33,7 +33,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {}
+  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
   private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
 
   val local = new LocalActorRefProvider(app)
@@ -143,7 +143,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   // FIXME: implement supervision
   def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
-    new RoutedActorRef(props, address)
+    new RoutedActorRef(app, props, address)
   }
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
@@ -231,9 +231,9 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] case class RemoteActorRef private[akka] (
-  val remote: RemoteSupport,
-  val remoteAddress: InetSocketAddress,
-  val address: String,
+  remote: RemoteSupport,
+  remoteAddress: InetSocketAddress,
+  address: String,
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
 
@@ -246,23 +246,11 @@ private[akka] case class RemoteActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
-  def postMessageToMailbox(message: Any, channel: UntypedChannel) {
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    remote.send[Any](message, chSender, None, remoteAddress, true, this, loader)
+  def postMessageToMailbox(message: Any, sender: ActorRef) {
+    remote.send[Any](message, Some(sender), None, remoteAddress, true, this, loader)
   }
 
-  def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any,
-    timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = {
-
-    val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None
-    val chFuture = if (channel.isInstanceOf[Promise[_]]) Some(channel.asInstanceOf[Promise[Any]]) else None
-    val future = remote.send[Any](message, chSender, chFuture, remoteAddress, false, this, loader)
-
-    if (future.isDefined) ActorPromise(future.get)(timeout)
-    else throw new IllegalActorStateException("Expected a future from remote call to actor " + toString)
-  }
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
 
   def suspend(): Unit = unsupported
 
@@ -272,7 +260,7 @@ private[akka] case class RemoteActorRef private[akka] (
     synchronized {
       if (running) {
         running = false
-        postMessageToMailbox(Terminate, None)
+        postMessageToMailbox(new Terminate(), remote.app.deadLetters)
       }
     }
   }

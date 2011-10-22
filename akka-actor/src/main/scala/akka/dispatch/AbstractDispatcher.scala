@@ -17,7 +17,7 @@ import scala.annotation.tailrec
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class Envelope(val message: Any, val channel: UntypedChannel) {
+final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
 }
 
@@ -107,7 +107,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   object DeadLetterMailbox extends Mailbox(null) {
     becomeClosed()
     override def dispatcher = null //MessageDispatcher.this
-    override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
+    override def enqueue(envelope: Envelope) = ()
     override def dequeue() = null
     override def systemEnqueue(handle: SystemMessage): Unit = ()
     override def systemDrain(): SystemMessage = null

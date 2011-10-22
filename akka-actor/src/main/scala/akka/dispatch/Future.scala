@@ -7,7 +7,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.EventHandler
-import akka.actor.{ UntypedChannel, Timeout, ExceptionChannel }
+import akka.actor.{ Timeout }
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
@@ -758,11 +758,6 @@ object Promise {
    * Creates a non-completed, new, Promise with the default timeout (akka.actor.timeout in conf)
    */
   def apply[A]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): Promise[A] = apply(timeout)
-
-  /**
-   * Construct a completable channel
-   */
-  def channel(timeout: Long)(implicit dispatcher: MessageDispatcher): ActorPromise = new ActorPromise(timeout)
 }
 
 /**
@@ -1022,31 +1017,6 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 
   private def timeLeftNoinline(): Long = timeLeft()
-}
-
-class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) extends DefaultPromise[Any](timeout)(dispatcher) with UntypedChannel with ExceptionChannel[Any] {
-
-  def !(message: Any)(implicit channel: UntypedChannel) = completeWithResult(message)
-
-  override def sendException(ex: Throwable) = {
-    completeWithException(ex)
-    value == Some(Left(ex))
-  }
-
-  def channel: UntypedChannel = this
-
-}
-
-object ActorPromise {
-  def apply(f: Promise[Any])(timeout: Timeout = f.timeout): ActorPromise =
-    new ActorPromise(timeout)(f.dispatcher) {
-      completeWith(f)
-      override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
-      override def sendException(ex: Throwable) = {
-        f completeWithException ex
-        f.value == Some(Left(ex))
-      }
-    }
 }
 
 /**

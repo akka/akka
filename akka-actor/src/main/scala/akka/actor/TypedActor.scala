@@ -340,11 +340,14 @@ class TypedActor(val app: AkkaApplication) {
         try {
           if (m.isOneWay) m(me)
           else if (m.returnsFuture_?) {
-            channel match {
-              case p: ActorPromise ⇒ p completeWith m(me).asInstanceOf[Future[Any]]
-              case _               ⇒ throw new IllegalStateException("Future-returning TypedActor didn't use ?/ask so cannot reply")
+            val s = sender
+            m(me).asInstanceOf[Future[Any]] onComplete {
+              _.value.get match {
+                case Left(f)  ⇒ s ! akka.actor.Status.Failure(f)
+                case Right(r) ⇒ s ! r
+              }
             }
-          } else channel ! m(me)
+          } else sender ! m(me)
 
         } finally {
           TypedActor.selfReference set null

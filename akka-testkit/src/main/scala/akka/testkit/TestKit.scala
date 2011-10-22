@@ -20,12 +20,12 @@ object TestActor {
 
   trait Message {
     def msg: AnyRef
-    def channel: UntypedChannel
+    def sender: ActorRef
   }
-  case class RealMessage(msg: AnyRef, channel: UntypedChannel) extends Message
+  case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
   case object NullMessage extends Message {
     override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
-    override def channel: UntypedChannel = throw new IllegalActorStateException("last receive did not dequeue a message")
+    override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")
   }
 }
 
@@ -44,7 +44,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
     case Event(x: AnyRef, data) ⇒
       val observe = data map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
       if (observe)
-        queue.offerLast(RealMessage(x, channel))
+        queue.offerLast(RealMessage(x, sender))
 
       stay
   }
@@ -579,13 +579,13 @@ class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
    * Forward this message as if in the TestActor's receive method with self.forward.
    */
   def forward(actor: ActorRef, msg: AnyRef = lastMessage.msg) {
-    actor.!(msg)(lastMessage.channel)
+    actor.!(msg)(lastMessage.sender)
   }
 
   /**
-   * Get channel of last received message.
+   * Get sender of last received message.
    */
-  def channel = lastMessage.channel
+  def sender = lastMessage.sender
 
 }
 
