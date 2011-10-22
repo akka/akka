@@ -13,7 +13,7 @@ object SupervisorHierarchySpec {
 
   class CountDownActor(countDown: CountDownLatch) extends Actor {
     protected def receive = {
-      case p: Props ⇒ channel ! context.actorOf(p)
+      case p: Props ⇒ sender ! context.actorOf(p)
     }
     override def postRestart(reason: Throwable) = {
       countDown.countDown()

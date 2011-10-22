@@ -5,6 +5,6 @@ package akka.actor
 
 class Supervisor extends Actor {
   def receive = {
-    case x: Props ⇒ channel ! context.actorOf(x)
+    case x: Props ⇒ sender ! context.actorOf(x)
   }
 }

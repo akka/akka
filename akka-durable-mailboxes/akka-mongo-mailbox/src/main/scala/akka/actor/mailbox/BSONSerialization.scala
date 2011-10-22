@@ -35,7 +35,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     b += "_id" -> msg._id
     b += "ownerAddress" -> msg.ownerAddress
 
-    msg.channel match {
+    msg.sender match {
       case a: ActorRef ⇒ { b += "senderAddress" -> a.address }
       case _           ⇒ ()
     }

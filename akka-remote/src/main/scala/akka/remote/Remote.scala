@@ -75,8 +75,10 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
     remote.start(hostname, port)
     remote.register(remoteDaemonServiceName, remoteDaemon)
-    app.eventHandler.addListener(eventStream.channel)
+
+    app.eventHandler.addListener(eventStream.sender)
     app.eventHandler.addListener(remoteClientLifeCycleHandler)
+
     // TODO actually register this provider in app in remote mode
     //provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
     remote
@@ -161,10 +163,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         eventHandler.error(this, "Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [%s]".format(message))
       }
 
-      channel ! Success(address.toString)
+      sender ! Success(address.toString)
     } catch {
       case error: Throwable ⇒
-        channel ! Failure(error)
+        sender ! Failure(error)
         throw error
     }
   }
@@ -182,10 +184,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
     //   gossiper tell gossip
 
-    //   channel ! Success(address.toString)
+    //   sender ! Success(address.toString)
     // } catch {
     //   case error: Throwable ⇒
-    //     channel ! Failure(error)
+    //     sender ! Failure(error)
     //     throw error
     // }
   }
@@ -204,7 +206,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case f: Function0[_] ⇒ try { channel ! f() } finally { context.self.stop() }
+          case f: Function0[_] ⇒ try { sender ! f() } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
@@ -222,7 +224,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
     new LocalActorRef(app,
       Props(
         context ⇒ {
-          case (fun: Function[_, _], param: Any) ⇒ try { channel ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
+          case (fun: Function[_, _], param: Any) ⇒ try { sender ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
         }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 

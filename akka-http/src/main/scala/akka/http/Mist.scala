@@ -10,7 +10,7 @@ import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
 import javax.servlet.http.HttpServlet
 import javax.servlet.Filter
 import java.lang.UnsupportedOperationException
-import akka.actor.{ NullChannel, ActorRef, Actor }
+import akka.actor.{ ActorRef, Actor }
 import Types._
 import akka.AkkaApplication
 
@@ -246,10 +246,8 @@ trait Endpoint { this: Actor ⇒
 
       if (!endpoints.isEmpty) endpoints.foreach { _.apply(uri) ! req }
       else {
-        channel match {
-          case null | NullChannel ⇒ _na(uri, req)
-          case channel            ⇒ channel ! NoneAvailable(uri, req)
-        }
+        if (sender.isShutdown) _na(uri, req)
+        else sender ! NoneAvailable(uri, req)
       }
     }
   }

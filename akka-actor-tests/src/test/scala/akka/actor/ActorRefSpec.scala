@@ -18,24 +18,24 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
 
-  case class ReplyTo(channel: Channel[Any])
+  case class ReplyTo(sender: ActorRef)
 
   val latch = TestLatch(4)
 
   class ReplyActor extends Actor {
-    var replyTo: Channel[Any] = null
+    var replyTo: ActorRef = null
 
     def receive = {
       case "complexRequest" ⇒ {
-        replyTo = channel
+        replyTo = sender
         val worker = context.actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = context.actorOf(Props[WorkerActor])
-        worker ! ReplyTo(channel)
+        worker ! ReplyTo(sender)
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ channel ! "simpleReply"
+      case "simpleRequest" ⇒ sender ! "simpleReply"
     }
   }
 
@@ -43,7 +43,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work
-        channel ! "workDone"
+        sender ! "workDone"
         self.stop()
       }
       case ReplyTo(replyTo) ⇒ {
@@ -74,7 +74,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ channel ! self
+      case "self" ⇒ sender ! self
       case x      ⇒ inner forward x
     }
   }
@@ -83,7 +83,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ channel ! self
+      case "self" ⇒ sender ! self
       case x      ⇒ inner forward x
     }
   }
@@ -94,8 +94,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ channel ! self
-      case other       ⇒ channel ! other
+      case "innerself" ⇒ sender ! self
+      case other       ⇒ sender ! other
     }
   }
 
@@ -103,8 +103,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ channel ! self
-      case other       ⇒ channel ! other
+      case "innerself" ⇒ sender ! self
+      case other       ⇒ sender ! other
     }
   }
 
@@ -322,7 +322,7 @@ class ActorRefSpec extends AkkaSpec {
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
         val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
-        def receive = { case _ ⇒ channel ! nested }
+        def receive = { case _ ⇒ sender ! nested }
       })
 
       val nested = (a ? "any").as[ActorRef].get
@@ -342,7 +342,7 @@ class ActorRefSpec extends AkkaSpec {
       (a ? "msg").as[String] must be === Some("msg")
     }
 
-    "support reply via channel" in {
+    "support reply via sender" in {
       val serverRef = actorOf(Props[ReplyActor])
       val clientRef = actorOf(Props(new SenderActor(serverRef)))
 
@@ -370,8 +370,8 @@ class ActorRefSpec extends AkkaSpec {
       val timeout = Timeout(20000)
       val ref = actorOf(Props(new Actor {
         def receive = {
-          case 5    ⇒ channel.tryTell("five")
-          case null ⇒ channel.tryTell("null")
+          case 5    ⇒ sender.tell("five")
+          case null ⇒ sender.tell("null")
         }
       }))
 

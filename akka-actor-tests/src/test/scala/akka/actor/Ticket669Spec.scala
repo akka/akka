@@ -25,7 +25,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 5, 10000)))
         val supervised = (supervisor ? Props[Supervised]).as[ActorRef].get
 
-        supervised.!("test")(Some(testActor))
+        supervised.!("test")(testActor)
         expectMsg("failure1")
         supervisor.stop()
       }
@@ -36,7 +36,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), Some(0), None)))
         val supervised = (supervisor ? Props[Supervised]).as[ActorRef].get
 
-        supervised.!("test")(Some(testActor))
+        supervised.!("test")(testActor)
         expectMsg("failure2")
         supervisor.stop()
       }
@@ -51,11 +51,11 @@ object Ticket669Spec {
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
-      channel.tryTell("failure1")
+      sender.tell("failure1")
     }
 
     override def postStop() {
-      channel.tryTell("failure2")
+      sender.tell("failure2")
     }
   }
 }

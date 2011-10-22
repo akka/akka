@@ -97,11 +97,18 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {
+    @volatile
+    var stopped = false
+
     override def address = app.name + ":BubbleWalker"
 
     override def toString = address
 
-    protected[akka] override def postMessageToMailbox(msg: Any, channel: UntypedChannel) {
+    def stop() = stopped = true
+
+    def isShutdown = stopped
+
+    protected[akka] override def postMessageToMailbox(msg: Any, sender: ActorRef) {
       msg match {
         case Failed(child, ex)      ⇒ child.stop()
         case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
@@ -205,7 +212,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     // else new RoutedActorRef(props, address)
-    new RoutedActorRef(props, address)
+    new RoutedActorRef(app, props, address)
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)

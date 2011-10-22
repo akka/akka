@@ -8,7 +8,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
-import akka.actor.{ LocalActorRef, Actor, NullChannel }
+import akka.actor.{ LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -80,7 +80,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, NullChannel)
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, app.deadLetters)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null

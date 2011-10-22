@@ -74,7 +74,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ channel ! id
+          case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }), address)
@@ -188,7 +188,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val actor = app.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ channel ! id
+          case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
       }), address)

@@ -39,7 +39,7 @@ object SupervisorSpec {
     def receive = {
       case Ping ⇒
         messageLog.put(PingMessage)
-        channel.tryTell(PongMessage)
+        sender.tell(PongMessage)
       case Die ⇒
         throw new RuntimeException(ExceptionMessage)
     }
@@ -53,10 +53,10 @@ object SupervisorSpec {
 
     val temp = context.actorOf(Props[PingPongActor])
     self startsMonitoring temp
-    var s: UntypedChannel = _
+    var s: ActorRef = _
 
     def receive = {
-      case Die                ⇒ temp ! Die; s = context.channel
+      case Die                ⇒ temp ! Die; s = sender
       case Terminated(`temp`) ⇒ s ! "terminated"
     }
   }
@@ -294,7 +294,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
-          case Ping ⇒ channel.tryTell(PongMessage)
+          case Ping ⇒ sender.tell(PongMessage)
           case Die  ⇒ throw new RuntimeException("Expected")
         }
       })

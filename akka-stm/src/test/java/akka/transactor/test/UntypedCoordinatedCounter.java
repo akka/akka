@@ -57,7 +57,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
         } else if (incoming instanceof String) {
             String message = (String) incoming;
             if (message.equals("GetCount")) {
-                getChannel().tell(count.get());
+                getSender().tell(count.get());
             }
         }
     }

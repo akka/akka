@@ -1,6 +1,6 @@
 package sample.fsm.dining.fsm
 
-import akka.actor.{ ActorRef, Actor, FSM, UntypedChannel, NullChannel }
+import akka.actor.{ ActorRef, Actor, FSM }
 import akka.actor.FSM._
 import akka.util.Duration
 import akka.util.duration._
@@ -25,7 +25,7 @@ case object Taken extends ChopstickState
 /**
  * Some state container for the chopstick
  */
-case class TakenBy(hakker: UntypedChannel)
+case class TakenBy(hakker: ActorRef)
 
 /*
  * A chopstick is an actor, it can be taken, and put back
@@ -33,12 +33,12 @@ case class TakenBy(hakker: UntypedChannel)
 class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
 
   // A chopstick begins its existence as available and taken by no one
-  startWith(Available, TakenBy(NullChannel))
+  startWith(Available, TakenBy(app.deadLetters))
 
   // When a chopstick is available, it can be taken by a some hakker
   when(Available) {
     case Event(Take, _) ⇒
-      goto(Taken) using TakenBy(channel) replying Taken(self)
+      goto(Taken) using TakenBy(sender) replying Taken(self)
   }
 
   // When a chopstick is taken by a hakker
@@ -47,8 +47,8 @@ class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
   when(Taken) {
     case Event(Take, currentState) ⇒
       stay replying Busy(self)
-    case Event(Put, TakenBy(hakker)) if channel == hakker ⇒
-      goto(Available) using TakenBy(NullChannel)
+    case Event(Put, TakenBy(hakker)) if sender == hakker ⇒
+      goto(Available) using TakenBy(app.deadLetters)
   }
 
   // Initialze the chopstick

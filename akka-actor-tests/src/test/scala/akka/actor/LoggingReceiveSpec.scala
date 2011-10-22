@@ -62,7 +62,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         app.eventHandler.addListener(testActor)
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           }
         })
         actor ! "buh"
@@ -91,7 +91,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         app.eventHandler.addListener(testActor)
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           })
         })
         actor ! "buh"

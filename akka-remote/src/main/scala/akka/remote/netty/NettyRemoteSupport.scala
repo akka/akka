@@ -27,7 +27,7 @@ import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.AkkaApplication
 import akka.serialization.RemoteActorSerialization
-import akka.dispatch.{ Terminate, ActorPromise, DefaultPromise, Promise }
+import akka.dispatch.{ Terminate, DefaultPromise, Promise }
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
@@ -147,7 +147,7 @@ abstract class RemoteClient private[akka] (
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
 
-  val serialization = new RemoteActorSerialization(app, remoteSupport)
+  val serialization = new RemoteActorSerialization(remoteSupport)
 
   protected val futures = new ConcurrentHashMap[Uuid, Promise[_]]
 
@@ -587,7 +587,7 @@ class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerMod
   val settings = new RemoteServerSettings(app)
   import settings._
 
-  val serialization = new RemoteActorSerialization(app, serverModule.remoteSupport)
+  val serialization = new RemoteActorSerialization(serverModule.remoteSupport)
 
   val name = "NettyRemoteServer@" + host + ":" + port
   val address = new InetSocketAddress(host, port)
@@ -952,42 +952,18 @@ class RemoteServerHandler(
       }
 
     val message = MessageSerializer.deserialize(app, request.getMessage)
-    val sender =
-      if (request.hasSender) Some(serialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader))
-      else None
+    val sender = if (request.hasSender) serialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader) else app.deadLetters
 
     message match {
       // first match on system messages
-      case Terminate ⇒
-        if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor")
-        else actorRef.stop()
+      case _: Terminate ⇒
+        if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else actorRef.stop()
 
       case _: AutoReceivedMessage if (UNTRUSTED_MODE) ⇒
         throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
 
       case _ ⇒ // then match on user defined messages
-        if (request.getOneWay) actorRef.!(message)(sender)
-        else actorRef.postMessageToMailboxAndCreateFutureResultWithTimeout(
-          message,
-          request.getActorInfo.getTimeout,
-          new ActorPromise(request.getActorInfo.getTimeout).
-            onComplete(_.value.get match {
-              case Left(exception) ⇒ write(channel, createErrorReplyMessage(exception, request))
-              case r: Right[_, _] ⇒
-                val messageBuilder = serialization.createRemoteMessageProtocolBuilder(
-                  Some(actorRef),
-                  Right(request.getUuid),
-                  actorInfo.getAddress,
-                  actorInfo.getTimeout,
-                  r.asInstanceOf[Either[Throwable, Any]],
-                  isOneWay = true,
-                  Some(actorRef))
-
-                // FIXME lift in the supervisor uuid management into toh createRemoteMessageProtocolBuilder method
-                if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
-
-                write(channel, RemoteEncoder.encode(messageBuilder.build))
-            }))
+        actorRef.!(message)(sender)
     }
   }
 

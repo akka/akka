@@ -27,7 +27,7 @@ public class JavaAPI {
 
   @Test void mustAcceptSingleArgTryTell() {
     ActorRef ref = app.actorOf(JavaAPITestActor.class);
-    ref.tryTell("hallo");
-    ref.tryTell("hallo", ref);
+    ref.tell("hallo");
+    ref.tell("hallo", ref);
   }
 }
