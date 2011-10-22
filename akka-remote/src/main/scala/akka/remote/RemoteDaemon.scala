@@ -78,8 +78,8 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
     remote.start(hostname, port)
     remote.register(remoteDaemonServiceName, remoteDaemon)
-    remote.addListener(eventStream.channel)
-    remote.addListener(remoteClientLifeCycleHandler)
+    app.eventHandler.addListener(eventStream.channel)
+    app.eventHandler.addListener(remoteClientLifeCycleHandler)
     // TODO actually register this provider in app in remote mode
     //provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
     remote

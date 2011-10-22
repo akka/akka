@@ -185,27 +185,15 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val app: AkkaApplication) extends ListenerManagement with RemoteServerModule with RemoteClientModule {
-
-  lazy val eventHandler: ActorRef = {
-    implicit object format extends StatelessActorFormat[RemoteEventHandler]
-    val clazz = classOf[RemoteEventHandler]
-    val handler = app.provider.actorOf(Props(clazz), clazz.getName, true)
-    // add the remote client and server listener that pipes the events to the event handler system
-    addListener(handler)
-    handler
-  }
+abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModule with RemoteClientModule {
 
   def shutdown() {
-    eventHandler.stop()
-    removeListener(eventHandler)
     this.shutdownClientModule()
     this.shutdownServerModule()
     clear
   }
 
-  protected override def manageLifeCycleOfListeners = false
-  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = super.notifyListeners(message)
+  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = app.eventHandler.notify(message)
 
   private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
   private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]
