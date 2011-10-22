@@ -187,21 +187,14 @@ object DeploymentConfig {
   }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
-    case Direct                  ⇒ RouterType.Direct
-    case Direct()                ⇒ RouterType.Direct
-    case RoundRobin              ⇒ RouterType.RoundRobin
-    case RoundRobin()            ⇒ RouterType.RoundRobin
-    case Random                  ⇒ RouterType.Random
-    case Random()                ⇒ RouterType.Random
-    case ScatterGather           ⇒ RouterType.ScatterGather
-    case ScatterGather()         ⇒ RouterType.ScatterGather
-    case LeastCPU                ⇒ RouterType.LeastCPU
-    case LeastCPU()              ⇒ RouterType.LeastCPU
-    case LeastRAM                ⇒ RouterType.LeastRAM
-    case LeastRAM()              ⇒ RouterType.LeastRAM
-    case LeastMessages           ⇒ RouterType.LeastMessages
-    case LeastMessages()         ⇒ RouterType.LeastMessages
-    case CustomRouter(implClass) ⇒ RouterType.Custom(implClass)
+    case _: Direct | Direct               ⇒ RouterType.Direct
+    case _: RoundRobin | RoundRobin       ⇒ RouterType.RoundRobin
+    case _: Random | Random               ⇒ RouterType.Random
+    case _: ScatterGather | ScatterGather ⇒ RouterType.ScatterGather
+    case _: LeastCPU | LeastCPU           ⇒ RouterType.LeastCPU
+    case _: LeastRAM | LeastRAM           ⇒ RouterType.LeastRAM
+    case _: LeastMessages | LeastMessages ⇒ RouterType.LeastMessages
+    case CustomRouter(implClass)          ⇒ RouterType.Custom(implClass)
   }
 
   def isReplicated(replicationScheme: ReplicationScheme): Boolean =
