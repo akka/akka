@@ -57,14 +57,10 @@ trait NettyRemoteClientModule extends RemoteClientModule {
 
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],
-                              senderFuture: Option[Promise[T]],
                               remoteAddress: InetSocketAddress,
-                              isOneWay: Boolean,
                               actorRef: ActorRef,
-                              loader: Option[ClassLoader]): Option[Promise[T]] =
-    withClientFor(remoteAddress, loader) { client ⇒
-      client.send[T](message, senderOption, senderFuture, remoteAddress, isOneWay, actorRef)
-    }
+                              loader: Option[ClassLoader]): Unit =
+    withClientFor(remoteAddress, loader) { _.send[T](message, senderOption, remoteAddress, actorRef) }
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(body: RemoteClient ⇒ T): T = {
@@ -125,9 +121,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   }
 
   def shutdownRemoteClients() = lock withWriteGuard {
-    remoteClients.foreach({
-      case (addr, client) ⇒ client.shutdown()
-    })
+    remoteClients foreach { case (_, client) ⇒ client.shutdown() }
     remoteClients.clear()
   }
 }
@@ -149,8 +143,6 @@ abstract class RemoteClient private[akka] (
 
   val serialization = new RemoteActorSerialization(remoteSupport)
 
-  protected val futures = new ConcurrentHashMap[Uuid, Promise[_]]
-
   private[remote] val runSwitch = new Switch()
 
   private[remote] def isRunning = runSwitch.isOn
@@ -166,74 +158,28 @@ abstract class RemoteClient private[akka] (
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
    */
-  def send[T](
-    message: Any,
-    senderOption: Option[ActorRef],
-    senderFuture: Option[Promise[T]],
-    remoteAddress: InetSocketAddress,
-    isOneWay: Boolean,
-    actorRef: ActorRef): Option[Promise[T]] = {
-    val messageProtocol = serialization.createRemoteMessageProtocolBuilder(
-      Some(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.ActorTimeoutMillis, Right(message), isOneWay, senderOption).build
-    send(messageProtocol, senderFuture)
+  def send[T](message: Any, senderOption: Option[ActorRef], remoteAddress: InetSocketAddress, actorRef: ActorRef) {
+    val messageProtocol = serialization.createRemoteMessageProtocolBuilder(Some(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.ActorTimeoutMillis, Right(message), senderOption).build
+    send(messageProtocol)
   }
 
   /**
    * Sends the message across the wire
    */
-  def send[T](
-    request: RemoteMessageProtocol,
-    senderFuture: Option[Promise[T]]): Option[Promise[T]] = {
-
-    if (isRunning) {
+  def send[T](request: RemoteMessageProtocol) {
+    if (isRunning) { //TODO FIXME RACY
       app.eventHandler.debug(this, "Sending to connection [%s] message [\n%s]".format(remoteAddress, request))
 
       // tell
-      if (request.getOneWay) {
-        try {
-          val future = currentChannel.write(RemoteEncoder.encode(request))
-          future.awaitUninterruptibly()
-          if (!future.isCancelled && !future.isSuccess) {
-            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-          }
-        } catch {
-          case e: Exception ⇒ notifyListeners(RemoteClientError(e, module, remoteAddress))
+      try {
+        val future = currentChannel.write(RemoteEncoder.encode(request))
+        future.awaitUninterruptibly() //TODO FIXME SWITCH TO NONBLOCKING WRITE
+        if (!future.isCancelled && !future.isSuccess) {
+          notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
         }
-        None
-
-        // ask
-      } else {
-        val futureResult =
-          if (senderFuture.isDefined) senderFuture.get
-          else new DefaultPromise[T](request.getActorInfo.getTimeout)(app.dispatcher)
-
-        val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-        futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
-
-        def handleRequestReplyError(future: ChannelFuture) = {
-          val f = futures.remove(futureUuid) // Clean up future
-          if (f ne null) f.completeWithException(future.getCause)
-        }
-
-        var future: ChannelFuture = null
-        try {
-          // try to send the original one
-          future = currentChannel.write(RemoteEncoder.encode(request))
-          future.awaitUninterruptibly()
-
-          if (future.isCancelled || !future.isSuccess) {
-            notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
-            handleRequestReplyError(future)
-          }
-
-        } catch {
-          case e: Exception ⇒
-            notifyListeners(RemoteClientWriteFailed(request, e, module, remoteAddress))
-            handleRequestReplyError(future)
-        }
-        Some(futureResult)
+      } catch {
+        case e: Exception ⇒ notifyListeners(RemoteClientError(e, module, remoteAddress))
       }
-
     } else {
       val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", module, remoteAddress)
       notifyListeners(RemoteClientError(exception, module, remoteAddress))
@@ -314,7 +260,7 @@ class ActiveRemoteClient private[akka] (
       timer = new HashedWheelTimer
 
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
-      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(app, settings, name, futures, bootstrap, remoteAddress, timer, this))
+      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(app, settings, name, bootstrap, remoteAddress, timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
 
@@ -329,23 +275,8 @@ class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
         app.eventHandler.error(connection.getCause, this, "Remote client connection to [%s] has failed".format(remoteAddress))
         false
-
       } else {
         sendSecureCookie(connection)
-
-        //Add a task that does GCing of expired Futures
-        timer.newTimeout(new TimerTask() {
-          def run(timeout: Timeout) = {
-            if (isRunning) {
-              val i = futures.entrySet.iterator
-              while (i.hasNext) {
-                val e = i.next
-                if (e.getValue.isExpired)
-                  futures.remove(e.getKey)
-              }
-            }
-          }
-        }, REAP_FUTURES_DELAY.length, REAP_FUTURES_DELAY.unit)
         notifyListeners(RemoteClientStarted(module, remoteAddress))
         true
       }
@@ -400,7 +331,6 @@ class ActiveRemoteClientPipelineFactory(
   app: AkkaApplication,
   val settings: RemoteClientSettings,
   name: String,
-  futures: ConcurrentMap[Uuid, Promise[_]],
   bootstrap: ClientBootstrap,
   remoteAddress: InetSocketAddress,
   timer: HashedWheelTimer,
@@ -414,7 +344,7 @@ class ActiveRemoteClientPipelineFactory(
     val lenPrep = new LengthFieldPrepender(4)
     val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
-    val remoteClient = new ActiveRemoteClientHandler(app, settings, name, futures, bootstrap, remoteAddress, timer, client)
+    val remoteClient = new ActiveRemoteClientHandler(app, settings, name, bootstrap, remoteAddress, timer, client)
 
     new StaticChannelPipeline(timeout, lenDec, protobufDec, lenPrep, protobufEnc, remoteClient)
   }
@@ -428,7 +358,6 @@ class ActiveRemoteClientHandler(
   val app: AkkaApplication,
   val settings: RemoteClientSettings,
   val name: String,
-  val futures: ConcurrentMap[Uuid, Promise[_]],
   val bootstrap: ClientBootstrap,
   val remoteAddress: InetSocketAddress,
   val timer: HashedWheelTimer,
@@ -453,20 +382,7 @@ class ActiveRemoteClientHandler(
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
           app.eventHandler.debug(this, "Remote client received RemoteMessageProtocol[\n%s]\nTrying to map back to future [%s]".format(reply, replyUuid))
 
-          futures.remove(replyUuid).asInstanceOf[Promise[Any]] match {
-            case null ⇒
-              client.notifyListeners(RemoteClientError(
-                new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module,
-                client.remoteAddress))
-
-            case future ⇒
-              if (reply.hasMessage) {
-                val message = MessageSerializer.deserialize(app, reply.getMessage)
-                future.completeWithResult(message)
-              } else {
-                future.completeWithException(parseException(reply, client.loader))
-              }
-          }
+        //TODO FIXME DOESN'T DO ANYTHING ANYMORE
 
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
@@ -556,12 +472,7 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
 
   def optimizeLocalScoped_?() = optimizeLocal.get
 
-  protected[akka] def actorFor(
-    actorAddress: String,
-    timeout: Long,
-    host: String,
-    port: Int,
-    loader: Option[ClassLoader]): ActorRef = {
+  protected[akka] def actorFor(actorAddress: String, host: String, port: Int, loader: Option[ClassLoader]): ActorRef = {
 
     val homeInetSocketAddress = this.address
     if (optimizeLocalScoped_?) {
@@ -1023,14 +934,7 @@ class RemoteServerHandler(
 
   private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol = {
     val actorInfo = request.getActorInfo
-    val messageBuilder = serialization.createRemoteMessageProtocolBuilder(
-      None,
-      Right(request.getUuid),
-      actorInfo.getAddress,
-      actorInfo.getTimeout,
-      Left(exception),
-      true,
-      None)
+    val messageBuilder = serialization.createRemoteMessageProtocolBuilder(None, Right(request.getUuid), actorInfo.getAddress, actorInfo.getTimeout, Left(exception), None)
     if (request.hasSupervisorUuid) messageBuilder.setSupervisorUuid(request.getSupervisorUuid)
     RemoteEncoder.encode(messageBuilder.build)
   }
