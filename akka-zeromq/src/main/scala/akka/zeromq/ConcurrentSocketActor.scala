@@ -45,9 +45,11 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
     def sendBytes(bytes: Seq[Byte], flags: Int) {
       socket.send(bytes.toArray, flags)
     }
-    for (i <- 0 until frames.length) {
-      val flags = if (i < frames.length - 1) JZMQ.SNDMORE else 0
-      sendBytes(frames(i).payload, flags)
+    val iter = frames.iterator  
+    while (iter.hasNext) {
+      val payload = iter.next.payload
+      val flags = if (iter.hasNext) JZMQ.SNDMORE else 0
+      sendBytes(payload, flags)
     }
   }
   private def pollAndReceiveFrames() {
