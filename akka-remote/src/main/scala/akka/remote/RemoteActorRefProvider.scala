@@ -13,7 +13,7 @@ import akka.dispatch._
 import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.event.{ DeathWatch, EventHandler }
-import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
+import akka.serialization.{ Serialization, Serializer, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -247,7 +247,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
   def postMessageToMailbox(message: Any, sender: ActorRef) {
-    remote.send[Any](message, Some(sender), None, remoteAddress, true, this, loader)
+    remote.send[Any](message, Some(sender), remoteAddress, this, loader)
   }
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
@@ -260,7 +260,7 @@ private[akka] case class RemoteActorRef private[akka] (
     synchronized {
       if (running) {
         running = false
-        postMessageToMailbox(new Terminate(), remote.app.deadLetters)
+        remote.send[Any](new Terminate(), None, remoteAddress, this, loader)
       }
     }
   }

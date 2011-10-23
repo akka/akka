@@ -321,16 +321,10 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
 trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   def actorFor(address: String, hostname: String, port: Int): ActorRef =
-    actorFor(address, app.AkkaConfig.ActorTimeoutMillis, hostname, port, None)
+    actorFor(address, hostname, port, None)
 
   def actorFor(address: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, app.AkkaConfig.ActorTimeoutMillis, hostname, port, Some(loader))
-
-  def actorFor(address: String, timeout: Long, hostname: String, port: Int): ActorRef =
-    actorFor(address, timeout, hostname, port, None)
-
-  def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
-    actorFor(address, timeout, hostname, port, Some(loader))
+    actorFor(address, hostname, port, Some(loader))
 
   /**
    * Clean-up all open connections.
@@ -349,13 +343,11 @@ trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   /** Methods that needs to be implemented by a transport **/
 
-  protected[akka] def actorFor(address: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
+  protected[akka] def actorFor(address: String, hostname: String, port: Int, loader: Option[ClassLoader]): ActorRef
 
   protected[akka] def send[T](message: Any,
                               senderOption: Option[ActorRef],
-                              senderFuture: Option[Promise[T]],
                               remoteAddress: InetSocketAddress,
-                              isOneWay: Boolean,
                               actorRef: ActorRef,
-                              loader: Option[ClassLoader]): Option[Promise[T]]
+                              loader: Option[ClassLoader]): Unit
 }
