@@ -91,7 +91,7 @@ The ``map`` method is fine if we are modifying a single ``Future``, but if 2 or 
     }
   }
 
-  val result = f2.get().get()
+  val result = f3.get().get()
 
 The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]]`` instead of the desired ``Future[Int]``. Instead, the ``flatMap`` method should be used:
 
@@ -111,7 +111,7 @@ The ``get`` method had to be used twice because ``f3`` is a ``Future[Future[Int]
     }
   }
 
-  val result = f2.get()
+  val result = f3.get()
 
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
