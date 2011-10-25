@@ -379,9 +379,18 @@ abstract class ActorModelSpec extends AkkaSpec {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = a ? Interrupt
+        val f3 = try {
+          a ? Interrupt
+        } catch {
+          // CallingThreadDispatcher throws IE directly
+          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
+        }
         val f4 = a ? Reply("foo2")
-        val f5 = a ? Interrupt
+        val f5 = try {
+          a ? Interrupt
+        } catch {
+          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
+        }
         val f6 = a ? Reply("bar2")
 
         assert(f1.get === "foo")

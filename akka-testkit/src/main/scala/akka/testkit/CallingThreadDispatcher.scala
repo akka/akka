@@ -187,7 +187,8 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
    * it is suspendSwitch and resumed.
    */
   @tailrec
-  private def runQueue(mbox: CallingThreadMailbox, queue: NestingQueue) {
+  private def runQueue(mbox: CallingThreadMailbox, queue: NestingQueue, interruptedex: InterruptedException = null) {
+    var intex = interruptedex;
     assert(queue.isActive)
     mbox.lock.lock
     val recurse = try {
@@ -214,6 +215,7 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
           case ie: InterruptedException ⇒
             app.eventHandler.error(this, ie)
             Thread.currentThread().interrupt()
+            intex = ie
             true
           case e ⇒
             app.eventHandler.error(this, e)
@@ -230,7 +232,12 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
       mbox.lock.unlock
     }
     if (recurse) {
-      runQueue(mbox, queue)
+      runQueue(mbox, queue, intex)
+    } else {
+      if (intex ne null) {
+        Thread.interrupted // clear flag
+        throw intex
+      }
     }
   }
 }
