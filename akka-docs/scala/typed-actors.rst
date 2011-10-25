@@ -111,9 +111,9 @@ Methods that return something (e.g. non-void methods) are turned into ‘send-an
   val user = service.getUser(username)
 
 Generally it is preferred to use fire-forget messages as much as possible since they will never block, e.g. consume a resource by waiting. But sometimes they are neat to use since they:
-# Simulates standard Java method dispatch, which is more intuitive for most Java developers
-# Are a neat to model request-reply
-# Are useful when you need to do things in a defined order
+* Simulates standard Java method dispatch, which is more intuitive for most Java developers
+* Are a neat to model request-reply
+* Are useful when you need to do things in a defined order
 
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
