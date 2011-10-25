@@ -214,4 +214,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     guardian.stop()
   }
 
+  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
+
 }
