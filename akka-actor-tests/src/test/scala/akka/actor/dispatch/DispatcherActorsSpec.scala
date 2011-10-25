@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
  *
  * @author Jan Van Besien
  */
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherActorsSpec extends AkkaSpec {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 

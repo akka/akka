@@ -3,6 +3,7 @@ package akka.dispatch
 import akka.actor.{ Props, LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PriorityDispatcherSpec extends AkkaSpec {
 
   "A PriorityDispatcher" must {

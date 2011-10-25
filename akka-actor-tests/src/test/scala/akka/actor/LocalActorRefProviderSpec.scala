@@ -19,6 +19,7 @@ object LocalActorRefProviderSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalActorRefProviderSpec extends AkkaSpec {
   import akka.actor.LocalActorRefProviderSpec._
 
@@ -38,19 +39,19 @@ class LocalActorRefProviderSpec extends AkkaSpec {
         val address = "new-actor" + i
 
         spawn {
-          a1 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
+          a1 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), app.guardian, address))
           latch.countDown()
         }
         spawn {
-          a2 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
+          a2 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), app.guardian, address))
           latch.countDown()
         }
         spawn {
-          a3 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
+          a3 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), app.guardian, address))
           latch.countDown()
         }
         spawn {
-          a4 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
+          a4 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), app.guardian, address))
           latch.countDown()
         }
 

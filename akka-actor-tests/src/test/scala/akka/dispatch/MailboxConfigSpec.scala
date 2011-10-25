@@ -11,7 +11,7 @@ import akka.util.Duration._
 import akka.actor.{ LocalActorRef, Actor, NullChannel }
 import akka.testkit.AkkaSpec
 
-@RunWith(classOf[JUnitRunner])
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 

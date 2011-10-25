@@ -18,6 +18,7 @@ import akka.experimental
 import akka.{ AkkaApplication, AkkaException }
 
 import scala.reflect.BeanProperty
+import scala.util.control.NoStackTrace
 
 import com.eaio.uuid.UUID
 
@@ -54,7 +55,7 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
 case class Failed(@BeanProperty actor: ActorRef,
                   @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case class ChildTerminated(@BeanProperty child: ActorRef, @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+case class ChildTerminated(@BeanProperty child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
@@ -62,34 +63,44 @@ case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
 case object Kill extends AutoReceivedMessage with PossiblyHarmful
 
+case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
+
 case object ReceiveTimeout extends PossiblyHarmful
 
-case class Terminated(@BeanProperty actor: ActorRef, @BeanProperty cause: Throwable)
-
 // Exceptions for Actors
-class ActorStartException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
 }
 
-class IllegalActorStateException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class ActorKilledException private[akka] (message: String, cause: Throwable)
+  extends AkkaException(message, cause)
+  with NoStackTrace {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorKilledException private[akka] (message: String, cause: Throwable) extends AkkaException(message, cause) {
+case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) with NoStackTrace {
+  def this(msg: String) = this(null, msg, null);
+}
+
+class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorInitializationException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
+  extends AkkaException(message, cause)
+  with NoStackTrace {
   def this(msg: String) = this(msg, null);
 }
 
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
-}
+case class DeathPactException private[akka] (dead: ActorRef)
+  extends AkkaException("monitored actor " + dead + " terminated")
+  with NoStackTrace
 
-class InvalidMessageException private[akka] (message: String, cause: Throwable = null) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
-}
+// must not pass InterruptedException to other threads
+case class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -163,6 +174,11 @@ object Actor {
       case _: LoggingReceive ⇒ r
       case _                 ⇒ new LoggingReceive(source, r)
     }
+  }
+
+  object emptyBehavior extends Receive {
+    def isDefinedAt(x: Any) = false
+    def apply(x: Any) = throw new UnsupportedOperationException("empty behavior apply()")
   }
 }
 
@@ -359,8 +375,10 @@ trait Actor {
    * by default it does: EventHandler.warning(self, message)
    */
   def unhandled(message: Any) {
-    //EventHandler.warning(self, message)
-    throw new UnhandledMessageException(message, self)
+    message match {
+      case Terminated(dead) ⇒ throw new DeathPactException(dead)
+      case _                ⇒ throw new UnhandledMessageException(message, self)
+    }
   }
 
   /**
@@ -422,7 +440,7 @@ trait Actor {
       msg match {
         case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
         case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-        case unknown ⇒ unhandled(unknown) //This is the only line that differs from processingbehavior
+        case unknown ⇒ unhandled(unknown)
       }
     }
   }

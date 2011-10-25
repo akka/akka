@@ -9,11 +9,12 @@ import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
-      case Terminated(`actorRef`, ex: ActorKilledException) if ex.getMessage == "Stopped" || ex.getMessage == "Already terminated when linking" ⇒ true
+      case Terminated(`actorRef`) ⇒ true
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
@@ -80,12 +81,14 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
-        val supervisor = actorOf(Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
-        val terminal = actorOf(Props(context ⇒ { case x ⇒ context.channel ! x }).withSupervisor(supervisor))
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
+        val terminalProps = Props(context ⇒ { case x ⇒ context.channel ! x })
+        val terminal = (supervisor ? terminalProps).as[ActorRef].get
+
         val monitor = actorOf(Props(new Actor {
           watch(terminal)
           def receive = { case t: Terminated ⇒ testActor ! t }
-        }).withSupervisor(supervisor))
+        }))
 
         terminal ! Kill
         terminal ! Kill
@@ -96,6 +99,32 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         terminal.isShutdown must be === true
 
         supervisor.stop()
+      }
+    }
+
+    "fail a monitor which does not handle Terminated()" in {
+      filterEvents(EventFilter[ActorKilledException], EventFilter[DeathPactException]) {
+        case class FF(fail: Failed)
+        val supervisor = actorOf(Props[Supervisor]
+          .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {
+            override def handleFailure(fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]) = {
+              testActor ! FF(fail)
+              super.handleFailure(fail, stats, children)
+            }
+          }))
+
+        val failed, brother = (supervisor ? Props.empty).as[ActorRef].get
+        brother startsMonitoring failed
+        testActor startsMonitoring brother
+
+        failed ! Kill
+        val result = receiveWhile(3 seconds, messages = 3) {
+          case FF(Failed(`failed`, _: ActorKilledException))       ⇒ 1
+          case FF(Failed(`brother`, DeathPactException(`failed`))) ⇒ 2
+          case Terminated(`brother`)                               ⇒ 3
+        }
+        testActor must not be 'shutdown
+        result must be(Seq(1, 2, 3))
       }
     }
   }

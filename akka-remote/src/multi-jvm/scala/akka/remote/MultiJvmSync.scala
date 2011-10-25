@@ -4,23 +4,20 @@
 
 package akka.remote
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.BeforeAndAfterAll
-
+import akka.testkit.AkkaSpec
 import akka.util.Duration
 
-trait MultiJvmSync extends WordSpec with MustMatchers with BeforeAndAfterAll {
+trait MultiJvmSync extends AkkaSpec {
   def nodes: Int
 
-  override def beforeAll() = {
+  override def atStartup() = {
     onStart()
     MultiJvmSync.start(getClass.getName, nodes)
   }
 
   def onStart() {}
 
-  override def afterAll() = {
+  override def atTermination() = {
     MultiJvmSync.end(getClass.getName, nodes)
     onEnd()
   }

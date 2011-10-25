@@ -30,6 +30,12 @@ import com.google.protobuf.ByteString
  */
 class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
+  import java.util.concurrent.ConcurrentHashMap
+  import akka.dispatch.Promise
+
+  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {}
+  private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
+
   val local = new LocalActorRefProvider(app)
   val remote = new Remote(app)
 
@@ -40,10 +46,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
 
-  def actorOf(props: Props, address: String): ActorRef = actorOf(props, address, false)
-
-  def actorOf(props: Props, address: String, systemService: Boolean): ActorRef =
-    if (systemService) local.actorOf(props, address, systemService)
+  def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef =
+    if (systemService) local.actorOf(props, supervisor, address, systemService)
     else {
       val newFuture = Promise[ActorRef](5000)(defaultDispatcher) // FIXME is this proper timeout?
 
@@ -68,7 +72,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
                 if (isReplicaNode) {
                   // we are on one of the replica node for this remote actor
-                  new LocalActorRef(app, props, address, false)
+                  new LocalActorRef(app, props, supervisor, address, false)
                 } else {
 
                   // we are on the single "reference" node uses the remote actors on the replica nodes
@@ -112,10 +116,10 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
                   connections.keys foreach { useActorOnNode(_, address, props.creator) }
 
-                  actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), address)
+                  actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), supervisor, address)
                 }
 
-              case deploy ⇒ local.actorOf(props, address, systemService)
+              case deploy ⇒ local.actorOf(props, supervisor, address, systemService)
             }
           } catch {
             case e: Exception ⇒
@@ -136,7 +140,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   /**
    * Copied from LocalActorRefProvider...
    */
-  def actorOf(props: RoutedProps, address: String): ActorRef = {
+  // FIXME: implement supervision
+  def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
     new RoutedActorRef(props, address)
   }
@@ -238,6 +243,8 @@ private[akka] case class RemoteActorRef private[akka] (
   private var running: Boolean = true
 
   def isShutdown: Boolean = !running
+
+  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
   def postMessageToMailbox(message: Any, channel: UntypedChannel) {
     val chSender = if (channel.isInstanceOf[ActorRef]) Some(channel.asInstanceOf[ActorRef]) else None

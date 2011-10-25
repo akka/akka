@@ -201,15 +201,14 @@ class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
     }
 
     val props = Props(creator = factory,
-      timeout = if (protocol.hasTimeout) protocol.getTimeout else app.AkkaConfig.ActorTimeout,
-      supervisor = storedSupervisor //TODO what dispatcher should it use?
+      timeout = if (protocol.hasTimeout) protocol.getTimeout else app.AkkaConfig.ActorTimeout //TODO what dispatcher should it use?
       //TODO what faultHandler should it use?
-      //
       )
 
     val receiveTimeout = if (protocol.hasReceiveTimeout) Some(protocol.getReceiveTimeout) else None //TODO FIXME, I'm expensive and slow
 
-    val ar = new LocalActorRef(app, props, protocol.getAddress, false, actorUuid, receiveTimeout, storedHotswap)
+    // FIXME: what to do if storedSupervisor is empty?
+    val ar = new LocalActorRef(app, props, storedSupervisor getOrElse app.guardian, protocol.getAddress, false, actorUuid, receiveTimeout, storedHotswap)
 
     //Deserialize messages
     {

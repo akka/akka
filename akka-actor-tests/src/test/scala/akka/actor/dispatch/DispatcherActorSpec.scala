@@ -24,6 +24,7 @@ object DispatcherActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherActorSpec extends AkkaSpec {
   import DispatcherActorSpec._
 
@@ -81,10 +82,10 @@ class DispatcherActorSpec extends AkkaSpec {
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
       fastOne ! "sabotage"
       start.countDown()
-      val result = latch.await(10, TimeUnit.SECONDS)
+      latch.await(10, TimeUnit.SECONDS)
       fastOne.stop()
       slowOne.stop()
-      assert(result === true)
+      assert(latch.getCount() === 0)
     }
 
     "respect throughput deadline" in {

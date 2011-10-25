@@ -31,11 +31,12 @@ import akka.AkkaApplication
  * within one of its methods taking a closure argument.
  */
 
-object CallingThreadDispatcher {
+private[testkit] object CallingThreadDispatcher {
 
   // PRIVATE DATA
 
   private var queues = Map[CallingThreadMailbox, Set[WeakReference[NestingQueue]]]()
+  private var lastGC = 0l
 
   // we have to forget about long-gone threads sometime
   private def gc {
@@ -49,7 +50,11 @@ object CallingThreadDispatcher {
     } else {
       queues += mbox -> Set(new WeakReference(q))
     }
-    gc
+    val now = System.nanoTime
+    if (now - lastGC > 1000000000l) {
+      lastGC = now
+      gc
+    }
   }
 
   /*
@@ -57,20 +62,16 @@ object CallingThreadDispatcher {
    * given mailbox. When this method returns, the queue will be entered
    * (active).
    */
-  protected[akka] def gatherFromAllInactiveQueues(mbox: CallingThreadMailbox, own: NestingQueue): Unit = synchronized {
+  protected[akka] def gatherFromAllOtherQueues(mbox: CallingThreadMailbox, own: NestingQueue): Unit = synchronized {
     if (!own.isActive) own.enter
     if (queues contains mbox) {
       for {
         ref ← queues(mbox)
-        q = ref.get
-        if (q ne null) && !q.isActive
-        /*
-         * if q.isActive was false, then it cannot change to true while we are
-         * holding the mbox.suspende.switch's lock under which we are currently
-         * executing
-         */
+        val q = ref.get
+        if (q ne null) && (q ne own)
       } {
         while (q.peek ne null) {
+          // this is safe because this method is only ever called while holding the suspendSwitch monitor
           own.push(q.pop)
         }
       }
@@ -129,7 +130,7 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
     val queue = mbox.queue
     val wasActive = queue.isActive
     val switched = mbox.suspendSwitch.switchOff {
-      gatherFromAllInactiveQueues(mbox, queue)
+      gatherFromAllOtherQueues(mbox, queue)
     }
     if (switched && !wasActive) {
       runQueue(mbox, queue)
@@ -142,11 +143,11 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
 
   protected[akka] override def systemDispatch(receiver: ActorCell, message: SystemMessage) {
     val mbox = getMailbox(receiver)
-    mbox.lock.lock
-    try {
-      receiver systemInvoke message
-    } finally {
-      mbox.lock.unlock
+    mbox.systemEnqueue(message)
+    val queue = mbox.queue
+    if (!queue.isActive) {
+      queue.enter
+      runQueue(mbox, queue)
     }
   }
 
@@ -190,6 +191,7 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
     assert(queue.isActive)
     mbox.lock.lock
     val recurse = try {
+      mbox.processAllSystemMessages()
       val handle = mbox.suspendSwitch.fold[Envelope] {
         queue.leave
         null
@@ -200,6 +202,7 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
       }
       if (handle ne null) {
         try {
+          if (Mailbox.debug) println(mbox.actor + " processing message " + handle)
           mbox.actor.invoke(handle)
           if (warnings) handle.channel match {
             case f: ActorPromise if !f.isCompleted ⇒
@@ -208,6 +211,10 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
           }
           true
         } catch {
+          case ie: InterruptedException ⇒
+            app.eventHandler.error(this, ie)
+            Thread.currentThread().interrupt()
+            true
           case e ⇒
             app.eventHandler.error(this, e)
             queue.leave
@@ -217,6 +224,8 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
         queue.leave
         false
       } else false
+    } catch {
+      case e ⇒ queue.leave; throw e
     } finally {
       mbox.lock.unlock
     }
@@ -244,7 +253,11 @@ class NestingQueue {
 class CallingThreadMailbox(val dispatcher: MessageDispatcher, _receiver: ActorCell) extends Mailbox(_receiver) with DefaultSystemMessageQueue {
 
   private val q = new ThreadLocal[NestingQueue]() {
-    override def initialValue = new NestingQueue
+    override def initialValue = {
+      val queue = new NestingQueue
+      CallingThreadDispatcher.registerQueue(CallingThreadMailbox.this, queue)
+      queue
+    }
   }
 
   def queue = q.get

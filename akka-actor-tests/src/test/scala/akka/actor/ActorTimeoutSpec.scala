@@ -8,6 +8,7 @@ import akka.dispatch.FutureTimeoutException
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll {
 
   def actorWithTimeout(t: Timeout): ActorRef = actorOf(Props(creator = () ⇒ new Actor {

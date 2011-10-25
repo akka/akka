@@ -36,6 +36,7 @@ object FutureSpec {
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
   import FutureSpec._
 

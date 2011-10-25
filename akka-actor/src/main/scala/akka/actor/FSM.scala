@@ -466,14 +466,10 @@ trait FSM[S, D] extends ListenerManagement {
         }
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
+      // TODO use DeathWatch to clean up list
       addListener(actorRef)
       // send current state back as reference point
-      try {
-        actorRef ! CurrentState(self, currentState.stateName)
-      } catch {
-        case e: ActorInitializationException ⇒
-          app.eventHandler.warning(context.self, "trying to register not running listener")
-      }
+      actorRef ! CurrentState(self, currentState.stateName)
     case UnsubscribeTransitionCallBack(actorRef) ⇒
       removeListener(actorRef)
     case value ⇒ {

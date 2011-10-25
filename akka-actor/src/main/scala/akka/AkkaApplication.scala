@@ -9,11 +9,12 @@ import dispatch._
 import event._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
+import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
-import util.ReflectiveAccess
+import akka.util.ReflectiveAccess
 import java.util.concurrent.TimeUnit
 import akka.routing.Routing
-import remote.RemoteSupport
+import akka.remote.RemoteSupport
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 
@@ -67,9 +68,13 @@ object AkkaApplication {
 
   def apply(): AkkaApplication = new AkkaApplication()
 
+  sealed trait ExitStatus
+  case object Stopped extends ExitStatus
+  case class Failed(cause: Throwable) extends ExitStatus
+
 }
 
-class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory {
+class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
 
   def this(name: String) = this(name, AkkaApplication.defaultConfig)
   def this() = this("default")
@@ -154,34 +159,59 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
 
-  if (ConfigVersion != Version)
-    throw new ConfigurationException("Akka JAR version [" + Version +
-      "] does not match the provided config version [" + ConfigVersion + "]")
-
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
 
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  val eventHandler = new EventHandler(this)
+  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
 
-  val log: Logging = new EventHandlerLogging(eventHandler, this)
-
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val reflective = new ReflectiveAccess(this)
 
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
+  val provider: ActorRefProvider = reflective.createProvider
+
+  // TODO make this configurable
+  protected[akka] val guardian: ActorRef = {
+    import akka.actor.FaultHandlingStrategy._
+    new LocalActorRef(this,
+      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
+        case _: ActorKilledException         ⇒ Stop
+        case _: ActorInitializationException ⇒ Stop
+        case _: Exception                    ⇒ Restart
+      }).withDispatcher(dispatcher),
+      provider.theOneWhoWalksTheBubblesOfSpaceTime,
+      "ApplicationSupervisor",
+      true)
+  }
+
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
+  val eventHandler = new EventHandler(this)
+
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
+  val log: Logging = new EventHandlerLogging(eventHandler, this)
+
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
 
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val provider: ActorRefProvider = reflective.createProvider
-
   val deathWatch = provider.createDeathWatch()
 
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val typedActor = new TypedActor(this)
 
+  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val serialization = new Serialization(this)
 
   val scheduler = new DefaultScheduler
+  terminationFuture.onComplete(_ ⇒ scheduler.shutdown())
+
+  // TODO shutdown all that other stuff, whatever that may be
+  def stop(): Unit = {
+    guardian.stop()
+  }
+
 }

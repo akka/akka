@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec {
 
   "The default configuration file (i.e. akka-reference.conf)" should {

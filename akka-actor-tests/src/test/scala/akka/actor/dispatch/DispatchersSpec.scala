@@ -9,6 +9,7 @@ import akka.dispatch._
 import akka.testkit.AkkaSpec
 import akka.config.Configuration
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec {
 
   import app.dispatcherFactory._

@@ -19,6 +19,7 @@ object RoutingSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RoutingSpec extends AkkaSpec {
 
   import akka.routing.RoutingSpec._

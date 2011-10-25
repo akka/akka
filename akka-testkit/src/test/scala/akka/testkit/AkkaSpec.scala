@@ -4,14 +4,27 @@
 package akka.testkit
 
 import akka.config.Configuration
-import org.scalatest.WordSpec
+import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
 import akka.AkkaApplication
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
 
 abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
-  extends TestKit(_application) with WordSpec with MustMatchers {
+  extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
+
+  final override def beforeAll {
+    atStartup()
+  }
+
+  final override def afterAll {
+    app.stop()
+    atTermination()
+  }
+
+  protected def atStartup() {}
+
+  protected def atTermination() {}
 
   def this(config: Configuration) = this(new AkkaApplication(getClass.getSimpleName, AkkaApplication.defaultConfig ++ config))
 

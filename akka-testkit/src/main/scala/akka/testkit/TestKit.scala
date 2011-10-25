@@ -99,7 +99,7 @@ class TestKit(_app: AkkaApplication) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)), "testActor" + TestKit.testActorId.incrementAndGet(), true)
+  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)), app.guardian, "testActor" + TestKit.testActorId.incrementAndGet(), true)
 
   private var end: Duration = Duration.Inf
 
@@ -475,12 +475,13 @@ class TestKit(_app: AkkaApplication) {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf)(f: PartialFunction[AnyRef, T]): Seq[T] = {
+  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
     val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
-    def doit(acc: List[T]): List[T] = {
+    def doit(acc: List[T], count: Int): List[T] = {
+      if (count >= messages) return acc.reverse
       receiveOne((stop - now) min idle)
       lastMessage match {
         case NullMessage ⇒
@@ -488,7 +489,7 @@ class TestKit(_app: AkkaApplication) {
           acc.reverse
         case RealMessage(o, _) if (f isDefinedAt o) ⇒
           msg = lastMessage
-          doit(f(o) :: acc)
+          doit(f(o) :: acc, count + 1)
         case RealMessage(o, _) ⇒
           queue.offerFirst(lastMessage)
           lastMessage = msg
@@ -496,7 +497,7 @@ class TestKit(_app: AkkaApplication) {
       }
     }
 
-    val ret = doit(Nil)
+    val ret = doit(Nil, 0)
     lastWasNoMsg = true
     ret
   }

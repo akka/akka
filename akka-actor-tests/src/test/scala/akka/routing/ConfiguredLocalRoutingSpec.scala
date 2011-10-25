@@ -8,6 +8,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.DeploymentConfig._
 import akka.routing.Routing.Broadcast
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec {
 
   "round robin router" must {

@@ -13,6 +13,7 @@ import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
 
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
@@ -21,12 +22,14 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
       filterException[ActorKilledException] {
         within(5 seconds) {
           val p = Props(new Actor {
-            def receive = { case false ⇒ }
-            override def preRestart(reason: Throwable, msg: Option[Any]) { testActor ! self.address }
+            def receive = {
+              case p: Props ⇒ channel ! context.actorOf(p)
+            }
+            override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.address }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
           val headActor = actorOf(p)
-          val middleActor = actorOf(p.withSupervisor(headActor))
-          val lastActor = actorOf(p.withSupervisor(middleActor))
+          val middleActor = (headActor ? p).as[ActorRef].get
+          val lastActor = (middleActor ? p).as[ActorRef].get
 
           middleActor ! Kill
           expectMsg(middleActor.address)

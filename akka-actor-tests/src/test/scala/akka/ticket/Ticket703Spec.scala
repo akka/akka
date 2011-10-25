@@ -4,6 +4,7 @@ import akka.actor._
 import akka.routing._
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket703Spec extends AkkaSpec {
 
   "A ? call to an actor pool" should {

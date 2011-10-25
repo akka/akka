@@ -8,6 +8,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.Duration
 import akka.util.duration._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   import FSMTimingSpec._
   import FSM._
@@ -43,7 +44,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "receive single-shot timer" in {
-      within(50 millis, 150 millis) {
+      within(50 millis, 250 millis) {
         fsm ! TestSingleTimer
         expectMsg(Tick)
         expectMsg(Transition(fsm, TestSingleTimer, Initial))

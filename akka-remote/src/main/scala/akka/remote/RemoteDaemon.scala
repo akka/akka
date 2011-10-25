@@ -57,11 +57,10 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   private[remote] lazy val remoteDaemon =
     new LocalActorRef(
       app,
-      props =
-        Props(new RemoteSystemDaemon(this))
-          .withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName))
-          .withSupervisor(remoteDaemonSupervisor),
-      givenAddress = remoteDaemonServiceName,
+      Props(new RemoteSystemDaemon(this))
+        .withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
+      remoteDaemonSupervisor,
+      remoteDaemonServiceName,
       systemService = true)
 
   private[remote] lazy val remoteClientLifeCycleHandler = app.actorOf(Props(new Actor {
@@ -193,36 +192,40 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
     // }
   }
 
+  // FIXME: handle real remote supervision
   def handle_fun0_unit(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
           case f: Function0[_] ⇒ try { f() } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
+        }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
+  // FIXME: handle real remote supervision
   def handle_fun0_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
           case f: Function0[_] ⇒ try { channel ! f() } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
+        }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
+  // FIXME: handle real remote supervision
   def handle_fun1_arg_unit(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+        }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
+  // FIXME: handle real remote supervision
   def handle_fun1_arg_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { channel ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+        }).copy(dispatcher = computeGridDispatcher), app.guardian, Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteSystemDaemonMessageProtocol) {

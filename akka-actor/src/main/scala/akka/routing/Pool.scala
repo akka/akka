@@ -93,7 +93,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
 
   protected[akka] var _delegates = Vector[ActorRef]()
 
-  val defaultProps: Props = Props.default.withSupervisor(this.self).withDispatcher(this.context.dispatcher)
+  val defaultProps: Props = Props.default.withDispatcher(this.context.dispatcher)
 
   override def postStop() {
     _delegates foreach evict
@@ -104,7 +104,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     // for testing...
     case Stat ⇒
       channel.tryTell(Stats(_delegates length))
-    case Terminated(victim, _) ⇒
+    case Terminated(victim) ⇒
       _delegates = _delegates filterNot { victim == }
     case msg ⇒
       resizeIfAppropriate()

@@ -12,20 +12,20 @@ import java.util.concurrent.ConcurrentHashMap
 import com.eaio.uuid.UUID
 import akka.AkkaException
 import akka.event.{ ActorClassification, DeathWatch, EventHandler }
-import akka.dispatch.{ Future, MessageDispatcher, Promise }
+import akka.dispatch._
 
 /**
  * Interface for all ActorRef providers to implement.
  */
 trait ActorRefProvider {
 
-  def actorOf(props: Props, address: String): ActorRef
+  def actorOf(props: Props, supervisor: ActorRef, address: String): ActorRef = actorOf(props, supervisor, address, false)
 
-  def actorOf(props: RoutedProps, address: String): ActorRef
+  def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef
 
   def actorFor(address: String): Option[ActorRef]
 
-  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef
 
   private[akka] def evict(address: String): Boolean
 
@@ -34,6 +34,11 @@ trait ActorRefProvider {
   private[akka] def createDeathWatch(): DeathWatch
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
+
+  private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef
+
+  private[akka] def terminationFuture: Future[AkkaApplication.ExitStatus]
+
 }
 
 /**
@@ -45,6 +50,11 @@ trait ActorRefFactory {
 
   def dispatcher: MessageDispatcher
 
+  /**
+   * Father of all children created by this interface.
+   */
+  protected def guardian: ActorRef
+
   def actorOf(props: Props): ActorRef = actorOf(props, Props.randomAddress)
 
   /*
@@ -52,7 +62,7 @@ trait ActorRefFactory {
    * the same address can race on the cluster, and then you never know which
    * implementation wins
    */
-  def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, address)
+  def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, guardian, address, false)
 
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
@@ -67,7 +77,7 @@ trait ActorRefFactory {
 
   def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomAddress)
 
-  def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, address)
+  def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, guardian, address)
 
   def findActor(address: String): Option[ActorRef] = provider.actorFor(address)
 
@@ -80,9 +90,34 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
-  private val actors = new ConcurrentHashMap[String, AnyRef]
+  val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
 
-  def actorOf(props: Props, address: String): ActorRef = actorOf(props, address, false)
+  /**
+   * Top-level anchor for the supervision hierarchy of this actor system. Will
+   * receive only Supervise/ChildTerminated system messages or Failure message.
+   */
+  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {
+    override def address = app.name + ":BubbleWalker"
+
+    override def toString = address
+
+    protected[akka] override def postMessageToMailbox(msg: Any, channel: UntypedChannel) {
+      msg match {
+        case Failed(child, ex)      ⇒ child.stop()
+        case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
+        case _                      ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
+      }
+    }
+
+    protected[akka] override def sendSystemMessage(message: SystemMessage) {
+      message match {
+        case Supervise(child) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case _                ⇒ app.eventHandler.error(this, this + " received unexpected system message " + message)
+      }
+    }
+  }
+
+  private val actors = new ConcurrentHashMap[String, AnyRef]
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
     case null              ⇒ None
@@ -95,9 +130,9 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
    */
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
 
-  private[akka] def actorOf(props: Props, address: String, systemService: Boolean): ActorRef = {
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef = {
     if ((address eq null) || address == Props.randomAddress) {
-      val actor = new LocalActorRef(app, props, address, systemService = true)
+      val actor = new LocalActorRef(app, props, supervisor, address, systemService = true)
       actors.putIfAbsent(actor.address, actor) match {
         case null  ⇒ actor
         case other ⇒ throw new IllegalStateException("Same uuid generated twice for: " + actor + " and " + other)
@@ -112,7 +147,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
-                new LocalActorRef(app, props, address, systemService) // create a local actor
+                new LocalActorRef(app, props, supervisor, address, systemService) // create a local actor
 
               // create a routed actor ref
               case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
@@ -129,9 +164,9 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
                 }
 
                 val connections: Iterable[ActorRef] =
-                  if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, "", systemService)) else Nil
+                  if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, supervisor, "", systemService)) else Nil
 
-                actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), address)
+                actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, address)
 
               case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
             }
@@ -157,7 +192,9 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(props: RoutedProps, address: String): ActorRef = {
+  def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef = {
+    // FIXME: this needs to take supervision into account!
+
     //FIXME clustering should be implemented by cluster actor ref provider
     //TODO Implement support for configuring by deployment ID etc
     //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
@@ -200,7 +237,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
 
   override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
     if (!super.subscribe(subscriber, to)) {
-      subscriber ! Terminated(to, new ActorKilledException("Already terminated when linking"))
+      subscriber ! Terminated(to)
       false
     } else true
   }

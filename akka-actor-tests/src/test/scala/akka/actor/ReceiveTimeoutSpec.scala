@@ -9,6 +9,7 @@ import akka.util.duration._
 
 import java.util.concurrent.atomic.AtomicInteger
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReceiveTimeoutSpec extends AkkaSpec {
 
   "An actor with receive timeout" must {

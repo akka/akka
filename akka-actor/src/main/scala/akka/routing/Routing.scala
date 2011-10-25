@@ -94,7 +94,7 @@ object Routing {
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
 abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) extends UnsupportedActorRef {
-  private[akka] val uuid: Uuid = newUuid
+  private[akka] override val uuid: Uuid = newUuid
 
   val router = props.routerFactory()
 
@@ -120,14 +120,14 @@ abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) exte
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: String) extends AbstractRoutedActorRef(routedProps) {
+private[akka] class RoutedActorRef(val routedProps: RoutedProps, override val address: String) extends AbstractRoutedActorRef(routedProps) {
 
   @volatile
   private var running: Boolean = true
 
-  def isShutdown: Boolean = !running
+  override def isShutdown: Boolean = !running
 
-  def stop() {
+  override def stop() {
     synchronized {
       if (running) {
         running = false
@@ -362,7 +362,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
   private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[G] = {
     val responses = connectionManager.connections.iterable.flatMap { actor ⇒
       try {
-        if (actor.isShutdown) throw new ActorInitializationException("For compatability - check death first")
+        if (actor.isShutdown) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
         Some(actor.?(message, timeout)(sender).asInstanceOf[Future[S]])
       } catch {
         case e: Exception ⇒

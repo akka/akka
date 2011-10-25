@@ -4,16 +4,13 @@
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.BeforeAndAfterAll
 import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
 import akka.testkit.TestEvent._
-import akka.testkit.EventFilter
+import akka.testkit.{ EventFilter, ImplicitSender }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import akka.testkit.AkkaSpec
@@ -54,16 +51,19 @@ object SupervisorSpec {
 
   class Master extends Actor {
 
-    val temp = context.actorOf(Props[PingPongActor].withSupervisor(self))
+    val temp = context.actorOf(Props[PingPongActor])
+    self startsMonitoring temp
+    var s: UntypedChannel = _
 
     def receive = {
-      case Die           ⇒ (temp.?(Die, TimeoutMillis)).get
-      case _: Terminated ⇒
+      case Die                ⇒ temp ! Die; s = context.channel
+      case Terminated(`temp`) ⇒ s ! "terminated"
     }
   }
 }
 
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   import SupervisorSpec._
 
@@ -71,63 +71,60 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
   // Creating actors and supervisors
   // =====================================================
 
+  private def child(supervisor: ActorRef, props: Props): ActorRef = (supervisor ? props).as[ActorRef].get
+
   def temporaryActorAllForOne = {
-    val supervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), Some(0))))
-    val temporaryActor = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), Some(0))))
+    val temporaryActor = child(supervisor, Props[PingPongActor])
 
     (temporaryActor, supervisor)
   }
 
   def singleActorAllForOne = {
-    val supervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
-    val pingpong = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
+    val pingpong = child(supervisor, Props[PingPongActor])
 
     (pingpong, supervisor)
   }
 
   def singleActorOneForOne = {
-    val supervisor = actorOf(Props(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
-    val pingpong = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
+    val pingpong = child(supervisor, Props[PingPongActor])
 
     (pingpong, supervisor)
   }
 
   def multipleActorsAllForOne = {
-    val supervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
-    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
-    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
-    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
+    val pingpong1, pingpong2, pingpong3 = child(supervisor, Props[PingPongActor])
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def multipleActorsOneForOne = {
-    val supervisor = actorOf(Props(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
-    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
-    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
-    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(supervisor))
+    val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
+    val pingpong1, pingpong2, pingpong3 = child(supervisor, Props[PingPongActor])
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def nestedSupervisorsAllForOne = {
-    val topSupervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
-    val pingpong1 = actorOf(Props[PingPongActor].withSupervisor(topSupervisor))
+    val topSupervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, TimeoutMillis)))
+    val pingpong1 = child(topSupervisor, Props[PingPongActor])
 
-    val middleSupervisor = actorOf(Props(AllForOneStrategy(Nil, 3, TimeoutMillis)).withSupervisor(topSupervisor))
-    val pingpong2 = actorOf(Props[PingPongActor].withSupervisor(middleSupervisor))
-    val pingpong3 = actorOf(Props[PingPongActor].withSupervisor(middleSupervisor))
+    val middleSupervisor = child(topSupervisor, Props[Supervisor].withFaultHandler(AllForOneStrategy(Nil, 3, TimeoutMillis)))
+    val pingpong2, pingpong3 = child(middleSupervisor, Props[PingPongActor])
 
     (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 
-  override def beforeAll() = {
+  override def atStartup() = {
     app.eventHandler notify Mute(EventFilter[Exception]("Die"),
       EventFilter[IllegalStateException]("Don't wanna!"),
       EventFilter[RuntimeException]("Expected"))
   }
 
-  override def afterAll() = {
+  override def atTermination() = {
     app.eventHandler notify UnMuteAll
   }
 
@@ -150,12 +147,11 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     "not restart programmatically linked temporary actor" in {
       val master = actorOf(Props[Master].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
 
-      intercept[RuntimeException] {
-        (master.?(Die, TimeoutMillis)).get
-      }
+      master ! Die
+      expectMsg(3 seconds, "terminated")
 
       sleepFor(1 second)
-      messageLog.size must be(0)
+      messageLogPoll must be(null)
     }
 
     "not restart temporary actor" in {
@@ -290,9 +286,9 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "must attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
-      val supervisor = actorOf(Props(OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000)))
+      val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(classOf[Exception] :: Nil, 3, 10000)))
 
-      val dyingActor = actorOf(Props(new Actor {
+      val dyingProps = Props(new Actor {
         inits.incrementAndGet
 
         if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
@@ -301,7 +297,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
           case Ping ⇒ channel.tryTell(PongMessage)
           case Die  ⇒ throw new RuntimeException("Expected")
         }
-      }).withSupervisor(supervisor))
+      })
+      val dyingActor = (supervisor ? dyingProps).as[ActorRef].get
 
       intercept[RuntimeException] {
         (dyingActor.?(Die, TimeoutMillis)).get

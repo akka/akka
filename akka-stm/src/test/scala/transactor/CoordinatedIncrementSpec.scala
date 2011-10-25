@@ -53,6 +53,7 @@ object CoordinatedIncrement {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
   import CoordinatedIncrement._
 

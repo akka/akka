@@ -44,8 +44,7 @@ trait ListenerManagement {
   def hasListeners: Boolean = !listeners.isEmpty
 
   /**
-   * Checks if a specific listener is registered. ActorInitializationException leads to removal of listener if that
-   * one isShutdown.
+   * Checks if a specific listener is registered. Pruned eventually when isShutdown==true in notify.
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
@@ -62,7 +61,7 @@ trait ListenerManagement {
   }
 
   /**
-   * Execute <code>f</code> with each listener as argument. ActorInitializationException is not handled.
+   * Execute <code>f</code> with each listener as argument.
    */
   protected[akka] def foreachListener(f: (ActorRef) ⇒ Unit) {
     val iterator = listeners.iterator

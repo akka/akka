@@ -52,14 +52,14 @@ object SystemMessage {
 sealed trait SystemMessage extends PossiblyHarmful {
   var next: SystemMessage = _
 }
-case class Create() extends SystemMessage
-case class Recreate(cause: Throwable) extends SystemMessage
-case class Suspend() extends SystemMessage
-case class Resume() extends SystemMessage
-case class Terminate() extends SystemMessage
-case class Supervise(child: ActorRef) extends SystemMessage
-case class Link(subject: ActorRef) extends SystemMessage
-case class Unlink(subject: ActorRef) extends SystemMessage
+case class Create() extends SystemMessage // send to self from Dispatcher.register
+case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
+case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
+case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.startsMonitoring
+case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.stopsMonitoring
 
 final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {

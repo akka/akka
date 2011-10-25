@@ -15,7 +15,7 @@ import annotation.tailrec
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
-private[dispatch] object Mailbox {
+object Mailbox {
 
   type Status = Int
 
@@ -29,6 +29,10 @@ private[dispatch] object Mailbox {
   final val Closed = 2
   // secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 4
+
+  // mailbox debugging helper using println (see below)
+  // TODO take this out before release
+  final val debug = false
 }
 
 /**
@@ -147,9 +151,8 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   }
 
   final def run = {
-    try { processMailbox() } catch {
-      case ie: InterruptedException ⇒ Thread.currentThread().interrupt() //Restore interrupt
-    } finally {
+    try processMailbox()
+    finally {
       setAsIdle()
       dispatcher.registerForExecution(this, false, false)
     }
@@ -170,6 +173,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
           do {
+            if (debug) println(actor + " processing message " + nextMessage)
             actor invoke nextMessage
 
             processAllSystemMessages() //After we're done, process all system messages
@@ -193,6 +197,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
+        if (debug) println(actor + " processing system message " + nextMessage)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
@@ -239,6 +244,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   @tailrec
   final def systemEnqueue(message: SystemMessage): Unit = {
+    if (Mailbox.debug) println(actor + " having enqueued " + message)
     val head = systemQueueGet
     /*
      * this write is safely published by the compareAndSet contained within
