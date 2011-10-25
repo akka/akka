@@ -11,7 +11,7 @@ The Typed Actors are implemented through `Typed Actors <http://en.wikipedia.org/
 
 If you are using the `Spring Framework <http://springsource.org>`_ then take a look at Akka's `Spring integration <spring-integration>`_.
 
-** WARNING: ** Do not configure to use a WorkStealingDispatcher with your TypedActors, it just isn't safe with how TypedActors currently are implemented. This limitation will most likely be removed in the future.
+**WARNING:** Do not configure to use a ``WorkStealingDispatcher`` with your ``TypedActors``, it just isn't safe with how ``TypedActors`` currently are implemented. This limitation will most likely be removed in the future.
 
 Creating Typed Actors
 ---------------------
@@ -20,7 +20,7 @@ Creating Typed Actors
 
 Akka turns POJOs with interface and implementation into asynchronous (Typed) Actors. Akka is using `AspectWerkz’s Proxy <http://blogs.codehaus.org/people/jboner/archives/000914_awproxy_proxy_on_steriods.html>`_ implementation, which is the `most performant <http://docs.codehaus.org/display/AW/AOP+Benchmark>`_ proxy implementation there exists.
 
-In order to create a Typed Actor you have to subclass the TypedActor base class.
+In order to create a Typed Actor you have to subclass the ``TypedActor`` base class.
 
 Here is an example.
 
@@ -48,7 +48,7 @@ If you have a POJO with an interface implementation separation like this:
     }
   }
 
-Then you can create an Typed Actor out of it by creating it through the 'TypedActor' factory like this:
+Then you can create an Typed Actor out of it by creating it through the ``TypedActor`` factory like this:
 
 .. code-block:: scala
 
@@ -58,7 +58,7 @@ Then you can create an Typed Actor out of it by creating it through the 'TypedAc
 Creating Typed Actors with non-default constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To create a typed actor that takes constructor arguments use a variant of 'newInstance' or 'newRemoteInstance' that takes a call-by-name block in which you can create the Typed Actor in any way you like.
+To create a typed actor that takes constructor arguments use a variant of ``newInstance`` or ``newRemoteInstance`` that takes a call-by-name block in which you can create the Typed Actor in any way you like.
 
 Here is an example:
 
@@ -119,7 +119,7 @@ Generally it is preferred to use fire-forget messages as much as possible since 
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Methods that return a 'akka.dispatch.Future<TYPE>' are turned into ‘send-and-receive-with-future’ semantics by asynchronously firing off the message and returns immediately with a Future. You need to use the 'future(...)' method in the TypedActor base class to resolve the Future that the client code is waiting on.
+Methods that return a ``akka.dispatch.Future<TYPE>`` are turned into ‘send-and-receive-with-future’ semantics by asynchronously firing off the message and returns immediately with a Future. You need to use the ``future(...)`` method in the ``TypedActor`` base class to resolve the Future that the client code is waiting on.
 
 Here is an example:
 
@@ -140,7 +140,7 @@ Here is an example:
 Stopping Typed Actors
 ---------------------
 
-Once Typed Actors have been created with one of the TypedActor.newInstance methods they need to be stopped with TypedActor.stop to free resources allocated by the created Typed Actor (this is not needed when the Typed Actor is supervised).
+Once Typed Actors have been created with one of the ``TypedActor.newInstance`` methods they need to be stopped with ``TypedActor.stop`` to free resources allocated by the created Typed Actor (this is not needed when the Typed Actor is supervised).
 
 .. code-block:: scala
 
@@ -152,12 +152,12 @@ Once Typed Actors have been created with one of the TypedActor.newInstance metho
   // Free Typed Actor resources
   TypedActor.stop(service)
 
-When the Typed Actor defines a shutdown callback method (:ref:`fault-tolerance-scala`) it will be invoked on TypedActor.stop.
+When the Typed Actor defines a shutdown callback method (:ref:`fault-tolerance-scala`) it will be invoked on ``TypedActor.stop``.
 
 How to use the TypedActorContext for runtime information access
 ---------------------------------------------------------------
 
-The 'akka.actor.TypedActorContext' class Holds 'runtime type information' (RTTI) for the Typed Actor. This context is a member field in the TypedActor base class and holds for example the current sender reference, the current sender future etc.
+The ``akka.actor.TypedActorContext`` class Holds 'runtime type information' (RTTI) for the Typed Actor. This context is a member field in the ``TypedActor`` base class and holds for example the current sender reference, the current sender future etc.
 
 Here is an example how you can use it to in a 'void' (e.g. fire-forget) method to implement request-reply by using the sender reference:
 
@@ -171,7 +171,7 @@ Here is an example how you can use it to in a 'void' (e.g. fire-forget) method t
     }
   }
 
-If the sender, sender future etc. is not available, then these methods will return 'null' so you should have a way of dealing with that scenario.
+If the sender, sender future etc. is not available, then these methods will return ``null`` so you should have a way of dealing with that scenario.
 
 Messages and immutability
 -------------------------
