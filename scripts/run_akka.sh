@@ -7,7 +7,7 @@ VMARGS=$@
 
 if [ -d $TARGET_DIR  ]; then
     cd $TARGET_DIR
-else 
+else
   unzip dist/${VERSION}.zip -d $TARGET_DIR
   cd $TARGET_DIR
 fi

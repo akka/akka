@@ -6,7 +6,7 @@ Software Transactional Memory (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 Module stability: **SOLID**
 
 Overview of STM

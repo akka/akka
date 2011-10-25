@@ -58,7 +58,7 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 
 .. code-block:: java
 
-  import akka.dispatch.Future; 
+  import akka.dispatch.Future;
   import static akka.dispatch.Futures.future;
   import static akka.japi.Function;
   import java.util.concurrent.Callable;
@@ -234,7 +234,7 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
               return r + t; //Just concatenate
           }
         });
-  
+
   result.get(); // Will produce a String that says "testtesttesttest"(... and so on).
 
 That's all it takes!
@@ -256,7 +256,7 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
               return r + t; //Just concatenate
           }
         });
-  
+
   result.get(); // Will produce a String that says "testtesttesttest"(... and so on).
 
 Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.

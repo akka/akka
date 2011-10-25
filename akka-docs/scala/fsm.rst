@@ -214,7 +214,7 @@ Defining States
 A state is defined by one or more invocations of the method
 
   :func:`when(<name>[, stateTimeout = <timeout>])(stateFunction)`.
-  
+
 The given name must be an object which is type-compatible with the first type
 parameter given to the :class:`FSM` trait. This object is used as a hash key,
 so you must ensure that it properly implements :meth:`equals` and

@@ -10,7 +10,7 @@ presented in the following, for the full list of tickets closed during the
 development cycle please refer to
 `the issue tracker <https://www.assembla.com/spaces/akka/milestones/356697-1-2>`_.
 
-- **Actor:** 
+- **Actor:**
 
   - unified :class:`Channel` abstraction for :class:`Promise` & :class:`Actor`
 
@@ -111,7 +111,7 @@ Commits  Insertions  Deletions  Author
       1          17          5  Debasish Ghosh
       2          15          5  Jonas Bonér
 =======  ==========  =========  =========
-  
+
 .. note::
 
   Release notes of previous releases consisted of ticket or change listings in

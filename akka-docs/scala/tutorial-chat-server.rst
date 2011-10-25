@@ -4,5 +4,5 @@ Tutorial: write a scalable, fault-tolerant, network chat server and client (Scal
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 REWRITE ME

@@ -232,7 +232,7 @@ MongoDB-based Durable Mailboxes
 ===============================
 
 This mailbox is backed by `MongoDB <http://mongodb.org>`_.
-MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of 
+MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of
 features cohesive to a fast, reliable & durable queueing mechanism which the Akka Mailbox takes advantage of.
 
 
@@ -257,15 +257,15 @@ file.
 You must specify a hostname (and optionally port) and at *least* a Database name.  If you specify a collection name, it will be used as a 'prefix' for the collections Akka creates to store mailbox messages.  Otherwise, collections will be prefixed with ``mailbox.``
 
 It is also possible to configure the timeout threshholds for Read and Write operations in the ``timeout`` block.
-Currently Akka offers only one "type" of MongoDB based Mailbox but there are plans to support at least 
-one other kind which uses a different queueing strategy.  
+Currently Akka offers only one "type" of MongoDB based Mailbox but there are plans to support at least
+one other kind which uses a different queueing strategy.
 
 
 'Naive' MongoDB-based Durable Mailbox
 -------------------------------------
 The currently supported mailbox is considered "Naive" as it removes messages (using the ``findAndRemove``
-command) from the MongoDB datastore as soon as the actor consumes them.  This could cause message loss 
-if an actor crashes before completely processing a message.  It is not a problem per sé, but behavior 
+command) from the MongoDB datastore as soon as the actor consumes them.  This could cause message loss
+if an actor crashes before completely processing a message.  It is not a problem per sé, but behavior
 users should be aware of.
 
 Here is an example of how you can configure your dispatcher to use this mailbox::

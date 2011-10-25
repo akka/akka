@@ -198,7 +198,7 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
 .. code-block:: scala
 
   val futures = for(i <- 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
-  
+
   val futureSum = Future.fold(0)(futures)(_ + _)
 
 That's all it takes!

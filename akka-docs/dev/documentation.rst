@@ -10,7 +10,7 @@
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 The Akka documentation uses `reStructuredText`_ as its markup language and is
 built using `Sphinx`_.
 

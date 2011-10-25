@@ -158,7 +158,7 @@ If you have not already done so, now is the time to create an Eclipse project fo
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. 
+If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project.
 You need to install the plugin as described in the `README of sbteclipse <https://github.com/typesafehub/sbteclipse>`_
 
 Then run the ``eclipse`` target to generate the Eclipse project::
