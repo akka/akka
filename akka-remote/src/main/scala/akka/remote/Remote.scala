@@ -22,8 +22,6 @@ import java.net.InetSocketAddress
 
 import com.eaio.uuid.UUID
 
-// FIXME renamed file from RemoteDaemon.scala to Remote.scala
-
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
  *
