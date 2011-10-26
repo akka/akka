@@ -9,7 +9,15 @@
 Intro
 =====
 
-TODO
+Akka Cluster provides a fault-tolerant, elastic, decentralized
+peer-to-peer cluster with no single point of failure (SPOF) or single
+point of bottleneck (SPOB). It implemented as a Dynamo-style system
+using gossip protocols, automatic failure detection, automatic
+partitioning, handoff and cluster rebalancing. But with some
+differences due to the fact that it is not just managing passive data,
+but actors, e.g. active, sometimes stateful, components that have
+requirements on message ordering, the number of active instances in
+the cluster etc.
  
 Terms
 =====
@@ -74,12 +82,15 @@ algorithm defined below.
 During each of these runs the node initiates gossip exchange according
 to following rules:
 
-1. Gossip to random live node (if any)
+1. Gossip to random live membership node (if any).
 2. Gossip to random unreachable node with certain probability
-   depending on number of unreachable and live nodes
-3. If the node gossiped to at (1) was not a ``seed`` node, or the number of live 
-   nodes is less than number of seeds, gossip to random ``seed`` with
-   certain probability depending on number of unreachable, seed and live nodes.
+   depending on number of unreachable and live nodes (if any).
+3. If the node gossiped to at (1) was not a ``seed`` node, or the
+   number of live nodes is less than number of seeds, then gossip to
+   random ``seed`` node with a certain probability depending on number
+   of unreachable, seed and live nodes.
+
+All gossip is done over standard TCP and do not require multicast. 
 
 TODO: More details about our version of push-pull-gossip.
 
@@ -196,6 +207,9 @@ comes back up and begins gossiping it will automatically go through the joining
 process again. If the unreachable node will be permanently down then it can be
 removed from the cluster directly with the ``remove`` user action. The cluster
 can also *auto-down* a node using the accrual failure detector.
+
+This means that nodes can join and leave the cluster at any point in
+time, e.g. provide cluster elasticity.
 
 
 State diagram for the member states
