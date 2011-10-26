@@ -75,22 +75,25 @@ gossip updates it updates the `Failure Detector`_ with the liveness
 information.
 
 The nodes defined as ``seed`` nodes are just regular member nodes whos
-only "special role" is to function as contact points in the cluster
-and to help breaking logical partitions as seen in the gossip
-algorithm defined below.
+only additional role is to function as contact points in the cluster
+and to help breaking logical partitions (as seen in the gossip
+algorithm defined below). A cluster can and should have multiple
+``seed`` nodes. Seed nodes are *not* a single point of failure since the
+cluster can continue to function just as fine without them.
 
 During each of these runs the node initiates gossip exchange according
 to following rules:
 
-1. Gossip to random live membership node (if any).
-2. Gossip to random unreachable node with certain probability
+1. Gossip to random ``live`` membership node (if any).
+2. Gossip to random ``unreachable`` node with certain probability
    depending on number of unreachable and live nodes (if any).
 3. If the node gossiped to at (1) was not a ``seed`` node, or the
    number of live nodes is less than number of seeds, then gossip to
    random ``seed`` node with a certain probability depending on number
-   of unreachable, seed and live nodes.
+   of ``unreachable``, ``seed`` and ``live`` nodes.
 
-All gossip is done over standard TCP and do not require multicast. 
+All gossip is done over standard TCP and do not require multicast and
+therefore works fine in virtualized environments such as Amazon EC2.
 
 TODO: More details about our version of push-pull-gossip.
 
@@ -111,11 +114,10 @@ to the cluster state has an accompanying update to the vector clock.
 One problem with vector clocks is that their history can over time be
 very long, which will both make comparisons take longer time as well
 as take up unnecessary memory. To solve that problem we do pruning of
-the vector clocks according to the `pruning algorithm
-<http://wiki.basho.com/Vector-Clocks.html#Vector-Clock-Pruning>_`
-in Riak.
+the vector clocks according to the `pruning algorithm`_ in Riak.
 
 .. _Vector Clocks: http://en.wikipedia.org/wiki/Vector_clock
+.. _pruning algorithm: http://wiki.basho.com/Vector-Clocks.html#Vector-Clock-Pruning
 
 Gossip convergence
 ------------------
@@ -133,8 +135,7 @@ Failure Detector
 
 The failure detector is responsible for trying to detect if a node is
 unreachable from the rest of the cluster. For this we are using an
-implementation of the `Phi Accrual Failure Detector` as defined in this
-`paper <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_ by Hayashibara et al. 
+implementation of `The Phi Accrual Failure Detector`_ by Hayashibara et al. 
 
 An accrual failure detector decouple monitoring and
 interpretation. That makes them applicable to a wider area of
@@ -157,6 +158,8 @@ but needs more time to detect actual crashes. The default
 cloud environments, such as Amazon EC2, the value could be increased
 to 12 in order to account for network issues that sometimes occur on
 such platforms.
+
+.. _The Phi Accrual Failure Detector: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
 
 Leader
 ------
