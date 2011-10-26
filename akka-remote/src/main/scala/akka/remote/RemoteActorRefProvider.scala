@@ -33,15 +33,15 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
-  private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
-
   val local = new LocalActorRefProvider(app)
   val remote = new Remote(app)
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
 
   private val remoteDaemonConnectionManager = new RemoteConnectionManager(app, remote)
+
+  private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
+  private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
