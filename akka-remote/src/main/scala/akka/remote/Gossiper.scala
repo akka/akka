@@ -48,7 +48,7 @@ case class Gossip(
     leader: InetSocketAddress, // FIXME leader is always head of 'members', so we probably don't need this field
     members: SortedSet[Member] = SortetSet.empty[Member](Ordering.fromLessThan[String](_ > _)), // sorted set of members with their status, sorted by name
     seen: Map[Member, VectorClock] = Map.empty[Member, VectorClock],                            // for ring convergence
-    pendingChanges: Vector[PendingPartitioningChange],                                          // for handoff
+    pendingChanges: Option[Vector[PendingPartitioningChange]] = None,                           // for handoff
     meta: Option[Map[String, Array[Byte]]] = None)                                              // misc meta-data
 
   case class Member(address: InetSocketAddress, status: MemberStatus)
