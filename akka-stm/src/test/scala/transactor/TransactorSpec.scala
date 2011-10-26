@@ -69,7 +69,7 @@ object SimpleTransactor {
     def atomically = {
       case Set(ref, value, latch) ⇒ {
         ref.set(value)
-        latch.countDown()
+        deferred { latch.countDown() }
       }
     }
   }
