@@ -258,20 +258,20 @@ Configuring transactions with an **explicit** ``TransactionFactory``:
 
 The following settings are possible on a TransactionFactory:
 
-- familyName - Family name for transactions. Useful for debugging.
-- readonly - Sets transaction as readonly. Readonly transactions are cheaper.
-- maxRetries - The maximum number of times a transaction will retry.
-- timeout - The maximum time a transaction will block for.
-- trackReads - Whether all reads should be tracked. Needed for blocking operations.
-- writeSkew - Whether writeskew is allowed. Disable with care.
-- blockingAllowed - Whether explicit retries are allowed.
-- interruptible - Whether a blocking transaction can be interrupted.
-- speculative - Whether speculative configuration should be enabled.
-- quickRelease - Whether locks should be released as quickly as possible (before whole commit).
-- propagation - For controlling how nested transactions behave.
-- traceLevel - Transaction trace level.
+- ``familyName`` - Family name for transactions. Useful for debugging.
+- ``readonly`` - Sets transaction as readonly. Readonly transactions are cheaper.
+- ``maxRetries`` - The maximum number of times a transaction will retry.
+- ``timeout`` - The maximum time a transaction will block for.
+- ``trackReads`` - Whether all reads should be tracked. Needed for blocking operations.
+- ``writeSkew`` - Whether writeskew is allowed. Disable with care.
+- ``blockingAllowed`` - Whether explicit retries are allowed.
+- ``interruptible`` - Whether a blocking transaction can be interrupted.
+- ``speculative`` - Whether speculative configuration should be enabled.
+- ``quickRelease`` - Whether locks should be released as quickly as possible (before whole commit).
+- ``propagation`` - For controlling how nested transactions behave.
+- ``traceLevel`` - Transaction trace level.
 
-You can also specify the default values for some of these options in akka.conf. Here they are with their default values:
+You can also specify the default values for some of these options in ``akka.conf``. Here they are with their default values:
 
 ::
 
@@ -461,12 +461,12 @@ Transactional datastructures
 
 Akka provides two datastructures that are managed by the STM.
 
-- TransactionalMap
-- TransactionalVector
+- ``TransactionalMap``
+- ``TransactionalVector``
 
-TransactionalMap and TransactionalVector look like regular mutable datastructures, they even implement the standard Scala 'Map' and 'RandomAccessSeq' interfaces, but they are implemented using persistent datastructures and managed references under the hood. Therefore they are safe to use in a concurrent environment. Underlying TransactionalMap is HashMap, an immutable Map but with near constant time access and modification operations. Similarly TransactionalVector uses a persistent Vector. See the Persistent Datastructures section below for more details.
+``TransactionalMap`` and ``TransactionalVector`` look like regular mutable datastructures, they even implement the standard Scala 'Map' and 'RandomAccessSeq' interfaces, but they are implemented using persistent datastructures and managed references under the hood. Therefore they are safe to use in a concurrent environment. Underlying TransactionalMap is HashMap, an immutable Map but with near constant time access and modification operations. Similarly ``TransactionalVector`` uses a persistent Vector. See the Persistent Datastructures section below for more details.
 
-Like managed references, TransactionalMap and TransactionalVector can only be modified inside the scope of an STM transaction.
+Like managed references, ``TransactionalMap`` and ``TransactionalVector`` can only be modified inside the scope of an STM transaction.
 
 *IMPORTANT*: There have been some problems reported when using transactional datastructures with 'lazy' initialization. Avoid that.
 
@@ -488,9 +488,9 @@ Here is how you create these transactional datastructures:
   val map = TransactionalMap[String, User]
   val vector = TransactionalVector[Address]
 
-TransactionalMap and TransactionalVector wrap persistent datastructures with transactional references and provide a standard Scala interface. This makes them convenient to use.
+``TransactionalMap`` and ``TransactionalVector`` wrap persistent datastructures with transactional references and provide a standard Scala interface. This makes them convenient to use.
 
-Here is an example of using a Ref and a HashMap directly:
+Here is an example of using a ``Ref`` and a ``HashMap`` directly:
 
 .. code-block:: scala
 
@@ -512,7 +512,7 @@ Here is an example of using a Ref and a HashMap directly:
   }
   // -> User("bill")
 
-Here is the same example using TransactionalMap:
+Here is the same example using ``TransactionalMap``:
 
 .. code-block:: scala
 
@@ -536,8 +536,9 @@ Persistent datastructures
 -------------------------
 
 Akka's STM should only be used with immutable data. This can be costly if you have large datastructures and are using a naive copy-on-write. In order to make working with immutable datastructures fast enough Scala provides what are called Persistent Datastructures. There are currently two different ones:
-* HashMap (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/HashMap.html>`__)
-* Vector (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/Vector.html>`__)
+
+* ``HashMap`` (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/HashMap.html>`__)
+* ``Vector`` (`scaladoc <http://www.scala-lang.org/api/current/scala/collection/immutable/Vector.html>`__)
 
 They are immutable and each update creates a completely new version but they are using clever structural sharing in order to make them almost as fast, for both read and update, as regular mutable datastructures.
 
