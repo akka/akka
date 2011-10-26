@@ -258,18 +258,18 @@ Configuring transactions with an **explicit** ``TransactionFactory``:
 
 The following settings are possible on a TransactionFactory:
 
-- familyName - Family name for transactions. Useful for debugging.
-- readonly - Sets transaction as readonly. Readonly transactions are cheaper.
-- maxRetries - The maximum number of times a transaction will retry.
-- timeout - The maximum time a transaction will block for.
-- trackReads - Whether all reads should be tracked. Needed for blocking operations.
-- writeSkew - Whether writeskew is allowed. Disable with care.
-- blockingAllowed - Whether explicit retries are allowed.
-- interruptible - Whether a blocking transaction can be interrupted.
-- speculative - Whether speculative configuration should be enabled.
-- quickRelease - Whether locks should be released as quickly as possible (before whole commit).
-- propagation - For controlling how nested transactions behave.
-- traceLevel - Transaction trace level.
+- ``familyName`` - Family name for transactions. Useful for debugging.
+- ``readonly`` - Sets transaction as readonly. Readonly transactions are cheaper.
+- ``maxRetries`` - The maximum number of times a transaction will retry.
+- ``timeout`` - The maximum time a transaction will block for.
+- ``trackReads`` - Whether all reads should be tracked. Needed for blocking operations.
+- ``writeSkew`` - Whether writeskew is allowed. Disable with care.
+- ``blockingAllowed`` - Whether explicit retries are allowed.
+- ``interruptible`` - Whether a blocking transaction can be interrupted.
+- ``speculative`` - Whether speculative configuration should be enabled.
+- ``quickRelease`` - Whether locks should be released as quickly as possible (before whole commit).
+- ``propagation`` - For controlling how nested transactions behave.
+- ``traceLevel`` - Transaction trace level.
 
 You can also specify the default values for some of these options in akka.conf. Here they are with their default values:
 
