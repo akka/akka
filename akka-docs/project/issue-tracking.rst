@@ -29,9 +29,9 @@ In order to create tickets you need to do the following:
 
 `Register here <https://www.assembla.com/user/signup>`_ then log in
 
-For Akka tickets:
 Register as a Watcher for the Akka project, you won't be able to open tickets otherwise.
 
+For Akka tickets:
 `Link to create new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
 
 
