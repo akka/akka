@@ -558,19 +558,44 @@ have a dependency on message ordering from any given source.
   and state is transfered during the migration initialization, then options 2b
   and 3b would be required.
 
-Support for stateful singleton actors will come in future releases of Akka, most
-likely Akka 2.2.
+Stateful Actor Replication
+==========================
 
+Support for stateful singleton actors will come in future releases of Akka, and
+is scheduled for Akka 2.2. Having a Dynamo base for the clustering already we
+should use the same infrastructure to provide stateful actor clustering and
+datastore as well. The stateful actor clustering should be layered on top of the
+distributed datastore. See the next section for a rough outline on how the
+distributed datastore could be implemented.
 
-Other ideas
-===========
+Implementing a Dynamo-style distributed database on top of Akka Cluster 
+-----------------------------------------------------------------------
 
-Behaviour and state
--------------------
+The missing pieces to implement a full Dynamo-style eventually consistent data
+storage on top of the Akka Cluster as described in this document are: 
 
-If we provide actor clustering it is only half of the solution, we need to
-provide both actor clustering for stateless actors (behaviour) and easy ways to
-store and distribute state. Having a dynamo base for the clustering already we
-could use the same infrastructure and provide both actor clustering and
-datastore. We can also provide an event sourcing API with the default
-implementation using the distributed datastore.
+- Configuration of ``READ`` and ``WRITE`` consistency levels according to the ``N/R/W`` numbers
+  defined in the Dynamo paper.
+    - R = read replica count 
+    - W = write replica count 
+    - N = replication factor 
+    - Q = QUORUM = N / 2 + 1
+    - W + R > N = full consistency
+
+- Define a versioned data message wrapper: ``Versioned[T](hash: Long, version: VectorClock, data: T)``.
+
+- Define a single system data broker actor on each node that uses a ``Consistent
+  Hashing Router`` and that have instances on all other nodes in the node ring.
+
+- For ``WRITE``:
+    1. Wrap data in a ``Versioned Message``
+    2. Send a ``Versioned Message`` with the data is sent to a number of nodes matching the ``W-value``.
+
+- For ``READ``:
+    1. Read in the ``Versioned Message`` with the data from as many replicas as you need for the consistency level required by the ``R-value``.
+    2. Do comparison on the versions (using `Vector Clocks`_)
+    3. If the versions differ then do `Read Repair`_ to update the inconsistent nodes.
+    4. Return the latest versioned data.
+
+.. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
+
