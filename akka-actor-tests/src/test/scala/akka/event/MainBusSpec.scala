@@ -14,7 +14,7 @@ object MainBusSpec {
 class MainBusSpec extends AkkaSpec(Configuration(
   "akka.actor.debug.lifecycle" -> true,
   "akka.actor.debug.mainbus" -> true)) {
-  
+
   import MainBusSpec._
 
   "A MainBus" must {

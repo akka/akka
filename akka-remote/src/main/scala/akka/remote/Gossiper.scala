@@ -7,6 +7,7 @@ package akka.remote
 import akka.AkkaApplication
 import akka.actor._
 import akka.actor.Status._
+import akka.event.Logging
 import akka.util.duration._
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -104,6 +105,7 @@ class Gossiper(remote: Remote) {
     nodeMembershipChangeListeners: Set[NodeMembershipChangeListener] = Set.empty[NodeMembershipChangeListener])
 
   private val app = remote.app
+  private val log = Logging(app, this)
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[InetSocketAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
@@ -243,20 +245,20 @@ class Gossiper(remote: Remote) {
     try {
       (connection ? (toRemoteMessage(newGossip), remote.remoteSystemDaemonAckTimeout)).as[Status] match {
         case Some(Success(receiver)) ⇒
-          app.eventHandler.debug(this, "Gossip sent to [%s] was successfully received".format(receiver))
+          log.debug("Gossip sent to [{}] was successfully received", receiver)
 
         case Some(Failure(cause)) ⇒
-          app.eventHandler.error(cause, this, cause.toString)
+          log.error(cause, cause.toString)
           throw cause
 
         case None ⇒
-          val error = new RemoteException("Gossip to [%s] timed out".format(connection.address))
-          app.eventHandler.error(error, this, error.toString)
+          val error = new RemoteException("Gossip to [{}] timed out".format(connection.address))
+          log.error(error, error.toString)
           throw error
       }
     } catch {
       case e: Exception ⇒
-        app.eventHandler.error(e, this, "Could not gossip to [%s] due to: %s".format(connection.address, e.toString))
+        log.error(e, "Could not gossip to [{}] due to: {}", connection.address, e.toString)
         throw e
     }
 
