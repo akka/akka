@@ -194,15 +194,9 @@ class RoutingSpec extends AkkaSpec {
         }
       })
 
-      val props = RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1))
-      val actor = app.actorOf(props, "foo")
+      val actor = app.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1)), "foo")
 
-      try {
-        actor ? Broadcast(1)
-        fail()
-      } catch {
-        case e: RoutingException ⇒
-      }
+      intercept[RoutingException] { actor ? Broadcast(1) }
 
       actor ! "end"
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)

@@ -368,23 +368,32 @@ class DeadLetterActorRef(app: AkkaApplication) extends MinimalActorRef {
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = brokenPromise
 }
 
-abstract class AskActorRef(promise: Promise[Any], app: AkkaApplication) extends MinimalActorRef {
+abstract class AskActorRef(app: AkkaApplication)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
+  final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
-  promise onComplete { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
-  promise onTimeout { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
+  {
+    val callback: Future[Any] ⇒ Unit = { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
+    result onComplete callback
+    result onTimeout callback
+  }
 
   protected def whenDone(): Unit
 
-  override protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit = message match {
-    case akka.actor.Status.Success(r) ⇒ promise.completeWithResult(r)
-    case akka.actor.Status.Failure(f) ⇒ promise.completeWithException(f)
-    case other                        ⇒ promise.completeWithResult(other)
+  protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit = message match {
+    case akka.actor.Status.Success(r) ⇒ result.completeWithResult(r)
+    case akka.actor.Status.Failure(f) ⇒ result.completeWithException(f)
+    case other                        ⇒ result.completeWithResult(other)
   }
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new ActorKilledException("Not possible to ask/? a reference to an ask/?.")))(app.dispatcher)
+  protected[akka] override def sendSystemMessage(message: SystemMessage): Unit = message match {
+    case _: Terminate ⇒ stop()
+    case _            ⇒
+  }
 
-  override def isShutdown = promise.isCompleted || promise.isExpired
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
+    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
 
-  override def stop(): Unit = if (!isShutdown) promise.completeWithException(new ActorKilledException("Stopped"))
+  override def isShutdown = result.isCompleted || result.isExpired
+
+  override def stop(): Unit = if (!isShutdown) result.completeWithException(new ActorKilledException("Stopped"))
 }
