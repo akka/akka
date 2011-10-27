@@ -101,8 +101,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
-      map(time ⇒ Duration(time, DefaultTimeUnit)).
-      getOrElse(Duration(1000, TimeUnit.MILLISECONDS))
+      map(time ⇒ Duration(time, DefaultTimeUnit)).getOrElse(Duration(1000, TimeUnit.MILLISECONDS))
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
     val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), DefaultTimeUnit)
     val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.throughput-deadline-time", -1), DefaultTimeUnit)

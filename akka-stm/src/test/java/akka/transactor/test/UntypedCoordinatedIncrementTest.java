@@ -1,6 +1,8 @@
 package akka.transactor.test;
 
 import static org.junit.Assert.*;
+
+import org.junit.After;
 import org.junit.Test;
 import org.junit.Before;
 
@@ -34,11 +36,12 @@ public class UntypedCoordinatedIncrementTest {
     List<ActorRef> counters;
     ActorRef failer;
 
-    int numCounters = 5;
+    int numCounters = 3;
     int timeout = 5;
     int askTimeout = 5000;
 
     @Before public void initialise() {
+        Props p = new Props().withCreator(UntypedFailer.class);
         counters = new ArrayList<ActorRef>();
         for (int i = 1; i <= numCounters; i++) {
             final String name = "counter" + i;
@@ -49,7 +52,7 @@ public class UntypedCoordinatedIncrementTest {
             }));
             counters.add(counter);
         }
-        failer = application.actorOf(new Props().withCreator(UntypedFailer.class));
+        failer = application.actorOf(p);
     }
 
     @Test public void incrementAllCountersWithSuccessfulTransaction() {
@@ -61,15 +64,7 @@ public class UntypedCoordinatedIncrementTest {
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
             Future future = counter.ask("GetCount", askTimeout);
-            future.await();
-            if (future.isCompleted()) {
-                Option resultOption = future.result();
-                if (resultOption.isDefined()) {
-                    Object result = resultOption.get();
-                    int count = (Integer) result;
-                    assertEquals(1, count);
-                }
-            }
+            assertEquals(1, ((Integer)future.get()).intValue());
         }
     }
 
@@ -88,21 +83,18 @@ public class UntypedCoordinatedIncrementTest {
         } catch (InterruptedException exception) {}
         for (ActorRef counter : counters) {
             Future future = counter.ask("GetCount", askTimeout);
-            future.await();
-            if (future.isCompleted()) {
-                Option resultOption = future.result();
-                if (resultOption.isDefined()) {
-                    Object result = resultOption.get();
-                    int count = (Integer) result;
-                    assertEquals(0, count);
-                }
-            }
+            assertEquals(0, ((Integer)future.get()).intValue());
         }
         application.eventHandler().notify(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {
       return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toSeq();
+    }
+
+    @After
+    public void stop() {
+      application.stop();
     }
 }
 
