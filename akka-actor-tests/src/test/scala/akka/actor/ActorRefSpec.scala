@@ -377,16 +377,12 @@ class ActorRefSpec extends AkkaSpec {
 
       val ffive = (ref ? (5, timeout)).mapTo[String]
       val fnull = (ref ? (null, timeout)).mapTo[String]
-
-      intercept[ActorKilledException] {
-        (ref ? PoisonPill).get
-        fail("shouldn't get here")
-      }
+      ref ! PoisonPill
 
       ffive.get must be("five")
       fnull.get must be("null")
 
-      awaitCond(ref.isShutdown, 100 millis)
+      awaitCond(ref.isShutdown, 2000 millis)
     }
 
     "restart when Kill:ed" in {
