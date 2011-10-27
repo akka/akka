@@ -437,21 +437,6 @@ class DispatcherModelSpec extends ActorModelSpec {
   def dispatcherType = "Dispatcher"
 
   "A " + dispatcherType must {
-    "complete all uncompleted sender futures on deregister" in {
-      implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
-      a.suspend
-      val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
-      val stopped = a ? PoisonPill
-      val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
-      a.resume
-      assert(f1.get == "foo")
-      stopped.await
-      for (each ← shouldBeCompleted)
-        assert(each.await.exception.get.isInstanceOf[ActorKilledException])
-      a.stop()
-    }
-
     "process messages in parallel" in {
       implicit val dispatcher = newInterceptedDispatcher
       val aStart, aStop, bParallel = new CountDownLatch(1)
