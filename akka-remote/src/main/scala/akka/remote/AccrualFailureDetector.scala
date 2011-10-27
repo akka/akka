@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
+import System.{ currentTimeMillis ⇒ newTimestamp }
+
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
@@ -22,7 +24,7 @@ import scala.annotation.tailrec
  */
 class AccrualFailureDetector(
   val threshold: Int = 8,
-  val maxSampleSize: Int = 1000) extends FailureDetector {
+  val maxSampleSize: Int = 1000) {
 
   final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -163,8 +165,4 @@ class AccrualFailureDetector(
       if (!state.compareAndSet(oldState, newState)) remove(connection) // recur
     }
   }
-
-  def recordSuccess(connection: InetSocketAddress, timestamp: Long) {}
-  def recordFailure(connection: InetSocketAddress, timestamp: Long) {}
-  def notify(event: RemoteLifeCycleEvent) {}
 }

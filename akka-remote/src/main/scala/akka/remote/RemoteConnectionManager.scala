@@ -35,9 +35,6 @@ class RemoteConnectionManager(
 
   private val state: AtomicReference[State] = new AtomicReference[State](newState())
 
-  // register all initial connections - e.g listen to events from them
-  initialConnections.keys foreach (remote.eventStream.register(failureDetector, _))
-
   /**
    * This method is using the FailureDetector to filter out connections that are considered not available.
    */
@@ -117,7 +114,6 @@ class RemoteConnectionManager(
         remove(faultyConnection) // recur
       } else {
         app.eventHandler.debug(this, "Removing connection [%s]".format(faultyAddress))
-        remote.eventStream.unregister(failureDetector, faultyAddress) // unregister the connections - e.g stop listen to events from it
       }
     }
   }
@@ -145,7 +141,6 @@ class RemoteConnectionManager(
         } else {
           // we succeeded
           app.eventHandler.debug(this, "Adding connection [%s]".format(address))
-          remote.eventStream.register(failureDetector, address) // register the connection - e.g listen to events from it
           newConnection // return new connection actor
         }
     }
