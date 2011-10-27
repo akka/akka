@@ -395,14 +395,10 @@ abstract class ActorModelSpec extends AkkaSpec {
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
-        assert((intercept[ActorInterruptedException] {
-          f3.get
-        }).getMessage === "Ping!")
         assert(f4.get === "foo2")
-        assert((intercept[ActorInterruptedException] {
-          f5.get
-        }).getMessage === "Ping!")
+        assert(f3.value === None)
         assert(f6.get === "bar2")
+        assert(f5.value === None)
       }
     }
 
@@ -412,21 +408,17 @@ abstract class ActorModelSpec extends AkkaSpec {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
+        val f3 = a ? ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
         val f4 = a ? Reply("foo2")
-        val f5 = a ? new ThrowException(new RemoteException("RemoteException"))
+        val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
-        assert((intercept[IndexOutOfBoundsException] {
-          f3.get
-        }).getMessage === "IndexOutOfBoundsException")
         assert(f4.get === "foo2")
-        assert((intercept[RemoteException] {
-          f5.get
-        }).getMessage === "RemoteException")
         assert(f6.get === "bar2")
+        assert(f3.result === None)
+        assert(f5.result === None)
       }
     }
   }
