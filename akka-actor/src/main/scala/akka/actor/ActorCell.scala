@@ -54,6 +54,8 @@ private[akka] object ActorCell {
   val contextStack = new ThreadLocal[Stack[ActorContext]] {
     override def initialValue = Stack[ActorContext]()
   }
+
+  val emptyChildren = TreeMap[ActorRef, ChildRestartStats]()
 }
 
 //vars don't need volatile since it's protected with the mailbox status
@@ -74,9 +76,9 @@ private[akka] class ActorCell(
 
   def provider = app.provider
 
-  var futureTimeout: Option[ScheduledFuture[AnyRef]] = None //FIXME TODO Doesn't need to be volatile either, since it will only ever be accessed when a message is processed
+  var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
-  var _children = TreeMap[ActorRef, ChildRestartStats]()
+  var _children = emptyChildren //Reuse same empty instance to avoid allocating new instance of the Ordering and the actual empty instance for every actor
 
   var currentMessage: Envelope = null
 
