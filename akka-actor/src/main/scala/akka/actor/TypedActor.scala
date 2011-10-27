@@ -339,15 +339,23 @@ class TypedActor(val app: AkkaApplication) {
         TypedActor.appReference set app
         try {
           if (m.isOneWay) m(me)
-          else if (m.returnsFuture_?) {
+          else {
             val s = sender
-            m(me).asInstanceOf[Future[Any]] onComplete {
-              _.value.get match {
-                case Left(f)  ⇒ s ! akka.actor.Status.Failure(f)
-                case Right(r) ⇒ s ! r
+            try {
+              if (m.returnsFuture_?) {
+                m(me).asInstanceOf[Future[Any]] onComplete {
+                  _.value.get match {
+                    case Left(f)  ⇒ s ! akka.actor.Status.Failure(f)
+                    case Right(r) ⇒ s ! r
+                  }
+                }
+              } else {
+                s ! m(me)
               }
+            } catch {
+              case e: Exception ⇒ s ! akka.actor.Status.Failure(e)
             }
-          } else sender ! m(me)
+          }
 
         } finally {
           TypedActor.selfReference set null
@@ -366,17 +374,18 @@ class TypedActor(val app: AkkaApplication) {
       case _ ⇒
         MethodCall(app, method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ actor ? m
+          case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            val f = actor ? m
+            val f = actor.?(m, timeout)
             try { f.await } catch { case _: FutureTimeoutException ⇒ }
+            println("JOption result: " + f.value)
             f.value match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
           case m ⇒
-            (actor ? m).get.asInstanceOf[AnyRef]
+            (actor.?(m, timeout)).get.asInstanceOf[AnyRef]
         }
     }
   }
