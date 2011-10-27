@@ -9,9 +9,12 @@ import org.scalatest.matchers.MustMatchers
 import akka.AkkaApplication
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
+import akka.event.{ Logging, MainBusLogging }
 
 abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
+
+  val log: Logging = new MainBusLogging(app.mainbus, this)
 
   final override def beforeAll {
     atStartup()

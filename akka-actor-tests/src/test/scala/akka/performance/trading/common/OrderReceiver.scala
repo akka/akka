@@ -24,14 +24,14 @@ trait OrderReceiver {
 
 }
 
-class AkkaOrderReceiver extends Actor with OrderReceiver {
+class AkkaOrderReceiver extends Actor with OrderReceiver with ActorLogging {
   type ME = ActorRef
 
   def receive = {
     case routing @ MatchingEngineRouting(mapping) ⇒
       refreshMatchingEnginePartitions(routing.asInstanceOf[MatchingEngineRouting[ActorRef]])
     case order: Order ⇒ placeOrder(order)
-    case unknown      ⇒ app.eventHandler.warning(this, "Received unknown message: " + unknown)
+    case unknown      ⇒ log.warning("Received unknown message: " + unknown)
   }
 
   def placeOrder(order: Order) = {
@@ -40,7 +40,7 @@ class AkkaOrderReceiver extends Actor with OrderReceiver {
       case Some(m) ⇒
         m.forward(order)
       case None ⇒
-        app.eventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
+        log.warning("Unknown orderbook: " + order.orderbookSymbol)
         channel ! new Rsp(false)
     }
   }

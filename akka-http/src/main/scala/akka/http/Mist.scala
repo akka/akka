@@ -4,7 +4,7 @@
 
 package akka.http
 
-import akka.event.EventHandler
+import akka.event.Logging
 import akka.config.ConfigurationException
 import javax.servlet.http.{ HttpServletResponse, HttpServletRequest }
 import javax.servlet.http.HttpServlet
@@ -360,7 +360,7 @@ trait RequestMethod {
           }
         } catch {
           case io: Exception ⇒
-            app.eventHandler.error(io, this, io.getMessage)
+            app.mainbus.publish(Logging.Error(io, this, io.getMessage))
             false
         }
       case None ⇒ false
@@ -376,7 +376,7 @@ trait RequestMethod {
           }
         } catch {
           case io: IOException ⇒
-            app.eventHandler.error(io, this, io.getMessage)
+            app.mainbus.publish(Logging.Error(io, this, io.getMessage))
         }
       case None ⇒ {}
     }

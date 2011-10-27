@@ -17,7 +17,7 @@ class OneWayMatchingEngine(meId: String, orderbooks: List[Orderbook]) extends Ak
         orderbook.matchOrders()
 
       case None ⇒
-        app.eventHandler.warning(this, "Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
+        log.warning("Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
     }
   }
 

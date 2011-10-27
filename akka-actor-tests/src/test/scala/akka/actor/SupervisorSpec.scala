@@ -118,14 +118,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 
-  override def atStartup() = {
-    app.eventHandler notify Mute(EventFilter[Exception]("Die"),
-      EventFilter[IllegalStateException]("Don't wanna!"),
-      EventFilter[RuntimeException]("Expected"))
-  }
-
-  override def atTermination() = {
-    app.eventHandler notify UnMuteAll
+  override def atStartup() {
+    app.mainbus.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
   }
 
   override def beforeEach() = {

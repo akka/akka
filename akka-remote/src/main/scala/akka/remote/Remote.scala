@@ -6,7 +6,7 @@ package akka.remote
 
 import akka.AkkaApplication
 import akka.actor._
-import akka.event.EventHandler
+import akka.event.Logging
 import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.actor.Status._
 import akka.util._
@@ -28,6 +28,8 @@ import com.eaio.uuid.UUID
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Remote(val app: AkkaApplication) extends RemoteService {
+
+  val log = Logging(app, this)
 
   import app._
   import app.config
@@ -75,8 +77,8 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
     remote.start(hostname, port)
     remote.register(remoteDaemonServiceName, remoteDaemon)
-    app.eventHandler.addListener(eventStream.channel)
-    app.eventHandler.addListener(remoteClientLifeCycleHandler)
+    app.mainbus.subscribe(eventStream.channel, classOf[RemoteLifeCycleEvent])
+    app.mainbus.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
     // TODO actually register this provider in app in remote mode
     //provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
     remote
@@ -86,7 +88,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
 
   def start() {
     val triggerLazyServerVal = address.toString
-    eventHandler.info(this, "Starting remote server on [%s]".format(triggerLazyServerVal))
+    log.info("Starting remote server on [{}]", triggerLazyServerVal)
   }
 
   def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
@@ -108,16 +110,14 @@ class Remote(val app: AkkaApplication) extends RemoteService {
 class RemoteSystemDaemon(remote: Remote) extends Actor {
 
   import remote._
-  import remote.app._
 
   override def preRestart(reason: Throwable, msg: Option[Any]) {
-    eventHandler.debug(this, "RemoteSystemDaemon failed due to [%s] - restarting...".format(reason))
+    log.debug("RemoteSystemDaemon failed due to [{}] - restarting...", reason)
   }
 
   def receive: Actor.Receive = {
     case message: RemoteSystemDaemonMessageProtocol ⇒
-      eventHandler.debug(this,
-        "Received command [\n%s] to RemoteSystemDaemon on [%s]".format(message, nodename))
+      log.debug("Received command [\n{}] to RemoteSystemDaemon on [{}]", message, app.nodename)
 
       message.getMessageType match {
         case USE                    ⇒ handleUse(message)
@@ -135,7 +135,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         //TODO: should we not deal with unrecognized message types?
       }
 
-    case unknown ⇒ eventHandler.warning(this, "Unknown message to RemoteSystemDaemon [%s]".format(unknown))
+    case unknown ⇒ log.warning("Unknown message to RemoteSystemDaemon [{}]", unknown)
   }
 
   def handleUse(message: RemoteSystemDaemonMessageProtocol) {
@@ -147,7 +147,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
           else message.getPayload.toByteArray
 
         val actorFactory =
-          serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
+          app.serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
             case Left(error)     ⇒ throw error
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
@@ -158,7 +158,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         server.register(actorAddress, newActorRef)
 
       } else {
-        eventHandler.error(this, "Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [%s]".format(message))
+        log.error("Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [{}]", message)
       }
 
       channel ! Success(address.toString)
@@ -232,7 +232,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
   }
 
   private def payloadFor[T](message: RemoteSystemDaemonMessageProtocol, clazz: Class[T]): T = {
-    serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
+    app.serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
       case Left(error)     ⇒ throw error
       case Right(instance) ⇒ instance.asInstanceOf[T]
     }

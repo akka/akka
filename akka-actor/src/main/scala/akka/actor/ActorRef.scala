@@ -383,12 +383,12 @@ class DeadLetterActorRef(app: AkkaApplication) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  protected[akka] override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.eventHandler.notify(DeadLetter(message, channel))
+  protected[akka] override def postMessageToMailbox(message: Any, channel: UntypedChannel): Unit = app.mainbus.publish(DeadLetter(message, channel))
 
   protected[akka] override def postMessageToMailboxAndCreateFutureResultWithTimeout(
     message: Any,
     timeout: Timeout,
-    channel: UntypedChannel): Future[Any] = { app.eventHandler.notify(DeadLetter(message, channel)); brokenPromise }
+    channel: UntypedChannel): Future[Any] = { app.mainbus.publish(DeadLetter(message, channel)); brokenPromise }
 }
 
 abstract class AskActorRef(promise: Promise[Any], app: AkkaApplication) extends MinimalActorRef {

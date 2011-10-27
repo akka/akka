@@ -3,12 +3,13 @@
  */
 
 package akka.util
+
 import akka.dispatch.Envelope
 import akka.config.ModuleNotAvailableException
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
 import akka.config.ModuleNotAvailableException
-import akka.event.EventHandler
+import akka.event.Logging.Debug
 import akka.cluster.ClusterNode
 import akka.remote.{ RemoteSupport, RemoteService }
 import akka.routing.{ RoutedProps, Router }
@@ -167,7 +168,7 @@ class ReflectiveAccess(val app: AkkaApplication) {
       if (!isEnabled) {
         val e = new ModuleNotAvailableException(
           "Can't load the cluster module, make sure it is enabled in the config ('akka.enabled-modules = [\"cluster\"])' and that akka-cluster.jar is on the classpath")
-        app.eventHandler.debug(this, e.toString)
+        app.mainbus.publish(Debug(this, e.toString))
         throw e
       }
     }
@@ -175,21 +176,21 @@ class ReflectiveAccess(val app: AkkaApplication) {
     lazy val clusterInstance: Option[Cluster] = getObjectFor("akka.cluster.Cluster$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        app.eventHandler.debug(this, exception.toString)
+        app.mainbus.publish(Debug(this, exception.toString))
         None
     }
 
     lazy val clusterDeployerInstance: Option[ActorDeployer] = getObjectFor("akka.cluster.ClusterDeployer$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        app.eventHandler.debug(this, exception.toString)
+        app.mainbus.publish(Debug(this, exception.toString))
         None
     }
 
     lazy val transactionLogInstance: Option[TransactionLogObject] = getObjectFor("akka.cluster.TransactionLog$") match {
       case Right(value) ⇒ Some(value)
       case Left(exception) ⇒
-        app.eventHandler.debug(this, exception.toString)
+        app.mainbus.publish(Debug(this, exception.toString))
         None
     }
 

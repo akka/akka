@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicLong
-import akka.event.EventHandler
+import akka.event.Logging.Error
 import akka.config.Configuration
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
@@ -66,7 +66,7 @@ final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cle
     try {
       function()
     } catch {
-      case e ⇒ app.eventHandler.error(e, this, e.getMessage)
+      case e ⇒ app.mainbus.publish(Error(e, this, e.getMessage))
     } finally {
       cleanup()
     }

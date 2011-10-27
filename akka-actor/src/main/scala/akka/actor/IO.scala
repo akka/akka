@@ -5,7 +5,6 @@ package akka.actor
 
 import akka.util.ByteString
 import akka.dispatch.Envelope
-import akka.event.EventHandler
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference

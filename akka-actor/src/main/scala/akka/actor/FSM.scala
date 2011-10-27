@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.util._
-import akka.event.EventHandler
+import akka.event.MainBusLogging
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
@@ -189,6 +189,8 @@ trait FSM[S, D] extends ListenerManagement {
   type StateFunction = scala.PartialFunction[Event, State]
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
+
+  val log = new MainBusLogging(app.mainbus, context.self)
 
   /**
    * ****************************************
@@ -421,7 +423,7 @@ trait FSM[S, D] extends ListenerManagement {
    */
   private val handleEventDefault: StateFunction = {
     case Event(value, stateData) ⇒
-      app.eventHandler.warning(context.self, "unhandled event " + value + " in state " + stateName)
+      log.warning("unhandled event " + value + " in state " + stateName)
       stay
   }
   private var handleEvent: StateFunction = handleEventDefault
@@ -534,8 +536,8 @@ trait FSM[S, D] extends ListenerManagement {
     if (!currentState.stopReason.isDefined) {
       val reason = nextState.stopReason.get
       reason match {
-        case Failure(ex: Throwable) ⇒ app.eventHandler.error(ex, context.self, "terminating due to Failure")
-        case Failure(msg)           ⇒ app.eventHandler.error(context.self, msg)
+        case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
+        case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
         case _                      ⇒
       }
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
@@ -584,13 +586,13 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   protected[akka] abstract override def setTimer(name: String, msg: Any, timeout: Duration, repeat: Boolean): State = {
     if (debugEvent)
-      app.eventHandler.debug(context.self, "setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
+      log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     super.setTimer(name, msg, timeout, repeat)
   }
 
   protected[akka] abstract override def cancelTimer(name: String) = {
     if (debugEvent)
-      app.eventHandler.debug(context.self, "canceling timer '" + name + "'")
+      log.debug("canceling timer '" + name + "'")
     super.cancelTimer(name)
   }
 
@@ -602,7 +604,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
         case c: UntypedChannel    ⇒ c.toString
         case _                    ⇒ "unknown"
       }
-      app.eventHandler.debug(context.self, "processing " + event + " from " + srcstr)
+      log.debug("processing " + event + " from " + srcstr)
     }
 
     if (logDepth > 0) {
@@ -616,7 +618,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
     val newState = stateName
 
     if (debugEvent && oldState != newState)
-      app.eventHandler.debug(context.self, "transition " + oldState + " -> " + newState)
+      log.debug("transition " + oldState + " -> " + newState)
   }
 
   /**

@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.mutable.{ Map ⇒ MutableMap }
 import akka.AkkaApplication
+import akka.event.Logging
 
 trait BenchResultRepository {
   def add(stats: Stats)
@@ -42,6 +43,8 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
   private val htmlDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/html"
   private def htmlDirExists: Boolean = new File(htmlDir).exists
   protected val maxHistorical = 7
+
+  val log = Logging(app, this)
 
   case class Key(name: String, load: Int)
 
@@ -102,8 +105,7 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
       out.writeObject(stats)
     } catch {
       case e: Exception ⇒
-        app.eventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
-          format(stats, f.getAbsolutePath, e.getMessage))
+        log.error("Failed to save [{}] to [{}], due to [{}]", stats, f.getAbsolutePath, e.getMessage)
     } finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
     }
@@ -119,8 +121,7 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
           Some(stats)
         } catch {
           case e: Throwable ⇒
-            app.eventHandler.error(this, "Failed to load from [%s], due to [%s]".
-              format(f.getAbsolutePath, e.getMessage))
+            log.error("Failed to load from [{}], due to [{}]", f.getAbsolutePath, e.getMessage)
             None
         } finally {
           if (in ne null) try { in.close() } catch { case ignore: Exception ⇒ }
@@ -143,8 +144,7 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
       writer.flush()
     } catch {
       case e: Exception ⇒
-        app.eventHandler.error(this, "Failed to save report to [%s], due to [%s]".
-          format(f.getAbsolutePath, e.getMessage))
+        log.error("Failed to save report to [{}], due to [{}]", f.getAbsolutePath, e.getMessage)
     } finally {
       if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
     }

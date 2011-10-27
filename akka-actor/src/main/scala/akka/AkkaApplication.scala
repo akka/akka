@@ -20,6 +20,8 @@ import java.net.InetSocketAddress
 
 object AkkaApplication {
 
+  type AkkaConfig = a.AkkaConfig.type forSome { val a: AkkaApplication }
+
   val Version = "2.0-SNAPSHOT"
 
   val envHome = System.getenv("AKKA_HOME") match {
@@ -92,12 +94,14 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     val ActorTimeoutMillis = ActorTimeout.duration.toMillis
     val SerializeAllMessages = getBool("akka.actor.serialize-messages", false)
 
-    val LogLevel = getString("akka.event-handler-level", "INFO")
+    val LogLevel = getString("akka.loglevel", "INFO")
+    val StdoutLogLevel = getString("akka.stdout-loglevel", LogLevel)
     val EventHandlers = getList("akka.event-handlers")
     val AddLoggingReceive = getBool("akka.actor.debug.receive", false)
     val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
     val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
     val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
+    val DebugMainBus = getBool("akka.actor.debug.mainbus", false)
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
@@ -133,6 +137,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
   }
 
+  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
+
   import AkkaConfig._
 
   if (ConfigVersion != Version)
@@ -159,11 +165,14 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
 
+  // this provides basic logging (to stdout) until .start() is called below
+  val mainbus = new MainBus(DebugMainBus)
+  mainbus.startStdoutLogger(AkkaConfig)
+  val log = new MainBusLogging(mainbus, this)
+
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
-
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-
   def terminationFuture: Future[ExitStatus] = provider.terminationFuture
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
@@ -175,7 +184,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO make this configurable
   protected[akka] val guardian: ActorRef = {
     import akka.actor.FaultHandlingStrategy._
-    new LocalActorRef(this,
+    provider.actorOf(
       Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
         case _: ActorKilledException         ⇒ Stop
         case _: ActorInitializationException ⇒ Stop
@@ -186,19 +195,30 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
       true)
   }
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val eventHandler = new EventHandler(this)
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val log: Logging = new EventHandlerLogging(eventHandler, this)
+  protected[akka] val systemGuardian: ActorRef = {
+    import akka.actor.FaultHandlingStrategy._
+    provider.actorOf(
+      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
+        case _: ActorKilledException         ⇒ Stop
+        case _: ActorInitializationException ⇒ Stop
+        case _: Exception                    ⇒ Restart
+      }).withDispatcher(dispatcher),
+      provider.theOneWhoWalksTheBubblesOfSpaceTime,
+      "SystemSupervisor",
+      true)
+  }
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
 
+  val deathWatch = provider.createDeathWatch()
+
+  // this starts the reaper actor and the user-configured logging subscribers, which are also actors
+  mainbus.start(this)
+  mainbus.startDefaultLoggers(this, AkkaConfig)
+
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)
-
-  val deathWatch = provider.createDeathWatch()
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val typedActor = new TypedActor(this)
@@ -212,6 +232,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO shutdown all that other stuff, whatever that may be
   def stop(): Unit = {
     guardian.stop()
+    systemGuardian.stop()
   }
 
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())

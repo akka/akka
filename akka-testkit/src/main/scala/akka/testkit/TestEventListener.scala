@@ -1,7 +1,6 @@
 package akka.testkit
 
-import akka.event.EventHandler
-import akka.event.EventHandler.{ Event, Error }
+import akka.event.Logging.{ LogEvent, Error, InitializeLogger }
 import akka.actor.Actor
 
 sealed trait TestEvent
@@ -15,11 +14,10 @@ object TestEvent {
     def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.toSeq)
   }
   case class UnMute(filters: Seq[EventFilter]) extends TestEvent
-  case object UnMuteAll extends TestEvent
 }
 
 trait EventFilter {
-  def apply(event: Event): Boolean
+  def apply(event: LogEvent): Boolean
 }
 
 object EventFilter {
@@ -36,19 +34,19 @@ object EventFilter {
   def apply[A <: Throwable: Manifest](source: AnyRef, message: String): EventFilter =
     ErrorSourceMessageFilter(manifest[A].erasure, source, message)
 
-  def custom(test: (Event) ⇒ Boolean): EventFilter =
+  def custom(test: (LogEvent) ⇒ Boolean): EventFilter =
     CustomEventFilter(test)
 }
 
 case class ErrorFilter(throwable: Class[_]) extends EventFilter {
-  def apply(event: Event) = event match {
+  def apply(event: LogEvent) = event match {
     case Error(cause, _, _) ⇒ throwable isInstance cause
     case _                  ⇒ false
   }
 }
 
 case class ErrorMessageFilter(throwable: Class[_], message: String) extends EventFilter {
-  def apply(event: Event) = event match {
+  def apply(event: LogEvent) = event match {
     case Error(cause, _, _) if !(throwable isInstance cause) ⇒ false
     case Error(cause, _, null) if cause.getMessage eq null   ⇒ cause.getStackTrace.length == 0
     case Error(cause, _, null)                               ⇒ cause.getMessage startsWith message
@@ -59,14 +57,14 @@ case class ErrorMessageFilter(throwable: Class[_], message: String) extends Even
 }
 
 case class ErrorSourceFilter(throwable: Class[_], source: AnyRef) extends EventFilter {
-  def apply(event: Event) = event match {
+  def apply(event: LogEvent) = event match {
     case Error(cause, instance, _) ⇒ (throwable isInstance cause) && (source eq instance)
     case _                         ⇒ false
   }
 }
 
 case class ErrorSourceMessageFilter(throwable: Class[_], source: AnyRef, message: String) extends EventFilter {
-  def apply(event: Event) = event match {
+  def apply(event: LogEvent) = event match {
     case Error(cause, instance, _) if !((throwable isInstance cause) && (source eq instance)) ⇒ false
     case Error(cause, _, null) if cause.getMessage eq null ⇒ cause.getStackTrace.length == 0
     case Error(cause, _, null) ⇒ cause.getMessage startsWith message
@@ -76,23 +74,23 @@ case class ErrorSourceMessageFilter(throwable: Class[_], source: AnyRef, message
   }
 }
 
-case class CustomEventFilter(test: (Event) ⇒ Boolean) extends EventFilter {
-  def apply(event: Event) = test(event)
+case class CustomEventFilter(test: (LogEvent) ⇒ Boolean) extends EventFilter {
+  def apply(event: LogEvent) = test(event)
 }
 
-class TestEventListener extends EventHandler.DefaultListener {
+class TestEventListener extends akka.event.Logging.DefaultLogger {
   import TestEvent._
 
   var filters: List[EventFilter] = Nil
 
   override def receive: Actor.Receive = ({
-    case Mute(filters)                 ⇒ filters foreach addFilter
-    case UnMute(filters)               ⇒ filters foreach removeFilter
-    case UnMuteAll                     ⇒ filters = Nil
-    case event: Event if filter(event) ⇒
+    case InitializeLogger(bus)            ⇒ Seq(classOf[Mute], classOf[UnMute]) foreach (bus.subscribe(context.self, _))
+    case Mute(filters)                    ⇒ filters foreach addFilter
+    case UnMute(filters)                  ⇒ filters foreach removeFilter
+    case event: LogEvent if filter(event) ⇒
   }: Actor.Receive) orElse super.receive
 
-  def filter(event: Event): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
+  def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 

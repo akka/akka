@@ -13,7 +13,7 @@ class OneWayOrderReceiver extends AkkaOrderReceiver {
       case Some(m) ⇒
         m ! order
       case None ⇒
-        app.eventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
+        log.warning("Unknown orderbook: " + order.orderbookSymbol)
     }
   }
 }

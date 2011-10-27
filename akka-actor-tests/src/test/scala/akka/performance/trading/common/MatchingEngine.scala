@@ -16,7 +16,7 @@ trait MatchingEngine {
 }
 
 class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
-  extends Actor with MatchingEngine {
+  extends Actor with MatchingEngine with ActorLogging {
 
   var standby: Option[ActorRef] = None
 
@@ -26,7 +26,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
     case order: Order ⇒
       handleOrder(order)
     case unknown ⇒
-      app.eventHandler.warning(this, "Received unknown message: " + unknown)
+      log.warning("Received unknown message: " + unknown)
   }
 
   def handleOrder(order: Order) {
@@ -41,7 +41,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
         pendingStandbyReply.foreach(waitForStandby(_))
         done(true)
       case None ⇒
-        app.eventHandler.warning(this, "Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
+        log.warning("Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
         done(false)
     }
   }
@@ -55,7 +55,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
       pendingStandbyFuture.await
     } catch {
       case e: FutureTimeoutException ⇒
-        app.eventHandler.error(this, "Standby timeout: " + e)
+        log.error("Standby timeout: " + e)
     }
   }
 

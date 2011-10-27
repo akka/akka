@@ -7,7 +7,6 @@ import akka.transactor.Coordinated
 import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
-import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -86,17 +85,17 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
         EventFilter[ExpectedFailureException],
         EventFilter[CoordinatedTransactionException],
         EventFilter[ActorTimeoutException])
-      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, failer) = actorOfs
-      val coordinated = Coordinated()
-      counters(0) ! Coordinated(Increment(counters.tail :+ failer))
-      coordinated.await
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 0
+      filterEvents(ignoreExceptions) {
+        val (counters, failer) = actorOfs
+        val coordinated = Coordinated()
+        counters(0) ! Coordinated(Increment(counters.tail :+ failer))
+        coordinated.await
+        for (counter ← counters) {
+          (counter ? GetCount).as[Int].get must be === 0
+        }
+        counters foreach (_.stop())
+        failer.stop()
       }
-      counters foreach (_.stop())
-      failer.stop()
-      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

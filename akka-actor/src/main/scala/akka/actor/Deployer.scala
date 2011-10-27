@@ -8,7 +8,7 @@ import collection.immutable.Seq
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.event.EventHandler
+import akka.event.MainBusLogging
 import akka.actor.DeploymentConfig._
 import akka.{ AkkaException, AkkaApplication }
 import akka.config.{ Configuration, ConfigurationException }
@@ -34,6 +34,7 @@ trait ActorDeployer {
 class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
+  val log = new MainBusLogging(app.mainbus, this)
 
   //  val defaultAddress = Node(Config.nodename)
 
@@ -81,7 +82,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         lookupInConfig(address)
       } catch {
         case e: ConfigurationException ⇒
-          app.eventHandler.error(e, this, e.getMessage) //TODO FIXME I do not condone log AND rethrow
+          log.error(e, e.getMessage) //TODO FIXME I do not condone log AND rethrow
           throw e
       }
 
@@ -324,13 +325,13 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException("Address [" + deployment.address + "] already bound to [" + deployment + "]")
-    app.eventHandler.error(e, this, e.getMessage)
+    log.error(e, e.getMessage)
     throw e
   }
 
   private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
-    app.eventHandler.error(e, this, e.getMessage)
+    log.error(e, e.getMessage)
     throw e
   }
 }

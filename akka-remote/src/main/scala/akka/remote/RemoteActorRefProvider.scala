@@ -12,7 +12,7 @@ import akka.routing._
 import akka.dispatch._
 import akka.util.duration._
 import akka.config.ConfigurationException
-import akka.event.{ DeathWatch, EventHandler }
+import akka.event.{ DeathWatch, Logging }
 import akka.serialization.{ Serialization, Serializer, ActorSerialization, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
@@ -29,6 +29,8 @@ import com.google.protobuf.ByteString
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
+
+  val log = Logging(app, this)
 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
@@ -167,7 +169,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
-    app.eventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
+    log.debug("Instantiating Actor [{}] on node [{}]", actorAddress, remoteAddress)
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {
@@ -198,20 +200,20 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       try {
         (connection ? (command, remote.remoteSystemDaemonAckTimeout)).as[Status] match {
           case Some(Success(receiver)) ⇒
-            app.eventHandler.debug(this, "Remote system command sent to [%s] successfully received".format(receiver))
+            log.debug("Remote system command sent to [{}] successfully received", receiver)
 
           case Some(Failure(cause)) ⇒
-            app.eventHandler.error(cause, this, cause.toString)
+            log.error(cause, cause.toString)
             throw cause
 
           case None ⇒
             val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
-            app.eventHandler.error(error, this, error.toString)
+            log.error(error, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          app.eventHandler.error(e, this, "Could not send remote system command to [%s] due to: %s".format(connection.address, e.toString))
+          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.address, e.toString)
           throw e
       }
     } else {

@@ -15,6 +15,7 @@ import akka.actor._
 import util.control.NoStackTrace
 import akka.AkkaApplication
 import akka.util.duration._
+import akka.event.Logging.Error
 
 object ActorModelSpec {
 
@@ -154,8 +155,8 @@ object ActorModelSpec {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        app.eventHandler.error(e, dispatcher, "actual: starts=" + dispatcher.starts.get + ",stops=" + dispatcher.stops.get +
-          " required: starts=" + starts + ",stops=" + stops)
+        app.mainbus.publish(Error(e, dispatcher, "actual: starts=" + dispatcher.starts.get + ",stops=" + dispatcher.stops.get +
+          " required: starts=" + starts + ",stops=" + stops))
         throw e
     }
   }
@@ -215,9 +216,9 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        app.eventHandler.error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        app.mainbus.publish(Error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
-          ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts)
+          ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e
     }
   }
@@ -321,7 +322,7 @@ abstract class ActorModelSpec extends AkkaSpec {
           try {
             f
           } catch {
-            case e ⇒ app.eventHandler.error(e, this, "error in spawned thread")
+            case e ⇒ app.mainbus.publish(Error(e, this, "error in spawned thread"))
           }
         }
       }
@@ -373,7 +374,7 @@ abstract class ActorModelSpec extends AkkaSpec {
     }
 
     "continue to process messages when a thread gets interrupted" in {
-      filterEvents(EventFilter[InterruptedException], EventFilter[akka.event.EventHandler.EventHandlerException]) {
+      filterEvents(EventFilter[InterruptedException], EventFilter[akka.event.Logging.EventHandlerException]) {
         implicit val dispatcher = newInterceptedDispatcher
         implicit val timeout = Timeout(5 seconds)
         val a = newTestActor(dispatcher)

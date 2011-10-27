@@ -8,6 +8,7 @@ import annotation.tailrec
 
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Comparator, Set ⇒ JSet }
+import scala.collection.mutable
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -97,6 +98,24 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
     import scala.collection.JavaConversions._
     container.entrySet foreach { e ⇒ e.getValue.foreach(fun(e.getKey, _)) }
   }
+
+  /**
+   * Returns the value set.
+   */
+  def values = {
+    import scala.collection.JavaConversions._
+    val builder = mutable.Set.empty[V]
+    for {
+      entry ← container.entrySet
+      v ← entry.getValue
+    } builder += v
+    builder.toSet
+  }
+
+  /**
+   * Returns the key set.
+   */
+  def keys = scala.collection.JavaConversions.asScalaIterable(container.keySet)
 
   /**
    * Disassociates the value of type V from the key of type K

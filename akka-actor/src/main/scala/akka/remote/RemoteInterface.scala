@@ -30,7 +30,7 @@ trait RemoteModule {
   val UUID_PREFIX = "uuid:".intern
 
   def optimizeLocalScoped_?(): Boolean //Apply optimizations for remote operations in local scope
-  protected[akka] def notifyListeners(message: ⇒ Any): Unit
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit
 
   private[akka] def actors: ConcurrentHashMap[String, ActorRef] // FIXME need to invalidate this cache on replication
   private[akka] def actorsByUuid: ConcurrentHashMap[String, ActorRef] // FIXME remove actorsByUuid map?
@@ -193,7 +193,7 @@ abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModul
     clear
   }
 
-  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = app.eventHandler.notify(message)
+  protected[akka] override def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
 
   private[akka] val actors = new ConcurrentHashMap[String, ActorRef]
   private[akka] val actorsByUuid = new ConcurrentHashMap[String, ActorRef]

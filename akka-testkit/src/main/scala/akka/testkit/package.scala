@@ -1,14 +1,12 @@
 package akka
 
-import akka.event.EventHandler
-
 package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit app: AkkaApplication): T = {
-    app.eventHandler.notify(TestEvent.Mute(eventFilters.toSeq))
+    app.mainbus.publish(TestEvent.Mute(eventFilters.toSeq))
     try {
       block
     } finally {
-      app.eventHandler.notify(TestEvent.UnMute(eventFilters.toSeq))
+      app.mainbus.publish(TestEvent.UnMute(eventFilters.toSeq))
     }
   }
 

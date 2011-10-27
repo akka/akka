@@ -7,7 +7,7 @@ package akka.actor
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.testkit._
-import TestEvent.{ Mute, UnMuteAll }
+import TestEvent.Mute
 import FSM._
 import akka.util.Duration
 import akka.util.duration._
@@ -61,7 +61,7 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Ev(msg) ⇒ {
-        app.eventHandler.info(this, "unhandled event " + msg + " in state " + stateName + " with data " + stateData)
+        log.info("unhandled event " + msg + " in state " + stateName + " with data " + stateData)
         unhandledLatch.open
         stay
       }
@@ -132,8 +132,8 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
       lockedLatch.await
 
       filterEvents(EventFilter.custom {
-        case EventHandler.Info(_: Lock, _) ⇒ true
-        case _                             ⇒ false
+        case Logging.Info(_: Lock, _) ⇒ true
+        case _                        ⇒ false
       }) {
         lock ! "not_handled"
         unhandledLatch.await
@@ -163,18 +163,13 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           case Ev("go") ⇒ goto(2)
         }
       })
-      val logger = actorOf(new Actor {
-        def receive = {
-          case x ⇒ testActor forward x
-        }
-      })
-      filterException[EventHandler.EventHandlerException] {
-        app.eventHandler.addListener(logger)
+      filterException[Logging.EventHandlerException] {
+        app.mainbus.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
-        expectMsgPF(1 second) {
-          case EventHandler.Error(_: EventHandler.EventHandlerException, `fsm`, "Next state 2 does not exist") ⇒ true
+        expectMsgPF(1 second, hint = "Next state 2 does not exist") {
+          case Logging.Error(_, `fsm`, "Next state 2 does not exist") ⇒ true
         }
-        app.eventHandler.removeListener(logger)
+        app.mainbus.unsubscribe(testActor)
       }
     }
 
@@ -198,9 +193,9 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
       new TestKit(AkkaApplication("fsm event", AkkaApplication.defaultConfig ++
         Configuration("akka.event-handler-level" -> "DEBUG",
           "akka.actor.debug.fsm" -> true))) {
-        app.eventHandler.notify(TestEvent.Mute(EventFilter.custom {
-          case _: EventHandler.Debug ⇒ true
-          case _                     ⇒ false
+        app.mainbus.publish(TestEvent.Mute(EventFilter.custom {
+          case _: Logging.Debug ⇒ true
+          case _                ⇒ false
         }))
         val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
           startWith(1, null)
@@ -218,25 +213,20 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
             case StopEvent(r, _, _) ⇒ testActor ! r
           }
         })
-        val logger = actorOf(new Actor {
-          def receive = {
-            case x ⇒ testActor forward x
-          }
-        })
-        app.eventHandler.addListener(logger)
+        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
         fsm ! "go"
-        expectMsgPF(1 second) {
-          case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true
+        expectMsgPF(1 second, hint = "processing Event(go,null)") {
+          case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true
         }
-        expectMsg(1 second, EventHandler.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
-        expectMsg(1 second, EventHandler.Debug(fsm, "transition 1 -> 2"))
+        expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
+        expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
         fsm ! "stop"
-        expectMsgPF(1 second) {
-          case EventHandler.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[testActor") ⇒ true
+        expectMsgPF(1 second, hint = "processing Event(stop,null)") {
+          case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[testActor") ⇒ true
         }
-        expectMsgAllOf(1 second, EventHandler.Debug(fsm, "canceling timer 't'"), Normal)
+        expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
         expectNoMsg(1 second)
-        app.eventHandler.removeListener(logger)
+        app.mainbus.unsubscribe(testActor)
       }
     }
 

@@ -6,7 +6,6 @@ package akka.testkit
 
 import akka.actor._
 import akka.util.ReflectiveAccess
-import akka.event.EventHandler
 import com.eaio.uuid.UUID
 import akka.actor.Props._
 import akka.AkkaApplication

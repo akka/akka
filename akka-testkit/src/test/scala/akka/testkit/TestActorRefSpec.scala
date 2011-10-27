@@ -6,7 +6,7 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.event.EventHandler
+import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise }
 import akka.AkkaApplication
 
@@ -80,7 +80,6 @@ object TestActorRefSpec {
   }
 
   class Logger extends Actor {
-    import EventHandler._
     var count = 0
     var msg: String = _
     def receive = {

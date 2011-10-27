@@ -12,6 +12,7 @@ import akka.actor.{ ActorContext, ActorCell }
 import java.util.concurrent._
 import atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import annotation.tailrec
+import akka.event.Logging.Error
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -205,7 +206,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
       }
     } catch {
       case e ⇒
-        actor.app.eventHandler.error(e, this, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!")
+        actor.app.mainbus.publish(Error(e, this, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
   }

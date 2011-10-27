@@ -7,6 +7,7 @@ package akka.http
 import javax.servlet.{ AsyncContext, AsyncListener, AsyncEvent }
 import Types._
 import akka.AkkaApplication
+import akka.event.Logging
 
 /**
  * @author Garrick Evans
@@ -35,7 +36,7 @@ trait Servlet30Context extends AsyncListener {
       true
     } catch {
       case e: IllegalStateException ⇒
-        app.eventHandler.error(e, this, e.getMessage)
+        app.mainbus.publish(Logging.Error(e, this, e.getMessage))
         false
     }
   }
@@ -46,7 +47,7 @@ trait Servlet30Context extends AsyncListener {
   def onComplete(e: AsyncEvent) {}
   def onError(e: AsyncEvent) = e.getThrowable match {
     case null ⇒
-    case t    ⇒ app.eventHandler.error(t, this, t.getMessage)
+    case t    ⇒ app.mainbus.publish(Logging.Error(t, this, t.getMessage))
   }
   def onStartAsync(e: AsyncEvent) {}
   def onTimeout(e: AsyncEvent) = {

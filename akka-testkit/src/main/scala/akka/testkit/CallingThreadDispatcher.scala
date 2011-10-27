@@ -3,7 +3,7 @@
  */
 package akka.testkit
 
-import akka.event.EventHandler
+import akka.event.Logging.{ Warning, Error }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -166,14 +166,14 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
     val execute = mbox.suspendSwitch.fold {
       queue.push(handle)
       if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-        app.eventHandler.warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format receiver)
+        app.mainbus.publish(Warning(this, "suspendSwitch, creating Future could deadlock; target: %s" format receiver))
       }
       false
     } {
       queue.push(handle)
       if (queue.isActive) {
         if (warnings && handle.channel.isInstanceOf[Promise[_]]) {
-          app.eventHandler.warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format receiver)
+          app.mainbus.publish(Warning(this, "blocked on this thread, creating Future could deadlock; target: %s" format receiver))
         }
         false
       } else {
@@ -216,18 +216,18 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
           mbox.actor.invoke(handle)
           if (warnings) handle.channel match {
             case f: ActorPromise if !f.isCompleted ⇒
-              app.eventHandler.warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (mbox.actor, handle.message))
+              app.mainbus.publish(Warning(this, "calling %s with message %s did not reply as expected, might deadlock" format (mbox.actor, handle.message)))
             case _ ⇒
           }
           true
         } catch {
           case ie: InterruptedException ⇒
-            app.eventHandler.error(this, ie)
+            app.mainbus.publish(Error(this, ie))
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            app.eventHandler.error(this, e)
+            app.mainbus.publish(Error(this, e))
             queue.leave
             false
         }

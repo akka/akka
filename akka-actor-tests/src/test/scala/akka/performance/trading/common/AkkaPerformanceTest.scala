@@ -6,8 +6,11 @@ import akka.performance.trading.domain._
 import akka.performance.trading.common._
 import akka.actor.{ Props, ActorRef, Actor, PoisonPill }
 import akka.AkkaApplication
+import akka.event.Logging
 
 abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkScenarios {
+
+  val log = Logging(app, this)
 
   type TS = AkkaTradingSystem
 
@@ -70,7 +73,7 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
               placeOrder(orderReceiver, o)
             }
           if (!rsp.status) {
-            app.eventHandler.error(this, "Invalid rsp")
+            log.error("Invalid rsp")
           }
           delay(delayMs)
         }

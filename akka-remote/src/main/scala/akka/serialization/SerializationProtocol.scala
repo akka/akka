@@ -8,7 +8,7 @@ import akka.actor._
 import akka.actor.DeploymentConfig._
 import akka.dispatch.Envelope
 import akka.util.{ ReflectiveAccess, Duration }
-import akka.event.EventHandler
+import akka.event.Logging
 import akka.remote._
 import RemoteProtocol._
 import akka.AkkaApplication
@@ -27,6 +27,8 @@ import com.eaio.uuid.UUID
  */
 class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
   implicit val defaultSerializer = akka.serialization.JavaSerializer // Format.Default
+
+  val log = Logging(app, this)
 
   val remoteActorSerialization = new RemoteActorSerialization(app, remote)
 
@@ -144,7 +146,7 @@ class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
     overriddenUuid: Option[UUID],
     loader: Option[ClassLoader]): ActorRef = {
 
-    app.eventHandler.debug(this, "Deserializing SerializedActorRefProtocol to LocalActorRef:\n%s".format(protocol))
+    log.debug("Deserializing SerializedActorRefProtocol to LocalActorRef:\n{}", protocol)
 
     // import ReplicationStorageType._
     // import ReplicationStrategyType._
@@ -223,6 +225,8 @@ class ActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
 
 class RemoteActorSerialization(val app: AkkaApplication, remote: RemoteSupport) {
 
+  val log = Logging(app, this)
+
   /**
    * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
    */
@@ -239,7 +243,7 @@ class RemoteActorSerialization(val app: AkkaApplication, remote: RemoteSupport) 
    * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
    */
   private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    app.eventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
+    log.debug("Deserializing RemoteActorRefProtocol to RemoteActorRef:\n{}", protocol)
 
     val ref = RemoteActorRef(
       remote,
@@ -247,7 +251,7 @@ class RemoteActorSerialization(val app: AkkaApplication, remote: RemoteSupport) 
       protocol.getAddress,
       loader)
 
-    app.eventHandler.debug(this, "Newly deserialized RemoteActorRef has uuid: %s".format(ref.uuid))
+    log.debug("Newly deserialized RemoteActorRef has uuid: {}", ref.uuid)
 
     ref
   }
@@ -266,7 +270,7 @@ class RemoteActorSerialization(val app: AkkaApplication, remote: RemoteSupport) 
         app.defaultAddress
     }
 
-    app.eventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))
+    log.debug("Register serialized Actor [{}] as remote @ [{}]", actor.uuid, remoteAddress)
 
     RemoteActorRefProtocol.newBuilder
       .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))

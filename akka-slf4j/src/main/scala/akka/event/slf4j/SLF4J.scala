@@ -6,7 +6,7 @@ package akka.event.slf4j
 
 import org.slf4j.{ Logger ⇒ SLFLogger, LoggerFactory ⇒ SLFLoggerFactory }
 
-import akka.event.EventHandler
+import akka.event.Logging._
 import akka.actor._
 import Actor._
 
@@ -32,7 +32,6 @@ object Logger {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Slf4jEventHandler extends Actor with Logging {
-  import EventHandler._
 
   def receive = {
     case event @ Error(cause, instance, message) ⇒
