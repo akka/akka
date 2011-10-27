@@ -50,7 +50,7 @@ trait Router {
    *
    * @throws RoutingExceptionif something goes wrong while routing the message.
    */
-  def route[T](message: Any, timeout: Timeout)(implicit sender: ActorRef): Future[T]
+  def route[T](message: Any, timeout: Timeout): Future[T]
 }
 
 /**
@@ -98,7 +98,7 @@ abstract private[akka] class AbstractRoutedActorRef(val app: AkkaApplication, va
 
   override def postMessageToMailbox(message: Any, sender: ActorRef) = router.route(message)(sender)
 
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = app.provider.ask(message, this, timeout)
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = router.route(message, timeout)
 }
 
 /**
@@ -139,6 +139,7 @@ trait BasicRouter extends Router {
 
   def route(message: Any)(implicit sender: ActorRef) = message match {
     case Routing.Broadcast(message) ⇒
+
       //it is a broadcast message, we are going to send to message to all connections.
       connectionManager.connections.iterable foreach { connection ⇒
         try {
@@ -165,7 +166,7 @@ trait BasicRouter extends Router {
       }
   }
 
-  def route[T](message: Any, timeout: Timeout)(implicit sender: ActorRef): Future[T] = message match {
+  def route[T](message: Any, timeout: Timeout): Future[T] = message match {
     case Routing.Broadcast(message) ⇒
       throw new RoutingException("Broadcasting using '?'/'ask' is for the time being is not supported. Use ScatterGatherRouter.")
     case _ ⇒
@@ -340,7 +341,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
    */
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G]
 
-  private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: ActorRef): Future[G] = {
+  private def scatterGather[S, G >: S](message: Any, timeout: Timeout): Future[G] = {
     val responses = connectionManager.connections.iterable.flatMap { actor ⇒
       try {
         if (actor.isShutdown) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
@@ -357,9 +358,9 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
     else gather(responses)
   }
 
-  override def route[T](message: Any, timeout: Timeout)(implicit sender: ActorRef): Future[T] = message match {
+  override def route[T](message: Any, timeout: Timeout): Future[T] = message match {
     case Routing.Broadcast(message) ⇒ scatterGather(message, timeout)
-    case message                    ⇒ super.route(message, timeout)(sender)
+    case message                    ⇒ super.route(message, timeout)
   }
 }
 

@@ -223,12 +223,11 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     import akka.dispatch.{ Future, Promise, DefaultPromise }
     (if (within == null) app.AkkaConfig.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
-      case other ⇒
-        val result = new DefaultPromise[Any](other)(app.dispatcher)
-        val a = new AskActorRef(result, app) { def whenDone() = actors.remove(this) }
+      case t ⇒
+        val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this) }
         assert(actors.putIfAbsent(a.address, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
-        result
+        a.result
     }
   }
 }
