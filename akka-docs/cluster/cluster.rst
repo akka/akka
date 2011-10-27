@@ -101,8 +101,8 @@ a map from node to current state version during gossip. This information is
 referred to as the gossip overview. When all versions in the overview are equal
 there is convergence. Gossip convergence cannot occur while any nodes are
 unreachable, either the nodes become reachable again, or the nodes need to be
-moved into the ``down`` or ``removed`` states (see section on `Member
-states`_ below).
+moved into the ``down`` or ``removed`` states (see section on `Member states`_
+below).
 
 
 Failure Detector
@@ -151,8 +151,8 @@ cluster by specifying migrations, or to rebalance the cluster automatically
 based on metrics gossiped by the member nodes.
 
 The leader also has the power, if configured so, to "auto-down" a node that
-according to the Failure Detector is considered unreachable. This means setting the
-unreachable node status to ``down`` automatically.
+according to the Failure Detector is considered unreachable. This means setting
+the unreachable node status to ``down`` automatically.
 
 
 Gossip protocol
@@ -274,8 +274,8 @@ process again. If the unreachable node will be permanently down then it can be
 removed from the cluster directly with the ``remove`` user action. The cluster
 can also *auto-down* a node using the accrual failure detector.
 
-This means that nodes can join and leave the cluster at any point in
-time, e.g. provide cluster elasticity.
+This means that nodes can join and leave the cluster at any point in time,
+e.g. provide cluster elasticity.
 
 
 State diagram for the member states
@@ -337,8 +337,8 @@ The leader has the following duties:
 
   - setting the partition table (partition path -> base node)
 
-  - Automatic rebalancing based on runtime metrics in the
-    system (such as CPU, RAM, Garbage Collection, mailbox depth etc.)
+  - Automatic rebalancing based on runtime metrics in the system (such as CPU,
+    RAM, Garbage Collection, mailbox depth etc.)
 
 
 Partitioning
@@ -419,8 +419,8 @@ The first question is; during the migration transition, should:
 - Or is it important that no messages for ``A`` are processed on
   ``N1`` once migration begins?
 
-If it is okay for the previous host node ``N1`` to process messages during migration
-then there is nothing that needs to be done at this point.
+If it is okay for the previous host node ``N1`` to process messages during
+migration then there is nothing that needs to be done at this point.
 
 If no messages are to be processed on the previous host node during migration
 then there are two possibilities: the messages are forwarded to the new host and
@@ -433,8 +433,8 @@ Update transition
 
 The second transition begins when the migration is marked as complete and ends
 when all nodes have the updated partition table (when all nodes will use ``N2``
-as the host for ``A``), e.g. we have convergence, and is referred to as
-the *update transition*.
+as the host for ``A``), e.g. we have convergence, and is referred to as the
+*update transition*.
 
 Once the update transition begins ``N1`` can forward any messages it receives
 for ``A`` to the new host ``N2``. The question is whether or not message
