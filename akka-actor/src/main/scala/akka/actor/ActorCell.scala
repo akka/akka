@@ -80,7 +80,7 @@ private[akka] class ActorCell(
 
   var currentMessage: Envelope = null
 
-  var actor: Actor = _ //FIXME We can most probably make this just a regular reference to Actor
+  var actor: Actor = _
 
   def uuid: Uuid = self.uuid
 
