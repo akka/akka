@@ -55,8 +55,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   private[remote] lazy val remoteDaemon =
     new LocalActorRef(
       app,
-      Props(new RemoteSystemDaemon(this))
-        .withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
+      Props(new RemoteSystemDaemon(this)).withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
       remoteDaemonSupervisor,
       remoteDaemonServiceName,
       systemService = true)
@@ -118,8 +117,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
   def receive: Actor.Receive = {
     case message: RemoteSystemDaemonMessageProtocol ⇒
-      eventHandler.debug(this,
-        "Received command [\n%s] to RemoteSystemDaemon on [%s]".format(message, nodename))
+      eventHandler.debug(this, "Received command [\n%s] to RemoteSystemDaemon on [%s]".format(message, nodename))
 
       message.getMessageType match {
         case USE                    ⇒ handleUse(message)
@@ -145,8 +143,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       if (message.hasActorAddress) {
 
         val actorFactoryBytes =
-          if (shouldCompressData) LZF.uncompress(message.getPayload.toByteArray)
-          else message.getPayload.toByteArray
+          if (shouldCompressData) LZF.uncompress(message.getPayload.toByteArray) else message.getPayload.toByteArray
 
         val actorFactory =
           serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
@@ -165,7 +162,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
       sender ! Success(address.toString)
     } catch {
-      case error: Throwable ⇒
+      case error: Throwable ⇒ //FIXME doesn't seem sensible
         sender ! Failure(error)
         throw error
     }

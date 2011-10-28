@@ -159,7 +159,7 @@ abstract class RemoteClient private[akka] (
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send[T](message: Any, senderOption: Option[ActorRef], remoteAddress: InetSocketAddress, actorRef: ActorRef) {
-    val messageProtocol = serialization.createRemoteMessageProtocolBuilder(Some(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.ActorTimeoutMillis, Right(message), senderOption).build
+    val messageProtocol = serialization.createRemoteMessageProtocolBuilder(Option(actorRef), Left(actorRef.uuid), actorRef.address, app.AkkaConfig.ActorTimeoutMillis, Right(message), senderOption).build
     send(messageProtocol)
   }
 
@@ -862,19 +862,12 @@ class RemoteServerHandler(
           return
       }
 
-    val message = MessageSerializer.deserialize(app, request.getMessage)
     val sender = if (request.hasSender) serialization.fromProtobufToRemoteActorRef(request.getSender, applicationLoader) else app.deadLetters
 
-    message match {
-      // first match on system messages
-      case _: Terminate ⇒
-        if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else actorRef.stop()
-
-      case _: AutoReceivedMessage if (UNTRUSTED_MODE) ⇒
-        throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
-
-      case _ ⇒ // then match on user defined messages
-        actorRef.!(message)(sender)
+    MessageSerializer.deserialize(app, request.getMessage) match {
+      case _: Terminate ⇒ if (UNTRUSTED_MODE) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else actorRef.stop()
+      case _: AutoReceivedMessage if (UNTRUSTED_MODE) ⇒ throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
+      case m ⇒ actorRef.!(m)(sender)
     }
   }
 

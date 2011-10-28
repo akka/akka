@@ -10,6 +10,7 @@ import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
 import akka.event.ActorEventBus
+import akka.serialization.Serialization
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -49,8 +50,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Returns the address for the actor.
    */
   def address: String
-
-  private[akka] def uuid: Uuid //TODO FIXME REMOVE THIS
 
   /**
    * Comparison only takes address into account.
@@ -150,7 +149,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  app: AkkaApplication,
+  _app: AkkaApplication,
   props: Props,
   _supervisor: ActorRef,
   _givenAddress: String,
@@ -165,7 +164,7 @@ class LocalActorRef private[akka] (
     case other                      ⇒ other
   }
 
-  private[this] val actorCell = new ActorCell(app, this, props, _supervisor, receiveTimeout, hotswap)
+  private[this] val actorCell = new ActorCell(_app, this, props, _supervisor, receiveTimeout, hotswap)
   actorCell.start()
 
   /**
@@ -233,20 +232,14 @@ class LocalActorRef private[akka] (
 
   protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit = actorCell.postMessageToMailbox(message, sender)
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = app.provider.ask(message, this, timeout)
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
 
   protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
 
   protected[akka] def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
-  // ========= PRIVATE FUNCTIONS =========
-
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    // TODO: this was used to really send LocalActorRef across the network, which is broken now
-    val inetaddr = app.defaultAddress
-    SerializedActorRef(uuid, address, inetaddr.getAddress.getHostAddress, inetaddr.getPort)
-  }
+  private def writeReplace(): AnyRef = actorCell.provider.serialize(this)
 }
 
 /**
@@ -284,6 +277,8 @@ trait ScalaActorRef { ref: ActorRef ⇒
   protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit
 
   protected[akka] def restart(cause: Throwable): Unit
+
+  private[akka] def uuid: Uuid //TODO FIXME REMOVE THIS
 }
 
 /**
@@ -357,7 +352,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
 case class DeadLetter(message: Any, sender: ActorRef)
 
-class DeadLetterActorRef(app: AkkaApplication) extends MinimalActorRef {
+class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
   override val address: String = "akka:internal:DeadLetterActorRef"
 
@@ -368,7 +363,7 @@ class DeadLetterActorRef(app: AkkaApplication) extends MinimalActorRef {
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = brokenPromise
 }
 
-abstract class AskActorRef(app: AkkaApplication)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
+abstract class AskActorRef(protected val app: AkkaApplication)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
   {
@@ -396,4 +391,7 @@ abstract class AskActorRef(app: AkkaApplication)(timeout: Timeout = app.AkkaConf
   override def isShutdown = result.isCompleted || result.isExpired
 
   override def stop(): Unit = if (!isShutdown) result.completeWithException(new ActorKilledException("Stopped"))
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = app.provider.serialize(this)
 }

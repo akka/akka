@@ -156,7 +156,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case value     ⇒ value.toInt
   }
 
-  val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
+  val defaultAddress = new InetSocketAddress(hostname, port)
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)

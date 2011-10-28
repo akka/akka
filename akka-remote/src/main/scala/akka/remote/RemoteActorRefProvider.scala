@@ -156,12 +156,13 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
    */
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
-
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
-    local.actorFor(actor.address) orElse {
-      Some(RemoteActorRef(remote.server, new InetSocketAddress(actor.hostname, actor.port), actor.address, None))
-    }
+  private[akka] def serialize(actor: ActorRef): AnyRef = actor match {
+    case r: RemoteActorRef ⇒ SerializedActorRef(actor.uuid, actor.address, r.remoteAddress.getAddress.getHostAddress, r.remoteAddress.getPort)
+    case other             ⇒ local.serialize(actor)
   }
+
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] =
+    local.actorFor(actor.address) orElse Some(RemoteActorRef(remote.server, new InetSocketAddress(actor.hostname, actor.port), actor.address, None))
 
   /**
    * Using (checking out) actor on a specific node.
@@ -171,10 +172,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {
-        case Left(error) ⇒ throw error
-        case Right(bytes) ⇒
-          if (remote.shouldCompressData) LZF.compress(bytes)
-          else bytes
+        case Left(error)  ⇒ throw error
+        case Right(bytes) ⇒ if (remote.shouldCompressData) LZF.compress(bytes) else bytes
       }
 
     val command = RemoteSystemDaemonMessageProtocol.newBuilder
@@ -183,9 +182,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 
-    val connectionFactory =
-      () ⇒ remote.server.actorFor(
-        remote.remoteDaemonServiceName, remoteAddress.getHostName, remoteAddress.getPort)
+    val connectionFactory = () ⇒ remote.server.actorFor(remote.remoteDaemonServiceName, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
@@ -196,11 +193,12 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   private def sendCommandToRemoteNode(connection: ActorRef, command: RemoteSystemDaemonMessageProtocol, withACK: Boolean) {
     if (withACK) {
       try {
-        (connection ? (command, remote.remoteSystemDaemonAckTimeout)).as[Status] match {
-          case Some(Success(receiver)) ⇒
+        val f = connection ? (command, remote.remoteSystemDaemonAckTimeout)
+        (try f.await.value catch { case _: FutureTimeoutException ⇒ None }) match {
+          case Some(Right(receiver)) ⇒
             app.eventHandler.debug(this, "Remote system command sent to [%s] successfully received".format(receiver))
 
-          case Some(Failure(cause)) ⇒
+          case Some(Left(cause)) ⇒
             app.eventHandler.error(cause, this, cause.toString)
             throw cause
 
@@ -247,7 +245,7 @@ private[akka] case class RemoteActorRef private[akka] (
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
   def postMessageToMailbox(message: Any, sender: ActorRef) {
-    remote.send[Any](message, Some(sender), remoteAddress, this, loader)
+    remote.send[Any](message, Option(sender), remoteAddress, this, loader)
   }
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
@@ -266,9 +264,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    SerializedActorRef(uuid, address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
-  }
+  private def writeReplace(): AnyRef = app.provider.serialize(this)
 
   def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 

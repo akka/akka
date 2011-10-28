@@ -31,7 +31,7 @@ class RemoteConnectionManager(
     def iterable: Iterable[ActorRef] = connections.values
   }
 
-  val failureDetector = remote.failureDetector
+  def failureDetector = remote.failureDetector
 
   private val state: AtomicReference[State] = new AtomicReference[State](newState())
 
