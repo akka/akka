@@ -824,8 +824,8 @@ trait Promise[T] extends Future[T] {
 }
 
 //Companion object to FState, just to provide a cheap, immutable default entry
-private[akka] object FState {
-  def apply[T](): FState[T] = EmptyPending.asInstanceOf[FState[T]]
+private[dispatch] object DefaultPromise {
+  def EmptyPending[T](): FState[T] = EmptyPending.asInstanceOf[FState[T]]
 
   /**
    * Represents the internal state of the DefaultCompletableFuture
@@ -853,7 +853,7 @@ private[akka] object FState {
 class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDispatcher) extends AbstractPromise with Promise[T] {
   self ⇒
 
-  import FState.{ FState, Success, Failure, Pending, Expired }
+  import DefaultPromise.{ FState, Success, Failure, Pending, Expired }
 
   def this()(implicit dispatcher: MessageDispatcher, timeout: Timeout) = this(timeout)
 

@@ -264,7 +264,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = app.provider.serialize(this)
+  private def writeReplace(): AnyRef = remote.app.provider.serialize(this)
 
   def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
