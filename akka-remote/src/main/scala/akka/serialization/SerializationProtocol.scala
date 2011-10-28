@@ -60,11 +60,9 @@ class RemoteActorSerialization(remote: RemoteSupport) {
     val remoteAddress = actor match {
       case ar: RemoteActorRef ⇒
         ar.remoteAddress
-      case ar: LocalActorRef ⇒
-        remote.registerByUuid(ar)
-        remote.app.defaultAddress
-      case _ ⇒
-        remote.app.defaultAddress
+      case ar: ActorRef ⇒
+        remote.register(ar) //FIXME stop doing this and delegate to provider.actorFor in the NettyRemoting
+        remote.app.defaultAddress //FIXME Shouldn't this be the _current_ address of the remoting?
     }
 
     remote.app.eventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))
@@ -89,10 +87,7 @@ class RemoteActorSerialization(remote: RemoteSupport) {
       case Right(protocol) ⇒ protocol
     }
 
-    val actorInfoBuilder = ActorInfoProtocol.newBuilder
-      .setUuid(uuidProtocol)
-      .setAddress(actorAddress)
-      .setTimeout(timeout)
+    val actorInfoBuilder = ActorInfoProtocol.newBuilder.setUuid(uuidProtocol).setAddress(actorAddress).setTimeout(timeout)
 
     val actorInfo = actorInfoBuilder.build
     val messageBuilder = RemoteMessageProtocol.newBuilder

@@ -30,6 +30,7 @@ trait ActorRefProvider {
   private[akka] def evict(address: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
+  private[akka] def serialize(actor: ActorRef): AnyRef
 
   private[akka] def createDeathWatch(): DeathWatch
 
@@ -99,6 +100,8 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {
     @volatile
     var stopped = false
+
+    def app = LocalActorRefProvider.this.app
 
     override def address = app.name + ":BubbleWalker"
 
@@ -216,6 +219,8 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
+  private[akka] def serialize(actor: ActorRef): AnyRef =
+    SerializedActorRef(actor.uuid, actor.address, app.hostname, app.port)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
