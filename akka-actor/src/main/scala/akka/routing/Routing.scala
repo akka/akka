@@ -142,8 +142,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps, override val ad
 /**
  * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
  * Router only needs to implement the next method.
- *
- * FIXME: this is also the location where message buffering should be done in case of failure.
  */
 trait BasicRouter extends Router {
 
@@ -258,15 +256,17 @@ class DirectRouter extends BasicRouter {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RandomRouter extends BasicRouter {
+  import java.security.SecureRandom
 
   private val state = new AtomicReference[RandomRouterState]
 
-  //FIXME: threadlocal random?
-  private val random = new java.util.Random(System.nanoTime)
+  private val random = new ThreadLocal[SecureRandom] {
+    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
+  }
 
   def next: Option[ActorRef] = currentState.array match {
     case a if a.isEmpty ⇒ None
-    case a              ⇒ Some(a(random.nextInt(a.length)))
+    case a              ⇒ Some(a(random.get.nextInt(a.length)))
   }
 
   @tailrec

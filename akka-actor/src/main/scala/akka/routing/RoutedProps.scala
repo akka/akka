@@ -59,8 +59,6 @@ object RouterType {
 
   /**
    * A RouterType that select the connection based on the least amount of ram used.
-   *
-   * FIXME: this is extremely vague currently since there are so many ways to define least amount of ram.
    */
   object LeastRAM extends RouterType
 
