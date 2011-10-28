@@ -10,15 +10,15 @@ public final class ProtobufProtocol {
   }
   public interface MyMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required uint64 id = 1;
     boolean hasId();
     long getId();
-    
+
     // required string name = 2;
     boolean hasName();
     String getName();
-    
+
     // required bool status = 3;
     boolean hasStatus();
     boolean getStatus();
@@ -31,26 +31,26 @@ public final class ProtobufProtocol {
       super(builder);
     }
     private MyMessage(boolean noInit) {}
-    
+
     private static final MyMessage defaultInstance;
     public static MyMessage getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public MyMessage getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_MyMessage_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.ProtobufProtocol.internal_static_akka_actor_MyMessage_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
@@ -61,7 +61,7 @@ public final class ProtobufProtocol {
     public long getId() {
       return id_;
     }
-    
+
     // required string name = 2;
     public static final int NAME_FIELD_NUMBER = 2;
     private java.lang.Object name_;
@@ -73,7 +73,7 @@ public final class ProtobufProtocol {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -85,7 +85,7 @@ public final class ProtobufProtocol {
     private com.google.protobuf.ByteString getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         name_ = b;
         return b;
@@ -93,7 +93,7 @@ public final class ProtobufProtocol {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required bool status = 3;
     public static final int STATUS_FIELD_NUMBER = 3;
     private boolean status_;
@@ -103,7 +103,7 @@ public final class ProtobufProtocol {
     public boolean getStatus() {
       return status_;
     }
-    
+
     private void initFields() {
       id_ = 0L;
       name_ = "";
@@ -113,7 +113,7 @@ public final class ProtobufProtocol {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasId()) {
         memoizedIsInitialized = 0;
         return false;
@@ -129,7 +129,7 @@ public final class ProtobufProtocol {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -144,12 +144,12 @@ public final class ProtobufProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -167,14 +167,14 @@ public final class ProtobufProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static akka.actor.ProtobufProtocol.MyMessage parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -241,14 +241,14 @@ public final class ProtobufProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.ProtobufProtocol.MyMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -262,17 +262,17 @@ public final class ProtobufProtocol {
           getDescriptor() {
         return akka.actor.ProtobufProtocol.internal_static_akka_actor_MyMessage_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.actor.ProtobufProtocol.internal_static_akka_actor_MyMessage_fieldAccessorTable;
       }
-      
+
       // Construct using akka.actor.ProtobufProtocol.MyMessage.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -284,7 +284,7 @@ public final class ProtobufProtocol {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         id_ = 0L;
@@ -295,20 +295,20 @@ public final class ProtobufProtocol {
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.ProtobufProtocol.MyMessage.getDescriptor();
       }
-      
+
       public akka.actor.ProtobufProtocol.MyMessage getDefaultInstanceForType() {
         return akka.actor.ProtobufProtocol.MyMessage.getDefaultInstance();
       }
-      
+
       public akka.actor.ProtobufProtocol.MyMessage build() {
         akka.actor.ProtobufProtocol.MyMessage result = buildPartial();
         if (!result.isInitialized()) {
@@ -316,7 +316,7 @@ public final class ProtobufProtocol {
         }
         return result;
       }
-      
+
       private akka.actor.ProtobufProtocol.MyMessage buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         akka.actor.ProtobufProtocol.MyMessage result = buildPartial();
@@ -326,7 +326,7 @@ public final class ProtobufProtocol {
         }
         return result;
       }
-      
+
       public akka.actor.ProtobufProtocol.MyMessage buildPartial() {
         akka.actor.ProtobufProtocol.MyMessage result = new akka.actor.ProtobufProtocol.MyMessage(this);
         int from_bitField0_ = bitField0_;
@@ -347,7 +347,7 @@ public final class ProtobufProtocol {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.ProtobufProtocol.MyMessage) {
           return mergeFrom((akka.actor.ProtobufProtocol.MyMessage)other);
@@ -356,7 +356,7 @@ public final class ProtobufProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.ProtobufProtocol.MyMessage other) {
         if (other == akka.actor.ProtobufProtocol.MyMessage.getDefaultInstance()) return this;
         if (other.hasId()) {
@@ -371,23 +371,23 @@ public final class ProtobufProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasId()) {
-          
+
           return false;
         }
         if (!hasName()) {
-          
+
           return false;
         }
         if (!hasStatus()) {
-          
+
           return false;
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -429,9 +429,9 @@ public final class ProtobufProtocol {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // required uint64 id = 1;
       private long id_ ;
       public boolean hasId() {
@@ -452,7 +452,7 @@ public final class ProtobufProtocol {
         onChanged();
         return this;
       }
-      
+
       // required string name = 2;
       private java.lang.Object name_ = "";
       public boolean hasName() {
@@ -488,7 +488,7 @@ public final class ProtobufProtocol {
         name_ = value;
         onChanged();
       }
-      
+
       // required bool status = 3;
       private boolean status_ ;
       public boolean hasStatus() {
@@ -509,24 +509,24 @@ public final class ProtobufProtocol {
         onChanged();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:akka.actor.MyMessage)
     }
-    
+
     static {
       defaultInstance = new MyMessage(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:akka.actor.MyMessage)
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_akka_actor_MyMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_actor_MyMessage_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -560,6 +560,6 @@ public final class ProtobufProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }

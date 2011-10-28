@@ -18,7 +18,7 @@ import scala.Some;
 import scala.Right;
 
 public class JavaFutureTests {
-  
+
     private final AkkaApplication app = new AkkaApplication();
     private final Timeout t = app.AkkaConfig().ActorTimeout();
     private final FutureFactory ff = new FutureFactory(app.dispatcher(), t);
