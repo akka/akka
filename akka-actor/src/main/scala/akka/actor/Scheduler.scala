@@ -130,7 +130,7 @@ class DefaultScheduler extends Scheduler {
     }
   }
 
-  private[akka] def shutdown() { service.shutdown() }
+  private[akka] def shutdown() { service.shutdownNow() }
 }
 
 private object SchedulerThreadFactory extends ThreadFactory {

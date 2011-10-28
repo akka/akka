@@ -115,7 +115,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   /**
    * Returns the key set.
    */
-  def keys = scala.collection.JavaConversions.asScalaIterable(container.keySet)
+  def keys = scala.collection.JavaConversions.collectionAsScalaIterable(container.keySet)
 
   /**
    * Disassociates the value of type V from the key of type K

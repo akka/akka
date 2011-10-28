@@ -5,8 +5,9 @@ package akka
 
 import akka.config._
 import akka.actor._
-import dispatch._
-import event._
+import akka.dispatch._
+import akka.event._
+import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatchers, Future }
@@ -105,8 +106,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
-      map(time ⇒ Duration(time, DefaultTimeUnit)).
-      getOrElse(Duration(1000, TimeUnit.MILLISECONDS))
+      map(time ⇒ Duration(time, DefaultTimeUnit)).getOrElse(1 second)
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
     val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), DefaultTimeUnit)
     val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.throughput-deadline-time", -1), DefaultTimeUnit)
@@ -181,37 +181,45 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = reflective.createProvider
 
-  // TODO make this configurable
-  protected[akka] val guardian: ActorRef = {
-    import akka.actor.FaultHandlingStrategy._
-    provider.actorOf(
-      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
-        case _: ActorKilledException         ⇒ Stop
-        case _: ActorInitializationException ⇒ Stop
-        case _: Exception                    ⇒ Restart
-      }).withDispatcher(dispatcher),
-      provider.theOneWhoWalksTheBubblesOfSpaceTime,
-      "ApplicationSupervisor",
-      true)
+  private class Guardian extends Actor {
+    def receive = {
+      case Terminated(_) ⇒ context.self.stop()
+    }
   }
+  private class SystemGuardian extends Actor {
+    def receive = {
+      case Terminated(_) ⇒
+        mainbus.stopDefaultLoggers()
+        context.self.stop()
+    }
+  }
+  private val guardianFaultHandlingStrategy = {
+    import akka.actor.FaultHandlingStrategy._
+    OneForOneStrategy {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Restart
+    }
+  }
+  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
 
-  protected[akka] val systemGuardian: ActorRef = {
-    import akka.actor.FaultHandlingStrategy._
-    provider.actorOf(
-      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
-        case _: ActorKilledException         ⇒ Stop
-        case _: ActorInitializationException ⇒ Stop
-        case _: Exception                    ⇒ Restart
-      }).withDispatcher(dispatcher),
-      provider.theOneWhoWalksTheBubblesOfSpaceTime,
-      "SystemSupervisor",
-      true)
-  }
+  private val guardianInChief: ActorRef =
+    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, "GuardianInChief", true)
+
+  protected[akka] val guardian: ActorRef =
+    provider.actorOf(guardianProps, guardianInChief, "ApplicationSupervisor", true)
+
+  protected[akka] val systemGuardian: ActorRef =
+    provider.actorOf(guardianProps.withCreator(new SystemGuardian), guardianInChief, "SystemSupervisor", true)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
 
   val deathWatch = provider.createDeathWatch()
+
+  // chain death watchers so that killing guardian stops the application
+  deathWatch.subscribe(systemGuardian, guardian)
+  deathWatch.subscribe(guardianInChief, systemGuardian)
 
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
   mainbus.start(this)
@@ -232,7 +240,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO shutdown all that other stuff, whatever that may be
   def stop(): Unit = {
     guardian.stop()
-    systemGuardian.stop()
   }
 
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())

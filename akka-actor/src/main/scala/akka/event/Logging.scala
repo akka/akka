@@ -88,6 +88,19 @@ trait LoggingBus extends ActorEventBus {
     }
   }
 
+  def stopDefaultLoggers() {
+    val level = _logLevel // volatile access before reading loggers
+    if (!(loggers contains StandardOutLogger)) {
+      AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
+      publish(Info(this, "shutting down: StandardOutLogger started"))
+    }
+    for {
+      logger ← loggers
+      if logger != StandardOutLogger
+    } logger.stop()
+    publish(Info(this, "all default loggers stopped"))
+  }
+
   private def addLogger(app: AkkaApplication, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
     val actor = app.systemActorOf(Props(clazz), Props.randomAddress)
     actor ! InitializeLogger(this)
