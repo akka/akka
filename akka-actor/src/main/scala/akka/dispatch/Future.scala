@@ -336,6 +336,30 @@ object Future {
     future
   }
 
+  /**
+   * Send queued tasks back to the dispatcher to be executed. This is needed if the current
+   * task may block while waiting for something to happen in a queued task.
+   *
+   * Example:
+   * <pre>
+   * val latch = new StandardLatch
+   * val future = Future() map { _ ⇒
+   *   val nested = Future()
+   *   nested.await
+   *   nested foreach (_ ⇒ latch.open)
+   *   Future.redispatchTasks
+   *   latch.await
+   * }
+   * </pre>
+   */
+  def redispatchTasks()(implicit dispatcher: MessageDispatcher): Unit =
+    _taskStack.get match {
+      case Some(taskStack) if taskStack.nonEmpty ⇒
+        val tasks = taskStack.elems
+        taskStack.clear()
+        dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
+      case _ ⇒ // nothing to do
+    }
 
   private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None
@@ -833,9 +857,11 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     }
   }
 
-  protected def awaitThenThrow(waitNanos: Long): this.type =
+  protected def awaitThenThrow(waitNanos: Long): this.type = if (value.isDefined) this else {
+    Future.redispatchTasks()
     if ( awaitUnsafe(waitNanos) ) this
     else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(waitNanos) + "] milliseconds")
+  }
 
   def await(atMost: Duration) = awaitThenThrow(atMost.toNanos min timeLeft())
 

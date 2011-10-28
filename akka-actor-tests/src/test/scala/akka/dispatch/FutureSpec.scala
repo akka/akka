@@ -815,4 +815,20 @@ class FutureSpec extends JUnitSuite {
       intercept[FutureCanceledException] ( f.get )
     }
   }
+
+  @Test
+  def ticket1313DeadlockNestedAwait {
+    val simple = Future(()) map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
+    assert(simple.await.isCompleted)
+
+    val latch = new StandardLatch
+    val complex = Future(()) map { _ ⇒
+      val nested = Future(())
+      nested.await
+      nested foreach (_ ⇒ latch.open)
+      Future.redispatchTasks
+      latch.await
+    }
+    assert(complex.await.isCompleted)
+  }
 }
