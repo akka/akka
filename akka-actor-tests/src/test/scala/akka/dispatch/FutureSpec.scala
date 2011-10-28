@@ -6,19 +6,21 @@ import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
-import akka.actor.{ Actor, ActorRef, Timeout }
+import akka.actor.{ Actor, ActorRef, Status }
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.util.duration._
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
+import java.lang.ArithmeticException
 
 object FutureSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ sender ! "World"
-      case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "Hello" ⇒ sender ! "World"
+      case "Failure" ⇒
+        sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
       case "NoReply" ⇒
     }
   }
@@ -29,7 +31,7 @@ object FutureSpec {
       case "NoReply" ⇒ await.await
       case "Failure" ⇒
         await.await
-        throw new RuntimeException("Expected exception; to test fault-tolerance")
+        sender ! Status.Failure(new RuntimeException("Expected exception; to test fault-tolerance"))
     }
   }
 }
@@ -149,7 +151,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
         behave like futureWithException[ArithmeticException] { test ⇒
           filterException[ArithmeticException] {
             val actor1 = actorOf[TestActor]
-            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ sender ! s.length / 0 } })
+            val actor2 = actorOf(new Actor { def receive = { case s: String ⇒ sender ! Status.Failure(new ArithmeticException("/ by zero")) } })
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
@@ -323,8 +325,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
               def receive = {
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
-                  if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  sender.tell(add)
+                  if (add == 6) sender ! Status.Failure(new IllegalArgumentException("shouldFoldResultsWithException: expected"))
+                  else sender.tell(add)
               }
             })
           }
@@ -371,8 +373,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
               def receive = {
                 case (add: Int, wait: Int) ⇒
                   Thread.sleep(wait)
-                  if (add == 6) throw new IllegalArgumentException("shouldFoldResultsWithException: expected")
-                  sender.tell(add)
+                  if (add == 6) sender ! Status.Failure(new IllegalArgumentException("shouldFoldResultsWithException: expected"))
+                  else sender.tell(add)
               }
             })
           }

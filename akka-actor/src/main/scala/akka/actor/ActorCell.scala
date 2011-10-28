@@ -68,11 +68,11 @@ private[akka] class ActorCell(
 
   import ActorCell._
 
-  protected def guardian = self
+  protected final def guardian = self
 
   protected def typedActor = app.typedActor
 
-  def provider = app.provider
+  final def provider = app.provider
 
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
@@ -87,12 +87,12 @@ private[akka] class ActorCell(
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
 
-  def isShutdown: Boolean = mailbox.isClosed
+  final def isShutdown: Boolean = mailbox.isClosed
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
-  def start(): Unit = {
+  final def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -102,31 +102,31 @@ private[akka] class ActorCell(
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
+  final def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  def resume(): Unit = dispatcher.systemDispatch(this, Resume())
+  final def resume(): Unit = dispatcher.systemDispatch(this, Resume())
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  def startsMonitoring(subject: ActorRef): ActorRef = {
+  final def startsMonitoring(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
-  def stopsMonitoring(subject: ActorRef): ActorRef = {
+  final def stopsMonitoring(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject
   }
 
-  def children: Iterable[ActorRef] = _children.keys
+  final def children: Iterable[ActorRef] = _children.keys
 
-  def postMessageToMailbox(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
+  final def postMessageToMailbox(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
 
-  def sender: ActorRef = currentMessage match {
+  final def sender: ActorRef = currentMessage match {
     case null                      ⇒ app.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
     case _                         ⇒ app.deadLetters
@@ -150,7 +150,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def systemInvoke(message: SystemMessage) {
+  final def systemInvoke(message: SystemMessage) {
 
     def create(): Unit = try {
       val created = newActor()
@@ -268,7 +268,7 @@ private[akka] class ActorCell(
     }
   }
 
-  def invoke(messageHandle: Envelope) {
+  final def invoke(messageHandle: Envelope) {
     try {
       val isClosed = mailbox.isClosed //Fence plus volatile read
       if (!isClosed) {
@@ -308,20 +308,20 @@ private[akka] class ActorCell(
     }
   }
 
-  def handleFailure(fail: Failed): Unit = _children.get(fail.actor) match {
+  final def handleFailure(fail: Failed): Unit = _children.get(fail.actor) match {
     case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, _children)) throw fail.cause
     case None        ⇒ app.eventHandler.warning(self, "dropping " + fail + " from unknown child")
   }
 
-  def handleChildTerminated(child: ActorRef): Unit = {
+  final def handleChildTerminated(child: ActorRef): Unit = {
     _children -= child
     props.faultHandler.handleChildTerminated(child, children)
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
+  final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
 
-  def checkReceiveTimeout() {
+  final def checkReceiveTimeout() {
     cancelReceiveTimeout()
     val recvtimeout = receiveTimeout
     if (recvtimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
@@ -330,16 +330,16 @@ private[akka] class ActorCell(
     }
   }
 
-  def cancelReceiveTimeout() {
+  final def cancelReceiveTimeout() {
     if (futureTimeout.isDefined) {
       futureTimeout.get.cancel(true)
       futureTimeout = None
     }
   }
 
-  def clearActorContext(): Unit = setActorContext(null)
+  final def clearActorContext(): Unit = setActorContext(null)
 
-  def setActorContext(newContext: ActorContext) {
+  final def setActorContext(newContext: ActorContext) {
     @tailrec
     def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, newContext: ActorContext): Boolean = {
       val success = try {
@@ -364,11 +364,11 @@ private[akka] class ActorCell(
       lookupAndSetSelfFields(a.getClass, a, newContext)
   }
 
-  override def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
+  override final def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
 
-  override def equals(that: Any): Boolean = {
+  override final def equals(that: Any): Boolean = {
     that.isInstanceOf[ActorCell] && that.asInstanceOf[ActorCell].uuid == uuid
   }
 
-  override def toString = "ActorCell[%s]".format(uuid)
+  override final def toString = "ActorCell[%s]".format(uuid)
 }
