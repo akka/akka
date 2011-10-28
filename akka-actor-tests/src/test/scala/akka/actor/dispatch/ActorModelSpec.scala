@@ -78,7 +78,7 @@ object ActorModelSpec {
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
       case CountDownNStop(l)            ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
-      case Interrupt                    ⇒ ack; busy.switchOff(); throw new InterruptedException("Ping!")
+      case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
     }
   }
@@ -379,26 +379,17 @@ abstract class ActorModelSpec extends AkkaSpec {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try {
-          a ? Interrupt
-        } catch {
-          // CallingThreadDispatcher throws IE directly
-          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
-        }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
         val f4 = a ? Reply("foo2")
-        val f5 = try {
-          a ? Interrupt
-        } catch {
-          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
-        }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
         val f6 = a ? Reply("bar2")
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
         assert(f4.get === "foo2")
-        assert(f3.value === None)
+        assert(intercept[ActorInterruptedException](f3.get).getMessage === "Ping!")
         assert(f6.get === "bar2")
-        assert(f5.value === None)
+        assert(intercept[ActorInterruptedException](f5.get).getMessage === "Ping!")
       }
     }
 
