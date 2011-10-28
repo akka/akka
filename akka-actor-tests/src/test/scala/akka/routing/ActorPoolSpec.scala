@@ -347,7 +347,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       val pool = app.createProxy[Foo](createPool, Props().withFaultHandler(faultHandler))
 
-      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 100))
+      val results = for (i ← 1 to 50) yield (i, pool.sq(i, 100))
 
       for ((i, r) ← results) r.get must equal(i * i)
     }

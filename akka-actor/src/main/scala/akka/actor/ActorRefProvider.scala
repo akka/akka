@@ -101,8 +101,6 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     @volatile
     var stopped = false
 
-    def app = LocalActorRefProvider.this.app
-
     override def address = app.name + ":BubbleWalker"
 
     override def toString = address

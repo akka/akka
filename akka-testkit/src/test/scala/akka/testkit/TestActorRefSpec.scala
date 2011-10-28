@@ -224,10 +224,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       ref("work")
-      val ch = Promise[String](5000)
-      ref ! ch
-      ch must be('completed)
-      ch.get must be("complexReply")
+      ref.isShutdown must be(true)
     }
 
   }
