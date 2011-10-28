@@ -234,9 +234,7 @@ class LocalActorRef private[akka] (
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
 
-  protected[akka] def handleFailure(fail: Failed): Unit = actorCell.handleFailure(fail)
-
-  protected[akka] def restart(cause: Throwable): Unit = actorCell.restart(cause)
+  protected[akka] override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = actorCell.provider.serialize(this)
