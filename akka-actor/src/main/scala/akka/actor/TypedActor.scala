@@ -378,7 +378,6 @@ class TypedActor(val app: AkkaApplication) {
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor.?(m, timeout)
             try { f.await } catch { case _: FutureTimeoutException ⇒ }
-            println("JOption result: " + f.value)
             f.value match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
