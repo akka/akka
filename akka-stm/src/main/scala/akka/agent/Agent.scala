@@ -125,9 +125,7 @@ class Agent[T](initialValue: T, app: AkkaApplication) {
     if (Stm.activeTransaction) {
       val result = new DefaultPromise[T](timeout)(app.dispatcher)
       get //Join xa
-      deferred {
-        result completeWith dispatch
-      } //Attach deferred-block to current transaction
+      deferred { result completeWith dispatch } //Attach deferred-block to current transaction
       result
     } else dispatch
   }
@@ -288,7 +286,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
 
   def receive = {
     case update: Update[_] ⇒ sender.tell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
-    case Get               ⇒ sender ! agent.get
+    case Get               ⇒ sender.tell(agent.get)
     case _                 ⇒
   }
 }

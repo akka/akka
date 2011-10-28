@@ -41,7 +41,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   private val remoteDaemonConnectionManager = new RemoteConnectionManager(app, remote)
 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
-  private[akka] def terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
+  private[akka] def terminationFuture = local.terminationFuture
 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
