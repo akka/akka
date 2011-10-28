@@ -345,7 +345,7 @@ class ActorPoolSpec extends AkkaSpec {
         def receive = _route
       }
 
-      val pool = app.createProxy[Foo](createPool, Props().withFaultHandler(faultHandler))
+      val pool = app.createProxy[Foo](createPool, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
 
       val results = for (i ← 1 to 50) yield (i, pool.sq(i, 100))
 
