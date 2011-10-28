@@ -21,8 +21,8 @@ case class ChildRestartStats(var maxNrOfRetriesCount: Int = 0, var restartTimeWi
 
   private def retriesInWindowOkay(retries: Int, window: Int): Boolean = {
     /*
-     * Simple window algorithm: window is kept open for a certain time 
-     * after a restart and if enough restarts happen during this time, it 
+     * Simple window algorithm: window is kept open for a certain time
+     * after a restart and if enough restarts happen during this time, it
      * denies. Otherwise window closes and the scheme starts over.
      */
     val retriesDone = maxNrOfRetriesCount + 1
@@ -181,7 +181,7 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   /*
-   *  this is a performance optimization to avoid re-allocating the pairs upon 
+   *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */
@@ -238,7 +238,7 @@ case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   /*
-   *  this is a performance optimization to avoid re-allocating the pairs upon 
+   *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */

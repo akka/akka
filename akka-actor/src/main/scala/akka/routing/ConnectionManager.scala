@@ -14,7 +14,6 @@ import java.net.InetSocketAddress
 /**
  * An Iterable that also contains a version.
  */
-// FIXME REMOVE VersionedIterable
 trait VersionedIterable[A] {
   val version: Long
 

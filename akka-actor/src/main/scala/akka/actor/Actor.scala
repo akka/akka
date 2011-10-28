@@ -119,8 +119,9 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
 
 /**
  * Classes for passing status back to the sender.
+ * Used for internal ACKing protocol. But exposed as utility class for user-specific ACKing protocols as well.
  */
-object Status { //FIXME Why does this exist at all?
+object Status {
   sealed trait Status extends Serializable
   case class Success(status: AnyRef) extends Status
   case class Failure(cause: Throwable) extends Status

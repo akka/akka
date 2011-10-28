@@ -7,13 +7,13 @@ case class Stats(
   name: String,
   load: Int,
   timestamp: Long = System.currentTimeMillis,
-  durationNanos: Long,
-  n: Long,
-  min: Long,
-  max: Long,
-  mean: Double,
-  tps: Double,
-  percentiles: TreeMap[Int, Long]) {
+  durationNanos: Long = 0L,
+  n: Long = 0L,
+  min: Long = 0L,
+  max: Long = 0L,
+  mean: Double = 0.0,
+  tps: Double = 0.0,
+  percentiles: TreeMap[Int, Long] = TreeMap.empty) {
 
   def median: Long = percentiles(50)
 }

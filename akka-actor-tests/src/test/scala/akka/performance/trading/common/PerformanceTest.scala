@@ -56,7 +56,7 @@ trait PerformanceTest extends JUnitSuite {
 
   var stat: DescriptiveStatistics = _
 
-  val resultRepository = BenchResultRepository(app)
+  val resultRepository = BenchResultRepository()
   lazy val report = new Report(app, resultRepository, compareResultWith)
 
   type TS <: TradingSystem
@@ -107,34 +107,38 @@ trait PerformanceTest extends JUnitSuite {
   def compareResultWith: Option[String] = None
 
   def logMeasurement(scenario: String, numberOfClients: Int, durationNs: Long) {
+    try {
+      val name = simpleName(this)
+      val durationS = durationNs.toDouble / 1000000000.0
 
-    val name = simpleName(this)
-    val durationS = durationNs.toDouble / 1000000000.0
+      val percentiles = TreeMap[Int, Long](
+        5 -> (stat.getPercentile(5.0) / 1000).toLong,
+        25 -> (stat.getPercentile(25.0) / 1000).toLong,
+        50 -> (stat.getPercentile(50.0) / 1000).toLong,
+        75 -> (stat.getPercentile(75.0) / 1000).toLong,
+        95 -> (stat.getPercentile(95.0) / 1000).toLong)
 
-    val percentiles = TreeMap[Int, Long](
-      5 -> (stat.getPercentile(5.0) / 1000).toLong,
-      25 -> (stat.getPercentile(25.0) / 1000).toLong,
-      50 -> (stat.getPercentile(50.0) / 1000).toLong,
-      75 -> (stat.getPercentile(75.0) / 1000).toLong,
-      95 -> (stat.getPercentile(95.0) / 1000).toLong)
+      val n = stat.getN * sampling
 
-    val n = stat.getN * sampling
+      val stats = Stats(
+        name,
+        load = numberOfClients,
+        timestamp = TestStart.startTime,
+        durationNanos = durationNs,
+        n = n,
+        min = (stat.getMin / 1000).toLong,
+        max = (stat.getMax / 1000).toLong,
+        mean = (stat.getMean / 1000).toLong,
+        tps = (n.toDouble / durationS),
+        percentiles)
 
-    val stats = Stats(
-      name,
-      load = numberOfClients,
-      timestamp = TestStart.startTime,
-      durationNanos = durationNs,
-      n = n,
-      min = (stat.getMin / 1000).toLong,
-      max = (stat.getMax / 1000).toLong,
-      mean = (stat.getMean / 1000).toLong,
-      tps = (n.toDouble / durationS),
-      percentiles)
+      resultRepository.add(stats)
 
-    resultRepository.add(stats)
-
-    report.html(resultRepository.get(name))
+      report.html(resultRepository.get(name))
+    } catch {
+      // don't fail test due to problems saving bench report
+      case e: Exception ⇒ app.eventHandler.error(this, e.getMessage)
+    }
   }
 
   def delay(delayMs: Int) {
