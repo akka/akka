@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.util._
-import akka.event.MainBusLogging
+import akka.event.Logging
 
 import scala.collection.mutable
 import java.util.concurrent.ScheduledFuture
@@ -190,7 +190,7 @@ trait FSM[S, D] extends ListenerManagement {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val log = new MainBusLogging(app.mainbus, context.self)
+  val log = Logging(app.mainbus, context.self)
 
   /**
    * ****************************************

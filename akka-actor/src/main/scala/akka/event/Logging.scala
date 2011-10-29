@@ -28,15 +28,24 @@ trait LoggingBus extends ActorEventBus {
   @volatile
   private var _logLevel: LogLevel = _
 
+  /**
+   * Query currently set log level. See object Logging for more information.
+   */
   def logLevel = _logLevel
 
+  /**
+   * Change log level: default loggers (i.e. from configuration file) are 
+   * subscribed/unsubscribed as necessary so that they listen to all levels 
+   * which are at least as severe as the given one. See object Logging for 
+   * more information.
+   */
   def logLevel_=(level: LogLevel) {
     for { l ← AllLogLevels if l > _logLevel && l <= level; log ← loggers } subscribe(log, classFor(l))
     for { l ← AllLogLevels if l <= _logLevel && l > level; log ← loggers } unsubscribe(log, classFor(l))
     _logLevel = level
   }
 
-  def startStdoutLogger(config: AkkaConfig) {
+  private[akka] def startStdoutLogger(config: AkkaConfig) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
@@ -47,7 +56,7 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "StandardOutLogger started"))
   }
 
-  def startDefaultLoggers(app: AkkaApplication, config: AkkaConfig) {
+  private[akka] def startDefaultLoggers(app: AkkaApplication, config: AkkaConfig) {
     val level = levelFor(config.LogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.LogLevel))
       ErrorLevel
@@ -59,7 +68,7 @@ trait LoggingBus extends ActorEventBus {
       }
       loggers = for {
         loggerName ← defaultLoggers
-        if loggerName != DefaultLoggerName
+        if loggerName != StandardOutLoggerName
       } yield {
         try {
           ReflectiveAccess.getClassFor[Actor](loggerName) match {
@@ -74,7 +83,7 @@ trait LoggingBus extends ActorEventBus {
         }
       }
       publish(Info(this, "Default Loggers started"))
-      if (defaultLoggers contains DefaultLoggerName) {
+      if (defaultLoggers contains StandardOutLoggerName) {
         loggers :+= StandardOutLogger
       } else {
         unsubscribe(StandardOutLogger)
@@ -88,7 +97,7 @@ trait LoggingBus extends ActorEventBus {
     }
   }
 
-  def stopDefaultLoggers() {
+  private[akka] def stopDefaultLoggers() {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
@@ -111,6 +120,24 @@ trait LoggingBus extends ActorEventBus {
 
 }
 
+/**
+ * Main entry point for Akka logging: log levels and message types (aka 
+ * channels) defined for the main transport medium, the main event bus. The 
+ * recommended use is to obtain an implementation of the Logging trait with 
+ * suitable and efficient methods for generating log events:
+ * 
+ * <pre><code>
+ * val log = Logging(&lt;bus&gt;, &lt;source object&gt;)
+ * ...
+ * log.info("hello world!")
+ * </code></pre>
+ * 
+ * Loggers are attached to the level-specific channels <code>Error</code>, 
+ * <code>Warning</code>, <code>Info</code> and <code>Debug</code> as 
+ * appropriate for the configured (or set) log level. If you want to implement
+ * your own, make sure to handle these four event types plus the <code>InitializeLogger</code>
+ * message which is sent before actually attaching it to the logging bus.
+ */
 object Logging {
 
   trait LogLevelType
@@ -143,6 +170,7 @@ object Logging {
     case DebugLevel   ⇒ classOf[Debug]
   }
 
+  // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
   val AllLogLevels = Seq(ErrorLevel: AnyRef, WarningLevel, InfoLevel, DebugLevel).asInstanceOf[Seq[LogLevel]]
 
   val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
@@ -151,8 +179,8 @@ object Logging {
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
   val genericFormat = "[GENERIC] [%s] [%s]".intern
 
-  def apply(app: AkkaApplication, instance: AnyRef): Logging = new MainBusLogging(app.mainbus, instance)
-  def apply(bus: MainBus, instance: AnyRef): Logging = new MainBusLogging(bus, instance)
+  def apply(app: AkkaApplication, instance: AnyRef): Logging = new BusLogging(app.mainbus, instance)
+  def apply(bus: LoggingBus, instance: AnyRef): Logging = new BusLogging(bus, instance)
 
   class EventHandlerException extends AkkaException
 
@@ -181,6 +209,11 @@ object Logging {
     def level = DebugLevel
   }
 
+  /**
+   * Message which is sent to each default logger (i.e. from configuration file)
+   * after its creation but before attaching it to the logging bus. The logger
+   * actor should handle this message, e.g. to register for more channels.
+   */
   case class InitializeLogger(bus: LoggingBus)
 
   trait StdOutLogger {
@@ -240,13 +273,25 @@ object Logging {
     }
   }
 
+  /**
+   * Actor-less logging implementation for synchronous logging to standard 
+   * output. This logger is always attached first in order to be able to log
+   * failures during application start-up, even before normal logging is 
+   * started. Its log level can be configured by setting 
+   * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
+   */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     override val toString = "StandardOutLogger"
     override def postMessageToMailbox(obj: Any, channel: UntypedChannel) { print(obj) }
   }
   val StandardOutLogger = new StandardOutLogger
-  val DefaultLoggerName = StandardOutLogger.getClass.getName
+  val StandardOutLoggerName = StandardOutLogger.getClass.getName
 
+  /**
+   * Actor wrapper around the standard output logger. If 
+   * <code>akka.event-handlers</code> is not set, it defaults to just this
+   * logger.
+   */
   class DefaultLogger extends Actor with StdOutLogger {
     def receive = {
       case InitializeLogger(_) ⇒
@@ -270,7 +315,22 @@ object Logging {
 
 /**
  * Logging wrapper to make nicer and optimize: provide template versions which
- * evaluate .toString only if the log level is actually enabled.
+ * evaluate .toString only if the log level is actually enabled. Typically used
+ * by obtaining an implementation from the Logging object:
+ * 
+ * <code><pre>
+ * val log = Logging(&lt;bus&gt;, &lt;source object&gt;)
+ * ...
+ * log.info("hello world!")
+ * </pre></code>
+ * 
+ * All log-level methods support simple interpolation templates with up to four
+ * arguments placed by using <code>{}</code> within the template (first string 
+ * argument):
+ * 
+ * <code><pre>
+ * log.error(exception, "Exception while processing {} in state {}", msg, state)
+ * </pre></code>
  */
 trait Logging {
 
@@ -333,21 +393,21 @@ trait Logging {
 
 }
 
-class MainBusLogging(val mainbus: MainBus, val loggingInstance: AnyRef) extends Logging {
+class BusLogging(val bus: LoggingBus, val loggingInstance: AnyRef) extends Logging {
 
   import Logging._
 
-  def isErrorEnabled = mainbus.logLevel >= ErrorLevel
-  def isWarningEnabled = mainbus.logLevel >= WarningLevel
-  def isInfoEnabled = mainbus.logLevel >= InfoLevel
-  def isDebugEnabled = mainbus.logLevel >= DebugLevel
+  def isErrorEnabled = bus.logLevel >= ErrorLevel
+  def isWarningEnabled = bus.logLevel >= WarningLevel
+  def isInfoEnabled = bus.logLevel >= InfoLevel
+  def isDebugEnabled = bus.logLevel >= DebugLevel
 
-  protected def notifyError(cause: Throwable, message: String) { mainbus.publish(Error(cause, loggingInstance, message)) }
+  protected def notifyError(cause: Throwable, message: String) { bus.publish(Error(cause, loggingInstance, message)) }
 
-  protected def notifyWarning(message: String) { mainbus.publish(Warning(loggingInstance, message)) }
+  protected def notifyWarning(message: String) { bus.publish(Warning(loggingInstance, message)) }
 
-  protected def notifyInfo(message: String) { mainbus.publish(Info(loggingInstance, message)) }
+  protected def notifyInfo(message: String) { bus.publish(Info(loggingInstance, message)) }
 
-  protected def notifyDebug(message: String) { mainbus.publish(Debug(loggingInstance, message)) }
+  protected def notifyDebug(message: String) { bus.publish(Debug(loggingInstance, message)) }
 
 }

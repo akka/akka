@@ -11,7 +11,7 @@ import akka.AkkaApplication
 import java.util.concurrent.ConcurrentHashMap
 import com.eaio.uuid.UUID
 import akka.AkkaException
-import akka.event.{ ActorClassification, DeathWatch, MainBusLogging }
+import akka.event.{ ActorClassification, DeathWatch, Logging }
 import akka.dispatch._
 
 /**
@@ -91,7 +91,7 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
   val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
-  val log = new MainBusLogging(app.mainbus, this)
+  val log = Logging(app.mainbus, this)
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will

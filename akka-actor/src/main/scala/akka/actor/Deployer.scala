@@ -8,7 +8,7 @@ import collection.immutable.Seq
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.event.MainBusLogging
+import akka.event.Logging
 import akka.actor.DeploymentConfig._
 import akka.{ AkkaException, AkkaApplication }
 import akka.config.{ Configuration, ConfigurationException }
@@ -34,7 +34,7 @@ trait ActorDeployer {
 class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
-  val log = new MainBusLogging(app.mainbus, this)
+  val log = Logging(app.mainbus, this)
 
   //  val defaultAddress = Node(Config.nodename)
 

@@ -168,7 +168,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)
   mainbus.startStdoutLogger(AkkaConfig)
-  val log = new MainBusLogging(mainbus, this)
+  val log = new BusLogging(mainbus, this)
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
