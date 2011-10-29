@@ -61,13 +61,13 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
       disposeSubscriber(sub)
     }
 
-    "not allow for the same subscriber to subscribe to the same sender twice" in {
+    "not allow for the same subscriber to subscribe to the same channel twice" in {
       bus.subscribe(subscriber, classifier) must be === true
       bus.subscribe(subscriber, classifier) must be === false
       bus.unsubscribe(subscriber, classifier) must be === true
     }
 
-    "not allow for the same subscriber to unsubscribe to the same sender twice" in {
+    "not allow for the same subscriber to unsubscribe to the same channel twice" in {
       bus.subscribe(subscriber, classifier) must be === true
       bus.unsubscribe(subscriber, classifier) must be === true
       bus.unsubscribe(subscriber, classifier) must be === false
