@@ -25,7 +25,7 @@ public class JavaAPI {
       assertNotNull(ref);
   }
 
-  @Test void mustAcceptSingleArgTryTell() {
+  @Test void mustAcceptSingleArgTell() {
     ActorRef ref = app.actorOf(JavaAPITestActor.class);
     ref.tell("hallo");
     ref.tell("hallo", ref);
