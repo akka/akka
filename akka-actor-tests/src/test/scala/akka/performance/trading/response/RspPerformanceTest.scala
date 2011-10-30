@@ -11,7 +11,7 @@ class RspPerformanceTest extends AkkaPerformanceTest(AkkaApplication()) {
 
   implicit def appl = app
 
-  override def placeOrder(orderReceiver: ActorRef, order: Order): Rsp = {
+  override def placeOrder(orderReceiver: ActorRef, order: Order, await: Boolean): Rsp = {
     (orderReceiver ? order).get.asInstanceOf[Rsp]
   }
 

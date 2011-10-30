@@ -8,7 +8,10 @@ import akka.performance.trading.domain._
 import akka.actor.{ Props, ActorRef }
 import akka.AkkaApplication
 
+// -server -Xms512M -Xmx1024M -XX:+UseConcMarkSweepGC -Dbenchmark.useDummyOrderbook=true -Dbenchmark=true -Dbenchmark.minClients=1 -Dbenchmark.maxClients=40 -Dbenchmark.repeatFactor=500
 class OneWayPerformanceTest extends AkkaPerformanceTest(AkkaApplication()) {
+
+  val Ok = new Rsp(true)
 
   override def createTradingSystem: TS = new OneWayTradingSystem(app) {
     override def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) = meDispatcher match {
@@ -17,11 +20,16 @@ class OneWayPerformanceTest extends AkkaPerformanceTest(AkkaApplication()) {
     }
   }
 
-  override def placeOrder(orderReceiver: ActorRef, order: Order): Rsp = {
-    val newOrder = LatchOrder(order)
-    orderReceiver ! newOrder
-    val ok = newOrder.latch.await(10, TimeUnit.SECONDS)
-    new Rsp(ok)
+  override def placeOrder(orderReceiver: ActorRef, order: Order, await: Boolean): Rsp = {
+    if (await) {
+      val newOrder = LatchOrder(order)
+      orderReceiver ! newOrder
+      val ok = newOrder.latch.await(10, TimeUnit.SECONDS)
+      new Rsp(ok)
+    } else {
+      orderReceiver ! order
+      Ok
+    }
   }
 
   // need this so that junit will detect this as a test case
@@ -41,7 +49,10 @@ trait LatchMessageCountDown extends OneWayMatchingEngine {
 
   override def handleOrder(order: Order) {
     super.handleOrder(order)
-    order.asInstanceOf[LatchMessage].latch.countDown
+    order match {
+      case x: LatchMessage ⇒ x.latch.countDown
+      case _               ⇒
+    }
   }
 }
 

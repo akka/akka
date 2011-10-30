@@ -44,14 +44,14 @@ trait BenchmarkScenarios extends PerformanceTest {
 
     val repeat = 500 * repeatFactor
 
-    val prefixes = "A" :: "B" :: "C" :: Nil
+    val prefixes = "A" :: "B" :: "C" :: "D" :: "E" :: Nil
     val askOrders = for {
       s ← prefixes
-      i ← 1 to 5
+      i ← 1 to 3
     } yield new Ask(s + i, 100 - i, 1000)
     val bidOrders = for {
       s ← prefixes
-      i ← 1 to 5
+      i ← 1 to 3
     } yield new Bid(s + i, 100 - i, 1000)
     val orders = askOrders ::: bidOrders
 

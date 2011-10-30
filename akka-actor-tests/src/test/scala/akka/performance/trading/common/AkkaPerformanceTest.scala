@@ -22,7 +22,7 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
   /**
    * Implemented in subclass
    */
-  def placeOrder(orderReceiver: ActorRef, order: Order): Rsp
+  def placeOrder(orderReceiver: ActorRef, order: Order, await: Boolean): Rsp
 
   override def runScenario(scenario: String, orders: List[Order], repeat: Int, numberOfClients: Int, delayMs: Int) = {
     val totalNumberOfRequests = orders.size * repeat
@@ -59,15 +59,17 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
         var n = 0
         for (r ← 1 to repeat; o ← orders) {
           n += 1
+
           val rsp =
-            if (n % sampling == 0) {
+            if (measureLatency(n)) {
               val t0 = System.nanoTime
-              val rsp = placeOrder(orderReceiver, o)
+              val rsp = placeOrder(orderReceiver, o, await = true)
               val duration = System.nanoTime - t0
               stat.addValue(duration)
               rsp
             } else {
-              placeOrder(orderReceiver, o)
+              val await = measureLatency(n + 1) || (r == repeat)
+              placeOrder(orderReceiver, o, await)
             }
           if (!rsp.status) {
             app.eventHandler.error(this, "Invalid rsp")
@@ -76,6 +78,8 @@ abstract class AkkaPerformanceTest(val app: AkkaApplication) extends BenchmarkSc
         }
         latch.countDown()
     }
+
+    def measureLatency(n: Int) = (n % sampling == 0)
   }
 
 }

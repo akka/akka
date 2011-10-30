@@ -21,9 +21,6 @@ trait PerformanceTest extends JUnitSuite {
 
   def app: AkkaApplication
 
-  //    jvm parameters
-  //    -server -Xms512m -Xmx1024m -XX:+UseConcMarkSweepGC
-
   var isWarm = false
 
   def isBenchmark() = System.getProperty("benchmark") == "true"
@@ -51,7 +48,7 @@ trait PerformanceTest extends JUnitSuite {
   }
 
   def sampling = {
-    System.getProperty("benchmark.sampling", "100").toInt
+    System.getProperty("benchmark.sampling", "200").toInt
   }
 
   var stat: DescriptiveStatistics = _
@@ -66,7 +63,7 @@ trait PerformanceTest extends JUnitSuite {
 
   def createTradingSystem(): TS
 
-  def placeOrder(orderReceiver: TS#OR, order: Order): Rsp
+  def placeOrder(orderReceiver: TS#OR, order: Order, await: Boolean): Rsp
 
   def runScenario(scenario: String, orders: List[Order], repeat: Int, numberOfClients: Int, delayMs: Int)
 
@@ -94,8 +91,8 @@ trait PerformanceTest extends JUnitSuite {
     val loopCount = if (isWarm) 1 else 10 * warmupRepeatFactor
 
     for (i ← 1 to loopCount) {
-      placeOrder(orderReceiver, bid)
-      placeOrder(orderReceiver, ask)
+      placeOrder(orderReceiver, bid, true)
+      placeOrder(orderReceiver, ask, true)
     }
     isWarm = true
   }
