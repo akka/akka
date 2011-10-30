@@ -1017,7 +1017,7 @@ Any message sent to a Producer actor (or UntypedProducerActor) will be sent to
 the associated Camel endpoint, in the above example to
 ``http://localhost:8080/news``. Response messages (if supported by the
 configured endpoint) will, by default, be returned to the original sender. The
-following example uses the ``!!`` operator (Scala) to send a message to a
+following example uses the ``?`` operator (Scala) to send a message to a
 Producer actor and waits for a response. In Java, the sendRequestReply method is
 used.
 
@@ -1029,7 +1029,7 @@ used.
    import akka.actor.ActorRef
 
    val producer = actorOf[Producer1]
-   val response = producer !! "akka rocks"
+   val response = (producer ? "akka rocks").get
    val body = response.bodyAs[String]
 
 **Java**
@@ -1283,14 +1283,14 @@ Matching responses
 ^^^^^^^^^^^^^^^^^^
 
 The following code snippet shows how to best match responses when sending
-messages with the !! operator (Scala) or with the sendRequestReply method
+messages with the ``?`` operator (Scala) or with the ``ask`` method
 (Java).
 
 **Scala**
 
 .. code-block:: scala
 
-   val response = producer !! message
+   val response = (producer ? message).get
 
    response match {
      case Some(Message(body, headers)) => ...

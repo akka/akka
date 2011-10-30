@@ -62,7 +62,7 @@ The following JUnit snippet first creates an actor using the default constructor
       ActorRef ref = Actors.actorOf(SerializationTestActor.class);
       assertNotNull(ref);
       try {
-          Object result = ref.sendRequestReply("Hello");
+          Object result = ref.ask("Hello").get();
           assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
           fail("actor should not time out");
@@ -74,7 +74,7 @@ The following JUnit snippet first creates an actor using the default constructor
       assertNotNull(r);
 
       try {
-          Object result = r.sendRequestReply("Hello");
+          Object result = r.ask("Hello").get();
           assertEquals("got it!", result);
       } catch (ActorTimeoutException ex) {
           fail("actor should not time out");
@@ -151,10 +151,10 @@ Step 3: Serialize and de-serialize
       ActorRef ref = Actors.actorOf(MyUntypedActor.class);
       assertNotNull(ref);
       try {
-          Object result = ref.sendRequestReply("hello");
+          Object result = ref.ask("hello").get();
           assertEquals("world 1", result);
-          result = ref.sendRequestReply("hello");
-  	assertEquals("world 2", result);
+          result = ref.ask("hello").get();
+        	assertEquals("world 2", result);
       } catch (ActorTimeoutException ex) {
           fail("actor should not time out");
       }
@@ -164,9 +164,9 @@ Step 3: Serialize and de-serialize
       ActorRef r = fromBinaryJ(bytes, f);
       assertNotNull(r);
       try {
-          Object result = r.sendRequestReply("hello");
+          Object result = r.ask("hello").get();
           assertEquals("world 3", result);
-          result = r.sendRequestReply("hello");
+          result = r.ask("hello").get();
           assertEquals("world 4", result);
       } catch (ActorTimeoutException ex) {
           fail("actor should not time out");

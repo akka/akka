@@ -353,7 +353,7 @@ Client side usage
   import static akka.actor.Actors.*;
   ActorRef actor = remote().actorFor("hello-service", "localhost", 2552);
 
-  Object result = actor.sendRequestReply("Hello");
+  Object result = actor.ask("Hello").get();
 
 There are many variations on the 'remote()#actorFor' method. Here are some of them:
 
