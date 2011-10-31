@@ -821,13 +821,14 @@ class FutureSpec extends JUnitSuite {
     val simple = Future(()) map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
     assert(simple.await.isCompleted)
 
-    val latch = new StandardLatch
+    val l1, l2 = new StandardLatch
     val complex = Future(()) map { _ ⇒
+      Future.blocking()
       val nested = Future(())
-      nested.await
-      nested foreach (_ ⇒ latch.open)
-      Future.redispatchTasks
-      latch.await
+      nested foreach (_ ⇒ l1.open)
+      l1.await // make sure nested is completed
+      nested foreach (_ ⇒ l2.open)
+      l2.await
     }
     assert(complex.await.isCompleted)
   }
