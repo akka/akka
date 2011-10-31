@@ -33,17 +33,20 @@ class Report(
     sb.append(resultTable)
     sb.append("\n</pre>\n")
 
-    sb.append(img(percentilesAndMeanChart(current)))
     sb.append(img(latencyAndThroughputChart(current)))
 
     compareWithHistoricalTpsChart(statistics).foreach(url ⇒ sb.append(img(url)))
 
-    for (stats ← statistics) {
-      compareWithHistoricalPercentiliesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
-    }
+    if (current.max > 0L) {
+      sb.append(img(percentilesAndMeanChart(current)))
 
-    for (stats ← statistics) {
-      comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+      for (stats ← statistics) {
+        compareWithHistoricalPercentiliesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+      }
+
+      for (stats ← statistics) {
+        comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+      }
     }
 
     sb.append("<hr/>\n")

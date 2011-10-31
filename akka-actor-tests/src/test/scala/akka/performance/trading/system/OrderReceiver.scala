@@ -1,4 +1,4 @@
-package akka.performance.trading.common
+package akka.performance.trading.system
 
 import akka.performance.trading.domain._
 import akka.actor._
@@ -28,20 +28,20 @@ class AkkaOrderReceiver extends Actor with OrderReceiver {
   type ME = ActorRef
 
   def receive = {
+    case order: Order ⇒ placeOrder(order)
     case routing @ MatchingEngineRouting(mapping) ⇒
       refreshMatchingEnginePartitions(routing.asInstanceOf[MatchingEngineRouting[ActorRef]])
-    case order: Order ⇒ placeOrder(order)
-    case unknown      ⇒ app.eventHandler.warning(this, "Received unknown message: " + unknown)
+    case unknown ⇒ app.eventHandler.warning(this, "Received unknown message: " + unknown)
   }
 
   def placeOrder(order: Order) = {
     val matchingEngine = matchingEngineForOrderbook.get(order.orderbookSymbol)
     matchingEngine match {
       case Some(m) ⇒
-        m.forward(order)
+        m forward order
       case None ⇒
         app.eventHandler.warning(this, "Unknown orderbook: " + order.orderbookSymbol)
-        sender ! new Rsp(false)
+        sender ! Rsp(order, false)
     }
   }
 }
