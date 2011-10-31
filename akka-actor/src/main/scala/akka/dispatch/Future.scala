@@ -825,7 +825,7 @@ trait Promise[T] extends Future[T] {
 
 //Companion object to FState, just to provide a cheap, immutable default entry
 private[dispatch] object DefaultPromise {
-  def EmptyPending[T](): FState[T] = EmptyPending.asInstanceOf[FState[T]]
+  def EmptyPending[T](): FState[T] = emptyPendingValue.asInstanceOf[FState[T]]
 
   /**
    * Represents the internal state of the DefaultCompletableFuture
@@ -844,7 +844,7 @@ private[dispatch] object DefaultPromise {
   case object Expired extends FState[Nothing] {
     def value: Option[Either[Throwable, Nothing]] = None
   }
-  val EmptyPending = Pending[Nothing](Nil)
+  private val emptyPendingValue = Pending[Nothing](Nil)
 }
 
 /**

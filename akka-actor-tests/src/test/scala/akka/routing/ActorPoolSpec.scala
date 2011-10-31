@@ -332,7 +332,7 @@ class ActorPoolSpec extends AkkaSpec {
     "support typed actors" in {
       import RoutingSpec._
 
-      def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5
         def pressureThreshold = 1
@@ -341,15 +341,16 @@ class ActorPoolSpec extends AkkaSpec {
         def rampupRate = 0.1
         def backoffRate = 0.50
         def backoffThreshold = 0.50
-        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](p))
+        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
         def receive = _route
+      }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
+
+      val results = for (i ← 1 to 20) yield (i, pool.sq(i, 100))
+
+      for ((i, r) ← results) {
+        val value = r.get
+        value must equal(i * i)
       }
-
-      val pool = app.createProxy[Foo](createPool, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
-
-      val results = for (i ← 1 to 50) yield (i, pool.sq(i, 100))
-
-      for ((i, r) ← results) r.get must equal(i * i)
     }
 
     "provide default supervision of pooled actors" in {

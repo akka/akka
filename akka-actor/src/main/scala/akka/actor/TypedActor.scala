@@ -317,7 +317,7 @@ class TypedActor(val app: AkkaApplication) {
       case Props.`defaultTimeout` ⇒ app.AkkaConfig.ActorTimeout
       case x                      ⇒ x
     }
-    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar)(timeout)).asInstanceOf[T]
+    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar, timeout)).asInstanceOf[T]
     proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
     val ref = supervisor.actorOf(props, address)
     actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
@@ -327,11 +327,6 @@ class TypedActor(val app: AkkaApplication) {
   private[akka] def extractInterfaces(clazz: Class[_]): Array[Class[_]] = if (clazz.isInterface) Array[Class[_]](clazz) else clazz.getInterfaces
 
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
-
-    // FIXME TypedActor register/unregister on postStop/preStart
-    // override def preStart = app.registry.registerTypedActor(self, proxyVar.get) //Make sure actor registry knows about this actor
-    // override def postStop = app.registry.unregisterTypedActor(self, proxyVar.get)
-
     val me = createInstance
     def receive = {
       case m: MethodCall ⇒
@@ -345,7 +340,7 @@ class TypedActor(val app: AkkaApplication) {
               if (m.returnsFuture_?) {
                 m(me).asInstanceOf[Future[Any]] onComplete {
                   _.value.get match {
-                    case Left(f)  ⇒ s ! akka.actor.Status.Failure(f)
+                    case Left(f)  ⇒ s ! Status.Failure(f)
                     case Right(r) ⇒ s ! r
                   }
                 }
@@ -353,10 +348,9 @@ class TypedActor(val app: AkkaApplication) {
                 s ! m(me)
               }
             } catch {
-              case e: Exception ⇒ s ! akka.actor.Status.Failure(e)
+              case e: Exception ⇒ s ! Status.Failure(e)
             }
           }
-
         } finally {
           TypedActor.selfReference set null
           TypedActor.appReference set null
@@ -364,7 +358,7 @@ class TypedActor(val app: AkkaApplication) {
     }
   }
 
-  private[akka] class TypedActorInvocationHandler(actorVar: AtomVar[ActorRef])(implicit timeout: Timeout) extends InvocationHandler {
+  private[akka] class TypedActorInvocationHandler(actorVar: AtomVar[ActorRef], timeout: Timeout) extends InvocationHandler {
     def actor = actorVar.get
 
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
@@ -377,14 +371,12 @@ class TypedActor(val app: AkkaApplication) {
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor.?(m, timeout)
-            try { f.await } catch { case _: FutureTimeoutException ⇒ }
-            f.value match {
+            (try { f.await.value } catch { case _: FutureTimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒
-            (actor.?(m, timeout)).get.asInstanceOf[AnyRef]
+          case m ⇒ (actor.?(m, timeout)).get.asInstanceOf[AnyRef]
         }
     }
   }
