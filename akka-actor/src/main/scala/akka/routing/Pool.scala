@@ -95,6 +95,10 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
 
   val defaultProps: Props = Props.default.withDispatcher(this.context.dispatcher)
 
+  override def preStart() {
+    resizeIfAppropriate()
+  }
+
   override def postStop() {
     _delegates foreach evict
     _delegates = Vector.empty
@@ -112,7 +116,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       select(_delegates) foreach { _ forward msg }
   }
 
-  private def resizeIfAppropriate() {
+  protected def resizeIfAppropriate() {
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
