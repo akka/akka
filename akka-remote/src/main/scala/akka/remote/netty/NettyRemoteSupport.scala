@@ -43,8 +43,6 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, Lengt
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
 import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
-import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
-
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 
@@ -54,6 +52,7 @@ import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent._
 import akka.AkkaException
 import java.util.Queue
+import org.jboss.netty.util.{HashedWheelTimer, TimerTask, Timeout}
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause){
   def this(message: String) = this(message, null)
@@ -76,7 +75,23 @@ object RemoteEncoder {
 trait NettyRemoteClientModule extends RemoteClientModule {
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val remoteActors = new Index[Address, Uuid]
+  protected[akka] val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
+  private val timer = new HashedWheelTimer()
   private val lock = new ReadWriteGuard
+
+  def isRunning: Boolean
+
+  timer.newTimeout(new TimerTask() {
+    def run(timeout: Timeout) = {
+      if (isRunning) {
+        val i = futures.entrySet.iterator
+        while (i.hasNext) {
+          val e = i.next
+          if (e.getValue.isExpired) futures.remove(e.getKey)
+        }
+      }
+    }
+  }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
 
   protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T =
     TypedActor.createProxyForRemoteActorRef(intfClass, RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, AkkaActorType.TypedActor))
@@ -149,6 +164,8 @@ trait NettyRemoteClientModule extends RemoteClientModule {
    */
   def shutdownClientModule() {
     shutdownRemoteClients()
+    futures.clear()
+    timer.stop()
     //TODO: Should we empty our remoteActors too?
     //remoteActors.clear
   }
@@ -189,7 +206,7 @@ abstract class RemoteClient private[akka] (
     case i          ⇒ new LinkedBlockingQueue[RemoteMessageProtocol](i)
   }
 
-  protected val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
+
   protected val supervisors = new ConcurrentHashMap[Uuid, ActorRef]
 
   private[remote] val runSwitch = new Switch()
@@ -295,7 +312,7 @@ abstract class RemoteClient private[akka] (
           case None         ⇒ new DefaultCompletableFuture[T](request.getActorInfo.getTimeout)
         }
         val futureUuid = uuidFrom(request.getUuid.getHigh, request.getUuid.getLow)
-        futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
+        module.futures.put(futureUuid, futureResult) // Add future prematurely, remove it if write fails
 
         if (itIsOkToTryToWriteMessage) { //Only attempt write if message wasn't appended to pending
           def handleRequestReplyError(future: ChannelFuture) = {
@@ -304,7 +321,7 @@ abstract class RemoteClient private[akka] (
               if (!resendMessageQueue.offer(request)) // Add the request to the tx log after a failing send
                 throw new RemoteClientMessageBufferException("Buffer limit [" + resendMessagesOnFailureCapacity + "] reached", future.getCause)
             } else {
-              val f = futures.remove(futureUuid) // Clean up future
+              val f = module.futures.remove(futureUuid) // Clean up future
               if (f ne null) f.completeWithException(future.getCause)
             }
           }
@@ -314,7 +331,7 @@ abstract class RemoteClient private[akka] (
             // try to send the original one
             future = currentChannel.write(RemoteEncoder.encode(request))
             future.awaitUninterruptibly()
-            if (future.isCancelled) futures.remove(futureUuid) // Clean up future
+            if (future.isCancelled) module.futures.remove(futureUuid) // Clean up future
             else if (!future.isSuccess) handleRequestReplyError(future)
           } catch {
             case e: Exception ⇒ handleRequestReplyError(future)
@@ -429,7 +446,7 @@ class ActiveRemoteClient private[akka] (
       timer = new HashedWheelTimer
 
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
-      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, futures, supervisors, bootstrap, remoteAddress, timer, this))
+      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
 
@@ -441,19 +458,6 @@ class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
         false
       } else {
-        //Add a task that does GCing of expired Futures
-        timer.newTimeout(new TimerTask() {
-          def run(timeout: Timeout) = {
-            if (isRunning) {
-              val i = futures.entrySet.iterator
-              while (i.hasNext) {
-                val e = i.next
-                if (e.getValue.isExpired)
-                  futures.remove(e.getKey)
-              }
-            }
-          }
-        }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
         notifyListeners(RemoteClientStarted(module, remoteAddress))
         true
       }
@@ -502,7 +506,6 @@ class ActiveRemoteClient private[akka] (
  */
 class ActiveRemoteClientPipelineFactory(
   name: String,
-  futures: ConcurrentMap[Uuid, CompletableFuture[_]],
   supervisors: ConcurrentMap[Uuid, ActorRef],
   bootstrap: ClientBootstrap,
   remoteAddress: InetSocketAddress,
@@ -516,7 +519,7 @@ class ActiveRemoteClientPipelineFactory(
     val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
     val protobufEnc = new ProtobufEncoder
 
-    val remoteClient = new ActiveRemoteClientHandler(name, futures, supervisors, bootstrap, remoteAddress, timer, client)
+    val remoteClient = new ActiveRemoteClientHandler(name, supervisors, bootstrap, remoteAddress, timer, client)
     val stages: List[ChannelHandler] = timeout :: lenDec :: protobufDec :: lenPrep :: protobufEnc :: remoteClient :: Nil
     new StaticChannelPipeline(stages: _*)
   }
@@ -528,7 +531,6 @@ class ActiveRemoteClientPipelineFactory(
 @ChannelHandler.Sharable
 class ActiveRemoteClientHandler(
   val name: String,
-  val futures: ConcurrentMap[Uuid, CompletableFuture[_]],
   val supervisors: ConcurrentMap[Uuid, ActorRef],
   val bootstrap: ClientBootstrap,
   val remoteAddress: InetSocketAddress,
@@ -547,7 +549,7 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
           val replyUuid = uuidFrom(reply.getActorInfo.getUuid.getHigh, reply.getActorInfo.getUuid.getLow)
-          futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]] match {
+          client.module.futures.remove(replyUuid).asInstanceOf[CompletableFuture[Any]] match {
             case null ⇒
               client.notifyListeners(RemoteClientError(new IllegalActorStateException("Future mapped to UUID " + replyUuid + " does not exist"), client.module, client.remoteAddress))
 
