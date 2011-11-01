@@ -30,6 +30,7 @@ trait ActorRefProvider {
   private[akka] def evict(address: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
+
   private[akka] def serialize(actor: ActorRef): AnyRef
 
   private[akka] def createDeathWatch(): DeathWatch
