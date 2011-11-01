@@ -2,32 +2,29 @@ package akka.actor.mailbox
 
 import akka.actor.{ Actor, LocalActorRef }
 import akka.cluster.zookeeper._
-
 import org.I0Itec.zkclient._
+import akka.dispatch.MessageDispatcher
+import akka.actor.ActorRef
 
-class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeeperDurableMailboxStorage) {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeeperDurableMailboxType) {
   val dataPath = "_akka_cluster/data"
   val logPath = "_akka_cluster/log"
 
   var zkServer: ZkServer = _
 
-  override def beforeAll() {
+  override def atStartup() {
     zkServer = AkkaZooKeeper.startLocalServer(dataPath, logPath)
-    super.beforeAll
+    super.atStartup()
   }
 
   override def afterEach() {
-    Actor.registry.local.actors foreach {
-      case l: LocalActorRef ⇒ l.mailbox match {
-        case zk: ZooKeeperBasedMailbox ⇒ zk.close()
-        case _                         ⇒
-      }
-    }
-    super.afterEach
+    // TOOD PN we should close the zkClient in the mailbox, would have been nice with a callback in the mailbox when it is closed
+    super.afterEach()
   }
 
-  override def afterAll() {
+  override def atTermination() {
     zkServer.shutdown
-    super.afterAll
+    super.atTermination()
   }
 }

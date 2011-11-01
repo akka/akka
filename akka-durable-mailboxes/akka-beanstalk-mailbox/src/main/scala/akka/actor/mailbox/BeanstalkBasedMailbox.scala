@@ -3,58 +3,59 @@
  */
 package akka.actor.mailbox
 
-import MailboxProtocol._
-
-import akka.actor.LocalActorRef
-import akka.dispatch._
-import akka.config.Config._
-import akka.util.Duration
-import akka.AkkaException
-import akka.event.EventHandler
-
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
+import akka.actor.LocalActorRef
+import akka.util.Duration
+import akka.AkkaException
+import akka.actor.ActorCell
+import akka.dispatch.Envelope
+import akka.event.Logging
+import akka.actor.ActorRef
 
 class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
+class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val hostname = config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
-  val port = config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
-  val reconnectWindow = Duration(config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), TIME_UNIT).toSeconds.toInt
-  val messageSubmitDelay = Duration(config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), TIME_UNIT).toSeconds.toInt
-  val messageSubmitTimeout = Duration(config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), TIME_UNIT).toSeconds.toInt
-  val messageTimeToLive = Duration(config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), TIME_UNIT).toSeconds.toInt
+  val hostname = app.config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
+  val port = app.config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
+  val defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
+  val reconnectWindow = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), defaultTimeUnit).toSeconds.toInt
+  val messageSubmitDelay = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), defaultTimeUnit).toSeconds.toInt
+  val messageSubmitTimeout = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt
+  val messageTimeToLive = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), defaultTimeUnit).toSeconds.toInt
+
+  val log = Logging(app, this)
 
   private val queue = new ThreadLocal[Client] { override def initialValue = connect(name) }
 
   // ===== For MessageQueue =====
 
-  def enqueue(durableMessage: MessageInvocation) = {
-    Some(queue.get.put(65536, messageSubmitDelay, messageTimeToLive, serialize(durableMessage)).toInt)
-    EventHandler.debug(this, "\nENQUEUING message in beanstalk-based mailbox [%s]".format(durableMessage))
+  def enqueue(receiver: ActorRef, envelope: Envelope) {
+    log.debug("ENQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
+    Some(queue.get.put(65536, messageSubmitDelay, messageTimeToLive, serialize(envelope)).toInt)
   }
 
-  def dequeue: MessageInvocation = try {
+  def dequeue(): Envelope = try {
     val job = queue.get.reserve(null)
-    if (job eq null) null: MessageInvocation
+    if (job eq null) null: Envelope
     else {
       val bytes = job.getData
       if (bytes ne null) {
         queue.get.delete(job.getJobId)
-        val messageInvocation = deserialize(bytes)
-        EventHandler.debug(this, "\nDEQUEUING message in beanstalk-based mailbox [%s]".format(messageInvocation))
-        messageInvocation
-      } else null: MessageInvocation
+        val envelope = deserialize(bytes)
+        log.debug("DEQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
+        envelope
+      } else null: Envelope
     }
   } catch {
     case e: Exception ⇒
-      EventHandler.error(e, this, "Beanstalk connection error")
+      log.error(e, "Beanstalk connection error, due to: " + e.getMessage)
       reconnect(name)
-      null: MessageInvocation
+      null: Envelope
   }
 
   /**
@@ -69,16 +70,18 @@ class BeanstalkBasedMailbox(val owner: LocalActorRef) extends DurableExecutableM
     }
   }
 
-  def size: Int = {
+  def numberOfMessages: Int = {
     val item = queue.get.reserve(0)
     if (item eq null) 0 else 1
   }
 
-  def isEmpty = size == 0
+  def hasMessages: Boolean = numberOfMessages > 0
 
   private def connect(name: String): Client = {
+    // TODO PN: Why volatile on local variable?
     @volatile
     var connected = false
+    // TODO PN: attempts is not used. Should we have maxAttempts check? Note that this is called from ThreadLocal.initialValue 
     var attempts = 0
     var client: Client = null
     while (!connected) {
@@ -90,7 +93,7 @@ class BeanstalkBasedMailbox(val owner: LocalActorRef) extends DurableExecutableM
         connected = true
       } catch {
         case e: Exception ⇒
-          EventHandler.error(e, this, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".format(reconnectWindow, e))
+          log.error(e, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".format(reconnectWindow, e))
           try {
             Thread.sleep(1000 * reconnectWindow)
           } catch {
@@ -98,10 +101,11 @@ class BeanstalkBasedMailbox(val owner: LocalActorRef) extends DurableExecutableM
           }
       }
     }
-    EventHandler.info(this, "Beanstalk-based mailbox connected to Beanstalkd server")
+    log.info("Beanstalk-based mailbox connected to Beanstalkd server")
     client
   }
 
+  // TODO PN What is the purpose of this?
   private def reconnect(name: String): ThreadLocal[Client] = {
     new ThreadLocal[Client] { override def initialValue: Client = connect(name) }
   }
