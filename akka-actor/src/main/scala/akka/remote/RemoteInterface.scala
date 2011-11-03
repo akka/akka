@@ -21,10 +21,6 @@ import java.lang.reflect.InvocationTargetException
 
 class RemoteException(message: String) extends AkkaException(message)
 
-trait RemoteService {
-  def server: RemoteSupport
-}
-
 trait RemoteModule {
   protected[akka] def notifyListeners(message: ⇒ Any): Unit
 }
@@ -174,9 +170,9 @@ trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
 
   /** Methods that needs to be implemented by a transport **/
 
-  protected[akka] def send[T](message: Any,
-                              senderOption: Option[ActorRef],
-                              remoteAddress: InetSocketAddress,
-                              recipient: ActorRef,
-                              loader: Option[ClassLoader]): Unit
+  protected[akka] def send(message: Any,
+                           senderOption: Option[ActorRef],
+                           remoteAddress: InetSocketAddress,
+                           recipient: ActorRef,
+                           loader: Option[ClassLoader]): Unit
 }

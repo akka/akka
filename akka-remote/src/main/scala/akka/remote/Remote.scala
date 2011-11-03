@@ -27,7 +27,7 @@ import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compressi
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Remote(val app: AkkaApplication) extends RemoteService {
+class Remote(val app: AkkaApplication) {
 
   import app._
   import app.config

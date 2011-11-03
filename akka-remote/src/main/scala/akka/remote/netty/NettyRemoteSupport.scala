@@ -40,12 +40,12 @@ trait NettyRemoteClientModule extends RemoteClientModule {
 
   def app: AkkaApplication
 
-  protected[akka] def send[T](message: Any,
-                              senderOption: Option[ActorRef],
-                              recipientAddress: InetSocketAddress,
-                              recipient: ActorRef,
-                              loader: Option[ClassLoader]): Unit =
-    withClientFor(recipientAddress, loader) { _.send[T](message, senderOption, recipient) }
+  protected[akka] def send(message: Any,
+                           senderOption: Option[ActorRef],
+                           recipientAddress: InetSocketAddress,
+                           recipient: ActorRef,
+                           loader: Option[ClassLoader]): Unit =
+    withClientFor(recipientAddress, loader) { _.send(message, senderOption, recipient) }
 
   private[akka] def withClientFor[T](
     address: InetSocketAddress, loader: Option[ClassLoader])(body: RemoteClient ⇒ T): T = {
@@ -140,14 +140,14 @@ abstract class RemoteClient private[akka] (
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
    */
-  def send[T](message: Any, senderOption: Option[ActorRef], recipient: ActorRef) {
+  def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef) {
     send(createRemoteMessageProtocolBuilder(Left(recipient), Right(message), senderOption).build)
   }
 
   /**
    * Sends the message across the wire
    */
-  def send[T](request: RemoteMessageProtocol) {
+  def send(request: RemoteMessageProtocol) {
     if (isRunning) { //TODO FIXME RACY
       app.eventHandler.debug(this, "Sending to connection [%s] message [%s]".format(remoteAddress, new RemoteMessage(request, remoteSupport)))
 
@@ -210,6 +210,7 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
+      handshake.setOrigin(RemoteProtocol.Endpoint.newBuilder().setHost(app.hostname).setPort(app.port).build)
       connection.getChannel.write(createControlEnvelope(handshake.build))
     }
 
@@ -353,9 +354,7 @@ class ActiveRemoteClientHandler(
         case arp: AkkaRemoteProtocol if arp.hasInstruction ⇒
           val rcp = arp.getInstruction
           rcp.getCommandType match {
-            case CommandType.SHUTDOWN ⇒ akka.dispatch.Future {
-              client.module.shutdownClientConnection(remoteAddress)
-            }
+            case CommandType.SHUTDOWN ⇒ akka.dispatch.Future { client.module.shutdownClientConnection(remoteAddress) }
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
@@ -570,7 +569,8 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
         case `authenticated` ⇒ ctx.sendUpstream(event)
         case null ⇒ event.getMessage match {
           case remoteProtocol: AkkaRemoteProtocol if remoteProtocol.hasInstruction ⇒
-            remoteProtocol.getInstruction.getCookie match {
+            val instruction = remoteProtocol.getInstruction
+            instruction.getCookie match {
               case `cookie` ⇒
                 ctx.setAttachment(authenticated)
                 ctx.sendUpstream(event)

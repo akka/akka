@@ -4,15 +4,11 @@
 
 package akka.util
 import akka.dispatch.Envelope
-import akka.config.ModuleNotAvailableException
 import akka.actor._
 import DeploymentConfig.ReplicationScheme
 import akka.config.ModuleNotAvailableException
-import akka.event.EventHandler
 import akka.cluster.ClusterNode
-import akka.remote.{ RemoteSupport, RemoteService }
 import akka.routing.{ RoutedProps, Router }
-import java.net.InetSocketAddress
 import akka.AkkaApplication
 
 object ReflectiveAccess {
