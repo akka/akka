@@ -39,6 +39,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
+    lazy val TypesafeRepo           = MavenRepository("Typesafe Repo", "http://repo.typesafe.com/typesafe/releases/")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -70,6 +71,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
+  lazy val zeromqModuleConfig      = ModuleConfiguration("org.zeromq", TypesafeRepo)
 
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
@@ -124,7 +126,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.4.1" % "compile" //New BSD
 
-    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.1-SNAPSHOT" // ApacheV2
+    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.2" // ApacheV2
 
     lazy val sjson      = "net.debasishg" % "sjson_2.9.0" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.9.0" % "0.11" % "test" //ApacheV2
@@ -161,7 +163,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),               akka_typed_actor)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),                 akka_actor)
-  //lazy val akka_zeromq      = project("akka-zeromq",      "akka-zeromq",      new AkkaZeroMQProject(_),               akka_actor, akka_testkit)
+  lazy val akka_zeromq      = project("akka-zeromq",      "akka-zeromq",      new AkkaZeroMQProject(_),               akka_actor, akka_testkit)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),                akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
