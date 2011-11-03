@@ -254,3 +254,53 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
 
   override def toString = "RemoteMessage: " + recipient + "(" + input.getRecipient.getAddress + ") from " + sender
 }
+
+trait RemoteMarshallingOps {
+
+  def app: AkkaApplication
+
+  def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
+    val arp = AkkaRemoteProtocol.newBuilder
+    arp.setMessage(rmp)
+    arp.build
+  }
+
+  def createControlEnvelope(rcp: RemoteControlProtocol): AkkaRemoteProtocol = {
+    val arp = AkkaRemoteProtocol.newBuilder
+    arp.setInstruction(rcp)
+    arp.build
+  }
+
+  /**
+   * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
+   */
+  def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
+    val rep = app.provider.serialize(actor)
+    ActorRefProtocol.newBuilder.setAddress(rep.address).setHost(rep.hostname).setPort(rep.port).build
+  }
+
+  def createRemoteMessageProtocolBuilder(
+    recipient: Either[ActorRef, ActorRefProtocol],
+    message: Either[Throwable, Any],
+    senderOption: Option[ActorRef]): RemoteMessageProtocol.Builder = {
+
+    val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(recipient.fold(toRemoteActorRefProtocol _, identity))
+
+    message match {
+      case Right(message) ⇒
+        messageBuilder.setMessage(MessageSerializer.serialize(app, message.asInstanceOf[AnyRef]))
+      case Left(exception) ⇒
+        messageBuilder.setException(ExceptionProtocol.newBuilder
+          .setClassname(exception.getClass.getName)
+          .setMessage(Option(exception.getMessage).getOrElse(""))
+          .build)
+    }
+
+    if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
+
+    messageBuilder
+  }
+
+  def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol =
+    createMessageSendEnvelope(createRemoteMessageProtocolBuilder(Right(request.getSender), Left(exception), None).build)
+}

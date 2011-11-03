@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.actor.{ ActorRef, Uuid, newUuid, uuidFrom, IllegalActorStateException, PoisonPill, AutoReceivedMessage, simpleName }
+import akka.actor.{ ActorRef, IllegalActorStateException, AutoReceivedMessage, simpleName }
 import akka.remote._
 import RemoteProtocol._
 import akka.util._
@@ -26,25 +26,10 @@ import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.AkkaApplication
-import akka.serialization.RemoteActorSerialization
-import akka.dispatch.{ Terminate, DefaultPromise, Promise }
+import akka.dispatch.{ Terminate }
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);
-}
-
-object RemoteEncoder {
-  def encode(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
-    val arp = AkkaRemoteProtocol.newBuilder
-    arp.setMessage(rmp)
-    arp.build
-  }
-
-  def encode(rcp: RemoteControlProtocol): AkkaRemoteProtocol = {
-    val arp = AkkaRemoteProtocol.newBuilder
-    arp.setInstruction(rcp)
-    arp.build
-  }
 }
 
 trait NettyRemoteClientModule extends RemoteClientModule {
@@ -134,13 +119,11 @@ abstract class RemoteClient private[akka] (
   val app: AkkaApplication,
   val remoteSupport: RemoteSupport,
   val module: NettyRemoteClientModule,
-  val remoteAddress: InetSocketAddress) {
+  val remoteAddress: InetSocketAddress) extends RemoteMarshallingOps {
 
   val name = simpleName(this) + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
-
-  val serialization = new RemoteActorSerialization(remoteSupport)
 
   private[remote] val runSwitch = new Switch()
 
@@ -158,7 +141,7 @@ abstract class RemoteClient private[akka] (
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send[T](message: Any, senderOption: Option[ActorRef], recipient: ActorRef) {
-    send(serialization.createRemoteMessageProtocolBuilder(Left(recipient), Right(message), senderOption).build)
+    send(createRemoteMessageProtocolBuilder(Left(recipient), Right(message), senderOption).build)
   }
 
   /**
@@ -170,7 +153,7 @@ abstract class RemoteClient private[akka] (
 
       // tell
       try {
-        val future = currentChannel.write(RemoteEncoder.encode(request))
+        val future = currentChannel.write(createMessageSendEnvelope(request))
         future.awaitUninterruptibly() //TODO FIXME SWITCH TO NONBLOCKING WRITE
         if (!future.isCancelled && !future.isSuccess) {
           notifyListeners(RemoteClientWriteFailed(request, future.getCause, module, remoteAddress))
@@ -227,7 +210,7 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      connection.getChannel.write(RemoteEncoder.encode(handshake.build))
+      connection.getChannel.write(createControlEnvelope(handshake.build))
     }
 
     def closeChannel(connection: ChannelFuture) = {
@@ -446,12 +429,10 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
   override def toString = name
 }
 
-class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) {
+class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) extends RemoteMarshallingOps {
 
   val settings = new RemoteServerSettings(app)
   import settings._
-
-  val serialization = new RemoteActorSerialization(serverModule.remoteSupport)
 
   val name = "NettyRemoteServer@" + host + ":" + port
   val address = new InetSocketAddress(host, port)
@@ -470,7 +451,7 @@ class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerMod
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
-  val pipelineFactory = new RemoteServerPipelineFactory(settings, serialization, name, openChannels, executor, loader, serverModule)
+  val pipelineFactory = new RemoteServerPipelineFactory(settings, name, openChannels, executor, loader, serverModule)
   bootstrap.setPipelineFactory(pipelineFactory)
   bootstrap.setOption("backlog", BACKLOG)
   bootstrap.setOption("child.tcpNoDelay", true)
@@ -490,7 +471,7 @@ class NettyRemoteServer(app: AkkaApplication, serverModule: NettyRemoteServerMod
           b.setCookie(SECURE_COOKIE.get)
         b.build
       }
-      openChannels.write(RemoteEncoder.encode(shutdownSignal)).awaitUninterruptibly
+      openChannels.write(createControlEnvelope(shutdownSignal)).awaitUninterruptibly
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()
@@ -557,7 +538,6 @@ trait NettyRemoteServerModule extends RemoteServerModule {
  */
 class RemoteServerPipelineFactory(
   val settings: RemoteServerSettings,
-  val serialization: RemoteActorSerialization,
   val name: String,
   val openChannels: ChannelGroup,
   val executor: ExecutionHandler,
@@ -573,7 +553,7 @@ class RemoteServerPipelineFactory(
     val protobufEnc = new ProtobufEncoder
 
     val authenticator = if (REQUIRE_COOKIE) new RemoteServerAuthenticationHandler(SECURE_COOKIE) :: Nil else Nil
-    val remoteServer = new RemoteServerHandler(settings, serialization, name, openChannels, loader, server)
+    val remoteServer = new RemoteServerHandler(settings, name, openChannels, loader, server)
     val stages: List[ChannelHandler] = lenDec :: protobufDec :: lenPrep :: protobufEnc :: executor :: authenticator ::: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
@@ -611,11 +591,10 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
 @ChannelHandler.Sharable
 class RemoteServerHandler(
   val settings: RemoteServerSettings,
-  val serialization: RemoteActorSerialization,
   val name: String,
   val openChannels: ChannelGroup,
   val applicationLoader: Option[ClassLoader],
-  val server: NettyRemoteServerModule) extends SimpleChannelUpstreamHandler {
+  val server: NettyRemoteServerModule) extends SimpleChannelUpstreamHandler with RemoteMarshallingOps {
 
   import settings._
 
@@ -709,9 +688,6 @@ class RemoteServerHandler(
       server.notifyListeners(RemoteServerError(e, server))
       app.eventHandler.error(e, this, e.getMessage)
   }
-
-  private def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol =
-    RemoteEncoder.encode(serialization.createRemoteMessageProtocolBuilder(Right(request.getSender), Left(exception), None).build)
 }
 
 class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
