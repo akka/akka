@@ -39,7 +39,7 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
 
 object AkkaException {
   val hostname = try {
-    InetAddress.getLocalHost.getHostName
+    InetAddress.getLocalHost.getHostAddress
   } catch {
     case e: UnknownHostException ⇒ "unknown"
   }

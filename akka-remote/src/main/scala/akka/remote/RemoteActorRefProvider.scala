@@ -22,6 +22,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -65,14 +66,13 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
                 //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
                 // }
 
-                val thisHostname = remote.address.getHostName
-                val thisPort = remote.address.getPort
+                def isReplicaNode: Boolean = remoteAddresses exists { some ⇒ some.port == app.port && some.hostname == app.hostname }
 
-                def isReplicaNode: Boolean = remoteAddresses exists { some ⇒ some.hostname == thisHostname && some.port == thisPort }
+                //app.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(app.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
 
                 if (isReplicaNode) {
                   // we are on one of the replica node for this remote actor
-                  new LocalActorRef(app, props, supervisor, address, false)
+                  local.actorOf(props, supervisor, address, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create
                 } else {
 
                   // we are on the single "reference" node uses the remote actors on the replica nodes
@@ -147,28 +147,38 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   }
 
   def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
-    case null              ⇒ None
+    case null              ⇒ local.actorFor(address)
     case actor: ActorRef   ⇒ Some(actor)
     case future: Future[_] ⇒ Some(future.get.asInstanceOf[ActorRef])
   }
+
+  val optimizeLocal = new AtomicBoolean(true)
+  def optimizeLocalScoped_?() = optimizeLocal.get
 
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
    */
   private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
-  private[akka] def serialize(actor: ActorRef): AnyRef = actor match {
-    case r: RemoteActorRef ⇒ SerializedActorRef(actor.uuid, actor.address, r.remoteAddress.getAddress.getHostAddress, r.remoteAddress.getPort)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = actor match {
+    case r: RemoteActorRef ⇒ new SerializedActorRef(actor.address, r.remoteAddress)
     case other             ⇒ local.serialize(actor)
   }
 
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] =
-    local.actorFor(actor.address) orElse Some(RemoteActorRef(remote.server, new InetSocketAddress(actor.hostname, actor.port), actor.address, None))
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
+    if (optimizeLocalScoped_? && (actor.hostname == app.hostname || actor.hostname == app.defaultAddress.getHostName) && actor.port == app.port) {
+      local.actorFor(actor.address)
+    } else {
+      val remoteInetSocketAddress = new InetSocketAddress(actor.hostname, actor.port) //FIXME Drop the InetSocketAddresses and use RemoteAddress
+      app.eventHandler.debug(this, "%s: Creating RemoteActorRef with address [%s] connected to [%s]".format(app.defaultAddress, actor.address, remoteInetSocketAddress))
+      Some(RemoteActorRef(remote.server, remoteInetSocketAddress, actor.address, None)) //Should it be None here
+    }
+  }
 
   /**
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
-    app.eventHandler.debug(this, "Instantiating Actor [%s] on node [%s]".format(actorAddress, remoteAddress))
+    app.eventHandler.debug(this, "[%s] Instantiating Actor [%s] on node [%s]".format(app.defaultAddress, actorAddress, remoteAddress))
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {
@@ -182,7 +192,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 
-    val connectionFactory = () ⇒ remote.server.actorFor(remote.remoteDaemonServiceName, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort)
+    val connectionFactory = () ⇒ deserialize(new SerializedActorRef(remote.remoteDaemonServiceName, remoteAddress)).get
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
@@ -234,9 +244,6 @@ private[akka] case class RemoteActorRef private[akka] (
   address: String,
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {
-
-  private[akka] val uuid: Uuid = newUuid
-
   @volatile
   private var running: Boolean = true
 
@@ -244,21 +251,19 @@ private[akka] case class RemoteActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
-  def postMessageToMailbox(message: Any, sender: ActorRef) {
-    remote.send[Any](message, Option(sender), remoteAddress, this, loader)
-  }
+  def postMessageToMailbox(message: Any, sender: ActorRef): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
 
-  def suspend(): Unit = unsupported
+  def suspend(): Unit = ()
 
-  def resume(): Unit = unsupported
+  def resume(): Unit = ()
 
   def stop() { //FIXME send the cause as well!
     synchronized {
       if (running) {
         running = false
-        remote.send[Any](new Terminate(), None, remoteAddress, this, loader)
+        remote.send(new Terminate(), None, remoteAddress, this, loader)
       }
     }
   }
@@ -266,11 +271,11 @@ private[akka] case class RemoteActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = remote.app.provider.serialize(this)
 
-  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
+  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
 
-  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
+  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
 
-  protected[akka] def restart(cause: Throwable): Unit = unsupported
+  protected[akka] def restart(cause: Throwable): Unit = ()
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }

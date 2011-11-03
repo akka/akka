@@ -14,12 +14,12 @@ object MessageSerializer {
   def deserialize(app: AkkaApplication, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
     val clazz = loadManifest(classLoader, messageProtocol)
     app.serialization.deserialize(messageProtocol.getMessage.toByteArray,
-      clazz, classLoader).fold(x ⇒ throw x, o ⇒ o)
+      clazz, classLoader).fold(x ⇒ throw x, identity)
   }
 
   def serialize(app: AkkaApplication, message: AnyRef): MessageProtocol = {
     val builder = MessageProtocol.newBuilder
-    val bytes = app.serialization.serialize(message).fold(x ⇒ throw x, b ⇒ b)
+    val bytes = app.serialization.serialize(message).fold(x ⇒ throw x, identity)
     builder.setMessage(ByteString.copyFrom(bytes))
     builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
     builder.build

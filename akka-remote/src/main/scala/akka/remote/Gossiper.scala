@@ -109,7 +109,7 @@ class Gossiper(remote: Remote) {
   private val seeds = Set(address) // FIXME read in list of seeds from config
   private val scheduler = new DefaultScheduler
 
-  private val address = new InetSocketAddress(app.hostname, app.port)
+  private val address = app.defaultAddress
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")

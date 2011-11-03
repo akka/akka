@@ -10,7 +10,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
 import scala.collection.JavaConverters
 import java.util.concurrent.{ ScheduledFuture, TimeUnit }
-import java.util.{ Collection ⇒ JCollection, Collections ⇒ JCollections }
 import akka.AkkaApplication
 
 /**
@@ -81,8 +80,6 @@ private[akka] class ActorCell(
   var currentMessage: Envelope = null
 
   var actor: Actor = _
-
-  def uuid: Uuid = self.uuid
 
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
@@ -363,12 +360,4 @@ private[akka] class ActorCell(
     if (a ne null)
       lookupAndSetSelfFields(a.getClass, a, newContext)
   }
-
-  override final def hashCode: Int = HashCode.hash(HashCode.SEED, uuid)
-
-  override final def equals(that: Any): Boolean = {
-    that.isInstanceOf[ActorCell] && that.asInstanceOf[ActorCell].uuid == uuid
-  }
-
-  override final def toString = "ActorCell[%s]".format(uuid)
 }
