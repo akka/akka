@@ -477,7 +477,7 @@ class TestKit(_app: AkkaApplication) {
    * </pre>
    */
   def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
-    val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
+    val stop = now + (if (max eq Duration.MinusInf) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
