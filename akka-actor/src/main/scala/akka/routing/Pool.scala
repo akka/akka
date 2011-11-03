@@ -53,6 +53,10 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
   private var _lastCapacityChange = 0
   private var _lastSelectorCount = 0
 
+  override def preStart() {
+    resizeIfAppropriate()
+  }
+
   override def postStop() = _delegates foreach { delegate ⇒
     try {
       delegate ! PoisonPill
@@ -75,7 +79,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       }
   }
 
-  private def resizeIfAppropriate() {
+  protected def resizeIfAppropriate() {
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
