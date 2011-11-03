@@ -39,7 +39,7 @@ class MainBus(debug: Boolean = false) extends LoggingBus with LookupClassificati
 
   def start(app: AkkaApplication) {
     reaper = app.systemActorOf(Props(new Actor {
-      def receive = loggable(context.self) {
+      def receive = {
         case ref: ActorRef   ⇒ watch(ref)
         case Terminated(ref) ⇒ unsubscribe(ref)
       }

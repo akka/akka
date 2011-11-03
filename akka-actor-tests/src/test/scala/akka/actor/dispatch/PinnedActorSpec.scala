@@ -43,13 +43,9 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
     "support ask/exception" in {
       val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       filterException[RuntimeException] {
-        try {
+        intercept[RuntimeException] {
           (actor ? "Failure").get
-          fail("Should have thrown an exception")
-        } catch {
-          case e ⇒
-            assert("Expected exception; to test fault-tolerance" === e.getMessage())
-        }
+        }.getMessage must be("Expected exception; to test fault-tolerance")
       }
       actor.stop()
     }

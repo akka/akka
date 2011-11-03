@@ -100,9 +100,9 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   }
 
   /**
-   * Returns the value set.
+   * Returns the union of all value sets.
    */
-  def values = {
+  def values: Set[V] = {
     import scala.collection.JavaConversions._
     val builder = mutable.Set.empty[V]
     for {

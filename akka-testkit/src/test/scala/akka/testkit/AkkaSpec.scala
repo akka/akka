@@ -9,14 +9,14 @@ import org.scalatest.matchers.MustMatchers
 import akka.AkkaApplication
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
 
 abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  val log: Logging = Logging(app.mainbus, this)
+  val log: LoggingAdapter = Logging(app.mainbus, this)
 
   final override def beforeAll {
     atStartup()
@@ -49,6 +49,7 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {

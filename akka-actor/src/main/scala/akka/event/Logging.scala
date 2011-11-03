@@ -8,6 +8,7 @@ import akka.{ AkkaException, AkkaApplication }
 import akka.AkkaApplication.AkkaConfig
 import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
+import akka.util.ReentrantGuard
 
 /**
  * This trait brings log level handling to the MainBus: it reads the log
@@ -24,24 +25,38 @@ trait LoggingBus extends ActorEventBus {
 
   import Logging._
 
+  private val guard = new ReentrantGuard
   private var loggers = Seq.empty[ActorRef]
-  @volatile
   private var _logLevel: LogLevel = _
 
   /**
    * Query currently set log level. See object Logging for more information.
    */
-  def logLevel = _logLevel
+  def logLevel = guard.withGuard { _logLevel }
 
   /**
-   * Change log level: default loggers (i.e. from configuration file) are 
-   * subscribed/unsubscribed as necessary so that they listen to all levels 
-   * which are at least as severe as the given one. See object Logging for 
+   * Change log level: default loggers (i.e. from configuration file) are
+   * subscribed/unsubscribed as necessary so that they listen to all levels
+   * which are at least as severe as the given one. See object Logging for
    * more information.
+   *
+   * NOTE: if the StandardOutLogger is configured also as normal logger, it
+   * will not participate in the automatic management of log level
+   * subscriptions!
    */
-  def logLevel_=(level: LogLevel) {
-    for { l ← AllLogLevels if l > _logLevel && l <= level; log ← loggers } subscribe(log, classFor(l))
-    for { l ← AllLogLevels if l <= _logLevel && l > level; log ← loggers } unsubscribe(log, classFor(l))
+  def logLevel_=(level: LogLevel): Unit = guard.withGuard {
+    for {
+      l ← AllLogLevels
+      // subscribe if previously ignored and now requested
+      if l > _logLevel && l <= level
+      log ← loggers
+    } subscribe(log, classFor(l))
+    for {
+      l ← AllLogLevels
+      // unsubscribe if previously registered and now ignored
+      if l <= _logLevel && l > level
+      log ← loggers
+    } unsubscribe(log, classFor(l))
     _logLevel = level
   }
 
@@ -51,8 +66,10 @@ trait LoggingBus extends ActorEventBus {
       ErrorLevel
     }
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
-    loggers = Seq(StandardOutLogger)
-    _logLevel = level
+    guard.withGuard {
+      loggers = Seq(StandardOutLogger)
+      _logLevel = level
+    }
     publish(Info(this, "StandardOutLogger started"))
   }
 
@@ -66,7 +83,7 @@ trait LoggingBus extends ActorEventBus {
         case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
         case loggers ⇒ loggers
       }
-      loggers = for {
+      val myloggers = for {
         loggerName ← defaultLoggers
         if loggerName != StandardOutLoggerName
       } yield {
@@ -82,13 +99,14 @@ trait LoggingBus extends ActorEventBus {
                 "] due to [" + e.toString + "]", e)
         }
       }
+      guard.withGuard {
+        loggers = myloggers
+        _logLevel = level
+      }
       publish(Info(this, "Default Loggers started"))
-      if (defaultLoggers contains StandardOutLoggerName) {
-        loggers :+= StandardOutLogger
-      } else {
+      if (!(defaultLoggers contains StandardOutLoggerName)) {
         unsubscribe(StandardOutLogger)
       }
-      _logLevel = level
     } catch {
       case e: Exception ⇒
         System.err.println("error while starting up EventHandler")
@@ -121,26 +139,45 @@ trait LoggingBus extends ActorEventBus {
 }
 
 /**
- * Main entry point for Akka logging: log levels and message types (aka 
- * channels) defined for the main transport medium, the main event bus. The 
- * recommended use is to obtain an implementation of the Logging trait with 
+ * Main entry point for Akka logging: log levels and message types (aka
+ * channels) defined for the main transport medium, the main event bus. The
+ * recommended use is to obtain an implementation of the Logging trait with
  * suitable and efficient methods for generating log events:
- * 
+ *
  * <pre><code>
  * val log = Logging(&lt;bus&gt;, &lt;source object&gt;)
  * ...
  * log.info("hello world!")
  * </code></pre>
- * 
- * Loggers are attached to the level-specific channels <code>Error</code>, 
- * <code>Warning</code>, <code>Info</code> and <code>Debug</code> as 
+ *
+ * Loggers are attached to the level-specific channels <code>Error</code>,
+ * <code>Warning</code>, <code>Info</code> and <code>Debug</code> as
  * appropriate for the configured (or set) log level. If you want to implement
  * your own, make sure to handle these four event types plus the <code>InitializeLogger</code>
  * message which is sent before actually attaching it to the logging bus.
+ *
+ * Logging is configured in <code>akka.conf</code> by setting (some of) the following:
+ *
+ * <pre><code>
+ * akka {
+ *   event-handlers = ["akka.slf4j.Slf4jEventHandler"] # for example
+ *   loglevel = "INFO"        # used when normal logging ("event-handlers") has been started
+ *   stdout-loglevel = "WARN" # used during application start-up until normal logging is available
+ * }
+ * </code></pre>
  */
 object Logging {
 
+  /**
+   * Marker trait for annotating LogLevel, which must be Int after erasure.
+   */
   trait LogLevelType
+  /**
+   * Log level in numeric form, used when deciding whether a certain log
+   * statement should generate a log event. Predefined levels are ErrorLevel (1)
+   * to DebugLevel (4). In case you want to add more levels, loggers need to
+   * be subscribed to their event bus channels manually.
+   */
   type LogLevel = Int with LogLevelType
   final val ErrorLevel = 1.asInstanceOf[Int with LogLevelType]
   final val WarningLevel = 2.asInstanceOf[Int with LogLevelType]
@@ -179,9 +216,31 @@ object Logging {
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
   val genericFormat = "[GENERIC] [%s] [%s]".intern
 
-  def apply(app: AkkaApplication, instance: AnyRef): Logging = new BusLogging(app.mainbus, instance)
-  def apply(bus: LoggingBus, instance: AnyRef): Logging = new BusLogging(bus, instance)
+  /**
+   * Obtain LoggingAdapter for the given application and source object. The
+   * source object is used to identify the source of this logging channel.
+   */
+  def apply(app: AkkaApplication, source: AnyRef): LoggingAdapter = new BusLogging(app.mainbus, source)
+  /**
+   * Java API: Obtain LoggingAdapter for the given application and source object. The
+   * source object is used to identify the source of this logging channel.
+   */
+  def getLogger(app: AkkaApplication, source: AnyRef): LoggingAdapter = apply(app, source)
+  /**
+   * Obtain LoggingAdapter for the given event bus and source object. The
+   * source object is used to identify the source of this logging channel.
+   */
+  def apply(bus: LoggingBus, source: AnyRef): LoggingAdapter = new BusLogging(bus, source)
+  /**
+   * Java API: Obtain LoggingAdapter for the given event bus and source object. The
+   * source object is used to identify the source of this logging channel.
+   */
+  def getLogger(bus: LoggingBus, source: AnyRef): LoggingAdapter = apply(bus, source)
 
+  /**
+   * Artificial exception injected into Error events if no Throwable is
+   * supplied; used for getting a stack dump of error locations.
+   */
   class EventHandlerException extends AkkaException
 
   sealed trait LogEvent {
@@ -274,10 +333,10 @@ object Logging {
   }
 
   /**
-   * Actor-less logging implementation for synchronous logging to standard 
+   * Actor-less logging implementation for synchronous logging to standard
    * output. This logger is always attached first in order to be able to log
-   * failures during application start-up, even before normal logging is 
-   * started. Its log level can be configured by setting 
+   * failures during application start-up, even before normal logging is
+   * started. Its log level can be configured by setting
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
@@ -288,7 +347,7 @@ object Logging {
   val StandardOutLoggerName = StandardOutLogger.getClass.getName
 
   /**
-   * Actor wrapper around the standard output logger. If 
+   * Actor wrapper around the standard output logger. If
    * <code>akka.event-handlers</code> is not set, it defaults to just this
    * logger.
    */
@@ -317,22 +376,22 @@ object Logging {
  * Logging wrapper to make nicer and optimize: provide template versions which
  * evaluate .toString only if the log level is actually enabled. Typically used
  * by obtaining an implementation from the Logging object:
- * 
+ *
  * <code><pre>
  * val log = Logging(&lt;bus&gt;, &lt;source object&gt;)
  * ...
  * log.info("hello world!")
  * </pre></code>
- * 
+ *
  * All log-level methods support simple interpolation templates with up to four
- * arguments placed by using <code>{}</code> within the template (first string 
+ * arguments placed by using <code>{}</code> within the template (first string
  * argument):
- * 
+ *
  * <code><pre>
  * log.error(exception, "Exception while processing {} in state {}", msg, state)
  * </pre></code>
  */
-trait Logging {
+trait LoggingAdapter {
 
   /*
    * implement these as precisely as needed/possible: always returning true 
@@ -347,6 +406,7 @@ trait Logging {
    * These actually implement the passing on of the messages to be logged. 
    * Will not be called if is...Enabled returned false.
    */
+  protected def notifyError(message: String)
   protected def notifyError(cause: Throwable, message: String)
   protected def notifyWarning(message: String)
   protected def notifyInfo(message: String)
@@ -362,7 +422,7 @@ trait Logging {
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) error(cause, format(template, arg1, arg2, arg3)) }
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isErrorEnabled) error(cause, format(template, arg1, arg2, arg3, arg4)) }
 
-  def error(message: String) { if (isErrorEnabled) error(null: Throwable, message) }
+  def error(message: String) { if (isErrorEnabled) notifyError(message) }
   def error(template: String, arg1: Any) { if (isErrorEnabled) error(format(template, arg1)) }
   def error(template: String, arg1: Any, arg2: Any) { if (isErrorEnabled) error(format(template, arg1, arg2)) }
   def error(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) error(format(template, arg1, arg2, arg3)) }
@@ -393,7 +453,7 @@ trait Logging {
 
 }
 
-class BusLogging(val bus: LoggingBus, val loggingInstance: AnyRef) extends Logging {
+class BusLogging(val bus: LoggingBus, val loggingInstance: AnyRef) extends LoggingAdapter {
 
   import Logging._
 
@@ -401,6 +461,8 @@ class BusLogging(val bus: LoggingBus, val loggingInstance: AnyRef) extends Loggi
   def isWarningEnabled = bus.logLevel >= WarningLevel
   def isInfoEnabled = bus.logLevel >= InfoLevel
   def isDebugEnabled = bus.logLevel >= DebugLevel
+
+  protected def notifyError(message: String) { bus.publish(Error(loggingInstance, message)) }
 
   protected def notifyError(cause: Throwable, message: String) { bus.publish(Error(cause, loggingInstance, message)) }
 
