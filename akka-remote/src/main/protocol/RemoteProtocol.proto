@@ -33,12 +33,7 @@ message RemoteMessageProtocol {
 message RemoteControlProtocol {
   required CommandType commandType = 1;
   optional string cookie = 2;
-  optional Endpoint origin = 3;
-}
-
-message Endpoint {
-  required string host = 1;
-  required uint32 port = 2;
+  optional AddressProtocol origin = 3;
 }
 
 /**

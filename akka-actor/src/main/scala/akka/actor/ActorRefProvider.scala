@@ -160,6 +160,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
               // create a routed actor ref
               case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+
                 val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
                   case RouterType.Direct     ⇒ () ⇒ new DirectRouter
                   case RouterType.Random     ⇒ () ⇒ new RandomRouter

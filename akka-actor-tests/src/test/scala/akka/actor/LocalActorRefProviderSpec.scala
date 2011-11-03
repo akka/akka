@@ -17,15 +17,11 @@ class LocalActorRefProviderSpec extends AkkaSpec {
 
       provider.isInstanceOf[LocalActorRefProvider] must be(true)
 
-      implicit val timeout = Timeout(30 seconds)
-
-      val actors: Seq[Future[ActorRef]] =
-        (0 until 100) flatMap { i ⇒ // 100 concurrent runs
-          val address = "new-actor" + i
-          (1 to 4) map { _ ⇒ Future { provider.actorOf(Props(c ⇒ { case _ ⇒ }), app.guardian, address) } }
-        }
-
-      actors.map(_.get).distinct.size must be(100)
+      (0 until 100) foreach { i ⇒ // 100 concurrent runs
+        val address = "new-actor" + i
+        implicit val timeout = Timeout(30 seconds)
+        ((1 to 4) map { _ ⇒ Future { provider.actorOf(Props(c ⇒ { case _ ⇒ }), app.guardian, address, true) } }).map(_.get).distinct.size must be(1)
+      }
     }
   }
 }

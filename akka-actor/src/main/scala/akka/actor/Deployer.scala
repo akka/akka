@@ -36,8 +36,6 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
 
-  //  val defaultAddress = Node(Config.nodename)
-
   lazy val instance: ActorDeployer = {
     val deployer = if (app.reflective.ClusterModule.isEnabled) app.reflective.ClusterModule.clusterDeployer else LocalDeployer
     deployer.init(deploymentsInConfig)
@@ -74,22 +72,13 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   }
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment_? = instance.lookupDeploymentFor(address)
-
-    if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
-    else {
-      val newDeployment = try {
-        lookupInConfig(address)
-      } catch {
-        case e: ConfigurationException ⇒
-          app.eventHandler.error(e, this, e.getMessage) //TODO FIXME I do not condone log AND rethrow
-          throw e
-      }
-
-      newDeployment match {
-        case None | Some(null) ⇒ None
-        case Some(d)           ⇒ deploy(d); newDeployment // deploy and cache it
-      }
+    instance.lookupDeploymentFor(address) match {
+      case s @ Some(d) if d ne null ⇒ s
+      case _ ⇒
+        lookupInConfig(address) match {
+          case None | Some(null) ⇒ None
+          case s @ Some(d)       ⇒ deploy(d); s // deploy and cache it
+        }
     }
   }
 

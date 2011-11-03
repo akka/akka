@@ -210,7 +210,7 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      handshake.setOrigin(RemoteProtocol.Endpoint.newBuilder().setHost(app.hostname).setPort(app.port).build)
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder().setHostname(app.hostname).setPort(app.port).build)
       connection.getChannel.write(createControlEnvelope(handshake.build))
     }
 
@@ -646,14 +646,13 @@ class RemoteServerHandler(
     event.getMessage match {
       case null ⇒ throw new IllegalActorStateException("Message in remote MessageEvent is null [" + event + "]")
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒ handleRemoteMessageProtocol(remote.getMessage, event.getChannel)
-      //case remote: AkkaRemoteProtocol if remote.hasInstruction => RemoteServer cannot receive control messages (yet)
+      case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒ //Doesn't handle instructions
       case _ ⇒ //ignore
     }
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     app.eventHandler.error(event.getCause, this, "Unexpected exception from remote downstream")
-
     event.getChannel.close
     server.notifyListeners(RemoteServerError(event.getCause, server))
   }
