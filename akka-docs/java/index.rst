@@ -14,7 +14,6 @@ Java API
    stm
    transactors
    remote-actors
-   serialization
    fault-tolerance
    dispatchers
    routing
