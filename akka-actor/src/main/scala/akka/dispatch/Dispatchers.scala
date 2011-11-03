@@ -61,7 +61,7 @@ class Dispatchers(val app: AkkaApplication) {
    */
   def newPinnedDispatcher(actor: LocalActorRef) = actor match {
     case null ⇒ new PinnedDispatcher(app, null, "anon", MailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(app, some.underlying, some.underlying.uuid.toString, MailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(app, some.underlying, some.address, MailboxType, DispatcherShutdownMillis)
   }
 
   /**
@@ -72,7 +72,7 @@ class Dispatchers(val app: AkkaApplication) {
    */
   def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
     case null ⇒ new PinnedDispatcher(app, null, "anon", mailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(app, some.underlying, some.underlying.uuid.toString, mailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(app, some.underlying, some.address, mailboxType, DispatcherShutdownMillis)
   }
 
   /**

@@ -6,17 +6,10 @@ package akka.serialization
 
 import akka.actor._
 import akka.actor.DeploymentConfig._
-import akka.dispatch.Envelope
-import akka.util.{ ReflectiveAccess, Duration }
-import akka.event.EventHandler
 import akka.remote._
 import RemoteProtocol._
-import akka.AkkaApplication
-
-import scala.collection.immutable.Stack
 
 import java.net.InetSocketAddress
-import java.util.{ LinkedList, Collections }
 
 import com.google.protobuf.ByteString
 
@@ -25,78 +18,19 @@ import com.eaio.uuid.UUID
 class RemoteActorSerialization(remote: RemoteSupport) {
 
   /**
-   * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
-   */
-  def fromBinaryToRemoteActorRef(bytes: Array[Byte]): ActorRef =
-    fromProtobufToRemoteActorRef(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, None)
-
-  /**
-   * Deserializes a byte array (Array[Byte]) into an RemoteActorRef instance.
-   */
-  def fromBinaryToRemoteActorRef(bytes: Array[Byte], loader: ClassLoader): ActorRef =
-    fromProtobufToRemoteActorRef(RemoteActorRefProtocol.newBuilder.mergeFrom(bytes).build, Some(loader))
-
-  /**
-   * Deserializes a RemoteActorRefProtocol Protocol Buffers (protobuf) Message into an RemoteActorRef instance.
-   */
-  private[akka] def fromProtobufToRemoteActorRef(protocol: RemoteActorRefProtocol, loader: Option[ClassLoader]): ActorRef = {
-    remote.app.eventHandler.debug(this, "Deserializing RemoteActorRefProtocol to RemoteActorRef:\n %s".format(protocol))
-
-    val ref = RemoteActorRef(
-      remote,
-      JavaSerializer.fromBinary(protocol.getInetSocketAddress.toByteArray, Some(classOf[InetSocketAddress]), loader).asInstanceOf[InetSocketAddress],
-      protocol.getAddress,
-      loader)
-
-    remote.app.eventHandler.debug(this, "Newly deserialized RemoteActorRef has uuid: %s".format(ref.uuid))
-
-    ref
-  }
-
-  /**
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
-  def toRemoteActorRefProtocol(actor: ActorRef): RemoteActorRefProtocol = {
-    val remoteAddress = actor match {
-      case ar: RemoteActorRef ⇒
-        ar.remoteAddress
-      case ar: ActorRef ⇒
-        remote.register(ar) //FIXME stop doing this and delegate to provider.actorFor in the NettyRemoting
-        remote.app.defaultAddress //FIXME Shouldn't this be the _current_ address of the remoting?
-    }
-
-    remote.app.eventHandler.debug(this, "Register serialized Actor [%s] as remote @ [%s]".format(actor.uuid, remoteAddress))
-
-    RemoteActorRefProtocol.newBuilder
-      .setInetSocketAddress(ByteString.copyFrom(JavaSerializer.toBinary(remoteAddress)))
-      .setAddress(actor.address)
-      .setTimeout(remote.app.AkkaConfig.ActorTimeoutMillis)
-      .build
+  def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
+    val rep = remote.app.provider.serialize(actor)
+    ActorRefProtocol.newBuilder.setAddress(rep.address).setHost(rep.hostname).setPort(rep.port).build
   }
 
   def createRemoteMessageProtocolBuilder(
-    actorRef: Option[ActorRef],
-    replyUuid: Either[Uuid, UuidProtocol],
-    actorAddress: String,
-    timeout: Long,
+    recipient: Either[ActorRef, ActorRefProtocol],
     message: Either[Throwable, Any],
     senderOption: Option[ActorRef]): RemoteMessageProtocol.Builder = {
 
-    val uuidProtocol = replyUuid match {
-      case Left(uid)       ⇒ UuidProtocol.newBuilder.setHigh(uid.getTime).setLow(uid.getClockSeqAndNode).build
-      case Right(protocol) ⇒ protocol
-    }
-
-    val actorInfoBuilder = ActorInfoProtocol.newBuilder.setUuid(uuidProtocol).setAddress(actorAddress).setTimeout(timeout)
-
-    val actorInfo = actorInfoBuilder.build
-    val messageBuilder = RemoteMessageProtocol.newBuilder
-      .setUuid({
-        val messageUuid = newUuid
-        UuidProtocol.newBuilder.setHigh(messageUuid.getTime).setLow(messageUuid.getClockSeqAndNode).build
-      })
-      .setActorInfo(actorInfo)
-      .setOneWay(true)
+    val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(recipient.fold(toRemoteActorRefProtocol _, identity))
 
     message match {
       case Right(message) ⇒
@@ -108,8 +42,7 @@ class RemoteActorSerialization(remote: RemoteSupport) {
           .build)
     }
 
-    if (senderOption.isDefined)
-      messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
+    if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
     messageBuilder
   }

@@ -13,6 +13,7 @@ import akka.actor.DeploymentConfig._
 import akka.{ AkkaException, AkkaApplication }
 import akka.config.{ Configuration, ConfigurationException }
 import akka.util.Duration
+import java.net.InetSocketAddress
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -248,7 +249,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                     case e: Exception ⇒ raiseRemoteNodeParsingError()
                   }
                   if (port == 0) raiseRemoteNodeParsingError()
-                  RemoteAddress(hostname, port)
+                  val inet = new InetSocketAddress(hostname, port) //FIXME switch to non-ip-tied
+                  RemoteAddress(Option(inet.getAddress).map(_.getHostAddress).getOrElse(hostname), inet.getPort)
                 }
             }
 

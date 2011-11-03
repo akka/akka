@@ -13,7 +13,6 @@ import akka.util._
 import akka.util.duration._
 import akka.util.Helpers._
 import akka.actor.DeploymentConfig._
-import akka.serialization.{ Serialization, Serializer, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -21,6 +20,7 @@ import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import java.net.InetSocketAddress
 
 import com.eaio.uuid.UUID
+import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression }
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
@@ -37,9 +37,6 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   val shouldCompressData = config.getBool("akka.remote.use-compression", false)
   val remoteSystemDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), DefaultTimeUnit).toMillis.toInt
 
-  val hostname = app.hostname
-  val port = app.port
-
   val failureDetector = new AccrualFailureDetector(FailureDetectorThreshold, FailureDetectorMaxSampleSize)
 
   //  val gossiper = new Gossiper(this)
@@ -53,8 +50,7 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     OneForOneStrategy(List(classOf[Exception]), None, None))) // is infinite restart what we want?
 
   private[remote] lazy val remoteDaemon =
-    new LocalActorRef(
-      app,
+    app.provider.actorOf(
       Props(new RemoteSystemDaemon(this)).withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
       remoteDaemonSupervisor,
       remoteDaemonServiceName,
@@ -73,7 +69,6 @@ class Remote(val app: AkkaApplication) extends RemoteService {
   lazy val server: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
     remote.start(hostname, port)
-    remote.register(remoteDaemonServiceName, remoteDaemon)
 
     app.eventHandler.addListener(eventStream.sender)
     app.eventHandler.addListener(remoteClientLifeCycleHandler)
@@ -83,20 +78,11 @@ class Remote(val app: AkkaApplication) extends RemoteService {
     remote
   }
 
-  lazy val address = server.address
-
-  def start() {
-    val triggerLazyServerVal = address.toString
-    eventHandler.info(this, "Starting remote server on [%s]".format(triggerLazyServerVal))
+  def start(): Unit = {
+    val serverAddress = server.app.defaultAddress //Force init of server
+    val daemonAddress = remoteDaemon.address //Force init of daemon
+    eventHandler.info(this, "Starting remote server on [%s] and starting remoteDaemon with address [%s]".format(serverAddress, daemonAddress))
   }
-
-  def uuidProtocolToUuid(uuid: UuidProtocol): UUID = new UUID(uuid.getHigh, uuid.getLow)
-
-  def uuidToUuidProtocol(uuid: UUID): UuidProtocol =
-    UuidProtocol.newBuilder
-      .setHigh(uuid.getTime)
-      .setLow(uuid.getClockSeqAndNode)
-      .build
 }
 
 /**
@@ -117,7 +103,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
   def receive: Actor.Receive = {
     case message: RemoteSystemDaemonMessageProtocol ⇒
-      eventHandler.debug(this, "Received command [\n%s] to RemoteSystemDaemon on [%s]".format(message, nodename))
+      eventHandler.debug(this, "Received command [\n%s] to RemoteSystemDaemon on [%s]".format(message.getMessageType, nodename))
 
       message.getMessageType match {
         case USE                    ⇒ handleUse(message)
@@ -151,16 +137,12 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
 
-        val actorAddress = message.getActorAddress
-        val newActorRef = app.actorOf(Props(creator = actorFactory), actorAddress)
-
-        server.register(actorAddress, newActorRef)
-
+        app.actorOf(Props(creator = actorFactory), message.getActorAddress)
       } else {
         eventHandler.error(this, "Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [%s]".format(message))
       }
 
-      sender ! Success(address.toString)
+      sender ! Success(app.defaultAddress)
     } catch {
       case error: Throwable ⇒ //FIXME doesn't seem sensible
         sender ! Failure(error)
@@ -236,4 +218,39 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       case Right(instance) ⇒ instance.asInstanceOf[T]
     }
   }
+}
+
+class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLoader: Option[ClassLoader] = None) {
+  lazy val sender: ActorRef =
+    if (input.hasSender)
+      remote.app.provider.deserialize(
+        SerializedActorRef(input.getSender.getAddress, input.getSender.getHost, input.getSender.getPort)).getOrElse(throw new IllegalStateException("OHNOES"))
+    else
+      remote.app.deadLetters
+  lazy val recipient: ActorRef = remote.app.findActor(input.getRecipient.getAddress) match {
+    case None         ⇒ remote.app.deadLetters
+    case Some(target) ⇒ target
+  }
+
+  lazy val payload: Either[Throwable, AnyRef] =
+    if (input.hasException) Left(parseException())
+    else Right(MessageSerializer.deserialize(remote.app, input.getMessage, classLoader))
+
+  protected def parseException(): Throwable = {
+    val exception = input.getException
+    val classname = exception.getClassname
+    try {
+      val exceptionClass =
+        if (classLoader.isDefined) classLoader.get.loadClass(classname) else Class.forName(classname)
+      exceptionClass
+        .getConstructor(Array[Class[_]](classOf[String]): _*)
+        .newInstance(exception.getMessage).asInstanceOf[Throwable]
+    } catch {
+      case problem: Exception ⇒
+        remote.app.eventHandler.error(problem, remote, problem.getMessage)
+        CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
+    }
+  }
+
+  override def toString = "RemoteMessage: " + recipient + "(" + input.getRecipient.getAddress + ") from " + sender
 }

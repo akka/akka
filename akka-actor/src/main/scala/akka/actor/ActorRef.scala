@@ -12,6 +12,7 @@ import akka.AkkaApplication
 import akka.event.ActorEventBus
 import akka.serialization.Serialization
 import akka.actor.DeadLetterActorRef.SerializedDeadLetterActorRef
+import java.net.InetSocketAddress
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -276,17 +277,16 @@ trait ScalaActorRef { ref: ActorRef ⇒
   protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit
 
   protected[akka] def restart(cause: Throwable): Unit
-
-  private[akka] def uuid: Uuid //TODO FIXME REMOVE THIS
 }
 
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
 
-case class SerializedActorRef(uuid: Uuid, address: String, hostname: String, port: Int) {
-
+case class SerializedActorRef(address: String, hostname: String, port: Int) {
   import akka.serialization.Serialization.app
+
+  def this(address: String, inet: InetSocketAddress) = this(address, inet.getAddress.getHostAddress, inet.getPort)
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
@@ -366,7 +366,8 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit = app.eventHandler.notify(DeadLetter(message, sender))
+  protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit =
+    app.eventHandler.notify(DeadLetter(message, sender))
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
     app.eventHandler.notify(DeadLetter(message, this))

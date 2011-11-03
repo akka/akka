@@ -31,7 +31,7 @@ trait ActorRefProvider {
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
 
-  private[akka] def serialize(actor: ActorRef): AnyRef
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef
 
   private[akka] def createDeathWatch(): DeathWatch
 
@@ -177,7 +177,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
                 actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, address)
 
-              case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+              case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
             }
           } catch {
             case e: Exception ⇒
@@ -218,8 +218,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
-  private[akka] def serialize(actor: ActorRef): AnyRef =
-    SerializedActorRef(actor.uuid, actor.address, app.hostname, app.port)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(actor.address, app.defaultAddress)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
