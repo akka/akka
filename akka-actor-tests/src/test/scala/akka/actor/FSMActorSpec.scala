@@ -191,7 +191,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
 
     "log events and transitions if asked to do so" in {
       new TestKit(AkkaApplication("fsm event", AkkaApplication.defaultConfig ++
-        Configuration("akka.event-handler-level" -> "DEBUG",
+        Configuration("akka.loglevel" -> "DEBUG",
           "akka.actor.debug.fsm" -> true))) {
         app.mainbus.publish(TestEvent.Mute(EventFilter.custom {
           case _: Logging.Debug ⇒ true
