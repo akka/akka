@@ -998,8 +998,12 @@ object ActorCompletableFuture {
  * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
  * a Future-composition but you already have a value to contribute.
  */
-sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T])(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
+sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T], timeout: Long, timeunit: TimeUnit)(implicit val dispatcher: MessageDispatcher) extends CompletableFuture[T] {
+  def this(suppliedValue: Either[Throwable, T])(implicit dispatcher: MessageDispatcher) = this(suppliedValue, Actor.TIMEOUT, MILLIS)(dispatcher)
+  def this(suppliedValue: Either[Throwable, T], timeout: Long)(implicit dispatcher: MessageDispatcher) = this(suppliedValue, timeout, MILLIS)(dispatcher)
+
   val value = Some(suppliedValue)
+  val timeoutInNanos: Long = timeunit.toNanos(timeout)
 
   def complete(value: Either[Throwable, T]): this.type = this
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
@@ -1009,7 +1013,6 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T])(impl
   def await(atMost: Duration): this.type = this
   def await: this.type = this
   def isExpired: Boolean = true
-  def timeoutInNanos: Long = 0
   def onTimeout(func: Future[T] ⇒ Unit): this.type = this
   def cancel(): this.type = this
 }

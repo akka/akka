@@ -832,4 +832,11 @@ class FutureSpec extends JUnitSuite {
     }
     assert(complex.await.isCompleted)
   }
+
+  @Test
+  def ticket853AlreadyCompletedFutureMustHaveTimeout {
+    val f1 = new AlreadyCompletedFuture(Right(()))
+    val f2 = f1 map (_ => ())
+    assert(f2.get == ())
+  }
 }
