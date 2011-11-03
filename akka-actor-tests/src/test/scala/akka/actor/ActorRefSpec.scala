@@ -292,11 +292,7 @@ class ActorRefSpec extends AkkaSpec {
 
       val inetAddress = app.defaultAddress
 
-      val expectedSerializedRepresentation = SerializedActorRef(
-        a.uuid,
-        a.address,
-        inetAddress.getAddress.getHostAddress,
-        inetAddress.getPort)
+      val expectedSerializedRepresentation = new SerializedActorRef(a.address, inetAddress)
 
       import java.io._
 

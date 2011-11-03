@@ -234,7 +234,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch1.countDown()
             }
           }))
@@ -262,7 +262,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch2.countDown()
             }
           }))
