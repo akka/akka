@@ -65,15 +65,13 @@ import akka.AkkaApplication
  */
 class Dispatcher(
   _app: AkkaApplication,
-  _name: String,
+  val name: String,
   val throughput: Int,
   val throughputDeadlineTime: Int,
   val mailboxType: MailboxType,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val timeoutMs: Long)
   extends MessageDispatcher(_app) {
-
-  val name = "akka:event-driven:dispatcher:" + _name
 
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
   protected[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))

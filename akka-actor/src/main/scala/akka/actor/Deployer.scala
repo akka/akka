@@ -37,7 +37,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   val deploymentConfig = new DeploymentConfig(app)
 
   lazy val instance: ActorDeployer = {
-    val deployer = if (app.reflective.ClusterModule.isEnabled) app.reflective.ClusterModule.clusterDeployer else LocalDeployer
+    val deployer = LocalDeployer
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -71,16 +71,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
     }
   }
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
-    instance.lookupDeploymentFor(address) match {
-      case s @ Some(d) if d ne null ⇒ s
-      case _ ⇒
-        lookupInConfig(address) match {
-          case None | Some(null) ⇒ None
-          case s @ Some(d)       ⇒ deploy(d); s // deploy and cache it
-        }
-    }
-  }
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] =
+    instance.lookupDeploymentFor(address)
 
   private[akka] def deploymentsInConfig: List[Deploy] = {
     for {
