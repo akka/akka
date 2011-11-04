@@ -446,11 +446,20 @@ trait LoggingAdapter {
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isDebugEnabled) debug(format(template, arg1, arg2, arg3)) }
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isDebugEnabled) debug(format(template, arg1, arg2, arg3, arg4)) }
 
-  def format(t: String, arg1: Any) = t.replaceFirst("{}", arg1.asInstanceOf[AnyRef].toString)
-  def format(t: String, arg1: Any, arg2: Any) = t.replaceFirst("{}", arg1.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg2.asInstanceOf[AnyRef].toString)
-  def format(t: String, arg1: Any, arg2: Any, arg3: Any) = t.replaceFirst("{}", arg1.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg2.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg3.asInstanceOf[AnyRef].toString)
-  def format(t: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) = t.replaceFirst("{}", arg1.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg2.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg3.asInstanceOf[AnyRef].toString).replaceFirst("{}", arg4.asInstanceOf[AnyRef].toString)
-
+  def format(t: String, arg: Any*) = {
+    val sb = new StringBuilder
+    var p = 0
+    var rest = t
+    while (p < arg.length) {
+      val index = rest.indexOf("{}")
+      sb.append(rest.substring(0, index))
+      sb.append(arg(p))
+      rest = rest.substring(index + 2)
+      p += 1
+    }
+    sb.append(rest)
+    sb.toString
+  }
 }
 
 class BusLogging(val bus: LoggingBus, val loggingInstance: AnyRef) extends LoggingAdapter {
