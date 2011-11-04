@@ -8,6 +8,7 @@ import akka.util.duration._
 //#imports
 import akka.actor.Actor
 import akka.event.Logging
+import akka.config.Configuration
 
 //#imports
 
@@ -21,7 +22,7 @@ class MyActor extends Actor {
 }
 //#my-actor
 
-class ActorDocSpec extends AkkaSpec {
+class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
 
   "creating actor with AkkaSpec.actorOf" in {
     //#creating-actorOf
