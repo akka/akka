@@ -194,9 +194,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
 
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val deployer = new Deployer(this)
-
   val deathWatch = provider.createDeathWatch()
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor

@@ -44,6 +44,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
   private[akka] def terminationFuture = local.terminationFuture
 
+  private[akka] def deployer: Deployer = local.deployer
+
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
 
@@ -55,7 +57,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       actors.putIfAbsent(address, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
           val actor: ActorRef = try {
-            app.deployer.lookupDeploymentFor(address) match {
+            deployer.lookupDeploymentFor(address) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
                 // FIXME move to AccrualFailureDetector as soon as we have the Gossiper up and running and remove the option to select impl in the akka.conf file since we only have one

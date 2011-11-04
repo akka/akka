@@ -36,8 +36,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
 
-  lazy val instance: ActorDeployer = {
-    val deployer = LocalDeployer
+  val instance: ActorDeployer = {
+    val deployer = new LocalDeployer()
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -323,20 +323,14 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object LocalDeployer extends ActorDeployer {
+class LocalDeployer extends ActorDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]
 
-  private[akka] def init(deployments: Seq[Deploy]) {
-    deployments foreach (deploy(_)) // deploy
-  }
+  private[akka] def init(deployments: Seq[Deploy]): Unit = deployments foreach deploy // deploy
 
-  private[akka] def shutdown() {
-    deployments.clear() //TODO do something else/more?
-  }
+  private[akka] def shutdown(): Unit = deployments.clear() //TODO do something else/more?
 
-  private[akka] def deploy(deployment: Deploy) {
-    deployments.putIfAbsent(deployment.address, deployment)
-  }
+  private[akka] def deploy(deployment: Deploy): Unit = deployments.putIfAbsent(deployment.address, deployment)
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
 }

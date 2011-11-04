@@ -16,7 +16,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "be able to shut down its instance" in {
       val address = "round-robin-0"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,
@@ -52,7 +52,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "deliver messages in a round robin fashion" in {
       val address = "round-robin-1"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,
@@ -97,7 +97,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "deliver a broadcast message using the !" in {
       val address = "round-robin-2"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,
@@ -132,7 +132,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "be able to shut down its instance" in {
       val address = "random-0"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,
@@ -166,7 +166,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "deliver messages in a random fashion" in {
       val address = "random-1"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,
@@ -211,7 +211,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     "deliver a broadcast message using the !" in {
       val address = "random-2"
 
-      app.deployer.deploy(
+      app.provider.deployer.deploy(
         Deploy(
           address,
           None,

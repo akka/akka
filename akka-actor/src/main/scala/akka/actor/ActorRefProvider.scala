@@ -25,6 +25,11 @@ trait ActorRefProvider {
 
   def actorFor(address: String): Option[ActorRef]
 
+  /**
+   * What deployer will be used to resolve deployment configuration?
+   */
+  private[akka] def deployer: Deployer
+
   private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef
 
   private[akka] def evict(address: String): Boolean
@@ -92,6 +97,8 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
+  private[akka] val deployer: Deployer = new Deployer(app)
+
   val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
 
   /**
@@ -152,7 +159,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
       actors.putIfAbsent(address, newFuture) match {
         case null ⇒
           val actor: ActorRef = try {
-            (if (systemService) None else app.deployer.lookupDeploymentFor(address)) match { // see if the deployment already exists, if so use it, if not create actor
+            (if (systemService) None else deployer.lookupDeployment(address)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
