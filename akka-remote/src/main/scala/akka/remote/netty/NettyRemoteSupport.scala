@@ -252,12 +252,12 @@ abstract class RemoteClient private[akka] (
  */
 class ActiveRemoteClient private[akka] (
   _app: AkkaApplication,
-  remoteSupport: RemoteSupport,
-  module: NettyRemoteClientModule,
-  remoteAddress: InetSocketAddress,
+  _remoteSupport: RemoteSupport,
+  _module: NettyRemoteClientModule,
+  _remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None,
   notifyListenersFun: (RemoteLifeCycleEvent) ⇒ Unit)
-  extends RemoteClient(_app, remoteSupport, module, remoteAddress) {
+  extends RemoteClient(_app, _remoteSupport, _module, _remoteAddress) {
 
   val settings = new RemoteClientSettings(app)
   import settings._
