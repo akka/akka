@@ -835,20 +835,19 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
       }
 
       "should not deadlock with nested await (ticket 1313)" in {
-
-        val simple = Future() map (_ ⇒ (Future() map (_ ⇒ ())).get)
+        val simple = Future() map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
         simple.await must be('completed)
 
-        val latch = new StandardLatch
+        val l1, l2 = new StandardLatch
         val complex = Future() map { _ ⇒
+          Future.blocking()
           val nested = Future()
-          nested.await
-          nested foreach (_ ⇒ latch.open)
-          Future.redispatchTasks
-          latch.await
+          nested foreach (_ ⇒ l1.open)
+          l1.await // make sure nested is completed
+          nested foreach (_ ⇒ l2.open)
+          l2.await
         }
-        complex.await must be('completed)
-
+        assert(complex.await.isCompleted)
       }
     }
   }

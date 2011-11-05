@@ -360,28 +360,38 @@ object Future {
   // TODO make variant of flow(timeout)(body) which does NOT break type inference
 
   /**
-   * Send queued tasks back to the dispatcher to be executed. This is needed if the current
-   * task may block while waiting for something to happen in a queued task.
+   * Assures that any Future tasks initiated in the current thread will be
+   * executed asynchronously, including any tasks currently queued to be
+   * executed in the current thread. This is needed if the current task may
+   * block, causing delays in executing the remaining tasks which in some
+   * cases may cause a deadlock.
    *
-   * Example:
+   * Note: Calling 'Future.await' will automatically trigger this method.
+   *
+   * For example, in the following block of code the call to 'latch.open'
+   * might not be executed until after the call to 'latch.await', causing
+   * a deadlock. By adding 'Future.blocking()' the call to 'latch.open'
+   * will instead be dispatched separately from the current block, allowing
+   * it to be run in parallel:
    * <pre>
    * val latch = new StandardLatch
    * val future = Future() map { _ ⇒
+   *   Future.blocking()
    *   val nested = Future()
-   *   nested.await
    *   nested foreach (_ ⇒ latch.open)
-   *   Future.redispatchTasks
    *   latch.await
    * }
    * </pre>
    */
-  def redispatchTasks()(implicit dispatcher: MessageDispatcher): Unit =
+  def blocking()(implicit dispatcher: MessageDispatcher): Unit =
     _taskStack.get match {
       case Some(taskStack) if taskStack.nonEmpty ⇒
         val tasks = taskStack.elems
         taskStack.clear()
+        _taskStack set None
         dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
-      case _ ⇒ // nothing to do
+      case Some(_) ⇒ _taskStack set None
+      case _       ⇒ // already None
     }
 
   private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
@@ -878,7 +888,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   }
 
   def await(atMost: Duration): this.type = if (value.isDefined) this else {
-    Future.redispatchTasks()
+    Future.blocking()
 
     val waitNanos =
       if (timeout.duration.isFinite && atMost.isFinite)
