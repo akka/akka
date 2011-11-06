@@ -23,6 +23,8 @@ private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory 
 
   def self: ActorRef with ScalaActorRef
 
+  def hasMessages: Boolean
+
   def receiveTimeout: Option[Long]
 
   def receiveTimeout_=(timeout: Option[Long]): Unit
@@ -94,6 +96,8 @@ private[akka] class ActorCell(
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
+
+  def hasMessages: Boolean = mailbox.hasMessages
 
   def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)

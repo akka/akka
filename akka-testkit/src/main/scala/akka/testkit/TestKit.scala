@@ -555,6 +555,36 @@ class TestKit(_app: AkkaApplication) {
 
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
+
+  /**
+   * Block until the given condition evaluates to `true` or the timeout
+   * expires, whichever comes first.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.timeFactor.
+   */
+  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis) {
+    val stop = now + max
+
+    @tailrec
+    def poll(t: Duration) {
+      if (!p) {
+        assert(now < stop, "timeout " + max + " expired")
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      }
+    }
+
+    poll(max min interval)
+  }
+
+  /**
+   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
+   */
+  def now: Duration = System.nanoTime().nanos
+
 }
 
 /**
