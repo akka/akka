@@ -40,6 +40,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
     lazy val TypesafeRepo           = MavenRepository("Typesafe Repo", "http://repo.typesafe.com/typesafe/releases/")
+    lazy val TwitterRepo            = MavenRepository("Twitter Public Repo", "http://maven.twttr.com")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -72,6 +73,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
   lazy val zeromqModuleConfig      = ModuleConfiguration("org.zeromq", TypesafeRepo)
+  lazy val twitterModuleConfig     = ModuleConfiguration("com.twitter", "util-core", TwitterRepo)
+  lazy val mongoModuleConfig       = ModuleConfiguration("com.mongodb.casbah", ScalaToolsSnapshotRepo)
 
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
@@ -134,9 +137,11 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
 
-    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
-    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"            //ApacheV2
-    lazy val mongoAsync       = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.7"      //ApacheV2
+    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5"     //New BSD
+    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"     //ApacheV2
+    lazy val mongoAsync       = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.7"     //ApacheV2
+
+    lazy val twitterUtilCore  = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
 
     // Test
 
@@ -381,6 +386,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       project("akka-file-mailbox", "akka-file-mailbox", new AkkaFileMailboxProject(_), akka_mailboxes_common)
     lazy val akka_beanstalk_mailbox =
       project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
+    lazy val akka_mongo_mailbox =
+      project("akka-mongo-mailbox", "akka-mongo-mailbox", new AkkaMongoMailboxProject(_), akka_mailboxes_common)
 
     override def disableCrossPaths = true
 
@@ -402,6 +409,16 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     override def testOptions =
       super.testOptions ++ (if (!redisTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Redis"))) else Seq.empty)
+  }
+
+  class AkkaMongoMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val mongoAsync = Dependencies.mongoAsync
+    val twitterUtilCore = Dependencies.twitterUtilCore
+
+    lazy val mongoTestsEnabled = systemOptional[Boolean]("mailbox.test.mongo", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!mongoTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Mongo"))) else Seq.empty)
   }
 
   class AkkaFileMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
@@ -536,28 +553,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Default project
   // -------------------------------------------------------------------------------------------------------------------
 
-  //import com.github.olim7t.sbtscalariform._
-  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom /*with ScalariformPlugin*/ {
-
-    /*override def scalariformOptions = Seq(
-      //VerboseScalariform,
-      AlignParameters(true),
-      CompactStringConcatenation(false),
-      IndentPackageBlocks(true),
-      FormatXml(true),
-      PreserveSpaceBeforeArguments(false),
-      DoubleIndentClassDeclaration(false),
-      RewriteArrowSymbols(true),
-      AlignSingleLineCaseStatements(true),
-      SpaceBeforeColon(false),
-      PreserveDanglingCloseParenthesis(false),
-      IndentSpaces(2),
-      IndentLocalDefs(false)
-//      MaxArrowIndent(40),
-//      SpaceInsideBrackets(false),
-//      SpaceInsideParentheses(false),
-      //SpacesWithinPatternBinders(true)
-    )*/
+  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom  {
 
     override def disableCrossPaths = true
 
