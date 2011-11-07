@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-import akka.testkit.Testing.sleepFor
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 

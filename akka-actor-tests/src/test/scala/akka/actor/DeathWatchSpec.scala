@@ -103,7 +103,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "fail a monitor which does not handle Terminated()" in {
-      filterEvents(EventFilter[ActorKilledException], EventFilter[DeathPactException]) {
+      filterEvents(EventFilter[ActorKilledException](), EventFilter[DeathPactException]()) {
         case class FF(fail: Failed)
         val supervisor = actorOf(Props[Supervisor]
           .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {

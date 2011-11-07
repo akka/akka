@@ -156,7 +156,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     }
 
     "stop when sent a poison pill" in {
-      filterEvents(EventFilter[ActorKilledException]) {
+      EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
         intercept[ActorKilledException] {
           (a ? PoisonPill).get
@@ -167,7 +167,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     }
 
     "restart when Kill:ed" in {
-      filterEvents(EventFilter[ActorKilledException]) {
+      EventFilter[ActorKilledException]() intercept {
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {

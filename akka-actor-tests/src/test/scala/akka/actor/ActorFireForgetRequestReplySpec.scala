@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
-import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.dispatch.Dispatchers
 
@@ -84,7 +83,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
         actor.isShutdown must be(false)
         actor ! "Die"
         state.finished.await
-        sleepFor(1 second)
+        1.second.dilated.sleep()
         actor.isShutdown must be(true)
         supervisor.stop()
       }

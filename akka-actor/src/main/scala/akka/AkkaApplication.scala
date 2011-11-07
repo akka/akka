@@ -90,10 +90,13 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val ProviderClass = getString("akka.actor.provider", "akka.actor.LocalActorRefProvider")
 
-    val DefaultTimeUnit = getString("akka.time-unit", "seconds")
+    val DefaultTimeUnit = Duration.timeUnit(getString("akka.time-unit", "seconds"))
     val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout", 5), DefaultTimeUnit))
     val ActorTimeoutMillis = ActorTimeout.duration.toMillis
     val SerializeAllMessages = getBool("akka.actor.serialize-messages", false)
+
+    val TestTimeFactor = getDouble("akka.test.timefactor", 1.0)
+    val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway", 0.5), DefaultTimeUnit)
 
     val LogLevel = getString("akka.loglevel", "INFO")
     val StdoutLogLevel = getString("akka.stdout-loglevel", LogLevel)

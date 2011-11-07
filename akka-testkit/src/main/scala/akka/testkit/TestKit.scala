@@ -453,12 +453,6 @@ class TestKit(_app: AkkaApplication) {
   }
 
   /**
-   * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
-   */
-  @deprecated("insert empty first parameter list", "1.2")
-  def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile(remaining / Duration.timeFactor)(f)
-
-  /**
    * Receive a series of messages until one does not match the given partial
    * function or the idle timeout is met (disabled by default) or the overall
    * maximum duration is elapsed. Returns the sequence of messages.

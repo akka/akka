@@ -115,9 +115,9 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
       filterEvents(ignoreExceptions) {
         val (counters, coordinator) = actorOfs
         val latch = new CountDownLatch(1)

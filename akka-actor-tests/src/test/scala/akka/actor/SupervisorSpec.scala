@@ -5,7 +5,6 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
@@ -17,7 +16,6 @@ import akka.testkit.AkkaSpec
 
 object SupervisorSpec {
   val Timeout = 5 seconds
-  val TimeoutMillis = Timeout.dilated.toMillis.toInt
 
   // =====================================================
   // Message logs
@@ -66,6 +64,8 @@ object SupervisorSpec {
 class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
 
   import SupervisorSpec._
+
+  val TimeoutMillis = Timeout.dilated.toMillis.toInt
 
   // =====================================================
   // Creating actors and supervisors
@@ -144,7 +144,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       master ! Die
       expectMsg(3 seconds, "terminated")
 
-      sleepFor(1 second)
+      1.second.dilated.sleep
       messageLogPoll must be(null)
     }
 
@@ -155,7 +155,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         (temporaryActor.?(Die, TimeoutMillis)).get
       }
 
-      sleepFor(1 second)
+      1.second.dilated.sleep
       messageLog.size must be(0)
     }
 
@@ -299,7 +299,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       }
 
       // give time for restart
-      sleepFor(3 seconds)
+      3.seconds.dilated.sleep
 
       (dyingActor.?(Ping, TimeoutMillis)).as[String].getOrElse("nil") must be === PongMessage
 

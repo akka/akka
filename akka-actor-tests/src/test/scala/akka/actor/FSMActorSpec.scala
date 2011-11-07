@@ -18,19 +18,23 @@ import akka.config.Configuration
 
 object FSMActorSpec {
 
-  val unlockedLatch = TestLatch()
-  val lockedLatch = TestLatch()
-  val unhandledLatch = TestLatch()
-  val terminatedLatch = TestLatch()
-  val transitionLatch = TestLatch()
-  val initialStateLatch = TestLatch()
-  val transitionCallBackLatch = TestLatch()
+  class Latches(implicit app: AkkaApplication) {
+    val unlockedLatch = TestLatch()
+    val lockedLatch = TestLatch()
+    val unhandledLatch = TestLatch()
+    val terminatedLatch = TestLatch()
+    val transitionLatch = TestLatch()
+    val initialStateLatch = TestLatch()
+    val transitionCallBackLatch = TestLatch()
+  }
 
   sealed trait LockState
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: Duration) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: Duration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
+
+    import latches._
 
     startWith(Locked, CodeState("", code))
 
@@ -107,8 +111,11 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
 
     "unlock the lock" in {
 
+      val latches = new Latches
+      import latches._
+
       // lock that locked after being open for 1 sec
-      val lock = actorOf(new Lock("33221", 1 second))
+      val lock = actorOf(new Lock("33221", 1 second, latches))
 
       val transitionTester = actorOf(new Actor {
         def receive = {

@@ -9,7 +9,6 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
 import akka.util.duration._
-import akka.testkit.Testing.sleepFor
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.dispatch.{ DefaultPromise, Promise, Future }
@@ -19,8 +18,6 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 object ActorRefSpec {
 
   case class ReplyTo(channel: Channel[Any])
-
-  val latch = TestLatch(4)
 
   class ReplyActor extends Actor {
     var replyTo: Channel[Any] = null
@@ -53,11 +50,11 @@ object ActorRefSpec {
     }
 
     private def work {
-      sleepFor(1 second)
+      1.second.dilated.sleep
     }
   }
 
-  class SenderActor(replyActor: ActorRef) extends Actor {
+  class SenderActor(replyActor: ActorRef, latch: TestLatch) extends Actor {
 
     def receive = {
       case "complex"  ⇒ replyActor ! "complexRequest"
@@ -343,8 +340,9 @@ class ActorRefSpec extends AkkaSpec {
     }
 
     "support reply via channel" in {
+      val latch = new TestLatch(4)
       val serverRef = actorOf(Props[ReplyActor])
-      val clientRef = actorOf(Props(new SenderActor(serverRef)))
+      val clientRef = actorOf(Props(new SenderActor(serverRef, latch)))
 
       clientRef ! "complex"
       clientRef ! "simple"

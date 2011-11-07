@@ -82,9 +82,9 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
 
     "increment no counters with a failing transaction" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
       filterEvents(ignoreExceptions) {
         val (counters, failer) = actorOfs
         val coordinated = Coordinated()

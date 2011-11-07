@@ -2,7 +2,6 @@ package akka.routing
 
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.testkit.Testing._
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
@@ -88,7 +87,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
-                sleepFor(10 millis)
+                (10 millis).dilated.sleep
                 channel.tryTell("Response")
               }
             }
@@ -116,7 +115,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 count.incrementAndGet
                 latch.countDown()
             }
@@ -142,7 +141,7 @@ class ActorPoolSpec extends AkkaSpec {
         count.set(0)
         for (m ← 0 until loops) {
           pool ? t
-          sleepFor(50 millis)
+          (50 millis).dilated.sleep
         }
       }
 
@@ -180,7 +179,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 count.incrementAndGet
                 latch.countDown()
             }
@@ -291,7 +290,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 latch.countDown()
             }
           }))
@@ -311,7 +310,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       for (m ← 0 to 10) pool ! 250
 
-      sleepFor(5 millis)
+      (5 millis).dilated.sleep
 
       val z = (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size
 
@@ -321,7 +320,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       for (m ← 0 to 3) {
         pool ! 1
-        sleepFor(500 millis)
+        (500 millis).dilated.sleep
       }
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
@@ -414,7 +413,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! akka.Die
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pingCount.get must be(1)
 
@@ -425,7 +424,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! akka.Die
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
@@ -438,7 +437,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool2 ! "ping"
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool2 ! akka.Die
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pingCount.get must be(1)
 
@@ -449,7 +448,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool2 ! "ping"
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool2 ! akka.Die
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
         pool2 ! "ping"
         (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
@@ -461,7 +460,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool3 ! "ping"
         (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool3 ! akka.Die
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
         pool3 ! "ping"
         pool3 ! "ping"
@@ -472,7 +471,7 @@ class ActorPoolSpec extends AkkaSpec {
     }
 
     "support customizable supervision config of pooled actors" in {
-      filterEvents(EventFilter[IllegalStateException], EventFilter[RuntimeException]) {
+      filterEvents(EventFilter[IllegalStateException](), EventFilter[RuntimeException]()) {
         val pingCount = new AtomicInteger(0)
         val deathCount = new AtomicInteger(0)
         var keepDying = new AtomicBoolean(false)
@@ -510,7 +509,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! BadState
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pingCount.get must be(1)
 
@@ -520,7 +519,7 @@ class ActorPoolSpec extends AkkaSpec {
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
         pool1 ! BadState
-        sleepFor(2 seconds)
+        (2 seconds).dilated.sleep
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
         pool1 ! "ping"
         (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
