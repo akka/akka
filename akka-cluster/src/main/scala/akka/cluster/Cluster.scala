@@ -1275,7 +1275,7 @@ class DefaultClusterNode private[akka] (
    * Update the list of connections to other nodes in the cluster.
    * Tail recursive, using lockless optimimistic concurrency.
    *
-   * @returns a Map with the remote socket addresses to of disconnected node connections
+   * @return a Map with the remote socket addresses to of disconnected node connections
    */
   @tailrec
   final private[cluster] def connectToAllNewlyArrivedMembershipNodesInCluster(

@@ -122,7 +122,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * This means that this actor will get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def startsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
@@ -131,7 +131,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * This means that this actor will not get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def stopsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
@@ -202,7 +202,7 @@ class LocalActorRef private[akka] (
    * This means that this actor will get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def startsMonitoring(subject: ActorRef): ActorRef = actorCell.startsMonitoring(subject)
 
@@ -211,7 +211,7 @@ class LocalActorRef private[akka] (
    * This means that this actor will not get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def stopsMonitoring(subject: ActorRef): ActorRef = actorCell.stopsMonitoring(subject)
 
