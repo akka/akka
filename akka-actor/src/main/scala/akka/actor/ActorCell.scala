@@ -45,6 +45,7 @@ private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory 
 
   def app: AkkaApplication
 
+  def parent: ActorRef
 }
 
 private[akka] object ActorCell {
@@ -61,7 +62,7 @@ private[akka] class ActorCell(
   val app: AkkaApplication,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
-  val supervisor: ActorRef,
+  val parent: ActorRef,
   var receiveTimeout: Option[Long],
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
@@ -93,7 +94,7 @@ private[akka] class ActorCell(
     mailbox = dispatcher.createMailbox(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    supervisor.sendSystemMessage(akka.dispatch.Supervise(self))
+    parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
     dispatcher.attach(this)
   }
@@ -162,7 +163,7 @@ private[akka] class ActorCell(
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          supervisor ! Failed(self, ActorInitializationException(self, "exception during creation", e))
+          parent ! Failed(self, ActorInitializationException(self, "exception during creation", e))
         }
     }
 
@@ -193,7 +194,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        supervisor ! Failed(self, ActorInitializationException(self, "exception during re-creation", e))
+        parent ! Failed(self, ActorInitializationException(self, "exception during re-creation", e))
       }
     }
 
@@ -222,7 +223,7 @@ private[akka] class ActorCell(
         }
       } finally {
         try {
-          supervisor ! ChildTerminated(self)
+          parent ! ChildTerminated(self)
           app.deathWatch.publish(Terminated(self))
         } finally {
           currentMessage = null
@@ -287,11 +288,11 @@ private[akka] class ActorCell(
               if (e.isInstanceOf[InterruptedException]) {
                 val ex = ActorInterruptedException(e)
                 props.faultHandler.handleSupervisorFailing(self, children)
-                supervisor ! Failed(self, ex)
+                parent ! Failed(self, ex)
                 throw e //Re-throw InterruptedExceptions as expected
               } else {
                 props.faultHandler.handleSupervisorFailing(self, children)
-                supervisor ! Failed(self, e)
+                parent ! Failed(self, e)
               }
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
