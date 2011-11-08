@@ -25,8 +25,8 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, http, remote, slf4j, akkaSbtPlugin, samples, tutorials, docs)
-    //aggregate = Seq(actor, testkit, actorTests, stm, http, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, akkaSbtPlugin, samples, tutorials, docs)
+    //aggregate = Seq(actor, testkit, actorTests, stm, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
   )
 
   lazy val actor = Project(
@@ -104,15 +104,6 @@ object AkkaBuild extends Build {
   //     test in Test <<= (test in Test) dependsOn (test in MultiJvm)
   //   )
   // ) configs (MultiJvm)
-
-  lazy val http = Project(
-    id = "akka-http",
-    base = file("akka-http"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.http
-    )
-  )
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -222,7 +213,7 @@ object AkkaBuild extends Build {
   // lazy val kernel = Project(
   //   id = "akka-kernel",
   //   base = file("akka-kernel"),
-  //   dependencies = Seq(cluster, http, slf4j, spring),
+  //   dependencies = Seq(cluster, slf4j, spring),
   //   settings = defaultSettings ++ Seq(
   //     libraryDependencies ++= Dependencies.kernel
   //   )
@@ -312,7 +303,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", stm, http, remote, slf4j),
+    dependencies = Seq(actor, testkit % "test->test", stm, remote, slf4j),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -416,11 +407,6 @@ object Dependencies {
     protobuf, sjson, zkClient, zookeeper, zookeeperLock, Test.junit, Test.scalatest
   )
 
-  val http = Seq(
-    jsr250, Provided.javaxServlet, Provided.jetty, Provided.jerseyServer, jsr311, commonsCodec,
-    Test.junit, Test.scalatest, Test.mockito
-  )
-
   val slf4j = Seq(slf4jApi)
 
   val mailboxes = Seq(Test.scalatest)
@@ -437,8 +423,7 @@ object Dependencies {
 //  val spring = Seq(springBeans, springContext, camelSpring, Test.junit, Test.scalatest)
 
   val kernel = Seq(
-    jettyUtil, jettyXml, jettyServlet, jerseyCore, jerseyJson, jerseyScala,
-    jacksonCore, staxApi, Provided.jerseyServer
+    jettyUtil, jettyXml, jettyServlet, jacksonCore, staxApi
   )
 
   // TODO: resolve Jetty version conflict
@@ -480,14 +465,9 @@ object Dependency {
   val h2Lzf         = "voldemort.store.compress"    % "h2-lzf"                 % "1.0"        // ApacheV2
   val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
   val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"     % V.Jackson    // ApacheV2
-  val jerseyCore    = "com.sun.jersey"              % "jersey-core"            % V.Jersey     // CDDL v1
-  val jerseyJson    = "com.sun.jersey"              % "jersey-json"            % V.Jersey     // CDDL v1
-  val jerseyScala   = "com.sun.jersey.contribs"     % "jersey-scala"           % V.Jersey     // CDDL v1
   val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
   val jettyXml      = "org.eclipse.jetty"           % "jetty-xml"              % V.Jetty      // Eclipse license
   val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"          % V.Jetty      // Eclipse license
-  val jsr250        = "javax.annotation"            % "jsr250-api"             % "1.0"        // CDDL v1
-  val jsr311        = "javax.ws.rs"                 % "jsr311-api"             % "1.1"        // CDDL v1
   val log4j         = "log4j"                       % "log4j"                  % "1.2.15"     // ApacheV2
   val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.7"      // ApacheV2
   val multiverse    = "org.multiverse"              % "multiverse-alpha"       % V.Multiverse // ApacheV2
@@ -509,7 +489,6 @@ object Dependency {
 
   object Provided {
     val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" // CDDL v1
-    val jerseyServer = "com.sun.jersey"    % "jersey-server" % V.Jersey       % "provided"            // CDDL v1
     val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided"            // Eclipse license
   }
 
