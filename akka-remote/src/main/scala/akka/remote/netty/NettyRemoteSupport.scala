@@ -168,6 +168,30 @@ abstract class RemoteClient private[akka] (
   }
 }
 
+class PassiveRemoteClient(_app: AkkaApplication,
+                          val currentChannel: Channel,
+                          remoteSupport: RemoteSupport,
+                          module: NettyRemoteClientModule,
+                          remoteAddress: InetSocketAddress,
+                          val loader: Option[ClassLoader] = None,
+                          notifyListenersFun: (⇒ Any) ⇒ Unit)
+  extends RemoteClient(_app, remoteSupport, module, remoteAddress) {
+
+  def notifyListeners(msg: ⇒ Any): Unit = notifyListenersFun(msg)
+
+  def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
+    notifyListeners(RemoteClientStarted(module, remoteAddress))
+    app.eventHandler.debug(this, "Starting remote client connection to [%s]".format(remoteAddress))
+  }
+
+  def shutdown() = runSwitch switchOff {
+    app.eventHandler.debug(this, "Shutting down remote client [%s]".format(name))
+
+    notifyListeners(RemoteClientShutdown(module, remoteAddress))
+    app.eventHandler.debug(this, "[%s] has been shut down".format(name))
+  }
+}
+
 /**
  *  RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
  *
@@ -621,7 +645,12 @@ class RemoteServerHandler(
     event.getMessage match {
       case null ⇒ throw new IllegalActorStateException("Message in remote MessageEvent is null [" + event + "]")
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒ handleRemoteMessageProtocol(remote.getMessage, event.getChannel)
-      case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒ //Doesn't handle instructions
+      case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
+        remote.getInstruction.getCommandType match {
+          case CommandType.CONNECT  ⇒ //TODO FIXME Create passive connection here
+          case CommandType.SHUTDOWN ⇒ //TODO FIXME Dispose passive connection here
+          case _                    ⇒ //Unknown command
+        }
       case _ ⇒ //ignore
     }
   }
