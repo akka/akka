@@ -517,9 +517,7 @@ trait NettyRemoteServerModule extends RemoteServerModule {
         currentServer.set(Some(new NettyRemoteServer(app, this, _hostname, _port, loader)))
       }
     } catch {
-      case e: Exception ⇒
-        app.eventHandler.error(e, this, e.getMessage)
-        notifyListeners(RemoteServerError(e, this))
+      case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
     }
     this
   }
@@ -626,19 +624,16 @@ class RemoteServerHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    app.eventHandler.debug(this, "Remote client [%s] connected to [%s]".format(clientAddress, server.name))
     server.notifyListeners(RemoteServerClientConnected(server, clientAddress))
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    app.eventHandler.debug(this, "Remote client [%s] disconnected from [%s]".format(clientAddress, server.name))
     server.notifyListeners(RemoteServerClientDisconnected(server, clientAddress))
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val clientAddress = getClientAddress(ctx)
-    app.eventHandler.debug("Remote client [%s] channel closed from [%s]".format(clientAddress, server.name), this)
     server.notifyListeners(RemoteServerClientClosed(server, clientAddress))
   }
 
