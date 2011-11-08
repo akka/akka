@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorRef, MinimalActorRef, LocalActorRef, Props }
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props }
 import akka.{ AkkaException, AkkaApplication }
 import akka.AkkaApplication.AkkaConfig
 import akka.util.ReflectiveAccess
@@ -340,6 +340,9 @@ object Logging {
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
+    override val name: String = "standard-out-logger"
+    val path: ActorPath = null // pathless
+    val address: String = name
     override val toString = "StandardOutLogger"
     override def postMessageToMailbox(obj: Any, sender: ActorRef) { print(obj) }
   }

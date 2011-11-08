@@ -157,7 +157,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ RemoteActorRef(remote.server, gossipingNode, remote.remoteDaemonServiceName, None)
+          val connectionFactory = () ⇒ RemoteActorRef(remote.server, gossipingNode, remote.remoteDaemon.path, None)
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }
@@ -310,7 +310,7 @@ class Gossiper(remote: Remote) {
 
     RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(GOSSIP)
-      .setActorAddress(remote.remoteDaemonServiceName)
+      .setActorAddress(remote.remoteDaemon.path.toString)
       .setPayload(ByteString.copyFrom(gossipAsBytes))
       .build()
   }

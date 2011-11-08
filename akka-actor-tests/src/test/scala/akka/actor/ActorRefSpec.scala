@@ -278,31 +278,18 @@ class ActorRefSpec extends AkkaSpec {
         " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 
-    "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
-      val latch = new CountDownLatch(1)
-      val a = actorOf(new InnerActor {
-        override def postStop {
-          // app.registry.unregister(self)
-          latch.countDown
-        }
-      })
-
-      val inetAddress = app.defaultAddress
-
-      val expectedSerializedRepresentation = new SerializedActorRef(a.address, inetAddress)
-
+    "must throw exception on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
       import java.io._
 
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      out.writeObject(a)
+      val serialized = SerializedActorRef(app.hostname, app.port, "/this/path/does/not/exist")
+
+      out.writeObject(serialized)
 
       out.flush
       out.close
-
-      a.stop()
-      latch.await(5, TimeUnit.SECONDS) must be === true
 
       Serialization.app.withValue(app) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))

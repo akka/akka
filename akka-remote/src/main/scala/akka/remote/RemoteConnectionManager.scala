@@ -74,7 +74,7 @@ class RemoteConnectionManager(
       case (`from`, actorRef) ⇒
         changed = true
         //actorRef.stop()
-        (to, newConnection(actorRef.address, to))
+        (to, newConnection(to, actorRef.path))
       case other ⇒ other
     }
 
@@ -149,7 +149,7 @@ class RemoteConnectionManager(
     }
   }
 
-  private[remote] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
-    RemoteActorRef(remote.server, inetSocketAddress, actorAddress, None)
+  private[remote] def newConnection(inetSocketAddress: InetSocketAddress, actorPath: ActorPath) = {
+    RemoteActorRef(remote.server, inetSocketAddress, actorPath, None)
   }
 }

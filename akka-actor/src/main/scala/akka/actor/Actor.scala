@@ -213,7 +213,7 @@ trait Actor {
    * Stores the context for this actor, including self, sender, and hotswap.
    */
   @transient
-  private[akka] implicit val context: ActorContext = {
+  protected[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
 
     def noContextError =

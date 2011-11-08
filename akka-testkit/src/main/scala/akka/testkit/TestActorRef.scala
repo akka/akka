@@ -18,8 +18,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor: ActorRef, address: String)
-  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, address, false) {
+class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor: ActorRef, name: String)
+  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, _supervisor.path / name, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -34,9 +34,9 @@ class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor
    */
   def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
-  override def toString = "TestActor[" + address + ":" + uuid + "]"
+  override def toString = "TestActor[" + address + "]"
 
-  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].uuid == uuid
+  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address
 }
 
 object TestActorRef {
@@ -49,8 +49,13 @@ object TestActorRef {
 
   def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, app.guardian, address)
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, address: String)(implicit app: AkkaApplication): TestActorRef[T] =
-    new TestActorRef(app, props, supervisor, address)
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, address: String)(implicit app: AkkaApplication): TestActorRef[T] = {
+    val name: String = address match {
+      case null | Props.randomAddress ⇒ newUuid.toString
+      case given                      ⇒ given
+    }
+    new TestActorRef(app, props, supervisor, name)
+  }
 
   def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomAddress)
 
