@@ -348,13 +348,17 @@ class ActiveRemoteClientHandler(
 
   implicit def _app = app
 
+  def runOnceNow(thunk: ⇒ Unit) = timer.newTimeout(new TimerTask() {
+    def run(timeout: Timeout) = try { thunk } finally { timeout.cancel() }
+  }, 0, TimeUnit.MILLISECONDS)
+
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
       event.getMessage match {
         case arp: AkkaRemoteProtocol if arp.hasInstruction ⇒
           val rcp = arp.getInstruction
           rcp.getCommandType match {
-            case CommandType.SHUTDOWN ⇒ akka.dispatch.Future { client.module.shutdownClientConnection(remoteAddress) }
+            case CommandType.SHUTDOWN ⇒ runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
@@ -380,7 +384,7 @@ class ActiveRemoteClientHandler(
           }
         }
       }, settings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
-    } else akka.dispatch.Future {
+    } else runOnceNow {
       client.module.shutdownClientConnection(remoteAddress) // spawn in another thread
     }
   }
@@ -409,7 +413,7 @@ class ActiveRemoteClientHandler(
 
       cause match {
         case e: ReadTimeoutException ⇒
-          akka.dispatch.Future {
+          runOnceNow {
             client.module.shutdownClientConnection(remoteAddress) // spawn in another thread
           }
         case e: Exception ⇒
@@ -498,16 +502,14 @@ trait NettyRemoteServerModule extends RemoteServerModule {
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None ⇒
-      val a = app.defaultAddress
-      "NettyRemoteServer@" + a.getAddress.getHostAddress + ":" + a.getPort
+    case None         ⇒ "NettyRemoteServer@" + app.hostname + ":" + app.port
   }
 
   private val _isRunning = new Switch(false)
 
   def isRunning = _isRunning.isOn
 
-  def start(_hostname: String, _port: Int, loader: Option[ClassLoader] = None): RemoteServerModule = guard withGuard {
+  def start(_hostname: String, _port: Int, loader: Option[ClassLoader] = None): RemoteServerModule = {
     try {
       _isRunning switchOn {
         app.eventHandler.debug(this, "Starting up remote server on [%s:%s]".format(_hostname, _port))
@@ -522,12 +524,10 @@ trait NettyRemoteServerModule extends RemoteServerModule {
     this
   }
 
-  def shutdownServerModule() = guard withGuard {
-    _isRunning switchOff {
-      currentServer.getAndSet(None) foreach { instance ⇒
-        app.eventHandler.debug(this, "Shutting down remote server on %s:%s".format(instance.host, instance.port))
-        instance.shutdown()
-      }
+  def shutdownServerModule() = _isRunning switchOff {
+    currentServer.getAndSet(None) foreach { instance ⇒
+      app.eventHandler.debug(this, "Shutting down remote server on %s:%s".format(instance.host, instance.port))
+      instance.shutdown()
     }
   }
 }

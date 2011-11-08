@@ -129,8 +129,6 @@ abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModul
  * This is the interface for the RemoteServer functionality, it's used in Actor.remote
  */
 trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
-  protected val guard = new ReentrantGuard
-
   /**
    * Signals whether the server is up and running or not
    */
