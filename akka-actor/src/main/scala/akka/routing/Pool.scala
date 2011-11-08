@@ -296,8 +296,10 @@ trait MailboxPressureCapacitor {
 trait ActiveActorsPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ !a.underlying.sender.isShutdown
-      case _                ⇒ false
+      case a: LocalActorRef ⇒
+        val cell = a.underlying
+        cell.mailbox.isScheduled && cell.currentMessage != null
+      case _ ⇒ false
     }
 }
 

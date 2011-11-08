@@ -351,6 +351,7 @@ class ActorPoolSpec extends AkkaSpec {
         val value = r.get
         value must equal(i * i)
       }
+      app.typedActor.stop(pool)
     }
 
     "provide default supervision of pooled actors" in {
