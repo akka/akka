@@ -19,8 +19,8 @@ trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
   private[akka] def shutdown(): Unit //TODO Why should we have "shutdown", should be crash only?
   private[akka] def deploy(deployment: Deploy): Unit
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy]
-  def lookupDeployment(address: String): Option[Deploy] = address match {
+  private[akka] def lookupDeploymentFor(path: String): Option[Deploy]
+  def lookupDeployment(path: String): Option[Deploy] = path match {
     case null | Props.`randomName` ⇒ None
     case some                      ⇒ lookupDeploymentFor(some)
   }
@@ -28,7 +28,7 @@ trait ActorDeployer {
 }
 
 /**
- * Deployer maps actor deployments to actor addresses.
+ * Deployer maps actor paths to actor deployments.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -58,36 +58,36 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   def isClustered(deployment: Deploy): Boolean = !isLocal(deployment)
 
-  def isLocal(address: String): Boolean = isLocal(deploymentFor(address)) //TODO Should this throw exception if address not found?
+  def isLocal(path: String): Boolean = isLocal(deploymentFor(path)) //TODO Should this throw exception if path not found?
 
-  def isClustered(address: String): Boolean = !isLocal(address) //TODO Should this throw exception if address not found?
+  def isClustered(path: String): Boolean = !isLocal(path) //TODO Should this throw exception if path not found?
 
   /**
    * Same as 'lookupDeploymentFor' but throws an exception if no deployment is bound.
    */
-  private[akka] def deploymentFor(address: String): Deploy = {
-    lookupDeploymentFor(address) match {
+  private[akka] def deploymentFor(path: String): Deploy = {
+    lookupDeploymentFor(path) match {
       case Some(deployment) ⇒ deployment
-      case None             ⇒ thrownNoDeploymentBoundException(address)
+      case None             ⇒ thrownNoDeploymentBoundException(path)
     }
   }
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] =
-    instance.lookupDeploymentFor(address)
+  private[akka] def lookupDeploymentFor(path: String): Option[Deploy] =
+    instance.lookupDeploymentFor(path)
 
   private[akka] def deploymentsInConfig: List[Deploy] = {
     for {
-      address ← addressesInConfig
-      deployment ← lookupInConfig(address)
+      path ← pathsInConfig
+      deployment ← lookupInConfig(path)
     } yield deployment
   }
 
-  private[akka] def addressesInConfig: List[String] = {
+  private[akka] def pathsInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
     app.config.getSection(deploymentPath) match {
       case None ⇒ Nil
-      case Some(addressConfig) ⇒
-        addressConfig.map.keySet
+      case Some(pathConfig) ⇒
+        pathConfig.map.keySet
           .map(path ⇒ path.substring(0, path.indexOf(".")))
           .toSet.toList // toSet to force uniqueness
     }
@@ -96,21 +96,21 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(address: String, configuration: Configuration = app.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(path: String, configuration: Configuration = app.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------
-    // akka.actor.deployment.<address>
+    // akka.actor.deployment.<path>
     // --------------------------------
-    val addressPath = "akka.actor.deployment." + address
-    configuration.getSection(addressPath) match {
+    val deploymentKey = "akka.actor.deployment." + path
+    configuration.getSection(deploymentKey) match {
       case None ⇒ None
-      case Some(addressConfig) ⇒
+      case Some(pathConfig) ⇒
 
         // --------------------------------
-        // akka.actor.deployment.<address>.router
+        // akka.actor.deployment.<path>.router
         // --------------------------------
-        val router: Routing = addressConfig.getString("router", "direct") match {
+        val router: Routing = pathConfig.getString("router", "direct") match {
           case "direct"         ⇒ Direct
           case "round-robin"    ⇒ RoundRobin
           case "random"         ⇒ Random
@@ -122,12 +122,12 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.nr-of-instances
+        // akka.actor.deployment.<path>.nr-of-instances
         // --------------------------------
         val nrOfInstances = {
           if (router == Direct) OneNrOfInstances
           else {
-            addressConfig.getAny("nr-of-instances", "1") match {
+            pathConfig.getAny("nr-of-instances", "1") match {
               case "auto" ⇒ AutoNrOfInstances
               case "1"    ⇒ OneNrOfInstances
               case "0"    ⇒ ZeroNrOfInstances
@@ -137,7 +137,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 } catch {
                   case e: Exception ⇒
                     throw new ConfigurationException(
-                      "Config option [" + addressPath +
+                      "Config option [" + deploymentKey +
                         ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
                         nrOfReplicas + "]")
                 }
@@ -146,37 +146,37 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.create-as
+        // akka.actor.deployment.<path>.create-as
         // --------------------------------
-        val recipe: Option[ActorRecipe] = addressConfig.getSection("create-as") map { section ⇒
+        val recipe: Option[ActorRecipe] = pathConfig.getSection("create-as") map { section ⇒
           val implementationClass = section.getString("class") match {
             case Some(impl) ⇒
               getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
-                "Config option [" + addressPath + ".create-as.class] load failed", e), identity)
+                "Config option [" + deploymentKey + ".create-as.class] load failed", e), identity)
             case None ⇒
               throw new ConfigurationException(
-                "Config option [" + addressPath + ".create-as.class] is missing, need the fully qualified name of the class")
+                "Config option [" + deploymentKey + ".create-as.class] is missing, need the fully qualified name of the class")
           }
           ActorRecipe(implementationClass)
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.remote
+        // akka.actor.deployment.<path>.remote
         // --------------------------------
-        addressConfig.getSection("remote") match {
+        pathConfig.getSection("remote") match {
           case Some(remoteConfig) ⇒ // we have a 'remote' config section
 
-            if (addressConfig.getSection("cluster").isDefined) throw new ConfigurationException(
-              "Configuration for deployment ID [" + address + "] can not have both 'remote' and 'cluster' sections.")
+            if (pathConfig.getSection("cluster").isDefined) throw new ConfigurationException(
+              "Configuration for deployment ID [" + path + "] can not have both 'remote' and 'cluster' sections.")
 
             // --------------------------------
-            // akka.actor.deployment.<address>.remote.nodes
+            // akka.actor.deployment.<path>.remote.nodes
             // --------------------------------
             val remoteAddresses = remoteConfig.getList("nodes") match {
               case Nil ⇒ Nil
               case nodes ⇒
                 def raiseRemoteNodeParsingError() = throw new ConfigurationException(
-                  "Config option [" + addressPath +
+                  "Config option [" + deploymentKey +
                     ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + nodes.mkString(", ") + "]")
 
                 nodes map { node ⇒
@@ -192,26 +192,26 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 }
             }
 
-            Some(Deploy(address, recipe, router, nrOfInstances, RemoteScope(remoteAddresses)))
+            Some(Deploy(path, recipe, router, nrOfInstances, RemoteScope(remoteAddresses)))
 
           case None ⇒ // check for 'cluster' config section
 
             // --------------------------------
-            // akka.actor.deployment.<address>.cluster
+            // akka.actor.deployment.<path>.cluster
             // --------------------------------
-            addressConfig.getSection("cluster") match {
+            pathConfig.getSection("cluster") match {
               case None ⇒ None
               case Some(clusterConfig) ⇒
 
                 // --------------------------------
-                // akka.actor.deployment.<address>.cluster.preferred-nodes
+                // akka.actor.deployment.<path>.cluster.preferred-nodes
                 // --------------------------------
 
                 val preferredNodes = clusterConfig.getList("preferred-nodes") match {
                   case Nil ⇒ Nil
                   case homes ⇒
                     def raiseHomeConfigError() = throw new ConfigurationException(
-                      "Config option [" + addressPath +
+                      "Config option [" + deploymentKey +
                         ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
                         homes + "]")
 
@@ -230,18 +230,18 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 }
 
                 // --------------------------------
-                // akka.actor.deployment.<address>.cluster.replication
+                // akka.actor.deployment.<path>.cluster.replication
                 // --------------------------------
                 clusterConfig.getSection("replication") match {
                   case None ⇒
-                    Some(Deploy(address, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Transient)))
+                    Some(Deploy(path, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
                     val storage = replicationConfig.getString("storage", "transaction-log") match {
                       case "transaction-log" ⇒ TransactionLog
                       case "data-grid"       ⇒ DataGrid
                       case unknown ⇒
-                        throw new ConfigurationException("Config option [" + addressPath +
+                        throw new ConfigurationException("Config option [" + deploymentKey +
                           ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
                           unknown + "]")
                     }
@@ -249,11 +249,11 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                       case "write-through" ⇒ WriteThrough
                       case "write-behind"  ⇒ WriteBehind
                       case unknown ⇒
-                        throw new ConfigurationException("Config option [" + addressPath +
+                        throw new ConfigurationException("Config option [" + deploymentKey +
                           ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                           unknown + "]")
                     }
-                    Some(Deploy(address, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
+                    Some(Deploy(path, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
                 }
             }
         }
@@ -261,13 +261,13 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   }
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
-    val e = new DeploymentAlreadyBoundException("Address [" + deployment.address + "] already bound to [" + deployment + "]")
+    val e = new DeploymentAlreadyBoundException("Path [" + deployment.path + "] already bound to [" + deployment + "]")
     log.error(e, e.getMessage)
     throw e
   }
 
-  private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
-    val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
+  private[akka] def thrownNoDeploymentBoundException(path: String): Nothing = {
+    val e = new NoDeploymentBoundException("Path [" + path + "] is not bound to a deployment")
     log.error(e, e.getMessage)
     throw e
   }
@@ -285,9 +285,9 @@ class LocalDeployer extends ActorDeployer {
 
   private[akka] def shutdown(): Unit = deployments.clear() //TODO do something else/more?
 
-  private[akka] def deploy(deployment: Deploy): Unit = deployments.putIfAbsent(deployment.address, deployment)
+  private[akka] def deploy(deployment: Deploy): Unit = deployments.putIfAbsent(deployment.path, deployment)
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
+  private[akka] def lookupDeploymentFor(path: String): Option[Deploy] = Option(deployments.get(path))
 }
 
 class DeploymentException private[akka] (message: String) extends AkkaException(message)

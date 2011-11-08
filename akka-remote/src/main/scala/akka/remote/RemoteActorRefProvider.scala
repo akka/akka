@@ -63,8 +63,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
           val actor: ActorRef = try {
-            // FIXME (actor path): lookup should be by path
-            deployer.lookupDeploymentFor(name) match {
+            deployer.lookupDeploymentFor(path.toString) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
                 // FIXME move to AccrualFailureDetector as soon as we have the Gossiper up and running and remove the option to select impl in the akka.conf file since we only have one

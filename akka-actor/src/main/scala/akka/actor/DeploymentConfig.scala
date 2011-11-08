@@ -15,7 +15,7 @@ object DeploymentConfig {
   // --- Deploy
   // --------------------------------
   case class Deploy(
-    address: String,
+    path: String,
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,

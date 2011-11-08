@@ -192,8 +192,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
       actors.putIfAbsent(path.toString, newFuture) match {
         case null ⇒
           val actor: ActorRef = try {
-            // FIXME (actor path): lookup should be by path
-            (if (systemService) None else deployer.lookupDeployment(name)) match { // see if the deployment already exists, if so use it, if not create actor
+            (if (systemService) None else deployer.lookupDeployment(path.toString)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
