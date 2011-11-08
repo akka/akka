@@ -9,6 +9,8 @@ import akka.AkkaApplication
 object ActorPath {
   final val separator = "/"
 
+  val pattern = """(/[0-9a-zA-Z\-\_\$\.]+)+""".r.pattern
+
   /**
    * Create an actor path from a string.
    */
@@ -35,6 +37,21 @@ object ActorPath {
    */
   def join(path: Iterable[String]): String =
     path.mkString(separator, separator, "")
+
+  /**
+   * Is this string representation of a path valid?
+   */
+  def valid(path: String): Boolean =
+    pattern.matcher(path).matches
+
+  /**
+   * Validate a path. Moved here from Address.validate.
+   * Throws an IllegalArgumentException if the path is invalid.
+   */
+  def validate(path: String): Unit = {
+    if (!valid(path))
+      throw new IllegalArgumentException("Path [" + path + "] is not valid. Needs to follow this pattern: " + pattern)
+  }
 }
 
 /**

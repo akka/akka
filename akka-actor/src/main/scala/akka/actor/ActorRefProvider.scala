@@ -65,7 +65,7 @@ trait ActorRefFactory {
    */
   protected def guardian: ActorRef
 
-  def actorOf(props: Props): ActorRef = actorOf(props, Props.randomAddress)
+  def actorOf(props: Props): ActorRef = actorOf(props, Props.randomName)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
@@ -85,7 +85,7 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomAddress)
+  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomName)
 
   def actorOf(props: RoutedProps, name: String): ActorRef = provider.actorOf(props, guardian, name)
 
@@ -178,7 +178,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
   private[akka] def actorOf(props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
     val name = path.name
-    if ((name eq null) || name == Props.randomAddress) {
+    if ((name eq null) || name == Props.randomName) {
       val randomName: String = newUuid.toString
       val newPath = path.parent / randomName
       val actor = new LocalActorRef(app, props, supervisor, newPath, systemService = true)

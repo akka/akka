@@ -129,7 +129,7 @@ trait LoggingBus extends ActorEventBus {
   }
 
   private def addLogger(app: AkkaApplication, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
-    val actor = app.systemActorOf(Props(clazz), Props.randomAddress)
+    val actor = app.systemActorOf(Props(clazz), Props.randomName)
     actor ! InitializeLogger(this)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
     publish(Info(this, "logger " + clazz.getName + " started"))

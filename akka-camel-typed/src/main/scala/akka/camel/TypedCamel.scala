@@ -32,8 +32,8 @@ private[camel] object TypedCamel {
    * and re-uses the <code>activationTracker</code> of <code>service</code>.
    */
   def onCamelServiceStart(service: CamelService) {
-    consumerPublisher = new LocalActorRef(Props(new TypedConsumerPublisher(service.activationTracker)), Props.randomAddress, true)
-    publishRequestor = new LocalActorRef(Props(new TypedConsumerPublishRequestor), Props.randomAddress, true)
+    consumerPublisher = new LocalActorRef(Props(new TypedConsumerPublisher(service.activationTracker)), Props.randomName, true)
+    publishRequestor = new LocalActorRef(Props(new TypedConsumerPublishRequestor), Props.randomName, true)
 
     registerPublishRequestor
 

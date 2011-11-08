@@ -310,7 +310,7 @@ class Gossiper(remote: Remote) {
 
     RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(GOSSIP)
-      .setActorAddress(remote.remoteDaemon.path.toString)
+      .setActorPath(remote.remoteDaemon.path.toString)
       .setPayload(ByteString.copyFrom(gossipAsBytes))
       .build()
   }

@@ -441,23 +441,3 @@ trait Actor {
   private val processingBehavior = receive //ProcessingBehavior is the original behavior
 }
 
-/**
- * Helper methods and fields for working with actor addresses.
- * Meant for internal use.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-object Address {
-
-  val clusterActorRefPrefix = "cluster-actor-ref.".intern
-
-  private val validAddressPattern = java.util.regex.Pattern.compile("[0-9a-zA-Z\\-\\_\\$\\.]+")
-
-  def validate(address: String) {
-    if (!validAddressPattern.matcher(address).matches) {
-      val e = new IllegalArgumentException("Address [" + address + "] is not valid, need to follow pattern: " + validAddressPattern.pattern)
-      throw e
-    }
-  }
-}
-

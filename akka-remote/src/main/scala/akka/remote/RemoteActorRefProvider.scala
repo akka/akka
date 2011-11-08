@@ -198,7 +198,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
     val command = RemoteSystemDaemonMessageProtocol.newBuilder
       .setMessageType(USE)
-      .setActorAddress(actorPath)
+      .setActorPath(actorPath)
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 

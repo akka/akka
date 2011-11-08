@@ -220,7 +220,7 @@ private[akka] class ActorCell(
     def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
-      app.provider.evict(self.address)
+      app.provider.evict(self.path.toString)
       dispatcher.detach(this)
 
       try {
