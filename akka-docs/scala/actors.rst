@@ -60,12 +60,6 @@ Creating Actors
 
 .. includecode:: code/ActorDocSpec.scala#creating-actorOf
 
-Normally you would want to import the ``actorOf`` method like this:
-
-.. includecode:: code/ActorDocSpec.scala#creating-imported
-
-to avoid prefixing it with ``Actor`` every time you use it.
-
 The call to ``actorOf`` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
 ``ActorRef`` is immutable and has a one to one relationship with the Actor it

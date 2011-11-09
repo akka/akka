@@ -1,13 +1,13 @@
 
 .. _guaranteed-delivery:
 
-#########
+#####################
  Guaranteed Delivery
-#########
+#####################
 
 
 Guaranteed Delivery
-=====
+===================
 
 Akka does *not* support guaranteed delivery.
 
