@@ -109,7 +109,7 @@ class Gossiper(remote: Remote) {
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[InetSocketAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
-  private val scheduler = new DefaultScheduler
+  private val scheduler = app.scheduler
 
   private val address = app.defaultAddress
   private val nodeFingerprint = address.##

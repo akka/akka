@@ -4,11 +4,10 @@
 package akka.actor
 
 import akka.util._
-import akka.event.Logging
 
 import scala.collection.mutable
-import java.util.concurrent.ScheduledFuture
 import akka.AkkaApplication
+import akka.event.Logging
 
 object FSM {
 
@@ -31,7 +30,7 @@ object FSM {
   case class TimeoutMarker(generation: Long)
 
   case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: AkkaApplication) {
-    private var ref: Option[ScheduledFuture[AnyRef]] = _
+    private var ref: Option[org.jboss.netty.akka.util.Timeout] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
@@ -43,7 +42,7 @@ object FSM {
 
     def cancel {
       if (ref.isDefined) {
-        ref.get.cancel(true)
+        ref.get.cancel()
         ref = None
       }
     }
@@ -393,7 +392,7 @@ trait FSM[S, D] extends ListenerManagement {
    * FSM State data and current timeout handling
    */
   private var currentState: State = _
-  private var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
+  private var timeoutFuture: Option[org.jboss.netty.akka.util.Timeout] = None
   private var generation: Long = 0L
 
   /*
@@ -458,7 +457,7 @@ trait FSM[S, D] extends ListenerManagement {
     case t @ Timer(name, msg, repeat, gen) ⇒
       if ((timers contains name) && (timers(name).generation == gen)) {
         if (timeoutFuture.isDefined) {
-          timeoutFuture.get.cancel(true)
+          timeoutFuture.get.cancel()
           timeoutFuture = None
         }
         generation += 1
@@ -476,7 +475,7 @@ trait FSM[S, D] extends ListenerManagement {
       removeListener(actorRef)
     case value ⇒ {
       if (timeoutFuture.isDefined) {
-        timeoutFuture.get.cancel(true)
+        timeoutFuture.get.cancel()
         timeoutFuture = None
       }
       generation += 1

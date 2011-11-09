@@ -17,6 +17,7 @@ import akka.routing.Routing
 import akka.remote.RemoteSupport
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
+import org.jboss.netty.akka.util.HashedWheelTimer
 
 object AkkaApplication {
 
@@ -174,14 +175,21 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
+
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+
+  // Start the scheduler before the provider (to prevent null pointers from happening in e.g. Gossiper)
+  val scheduler = new DefaultScheduler(new HashedWheelTimer)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val reflective = new ReflectiveAccess(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = reflective.createProvider
+
+  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+
+  terminationFuture.onComplete(_ ⇒ scheduler.stop())
 
   private class Guardian extends Actor {
     def receive = {
@@ -235,9 +243,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val serialization = new Serialization(this)
-
-  val scheduler = new DefaultScheduler
-  terminationFuture.onComplete(_ ⇒ scheduler.shutdown())
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop(): Unit = {
