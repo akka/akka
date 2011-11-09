@@ -40,10 +40,6 @@ class ClusterSpec extends AkkaSpec {
       getBool("akka.remote.server.require-cookie") must equal(Some(false))
       getBool("akka.remote.server.untrusted-mode") must equal(Some(false))
       getInt("akka.remote.server.backlog") must equal(Some(4096))
-      getInt("akka.remote.server.execution-pool-keepalive") must equal(Some(60))
-      getInt("akka.remote.server.execution-pool-size") must equal(Some(16))
-      getInt("akka.remote.server.max-channel-memory-size") must equal(Some(0))
-      getInt("akka.remote.server.max-total-memory-size") must equal(Some(0))
 
       //akka.remote.client
       getBool("akka.remote.client.buffering.retry-message-send-on-failure") must equal(Some(false))

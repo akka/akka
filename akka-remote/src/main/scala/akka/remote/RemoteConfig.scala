@@ -29,7 +29,7 @@ class RemoteServerSettings(val app: AkkaApplication) {
   import app.config
   import app.AkkaConfig.DefaultTimeUnit
 
-  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
+  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster") //TODO FIXME Shouldn't this be "remote"?
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE = config.getString("akka.remote.secure-cookie")
   val REQUIRE_COOKIE = {

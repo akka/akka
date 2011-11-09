@@ -359,10 +359,11 @@ abstract class ActorModelSpec extends AkkaSpec {
         }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
         boss ! "run"
         try {
-          assertCountDown(cachedMessage.latch, Testing.testTime(10000), "Should process " + num + " countdowns")
+          assertCountDown(cachedMessage.latch, Testing.testTime(20000), "Should process " + num + " countdowns")
         } catch {
           case e ⇒
-            System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
+            System.err.println(this.getClass.getName + " error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
+            throw e
         }
         boss.stop()
       }
