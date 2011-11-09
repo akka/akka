@@ -22,7 +22,7 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
       var subscriber: Option[ActorRef] = None
       var msgGenerator: Option[ActorRef] = None
       try {
-        context = Some(ZeroMQ.newContext)
+        context = Some(ZeroMQ.newContext())
         publisher = newPublisher(context.get, publisherProbe.ref)
         subscriber = newSubscriber(context.get, subscriberProbe.ref)
         msgGenerator = newMessageGenerator(publisher)
@@ -52,7 +52,7 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
       var publisher: Option[ActorRef] = None
       var context: Option[Context] = None
       try {
-        context = Some(ZeroMQ.newContext)
+        context = Some(ZeroMQ.newContext())
         publisher = newPublisher(context.get, publisherProbe.ref)
         publisher ! ZMQMessage(Seq[Frame]())
       } finally {
