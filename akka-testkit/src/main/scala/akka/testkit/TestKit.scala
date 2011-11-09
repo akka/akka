@@ -559,19 +559,24 @@ object TestKit {
    *
    * Note that the timeout is scaled using Duration.timeFactor.
    */
-  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis) {
+  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max
 
     @tailrec
-    def poll(t: Duration) {
+    def poll(): Boolean = {
       if (!p) {
-        assert(now < stop, "timeout " + max + " expired")
-        Thread.sleep(t.toMillis)
-        poll((stop - now) min interval)
-      }
+        val toSleep = stop - now
+        if (toSleep <= Duration.Zero) {
+          if (noThrow) false
+          else throw new AssertionError("timeout " + max + " expired")
+        } else {
+          Thread.sleep((toSleep min interval).toMillis)
+          poll()
+        }
+      } else true
     }
 
-    poll(max min interval)
+    poll()
   }
 
   /**

@@ -106,22 +106,19 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "notify unhandled messages" in {
-      filterEvents(EventFilter.custom {
-        case Logging.Warning(`fsm`, "unhandled event Tick in state TestUnhandled") ⇒ true
-        case Logging.Warning(`fsm`, "unhandled event Unhandled(test) in state TestUnhandled") ⇒ true
-        case _ ⇒ false
-      }) {
-        fsm ! TestUnhandled
-        within(1 second) {
-          fsm ! Tick
-          fsm ! SetHandler
-          fsm ! Tick
-          expectMsg(Unhandled(Tick))
-          fsm ! Unhandled("test")
-          fsm ! Cancel
-          expectMsg(Transition(fsm, TestUnhandled, Initial))
+      filterEvents(EventFilter.warning("unhandled event Tick in state TestUnhandled", source = fsm, occurrences = 1),
+        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled", source = fsm, occurrences = 1)) {
+          fsm ! TestUnhandled
+          within(1 second) {
+            fsm ! Tick
+            fsm ! SetHandler
+            fsm ! Tick
+            expectMsg(Unhandled(Tick))
+            fsm ! Unhandled("test")
+            fsm ! Cancel
+            expectMsg(Transition(fsm, TestUnhandled, Initial))
+          }
         }
-      }
     }
 
   }

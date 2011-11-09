@@ -48,11 +48,12 @@ object TestEvent {
  * error messages.
  *
  * See the companion object for convenient factory methods.
- * 
+ *
  * If the `occurrences` is set to Int.MaxValue, no tracking is done.
  */
 abstract class EventFilter(occurrences: Int) {
 
+  @volatile // JMM does not guarantee visibility for non-final fields
   private var todo = occurrences
 
   /**
@@ -69,7 +70,7 @@ abstract class EventFilter(occurrences: Int) {
   }
 
   def awaitDone(max: Duration): Boolean = {
-    if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo == 0, max)
+    if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo == 0, max, noThrow = true)
     todo == Int.MaxValue || todo == 0
   }
 
@@ -82,7 +83,10 @@ abstract class EventFilter(occurrences: Int) {
     try {
       val result = code
       if (!awaitDone(app.AkkaConfig.TestEventFilterLeeway))
-        throw new AssertionError("Timeout waiting for " + todo + " messages on " + this)
+        if (todo > 0)
+          throw new AssertionError("Timeout waiting for " + todo + " messages on " + this)
+        else
+          throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
       result
     } finally app.mainbus publish TestEvent.UnMute(this)
   }
@@ -438,12 +442,12 @@ class TestEventListener extends Logging.DefaultLogger {
 
   var filters: List[EventFilter] = Nil
 
-  override def receive: Actor.Receive = ({
-    case InitializeLogger(bus)            ⇒ Seq(classOf[Mute], classOf[UnMute]) foreach (bus.subscribe(context.self, _))
-    case Mute(filters)                    ⇒ filters foreach addFilter
-    case UnMute(filters)                  ⇒ filters foreach removeFilter
-    case event: LogEvent if filter(event) ⇒
-  }: Actor.Receive) orElse super.receive
+  override def receive = {
+    case InitializeLogger(bus) ⇒ Seq(classOf[Mute], classOf[UnMute]) foreach (bus.subscribe(context.self, _))
+    case Mute(filters)         ⇒ filters foreach addFilter
+    case UnMute(filters)       ⇒ filters foreach removeFilter
+    case event: LogEvent       ⇒ if (!filter(event)) print(event)
+  }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
 

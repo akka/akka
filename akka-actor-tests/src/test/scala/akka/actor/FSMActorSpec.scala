@@ -65,7 +65,7 @@ object FSMActorSpec {
 
     whenUnhandled {
       case Ev(msg) ⇒ {
-        log.info("unhandled event " + msg + " in state " + stateName + " with data " + stateData)
+        log.warning("unhandled event " + msg + " in state " + stateName + " with data " + stateData)
         unhandledLatch.open
         stay
       }
@@ -138,10 +138,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
       transitionCallBackLatch.await
       lockedLatch.await
 
-      filterEvents(EventFilter.custom {
-        case Logging.Info(_: Lock, _) ⇒ true
-        case _                        ⇒ false
-      }) {
+      EventFilter.warning(start = "unhandled event", occurrences = 1) intercept {
         lock ! "not_handled"
         unhandledLatch.await
       }
@@ -200,40 +197,38 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
       new TestKit(AkkaApplication("fsm event", AkkaApplication.defaultConfig ++
         Configuration("akka.loglevel" -> "DEBUG",
           "akka.actor.debug.fsm" -> true))) {
-        app.mainbus.publish(TestEvent.Mute(EventFilter.custom {
-          case _: Logging.Debug ⇒ true
-          case _                ⇒ false
-        }))
-        val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
-          startWith(1, null)
-          when(1) {
-            case Ev("go") ⇒
-              setTimer("t", Shutdown, 1.5 seconds, false)
-              goto(2)
+        EventFilter.debug() intercept {
+          val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
+            startWith(1, null)
+            when(1) {
+              case Ev("go") ⇒
+                setTimer("t", Shutdown, 1.5 seconds, false)
+                goto(2)
+            }
+            when(2) {
+              case Ev("stop") ⇒
+                cancelTimer("t")
+                stop
+            }
+            onTermination {
+              case StopEvent(r, _, _) ⇒ testActor ! r
+            }
+          })
+          app.mainbus.subscribe(testActor, classOf[Logging.Debug])
+          fsm ! "go"
+          expectMsgPF(1 second, hint = "processing Event(go,null)") {
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true
           }
-          when(2) {
-            case Ev("stop") ⇒
-              cancelTimer("t")
-              stop
+          expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
+          expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
+          fsm ! "stop"
+          expectMsgPF(1 second, hint = "processing Event(stop,null)") {
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[testActor") ⇒ true
           }
-          onTermination {
-            case StopEvent(r, _, _) ⇒ testActor ! r
-          }
-        })
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
-        fsm ! "go"
-        expectMsgPF(1 second, hint = "processing Event(go,null)") {
-          case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[testActor") ⇒ true
+          expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
+          expectNoMsg(1 second)
+          app.mainbus.unsubscribe(testActor)
         }
-        expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
-        expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
-        fsm ! "stop"
-        expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-          case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[testActor") ⇒ true
-        }
-        expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
-        expectNoMsg(1 second)
-        app.mainbus.unsubscribe(testActor)
       }
     }
 
