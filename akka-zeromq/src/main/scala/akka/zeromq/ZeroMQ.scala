@@ -18,8 +18,8 @@ case class SocketParameters(
 )
 
 object ZeroMQ {
-  def newContext = {
-    new Context(1)
+  def newContext(numIoThreads: Int = 1) = {
+    new Context(numIoThreads)
   }
   def newSocket(params: SocketParameters, supervisor: Option[ActorRef] = None, dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher) = {
     val socket = Actor.actorOf(new ConcurrentSocketActor(params, dispatcher))
