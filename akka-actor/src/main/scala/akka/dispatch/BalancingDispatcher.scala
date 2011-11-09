@@ -98,7 +98,7 @@ class BalancingDispatcher(
 
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
     if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
-      if (mbox.isInstanceOf[SharingMailbox]) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
+      if (mbox.isInstanceOf[SharingMailbox] && !mbox.isClosed) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
       false
     } else true
   }

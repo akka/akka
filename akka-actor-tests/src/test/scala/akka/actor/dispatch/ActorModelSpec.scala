@@ -368,7 +368,7 @@ abstract class ActorModelSpec extends AkkaSpec {
         boss.stop()
       }
       for (run ← 1 to 3) {
-        flood(40000)
+        flood(50000)
         assertDispatcher(dispatcher)(starts = run, stops = run)
       }
     }
