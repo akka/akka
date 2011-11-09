@@ -10,4 +10,3 @@ General
    slf4j
    supervision
    guaranteed-delivery
-
