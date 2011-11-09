@@ -142,7 +142,7 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
   /**
    *  Starts the server up
    */
-  def start(host: String, port: Int, loader: Option[ClassLoader]): RemoteServerModule
+  def start(loader: Option[ClassLoader]): RemoteServerModule
 
   /**
    *  Shuts the server down

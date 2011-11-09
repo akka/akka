@@ -68,7 +68,7 @@ class Remote(val app: AkkaApplication) {
 
   lazy val server: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
-    remote.start(hostname, port)
+    remote.start() //TODO FIXME Any application loader here?
 
     app.eventHandler.addListener(eventStream.sender)
     app.eventHandler.addListener(remoteClientLifeCycleHandler)

@@ -253,7 +253,6 @@ class ActiveRemoteClient private[akka] (
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
         false
-
       } else {
         sendSecureCookie(connection)
         true
@@ -446,13 +445,12 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
   override def toString = name
 }
 
-class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServerModule, val host: String, val port: Int, val loader: Option[ClassLoader]) extends RemoteMarshallingOps {
+class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServerModule, val loader: Option[ClassLoader]) extends RemoteMarshallingOps {
 
   val settings = new RemoteServerSettings(app)
   import settings._
 
-  val name = "NettyRemoteServer@" + host + ":" + port
-  val address = new InetSocketAddress(host, port)
+  val name = "NettyRemoteServer@" + app.hostname + ":" + app.port
 
   private val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool)
 
@@ -469,7 +467,7 @@ class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServe
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT.toMillis)
 
-  openChannels.add(bootstrap.bind(address))
+  openChannels.add(bootstrap.bind(app.defaultAddress))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))
 
   def shutdown() {
@@ -499,11 +497,6 @@ trait NettyRemoteServerModule extends RemoteServerModule {
 
   private[akka] val currentServer = new AtomicReference[Option[NettyRemoteServer]](None)
 
-  def address = currentServer.get match {
-    case Some(server) ⇒ server.address
-    case None         ⇒ app.defaultAddress
-  }
-
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
     case None         ⇒ "NettyRemoteServer@" + app.hostname + ":" + app.port
@@ -513,9 +506,9 @@ trait NettyRemoteServerModule extends RemoteServerModule {
 
   def isRunning = _isRunning.isOn
 
-  def start(_hostname: String, _port: Int, loader: Option[ClassLoader] = None): RemoteServerModule = {
+  def start(loader: Option[ClassLoader] = None): RemoteServerModule = {
     try {
-      _isRunning switchOn { currentServer.set(Some(new NettyRemoteServer(app, this, _hostname, _port, loader))) }
+      _isRunning switchOn { currentServer.set(Some(new NettyRemoteServer(app, this, loader))) }
     } catch {
       case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
     }
