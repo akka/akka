@@ -156,10 +156,6 @@ abstract class RemoteClient private[akka] (
               if (future.isCancelled) {
                 //Not interesting at the moment
               } else if (!future.isSuccess) {
-                val socketAddress = future.getChannel.getRemoteAddress match {
-                  case i: InetSocketAddress ⇒ Some(i)
-                  case _                    ⇒ None
-                }
                 notifyListeners(RemoteClientWriteFailed(payload, future.getCause, module, remoteAddress))
               }
             }
