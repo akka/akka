@@ -13,6 +13,7 @@ import akka.actor.DeploymentConfig._
 import akka.{ AkkaException, AkkaApplication }
 import akka.config.{ Configuration, ConfigurationException }
 import akka.util.Duration
+import java.net.InetSocketAddress
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -36,10 +37,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   val deploymentConfig = new DeploymentConfig(app)
   val log = Logging(app.mainbus, this)
 
-  //  val defaultAddress = Node(Config.nodename)
-
-  lazy val instance: ActorDeployer = {
-    val deployer = if (app.reflective.ClusterModule.isEnabled) app.reflective.ClusterModule.clusterDeployer else LocalDeployer
+  val instance: ActorDeployer = {
+    val deployer = new LocalDeployer()
     deployer.init(deploymentsInConfig)
     deployer
   }
@@ -73,25 +72,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
     }
   }
 
-  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = {
-    val deployment_? = instance.lookupDeploymentFor(address)
-
-    if (deployment_?.isDefined && (deployment_?.get ne null)) deployment_?
-    else {
-      val newDeployment = try {
-        lookupInConfig(address)
-      } catch {
-        case e: ConfigurationException ⇒
-          log.error(e, e.getMessage) //TODO FIXME I do not condone log AND rethrow
-          throw e
-      }
-
-      newDeployment match {
-        case None | Some(null) ⇒ None
-        case Some(d)           ⇒ deploy(d); newDeployment // deploy and cache it
-      }
-    }
-  }
+  private[akka] def lookupDeploymentFor(address: String): Option[Deploy] =
+    instance.lookupDeploymentFor(address)
 
   private[akka] def deploymentsInConfig: List[Deploy] = {
     for {
@@ -249,7 +231,8 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                     case e: Exception ⇒ raiseRemoteNodeParsingError()
                   }
                   if (port == 0) raiseRemoteNodeParsingError()
-                  RemoteAddress(hostname, port)
+                  val inet = new InetSocketAddress(hostname, port) //FIXME switch to non-ip-tied
+                  RemoteAddress(Option(inet.getAddress).map(_.getHostAddress).getOrElse(hostname), inet.getPort)
                 }
             }
 
@@ -341,20 +324,14 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-object LocalDeployer extends ActorDeployer {
+class LocalDeployer extends ActorDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]
 
-  private[akka] def init(deployments: Seq[Deploy]) {
-    deployments foreach (deploy(_)) // deploy
-  }
+  private[akka] def init(deployments: Seq[Deploy]): Unit = deployments foreach deploy // deploy
 
-  private[akka] def shutdown() {
-    deployments.clear() //TODO do something else/more?
-  }
+  private[akka] def shutdown(): Unit = deployments.clear() //TODO do something else/more?
 
-  private[akka] def deploy(deployment: Deploy) {
-    deployments.putIfAbsent(deployment.address, deployment)
-  }
+  private[akka] def deploy(deployment: Deploy): Unit = deployments.putIfAbsent(deployment.address, deployment)
 
   private[akka] def lookupDeploymentFor(address: String): Option[Deploy] = Option(deployments.get(address))
 }

@@ -8,9 +8,9 @@ import akka.actor.Actor._
 import akka.event.Logging
 import System.{ currentTimeMillis ⇒ now }
 import akka.routing.Routing.Broadcast
-import akka.actor.{ Timeout, Channel, Actor, PoisonPill }
 import akka.routing._
 import akka.AkkaApplication
+import akka.actor.{ ActorRef, Timeout, Actor, PoisonPill }
 
 object Pi extends App {
 
@@ -41,8 +41,7 @@ object Pi extends App {
     }
 
     def receive = {
-      case Work(arg, nrOfElements) ⇒
-        channel ! Result(calculatePiFor(arg, nrOfElements)) // perform the work
+      case Work(arg, nrOfElements) ⇒ sender ! Result(calculatePiFor(arg, nrOfElements)) // perform the work
     }
   }
 
@@ -68,11 +67,11 @@ object Pi extends App {
         for (arg ← 0 until nrOfMessages) router ! Work(arg, nrOfElements)
 
         //Assume the gathering behavior
-        this become gather(channel)
+        this become gather(sender)
     }
 
     // phase 2, aggregate the results of the Calculation
-    def gather(recipient: Channel[Any]): Receive = {
+    def gather(recipient: ActorRef): Receive = {
       case Result(value) ⇒
         // handle result from the worker
         pi += value

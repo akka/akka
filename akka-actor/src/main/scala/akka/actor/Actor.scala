@@ -119,8 +119,9 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
 
 /**
  * Classes for passing status back to the sender.
+ * Used for internal ACKing protocol. But exposed as utility class for user-specific ACKing protocols as well.
  */
-object Status { //FIXME Why does this exist at all?
+object Status {
   sealed trait Status extends Serializable
   case class Success(status: AnyRef) extends Status
   case class Failure(cause: Throwable) extends Status
@@ -212,16 +213,15 @@ trait Actor {
    * Stores the context for this actor, including self, sender, and hotswap.
    */
   @transient
-  private[akka] val context: ActorContext = {
+  private[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
 
-    def noContextError = {
+    def noContextError =
       throw new ActorInitializationException(
         "\n\tYou cannot create an instance of " + getClass.getName + " explicitly using the constructor (new)." +
           "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
           "\n\t\t'val actor = Actor.actorOf[MyActor]', or" +
           "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
-    }
 
     if (contextStack.isEmpty) noContextError
     val context = contextStack.head
@@ -287,14 +287,6 @@ trait Actor {
   final def sender: ActorRef = context.sender
 
   /**
-   * Abstraction for unification of sender and senderFuture for later reply
-   */
-  def channel: UntypedChannel = context.channel
-
-  // TODO FIXME REMOVE ME just for current compatibility
-  implicit def forwardable: ForwardableChannel = ForwardableChannel(channel)
-
-  /**
    * Gets the current receive timeout
    * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
    */
@@ -329,7 +321,7 @@ trait Actor {
    *   def receive = {
    *     case Ping =&gt;
    *       println("got a 'Ping' message")
-   *       channel ! "pong"
+   *       sender ! "pong"
    *
    *     case OneWay =&gt;
    *       println("got a 'OneWay' message")
@@ -405,13 +397,13 @@ trait Actor {
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef
-   * @returns the provided ActorRef
+   * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef = self startsMonitoring subject
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
-   * @returns the provided ActorRef
+   * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef = self stopsMonitoring subject
 
@@ -430,10 +422,7 @@ trait Actor {
         case f: Failed                 ⇒ context.handleFailure(f)
         case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct.child)
         case Kill                      ⇒ throw new ActorKilledException("Kill")
-        case PoisonPill ⇒
-          val ch = channel
-          self.stop()
-          ch.sendException(new ActorKilledException("PoisonPill"))
+        case PoisonPill                ⇒ self.stop()
       }
     }
 

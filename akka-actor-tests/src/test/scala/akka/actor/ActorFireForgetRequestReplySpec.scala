@@ -14,9 +14,9 @@ object ActorFireForgetRequestReplySpec {
   class ReplyActor extends Actor {
     def receive = {
       case "Send" ⇒
-        channel ! "Reply"
+        sender ! "Reply"
       case "SendImplicit" ⇒
-        channel ! "ReplyImplicit"
+        sender ! "ReplyImplicit"
     }
   }
 

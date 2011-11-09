@@ -28,7 +28,7 @@ object Props {
     case _                               ⇒ Escalate
   }
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
-  final val defaultSupervisor: Option[ActorRef] = None
+
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val randomAddress: String = ""
 

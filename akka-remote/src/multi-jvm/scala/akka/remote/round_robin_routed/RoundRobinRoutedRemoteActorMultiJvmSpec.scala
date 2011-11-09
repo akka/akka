@@ -9,7 +9,7 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ channel ! app.nodename
+      case "hit" ⇒ sender ! app.nodename
       case "end" ⇒ self.stop()
     }
   }

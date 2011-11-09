@@ -11,7 +11,7 @@ import org.scalatest.BeforeAndAfterEach
 object PinnedActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ channel ! "World"
+      case "Hello"   ⇒ sender ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -37,16 +37,6 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
       val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
-      actor.stop()
-    }
-
-    "support ask/exception" in {
-      val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newPinnedDispatcher("test")))
-      filterException[RuntimeException] {
-        intercept[RuntimeException] {
-          (actor ? "Failure").get
-        }.getMessage must be("Expected exception; to test fault-tolerance")
-      }
       actor.stop()
     }
   }

@@ -11,12 +11,11 @@ Intro
 
 Akka Cluster provides a fault-tolerant, elastic, decentralized peer-to-peer
 cluster with no single point of failure (SPOF) or single point of bottleneck
-(SPOB). It implemented as a Dynamo-style system using gossip protocols,
-automatic failure detection, automatic partitioning, handoff, and cluster
-rebalancing. But with some differences due to the fact that it is not just
-managing passive data, but actors, e.g. active, sometimes stateful, components
-that have requirements on message ordering, the number of active instances in
-the cluster, etc.
+(SPOB). It implements a Dynamo-style system using gossip protocols, automatic
+failure detection, automatic partitioning, handoff, and cluster rebalancing. But
+with some differences due to the fact that it is not just managing passive data,
+but actors - active, sometimes stateful, components that also have requirements
+on message ordering, the number of active instances in the cluster, etc.
 
 
 Terms
@@ -32,8 +31,12 @@ These terms are used throughout the documentation.
   A set of nodes. Contains distributed Akka applications.
 
 **partition**
-  An actor (possibly a subtree of actors) in the Akka application that
-  is distributed within the cluster.
+  An actor or subtree of actors in the Akka application that is distributed
+  within the cluster.
+
+**partition point**
+  The actor at the head of a partition. The point around which a partition is
+  formed.
 
 **partition path**
   Also referred to as the actor address. Has the format `actor1/actor2/actor3`
@@ -46,8 +49,8 @@ These terms are used throughout the documentation.
   ``N-value`` of the partition.
 
 **partition table**
-  A mapping from partition path to base node and its ``N-value`` (i.e. its
-  instance count).
+  A mapping from partition path to base node and its ``N-value`` (instance
+  count).
 
 
 Membership
@@ -64,10 +67,11 @@ Gossip
 ------
 
 The cluster membership used in Akka is based on Amazon's `Dynamo`_ system and
-particularly the approach taken Basho's' `Riak`_ distributed database. Cluster
-membership is communicated using a `Gossip Protocol`_, where the current state
-of the cluster is gossiped randomly through the cluster. Joining a cluster is
-initiated by specifying a set of ``seed`` nodes with which to begin gossiping.
+particularly the approach taken in Basho's' `Riak`_ distributed database.
+Cluster membership is communicated using a `Gossip Protocol`_, where the current
+state of the cluster is gossiped randomly through the cluster. Joining a cluster
+is initiated by specifying a set of ``seed`` nodes with which to begin
+gossiping.
 
 .. _Gossip Protocol: http://en.wikipedia.org/wiki/Gossip_protocol
 .. _Dynamo: http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
@@ -92,6 +96,7 @@ the `pruning algorithm`_ in Riak.
 .. _Vector Clocks: http://en.wikipedia.org/wiki/Vector_clock
 .. _pruning algorithm: http://wiki.basho.com/Vector-Clocks.html#Vector-Clock-Pruning
 
+
 Gossip convergence
 ^^^^^^^^^^^^^^^^^^
 
@@ -113,13 +118,13 @@ unreachable from the rest of the cluster. For this we are using an
 implementation of `The Phi Accrual Failure Detector`_ by Hayashibara et al.
 
 An accrual failure detector decouple monitoring and interpretation. That makes
-them applicable to a wider area ofQ scenarios and more adequate to build generic
+them applicable to a wider area of scenarios and more adequate to build generic
 failure detection services. The idea is that it is keeping a history of failure
 statistics, calculated from heartbeats received from the gossip protocol, and is
 trying to do educated guesses by taking multiple factors, and how they
 accumulate over time, into account in order to come up with a better guess if a
 specific node is up or down. Rather than just answering "yes" or "no" to the
-question "is the node down?"  it returns a ``phi`` value representing the
+question "is the node down?" it returns a ``phi`` value representing the
 likelihood that the node is down.
 
 The ``threshold`` that is the basis for the calculation is configurable by the
@@ -131,6 +136,7 @@ cloud environments, such as Amazon EC2, the value could be increased to 12 in
 order to account for network issues that sometimes occur on such platforms.
 
 .. _The Phi Accrual Failure Detector: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
+
 
 Leader
 ^^^^^^
@@ -345,27 +351,49 @@ Partitioning
 ============
 
 Each partition (an actor or actor subtree) in the actor system is assigned to a
-base node. The mapping from partition path (actor address on the format "a/b/c")
-to base node is stored in the partition table and is maintained as part of the
-cluster state through the gossip protocol. The partition table is only updated
-by the leader node. If the partition has a configured instance count, referred
-to as the ``N-value``, greater than one, then the location of the other
-instances can be found deterministically by counting from the base node. (The
-``N-value`` is larger than 1 when a actor is configured to be routed.) The first
-instance will be found on the base node, and the other instances on the next N-1
-nodes, given the nodes in sorted order.
+base node. The actor at the head of the partition is referred to as the
+partition point. The mapping from partition path (actor address of the format
+"a/b/c") to base node is stored in the partition table and is maintained as part
+of the cluster state through the gossip protocol. The partition table is only
+updated by the leader node. Currently the only possible partition points are
+*routed* actors.
 
-TODO: discuss how different N values within the tree work (especially subtrees
-with a greater or lesser N value). A simple implementation would only allow the
-highest-up-the-tree, non-singular (greater than one) value to be used for any
-subtree.
+Routed actors can have an instance count greater than one. The instance count is
+also referred to as the ``N-value``. If the ``N-value`` is greater than one then
+the first instance will be found on the base node, and the other instances on
+the next N-1 nodes, given the nodes in sorted order.
+
+Note that in the first implementation there may be a restriction such that only
+top-level partitions are possible (the highest possible partition points are
+used and sub-partitioning is not allowed). Still to be explored in more detail.
+
+The cluster leader determines the current instance count for a partition based
+on two axes: fault-tolerance and scaling.
+
+Fault-tolerance determines a minimum number of instances for a routed actor
+(allowing N-1 nodes to crash while still maintaining at least one running actor
+instance). The user can specify a function from current number of nodes to the
+number of acceptable node failures: n: Int => f: Int where f < n.
+
+Scaling reflects the number of instances needed to maintain good throughput and
+is influenced by metrics from the system, particularly a history of mailbox
+size, CPU load, and GC percentages. It may also be possible to accept scaling
+hints from the user that indicate expected load.
+
+The balancing of partitions is determined in a simple way (at least for the
+first implementation) where the overlap of partitions is minimized. Partitions
+are spread over the cluster ring in a circular fashion, with each base node
+in the first available space.
+
+For example, given a cluster with ten nodes and three partitions having N-values
+of 4, 3, and 5; partition 1 would have base node 1 and instances on nodes
+1-4; partition 2 would have base node 5 and instances on nodes 5-7; partition 3
+would have base node 8 and instances on nodes 8-10 and 1-2. The only overlap is
+on nodes 1 and 2.
 
 When rebalancing is required the leader will schedule handoffs, gossiping a set
 of pending changes, and when each change is complete the leader will update the
 partition table.
-
-TODO: look further into how actors will be distributed and also avoiding
-unnecessary migrations just to create a more balanced cluster.
 
 
 Handoff
@@ -433,7 +461,7 @@ Update transition
 
 The second transition begins when the migration is marked as complete and ends
 when all nodes have the updated partition table (when all nodes will use ``N2``
-as the host for ``A``), e.g. we have convergence, and is referred to as the
+as the host for ``A``, i.e. we have convergence) and is referred to as the
 *update transition*.
 
 Once the update transition begins ``N1`` can forward any messages it receives
@@ -530,5 +558,44 @@ have a dependency on message ordering from any given source.
   and state is transfered during the migration initialization, then options 2b
   and 3b would be required.
 
-Support for stateful singleton actors will come in future releases of Akka, most
-likely Akka 2.2.
+Stateful Actor Replication
+==========================
+
+Support for stateful singleton actors will come in future releases of Akka, and
+is scheduled for Akka 2.2. Having a Dynamo base for the clustering already we
+should use the same infrastructure to provide stateful actor clustering and
+datastore as well. The stateful actor clustering should be layered on top of the
+distributed datastore. See the next section for a rough outline on how the
+distributed datastore could be implemented.
+
+Implementing a Dynamo-style distributed database on top of Akka Cluster 
+-----------------------------------------------------------------------
+
+The missing pieces to implement a full Dynamo-style eventually consistent data
+storage on top of the Akka Cluster as described in this document are: 
+
+- Configuration of ``READ`` and ``WRITE`` consistency levels according to the ``N/R/W`` numbers
+  defined in the Dynamo paper.
+    - R = read replica count 
+    - W = write replica count 
+    - N = replication factor 
+    - Q = QUORUM = N / 2 + 1
+    - W + R > N = full consistency
+
+- Define a versioned data message wrapper: ``Versioned[T](hash: Long, version: VectorClock, data: T)``.
+
+- Define a single system data broker actor on each node that uses a ``Consistent
+  Hashing Router`` and that have instances on all other nodes in the node ring.
+
+- For ``WRITE``:
+    1. Wrap data in a ``Versioned Message``
+    2. Send a ``Versioned Message`` with the data is sent to a number of nodes matching the ``W-value``.
+
+- For ``READ``:
+    1. Read in the ``Versioned Message`` with the data from as many replicas as you need for the consistency level required by the ``R-value``.
+    2. Do comparison on the versions (using `Vector Clocks`_)
+    3. If the versions differ then do `Read Repair`_ to update the inconsistent nodes.
+    4. Return the latest versioned data.
+
+.. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
+

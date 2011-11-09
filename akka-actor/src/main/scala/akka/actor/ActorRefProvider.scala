@@ -25,11 +25,18 @@ trait ActorRefProvider {
 
   def actorFor(address: String): Option[ActorRef]
 
+  /**
+   * What deployer will be used to resolve deployment configuration?
+   */
+  private[akka] def deployer: Deployer
+
   private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef
 
   private[akka] def evict(address: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
+
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef
 
   private[akka] def createDeathWatch(): DeathWatch
 
@@ -90,6 +97,8 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
+  private[akka] val deployer: Deployer = new Deployer(app)
+
   val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
   val log = Logging(app.mainbus, this)
 
@@ -98,11 +107,18 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {
+    @volatile
+    var stopped = false
+
     override def address = app.name + ":BubbleWalker"
 
     override def toString = address
 
-    protected[akka] override def postMessageToMailbox(msg: Any, channel: UntypedChannel) {
+    def stop() = stopped = true
+
+    def isShutdown = stopped
+
+    protected[akka] override def postMessageToMailbox(msg: Any, sender: ActorRef) {
       msg match {
         case Failed(child, ex)      ⇒ child.stop()
         case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
@@ -144,7 +160,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
       actors.putIfAbsent(address, newFuture) match {
         case null ⇒
           val actor: ActorRef = try {
-            (if (systemService) None else app.deployer.lookupDeploymentFor(address)) match { // see if the deployment already exists, if so use it, if not create actor
+            (if (systemService) None else deployer.lookupDeployment(address)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
@@ -152,6 +168,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
               // create a routed actor ref
               case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+
                 val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
                   case RouterType.Direct     ⇒ () ⇒ new DirectRouter
                   case RouterType.Random     ⇒ () ⇒ new RandomRouter
@@ -169,7 +186,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
 
                 actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, address)
 
-              case _ ⇒ throw new Exception("Don't know how to create this actor ref! Why?")
+              case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
             }
           } catch {
             case e: Exception ⇒
@@ -206,10 +223,11 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     // else new RoutedActorRef(props, address)
-    new RoutedActorRef(props, address)
+    new RoutedActorRef(app, props, address)
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(actor.address, app.defaultAddress)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
@@ -217,12 +235,11 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     import akka.dispatch.{ Future, Promise, DefaultPromise }
     (if (within == null) app.AkkaConfig.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
-      case other ⇒
-        val result = new DefaultPromise[Any](other)(app.dispatcher)
-        val a = new AskActorRef(result, app) { def whenDone() = actors.remove(this) }
+      case t ⇒
+        val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this) }
         assert(actors.putIfAbsent(a.address, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
-        result
+        a.result
     }
   }
 }

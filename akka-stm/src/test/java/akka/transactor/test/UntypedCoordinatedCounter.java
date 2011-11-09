@@ -45,20 +45,13 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 coordinated.atomic(new Atomically(txFactory) {
                     public void atomically() {
                         increment();
-                        StmUtils.scheduleDeferredTask(new Runnable() {
-                            public void run() { latch.countDown(); }
-                        });
-                        StmUtils.scheduleCompensatingTask(new Runnable() {
-                            public void run() { latch.countDown(); }
-                        });
+                        StmUtils.scheduleDeferredTask(new Runnable() { public void run() { latch.countDown(); } });
+                        StmUtils.scheduleCompensatingTask(new Runnable() { public void run() { latch.countDown(); } });
                     }
                 });
             }
-        } else if (incoming instanceof String) {
-            String message = (String) incoming;
-            if (message.equals("GetCount")) {
-                getChannel().tell(count.get());
-            }
+        } else if ("GetCount".equals(incoming)) {
+            getSender().tell(count.get());
         }
     }
 }

@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorRef, MinimalActorRef, LocalActorRef, Props, UntypedChannel }
+import akka.actor.{ Actor, ActorRef, MinimalActorRef, LocalActorRef, Props }
 import akka.{ AkkaException, AkkaApplication }
 import akka.AkkaApplication.AkkaConfig
 import akka.util.ReflectiveAccess
@@ -341,7 +341,7 @@ object Logging {
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     override val toString = "StandardOutLogger"
-    override def postMessageToMailbox(obj: Any, channel: UntypedChannel) { print(obj) }
+    override def postMessageToMailbox(obj: Any, sender: ActorRef) { print(obj) }
   }
   val StandardOutLogger = new StandardOutLogger
   val StandardOutLoggerName = StandardOutLogger.getClass.getName
@@ -394,7 +394,7 @@ object Logging {
 trait LoggingAdapter {
 
   /*
-   * implement these as precisely as needed/possible: always returning true 
+   * implement these as precisely as needed/possible: always returning true
    * just makes the notify... methods be called every time.
    */
   def isErrorEnabled: Boolean
@@ -403,7 +403,7 @@ trait LoggingAdapter {
   def isDebugEnabled: Boolean
 
   /*
-   * These actually implement the passing on of the messages to be logged. 
+   * These actually implement the passing on of the messages to be logged.
    * Will not be called if is...Enabled returned false.
    */
   protected def notifyError(message: String)

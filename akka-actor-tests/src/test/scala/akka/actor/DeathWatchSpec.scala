@@ -82,7 +82,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
-        val terminalProps = Props(context ⇒ { case x ⇒ context.channel ! x })
+        val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
         val terminal = (supervisor ? terminalProps).as[ActorRef].get
 
         val monitor = actorOf(Props(new Actor {

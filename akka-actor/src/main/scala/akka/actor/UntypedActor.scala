@@ -21,7 +21,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *
  *        if (msg.equals("UseReply")) {
  *          // Reply to original sender of message using the 'reply' method
- *          getContext().getChannel().tell(msg + ":" + getSelf().getAddress());
+ *          getContext().getSender().tell(msg + ":" + getSelf().getAddress());
  *
  *        } else if (msg.equals("UseSender") && getSender().isDefined()) {
  *          // Reply to original sender of message using the sender reference
@@ -67,12 +67,7 @@ abstract class UntypedActor extends Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  def getSender: ActorRef = sender
-
-  /**
-   * Abstraction for unification of sender and senderFuture for later reply
-   */
-  def getChannel: UntypedChannel = channel
+  def getSender(): ActorRef = sender
 
   /**
    * Gets the current receive timeout

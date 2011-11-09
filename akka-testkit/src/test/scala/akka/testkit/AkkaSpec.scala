@@ -65,3 +65,4 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
     }
   }
 }
+

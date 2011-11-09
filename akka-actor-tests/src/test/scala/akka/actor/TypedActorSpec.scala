@@ -263,7 +263,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = actorOf(Props(context ⇒ {
-          case p: Props ⇒ context.channel ! context.typedActorOf(classOf[Foo], classOf[Bar], p)
+          case p: Props ⇒ context.sender ! context.typedActorOf(classOf[Foo], classOf[Bar], p)
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
         }))
@@ -276,14 +276,10 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         t.failingFuturePigdog.await.exception.get.getMessage must be("expected")
         t.read() must be(1) //Make sure state is not reset after failure
 
-        (intercept[IllegalStateException] {
-          t.failingJOptionPigdog
-        }).getMessage must be("expected")
+        (intercept[IllegalStateException] { t.failingJOptionPigdog }).getMessage must be("expected")
         t.read() must be(1) //Make sure state is not reset after failure
 
-        (intercept[IllegalStateException] {
-          t.failingOptionPigdog
-        }).getMessage must be("expected")
+        (intercept[IllegalStateException] { t.failingOptionPigdog }).getMessage must be("expected")
 
         t.read() must be(1) //Make sure state is not reset after failure
 

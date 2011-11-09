@@ -15,7 +15,7 @@ import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit
-import java.util.Random
+import java.security.SecureRandom
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
 import scala.collection.immutable.Map
@@ -111,11 +111,11 @@ class Gossiper(remote: Remote) {
   private val seeds = Set(address) // FIXME read in list of seeds from config
   private val scheduler = new DefaultScheduler
 
-  private val address = new InetSocketAddress(app.hostname, app.port)
+  private val address = app.defaultAddress
   private val nodeFingerprint = address.##
 
-  private val random = new Random(newTimestamp)
-  private val initalDelayForGossip = 5 seconds // FIXME make configurablev
+  private val random = SecureRandom.getInstance("SHA1PRNG")
+  private val initalDelayForGossip = 5 seconds // FIXME make configurable
   private val gossipFrequency = 1 seconds // FIXME make configurable
   private val timeUnit = {
     assert(gossipFrequency.unit == initalDelayForGossip.unit)
@@ -218,14 +218,12 @@ class Gossiper(remote: Remote) {
       if (random.nextDouble() < probability) gossipTo(oldUnavailableNodes)
     }
 
-    if (!gossipedToSeed || oldAvailableNodesSize < 1) {
-      // 3. gossip to a seed for facilitating partition healing
-      if (seeds.head != address) {
-        if (oldAvailableNodesSize == 0) gossipTo(seeds)
-        else {
-          val probability = 1.0 / oldAvailableNodesSize + oldUnavailableNodesSize
-          if (random.nextDouble() <= probability) gossipTo(seeds)
-        }
+    // 3. gossip to a seed for facilitating partition healing
+    if ((!gossipedToSeed || oldAvailableNodesSize < 1) && (seeds.head != address)) {
+      if (oldAvailableNodesSize == 0) gossipTo(seeds)
+      else {
+        val probability = 1.0 / oldAvailableNodesSize + oldUnavailableNodesSize
+        if (random.nextDouble() <= probability) gossipTo(seeds)
       }
     }
   }
@@ -249,17 +247,14 @@ class Gossiper(remote: Remote) {
 
         case Some(Failure(cause)) ⇒
           log.error(cause, cause.toString)
-          throw cause
 
         case None ⇒
-          val error = new RemoteException("Gossip to [{}] timed out".format(connection.address))
+          val error = new RemoteException("Gossip to [%s] timed out".format(connection.address))
           log.error(error, error.toString)
-          throw error
       }
     } catch {
       case e: Exception ⇒
         log.error(e, "Could not gossip to [{}] due to: {}", connection.address, e.toString)
-        throw e
     }
 
     seeds exists (peer == _)
@@ -276,7 +271,7 @@ class Gossiper(remote: Remote) {
 
     val oldAvailableNodes = oldGossip.availableNodes
     val oldUnavailableNodes = oldGossip.unavailableNodes
-    val newlyDetectedUnavailableNodes = oldAvailableNodes filter (!failureDetector.isAvailable(_))
+    val newlyDetectedUnavailableNodes = oldAvailableNodes filterNot failureDetector.isAvailable
 
     if (!newlyDetectedUnavailableNodes.isEmpty) { // we have newly detected nodes marked as unavailable
       val newAvailableNodes = oldAvailableNodes diff newlyDetectedUnavailableNodes

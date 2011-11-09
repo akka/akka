@@ -13,7 +13,6 @@ import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
-import java.util.concurrent.TimeUnit
 import akka.routing.Routing
 import akka.remote.RemoteSupport
 import akka.serialization.Serialization
@@ -156,17 +155,17 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case value     ⇒ value
   }
 
-  val hostname: String = System.getProperty("akka.remote.hostname") match {
-    case null | "" ⇒ InetAddress.getLocalHost.getHostName
+  val defaultAddress = new InetSocketAddress(System.getProperty("akka.remote.hostname") match {
+    case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
-  }
-
-  val port: Int = System.getProperty("akka.remote.port") match {
+  }, System.getProperty("akka.remote.port") match {
     case null | "" ⇒ AkkaConfig.RemoteServerPort
     case value     ⇒ value.toInt
-  }
+  })
 
-  val defaultAddress = new InetSocketAddress(hostname, AkkaConfig.RemoteServerPort)
+  def hostname: String = defaultAddress.getAddress.getHostAddress
+
+  def port: Int = defaultAddress.getPort
 
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)

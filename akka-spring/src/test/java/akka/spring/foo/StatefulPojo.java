@@ -53,4 +53,4 @@ public class StatefulPojo extends TypedActor {
       return isInitialized;
     }
 }
-*/ 
+*/

@@ -71,7 +71,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         app.mainbus.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           }
         })
         actor ! "buh"
@@ -99,7 +99,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         app.mainbus.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           })
         })
         actor ! "buh"

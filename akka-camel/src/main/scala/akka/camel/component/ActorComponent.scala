@@ -16,7 +16,7 @@ import akka.actor._
 import akka.camel.{ Ack, Failure, Message }
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 import scala.reflect.BeanProperty
-import akka.dispatch.{ FutureTimeoutException, Promise, MessageDispatcher }
+import akka.dispatch._
 
 /**
  * @author Martin Krasser
@@ -274,9 +274,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
 
   def resume(): Unit = ()
 
-  def stop() {
-    running = false
-  }
+  def stop() { running = false }
 
   /**
    * Populates the initial <code>exchange</code> with the reply <code>message</code> and uses the
@@ -286,7 +284,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
    * @param message reply message
    * @param sender ignored
    */
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) = if(running) {
+  protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef) = if(running) {
     message match {
       case Ack          ⇒ { /* no response message to set */ }
       case msg: Failure ⇒ exchange.fromFailureMessage(msg)
@@ -298,7 +296,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
   def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
 
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Timeout, channel: UntypedChannel) = unsupported
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
+    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))
   def restart(reason: Throwable): Unit = unsupported
 
   private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)

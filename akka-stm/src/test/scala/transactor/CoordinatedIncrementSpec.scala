@@ -33,7 +33,7 @@ object CoordinatedIncrement {
         }
       }
 
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 
@@ -58,7 +58,7 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
 
   implicit val timeout = Timeout(5.seconds.dilated)
 
-  val numCounters = 5
+  val numCounters = 4
 
   def actorOfs = {
     def createCounter(i: Int) = app.actorOf(Props(new Counter("counter" + i)))

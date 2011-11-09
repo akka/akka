@@ -32,7 +32,7 @@ public class UntypedTransactorTest {
     List<ActorRef> counters;
     ActorRef failer;
 
-    int numCounters = 5;
+    int numCounters = 3;
     int timeout = 5;
     int askTimeout = 5000;
 

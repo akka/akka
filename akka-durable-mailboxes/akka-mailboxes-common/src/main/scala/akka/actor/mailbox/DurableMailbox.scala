@@ -50,7 +50,7 @@ abstract class DurableExecutableMailbox(owner: LocalActorRef) extends MessageQue
     val builder = DurableMailboxMessageProtocol.newBuilder
       .setOwnerAddress(ownerAddress)
       .setMessage(message.toByteString)
-    durableMessage.channel match {
+    durableMessage.sender match {
       case a: ActorRef ⇒ builder.setSenderAddress(a.address)
       case _           ⇒
     }

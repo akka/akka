@@ -47,7 +47,7 @@ class MongoBasedNaiveMailbox(val owner: LocalActorRef) extends DurableExecutable
     EventHandler.debug(this,
       "\nENQUEUING message in mongodb-based mailbox [%s]".format(msg))
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
-    val durableMessage = MongoDurableMessage(ownerAddress, msg.receiver, msg.message, msg.channel)
+    val durableMessage = MongoDurableMessage(ownerAddress, msg.receiver, msg.message, msg.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
     val result = new DefaultPromise[Boolean](writeTimeout)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒

@@ -26,7 +26,7 @@ public class RemoteTypedSessionActorImpl extends TypedActor implements RemoteTyp
       instantiatedSessionActors.remove(this);
     }
 
-    
+
     private String user="anonymous";
 
     @Override

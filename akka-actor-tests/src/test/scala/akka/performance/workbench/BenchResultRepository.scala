@@ -24,6 +24,8 @@ trait BenchResultRepository {
 
   def getWithHistorical(name: String, load: Int): Seq[Stats]
 
+  def isBaseline(stats: Stats): Boolean
+
   def saveHtmlReport(content: String, name: String): Unit
 
   def htmlReportUrl(name: String): String
@@ -31,10 +33,11 @@ trait BenchResultRepository {
 }
 
 object BenchResultRepository {
-  def apply(app: AkkaApplication): BenchResultRepository = new FileBenchResultRepository(app)
+  private val repository = new FileBenchResultRepository
+  def apply(): BenchResultRepository = repository
 }
 
-class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRepository {
+class FileBenchResultRepository extends BenchResultRepository {
   private val statsByName = MutableMap[String, Seq[Stats]]()
   private val baselineStats = MutableMap[Key, Stats]()
   private val historicalStats = MutableMap[Key, Seq[Stats]]()
@@ -43,8 +46,6 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
   private val htmlDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/html"
   private def htmlDirExists: Boolean = new File(htmlDir).exists
   protected val maxHistorical = 7
-
-  val log = Logging(app, this)
 
   case class Key(name: String, load: Int)
 
@@ -62,13 +63,18 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
     get(name).find(_.load == load)
   }
 
+  def isBaseline(stats: Stats): Boolean = {
+    baselineStats.get(Key(stats.name, stats.load)) == Some(stats)
+  }
+
   def getWithHistorical(name: String, load: Int): Seq[Stats] = {
     val key = Key(name, load)
     val historical = historicalStats.getOrElse(key, IndexedSeq.empty)
     val baseline = baselineStats.get(key)
     val current = get(name, load)
 
-    (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    val limited = (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    limited.sortBy(_.timestamp)
   }
 
   private def loadFiles() {
@@ -105,7 +111,8 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
       out.writeObject(stats)
     } catch {
       case e: Exception ⇒
-        log.error("Failed to save [{}] to [{}], due to [{}]", stats, f.getAbsolutePath, e.getMessage)
+        val errMsg = "Failed to save [%s] to [%s], due to [%s]".format(stats, f.getAbsolutePath, e.getMessage)
+        throw new RuntimeException(errMsg)
     } finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
     }
@@ -121,7 +128,6 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
           Some(stats)
         } catch {
           case e: Throwable ⇒
-            log.error("Failed to load from [{}], due to [{}]", f.getAbsolutePath, e.getMessage)
             None
         } finally {
           if (in ne null) try { in.close() } catch { case ignore: Exception ⇒ }
@@ -144,7 +150,8 @@ class FileBenchResultRepository(val app: AkkaApplication) extends BenchResultRep
       writer.flush()
     } catch {
       case e: Exception ⇒
-        log.error("Failed to save report to [{}], due to [{}]", f.getAbsolutePath, e.getMessage)
+        val errMsg = "Failed to save report to [%s], due to [%s]".format(f.getAbsolutePath, e.getMessage)
+        throw new RuntimeException(errMsg)
     } finally {
       if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
     }

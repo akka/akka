@@ -42,11 +42,11 @@ object AkkaKernelPlugin extends Plugin {
 
   lazy val distSettings: Seq[Setting[_]] =
     inConfig(Dist)(Seq(
-      dist <<= packageBin.identity,
+      dist <<= packageBin,
       packageBin <<= distTask,
       distClean <<= distCleanTask,
-      dependencyClasspath <<= (dependencyClasspath in Runtime).identity,
-      unmanagedResourceDirectories <<= (unmanagedResourceDirectories in Runtime).identity,
+      dependencyClasspath <<= (dependencyClasspath in Runtime),
+      unmanagedResourceDirectories <<= (unmanagedResourceDirectories in Runtime),
       outputDirectory <<= target / "dist",
       configSourceDirs <<= defaultConfigSourceDirs,
       distJvmOptions := "-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC",
@@ -54,8 +54,7 @@ object AkkaKernelPlugin extends Plugin {
       libFilter := { f ⇒ true },
       additionalLibs <<= defaultAdditionalLibs,
       distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
-      Seq(
-        dist <<= (dist in Dist).identity, distNeedsPackageBin)
+      Seq(dist <<= (dist in Dist), distNeedsPackageBin)
 
   private def distTask: Initialize[Task[File]] =
     (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒

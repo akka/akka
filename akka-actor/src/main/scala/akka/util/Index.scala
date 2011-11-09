@@ -138,7 +138,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
   /**
    * Disassociates all the values for the specified key
-   * @returns None if the key wasn't associated at all, or Some(scala.Iterable[V]) if it was associated
+   * @return None if the key wasn't associated at all, or Some(scala.Iterable[V]) if it was associated
    */
   def remove(key: K): Option[Iterable[V]] = {
     val set = container get key

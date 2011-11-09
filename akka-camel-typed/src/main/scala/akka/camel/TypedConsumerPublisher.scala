@@ -88,7 +88,6 @@ private[camel] trait ConsumerMethodEvent extends ConsumerEvent {
   val typedActor: AnyRef
   val method: Method
 
-  val uuid = actorRef.uuid.toString
   val methodName = method.getName
   val methodUuid = "%s_%s" format (uuid, methodName)
 

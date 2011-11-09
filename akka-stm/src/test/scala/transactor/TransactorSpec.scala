@@ -48,7 +48,7 @@ object TransactorIncrement {
     }
 
     override def normally = {
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 
@@ -81,7 +81,7 @@ class TransactorSpec extends AkkaSpec {
 
   implicit val timeout = Timeout(5.seconds.dilated)
 
-  val numCounters = 5
+  val numCounters = 3
 
   def createTransactors = {
     def createCounter(i: Int) = app.actorOf(Props(new Counter("counter" + i)))

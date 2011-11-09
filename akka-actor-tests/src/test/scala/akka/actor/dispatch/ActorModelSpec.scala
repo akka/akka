@@ -72,14 +72,14 @@ object ActorModelSpec {
       case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
-      case Reply(msg)                   ⇒ ack; channel ! msg; busy.switchOff()
-      case TryReply(msg)                ⇒ ack; channel.tryTell(msg); busy.switchOff()
+      case Reply(msg)                   ⇒ ack; sender ! msg; busy.switchOff()
+      case TryReply(msg)                ⇒ ack; sender.tell(msg); busy.switchOff()
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
       case CountDownNStop(l)            ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
-      case Interrupt                    ⇒ ack; busy.switchOff(); throw new InterruptedException("Ping!")
+      case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
     }
   }
@@ -364,6 +364,7 @@ abstract class ActorModelSpec extends AkkaSpec {
         } catch {
           case e ⇒
             System.err.println("Error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
+            throw e
         }
         boss.stop()
       }
@@ -380,30 +381,17 @@ abstract class ActorModelSpec extends AkkaSpec {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try {
-          a ? Interrupt
-        } catch {
-          // CallingThreadDispatcher throws IE directly
-          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
-        }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
         val f4 = a ? Reply("foo2")
-        val f5 = try {
-          a ? Interrupt
-        } catch {
-          case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie)))
-        }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
         val f6 = a ? Reply("bar2")
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
-        assert((intercept[ActorInterruptedException] {
-          f3.get
-        }).getMessage === "Ping!")
         assert(f4.get === "foo2")
-        assert((intercept[ActorInterruptedException] {
-          f5.get
-        }).getMessage === "Ping!")
+        assert(intercept[ActorInterruptedException](f3.get).getMessage === "Ping!")
         assert(f6.get === "bar2")
+        assert(intercept[ActorInterruptedException](f5.get).getMessage === "Ping!")
       }
     }
 
@@ -413,21 +401,17 @@ abstract class ActorModelSpec extends AkkaSpec {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = a ? new ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
+        val f3 = a ? ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
         val f4 = a ? Reply("foo2")
-        val f5 = a ? new ThrowException(new RemoteException("RemoteException"))
+        val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
         assert(f1.get === "foo")
         assert(f2.get === "bar")
-        assert((intercept[IndexOutOfBoundsException] {
-          f3.get
-        }).getMessage === "IndexOutOfBoundsException")
         assert(f4.get === "foo2")
-        assert((intercept[RemoteException] {
-          f5.get
-        }).getMessage === "RemoteException")
         assert(f6.get === "bar2")
+        assert(f3.result === None)
+        assert(f5.result === None)
       }
     }
   }
@@ -446,21 +430,6 @@ class DispatcherModelSpec extends ActorModelSpec {
   def dispatcherType = "Dispatcher"
 
   "A " + dispatcherType must {
-    "complete all uncompleted sender futures on deregister" in {
-      implicit val dispatcher = newInterceptedDispatcher
-      val a = newTestActor(dispatcher).asInstanceOf[LocalActorRef]
-      a.suspend
-      val f1: Future[String] = a ? Reply("foo") mapTo manifest[String]
-      val stopped = a ? PoisonPill
-      val shouldBeCompleted = for (i ← 1 to 10) yield a ? Reply(i)
-      a.resume
-      assert(f1.get == "foo")
-      stopped.await
-      for (each ← shouldBeCompleted)
-        assert(each.await.exception.get.isInstanceOf[ActorKilledException])
-      a.stop()
-    }
-
     "process messages in parallel" in {
       implicit val dispatcher = newInterceptedDispatcher
       val aStart, aStop, bParallel = new CountDownLatch(1)

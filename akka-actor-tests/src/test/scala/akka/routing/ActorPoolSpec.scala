@@ -41,7 +41,7 @@ class ActorPoolSpec extends AkkaSpec {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                channel.tryTell("success")
+                sender.tell("success")
             }
           }))
 
@@ -88,7 +88,7 @@ class ActorPoolSpec extends AkkaSpec {
             def receive = {
               case req: String ⇒ {
                 (10 millis).dilated.sleep
-                channel.tryTell("Response")
+                sender.tell("Response")
               }
             }
           }))
@@ -111,7 +111,7 @@ class ActorPoolSpec extends AkkaSpec {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
+        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
@@ -233,7 +233,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch1.countDown()
             }
           }))
@@ -261,7 +261,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch2.countDown()
             }
           }))
@@ -331,7 +331,7 @@ class ActorPoolSpec extends AkkaSpec {
     "support typed actors" in {
       import RoutingSpec._
 
-      def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5
         def pressureThreshold = 1
@@ -340,15 +340,17 @@ class ActorPoolSpec extends AkkaSpec {
         def rampupRate = 0.1
         def backoffRate = 0.50
         def backoffThreshold = 0.50
-        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](p))
+        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
         def receive = _route
+      }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
+
+      val results = for (i ← 1 to 20) yield (i, pool.sq(i, 10))
+
+      for ((i, r) ← results) {
+        val value = r.get
+        value must equal(i * i)
       }
-
-      val pool = app.createProxy[Foo](createPool, Props().withFaultHandler(faultHandler))
-
-      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 100))
-
-      for ((i, r) ← results) r.get must equal(i * i)
+      app.typedActor.stop(pool)
     }
 
     "provide default supervision of pooled actors" in {
@@ -358,7 +360,7 @@ class ActorPoolSpec extends AkkaSpec {
         val keepDying = new AtomicBoolean(false)
 
         val pool1, pool2 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1
@@ -381,7 +383,7 @@ class ActorPoolSpec extends AkkaSpec {
           }).withFaultHandler(faultHandler))
 
         val pool3 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with RoundRobinSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1
@@ -479,7 +481,7 @@ class ActorPoolSpec extends AkkaSpec {
         object BadState
 
         val pool1 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
+          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicFilter {
             def lowerBound = 2
             def upperBound = 5
             def rampupRate = 0.1

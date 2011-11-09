@@ -8,6 +8,7 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise }
+import akka.util.duration._
 import akka.AkkaApplication
 
 /**
@@ -36,31 +37,27 @@ object TestActorRefSpec {
   }
 
   class ReplyActor extends TActor {
-    var replyTo: Channel[Any] = null
+    var replyTo: ActorRef = null
 
     def receiveT = {
       case "complexRequest" ⇒ {
-        replyTo = channel
+        replyTo = sender
         val worker = TestActorRef(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = TestActorRef(Props[WorkerActor])
-        worker ! channel
+        worker ! sender
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ channel ! "simpleReply"
+      case "simpleRequest" ⇒ sender ! "simpleReply"
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
-      case "work" ⇒ {
-        channel ! "workDone"
-        self.stop()
-      }
-      case replyTo: UntypedChannel ⇒ {
-        replyTo ! "complexReply"
-      }
+      case "work"                ⇒ sender ! "workDone"; self.stop()
+      case replyTo: Promise[Any] ⇒ replyTo.completeWithResult("complexReply")
+      case replyTo: ActorRef     ⇒ replyTo ! "complexReply"
     }
   }
 
@@ -109,7 +106,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ channel ! nested }
+          def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -120,7 +117,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
           val nested = context.actorOf(Props(self ⇒ { case _ ⇒ }))
-          def receive = { case _ ⇒ channel ! nested }
+          def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
         val nested = (a ? "any").as[ActorRef].get
@@ -130,7 +127,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
     }
 
-    "support reply via channel" in {
+    "support reply via sender" in {
       val serverRef = TestActorRef(Props[ReplyActor])
       val clientRef = TestActorRef(Props(new SenderActor(serverRef)))
 
@@ -158,8 +155,10 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     "stop when sent a poison pill" in {
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
-        intercept[ActorKilledException] {
-          (a ? PoisonPill).get
+        testActor startsMonitoring a
+        a.!(PoisonPill)(testActor)
+        expectMsgPF(5 seconds) {
+          case Terminated(`a`) ⇒ true
         }
         a must be('shutdown)
         assertThread
@@ -190,9 +189,10 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "support futures" in {
       val a = TestActorRef[WorkerActor]
-      val f = a ? "work" mapTo manifest[String]
+      val f = a ? "work"
+      // CallingThreadDispatcher means that there is no delay
       f must be('completed)
-      f.get must equal("workDone")
+      f.as[String] must equal(Some("workDone"))
     }
 
   }
@@ -223,11 +223,8 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
-      intercept[IllegalActorStateException] { ref("work") }
-      val ch = Promise.channel(5000)
-      ref ! ch
-      ch must be('completed)
-      ch.get must be("complexReply")
+      ref("work")
+      ref.isShutdown must be(true)
     }
 
   }

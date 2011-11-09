@@ -10,20 +10,20 @@ public final class MailboxProtocol {
   }
   public interface DurableMailboxMessageProtocolOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required string ownerAddress = 1;
     boolean hasOwnerAddress();
     String getOwnerAddress();
-    
+
     // optional string senderAddress = 2;
     boolean hasSenderAddress();
     String getSenderAddress();
-    
+
     // optional .UuidProtocol futureUuid = 3;
     boolean hasFutureUuid();
     akka.actor.mailbox.MailboxProtocol.UuidProtocol getFutureUuid();
     akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder();
-    
+
     // required bytes message = 4;
     boolean hasMessage();
     com.google.protobuf.ByteString getMessage();
@@ -36,26 +36,26 @@ public final class MailboxProtocol {
       super(builder);
     }
     private DurableMailboxMessageProtocol(boolean noInit) {}
-    
+
     private static final DurableMailboxMessageProtocol defaultInstance;
     public static DurableMailboxMessageProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public DurableMailboxMessageProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // required string ownerAddress = 1;
     public static final int OWNERADDRESS_FIELD_NUMBER = 1;
@@ -68,7 +68,7 @@ public final class MailboxProtocol {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -80,7 +80,7 @@ public final class MailboxProtocol {
     private com.google.protobuf.ByteString getOwnerAddressBytes() {
       java.lang.Object ref = ownerAddress_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         ownerAddress_ = b;
         return b;
@@ -88,7 +88,7 @@ public final class MailboxProtocol {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // optional string senderAddress = 2;
     public static final int SENDERADDRESS_FIELD_NUMBER = 2;
     private java.lang.Object senderAddress_;
@@ -100,7 +100,7 @@ public final class MailboxProtocol {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -112,7 +112,7 @@ public final class MailboxProtocol {
     private com.google.protobuf.ByteString getSenderAddressBytes() {
       java.lang.Object ref = senderAddress_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         senderAddress_ = b;
         return b;
@@ -120,7 +120,7 @@ public final class MailboxProtocol {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // optional .UuidProtocol futureUuid = 3;
     public static final int FUTUREUUID_FIELD_NUMBER = 3;
     private akka.actor.mailbox.MailboxProtocol.UuidProtocol futureUuid_;
@@ -133,7 +133,7 @@ public final class MailboxProtocol {
     public akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder getFutureUuidOrBuilder() {
       return futureUuid_;
     }
-    
+
     // required bytes message = 4;
     public static final int MESSAGE_FIELD_NUMBER = 4;
     private com.google.protobuf.ByteString message_;
@@ -143,7 +143,7 @@ public final class MailboxProtocol {
     public com.google.protobuf.ByteString getMessage() {
       return message_;
     }
-    
+
     private void initFields() {
       ownerAddress_ = "";
       senderAddress_ = "";
@@ -154,7 +154,7 @@ public final class MailboxProtocol {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasOwnerAddress()) {
         memoizedIsInitialized = 0;
         return false;
@@ -172,7 +172,7 @@ public final class MailboxProtocol {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -190,12 +190,12 @@ public final class MailboxProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -217,14 +217,14 @@ public final class MailboxProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -291,14 +291,14 @@ public final class MailboxProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -312,17 +312,17 @@ public final class MailboxProtocol {
           getDescriptor() {
         return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.actor.mailbox.MailboxProtocol.internal_static_DurableMailboxMessageProtocol_fieldAccessorTable;
       }
-      
+
       // Construct using akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -335,7 +335,7 @@ public final class MailboxProtocol {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         ownerAddress_ = "";
@@ -352,20 +352,20 @@ public final class MailboxProtocol {
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.getDescriptor();
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol getDefaultInstanceForType() {
         return akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.getDefaultInstance();
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol build() {
         akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = buildPartial();
         if (!result.isInitialized()) {
@@ -373,7 +373,7 @@ public final class MailboxProtocol {
         }
         return result;
       }
-      
+
       private akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = buildPartial();
@@ -383,7 +383,7 @@ public final class MailboxProtocol {
         }
         return result;
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol buildPartial() {
         akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol result = new akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol(this);
         int from_bitField0_ = bitField0_;
@@ -412,7 +412,7 @@ public final class MailboxProtocol {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol) {
           return mergeFrom((akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol)other);
@@ -421,7 +421,7 @@ public final class MailboxProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol other) {
         if (other == akka.actor.mailbox.MailboxProtocol.DurableMailboxMessageProtocol.getDefaultInstance()) return this;
         if (other.hasOwnerAddress()) {
@@ -439,25 +439,25 @@ public final class MailboxProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasOwnerAddress()) {
-          
+
           return false;
         }
         if (!hasMessage()) {
-          
+
           return false;
         }
         if (hasFutureUuid()) {
           if (!getFutureUuid().isInitialized()) {
-            
+
             return false;
           }
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -508,9 +508,9 @@ public final class MailboxProtocol {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // required string ownerAddress = 1;
       private java.lang.Object ownerAddress_ = "";
       public boolean hasOwnerAddress() {
@@ -546,7 +546,7 @@ public final class MailboxProtocol {
         ownerAddress_ = value;
         onChanged();
       }
-      
+
       // optional string senderAddress = 2;
       private java.lang.Object senderAddress_ = "";
       public boolean hasSenderAddress() {
@@ -582,7 +582,7 @@ public final class MailboxProtocol {
         senderAddress_ = value;
         onChanged();
       }
-      
+
       // optional .UuidProtocol futureUuid = 3;
       private akka.actor.mailbox.MailboxProtocol.UuidProtocol futureUuid_ = akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
@@ -660,7 +660,7 @@ public final class MailboxProtocol {
         }
       }
       private com.google.protobuf.SingleFieldBuilder<
-          akka.actor.mailbox.MailboxProtocol.UuidProtocol, akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder, akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder> 
+          akka.actor.mailbox.MailboxProtocol.UuidProtocol, akka.actor.mailbox.MailboxProtocol.UuidProtocol.Builder, akka.actor.mailbox.MailboxProtocol.UuidProtocolOrBuilder>
           getFutureUuidFieldBuilder() {
         if (futureUuidBuilder_ == null) {
           futureUuidBuilder_ = new com.google.protobuf.SingleFieldBuilder<
@@ -672,7 +672,7 @@ public final class MailboxProtocol {
         }
         return futureUuidBuilder_;
       }
-      
+
       // required bytes message = 4;
       private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
       public boolean hasMessage() {
@@ -696,25 +696,25 @@ public final class MailboxProtocol {
         onChanged();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:DurableMailboxMessageProtocol)
     }
-    
+
     static {
       defaultInstance = new DurableMailboxMessageProtocol(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:DurableMailboxMessageProtocol)
   }
-  
+
   public interface UuidProtocolOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required uint64 high = 1;
     boolean hasHigh();
     long getHigh();
-    
+
     // required uint64 low = 2;
     boolean hasLow();
     long getLow();
@@ -727,26 +727,26 @@ public final class MailboxProtocol {
       super(builder);
     }
     private UuidProtocol(boolean noInit) {}
-    
+
     private static final UuidProtocol defaultInstance;
     public static UuidProtocol getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public UuidProtocol getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // required uint64 high = 1;
     public static final int HIGH_FIELD_NUMBER = 1;
@@ -757,7 +757,7 @@ public final class MailboxProtocol {
     public long getHigh() {
       return high_;
     }
-    
+
     // required uint64 low = 2;
     public static final int LOW_FIELD_NUMBER = 2;
     private long low_;
@@ -767,7 +767,7 @@ public final class MailboxProtocol {
     public long getLow() {
       return low_;
     }
-    
+
     private void initFields() {
       high_ = 0L;
       low_ = 0L;
@@ -776,7 +776,7 @@ public final class MailboxProtocol {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasHigh()) {
         memoizedIsInitialized = 0;
         return false;
@@ -788,7 +788,7 @@ public final class MailboxProtocol {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -800,12 +800,12 @@ public final class MailboxProtocol {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -819,14 +819,14 @@ public final class MailboxProtocol {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static akka.actor.mailbox.MailboxProtocol.UuidProtocol parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -893,14 +893,14 @@ public final class MailboxProtocol {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(akka.actor.mailbox.MailboxProtocol.UuidProtocol prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -914,17 +914,17 @@ public final class MailboxProtocol {
           getDescriptor() {
         return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.actor.mailbox.MailboxProtocol.internal_static_UuidProtocol_fieldAccessorTable;
       }
-      
+
       // Construct using akka.actor.mailbox.MailboxProtocol.UuidProtocol.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -936,7 +936,7 @@ public final class MailboxProtocol {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         high_ = 0L;
@@ -945,20 +945,20 @@ public final class MailboxProtocol {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDescriptor();
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol getDefaultInstanceForType() {
         return akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance();
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol build() {
         akka.actor.mailbox.MailboxProtocol.UuidProtocol result = buildPartial();
         if (!result.isInitialized()) {
@@ -966,7 +966,7 @@ public final class MailboxProtocol {
         }
         return result;
       }
-      
+
       private akka.actor.mailbox.MailboxProtocol.UuidProtocol buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         akka.actor.mailbox.MailboxProtocol.UuidProtocol result = buildPartial();
@@ -976,7 +976,7 @@ public final class MailboxProtocol {
         }
         return result;
       }
-      
+
       public akka.actor.mailbox.MailboxProtocol.UuidProtocol buildPartial() {
         akka.actor.mailbox.MailboxProtocol.UuidProtocol result = new akka.actor.mailbox.MailboxProtocol.UuidProtocol(this);
         int from_bitField0_ = bitField0_;
@@ -993,7 +993,7 @@ public final class MailboxProtocol {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof akka.actor.mailbox.MailboxProtocol.UuidProtocol) {
           return mergeFrom((akka.actor.mailbox.MailboxProtocol.UuidProtocol)other);
@@ -1002,7 +1002,7 @@ public final class MailboxProtocol {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(akka.actor.mailbox.MailboxProtocol.UuidProtocol other) {
         if (other == akka.actor.mailbox.MailboxProtocol.UuidProtocol.getDefaultInstance()) return this;
         if (other.hasHigh()) {
@@ -1014,19 +1014,19 @@ public final class MailboxProtocol {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasHigh()) {
-          
+
           return false;
         }
         if (!hasLow()) {
-          
+
           return false;
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1063,9 +1063,9 @@ public final class MailboxProtocol {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // required uint64 high = 1;
       private long high_ ;
       public boolean hasHigh() {
@@ -1086,7 +1086,7 @@ public final class MailboxProtocol {
         onChanged();
         return this;
       }
-      
+
       // required uint64 low = 2;
       private long low_ ;
       public boolean hasLow() {
@@ -1107,18 +1107,18 @@ public final class MailboxProtocol {
         onChanged();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:UuidProtocol)
     }
-    
+
     static {
       defaultInstance = new UuidProtocol(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:UuidProtocol)
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_DurableMailboxMessageProtocol_descriptor;
   private static
@@ -1129,7 +1129,7 @@ public final class MailboxProtocol {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_UuidProtocol_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -1174,6 +1174,6 @@ public final class MailboxProtocol {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }

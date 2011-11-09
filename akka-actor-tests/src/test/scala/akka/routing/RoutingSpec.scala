@@ -194,15 +194,9 @@ class RoutingSpec extends AkkaSpec {
         }
       })
 
-      val props = RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1))
-      val actor = app.actorOf(props, "foo")
+      val actor = app.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(List(connection1)), "foo")
 
-      try {
-        actor ? Broadcast(1)
-        fail()
-      } catch {
-        case e: RoutingException ⇒
-      }
+      intercept[RoutingException] { actor ? Broadcast(1) }
 
       actor ! "end"
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
@@ -459,7 +453,7 @@ class RoutingSpec extends AkkaSpec {
         case Stop(None)                     ⇒ self.stop()
         case Stop(Some(_id)) if (_id == id) ⇒ self.stop()
         case _id: Int if (_id == id)        ⇒
-        case _                              ⇒ Thread sleep 100 * id; channel.tryTell(id)
+        case _                              ⇒ Thread sleep 100 * id; sender.tell(id)
       }
 
       override def postStop = {
