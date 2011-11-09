@@ -5,7 +5,7 @@
 package akka.tutorial.second
 
 import akka.actor.Actor._
-import akka.event.EventHandler
+import akka.event.Logging
 import System.{ currentTimeMillis ⇒ now }
 import akka.routing.Routing.Broadcast
 import akka.routing._
@@ -15,6 +15,7 @@ import akka.actor.{ ActorRef, Timeout, Actor, PoisonPill }
 object Pi extends App {
 
   val app = AkkaApplication()
+  val log = Logging(app, this)
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
@@ -109,9 +110,9 @@ object Pi extends App {
     master.?(Calculate, Timeout(60000)).
       await.resultOrException match { //wait for the result, with a 60 seconds timeout
         case Some(pi) ⇒
-          app.eventHandler.info(this, "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis".format(pi, (now - start)))
+          log.info("\n\tPi estimate: \t\t{}\n\tCalculation time: \t{} millis", pi, now - start)
         case None ⇒
-          app.eventHandler.error(this, "Pi calculation did not complete within the timeout.")
+          log.error("Pi calculation did not complete within the timeout.")
       }
   }
 }

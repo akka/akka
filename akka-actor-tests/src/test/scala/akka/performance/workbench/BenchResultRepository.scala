@@ -12,6 +12,8 @@ import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.mutable.{ Map ⇒ MutableMap }
+import akka.AkkaApplication
+import akka.event.Logging
 
 trait BenchResultRepository {
   def add(stats: Stats)

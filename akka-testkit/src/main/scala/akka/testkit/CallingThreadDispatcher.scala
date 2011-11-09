@@ -3,7 +3,7 @@
  */
 package akka.testkit
 
-import akka.event.EventHandler
+import akka.event.Logging.{ Warning, Error }
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import java.util.concurrent.RejectedExecutionException
@@ -104,7 +104,7 @@ private[testkit] object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling-thread", val warnings: Boolean = true) extends MessageDispatcher(_app) {
+class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling-thread") extends MessageDispatcher(_app) {
   import CallingThreadDispatcher._
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this, actor)
@@ -211,12 +211,12 @@ class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling
           true
         } catch {
           case ie: InterruptedException ⇒
-            app.eventHandler.error(this, ie)
+            app.mainbus.publish(Error(this, ie))
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            app.eventHandler.error(this, e)
+            app.mainbus.publish(Error(this, e))
             queue.leave
             false
         }

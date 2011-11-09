@@ -8,7 +8,6 @@ import akka.transactor.Transactor
 import akka.actor._
 import akka.stm._
 import akka.util.duration._
-import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -106,20 +105,20 @@ class TransactorSpec extends AkkaSpec {
 
     "increment no counters with a failing transaction" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
-      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, failer) = createTransactors
-      val failLatch = TestLatch(numCounters)
-      counters(0) ! Increment(counters.tail :+ failer, failLatch)
-      failLatch.await
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 0
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
+      filterEvents(ignoreExceptions) {
+        val (counters, failer) = createTransactors
+        val failLatch = TestLatch(numCounters)
+        counters(0) ! Increment(counters.tail :+ failer, failLatch)
+        failLatch.await
+        for (counter ← counters) {
+          (counter ? GetCount).as[Int].get must be === 0
+        }
+        counters foreach (_.stop())
+        failer.stop()
       }
-      counters foreach (_.stop())
-      failer.stop()
-      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 

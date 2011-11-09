@@ -90,7 +90,7 @@ trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
       report.html(resultRepository.get(stats.name))
     } catch {
       // don't fail test due to problems saving bench report
-      case e: Exception ⇒ app.eventHandler.error(e, this, e.getMessage)
+      case e: Exception ⇒ log.error(e, e.getMessage)
     }
   }
 

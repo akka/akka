@@ -11,7 +11,7 @@ import akka.AkkaApplication
 import java.util.concurrent.ConcurrentHashMap
 import com.eaio.uuid.UUID
 import akka.AkkaException
-import akka.event.{ ActorClassification, DeathWatch, EventHandler }
+import akka.event.{ ActorClassification, DeathWatch, Logging }
 import akka.dispatch._
 
 /**
@@ -100,6 +100,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   private[akka] val deployer: Deployer = new Deployer(app)
 
   val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
+  val log = Logging(app.mainbus, this)
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
@@ -121,14 +122,14 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
       msg match {
         case Failed(child, ex)      ⇒ child.stop()
         case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
-        case _                      ⇒ app.eventHandler.error(this, this + " received unexpected message " + msg)
+        case _                      ⇒ log.error(this + " received unexpected message " + msg)
       }
     }
 
     protected[akka] override def sendSystemMessage(message: SystemMessage) {
       message match {
         case Supervise(child) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case _                ⇒ app.eventHandler.error(this, this + " received unexpected system message " + message)
+        case _                ⇒ log.error(this + " received unexpected system message " + message)
       }
     }
   }

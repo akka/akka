@@ -9,9 +9,14 @@ import org.scalatest.matchers.MustMatchers
 import akka.AkkaApplication
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
+import akka.event.{ Logging, LoggingAdapter }
+import akka.util.duration._
+import akka.dispatch.FutureTimeoutException
 
 abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
+
+  val log: LoggingAdapter = Logging(app.mainbus, this)
 
   final override def beforeAll {
     atStartup()
@@ -19,6 +24,9 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
 
   final override def afterAll {
     app.stop()
+    try app.terminationFuture.await(5 seconds) catch {
+      case _: FutureTimeoutException ⇒ app.log.warning("failed to stop within 5 seconds")
+    }
     atTermination()
   }
 
@@ -40,3 +48,21 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
     actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
   }
 }
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class AkkaSpecSpec extends WordSpec with MustMatchers {
+  "An AkkaSpec" must {
+    "terminate all actors" in {
+      import AkkaApplication.defaultConfig
+      val app = AkkaApplication("test", defaultConfig ++ Configuration(
+        "akka.actor.debug.lifecycle" -> true, "akka.loglevel" -> "DEBUG"))
+      val spec = new AkkaSpec(app) {
+        val ref = Seq(testActor, app.actorOf(Props.empty, "name"))
+      }
+      spec.ref foreach (_ must not be 'shutdown)
+      app.stop()
+      spec.awaitCond(spec.ref forall (_.isShutdown), 2 seconds)
+    }
+  }
+}
+

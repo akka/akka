@@ -7,20 +7,22 @@ import akka.util.duration._
 
 //#imports
 import akka.actor.Actor
-import akka.event.EventHandler
+import akka.event.Logging
+import akka.config.Configuration
 
 //#imports
 
 //#my-actor
 class MyActor extends Actor {
+  val log = Logging(app, this)
   def receive = {
-    case "test" ⇒ app.eventHandler.info(this, "received test")
-    case _      ⇒ app.eventHandler.info(this, "received unknown message")
+    case "test" ⇒ log.info("received test")
+    case _      ⇒ log.info("received unknown message")
   }
 }
 //#my-actor
 
-class ActorDocSpec extends AkkaSpec {
+class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
 
   "creating actor with AkkaSpec.actorOf" in {
     //#creating-actorOf
@@ -30,23 +32,21 @@ class ActorDocSpec extends AkkaSpec {
     // testing the actor
 
     // TODO: convert docs to AkkaSpec(Configuration(...))
-    app.eventHandler.notify(TestEvent.Mute(EventFilter.custom {
-      case e: EventHandler.Info ⇒ true
-      case _                    ⇒ false
-    }))
-    app.eventHandler.addListener(testActor)
-    val eventLevel = app.eventHandler.level
-    app.eventHandler.level = EventHandler.InfoLevel
+    val filter = EventFilter.custom {
+      case e: Logging.Info ⇒ true
+      case _               ⇒ false
+    }
+    app.mainbus.publish(TestEvent.Mute(filter))
+    app.mainbus.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
-    expectMsgPF(1 second) { case EventHandler.Info(_, "received test") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, "received test") ⇒ true }
 
     myActor ! "unknown"
-    expectMsgPF(1 second) { case EventHandler.Info(_, "received unknown message") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, "received unknown message") ⇒ true }
 
-    app.eventHandler.level = eventLevel
-    app.eventHandler.removeListener(testActor)
-    app.eventHandler.notify(TestEvent.UnMuteAll)
+    app.mainbus.unsubscribe(testActor)
+    app.mainbus.publish(TestEvent.UnMute(filter))
 
     myActor.stop()
   }

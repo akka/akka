@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationTargetException
 class RemoteException(message: String) extends AkkaException(message)
 
 trait RemoteModule {
-  protected[akka] def notifyListeners(message: ⇒ Any): Unit
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit
 }
 
 /**
@@ -122,7 +122,7 @@ abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModul
     this.shutdownServerModule()
   }
 
-  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = app.eventHandler.notify(message)
+  protected[akka] override def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
 }
 
 /**

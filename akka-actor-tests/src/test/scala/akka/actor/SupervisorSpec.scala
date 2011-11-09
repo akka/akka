@@ -5,7 +5,6 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.testkit.Testing.sleepFor
 import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
@@ -17,7 +16,6 @@ import akka.testkit.AkkaSpec
 
 object SupervisorSpec {
   val Timeout = 5 seconds
-  val TimeoutMillis = Timeout.dilated.toMillis.toInt
 
   case object DieReply
 
@@ -70,6 +68,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
   import SupervisorSpec._
 
+  val TimeoutMillis = Timeout.dilated.toMillis.toInt
+
   // =====================================================
   // Creating actors and supervisors
   // =====================================================
@@ -121,14 +121,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 
-  override def atStartup() = {
-    app.eventHandler notify Mute(EventFilter[Exception]("Die"),
-      EventFilter[IllegalStateException]("Don't wanna!"),
-      EventFilter[RuntimeException]("Expected"))
-  }
-
-  override def atTermination() = {
-    app.eventHandler notify UnMuteAll
+  override def atStartup() {
+    app.mainbus.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
   }
 
   override def beforeEach() = {

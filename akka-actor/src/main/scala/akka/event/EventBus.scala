@@ -48,6 +48,7 @@ trait EventBus {
  */
 trait ActorEventBus extends EventBus {
   type Subscriber = ActorRef
+  protected def compareSubscribers(a: ActorRef, b: ActorRef) = a compareTo b
 }
 
 /**
@@ -254,9 +255,9 @@ trait ActorClassification { self: ActorEventBus with ActorClassifier ⇒
    */
   protected def mapSize: Int
 
-  def publish(event: Event): Unit = mappings.get(classify(event)) match {
-    case null           ⇒
-    case raw: Vector[_] ⇒ raw.asInstanceOf[Vector[ActorRef]] foreach { _ ! event }
+  def publish(event: Event): Unit = {
+    val receivers = mappings.get(classify(event))
+    if (receivers ne null) receivers foreach { _ ! event }
   }
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = associate(to, subscriber)

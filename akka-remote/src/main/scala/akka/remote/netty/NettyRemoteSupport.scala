@@ -23,6 +23,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.AkkaApplication
+import akka.event.Logging
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -126,6 +127,8 @@ abstract class RemoteClient private[akka] (
   val module: NettyRemoteClientModule,
   val remoteAddress: InetSocketAddress) extends RemoteMarshallingOps {
 
+  val log = Logging(app, this)
+
   val name = simpleName(this) + "@" +
     remoteAddress.getAddress.getHostAddress + "::" +
     remoteAddress.getPort
@@ -134,7 +137,7 @@ abstract class RemoteClient private[akka] (
 
   private[remote] def isRunning = runSwitch.isOn
 
-  protected def notifyListeners(msg: ⇒ Any): Unit
+  protected def notifyListeners(msg: RemoteLifeCycleEvent): Unit
 
   protected def currentChannel: Channel
 
@@ -154,9 +157,8 @@ abstract class RemoteClient private[akka] (
    */
   def send(request: RemoteMessageProtocol) {
     if (isRunning) { //TODO FIXME RACY
-      app.eventHandler.debug(this, "Sending message: " + new RemoteMessage(request, remoteSupport))
+      log.debug("Sending message: " + new RemoteMessage(request, remoteSupport))
 
-      // tell
       try {
         val payload = createMessageSendEnvelope(request);
         currentChannel.write(payload).addListener(
@@ -188,21 +190,21 @@ class PassiveRemoteClient(_app: AkkaApplication,
                           module: NettyRemoteClientModule,
                           remoteAddress: InetSocketAddress,
                           val loader: Option[ClassLoader] = None,
-                          notifyListenersFun: (⇒ Any) ⇒ Unit)
+                          notifyListenersFun: RemoteLifeCycleEvent ⇒ Unit)
   extends RemoteClient(_app, remoteSupport, module, remoteAddress) {
 
-  def notifyListeners(msg: ⇒ Any): Unit = notifyListenersFun(msg)
+  override def notifyListeners(msg: RemoteLifeCycleEvent) { app.mainbus.publish(msg) }
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
     notifyListeners(RemoteClientStarted(module, remoteAddress))
-    app.eventHandler.debug(this, "Starting remote client connection to [%s]".format(remoteAddress))
+    log.debug("Starting remote client connection to [{}]", remoteAddress)
   }
 
   def shutdown() = runSwitch switchOff {
-    app.eventHandler.debug(this, "Shutting down remote client [%s]".format(name))
+    log.debug("Shutting down remote client [{}]", name)
 
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
-    app.eventHandler.debug(this, "[%s] has been shut down".format(name))
+    log.debug("[{}] has been shut down", name)
   }
 }
 
@@ -213,12 +215,12 @@ class PassiveRemoteClient(_app: AkkaApplication,
  */
 class ActiveRemoteClient private[akka] (
   _app: AkkaApplication,
-  remoteSupport: RemoteSupport,
-  module: NettyRemoteClientModule,
-  remoteAddress: InetSocketAddress,
+  _remoteSupport: RemoteSupport,
+  _module: NettyRemoteClientModule,
+  _remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None,
-  notifyListenersFun: (⇒ Any) ⇒ Unit)
-  extends RemoteClient(_app, remoteSupport, module, remoteAddress) {
+  notifyListenersFun: (RemoteLifeCycleEvent) ⇒ Unit)
+  extends RemoteClient(_app, _remoteSupport, _module, _remoteAddress) {
 
   val settings = new RemoteClientSettings(app)
   import settings._
@@ -235,7 +237,7 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var reconnectionTimeWindowStart = 0L
 
-  def notifyListeners(msg: ⇒ Any): Unit = notifyListenersFun(msg)
+  def notifyListeners(msg: RemoteLifeCycleEvent): Unit = notifyListenersFun(msg)
 
   def currentChannel = connection.getChannel
 
@@ -258,7 +260,7 @@ class ActiveRemoteClient private[akka] (
     }
 
     def attemptReconnect(): Boolean = {
-      app.eventHandler.debug(this, "Remote client reconnecting to [%s]".format(remoteAddress))
+      log.debug("Remote client reconnecting to [{}]", remoteAddress)
 
       val connection = bootstrap.connect(remoteAddress)
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
@@ -281,7 +283,7 @@ class ActiveRemoteClient private[akka] (
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
 
-      app.eventHandler.debug(this, "Starting remote client connection to [%s]".format(remoteAddress))
+      log.debug("Starting remote client connection to [{}]", remoteAddress)
 
       connection = bootstrap.connect(remoteAddress)
 
@@ -301,7 +303,7 @@ class ActiveRemoteClient private[akka] (
       case false if reconnectIfAlreadyConnected ⇒
         closeChannel(connection)
 
-        app.eventHandler.debug(this, "Remote client reconnecting to [%s]".format(remoteAddress))
+        log.debug("Remote client reconnecting to [{}]", remoteAddress)
         attemptReconnect()
 
       case false ⇒ false
@@ -310,7 +312,7 @@ class ActiveRemoteClient private[akka] (
 
   // Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown() = runSwitch switchOff {
-    app.eventHandler.debug(this, "Shutting down remote client [%s]".format(name))
+    log.debug("Shutting down remote client [{}]", name)
 
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
     timer.stop()
@@ -321,7 +323,7 @@ class ActiveRemoteClient private[akka] (
     bootstrap = null
     connection = null
 
-    app.eventHandler.debug(this, "[%s] has been shut down".format(name))
+    log.debug("[{}] has been shut down", name)
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -331,7 +333,7 @@ class ActiveRemoteClient private[akka] (
     } else {
       val timeLeft = (RECONNECTION_TIME_WINDOW - (System.currentTimeMillis - reconnectionTimeWindowStart)) > 0
       if (timeLeft)
-        app.eventHandler.debug(this, "Will try to reconnect to remote server for another [%s] milliseconds".format(timeLeft))
+        log.info("Will try to reconnect to remote server for another [{}] milliseconds", timeLeft)
 
       timeLeft
     }
@@ -459,6 +461,8 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
 
 class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServerModule, val loader: Option[ClassLoader]) extends RemoteMarshallingOps {
 
+  val log = Logging(app, this)
+
   val settings = new RemoteServerSettings(app)
   import settings._
 
@@ -503,6 +507,8 @@ class NettyRemoteServer(val app: AkkaApplication, serverModule: NettyRemoteServe
 
 trait NettyRemoteServerModule extends RemoteServerModule {
   self: RemoteSupport ⇒
+
+  val log = Logging(app, this)
 
   def app: AkkaApplication
   def remoteSupport = self
@@ -594,6 +600,8 @@ class RemoteServerHandler(
   val openChannels: ChannelGroup,
   val applicationLoader: Option[ClassLoader],
   val server: NettyRemoteServerModule) extends SimpleChannelUpstreamHandler with RemoteMarshallingOps {
+
+  val log = Logging(app, this)
 
   import settings._
 

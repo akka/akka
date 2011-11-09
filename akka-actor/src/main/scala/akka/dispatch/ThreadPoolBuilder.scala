@@ -9,7 +9,7 @@ import java.util.concurrent._
 import atomic.{ AtomicLong, AtomicInteger }
 import ThreadPoolExecutor.CallerRunsPolicy
 import akka.util.Duration
-import akka.event.EventHandler
+import akka.event.Logging.{ Warning, Error }
 import akka.AkkaApplication
 
 object ThreadPoolConfig {
@@ -227,10 +227,10 @@ class BoundedExecutorDecorator(val app: AkkaApplication, val executor: ExecutorS
       })
     } catch {
       case e: RejectedExecutionException ⇒
-        app.eventHandler.warning(this, e.toString)
+        app.mainbus.publish(Warning(this, e.toString))
         semaphore.release
       case e: Throwable ⇒
-        app.eventHandler.error(e, this, e.getMessage)
+        app.mainbus.publish(Error(e, this, e.getMessage))
         throw e
     }
   }

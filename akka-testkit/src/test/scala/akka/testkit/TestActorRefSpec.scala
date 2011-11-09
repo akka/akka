@@ -6,7 +6,7 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.event.EventHandler
+import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise }
 import akka.util.duration._
 import akka.AkkaApplication
@@ -77,7 +77,6 @@ object TestActorRefSpec {
   }
 
   class Logger extends Actor {
-    import EventHandler._
     var count = 0
     var msg: String = _
     def receive = {
@@ -154,7 +153,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     }
 
     "stop when sent a poison pill" in {
-      filterEvents(EventFilter[ActorKilledException]) {
+      EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
         testActor startsMonitoring a
         a.!(PoisonPill)(testActor)
@@ -167,7 +166,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     }
 
     "restart when Kill:ed" in {
-      filterEvents(EventFilter[ActorKilledException]) {
+      EventFilter[ActorKilledException]() intercept {
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
@@ -190,9 +189,10 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "support futures" in {
       val a = TestActorRef[WorkerActor]
-      val f = a ? "work" mapTo manifest[String]
+      val f = a ? "work"
+      // CallingThreadDispatcher means that there is no delay
       f must be('completed)
-      f.get must equal("workDone")
+      f.as[String] must equal(Some("workDone"))
     }
 
   }

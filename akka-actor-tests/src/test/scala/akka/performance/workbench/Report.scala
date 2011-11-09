@@ -6,6 +6,7 @@ import java.util.Date
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
 import akka.AkkaApplication
+import akka.event.Logging
 import scala.collection.immutable.TreeMap
 
 class Report(
@@ -13,7 +14,8 @@ class Report(
   resultRepository: BenchResultRepository,
   compareResultWith: Option[String] = None) {
 
-  private def log = System.getProperty("benchmark.logResult", "true").toBoolean
+  private def doLog = System.getProperty("benchmark.logResult", "true").toBoolean
+  val log = Logging(app, this)
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -58,8 +60,8 @@ class Report(
     val reportName = current.name + "--" + timestamp + ".html"
     resultRepository.saveHtmlReport(sb.toString, reportName)
 
-    if (log) {
-      app.eventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
+    if (doLog) {
+      log.info(resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
     }
 
   }

@@ -2,8 +2,7 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.testkit.TestEvent._
-import akka.testkit.EventFilter
+import akka.testkit._
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
@@ -23,14 +22,6 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
   import PinnedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS
-
-  override def beforeEach {
-    app.eventHandler.notify(Mute(EventFilter[RuntimeException]("Failure")))
-  }
-
-  override def afterEach {
-    app.eventHandler.notify(UnMuteAll)
-  }
 
   "A PinnedActor" must {
 

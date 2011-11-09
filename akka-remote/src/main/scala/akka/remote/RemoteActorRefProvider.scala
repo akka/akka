@@ -12,7 +12,7 @@ import akka.routing._
 import akka.dispatch._
 import akka.util.duration._
 import akka.config.ConfigurationException
-import akka.event.{ DeathWatch, EventHandler }
+import akka.event.{ DeathWatch, Logging }
 import akka.serialization.{ Serialization, Serializer, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
+
+  val log = Logging(app, this)
 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
@@ -171,7 +173,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
       local.actorFor(actor.address)
     } else {
       val remoteInetSocketAddress = new InetSocketAddress(actor.hostname, actor.port) //FIXME Drop the InetSocketAddresses and use RemoteAddress
-      app.eventHandler.debug(this, "%s: Creating RemoteActorRef with address [%s] connected to [%s]".format(app.defaultAddress, actor.address, remoteInetSocketAddress))
+      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", app.defaultAddress, actor.address, remoteInetSocketAddress)
       Some(RemoteActorRef(remote.server, remoteInetSocketAddress, actor.address, None)) //Should it be None here
     }
   }
@@ -180,7 +182,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
-    app.eventHandler.debug(this, "[%s] Instantiating Actor [%s] on node [%s]".format(app.defaultAddress, actorAddress, remoteAddress))
+    log.debug("[{}] Instantiating Actor [{}] on node [{}]", app.defaultAddress, actorAddress, remoteAddress)
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {
@@ -208,20 +210,20 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
         val f = connection ? (command, remote.remoteSystemDaemonAckTimeout)
         (try f.await.value catch { case _: FutureTimeoutException ⇒ None }) match {
           case Some(Right(receiver)) ⇒
-            app.eventHandler.debug(this, "Remote system command sent to [%s] successfully received".format(receiver))
+            log.debug("Remote system command sent to [{}] successfully received", receiver)
 
           case Some(Left(cause)) ⇒
-            app.eventHandler.error(cause, this, cause.toString)
+            log.error(cause, cause.toString)
             throw cause
 
           case None ⇒
             val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
-            app.eventHandler.error(error, this, error.toString)
+            log.error(error, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          app.eventHandler.error(e, this, "Could not send remote system command to [%s] due to: %s".format(connection.address, e.toString))
+          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.address, e.toString)
           throw e
       }
     } else {

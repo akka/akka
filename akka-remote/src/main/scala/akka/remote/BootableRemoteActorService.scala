@@ -6,7 +6,6 @@ package akka.remote
 
 import akka.actor.{ Actor, BootableActorLoaderService }
 import akka.util.{ ReflectiveAccess, Bootable }
-import akka.event.EventHandler
 
 // TODO: remove me - remoting is enabled through the RemoteActorRefProvider
 

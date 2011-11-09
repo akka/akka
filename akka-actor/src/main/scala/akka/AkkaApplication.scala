@@ -5,20 +5,22 @@ package akka
 
 import akka.config._
 import akka.actor._
-import dispatch._
-import event._
+import akka.dispatch._
+import akka.event._
+import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
-import java.util.concurrent.TimeUnit
 import akka.routing.Routing
 import akka.remote.RemoteSupport
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 
 object AkkaApplication {
+
+  type AkkaConfig = a.AkkaConfig.type forSome { val a: AkkaApplication }
 
   val Version = "2.0-SNAPSHOT"
 
@@ -87,21 +89,26 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
     val ProviderClass = getString("akka.actor.provider", "akka.actor.LocalActorRefProvider")
 
-    val DefaultTimeUnit = getString("akka.time-unit", "seconds")
+    val DefaultTimeUnit = Duration.timeUnit(getString("akka.time-unit", "seconds"))
     val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout", 5), DefaultTimeUnit))
     val ActorTimeoutMillis = ActorTimeout.duration.toMillis
     val SerializeAllMessages = getBool("akka.actor.serialize-messages", false)
 
-    val LogLevel = getString("akka.event-handler-level", "INFO")
+    val TestTimeFactor = getDouble("akka.test.timefactor", 1.0)
+    val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway", 0.5), DefaultTimeUnit)
+
+    val LogLevel = getString("akka.loglevel", "INFO")
+    val StdoutLogLevel = getString("akka.stdout-loglevel", LogLevel)
     val EventHandlers = getList("akka.event-handlers")
     val AddLoggingReceive = getBool("akka.actor.debug.receive", false)
     val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
     val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
     val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
+    val DebugMainBus = getBool("akka.actor.debug.mainbus", false)
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
-      map(time ⇒ Duration(time, DefaultTimeUnit)).getOrElse(Duration(1000, TimeUnit.MILLISECONDS))
+      map(time ⇒ Duration(time, DefaultTimeUnit)).getOrElse(1 second)
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
     val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), DefaultTimeUnit)
     val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.throughput-deadline-time", -1), DefaultTimeUnit)
@@ -132,6 +139,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
   }
 
+  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
+
   import AkkaConfig._
 
   if (ConfigVersion != Version)
@@ -158,11 +167,14 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   def port: Int = defaultAddress.getPort
 
+  // this provides basic logging (to stdout) until .start() is called below
+  val mainbus = new MainBus(DebugMainBus)
+  mainbus.startStdoutLogger(AkkaConfig)
+  val log = new BusLogging(mainbus, this)
+
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
-
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-
   def terminationFuture: Future[ExitStatus] = provider.terminationFuture
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
@@ -171,30 +183,52 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = reflective.createProvider
 
-  // TODO make this configurable
-  protected[akka] val guardian: ActorRef = {
-    import akka.actor.FaultHandlingStrategy._
-    new LocalActorRef(this,
-      Props(context ⇒ { case _ ⇒ }).withFaultHandler(OneForOneStrategy {
-        case _: ActorKilledException         ⇒ Stop
-        case _: ActorInitializationException ⇒ Stop
-        case _: Exception                    ⇒ Restart
-      }).withDispatcher(dispatcher),
-      provider.theOneWhoWalksTheBubblesOfSpaceTime,
-      "ApplicationSupervisor",
-      true)
+  private class Guardian extends Actor {
+    def receive = {
+      case Terminated(_) ⇒ context.self.stop()
+    }
   }
+  private class SystemGuardian extends Actor {
+    def receive = {
+      case Terminated(_) ⇒
+        mainbus.stopDefaultLoggers()
+        context.self.stop()
+    }
+  }
+  private val guardianFaultHandlingStrategy = {
+    import akka.actor.FaultHandlingStrategy._
+    OneForOneStrategy {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Restart
+    }
+  }
+  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val eventHandler = new EventHandler(this)
+  private val guardianInChief: ActorRef =
+    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, "GuardianInChief", true)
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val log: Logging = new EventHandlerLogging(eventHandler, this)
+  protected[akka] val guardian: ActorRef =
+    provider.actorOf(guardianProps, guardianInChief, "ApplicationSupervisor", true)
+
+  protected[akka] val systemGuardian: ActorRef =
+    provider.actorOf(guardianProps.withCreator(new SystemGuardian), guardianInChief, "SystemSupervisor", true)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
 
   val deathWatch = provider.createDeathWatch()
+
+  // chain death watchers so that killing guardian stops the application
+  deathWatch.subscribe(systemGuardian, guardian)
+  deathWatch.subscribe(guardianInChief, systemGuardian)
+
+  // this starts the reaper actor and the user-configured logging subscribers, which are also actors
+  mainbus.start(this)
+  mainbus.startDefaultLoggers(this, AkkaConfig)
+
+  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
+  val deployer = new Deployer(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val typedActor = new TypedActor(this)

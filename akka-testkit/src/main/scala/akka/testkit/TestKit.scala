@@ -99,7 +99,8 @@ class TestKit(_app: AkkaApplication) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)), app.guardian, "testActor" + TestKit.testActorId.incrementAndGet(), true)
+  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)),
+    "testActor" + TestKit.testActorId.incrementAndGet)
 
   private var end: Duration = Duration.Inf
 
@@ -452,12 +453,6 @@ class TestKit(_app: AkkaApplication) {
   }
 
   /**
-   * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
-   */
-  @deprecated("insert empty first parameter list", "1.2")
-  def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile(remaining / Duration.timeFactor)(f)
-
-  /**
    * Receive a series of messages until one does not match the given partial
    * function or the idle timeout is met (disabled by default) or the overall
    * maximum duration is elapsed. Returns the sequence of messages.
@@ -476,7 +471,7 @@ class TestKit(_app: AkkaApplication) {
    * </pre>
    */
   def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
-    val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
+    val stop = now + (if (max eq Duration.MinusInf) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
@@ -554,6 +549,41 @@ class TestKit(_app: AkkaApplication) {
 
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
+
+  /**
+   * Block until the given condition evaluates to `true` or the timeout
+   * expires, whichever comes first.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.timeFactor.
+   */
+  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
+    val stop = now + max
+
+    @tailrec
+    def poll(): Boolean = {
+      if (!p) {
+        val toSleep = stop - now
+        if (toSleep <= Duration.Zero) {
+          if (noThrow) false
+          else throw new AssertionError("timeout " + max + " expired")
+        } else {
+          Thread.sleep((toSleep min interval).toMillis)
+          poll()
+        }
+      } else true
+    }
+
+    poll()
+  }
+
+  /**
+   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
+   */
+  def now: Duration = System.nanoTime().nanos
+
 }
 
 /**

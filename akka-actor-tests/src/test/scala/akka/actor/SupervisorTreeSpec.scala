@@ -6,7 +6,6 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
-import akka.testkit.Testing.sleepFor
 import akka.dispatch.Dispatchers
 import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }

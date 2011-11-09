@@ -6,7 +6,6 @@ package akka.routing
 
 import akka.AkkaException
 import akka.actor._
-import akka.event.EventHandler
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
 import akka.AkkaApplication

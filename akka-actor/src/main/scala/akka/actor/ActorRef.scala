@@ -347,6 +347,9 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
   protected[akka] def sendSystemMessage(message: SystemMessage) {}
 
   protected[akka] def postMessageToMailbox(msg: Any, sender: ActorRef) {}
+
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
+    throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
 case class DeadLetter(message: Any, sender: ActorRef)
@@ -367,10 +370,10 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   override def isShutdown(): Boolean = true
 
   protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit =
-    app.eventHandler.notify(DeadLetter(message, sender))
+    app.mainbus.publish(DeadLetter(message, sender))
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.eventHandler.notify(DeadLetter(message, this))
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    app.mainbus.publish(DeadLetter(message, this))
     brokenPromise
   }
 

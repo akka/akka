@@ -130,7 +130,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
     def receive = {
       case Rsp(order, status) ⇒
         if (!status) {
-          app.eventHandler.error(this, "Invalid rsp")
+          log.error("Invalid rsp")
         }
         received += 1
         if (sent < repeat) {
