@@ -6,16 +6,20 @@ package akka.event
 import akka.actor.{ ActorRef, Actor, Props }
 import akka.AkkaApplication
 import akka.actor.Terminated
+import akka.util.Subclassification
 
-class MainBus(debug: Boolean = false) extends LoggingBus with LookupClassification {
+class MainBus(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]
 
+  val subclassification = new Subclassification[Class[_]] {
+    def isEqual(x: Class[_], y: Class[_]) = x == y
+    def isSubclass(x: Class[_], y: Class[_]) = y isAssignableFrom x
+  }
+
   @volatile
   private var reaper: ActorRef = _
-
-  protected def mapSize = 16
 
   protected def classify(event: AnyRef): Class[_] = event.getClass
 
@@ -44,13 +48,7 @@ class MainBus(debug: Boolean = false) extends LoggingBus with LookupClassificati
         case Terminated(ref) ⇒ unsubscribe(ref)
       }
     }), "MainBusReaper")
-    subscribers.values foreach (reaper ! _)
-  }
-
-  def printSubscribers: String = {
-    val sb = new StringBuilder
-    for (c ← subscribers.keys) sb.append(c + " -> " + subscribers.valueIterator(c).mkString("[", ", ", "]"))
-    sb.toString
+    subscribers foreach (reaper ! _)
   }
 
 }

@@ -21,6 +21,12 @@ object MainBusSpec {
       case e: Logging.LogEvent           ⇒ dst ! e
     }
   }
+
+  // class hierarchy for subchannel test
+  class A
+  class B1 extends A
+  class B2 extends A
+  class C extends B1
 }
 
 class MainBusSpec extends AkkaSpec(Configuration(
@@ -59,6 +65,33 @@ class MainBusSpec extends AkkaSpec(Configuration(
         verifyLevel(bus, DebugLevel)
         bus.logLevel = ErrorLevel
         verifyLevel(bus, ErrorLevel)
+      }
+    }
+
+    "manage sub-channels" in {
+      val a = new A
+      val b1 = new B1
+      val b2 = new B2
+      val c = new C
+      val bus = new MainBus(false)
+      bus.start(app)
+      within(2 seconds) {
+        bus.subscribe(testActor, classOf[B2]) === true
+        bus.publish(c)
+        bus.publish(b2)
+        expectMsg(b2)
+        bus.subscribe(testActor, classOf[A]) === true
+        bus.publish(c)
+        expectMsg(c)
+        bus.publish(b1)
+        expectMsg(b1)
+        bus.unsubscribe(testActor, classOf[B1]) === true
+        bus.publish(c)
+        bus.publish(b2)
+        bus.publish(a)
+        expectMsg(b2)
+        expectMsg(a)
+        expectNoMsg
       }
     }
 
