@@ -139,9 +139,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5"     //New BSD
     lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"     //ApacheV2
-    lazy val mongoAsync       = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.7"     //ApacheV2
+    lazy val mongoAsync  /* "Hammersmith" */    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.9-1"     //ApacheV2
 
-    lazy val twitterUtilCore  = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
+    lazy val twitterUtilCore  = "com.twitter"                 % "util-core"              % "1.12.2"      // ApacheV2
 
     // Test
 
@@ -413,7 +413,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
   class AkkaMongoMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
     val mongoAsync = Dependencies.mongoAsync
-    val twitterUtilCore = Dependencies.twitterUtilCore
+    //val twitterUtilCore = Dependencies.twitterUtilCore
 
     lazy val mongoTestsEnabled = systemOptional[Boolean]("mailbox.test.mongo", false)
 
