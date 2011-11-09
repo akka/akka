@@ -39,6 +39,8 @@ class RemoteServerSettings(val app: AkkaApplication) {
     requireCookie
   }
 
+  val USE_PASSIVE_CONNECTIONS = config.getBool("akka.remote.use-passive-connections", false)
+
   val UNTRUSTED_MODE = config.getBool("akka.remote.server.untrusted-mode", false)
   val PORT = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), DefaultTimeUnit)

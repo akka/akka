@@ -77,6 +77,17 @@ trait NettyRemoteClientModule extends RemoteClientModule {
     }
   }
 
+  def bindClient(inetAddress: InetSocketAddress, createClient: ⇒ RemoteClient, putIfAbsent: Boolean = false): Boolean = lock withWriteGuard {
+    val address = RemoteAddress(inetAddress)
+    if (putIfAbsent && remoteClients.contains(address)) false
+    else {
+      val newClient = createClient
+      newClient.connect()
+      remoteClients.put(address, newClient).foreach(_.shutdown())
+      true
+    }
+  }
+
   def shutdownClientConnection(address: InetSocketAddress): Boolean = lock withWriteGuard {
     remoteClients.remove(RemoteAddress(address)) match {
       case Some(client) ⇒ client.shutdown()
@@ -167,6 +178,8 @@ abstract class RemoteClient private[akka] (
       throw exception
     }
   }
+
+  override def toString = name
 }
 
 class PassiveRemoteClient(_app: AkkaApplication,
@@ -365,9 +378,7 @@ class ActiveRemoteClientHandler(
   val remoteAddress: InetSocketAddress,
   val timer: HashedWheelTimer,
   val client: ActiveRemoteClient)
-  extends SimpleChannelUpstreamHandler {
-
-  implicit def _app = app
+  extends SimpleChannelUpstreamHandler with RemoteMarshallingOps {
 
   def runOnceNow(thunk: ⇒ Unit) = timer.newTimeout(new TimerTask() {
     def run(timeout: Timeout) = try { thunk } finally { timeout.cancel() }
@@ -380,10 +391,11 @@ class ActiveRemoteClientHandler(
           val rcp = arp.getInstruction
           rcp.getCommandType match {
             case CommandType.SHUTDOWN ⇒ runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
+            case _                    ⇒ //Ignore others
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-        //TODO FIXME DOESN'T DO ANYTHING ANYMORE
+          receiveMessage(new RemoteMessage(arp.getMessage, client.remoteSupport, client.loader), untrustedMode = false) //TODO FIXME Sensible or not?
 
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.module, client.remoteAddress)
@@ -632,8 +644,15 @@ class RemoteServerHandler(
         receiveMessage(new RemoteMessage(remote.getMessage, server.remoteSupport, applicationLoader), UNTRUSTED_MODE)
 
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
-        remote.getInstruction.getCommandType match {
-          case CommandType.CONNECT  ⇒ //TODO FIXME Create passive connection here
+        val instruction = remote.getInstruction
+        instruction.getCommandType match {
+          case CommandType.CONNECT ⇒ server.remoteSupport match {
+            case clientModule: NettyRemoteClientModule if settings.USE_PASSIVE_CONNECTIONS ⇒
+              val origin = instruction.getOrigin
+              val inbound = new InetSocketAddress(origin.getHostname, origin.getPort)
+              clientModule.bindClient(inbound, new PassiveRemoteClient(app, event.getChannel, server.remoteSupport, clientModule, inbound, applicationLoader, server.notifyListeners))
+            case _ ⇒ //Ignore
+          }
           case CommandType.SHUTDOWN ⇒ //TODO FIXME Dispose passive connection here
           case _                    ⇒ //Unknown command
         }

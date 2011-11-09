@@ -227,10 +227,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
         SerializedActorRef(input.getSender.getAddress, input.getSender.getHost, input.getSender.getPort)).getOrElse(throw new IllegalStateException("OHNOES"))
     else
       remote.app.deadLetters
-  lazy val recipient: ActorRef = remote.app.findActor(input.getRecipient.getAddress) match {
-    case None         ⇒ remote.app.deadLetters
-    case Some(target) ⇒ target
-  }
+  lazy val recipient: ActorRef = remote.app.actorFor(input.getRecipient.getAddress).getOrElse(remote.app.deadLetters)
 
   lazy val payload: Either[Throwable, AnyRef] =
     if (input.hasException) Left(parseException())

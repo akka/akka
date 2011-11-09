@@ -86,7 +86,7 @@ trait ActorRefFactory {
 
   def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, guardian, address)
 
-  def findActor(address: String): Option[ActorRef] = provider.actorFor(address)
+  def actorFor(address: String): Option[ActorRef] = provider.actorFor(address)
 
 }
 

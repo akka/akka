@@ -23,6 +23,7 @@ class ClusterSpec extends AkkaSpec {
       getBool("akka.cluster.include-ref-node-in-replica-set") must equal(Some(true))
       getString("akka.remote.layer") must equal(Some("akka.cluster.netty.NettyRemoteSupport"))
       getString("akka.remote.secure-cookie") must equal(Some(""))
+      getBool("akka.remote.use-passive-connections") must equal(Some(true))
       getString("akka.cluster.log-directory") must equal(Some("_akka_cluster"))
 
       //akka.cluster.replication
