@@ -25,7 +25,7 @@ import akka.AkkaException
 import akka.AkkaApplication
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String) = this(msg, null)
 }
 
 trait NettyRemoteClientModule extends RemoteClientModule {
@@ -96,8 +96,6 @@ trait NettyRemoteClientModule extends RemoteClientModule {
    */
   def shutdownClientModule() {
     shutdownRemoteClients()
-    //TODO: Should we empty our remoteActors too?
-    //remoteActors.clear
   }
 
   def shutdownRemoteClients() = lock withWriteGuard {
