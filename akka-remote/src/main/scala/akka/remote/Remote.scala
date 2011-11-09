@@ -301,9 +301,6 @@ trait RemoteMarshallingOps {
     messageBuilder
   }
 
-  def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol =
-    createMessageSendEnvelope(createRemoteMessageProtocolBuilder(Right(request.getSender), Left(exception), None).build)
-
   def receiveMessage(remoteMessage: RemoteMessage, untrustedMode: Boolean) {
     val recipient = remoteMessage.recipient
 

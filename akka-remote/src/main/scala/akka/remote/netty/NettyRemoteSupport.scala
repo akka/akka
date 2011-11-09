@@ -635,20 +635,11 @@ class RemoteServerHandler(
     server.notifyListeners(RemoteServerClientClosed(server, clientAddress))
   }
 
-  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
+  override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
-        try {
-          try {
-            receiveMessage(new RemoteMessage(remote.getMessage, server.remoteSupport, applicationLoader), UNTRUSTED_MODE)
-          } catch {
-            case e: SecurityException ⇒
-              server.notifyListeners(RemoteServerError(e, server))
-              write(event.getChannel, createErrorReplyMessage(e, remote.getMessage)) //TODO FIXME What is the purpose of this response?
-          }
-        } catch {
-          case e: Exception ⇒ server.notifyListeners(RemoteServerError(e, server))
-        }
+        receiveMessage(new RemoteMessage(remote.getMessage, server.remoteSupport, applicationLoader), UNTRUSTED_MODE)
+
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         remote.getInstruction.getCommandType match {
           case CommandType.CONNECT  ⇒ //TODO FIXME Create passive connection here
@@ -657,6 +648,8 @@ class RemoteServerHandler(
         }
       case _ ⇒ //ignore
     }
+  } catch {
+    case e: Exception ⇒ server.notifyListeners(RemoteServerError(e, server))
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
