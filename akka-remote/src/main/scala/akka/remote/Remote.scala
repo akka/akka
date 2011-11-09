@@ -7,7 +7,6 @@ package akka.remote
 import akka.AkkaApplication
 import akka.actor._
 import akka.event.EventHandler
-import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.actor.Status._
 import akka.util._
 import akka.util.duration._
@@ -21,6 +20,7 @@ import java.net.InetSocketAddress
 
 import com.eaio.uuid.UUID
 import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression }
+import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
@@ -303,4 +303,17 @@ trait RemoteMarshallingOps {
 
   def createErrorReplyMessage(exception: Throwable, request: RemoteMessageProtocol): AkkaRemoteProtocol =
     createMessageSendEnvelope(createRemoteMessageProtocolBuilder(Right(request.getSender), Left(exception), None).build)
+
+  def receiveMessage(remoteMessage: RemoteMessage, untrustedMode: Boolean) {
+    val recipient = remoteMessage.recipient
+
+    remoteMessage.payload match {
+      case Left(t) ⇒ throw t
+      case Right(r) ⇒ r match {
+        case _: Terminate                              ⇒ if (untrustedMode) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else recipient.stop()
+        case _: AutoReceivedMessage if (untrustedMode) ⇒ throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
+        case m                                         ⇒ recipient.!(m)(remoteMessage.sender)
+      }
+    }
+  }
 }
