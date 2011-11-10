@@ -6,7 +6,7 @@ package akka.testkit
 
 import akka.util.Duration
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 class TestLatchTimeoutException(message: String) extends RuntimeException(message)
 class TestLatchNoTimeoutException(message: String) extends RuntimeException(message)
@@ -21,10 +21,10 @@ class TestLatchNoTimeoutException(message: String) extends RuntimeException(mess
 object TestLatch {
   val DefaultTimeout = Duration(5, TimeUnit.SECONDS)
 
-  def apply(count: Int = 1)(implicit app: AkkaApplication) = new TestLatch(count)
+  def apply(count: Int = 1)(implicit app: ActorSystem) = new TestLatch(count)
 }
 
-class TestLatch(count: Int = 1)(implicit app: AkkaApplication) {
+class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
   private var latch = new CountDownLatch(count)
 
   def countDown() = latch.countDown()

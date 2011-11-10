@@ -10,7 +10,7 @@ import atomic.{ AtomicLong, AtomicInteger }
 import ThreadPoolExecutor.CallerRunsPolicy
 import akka.util.Duration
 import akka.event.Logging.{ Warning, Error }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -68,7 +68,7 @@ trait ExecutorServiceFactoryProvider {
 /**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
-case class ThreadPoolConfig(app: AkkaApplication,
+case class ThreadPoolConfig(app: ActorSystem,
                             allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
                             corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
@@ -210,7 +210,7 @@ class MonitorableThread(runnable: Runnable, name: String)
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BoundedExecutorDecorator(val app: AkkaApplication, val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
+class BoundedExecutorDecorator(val app: ActorSystem, val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
   protected val semaphore = new Semaphore(bound)
 
   override def execute(command: Runnable) = {

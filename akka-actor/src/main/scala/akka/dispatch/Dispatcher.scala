@@ -8,7 +8,7 @@ import akka.event.Logging.Warning
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
 import akka.actor.{ ActorCell, ActorKilledException }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Default settings are:
@@ -64,7 +64,7 @@ import akka.AkkaApplication
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-  _app: AkkaApplication,
+  _app: ActorSystem,
   val name: String,
   val throughput: Int,
   val throughputDeadlineTime: Int,

@@ -9,7 +9,7 @@ import akka.actor._
 import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise }
 import akka.util.duration._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.

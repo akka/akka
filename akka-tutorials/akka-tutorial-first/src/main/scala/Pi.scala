@@ -4,16 +4,15 @@
 
 package akka.tutorial.first.scala
 
-import akka.actor.{ Actor, PoisonPill }
+import akka.actor.{ Actor, PoisonPill, ActorSystem }
 import Actor._
 import java.util.concurrent.CountDownLatch
 import akka.routing.Routing.Broadcast
 import akka.routing.{ RoutedProps, Routing }
-import akka.AkkaApplication
 
 object Pi extends App {
 
-  val app = AkkaApplication()
+  val app = ActorSystem()
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 

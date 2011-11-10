@@ -7,11 +7,11 @@ import org.scalatest.BeforeAndAfterEach
 
 import akka.actor.simpleName
 import akka.testkit.AkkaSpec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
 
-  def app: AkkaApplication
+  def app: ActorSystem
 
   def isBenchmark() = System.getProperty("benchmark") == "true"
 

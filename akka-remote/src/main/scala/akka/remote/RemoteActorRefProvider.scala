@@ -4,7 +4,7 @@
 
 package akka.remote
 
-import akka.{ AkkaException, AkkaApplication }
+import akka.AkkaException
 import akka.actor._
 import akka.actor.Actor._
 import akka.actor.Status._
@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
+class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
   val log = Logging(app, this)
 

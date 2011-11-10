@@ -6,7 +6,7 @@ package akka.remote
 
 import akka.actor._
 import akka.routing._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.event.Logging
 
 import scala.collection.immutable.Map
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteConnectionManager(
-  app: AkkaApplication,
+  app: ActorSystem,
   remote: Remote,
   initialConnections: Map[RemoteAddress, ActorRef] = Map.empty[RemoteAddress, ActorRef])
   extends ConnectionManager {

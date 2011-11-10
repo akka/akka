@@ -21,7 +21,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.event.Logging
 import org.jboss.netty.channel._
 
@@ -348,7 +348,7 @@ class ActiveRemoteClientHandler(
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with RemoteMarshallingOps {
+class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with RemoteMarshallingOps {
 
   val serverSettings = new RemoteServerSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
   val clientSettings = new RemoteClientSettings(app.config, app.AkkaConfig.DefaultTimeUnit)

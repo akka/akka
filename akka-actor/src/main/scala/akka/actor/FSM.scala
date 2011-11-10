@@ -6,7 +6,6 @@ package akka.actor
 import akka.util._
 
 import scala.collection.mutable
-import akka.AkkaApplication
 import akka.event.Logging
 
 object FSM {
@@ -29,7 +28,7 @@ object FSM {
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
 
-  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: AkkaApplication) {
+  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: ActorSystem) {
     private var ref: Option[Cancellable] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {

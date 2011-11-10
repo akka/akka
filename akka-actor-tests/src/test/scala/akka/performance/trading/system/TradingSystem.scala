@@ -5,7 +5,7 @@ import akka.performance.trading.domain.OrderbookRepository
 import akka.actor.Actor._
 import akka.dispatch.MessageDispatcher
 import akka.actor.{ Props, ActorRef, PoisonPill }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 trait TradingSystem {
   type ME
@@ -34,7 +34,7 @@ trait TradingSystem {
   case class MatchingEngineInfo(primary: ME, standby: Option[ME], orderbooks: List[Orderbook])
 }
 
-class AkkaTradingSystem(val app: AkkaApplication) extends TradingSystem {
+class AkkaTradingSystem(val app: ActorSystem) extends TradingSystem {
   type ME = ActorRef
   type OR = ActorRef
 

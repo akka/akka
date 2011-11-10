@@ -7,7 +7,7 @@ package akka.util
 import akka.event.Logging.Error
 import java.lang.management.ManagementFactory
 import javax.management.{ ObjectInstance, ObjectName, InstanceAlreadyExistsException, InstanceNotFoundException }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -18,7 +18,7 @@ object JMX {
   def nameFor(hostname: String, service: String, bean: String): ObjectName =
     new ObjectName("akka.%s:type=%s,name=%s".format(hostname, service, bean.replace(":", "_")))
 
-  def register(name: ObjectName, mbean: AnyRef)(implicit app: AkkaApplication): Option[ObjectInstance] = try {
+  def register(name: ObjectName, mbean: AnyRef)(implicit app: ActorSystem): Option[ObjectInstance] = try {
     Some(mbeanServer.registerMBean(mbean, name))
   } catch {
     case e: InstanceAlreadyExistsException ⇒
@@ -28,7 +28,7 @@ object JMX {
       None
   }
 
-  def unregister(mbean: ObjectName)(implicit app: AkkaApplication) = try {
+  def unregister(mbean: ObjectName)(implicit app: ActorSystem) = try {
     mbeanServer.unregisterMBean(mbean)
   } catch {
     case e: InstanceNotFoundException ⇒ {}

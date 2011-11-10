@@ -7,7 +7,7 @@ package akka.remote
 import scala.collection.mutable
 import akka.actor.{ LocalActorRef, Actor, ActorRef, Props, newUuid }
 import akka.actor.Actor._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
@@ -58,7 +58,7 @@ object NetworkEventStream {
   }
 }
 
-class NetworkEventStream(val app: AkkaApplication) {
+class NetworkEventStream(val app: ActorSystem) {
 
   import NetworkEventStream._
 

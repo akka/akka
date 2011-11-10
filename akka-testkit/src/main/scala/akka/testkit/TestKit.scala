@@ -10,7 +10,7 @@ import akka.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -86,7 +86,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: AkkaApplication) {
+class TestKit(_app: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
@@ -589,7 +589,7 @@ object TestKit {
 /**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
+class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 
   /**
    * Shorthand to get the testActor.
@@ -620,7 +620,7 @@ class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
 }
 
 object TestProbe {
-  def apply()(implicit app: AkkaApplication) = new TestProbe(app)
+  def apply()(implicit app: ActorSystem) = new TestProbe(app)
 }
 
 trait ImplicitSender { this: TestKit ⇒

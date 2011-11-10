@@ -9,7 +9,7 @@ import akka.actor.Actor
 import akka.event.Logging._
 import akka.event.Logging
 import akka.util.Duration
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -78,7 +78,7 @@ abstract class EventFilter(occurrences: Int) {
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def intercept[T](code: ⇒ T)(implicit app: AkkaApplication): T = {
+  def intercept[T](code: ⇒ T)(implicit app: ActorSystem): T = {
     app.mainbus publish TestEvent.Mute(this)
     try {
       val result = code

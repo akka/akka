@@ -5,10 +5,10 @@
 package akka.config
 
 import akka.testkit.AkkaSpec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfigSpec extends AkkaSpec(AkkaApplication("ConfigSpec", Configuration.fromFile("config/akka-reference.conf"))) {
+class ConfigSpec extends AkkaSpec(ActorSystem("ConfigSpec", Configuration.fromFile("config/akka-reference.conf"))) {
 
   "The default configuration file (i.e. akka-reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {

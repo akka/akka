@@ -9,12 +9,11 @@ import akka.event.Logging
 import System.{ currentTimeMillis ⇒ now }
 import akka.routing.Routing.Broadcast
 import akka.routing._
-import akka.AkkaApplication
-import akka.actor.{ ActorRef, Timeout, Actor, PoisonPill }
+import akka.actor.{ ActorRef, Timeout, Actor, PoisonPill, ActorSystem }
 
 object Pi extends App {
 
-  val app = AkkaApplication()
+  val app = ActorSystem()
   val log = Logging(app, this)
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)

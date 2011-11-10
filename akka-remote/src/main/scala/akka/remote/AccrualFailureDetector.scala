@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -25,7 +25,7 @@ import akka.AkkaApplication
  */
 class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000) {
 
-  def this(app: AkkaApplication) {
+  def this(app: ActorSystem) {
     this(
       app.config.getInt("akka.remote.failure-detector.theshold", 8),
       app.config.getInt("akka.remote.failure-detector.max-sample-size", 1000))

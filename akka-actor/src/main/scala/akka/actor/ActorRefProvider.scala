@@ -7,7 +7,6 @@ package akka.actor
 import akka.config.ConfigurationException
 import akka.util.ReflectiveAccess
 import akka.routing._
-import akka.AkkaApplication
 import com.eaio.uuid.UUID
 import akka.AkkaException
 import akka.dispatch._
@@ -50,12 +49,12 @@ trait ActorRefProvider {
 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef
 
-  private[akka] def terminationFuture: Future[AkkaApplication.ExitStatus]
+  private[akka] def terminationFuture: Future[ActorSystem.ExitStatus]
 
 }
 
 /**
- * Interface implemented by AkkaApplication and AkkaContext, the only two places from which you can get fresh actors
+ * Interface implemented by ActorSystem and AkkaContext, the only two places from which you can get fresh actors
  */
 trait ActorRefFactory {
 
@@ -102,13 +101,13 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
 /**
  * Local ActorRef provider.
  */
-class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
+class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
   val log = Logging(app.mainbus, this)
 
   private[akka] val deployer: Deployer = new Deployer(app)
 
-  val terminationFuture = new DefaultPromise[AkkaApplication.ExitStatus](Timeout.never)(app.dispatcher)
+  val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(app.dispatcher)
 
   private[akka] val scheduler: Scheduler = { //TODO FIXME Make this configurable
     val s = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
@@ -140,7 +139,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     protected[akka] override def postMessageToMailbox(msg: Any, sender: ActorRef) {
       msg match {
         case Failed(child, ex)      ⇒ child.stop()
-        case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(AkkaApplication.Stopped)
+        case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
         case _                      ⇒ log.error(this + " received unexpected message " + msg)
       }
     }

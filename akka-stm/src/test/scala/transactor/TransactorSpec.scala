@@ -3,7 +3,7 @@ package akka.transactor.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.transactor.Transactor
 import akka.actor._
 import akka.stm._

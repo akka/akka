@@ -8,13 +8,13 @@ import static akka.actor.Actors.poisonPill;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 
-import akka.AkkaApplication;
 import akka.routing.RoutedProps;
 import akka.routing.Routing;
 import akka.routing.LocalConnectionManager;
 import scala.Option;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
@@ -26,7 +26,7 @@ import java.util.LinkedList;
 
 public class Pi {
 
-  private static final AkkaApplication app = new AkkaApplication();
+  private static final ActorSystem app = new ActorSystem();
 
   public static void main(String[] args) throws Exception {
     Pi pi = new Pi();

@@ -7,7 +7,7 @@ package akka.serialization
 import akka.serialization.Serialization._
 import scala.reflect._
 import akka.testkit.AkkaSpec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import akka.actor.DeadLetterActorRef
 
@@ -68,7 +68,7 @@ class SerializeSpec extends AkkaSpec {
     "serialize DeadLetterActorRef" in {
       val outbuf = new ByteArrayOutputStream()
       val out = new ObjectOutputStream(outbuf)
-      val a = new AkkaApplication()
+      val a = new ActorSystem()
       out.writeObject(a.deadLetters)
       out.flush()
       out.close()

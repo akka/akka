@@ -2,7 +2,7 @@ package akka.transactor.test
 
 import org.scalatest.BeforeAndAfterAll
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.transactor.Coordinated
 import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }

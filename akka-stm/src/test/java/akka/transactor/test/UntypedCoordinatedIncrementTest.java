@@ -6,7 +6,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.Before;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.transactor.Coordinated;
 import akka.actor.Actors;
 import akka.actor.ActorRef;
@@ -30,7 +30,7 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedCoordinatedIncrementTest {
-    AkkaApplication application = new AkkaApplication("UntypedCoordinatedIncrementTest");
+    ActorSystem application = new ActorSystem("UntypedCoordinatedIncrementTest");
 
     List<ActorRef> counters;
     ActorRef failer;

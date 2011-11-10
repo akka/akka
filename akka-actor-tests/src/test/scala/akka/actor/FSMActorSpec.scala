@@ -12,13 +12,12 @@ import FSM._
 import akka.util.Duration
 import akka.util.duration._
 import akka.event._
-import akka.AkkaApplication
-import akka.AkkaApplication.defaultConfig
+import akka.actor.ActorSystem.defaultConfig
 import akka.config.Configuration
 
 object FSMActorSpec {
 
-  class Latches(implicit app: AkkaApplication) {
+  class Latches(implicit app: ActorSystem) {
     val unlockedLatch = TestLatch()
     val lockedLatch = TestLatch()
     val unhandledLatch = TestLatch()
@@ -194,7 +193,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
     }
 
     "log events and transitions if asked to do so" in {
-      new TestKit(AkkaApplication("fsm event", AkkaApplication.defaultConfig ++
+      new TestKit(ActorSystem("fsm event", ActorSystem.defaultConfig ++
         Configuration("akka.loglevel" -> "DEBUG",
           "akka.actor.debug.fsm" -> true))) {
         EventFilter.debug() intercept {

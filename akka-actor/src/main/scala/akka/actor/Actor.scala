@@ -15,7 +15,7 @@ import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
 import akka.event.Logging.Debug
 import akka.experimental
-import akka.{ AkkaApplication, AkkaException }
+import akka.AkkaException
 
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
@@ -151,7 +151,7 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit app: AkkaApplication) = app.AkkaConfig.ActorTimeout
+  implicit def defaultTimeout(implicit app: ActorSystem) = app.AkkaConfig.ActorTimeout
 }
 
 trait ActorLogging { this: Actor ⇒
@@ -165,7 +165,7 @@ object Actor {
   /**
    * This decorator adds invocation logging to a Receive function.
    */
-  class LoggingReceive(source: AnyRef, r: Receive)(implicit app: AkkaApplication) extends Receive {
+  class LoggingReceive(source: AnyRef, r: Receive)(implicit app: ActorSystem) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
       app.mainbus.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
@@ -175,7 +175,7 @@ object Actor {
   }
 
   object LoggingReceive {
-    def apply(source: AnyRef, r: Receive)(implicit app: AkkaApplication): Receive = r match {
+    def apply(source: AnyRef, r: Receive)(implicit app: ActorSystem): Receive = r match {
       case _: LoggingReceive ⇒ r
       case _                 ⇒ new LoggingReceive(source, r)
     }

@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka
+package akka.actor
 
 import akka.config._
 import akka.actor._
@@ -13,11 +13,11 @@ import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
-import remote.{ RemoteAddress }
+import akka.remote.RemoteAddress
 
-object AkkaApplication {
+object ActorSystem {
 
-  type AkkaConfig = a.AkkaConfig.type forSome { val a: AkkaApplication }
+  type AkkaConfig = a.AkkaConfig.type forSome { val a: ActorSystem }
 
   val Version = "2.0-SNAPSHOT"
 
@@ -61,11 +61,11 @@ object AkkaApplication {
 
   val defaultConfig = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
 
-  def apply(name: String, config: Configuration) = new AkkaApplication(name, config)
+  def apply(name: String, config: Configuration) = new ActorSystem(name, config)
 
-  def apply(name: String): AkkaApplication = new AkkaApplication(name)
+  def apply(name: String): ActorSystem = new ActorSystem(name)
 
-  def apply(): AkkaApplication = new AkkaApplication()
+  def apply(): ActorSystem = new ActorSystem()
 
   sealed trait ExitStatus
   case object Stopped extends ExitStatus
@@ -73,12 +73,12 @@ object AkkaApplication {
 
 }
 
-class AkkaApplication(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
+class ActorSystem(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
 
-  def this(name: String) = this(name, AkkaApplication.defaultConfig)
+  def this(name: String) = this(name, ActorSystem.defaultConfig)
   def this() = this("default")
 
-  import AkkaApplication._
+  import ActorSystem._
 
   object AkkaConfig {
     import config._

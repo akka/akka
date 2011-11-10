@@ -1,10 +1,9 @@
 package sample.fsm.dining.fsm
 
-import akka.actor.{ ActorRef, Actor, FSM }
+import akka.actor.{ ActorRef, Actor, FSM, ActorSystem }
 import akka.actor.FSM._
 import akka.util.Duration
 import akka.util.duration._
-import akka.AkkaApplication
 
 /*
  * Some messages for the chopstick
@@ -164,7 +163,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
  */
 object DiningHakkersOnFsm {
 
-  val app = AkkaApplication()
+  val app = ActorSystem()
 
   def run = {
     // Create 5 chopsticks

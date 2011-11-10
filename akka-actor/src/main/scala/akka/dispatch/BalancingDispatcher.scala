@@ -9,7 +9,7 @@ import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import java.util.{ Comparator, Queue }
 import annotation.tailrec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -28,7 +28,7 @@ import akka.AkkaApplication
  * @author Viktor Klang
  */
 class BalancingDispatcher(
-  _app: AkkaApplication,
+  _app: ActorSystem,
   _name: String,
   throughput: Int,
   throughputDeadlineTime: Int,

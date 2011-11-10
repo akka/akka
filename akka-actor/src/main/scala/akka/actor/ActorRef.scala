@@ -8,7 +8,6 @@ import akka.dispatch._
 import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
-import akka.AkkaApplication
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
@@ -161,7 +160,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  _app: AkkaApplication,
+  _app: ActorSystem,
   props: Props,
   _supervisor: ActorRef,
   val path: ActorPath,
@@ -300,7 +299,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
     if (app.value eq null) throw new IllegalStateException(
-      "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+      "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
         " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
     app.value.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
@@ -372,7 +371,7 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
+class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
 
   override val name: String = "dead-letter"
@@ -396,7 +395,7 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
-abstract class AskActorRef(protected val app: AkkaApplication)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
+abstract class AskActorRef(protected val app: ActorSystem)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
   // FIXME (actor path): put this under the tmp guardian supervisor

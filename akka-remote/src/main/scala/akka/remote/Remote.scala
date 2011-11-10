@@ -4,7 +4,7 @@
 
 package akka.remote
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.actor._
 import akka.event.Logging
 import akka.actor.Status._
@@ -27,7 +27,7 @@ import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Remote(val app: AkkaApplication) {
+class Remote(val app: ActorSystem) {
 
   val log = Logging(app, this)
 
@@ -266,7 +266,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
 
 trait RemoteMarshallingOps {
 
-  def app: AkkaApplication
+  def app: ActorSystem
 
   def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
     val arp = AkkaRemoteProtocol.newBuilder

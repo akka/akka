@@ -8,12 +8,11 @@ import akka.testkit._
 import akka.util.duration._
 import Actor._
 import akka.util.Duration
-import akka.AkkaApplication
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
-  def createForwardingChain(app: AkkaApplication): ActorRef = {
+  def createForwardingChain(app: ActorSystem): ActorRef = {
     val replier = app.actorOf(new Actor {
       def receive = { case x ⇒ sender ! x }
     })

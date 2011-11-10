@@ -3,7 +3,7 @@
  */
 
 package akka.util
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 trait Bootable {
   def onLoad() {}

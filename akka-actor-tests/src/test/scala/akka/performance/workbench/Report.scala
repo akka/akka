@@ -5,12 +5,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.event.Logging
 import scala.collection.immutable.TreeMap
 
 class Report(
-  app: AkkaApplication,
+  app: ActorSystem,
   resultRepository: BenchResultRepository,
   compareResultWith: Option[String] = None) {
 

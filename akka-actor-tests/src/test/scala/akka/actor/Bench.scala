@@ -5,8 +5,6 @@
 */
 package akka.actor
 
-import akka.AkkaApplication
-
 object Chameneos {
 
   sealed trait ChameneosEvent
@@ -109,7 +107,7 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    AkkaApplication().actorOf(new Mall(1000000, 4))
+    ActorSystem().actorOf(new Mall(1000000, 4))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
   }

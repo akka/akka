@@ -8,7 +8,7 @@ import akka.AkkaException
 import akka.actor._
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.util.ReflectiveAccess
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
@@ -92,7 +92,7 @@ object Routing {
 /**
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
-abstract private[akka] class AbstractRoutedActorRef(val app: AkkaApplication, val props: RoutedProps) extends UnsupportedActorRef {
+abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val props: RoutedProps) extends UnsupportedActorRef {
   val router = props.routerFactory()
 
   override def postMessageToMailbox(message: Any, sender: ActorRef) = router.route(message)(sender)
@@ -104,7 +104,7 @@ abstract private[akka] class AbstractRoutedActorRef(val app: AkkaApplication, va
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(app: AkkaApplication, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(app, routedProps) {
+private[akka] class RoutedActorRef(app: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(app, routedProps) {
 
   val path = supervisor.path / name
 

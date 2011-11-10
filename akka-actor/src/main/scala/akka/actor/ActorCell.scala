@@ -8,7 +8,6 @@ import akka.dispatch._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
 import java.util.concurrent.TimeUnit
-import akka.AkkaApplication
 import akka.event.Logging.{ Debug, Warning, Error }
 
 /**
@@ -44,7 +43,7 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def handleChildTerminated(child: ActorRef): Unit
 
-  def app: AkkaApplication
+  def app: ActorSystem
 
   def parent: ActorRef
 }
@@ -62,7 +61,7 @@ private[akka] object ActorCell {
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 private[akka] class ActorCell(
-  val app: AkkaApplication,
+  val app: ActorSystem,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   val parent: ActorRef,

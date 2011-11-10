@@ -10,14 +10,13 @@ import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
-import akka.AkkaApplication
 
 object TypedActor {
   /**
    * This class represents a Method call, and has a reference to the Method to be called and the parameters to supply
    * It's sent to the ActorRef backing the TypedActor and can be serialized and deserialized
    */
-  case class MethodCall(app: AkkaApplication, method: Method, parameters: Array[AnyRef]) {
+  case class MethodCall(app: ActorSystem, method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
     def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
@@ -60,7 +59,7 @@ object TypedActor {
     private def readResolve(): AnyRef = {
       val app = akka.serialization.Serialization.app.value
       if (app eq null) throw new IllegalStateException(
-        "Trying to deserialize a SerializedMethodCall without an AkkaApplication in scope." +
+        "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
       MethodCall(app, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
@@ -76,7 +75,7 @@ object TypedActor {
   }
 
   private val selfReference = new ThreadLocal[AnyRef]
-  private val appReference = new ThreadLocal[AkkaApplication]
+  private val appReference = new ThreadLocal[ActorSystem]
 
   /**
    * Returns the reference to the proxy when called inside a method call in a TypedActor
@@ -265,7 +264,7 @@ trait TypedActorFactory { this: ActorRefFactory ⇒
  *
  *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
  */
-class TypedActor(val app: AkkaApplication) {
+class TypedActor(val app: ActorSystem) {
 
   import TypedActor.MethodCall
   /**

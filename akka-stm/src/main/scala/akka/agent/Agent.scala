@@ -4,7 +4,7 @@
 
 package akka.agent
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.actor._
 import akka.stm._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
@@ -20,7 +20,7 @@ private[akka] case object Get
  * Factory method for creating an Agent.
  */
 object Agent {
-  def apply[T](initialValue: T)(implicit app: AkkaApplication) = new Agent(initialValue, app)
+  def apply[T](initialValue: T)(implicit app: ActorSystem) = new Agent(initialValue, app)
 }
 
 /**
@@ -93,7 +93,7 @@ object Agent {
  * agent4.close
  * }}}
  */
-class Agent[T](initialValue: T, app: AkkaApplication) {
+class Agent[T](initialValue: T, app: ActorSystem) {
   private[akka] val ref = Ref(initialValue)
   private[akka] val updater = app.actorOf(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
 

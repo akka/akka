@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.Before;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.Props;
@@ -27,7 +27,7 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedTransactorTest {
-    AkkaApplication application = new AkkaApplication("UntypedTransactorTest");
+    ActorSystem application = new ActorSystem("UntypedTransactorTest");
 
     List<ActorRef> counters;
     ActorRef failer;

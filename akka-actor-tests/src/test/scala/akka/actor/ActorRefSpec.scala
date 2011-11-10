@@ -274,7 +274,7 @@ class ActorRefSpec extends AkkaSpec {
 
       (intercept[java.lang.IllegalStateException] {
         in.readObject
-      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
         " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 

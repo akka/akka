@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.ActorCell
 import akka.dispatch._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /*
  * Locking rules:
@@ -104,7 +104,7 @@ private[testkit] object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(_app: AkkaApplication, val name: String = "calling-thread") extends MessageDispatcher(_app) {
+class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thread") extends MessageDispatcher(_app) {
   import CallingThreadDispatcher._
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this, actor)

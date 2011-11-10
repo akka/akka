@@ -13,7 +13,7 @@ import java.rmi.RemoteException
 import org.junit.{ After, Test }
 import akka.actor._
 import util.control.NoStackTrace
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.util.duration._
 import akka.event.Logging.Error
 
@@ -148,7 +148,7 @@ object ActorModelSpec {
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
     starts: Long = dispatcher.starts.get(),
-    stops: Long = dispatcher.stops.get())(implicit app: AkkaApplication) {
+    stops: Long = dispatcher.stops.get())(implicit app: ActorSystem) {
     val deadline = System.currentTimeMillis + dispatcher.timeoutMs * 5
     try {
       await(deadline)(starts == dispatcher.starts.get)
@@ -181,7 +181,7 @@ object ActorModelSpec {
     unregisters: Long = 0,
     msgsReceived: Long = 0,
     msgsProcessed: Long = 0,
-    restarts: Long = 0)(implicit app: AkkaApplication) {
+    restarts: Long = 0)(implicit app: ActorSystem) {
     assertRef(actorRef, dispatcher)(
       suspensions,
       resumes,
@@ -199,7 +199,7 @@ object ActorModelSpec {
     unregisters: Long = statsFor(actorRef).unregisters.get(),
     msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
-    restarts: Long = statsFor(actorRef).restarts.get())(implicit app: AkkaApplication) {
+    restarts: Long = statsFor(actorRef).restarts.get())(implicit app: ActorSystem) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {

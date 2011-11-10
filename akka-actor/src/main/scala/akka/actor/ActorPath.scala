@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import akka.AkkaApplication
-
 object ActorPath {
   final val separator = "/"
 
@@ -14,13 +12,13 @@ object ActorPath {
   /**
    * Create an actor path from a string.
    */
-  def apply(app: AkkaApplication, path: String): ActorPath =
+  def apply(app: ActorSystem, path: String): ActorPath =
     apply(app, split(path))
 
   /**
    * Create an actor path from an iterable.
    */
-  def apply(app: AkkaApplication, path: Iterable[String]): ActorPath =
+  def apply(app: ActorSystem, path: Iterable[String]): ActorPath =
     path.foldLeft(app.root)(_ / _)
 
   /**
@@ -62,7 +60,7 @@ trait ActorPath {
   /**
    * The akka application for this path.
    */
-  def app: AkkaApplication
+  def app: ActorSystem
 
   /**
    * The name of the actor that this path refers to.
@@ -100,7 +98,7 @@ trait ActorPath {
   def isRoot: Boolean
 }
 
-class RootActorPath(val app: AkkaApplication) extends ActorPath {
+class RootActorPath(val app: ActorSystem) extends ActorPath {
 
   def name: String = "/"
 
@@ -119,7 +117,7 @@ class RootActorPath(val app: AkkaApplication) extends ActorPath {
   override def toString = ActorPath.separator
 }
 
-class ChildActorPath(val app: AkkaApplication, val parent: ActorPath, val name: String) extends ActorPath {
+class ChildActorPath(val app: ActorSystem, val parent: ActorPath, val name: String) extends ActorPath {
 
   def /(child: String): ActorPath = new ChildActorPath(app, this, child)
 

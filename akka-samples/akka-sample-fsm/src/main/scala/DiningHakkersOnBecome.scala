@@ -3,9 +3,8 @@ package sample.fsm.dining.become
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
-import akka.actor.{ ActorRef, Actor }
+import akka.actor.{ ActorRef, Actor, ActorSystem }
 import java.util.concurrent.TimeUnit
-import akka.AkkaApplication
 
 /*
  * First we define our messages, they basically speak for themselves
@@ -123,7 +122,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
  * Alright, here's our test-harness
  */
 object DiningHakkers {
-  val app = AkkaApplication()
+  val app = ActorSystem()
   def run {
     //Create 5 chopsticks
     val chopsticks = for (i ← 1 to 5) yield app.actorOf(new Chopstick("Chopstick " + i))

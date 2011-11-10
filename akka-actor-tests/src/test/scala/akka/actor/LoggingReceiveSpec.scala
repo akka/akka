@@ -7,8 +7,7 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.AkkaApplication
-import akka.AkkaApplication.defaultConfig
+import akka.actor.ActorSystem.defaultConfig
 import akka.config.Configuration
 import akka.event.Logging
 import akka.util.Duration
@@ -25,9 +24,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
   import LoggingReceiveSpec._
 
   val config = defaultConfig ++ Configuration("akka.event-handler-level" -> "DEBUG")
-  val appLogging = AkkaApplication("logging", config ++ Configuration("akka.actor.debug.receive" -> true))
-  val appAuto = AkkaApplication("autoreceive", config ++ Configuration("akka.actor.debug.autoreceive" -> true))
-  val appLifecycle = AkkaApplication("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
+  val appLogging = ActorSystem("logging", config ++ Configuration("akka.actor.debug.receive" -> true))
+  val appAuto = ActorSystem("autoreceive", config ++ Configuration("akka.actor.debug.autoreceive" -> true))
+  val appLifecycle = ActorSystem("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
 
   val filter = TestEvent.Mute(EventFilter.custom {
     case _: Logging.Debug ⇒ true

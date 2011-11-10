@@ -6,14 +6,14 @@ package akka.testkit
 import akka.config.Configuration
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
 
-abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
+abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   val log: LoggingAdapter = Logging(app.mainbus, this)
@@ -34,7 +34,7 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
 
   protected def atTermination() {}
 
-  def this(config: Configuration) = this(new AkkaApplication(getClass.getSimpleName, AkkaApplication.defaultConfig ++ config))
+  def this(config: Configuration) = this(new ActorSystem(getClass.getSimpleName, ActorSystem.defaultConfig ++ config))
 
   def actorOf(props: Props): ActorRef = app.actorOf(props)
 
@@ -53,8 +53,8 @@ abstract class AkkaSpec(_application: AkkaApplication = AkkaApplication())
 class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {
-      import AkkaApplication.defaultConfig
-      val app = AkkaApplication("test", defaultConfig ++ Configuration(
+      import ActorSystem.defaultConfig
+      val app = ActorSystem("test", defaultConfig ++ Configuration(
         "akka.actor.debug.lifecycle" -> true, "akka.loglevel" -> "DEBUG"))
       val spec = new AkkaSpec(app) {
         val ref = Seq(testActor, app.actorOf(Props.empty, "name"))

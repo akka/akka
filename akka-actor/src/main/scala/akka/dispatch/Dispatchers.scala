@@ -9,7 +9,7 @@ import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.config.Configuration
 import java.util.concurrent.TimeUnit
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Scala API. Dispatcher factory.
@@ -43,7 +43,7 @@ import akka.AkkaApplication
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Dispatchers(val app: AkkaApplication) {
+class Dispatchers(val app: ActorSystem) {
   val ThroughputDeadlineTimeMillis = app.AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt
   val MailboxType: MailboxType =
     if (app.AkkaConfig.MailboxCapacity < 1) UnboundedMailbox()
@@ -206,7 +206,7 @@ class Dispatchers(val app: AkkaApplication) {
   }
 }
 
-class DispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConfigurator(app) {
+class DispatcherConfigurator(app: ActorSystem) extends MessageDispatcherConfigurator(app) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new Dispatcher(app,
       config.getString("name", newUuid.toString),
@@ -218,7 +218,7 @@ class DispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConf
   }
 }
 
-class BalancingDispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConfigurator(app) {
+class BalancingDispatcherConfigurator(app: ActorSystem) extends MessageDispatcherConfigurator(app) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new BalancingDispatcher(app,
       config.getString("name", newUuid.toString),

@@ -9,14 +9,14 @@ import org.scalatest.WordSpec
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 @RunWith(classOf[JUnitRunner])
 class ConfigSpec extends WordSpec with MustMatchers {
 
   "The default configuration file (i.e. akka-reference.conf)" should {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {
-      val config = AkkaApplication("ConfigSpec").config
+      val config = ActorSystem("ConfigSpec").config
 
       import config._
 

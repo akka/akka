@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.event.Logging
 import akka.actor.DeploymentConfig._
-import akka.{ AkkaException, AkkaApplication }
+import akka.AkkaException
 import akka.config.{ Configuration, ConfigurationException }
 import akka.util.Duration
 import java.net.InetSocketAddress
@@ -33,7 +33,7 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val app: AkkaApplication) extends ActorDeployer {
+class Deployer(val app: ActorSystem) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
   val log = Logging(app.mainbus, this)

@@ -11,7 +11,7 @@ import akka.config.Configuration
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import scala.annotation.tailrec
 
 /**
@@ -61,7 +61,7 @@ case class Supervise(child: ActorRef) extends SystemMessage // sent to superviso
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.startsMonitoring
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.stopsMonitoring
 
-final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(app: ActorSystem, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       function()
@@ -78,13 +78,13 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultDispatcher(implicit app: AkkaApplication) = app.dispatcher
+  implicit def defaultDispatcher(implicit app: ActorSystem) = app.dispatcher
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable {
+abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
   import MessageDispatcher._
 
   protected val _tasks = new AtomicLong(0L)
@@ -338,7 +338,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
+abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */

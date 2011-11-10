@@ -3,9 +3,9 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props }
-import akka.{ AkkaException, AkkaApplication }
-import akka.AkkaApplication.AkkaConfig
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem }
+import akka.AkkaException
+import akka.actor.ActorSystem.AkkaConfig
 import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
@@ -73,7 +73,7 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "StandardOutLogger started"))
   }
 
-  private[akka] def startDefaultLoggers(app: AkkaApplication, config: AkkaConfig) {
+  private[akka] def startDefaultLoggers(app: ActorSystem, config: AkkaConfig) {
     val level = levelFor(config.LogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.LogLevel))
       ErrorLevel
@@ -128,7 +128,7 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "all default loggers stopped"))
   }
 
-  private def addLogger(app: AkkaApplication, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
+  private def addLogger(app: ActorSystem, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
     val actor = app.systemActorOf(Props(clazz), Props.randomName)
     actor ! InitializeLogger(this)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
@@ -220,12 +220,12 @@ object Logging {
    * Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.
    */
-  def apply(app: AkkaApplication, source: AnyRef): LoggingAdapter = new BusLogging(app.mainbus, source)
+  def apply(app: ActorSystem, source: AnyRef): LoggingAdapter = new BusLogging(app.mainbus, source)
   /**
    * Java API: Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.
    */
-  def getLogger(app: AkkaApplication, source: AnyRef): LoggingAdapter = apply(app, source)
+  def getLogger(app: ActorSystem, source: AnyRef): LoggingAdapter = apply(app, source)
   /**
    * Obtain LoggingAdapter for the given event bus and source object. The
    * source object is used to identify the source of this logging channel.

@@ -5,7 +5,7 @@
 package akka.remote
 
 import akka.actor._
-import akka.{ AkkaException, AkkaApplication }
+import akka.AkkaException
 
 import scala.reflect.BeanProperty
 import java.io.{ PrintWriter, PrintStream }
@@ -128,7 +128,7 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val app: AkkaApplication) {
+abstract class RemoteSupport(val app: ActorSystem) {
   /**
    * Shuts down the remoting
    */

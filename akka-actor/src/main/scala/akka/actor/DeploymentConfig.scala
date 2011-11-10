@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.AkkaApplication
 import akka.util.Duration
 import akka.routing.{ RouterType, FailureDetectorType }
 import akka.routing.FailureDetectorType._
@@ -219,7 +218,7 @@ object DeploymentConfig {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DeploymentConfig(val app: AkkaApplication) {
+class DeploymentConfig(val app: ActorSystem) {
 
   import DeploymentConfig._
 

@@ -24,7 +24,6 @@ import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 import scala.util.continuations._
 import com.eaio.uuid.UUID
-import akka.AkkaApplication
 
 object IO {
 
@@ -291,7 +290,7 @@ private[akka] object IOWorker {
   case object Shutdown extends Request
 }
 
-private[akka] class IOWorker(app: AkkaApplication, ioManager: ActorRef, val bufferSize: Int) {
+private[akka] class IOWorker(app: ActorSystem, ioManager: ActorRef, val bufferSize: Int) {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import IOWorker._
 

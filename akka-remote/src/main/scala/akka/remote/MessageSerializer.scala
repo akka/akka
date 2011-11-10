@@ -7,17 +7,17 @@ package akka.remote
 import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
 import com.google.protobuf.ByteString
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 object MessageSerializer {
 
-  def deserialize(app: AkkaApplication, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
+  def deserialize(app: ActorSystem, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
     val clazz = loadManifest(classLoader, messageProtocol)
     app.serialization.deserialize(messageProtocol.getMessage.toByteArray,
       clazz, classLoader).fold(x ⇒ throw x, identity)
   }
 
-  def serialize(app: AkkaApplication, message: AnyRef): MessageProtocol = {
+  def serialize(app: ActorSystem, message: AnyRef): MessageProtocol = {
     val builder = MessageProtocol.newBuilder
     val bytes = app.serialization.serialize(message).fold(x ⇒ throw x, identity)
     builder.setMessage(ByteString.copyFrom(bytes))

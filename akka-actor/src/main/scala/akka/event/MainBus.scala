@@ -4,7 +4,7 @@
 package akka.event
 
 import akka.actor.{ ActorRef, Actor, Props }
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.actor.Terminated
 import akka.util.Subclassification
 
@@ -41,7 +41,7 @@ class MainBus(debug: Boolean = false) extends LoggingBus with SubchannelClassifi
     super.unsubscribe(subscriber)
   }
 
-  def start(app: AkkaApplication) {
+  def start(app: ActorSystem) {
     reaper = app.systemActorOf(Props(new Actor {
       def receive = {
         case ref: ActorRef   ⇒ watch(ref)
