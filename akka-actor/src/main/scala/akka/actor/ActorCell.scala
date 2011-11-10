@@ -5,11 +5,9 @@
 package akka.actor
 
 import akka.dispatch._
-import akka.util._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
-import scala.collection.JavaConverters
-import java.util.concurrent.{ ScheduledFuture, TimeUnit }
+import java.util.concurrent.TimeUnit
 import akka.AkkaApplication
 import akka.event.Logging.{ Debug, Warning, Error }
 
@@ -79,7 +77,7 @@ private[akka] class ActorCell(
 
   final def provider = app.provider
 
-  var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
+  var futureTimeout: Option[Cancellable] = None
 
   var childrenRefs = emptyChildrenRefs
 
@@ -348,7 +346,7 @@ private[akka] class ActorCell(
 
   final def cancelReceiveTimeout() {
     if (futureTimeout.isDefined) {
-      futureTimeout.get.cancel(true)
+      futureTimeout.get.cancel()
       futureTimeout = None
     }
   }

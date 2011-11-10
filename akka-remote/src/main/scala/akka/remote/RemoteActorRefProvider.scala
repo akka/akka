@@ -51,6 +51,8 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
 
+  def scheduler: Scheduler = local.scheduler
+
   private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
     actorOf(props, supervisor, supervisor.path / name, systemService)
 

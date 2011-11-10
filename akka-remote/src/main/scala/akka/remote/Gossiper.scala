@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import akka.AkkaApplication
 import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
@@ -107,7 +106,6 @@ class Gossiper(remote: Remote) {
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[RemoteAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
-  private val scheduler = new DefaultScheduler
 
   private val address = app.defaultAddress
   private val nodeFingerprint = address.##
@@ -124,8 +122,8 @@ class Gossiper(remote: Remote) {
 
   {
     // start periodic gossip and cluster scrutinization - default is run them every second with 1/2 second in between
-    scheduler schedule (() ⇒ initateGossip(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
-    scheduler schedule (() ⇒ scrutinize(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
+    app.scheduler schedule (() ⇒ initateGossip(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
+    app.scheduler schedule (() ⇒ scrutinize(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
   }
 
   /**

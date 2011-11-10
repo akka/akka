@@ -12,6 +12,7 @@ import akka.AkkaApplication
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
+import java.util.concurrent.TimeUnit
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -171,7 +172,7 @@ class LocalActorRef private[akka] (
 
   def name = path.name
 
-  def address: String = _app.address + path.toString
+  def address: String = _app.defaultAddress + path.toString
 
   private[this] val actorCell = new ActorCell(_app, this, props, _supervisor, receiveTimeout, hotswap)
   actorCell.start()
@@ -379,7 +380,7 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   // FIXME (actor path): put this under the sys guardian supervisor
   val path: ActorPath = app.root / "sys" / name
 
-  def address: String = app.address + path.toString
+  def address: String = app.defaultAddress + path.toString
 
   override def isShutdown(): Boolean = true
 
@@ -401,7 +402,7 @@ abstract class AskActorRef(protected val app: AkkaApplication)(timeout: Timeout 
   // FIXME (actor path): put this under the tmp guardian supervisor
   val path: ActorPath = app.root / "tmp" / name
 
-  def address: String = app.address + path.toString
+  def address: String = app.defaultAddress + path.toString
 
   {
     val callback: Future[Any] ⇒ Unit = { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }

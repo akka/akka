@@ -5,7 +5,6 @@ package akka
 
 import akka.config._
 import akka.actor._
-import akka.dispatch._
 import akka.event._
 import akka.util.duration._
 import java.net.InetAddress
@@ -13,10 +12,8 @@ import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
-import akka.routing.Routing
 import akka.serialization.Serialization
-import java.net.InetSocketAddress
-import remote.{ RemoteAddress, RemoteSupport }
+import remote.{ RemoteAddress }
 
 object AkkaApplication {
 
@@ -167,8 +164,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   def port: Int = defaultAddress.port
 
-  def address: String = hostname + ":" + port.toString
-
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)
   mainbus.startStdoutLogger(AkkaConfig)
@@ -176,8 +171,10 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
+
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+
+  def scheduler = provider.scheduler
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val reflective = new ReflectiveAccess(this)
@@ -189,6 +186,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = reflective.createProvider
+
+  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
 
   private class Guardian extends Actor {
     def receive = {
@@ -242,9 +241,6 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val serialization = new Serialization(this)
-
-  val scheduler = new DefaultScheduler
-  terminationFuture.onComplete(_ ⇒ scheduler.shutdown())
 
   /**
    * Create an actor path under the application supervisor (/app).

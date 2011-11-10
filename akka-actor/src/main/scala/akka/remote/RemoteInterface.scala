@@ -29,7 +29,8 @@ object RemoteAddress {
 trait RemoteAddress extends Serializable {
   def hostname: String
   def port: Int
-  override def toString = "" + hostname + ":" + port
+  @transient
+  override lazy val toString = "" + hostname + ":" + port
 }
 
 class RemoteException(message: String) extends AkkaException(message)

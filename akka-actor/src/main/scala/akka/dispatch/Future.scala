@@ -21,7 +21,7 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
@@ -985,7 +985,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
             }
           }
           val timeoutFuture = dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
-          onComplete(_ ⇒ timeoutFuture.cancel(true))
+          onComplete(_ ⇒ timeoutFuture.cancel())
           false
         } else true
       } else false
