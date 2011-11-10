@@ -62,8 +62,8 @@ class Remote(val app: AkkaApplication) {
 
   private[remote] lazy val remoteClientLifeCycleHandler = app.actorOf(Props(new Actor {
     def receive = {
-      case RemoteClientError(cause, client, address) ⇒ client.shutdownClientModule()
-      case RemoteClientDisconnected(client, address) ⇒ client.shutdownClientModule()
+      case RemoteClientError(cause, remote, address) ⇒ remote.shutdownClientConnection(address)
+      case RemoteClientDisconnected(remote, address) ⇒ remote.shutdownClientConnection(address)
       case _                                         ⇒ //ignore other
     }
   }), "akka.remote.RemoteClientLifeCycleListener")
