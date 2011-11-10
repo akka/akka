@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.event.EventHandler
+import akka.event.Logging.Warning
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
 import akka.actor.{ ActorCell, ActorKilledException }
@@ -93,7 +93,7 @@ class Dispatcher(
       executorService.get() execute invocation
     } catch {
       case e: RejectedExecutionException ⇒
-        app.eventHandler.warning(this, e.toString)
+        app.mainbus.publish(Warning(this, e.toString))
         throw e
     }
   }
@@ -105,7 +105,7 @@ class Dispatcher(
   protected[akka] def shutdown {
     val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
     if (old ne null)
-      old.shutdown()
+      old.shutdownNow()
   }
 
   /**
@@ -120,7 +120,7 @@ class Dispatcher(
         } catch {
           case e: RejectedExecutionException ⇒
             try {
-              app.eventHandler.warning(this, e.toString)
+              app.mainbus.publish(Warning(this, e.toString))
             } finally {
               mbox.setAsIdle()
             }

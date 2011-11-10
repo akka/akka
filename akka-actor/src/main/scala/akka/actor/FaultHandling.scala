@@ -45,7 +45,7 @@ case class ChildRestartStats(var maxNrOfRetriesCount: Int = 0, var restartTimeWi
 }
 
 object FaultHandlingStrategy {
-  sealed trait Action
+  sealed trait Action //TODO FIXME What is the Java API for using this?
   case object Resume extends Action
   case object Restart extends Action
   case object Stop extends Action

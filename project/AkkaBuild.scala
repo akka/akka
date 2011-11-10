@@ -25,8 +25,8 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
-    aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, akkaSbtPlugin, samples, tutorials, docs)
-    //aggregate = Seq(actor, testkit, actorTests, stm, slf4j, cluster, mailboxes, camel, camelTyped, samples, tutorials)
+    aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, amqp, akkaSbtPlugin, samples, tutorials, docs)
+    //aggregate = Seq(cluster, mailboxes, camel, camelTyped)
   )
 
   lazy val actor = Project(
@@ -111,6 +111,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
+    )
+  )
+
+  lazy val amqp = Project(
+    id = "akka-amqp",
+    base = file("akka-amqp"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.amqp
     )
   )
 
@@ -409,6 +418,8 @@ object Dependencies {
 
   val slf4j = Seq(slf4jApi)
 
+  val amqp = Seq(rabbit, commonsIo, protobuf)
+
   val mailboxes = Seq(Test.scalatest)
 
   val beanstalkMailbox = Seq(beanstalk)
@@ -451,6 +462,7 @@ object Dependency {
     val Slf4j        = "1.6.0"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
+    val Rabbit       = "2.3.1"
   }
 
   // Compile
@@ -474,6 +486,7 @@ object Dependency {
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
+  val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
   val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
   val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT

@@ -17,10 +17,6 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     future
   }
 
-  override def beforeEach {
-    app.eventHandler.notify(Mute(EventFilter[Exception]("CRASH")))
-  }
-
   override def afterEach {
     while (futures.peek() ne null) { Option(futures.poll()).foreach(_.cancel(true)) }
   }

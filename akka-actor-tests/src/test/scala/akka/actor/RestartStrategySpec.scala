@@ -15,12 +15,8 @@ import akka.testkit.AkkaSpec
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RestartStrategySpec extends AkkaSpec {
 
-  override def atStartup() {
-    app.eventHandler.notify(Mute(EventFilter[Exception]("Crashing...")))
-  }
-
-  override def atTermination() {
-    app.eventHandler.notify(UnMuteAll)
+  override def atStartup {
+    app.mainbus.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
   object Ping

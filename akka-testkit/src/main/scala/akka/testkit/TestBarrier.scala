@@ -6,6 +6,7 @@ package akka.testkit
 
 import akka.util.Duration
 import java.util.concurrent.{ CyclicBarrier, TimeUnit, TimeoutException }
+import akka.AkkaApplication
 
 class TestBarrierTimeoutException(message: String) extends RuntimeException(message)
 
@@ -24,14 +25,15 @@ object TestBarrier {
 class TestBarrier(count: Int) {
   private val barrier = new CyclicBarrier(count)
 
-  def await(): Unit = await(TestBarrier.DefaultTimeout)
+  def await()(implicit app: AkkaApplication): Unit = await(TestBarrier.DefaultTimeout)
 
-  def await(timeout: Duration) {
+  def await(timeout: Duration)(implicit app: AkkaApplication) {
     try {
-      barrier.await(Testing.testTime(timeout.toNanos), TimeUnit.NANOSECONDS)
+      barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
       case e: TimeoutException ⇒
-        throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s" format (timeout.toString, Duration.timeFactor))
+        throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
+          format (timeout.toString, app.AkkaConfig.TestTimeFactor))
     }
   }
 

@@ -147,7 +147,6 @@ object ActorEventBusSpec {
     type Classifier = String
 
     def classify(event: Event) = event.toString
-    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = a compareTo b
     protected def mapSize = 32
     def publish(event: Event, subscriber: Subscriber) = subscriber ! event
   }

@@ -13,7 +13,7 @@ import akka.remote.RemoteSupport
 import akka.cluster.ClusterNode
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
-import akka.event.EventHandler
+import akka.event.Logging.Debug
 import akka.experimental
 import akka.{ AkkaApplication, AkkaException }
 
@@ -154,6 +154,10 @@ object Timeout {
   implicit def defaultTimeout(implicit app: AkkaApplication) = app.AkkaConfig.ActorTimeout
 }
 
+trait ActorLogging { this: Actor ⇒
+  val log = akka.event.Logging(app.mainbus, context.self)
+}
+
 object Actor {
 
   type Receive = PartialFunction[Any, Unit]
@@ -164,7 +168,7 @@ object Actor {
   class LoggingReceive(source: AnyRef, r: Receive)(implicit app: AkkaApplication) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      app.eventHandler.debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o)
+      app.mainbus.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
       handled
     }
     def apply(o: Any): Unit = r(o)
@@ -393,13 +397,13 @@ trait Actor {
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef
-   * @returns the provided ActorRef
+   * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef = self startsMonitoring subject
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
-   * @returns the provided ActorRef
+   * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef = self stopsMonitoring subject
 
@@ -410,7 +414,7 @@ trait Actor {
   private[akka] final def apply(msg: Any) = {
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (app.AkkaConfig.DebugAutoReceive) app.eventHandler.debug(this, "received AutoReceiveMessage " + msg)
+      if (app.AkkaConfig.DebugAutoReceive) app.mainbus.publish(Debug(this, "received AutoReceiveMessage " + msg))
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)

@@ -122,7 +122,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * This means that this actor will get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def startsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
@@ -131,7 +131,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * This means that this actor will not get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def stopsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
@@ -202,7 +202,7 @@ class LocalActorRef private[akka] (
    * This means that this actor will get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def startsMonitoring(subject: ActorRef): ActorRef = actorCell.startsMonitoring(subject)
 
@@ -211,7 +211,7 @@ class LocalActorRef private[akka] (
    * This means that this actor will not get a Terminated()-message when the provided actor
    * is permanently terminated.
    *
-   * @returns the same ActorRef that is provided to it, to allow for cleaner invocations
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
   def stopsMonitoring(subject: ActorRef): ActorRef = actorCell.stopsMonitoring(subject)
 
@@ -347,6 +347,9 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
   protected[akka] def sendSystemMessage(message: SystemMessage) {}
 
   protected[akka] def postMessageToMailbox(msg: Any, sender: ActorRef) {}
+
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
+    throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
 case class DeadLetter(message: Any, sender: ActorRef)
@@ -367,10 +370,10 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   override def isShutdown(): Boolean = true
 
   protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit =
-    app.eventHandler.notify(DeadLetter(message, sender))
+    app.mainbus.publish(DeadLetter(message, sender))
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.eventHandler.notify(DeadLetter(message, this))
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    app.mainbus.publish(DeadLetter(message, this))
     brokenPromise
   }
 

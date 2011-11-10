@@ -16,7 +16,7 @@ trait MatchingEngine {
 }
 
 class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
-  extends Actor with MatchingEngine {
+  extends Actor with MatchingEngine with ActorLogging {
 
   var standby: Option[ActorRef] = None
 
@@ -26,7 +26,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
     case standbyRef: ActorRef ⇒
       standby = Some(standbyRef)
     case unknown ⇒
-      app.eventHandler.warning(this, "Received unknown message: " + unknown)
+      log.warning("Received unknown message: " + unknown)
   }
 
   def handleOrder(order: Order) {
@@ -40,7 +40,7 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
         done(true, order)
 
       case None ⇒
-        app.eventHandler.warning(this, "Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
+        log.warning("Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
     }
   }
 

@@ -6,8 +6,8 @@
 package akka.dispatch
 
 import akka.AkkaException
-import akka.event.EventHandler
-import akka.actor.{ Timeout }
+import akka.event.Logging.Error
+import akka.actor.Timeout
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
@@ -262,7 +262,7 @@ object Future {
                   result completeWithResult currentValue
                 } catch {
                   case e: Exception ⇒
-                    dispatcher.app.eventHandler.error(e, this, e.getMessage)
+                    dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
                     result completeWithException e
                 } finally {
                   results.clear
@@ -631,7 +631,7 @@ sealed trait Future[+T] extends japi.Future[T] {
             Right(f(res))
           } catch {
             case e: Exception ⇒
-              dispatcher.app.eventHandler.error(e, this, e.getMessage)
+              dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
               Left(e)
           })
       }
@@ -683,7 +683,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           future.completeWith(f(r))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventHandler.error(e, this, e.getMessage)
+            dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
             future complete Left(e)
         }
       }
@@ -716,7 +716,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           if (p(res)) r else Left(new MatchError(res))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventHandler.error(e, this, e.getMessage)
+            dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
             Left(e)
         })
       }
@@ -811,7 +811,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventHandler.error(e, this, e.getMessage)
+          dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
           fr completeWithException e
       }
     }
@@ -825,7 +825,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventHandler.error(e, this, e.getMessage)
+          dispatcher.app.mainbus.publish(Error(e, this, e.getMessage))
           fr completeWithException e
       }
     }
@@ -1017,7 +1017,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     } else this
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
-    try { func(this) } catch { case e ⇒ dispatcher.app.eventHandler.error(e, this, "Future onComplete-callback raised an exception") } //TODO catch, everything? Really?
+    try { func(this) } catch { case e ⇒ dispatcher.app.mainbus.publish(Error(e, this, "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
   }
 
   @inline

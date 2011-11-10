@@ -8,7 +8,7 @@ import collection.immutable.Seq
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.event.EventHandler
+import akka.event.Logging
 import akka.actor.DeploymentConfig._
 import akka.{ AkkaException, AkkaApplication }
 import akka.config.{ Configuration, ConfigurationException }
@@ -35,6 +35,7 @@ trait ActorDeployer {
 class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(app)
+  val log = Logging(app.mainbus, this)
 
   val instance: ActorDeployer = {
     val deployer = new LocalDeployer()
@@ -261,13 +262,13 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
     val e = new DeploymentAlreadyBoundException("Address [" + deployment.address + "] already bound to [" + deployment + "]")
-    app.eventHandler.error(e, this, e.getMessage)
+    log.error(e, e.getMessage)
     throw e
   }
 
   private[akka] def thrownNoDeploymentBoundException(address: String): Nothing = {
     val e = new NoDeploymentBoundException("Address [" + address + "] is not bound to a deployment")
-    app.eventHandler.error(e, this, e.getMessage)
+    log.error(e, e.getMessage)
     throw e
   }
 }

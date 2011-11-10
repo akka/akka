@@ -7,6 +7,7 @@ package akka.remote
 import akka.actor._
 import akka.routing._
 import akka.AkkaApplication
+import akka.event.Logging
 
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
@@ -24,6 +25,8 @@ class RemoteConnectionManager(
   remote: Remote,
   initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
   extends ConnectionManager {
+
+  val log = Logging(app, this)
 
   // FIXME is this VersionedIterable really needed? It is not used I think. Complicates API. See 'def connections' etc.
   case class State(version: Long, connections: Map[InetSocketAddress, ActorRef])
@@ -62,7 +65,7 @@ class RemoteConnectionManager(
 
   @tailrec
   final def failOver(from: InetSocketAddress, to: InetSocketAddress) {
-    app.eventHandler.debug(this, "Failing over connection from [%s] to [%s]".format(from, to))
+    log.debug("Failing over connection from [{}] to [{}]", from, to)
 
     val oldState = state.get
     var changed = false
@@ -113,7 +116,7 @@ class RemoteConnectionManager(
       if (!state.compareAndSet(oldState, newState)) {
         remove(faultyConnection) // recur
       } else {
-        app.eventHandler.debug(this, "Removing connection [%s]".format(faultyAddress))
+        log.debug("Removing connection [{}]", faultyAddress)
       }
     }
   }
@@ -140,7 +143,7 @@ class RemoteConnectionManager(
           putIfAbsent(address, newConnectionFactory) // recur
         } else {
           // we succeeded
-          app.eventHandler.debug(this, "Adding connection [%s]".format(address))
+          log.debug("Adding connection [{}]", address)
           newConnection // return new connection actor
         }
     }

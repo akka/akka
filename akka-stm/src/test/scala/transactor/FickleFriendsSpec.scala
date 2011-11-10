@@ -9,7 +9,6 @@ import akka.transactor.Coordinated
 import akka.actor._
 import akka.stm._
 import akka.util.duration._
-import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -116,21 +115,21 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
-      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, coordinator) = actorOfs
-      val latch = new CountDownLatch(1)
-      coordinator ! FriendlyIncrement(counters, latch)
-      latch.await // this could take a while
-      (coordinator ? GetCount).as[Int].get must be === 1
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 1
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
+      filterEvents(ignoreExceptions) {
+        val (counters, coordinator) = actorOfs
+        val latch = new CountDownLatch(1)
+        coordinator ! FriendlyIncrement(counters, latch)
+        latch.await // this could take a while
+        (coordinator ? GetCount).as[Int].get must be === 1
+        for (counter ← counters) {
+          (counter ? GetCount).as[Int].get must be === 1
+        }
+        counters foreach (_.stop())
+        coordinator.stop()
       }
-      counters foreach (_.stop())
-      coordinator.stop()
-      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

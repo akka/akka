@@ -7,6 +7,7 @@ package akka.util
 import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
+import akka.AkkaApplication
 
 class TimerException(message: String) extends RuntimeException(message)
 
@@ -117,15 +118,6 @@ object Duration {
     case "ms" | "milli" | "millis" | "millisecond" | "milliseconds" ⇒ MILLISECONDS
     case "µs" | "micro" | "micros" | "microsecond" | "microseconds" ⇒ MICROSECONDS
     case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     ⇒ NANOSECONDS
-  }
-
-  /*
-   * Testing facilities
-   */
-  val timeFactor: Double = {
-    val factor = System.getProperty("akka.test.timefactor", "1.0")
-    try { factor.toDouble }
-    catch { case e: java.lang.NumberFormatException ⇒ 1.0 }
   }
 
   val Zero: Duration = new FiniteDuration(0, NANOSECONDS)
@@ -272,9 +264,10 @@ abstract class Duration extends Serializable {
   def /(other: Duration): Double
   def unary_- : Duration
   def finite_? : Boolean
-  def dilated: Duration = this * Duration.timeFactor
+  def dilated(implicit app: AkkaApplication): Duration = this * app.AkkaConfig.TestTimeFactor
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
+  def sleep(): Unit = Thread.sleep(toMillis)
 
   // Java API
   def lt(other: Duration) = this < other

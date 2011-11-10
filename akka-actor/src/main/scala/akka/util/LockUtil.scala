@@ -6,7 +6,6 @@ package akka.util
 
 import java.util.concurrent.locks.{ ReentrantReadWriteLock, ReentrantLock }
 import java.util.concurrent.atomic.{ AtomicBoolean }
-import akka.event.EventHandler
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>

@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationTargetException
 class RemoteException(message: String) extends AkkaException(message)
 
 trait RemoteModule {
-  protected[akka] def notifyListeners(message: ⇒ Any): Unit
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit
 }
 
 /**
@@ -122,15 +122,13 @@ abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModul
     this.shutdownServerModule()
   }
 
-  protected[akka] override def notifyListeners(message: ⇒ Any): Unit = app.eventHandler.notify(message)
+  protected[akka] override def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
 }
 
 /**
  * This is the interface for the RemoteServer functionality, it's used in Actor.remote
  */
 trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
-  protected val guard = new ReentrantGuard
-
   /**
    * Signals whether the server is up and running or not
    */
@@ -144,7 +142,7 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
   /**
    *  Starts the server up
    */
-  def start(host: String, port: Int, loader: Option[ClassLoader]): RemoteServerModule
+  def start(loader: Option[ClassLoader]): RemoteServerModule
 
   /**
    *  Shuts the server down

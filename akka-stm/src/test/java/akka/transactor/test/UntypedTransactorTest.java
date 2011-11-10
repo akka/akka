@@ -11,7 +11,6 @@ import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
-import akka.event.EventHandler;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
@@ -76,7 +75,7 @@ public class UntypedTransactorTest {
         EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
         EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
         Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
-        application.eventHandler().notify(new TestEvent.Mute(ignoreExceptions));
+        application.mainbus().publish(new TestEvent.Mute(ignoreExceptions));
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
@@ -97,7 +96,7 @@ public class UntypedTransactorTest {
                 }
             }
         }
-        application.eventHandler().notify(new TestEvent.UnMute(ignoreExceptions));
+        application.mainbus().publish(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {

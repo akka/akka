@@ -5,6 +5,8 @@
  Cluster
 #########
 
+*This document describes the new clustering coming in Akka 2.1*
+
 
 Intro
 =====
@@ -41,16 +43,16 @@ These terms are used throughout the documentation.
 **partition path**
   Also referred to as the actor address. Has the format `actor1/actor2/actor3`
 
-**base node**
-  The first node (with nodes in sorted order) that contains a particular partition.
-
 **instance count**
   The number of instances of a partition in the cluster. Also referred to as the
   ``N-value`` of the partition.
 
+**instance node**
+  A node that an actor instance is assigned to.
+
 **partition table**
-  A mapping from partition path to base node and its ``N-value`` (instance
-  count).
+  A mapping from partition path to a set of instance nodes (where the nodes are
+  referred to by the ordinal position given the nodes in sorted order).
 
 
 Membership
@@ -154,7 +156,11 @@ The role of the leader is to shift members in and out of the cluster, changing
 leader actions are only triggered by receiving a new cluster state with gossip
 convergence but it may also be possible for the user to explicitly rebalance the
 cluster by specifying migrations, or to rebalance the cluster automatically
-based on metrics gossiped by the member nodes.
+based on metrics from member nodes. Metrics may be spread using the gossip
+protocol or possibly more efficiently using a *random chord* method, where the
+leader contacts several random nodes around the cluster ring and each contacted
+node gathers information from their immediate neighbours, giving a random
+sampling of load information.
 
 The leader also has the power, if configured so, to "auto-down" a node that
 according to the Failure Detector is considered unreachable. This means setting
@@ -351,17 +357,16 @@ Partitioning
 ============
 
 Each partition (an actor or actor subtree) in the actor system is assigned to a
-base node. The actor at the head of the partition is referred to as the
-partition point. The mapping from partition path (actor address of the format
-"a/b/c") to base node is stored in the partition table and is maintained as part
-of the cluster state through the gossip protocol. The partition table is only
-updated by the leader node. Currently the only possible partition points are
-*routed* actors.
+set of nodes in the cluster. The actor at the head of the partition is referred
+to as the partition point. The mapping from partition path (actor address of the
+format "a/b/c") to instance nodes is stored in the partition table and is
+maintained as part of the cluster state through the gossip protocol. The
+partition table is only updated by the leader node. Currently the only possible
+partition points are *routed* actors.
 
 Routed actors can have an instance count greater than one. The instance count is
 also referred to as the ``N-value``. If the ``N-value`` is greater than one then
-the first instance will be found on the base node, and the other instances on
-the next N-1 nodes, given the nodes in sorted order.
+a set of instance nodes will be given in the partition table.
 
 Note that in the first implementation there may be a restriction such that only
 top-level partitions are possible (the highest possible partition points are
@@ -380,16 +385,32 @@ is influenced by metrics from the system, particularly a history of mailbox
 size, CPU load, and GC percentages. It may also be possible to accept scaling
 hints from the user that indicate expected load.
 
-The balancing of partitions is determined in a simple way (at least for the
-first implementation) where the overlap of partitions is minimized. Partitions
-are spread over the cluster ring in a circular fashion, with each base node
-in the first available space.
+The balancing of partitions can be determined in a very simple way in the first
+implementation, where the overlap of partitions is minimized. Partitions are
+spread over the cluster ring in a circular fashion, with each instance node in
+the first available space. For example, given a cluster with ten nodes and three
+partitions, A, B, and C, having N-values of 4, 3, and 5; partition A would have
+instances on nodes 1-4; partition B would have instances on nodes 5-7; partition
+C would have instances on nodes 8-10 and 1-2. The only overlap is on nodes 1 and
+2.
 
-For example, given a cluster with ten nodes and three partitions having N-values
-of 4, 3, and 5; partition 1 would have base node 1 and instances on nodes
-1-4; partition 2 would have base node 5 and instances on nodes 5-7; partition 3
-would have base node 8 and instances on nodes 8-10 and 1-2. The only overlap is
-on nodes 1 and 2.
+The distribution of partitions is not limited, however, to having instances on
+adjacent nodes in the sorted ring order. Each instance can be assigned to any
+node and the more advanced load balancing algorithms will make use of this. The
+partition table contains a mapping from path to instance nodes. The partitioning
+for the above example would be::
+
+   A -> { 1, 2, 3, 4 }
+   B -> { 5, 6, 7 }
+   C -> { 8, 9, 10, 1, 2 }
+
+If 5 new nodes join the cluster and in sorted order these nodes appear after the
+current nodes 2, 4, 5, 7, and 8, then the partition table could be updated to
+the following, with all instances on the same physical nodes as before::
+
+   A -> { 1, 2, 4, 5 }
+   B -> { 7, 9, 10 }
+   C -> { 12, 14, 15, 1, 2 }
 
 When rebalancing is required the leader will schedule handoffs, gossiping a set
 of pending changes, and when each change is complete the leader will update the
@@ -558,6 +579,7 @@ have a dependency on message ordering from any given source.
   and state is transfered during the migration initialization, then options 2b
   and 3b would be required.
 
+
 Stateful Actor Replication
 ==========================
 
@@ -568,34 +590,50 @@ datastore as well. The stateful actor clustering should be layered on top of the
 distributed datastore. See the next section for a rough outline on how the
 distributed datastore could be implemented.
 
-Implementing a Dynamo-style distributed database on top of Akka Cluster 
+
+Implementing a Dynamo-style distributed database on top of Akka Cluster
 -----------------------------------------------------------------------
 
 The missing pieces to implement a full Dynamo-style eventually consistent data
-storage on top of the Akka Cluster as described in this document are: 
+storage on top of the Akka Cluster as described in this document are:
 
-- Configuration of ``READ`` and ``WRITE`` consistency levels according to the ``N/R/W`` numbers
-  defined in the Dynamo paper.
-    - R = read replica count 
-    - W = write replica count 
-    - N = replication factor 
+- Configuration of ``READ`` and ``WRITE`` consistency levels according to the
+  ``N/R/W`` numbers defined in the Dynamo paper.
+
+    - R = read replica count
+
+    - W = write replica count
+
+    - N = replication factor
+
     - Q = QUORUM = N / 2 + 1
+
     - W + R > N = full consistency
 
-- Define a versioned data message wrapper: ``Versioned[T](hash: Long, version: VectorClock, data: T)``.
+- Define a versioned data message wrapper::
+
+    Versioned[T](hash: Long, version: VectorClock, data: T)
 
 - Define a single system data broker actor on each node that uses a ``Consistent
   Hashing Router`` and that have instances on all other nodes in the node ring.
 
 - For ``WRITE``:
+
     1. Wrap data in a ``Versioned Message``
-    2. Send a ``Versioned Message`` with the data is sent to a number of nodes matching the ``W-value``.
+
+    2. Send a ``Versioned Message`` with the data is sent to a number of nodes
+       matching the ``W-value``.
 
 - For ``READ``:
-    1. Read in the ``Versioned Message`` with the data from as many replicas as you need for the consistency level required by the ``R-value``.
+
+    1. Read in the ``Versioned Message`` with the data from as many replicas as
+       you need for the consistency level required by the ``R-value``.
+
     2. Do comparison on the versions (using `Vector Clocks`_)
-    3. If the versions differ then do `Read Repair`_ to update the inconsistent nodes.
+
+    3. If the versions differ then do `Read Repair`_ to update the inconsistent
+       nodes.
+
     4. Return the latest versioned data.
 
 .. _Read Repair: http://wiki.apache.org/cassandra/ReadRepair
-

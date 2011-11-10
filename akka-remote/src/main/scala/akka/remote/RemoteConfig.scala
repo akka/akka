@@ -29,7 +29,7 @@ class RemoteServerSettings(val app: AkkaApplication) {
   import app.config
   import app.AkkaConfig.DefaultTimeUnit
 
-  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster")
+  val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster") //TODO FIXME Shouldn't this be "remote"?
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE = config.getString("akka.remote.secure-cookie")
   val REQUIRE_COOKIE = {
@@ -39,29 +39,11 @@ class RemoteServerSettings(val app: AkkaApplication) {
     requireCookie
   }
 
+  val USE_PASSIVE_CONNECTIONS = config.getBool("akka.remote.use-passive-connections", false)
+
   val UNTRUSTED_MODE = config.getBool("akka.remote.server.untrusted-mode", false)
   val PORT = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), DefaultTimeUnit)
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
-
-  val EXECUTION_POOL_KEEPALIVE = Duration(config.getInt("akka.remote.server.execution-pool-keepalive", 60), DefaultTimeUnit)
-
-  val EXECUTION_POOL_SIZE = {
-    val sz = config.getInt("akka.remote.server.execution-pool-size", 16)
-    if (sz < 1) throw new IllegalArgumentException("akka.remote.server.execution-pool-size is less than 1")
-    sz
-  }
-
-  val MAX_CHANNEL_MEMORY_SIZE = {
-    val sz = config.getInt("akka.remote.server.max-channel-memory-size", 0)
-    if (sz < 0) throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0")
-    sz
-  }
-
-  val MAX_TOTAL_MEMORY_SIZE = {
-    val sz = config.getInt("akka.remote.server.max-total-memory-size", 0)
-    if (sz < 0) throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0")
-    sz
-  }
 }
