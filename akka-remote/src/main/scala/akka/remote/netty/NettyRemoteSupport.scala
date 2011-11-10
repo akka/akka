@@ -368,12 +368,8 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
                            senderOption: Option[ActorRef],
                            recipientAddress: InetSocketAddress,
                            recipient: ActorRef,
-                           loader: Option[ClassLoader]): Unit =
-    withClientFor(recipientAddress, loader) { _.send(message, senderOption, recipient) }
-
-  private[akka] def withClientFor[T](
-    address: InetSocketAddress, loader: Option[ClassLoader])(body: RemoteClient ⇒ T): T = {
-    val key = RemoteAddress(address)
+                           loader: Option[ClassLoader]): Unit = {
+    val key = RemoteAddress(recipientAddress)
     clientsLock.readLock.lock
     try {
       val client = remoteClients.get(key) match {
@@ -387,7 +383,7 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
                 //Recheck for addition, race between upgrades
                 case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(this, address, loader)
+                  val client = new ActiveRemoteClient(this, recipientAddress, loader)
                   client.connect()
                   remoteClients += key -> client
                   client
@@ -399,7 +395,7 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
             clientsLock.writeLock.unlock
           }
       }
-      body(client)
+      client.send(message, senderOption, recipient)
     } finally {
       clientsLock.readLock.unlock
     }
