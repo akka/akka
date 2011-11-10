@@ -185,8 +185,6 @@ object Logging {
   final val InfoLevel = 3.asInstanceOf[Int with LogLevelType]
   final val DebugLevel = 4.asInstanceOf[Int with LogLevelType]
 
-  case object NotDefined
-
   def levelFor(s: String): Option[LogLevel] = s match {
     case "ERROR" | "error"     ⇒ Some(ErrorLevel)
     case "WARNING" | "warning" ⇒ Some(WarningLevel)
@@ -291,7 +289,7 @@ object Logging {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e          ⇒ debug(Debug(NotDefined, e.toString))
+        case e          ⇒ warning(Warning(this, "received unexpected event of class " + e.getClass + ": " + e))
       }
     }
 
