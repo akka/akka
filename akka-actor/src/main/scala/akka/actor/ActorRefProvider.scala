@@ -13,26 +13,29 @@ import com.eaio.uuid.UUID
 import akka.AkkaException
 import akka.event.{ ActorClassification, DeathWatch, Logging }
 import akka.dispatch._
+import scala.annotation.tailrec
 
 /**
  * Interface for all ActorRef providers to implement.
  */
 trait ActorRefProvider {
 
-  def actorOf(props: Props, supervisor: ActorRef, address: String): ActorRef = actorOf(props, supervisor, address, false)
+  def actorOf(props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(props, supervisor, name, false)
 
-  def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef
+  def actorOf(props: RoutedProps, supervisor: ActorRef, name: String): ActorRef
 
-  def actorFor(address: String): Option[ActorRef]
+  def actorFor(path: Iterable[String]): Option[ActorRef]
 
   /**
    * What deployer will be used to resolve deployment configuration?
    */
   private[akka] def deployer: Deployer
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
 
-  private[akka] def evict(address: String): Boolean
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
+
+  private[akka] def evict(path: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
 
@@ -62,19 +65,19 @@ trait ActorRefFactory {
    */
   protected def guardian: ActorRef
 
-  def actorOf(props: Props): ActorRef = actorOf(props, Props.randomAddress)
+  def actorOf(props: Props): ActorRef = actorOf(props, Props.randomName)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
    * the same address can race on the cluster, and then you never know which
    * implementation wins
    */
-  def actorOf(props: Props, address: String): ActorRef = provider.actorOf(props, guardian, address, false)
+  def actorOf(props: Props, name: String): ActorRef = provider.actorOf(props, guardian, name, false)
 
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
-  def actorOf[T <: Actor](address: String)(implicit m: Manifest[T]): ActorRef =
-    actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), address)
+  def actorOf[T <: Actor](name: String)(implicit m: Manifest[T]): ActorRef =
+    actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), name)
 
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
@@ -82,12 +85,13 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomAddress)
+  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomName)
 
-  def actorOf(props: RoutedProps, address: String): ActorRef = provider.actorOf(props, guardian, address)
+  def actorOf(props: RoutedProps, name: String): ActorRef = provider.actorOf(props, guardian, name)
 
-  def actorFor(address: String): Option[ActorRef] = provider.actorFor(address)
+  def actorFor(path: String): Option[ActorRef] = actorFor(ActorPath.split(path))
 
+  def actorFor(path: Iterable[String]): Option[ActorRef] = provider.actorFor(path)
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
@@ -110,9 +114,14 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     @volatile
     var stopped = false
 
-    override def address = app.name + ":BubbleWalker"
+    val name = app.name + "-bubble-walker"
 
-    override def toString = address
+    // FIXME (actor path): move the root path to the new root guardian
+    val path = app.root
+
+    val address = app.address + path.toString
+
+    override def toString = name
 
     def stop() = stopped = true
 
@@ -134,9 +143,26 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     }
   }
 
+  // FIXME (actor path): this could become a cache for the new tree traversal actorFor
+  // currently still used for tmp actors (e.g. ask actor refs)
   private val actors = new ConcurrentHashMap[String, AnyRef]
 
-  def actorFor(address: String): Option[ActorRef] = actors.get(address) match {
+  // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "app" name for now)
+  def actorFor(path: Iterable[String]): Option[ActorRef] = findInCache(ActorPath.join(path)) orElse findInTree(Some(app.guardian), path.tail)
+
+  @tailrec
+  private def findInTree(start: Option[ActorRef], path: Iterable[String]): Option[ActorRef] = {
+    if (path.isEmpty) start
+    else {
+      val child = start match {
+        case Some(local: LocalActorRef) ⇒ local.underlying.getChild(path.head)
+        case _                          ⇒ None
+      }
+      findInTree(child, path.tail)
+    }
+  }
+
+  private def findInCache(path: String): Option[ActorRef] = actors.get(path) match {
     case null              ⇒ None
     case actor: ActorRef   ⇒ Some(actor)
     case future: Future[_] ⇒ Some(future.get.asInstanceOf[ActorRef])
@@ -145,26 +171,32 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
    */
-  private[akka] def evict(address: String): Boolean = actors.remove(address) ne null
+  private[akka] def evict(path: String): Boolean = actors.remove(path) ne null
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, address: String, systemService: Boolean): ActorRef = {
-    if ((address eq null) || address == Props.randomAddress) {
-      val actor = new LocalActorRef(app, props, supervisor, address, systemService = true)
-      actors.putIfAbsent(actor.address, actor) match {
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
+    actorOf(props, supervisor, supervisor.path / name, systemService)
+
+  private[akka] def actorOf(props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
+    val name = path.name
+    if ((name eq null) || name == Props.randomName) {
+      val randomName: String = newUuid.toString
+      val newPath = path.parent / randomName
+      val actor = new LocalActorRef(app, props, supervisor, newPath, systemService = true)
+      actors.putIfAbsent(newPath.toString, actor) match {
         case null  ⇒ actor
-        case other ⇒ throw new IllegalStateException("Same uuid generated twice for: " + actor + " and " + other)
+        case other ⇒ throw new IllegalStateException("Same path generated twice for: " + actor + " and " + other)
       }
     } else {
       val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
 
-      actors.putIfAbsent(address, newFuture) match {
+      actors.putIfAbsent(path.toString, newFuture) match {
         case null ⇒
           val actor: ActorRef = try {
-            (if (systemService) None else deployer.lookupDeployment(address)) match { // see if the deployment already exists, if so use it, if not create actor
+            (if (systemService) None else deployer.lookupDeployment(path.toString)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
               case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
-                new LocalActorRef(app, props, supervisor, address, systemService) // create a local actor
+                new LocalActorRef(app, props, supervisor, path, systemService) // create a local actor
 
               // create a routed actor ref
               case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
@@ -181,10 +213,12 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
                   case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
                 }
 
-                val connections: Iterable[ActorRef] =
-                  if (nrOfInstances.factor > 0) Vector.fill(nrOfInstances.factor)(new LocalActorRef(app, props, supervisor, "", systemService)) else Nil
+                val connections: Iterable[ActorRef] = (1 to nrOfInstances.factor) map { i ⇒
+                  val routedPath = path.parent / (path.name + ":" + i)
+                  new LocalActorRef(app, props, supervisor, routedPath, systemService)
+                }
 
-                actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, address)
+                actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
 
               case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
             }
@@ -196,7 +230,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
           }
 
           newFuture completeWithResult actor
-          actors.replace(address, newFuture, actor)
+          actors.replace(path.toString, newFuture, actor)
           actor
         case actor: ActorRef ⇒
           actor
@@ -210,7 +244,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(props: RoutedProps, supervisor: ActorRef, address: String): ActorRef = {
+  def actorOf(props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
     // FIXME: this needs to take supervision into account!
 
     //FIXME clustering should be implemented by cluster actor ref provider
@@ -218,16 +252,16 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
     //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
     //TODO If the actor deployed uses a different config, then ignore or throw exception?
-    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + address + "] has zero connections configured; can't create a router")
+    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
     // val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     // else new RoutedActorRef(props, address)
-    new RoutedActorRef(app, props, address)
+    new RoutedActorRef(app, props, supervisor, name)
   }
 
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(actor.address)
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(actor.address, app.defaultAddress)
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(app.defaultAddress, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
@@ -237,7 +271,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
       case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
       case t ⇒
         val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this) }
-        assert(actors.putIfAbsent(a.address, a) eq null) //If this fails, we're in deep trouble
+        assert(actors.putIfAbsent(a.path.toString, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
         a.result
     }

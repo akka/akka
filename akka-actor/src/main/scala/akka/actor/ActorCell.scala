@@ -18,7 +18,7 @@ import akka.event.Logging.{ Debug, Warning, Error }
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
  */
-private[akka] trait ActorContext extends ActorRefFactory with TypedActorFactory {
+trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def self: ActorRef with ScalaActorRef
 
@@ -56,7 +56,9 @@ private[akka] object ActorCell {
     override def initialValue = Stack[ActorContext]()
   }
 
-  val emptyChildren = TreeMap[ActorRef, ChildRestartStats]()
+  val emptyChildrenRefs = TreeMap[String, ActorRef]()
+
+  val emptyChildrenStats = TreeMap[ActorRef, ChildRestartStats]()
 }
 
 //vars don't need volatile since it's protected with the mailbox status
@@ -79,7 +81,9 @@ private[akka] class ActorCell(
 
   var futureTimeout: Option[ScheduledFuture[AnyRef]] = None
 
-  var _children = emptyChildren //Reuse same empty instance to avoid allocating new instance of the Ordering and the actual empty instance for every actor
+  var childrenRefs = emptyChildrenRefs
+
+  var childrenStats = emptyChildrenStats
 
   var currentMessage: Envelope = null
 
@@ -125,7 +129,13 @@ private[akka] class ActorCell(
     subject
   }
 
-  final def children: Iterable[ActorRef] = _children.keys
+  final def children: Iterable[ActorRef] = childrenStats.keys
+
+  final def getChild(name: String): Option[ActorRef] = {
+    val isClosed = mailbox.isClosed // fence plus volatile read
+    if (isClosed) None
+    else childrenRefs.get(name)
+  }
 
   final def postMessageToMailbox(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
 
@@ -210,7 +220,7 @@ private[akka] class ActorCell(
     def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
-      app.provider.evict(self.address)
+      app.provider.evict(self.path.toString)
       dispatcher.detach(this)
 
       try {
@@ -222,7 +232,8 @@ private[akka] class ActorCell(
           //Stop supervised actors
           val c = children
           if (c.nonEmpty) {
-            _children = TreeMap.empty
+            childrenRefs = emptyChildrenRefs
+            childrenStats = emptyChildrenStats
             for (child ← c) child.stop()
           }
         }
@@ -238,9 +249,10 @@ private[akka] class ActorCell(
     }
 
     def supervise(child: ActorRef): Unit = {
-      val links = _children
-      if (!links.contains(child)) {
-        _children = _children.updated(child, ChildRestartStats())
+      val stats = childrenStats
+      if (!stats.contains(child)) {
+        childrenRefs = childrenRefs.updated(child.name, child)
+        childrenStats = childrenStats.updated(child, ChildRestartStats())
         if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "now supervising " + child))
       } else app.mainbus.publish(Warning(self, "Already supervising " + child))
     }
@@ -311,13 +323,14 @@ private[akka] class ActorCell(
     }
   }
 
-  final def handleFailure(fail: Failed): Unit = _children.get(fail.actor) match {
-    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, _children)) throw fail.cause
+  final def handleFailure(fail: Failed): Unit = childrenStats.get(fail.actor) match {
+    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, childrenStats)) throw fail.cause
     case None        ⇒ app.mainbus.publish(Warning(self, "dropping " + fail + " from unknown child"))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
-    _children -= child
+    childrenRefs -= child.name
+    childrenStats -= child
     props.faultHandler.handleChildTerminated(child, children)
   }
 

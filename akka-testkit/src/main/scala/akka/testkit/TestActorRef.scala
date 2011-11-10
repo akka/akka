@@ -18,8 +18,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor: ActorRef, address: String)
-  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, address, false) {
+class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor: ActorRef, name: String)
+  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, _supervisor.path / name, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -34,27 +34,32 @@ class TestActorRef[T <: Actor](_app: AkkaApplication, _props: Props, _supervisor
    */
   def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
-  override def toString = "TestActor[" + address + ":" + uuid + "]"
+  override def toString = "TestActor[" + address + "]"
 
-  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].uuid == uuid
+  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address
 }
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), Props.randomAddress)
+  def apply[T <: Actor](factory: ⇒ T)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), Props.randomName)
 
-  def apply[T <: Actor](factory: ⇒ T, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), address)
+  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), name)
 
-  def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, Props.randomAddress)
+  def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, Props.randomName)
 
-  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, app.guardian, address)
+  def apply[T <: Actor](props: Props, name: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, app.guardian, name)
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, address: String)(implicit app: AkkaApplication): TestActorRef[T] =
-    new TestActorRef(app, props, supervisor, address)
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, givenName: String)(implicit app: AkkaApplication): TestActorRef[T] = {
+    val name: String = givenName match {
+      case null | Props.randomName ⇒ newUuid.toString
+      case given                   ⇒ given
+    }
+    new TestActorRef(app, props, supervisor, name)
+  }
 
-  def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomAddress)
+  def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomName)
 
-  def apply[T <: Actor](address: String)(implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props({
+  def apply[T <: Actor](name: String)(implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value
@@ -64,5 +69,5 @@ object TestActorRef {
           "\nif so put it outside the class/trait, f.e. in a companion object," +
           "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", exception)
     }
-  }), address)
+  }), name)
 }

@@ -66,9 +66,9 @@ enum ReplicationStrategyType {
  * on the original node.
  */
 message ActorRefProtocol {
-  required string address = 1;
-  required string host = 2;
-  required uint32 port = 3;
+  required string host = 1;
+  required uint32 port = 2;
+  required string path = 3;
 }
 
 /**
@@ -116,7 +116,7 @@ message ExceptionProtocol {
  */
 message RemoteSystemDaemonMessageProtocol {
   required RemoteSystemDaemonMessageType messageType = 1;
-  optional string actorAddress = 2;
+  optional string actorPath = 2;
   optional bytes payload = 3;
   optional UuidProtocol replicateActorFromUuid = 4;
 }
