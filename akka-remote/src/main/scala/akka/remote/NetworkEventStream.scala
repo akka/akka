@@ -4,9 +4,7 @@
 
 package akka.remote
 
-import akka.dispatch.PinnedDispatcher
 import scala.collection.mutable
-import java.net.InetSocketAddress
 import akka.actor.{ LocalActorRef, Actor, ActorRef, Props, newUuid }
 import akka.actor.Actor._
 import akka.AkkaApplication
@@ -21,10 +19,10 @@ object NetworkEventStream {
 
   private sealed trait NetworkEventStreamEvent
 
-  private case class Register(listener: Listener, connectionAddress: InetSocketAddress)
+  private case class Register(listener: Listener, connectionAddress: RemoteAddress)
     extends NetworkEventStreamEvent
 
-  private case class Unregister(listener: Listener, connectionAddress: InetSocketAddress)
+  private case class Unregister(listener: Listener, connectionAddress: RemoteAddress)
     extends NetworkEventStreamEvent
 
   /**
@@ -39,8 +37,8 @@ object NetworkEventStream {
    */
   private class Channel extends Actor {
 
-    val listeners = new mutable.HashMap[InetSocketAddress, mutable.Set[Listener]]() {
-      override def default(k: InetSocketAddress) = mutable.Set.empty[Listener]
+    val listeners = new mutable.HashMap[RemoteAddress, mutable.Set[Listener]]() {
+      override def default(k: RemoteAddress) = mutable.Set.empty[Listener]
     }
 
     def receive = {
@@ -72,12 +70,12 @@ class NetworkEventStream(val app: AkkaApplication) {
   /**
    * Registers a network event stream listener (asyncronously).
    */
-  def register(listener: Listener, connectionAddress: InetSocketAddress) =
+  def register(listener: Listener, connectionAddress: RemoteAddress) =
     sender ! Register(listener, connectionAddress)
 
   /**
    * Unregisters a network event stream listener (asyncronously) .
    */
-  def unregister(listener: Listener, connectionAddress: InetSocketAddress) =
+  def unregister(listener: Listener, connectionAddress: RemoteAddress) =
     sender ! Unregister(listener, connectionAddress)
 }

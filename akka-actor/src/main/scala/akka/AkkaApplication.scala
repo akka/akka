@@ -14,9 +14,9 @@ import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.routing.Routing
-import akka.remote.RemoteSupport
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
+import remote.{ RemoteAddress, RemoteSupport }
 
 object AkkaApplication {
 
@@ -155,7 +155,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case value     ⇒ value
   }
 
-  val defaultAddress = new InetSocketAddress(System.getProperty("akka.remote.hostname") match {
+  val defaultAddress = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
   }, System.getProperty("akka.remote.port") match {
@@ -163,9 +163,9 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case value     ⇒ value.toInt
   })
 
-  def hostname: String = defaultAddress.getAddress.getHostAddress
+  def hostname: String = defaultAddress.hostname
 
-  def port: Int = defaultAddress.getPort
+  def port: Int = defaultAddress.port
 
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)

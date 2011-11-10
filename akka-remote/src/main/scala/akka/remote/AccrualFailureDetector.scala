@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable.Map
@@ -42,9 +41,9 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    */
   private case class State(
     version: Long = 0L,
-    failureStats: Map[InetSocketAddress, FailureStats] = Map.empty[InetSocketAddress, FailureStats],
-    intervalHistory: Map[InetSocketAddress, Vector[Long]] = Map.empty[InetSocketAddress, Vector[Long]],
-    timestamps: Map[InetSocketAddress, Long] = Map.empty[InetSocketAddress, Long])
+    failureStats: Map[RemoteAddress, FailureStats] = Map.empty[RemoteAddress, FailureStats],
+    intervalHistory: Map[RemoteAddress, Vector[Long]] = Map.empty[RemoteAddress, Vector[Long]],
+    timestamps: Map[RemoteAddress, Long] = Map.empty[RemoteAddress, Long])
 
   private val state = new AtomicReference[State](State())
 
@@ -52,13 +51,13 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Returns true if the connection is considered to be up and healthy
    * and returns false otherwise.
    */
-  def isAvailable(connection: InetSocketAddress): Boolean = phi(connection) < threshold
+  def isAvailable(connection: RemoteAddress): Boolean = phi(connection) < threshold
 
   /**
    * Records a heartbeat for a connection.
    */
   @tailrec
-  final def heartbeat(connection: InetSocketAddress) {
+  final def heartbeat(connection: RemoteAddress) {
     val oldState = state.get
 
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -139,7 +138,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
    * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
    */
-  def phi(connection: InetSocketAddress): Double = {
+  def phi(connection: RemoteAddress): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
     if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
@@ -154,7 +153,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Removes the heartbeat management for a connection.
    */
   @tailrec
-  final def remove(connection: InetSocketAddress) {
+  final def remove(connection: RemoteAddress) {
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {

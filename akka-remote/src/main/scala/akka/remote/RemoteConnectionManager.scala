@@ -12,7 +12,6 @@ import akka.event.Logging
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
-import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -23,13 +22,13 @@ import java.util.concurrent.atomic.AtomicReference
 class RemoteConnectionManager(
   app: AkkaApplication,
   remote: Remote,
-  initialConnections: Map[InetSocketAddress, ActorRef] = Map.empty[InetSocketAddress, ActorRef])
+  initialConnections: Map[RemoteAddress, ActorRef] = Map.empty[RemoteAddress, ActorRef])
   extends ConnectionManager {
 
   val log = Logging(app, this)
 
   // FIXME is this VersionedIterable really needed? It is not used I think. Complicates API. See 'def connections' etc.
-  case class State(version: Long, connections: Map[InetSocketAddress, ActorRef])
+  case class State(version: Long, connections: Map[RemoteAddress, ActorRef])
     extends VersionedIterable[ActorRef] {
     def iterable: Iterable[ActorRef] = connections.values
   }
@@ -55,7 +54,7 @@ class RemoteConnectionManager(
 
   def size: Int = connections.connections.size
 
-  def connectionFor(address: InetSocketAddress): Option[ActorRef] = connections.connections.get(address)
+  def connectionFor(address: RemoteAddress): Option[ActorRef] = connections.connections.get(address)
 
   def isEmpty: Boolean = connections.connections.isEmpty
 
@@ -64,7 +63,7 @@ class RemoteConnectionManager(
   }
 
   @tailrec
-  final def failOver(from: InetSocketAddress, to: InetSocketAddress) {
+  final def failOver(from: RemoteAddress, to: RemoteAddress) {
     log.debug("Failing over connection from [{}] to [{}]", from, to)
 
     val oldState = state.get
@@ -95,8 +94,8 @@ class RemoteConnectionManager(
     val oldState = state.get()
     var changed = false
 
-    var faultyAddress: InetSocketAddress = null
-    var newConnections = Map.empty[InetSocketAddress, ActorRef]
+    var faultyAddress: RemoteAddress = null
+    var newConnections = Map.empty[RemoteAddress, ActorRef]
 
     oldState.connections.keys foreach { address ⇒
       val actorRef: ActorRef = oldState.connections.get(address).get
@@ -122,7 +121,7 @@ class RemoteConnectionManager(
   }
 
   @tailrec
-  final def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
+  final def putIfAbsent(address: RemoteAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
 
     val oldState = state.get()
     val oldConnections = oldState.connections
@@ -149,7 +148,7 @@ class RemoteConnectionManager(
     }
   }
 
-  private[remote] def newConnection(actorAddress: String, inetSocketAddress: InetSocketAddress) = {
+  private[remote] def newConnection(actorAddress: String, inetSocketAddress: RemoteAddress) = {
     RemoteActorRef(remote.server, inetSocketAddress, actorAddress, None)
   }
 }

@@ -8,9 +8,29 @@ import akka.actor._
 import akka.{ AkkaException, AkkaApplication }
 
 import scala.reflect.BeanProperty
+import java.io.{ PrintWriter, PrintStream }
 
 import java.net.InetSocketAddress
-import java.io.{ PrintWriter, PrintStream }
+
+object RemoteAddress {
+  def apply(host: String, port: Int): RemoteAddress = apply(new InetSocketAddress(host, port))
+  def apply(inetAddress: InetSocketAddress): RemoteAddress = inetAddress match {
+    case null ⇒ null
+    case inet ⇒
+      val host = inet.getAddress.getHostAddress
+      val portNo = inet.getPort
+      new RemoteAddress {
+        def hostname = host
+        def port = portNo
+      }
+  }
+}
+
+trait RemoteAddress {
+  def hostname: String
+  def port: Int
+  override def toString = "" + hostname + ":" + port
+}
 
 class RemoteException(message: String) extends AkkaException(message)
 
@@ -27,35 +47,35 @@ sealed trait RemoteLifeCycleEvent
  * Life-cycle events for RemoteClient.
  */
 trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
-  def remoteAddress: InetSocketAddress
+  def remoteAddress: RemoteAddress
 }
 
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientDisconnected(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientConnected(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientStarted(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientShutdown(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
 
 /**
  *  Life-cycle events for RemoteServer.
@@ -71,18 +91,18 @@ case class RemoteServerError(
   @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientConnected(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientDisconnected(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientClosed(
   @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
   @BeanProperty server: RemoteSupport,
-  @BeanProperty remoteAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty remoteAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
@@ -90,7 +110,7 @@ case class RemoteServerWriteFailed(
 class RemoteClientException private[akka] (
   message: String,
   @BeanProperty val client: RemoteSupport,
-  val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause)
+  val remoteAddress: RemoteAddress, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Thrown when the remote server actor dispatching fails for some reason.
@@ -127,18 +147,18 @@ abstract class RemoteSupport(val app: AkkaApplication) {
   /**
    * Shuts down a specific client connected to the supplied remote address returns true if successful
    */
-  def shutdownClientConnection(address: InetSocketAddress): Boolean
+  def shutdownClientConnection(address: RemoteAddress): Boolean
 
   /**
    * Restarts a specific client connected to the supplied remote address, but only if the client is not shut down
    */
-  def restartClientConnection(address: InetSocketAddress): Boolean
+  def restartClientConnection(address: RemoteAddress): Boolean
 
   /** Methods that needs to be implemented by a transport **/
 
   protected[akka] def send(message: Any,
                            senderOption: Option[ActorRef],
-                           remoteAddress: InetSocketAddress,
+                           remoteAddress: RemoteAddress,
                            recipient: ActorRef,
                            loader: Option[ClassLoader]): Unit
 

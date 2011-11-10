@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 import java.net.InetSocketAddress
+import akka.remote.RemoteAddress
 
 /**
  * An Iterable that also contains a version.
@@ -71,12 +72,12 @@ trait ConnectionManager {
   /**
    * Creates a new connection (ActorRef) if it didn't exist. Atomically.
    */
-  def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef
+  def putIfAbsent(address: RemoteAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef
 
   /**
    * Fails over connections from one address to another.
    */
-  def failOver(from: InetSocketAddress, to: InetSocketAddress)
+  def failOver(from: RemoteAddress, to: RemoteAddress)
 }
 
 /**
@@ -120,9 +121,9 @@ class LocalConnectionManager(initialConnections: Iterable[ActorRef]) extends Con
     }
   }
 
-  def failOver(from: InetSocketAddress, to: InetSocketAddress) {} // do nothing here
+  def failOver(from: RemoteAddress, to: RemoteAddress) {} // do nothing here
 
-  def putIfAbsent(address: InetSocketAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
+  def putIfAbsent(address: RemoteAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
     throw new UnsupportedOperationException("Not supported")
   }
 }

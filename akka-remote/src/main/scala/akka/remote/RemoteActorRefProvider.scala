@@ -111,9 +111,9 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
                     case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
                   }
 
-                  val connections = (Map.empty[InetSocketAddress, ActorRef] /: remoteAddresses) { (conns, a) ⇒
-                    val inetAddr = new InetSocketAddress(a.hostname, a.port)
-                    conns + (inetAddr -> RemoteActorRef(remote.server, inetAddr, address, None))
+                  val connections = (Map.empty[RemoteAddress, ActorRef] /: remoteAddresses) { (conns, a) ⇒
+                    val remoteAddress = RemoteAddress(a.hostname, a.port)
+                    conns + (remoteAddress -> RemoteActorRef(remote.server, remoteAddress, address, None))
                   }
 
                   val connectionManager = new RemoteConnectionManager(app, remote, connections)
@@ -169,19 +169,19 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
-    if (optimizeLocalScoped_? && (actor.hostname == app.hostname || actor.hostname == app.defaultAddress.getHostName) && actor.port == app.port) {
+    val remoteAddress = RemoteAddress(actor.hostname, actor.port)
+    if (optimizeLocalScoped_? && remoteAddress == app.defaultAddress) {
       local.actorFor(actor.address)
     } else {
-      val remoteInetSocketAddress = new InetSocketAddress(actor.hostname, actor.port) //FIXME Drop the InetSocketAddresses and use RemoteAddress
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", app.defaultAddress, actor.address, remoteInetSocketAddress)
-      Some(RemoteActorRef(remote.server, remoteInetSocketAddress, actor.address, None)) //Should it be None here
+      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", app.defaultAddress, actor.address, remoteAddress)
+      Some(RemoteActorRef(remote.server, remoteAddress, actor.address, None)) //Should it be None here
     }
   }
 
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(remoteAddress: InetSocketAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
+  def useActorOnNode(remoteAddress: RemoteAddress, actorAddress: String, actorFactory: () ⇒ Actor) {
     log.debug("[{}] Instantiating Actor [{}] on node [{}]", app.defaultAddress, actorAddress, remoteAddress)
 
     val actorFactoryBytes =
@@ -244,7 +244,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
  */
 private[akka] case class RemoteActorRef private[akka] (
   remote: RemoteSupport,
-  remoteAddress: InetSocketAddress,
+  remoteAddress: RemoteAddress,
   address: String,
   loader: Option[ClassLoader])
   extends ActorRef with ScalaActorRef {

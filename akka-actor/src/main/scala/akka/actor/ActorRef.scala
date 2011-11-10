@@ -13,6 +13,7 @@ import akka.event.ActorEventBus
 import akka.serialization.Serialization
 import akka.actor.DeadLetterActorRef.SerializedDeadLetterActorRef
 import java.net.InetSocketAddress
+import akka.remote.RemoteAddress
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -286,7 +287,8 @@ trait ScalaActorRef { ref: ActorRef ⇒
 case class SerializedActorRef(address: String, hostname: String, port: Int) {
   import akka.serialization.Serialization.app
 
-  def this(address: String, inet: InetSocketAddress) = this(address, inet.getAddress.getHostAddress, inet.getPort)
+  def this(address: String, remoteAddress: RemoteAddress) = this(address, remoteAddress.hostname, remoteAddress.port)
+  def this(address: String, remoteAddress: InetSocketAddress) = this(address, remoteAddress.getAddress.getHostAddress, remoteAddress.getPort) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
