@@ -5,30 +5,22 @@
 package akka.remote
 
 import akka.util.Duration
-import akka.config.ConfigurationException
-import akka.AkkaApplication
+import akka.config.{ Configuration, ConfigurationException }
+import java.util.concurrent.TimeUnit
 
-class RemoteClientSettings(val app: AkkaApplication) {
-
-  import app.config
-  import app.AkkaConfig.DefaultTimeUnit
-
+class RemoteClientSettings(config: Configuration, defaultTimeUnit: TimeUnit) {
   val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie", "") match {
     case ""     ⇒ None
     case cookie ⇒ Some(cookie)
   }
 
-  val RECONNECTION_TIME_WINDOW = Duration(config.getInt("akka.remote.client.reconnection-time-window", 600), DefaultTimeUnit).toMillis
-  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 3600), DefaultTimeUnit)
-  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), DefaultTimeUnit)
+  val RECONNECTION_TIME_WINDOW = Duration(config.getInt("akka.remote.client.reconnection-time-window", 600), defaultTimeUnit).toMillis
+  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout", 3600), defaultTimeUnit)
+  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), defaultTimeUnit)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
 }
 
-class RemoteServerSettings(val app: AkkaApplication) {
-
-  import app.config
-  import app.AkkaConfig.DefaultTimeUnit
-
+class RemoteServerSettings(config: Configuration, defaultTimeUnit: TimeUnit) {
   val isRemotingEnabled = config.getList("akka.enabled-modules").exists(_ == "cluster") //TODO FIXME Shouldn't this be "remote"?
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size", 1048576)
   val SECURE_COOKIE = config.getString("akka.remote.secure-cookie")
@@ -43,7 +35,7 @@ class RemoteServerSettings(val app: AkkaApplication) {
 
   val UNTRUSTED_MODE = config.getBool("akka.remote.server.untrusted-mode", false)
   val PORT = config.getInt("akka.remote.server.port", 2552)
-  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), DefaultTimeUnit)
+  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), defaultTimeUnit)
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
 }

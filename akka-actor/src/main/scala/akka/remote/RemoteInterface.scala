@@ -4,20 +4,13 @@
 
 package akka.remote
 
-import akka.japi.Creator
 import akka.actor._
-import DeploymentConfig._
-import akka.util._
-import akka.dispatch.Promise
-import akka.serialization._
 import akka.{ AkkaException, AkkaApplication }
 
 import scala.reflect.BeanProperty
 
 import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
 import java.io.{ PrintWriter, PrintStream }
-import java.lang.reflect.InvocationTargetException
 
 class RemoteException(message: String) extends AkkaException(message)
 
@@ -39,29 +32,29 @@ trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
 
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientDisconnected(
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientConnected(
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientStarted(
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientShutdown(
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 case class RemoteClientWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty client: RemoteClientModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty remoteAddress: InetSocketAddress) extends RemoteClientLifeCycleEvent
 
 /**
@@ -70,33 +63,33 @@ case class RemoteClientWriteFailed(
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
 
 case class RemoteServerStarted(
-  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
 case class RemoteServerShutdown(
-  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
 case class RemoteServerError(
   @BeanProperty val cause: Throwable,
-  @BeanProperty val server: RemoteServerModule) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientConnected(
-  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientDisconnected(
-  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerClientClosed(
-  @BeanProperty val server: RemoteServerModule,
+  @BeanProperty remote: RemoteSupport,
   @BeanProperty val clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 case class RemoteServerWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty server: RemoteServerModule,
-  @BeanProperty clientAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty server: RemoteSupport,
+  @BeanProperty remoteAddress: Option[InetSocketAddress]) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
 class RemoteClientException private[akka] (
   message: String,
-  @BeanProperty val client: RemoteClientModule,
+  @BeanProperty val client: RemoteSupport,
   val remoteAddress: InetSocketAddress, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
@@ -115,24 +108,11 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val app: AkkaApplication) extends RemoteServerModule with RemoteClientModule {
-
-  def shutdown() {
-    this.shutdownClientModule()
-    this.shutdownServerModule()
-  }
-
-  protected[akka] override def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
-}
-
-/**
- * This is the interface for the RemoteServer functionality, it's used in Actor.remote
- */
-trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
+abstract class RemoteSupport(val app: AkkaApplication) {
   /**
-   * Signals whether the server is up and running or not
+   * Shuts down the remoting
    */
-  def isRunning: Boolean
+  def shutdown(): Unit
 
   /**
    *  Gets the name of the server instance
@@ -140,21 +120,9 @@ trait RemoteServerModule extends RemoteModule { this: RemoteSupport ⇒
   def name: String
 
   /**
-   *  Starts the server up
+   *  Starts up the remoting
    */
-  def start(loader: Option[ClassLoader]): RemoteServerModule
-
-  /**
-   *  Shuts the server down
-   */
-  def shutdownServerModule(): Unit
-}
-
-trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
-  /**
-   * Clean-up all open connections.
-   */
-  def shutdownClientModule(): Unit
+  def start(loader: Option[ClassLoader]): Unit
 
   /**
    * Shuts down a specific client connected to the supplied remote address returns true if successful
@@ -173,4 +141,8 @@ trait RemoteClientModule extends RemoteModule { self: RemoteSupport ⇒
                            remoteAddress: InetSocketAddress,
                            recipient: ActorRef,
                            loader: Option[ClassLoader]): Unit
+
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
+
+  override def toString = name
 }
