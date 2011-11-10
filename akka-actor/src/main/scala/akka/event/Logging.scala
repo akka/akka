@@ -214,7 +214,6 @@ object Logging {
   val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
   val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
-  val genericFormat = "[GENERIC] [%s] [%s]".intern
 
   /**
    * Obtain LoggingAdapter for the given application and source object. The
@@ -289,7 +288,7 @@ object Logging {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e          ⇒ generic(e)
+        case e          ⇒ debug(Debug("not defined", e.toString))
       }
     }
 
@@ -321,9 +320,6 @@ object Logging {
         event.thread.getName,
         instanceName(event.instance),
         event.message))
-
-    def generic(event: Any) =
-      println(genericFormat.format(timestamp, event.toString))
 
     def instanceName(instance: AnyRef): String = instance match {
       case null        ⇒ "NULL"
