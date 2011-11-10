@@ -30,7 +30,7 @@ object FSM {
   case class TimeoutMarker(generation: Long)
 
   case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: AkkaApplication) {
-    private var ref: Option[org.jboss.netty.akka.util.Timeout] = _
+    private var ref: Option[Cancellable] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
@@ -392,7 +392,7 @@ trait FSM[S, D] extends ListenerManagement {
    * FSM State data and current timeout handling
    */
   private var currentState: State = _
-  private var timeoutFuture: Option[org.jboss.netty.akka.util.Timeout] = None
+  private var timeoutFuture: Option[Cancellable] = None
   private var generation: Long = 0L
 
   /*

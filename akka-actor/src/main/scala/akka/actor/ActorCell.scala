@@ -75,7 +75,7 @@ private[akka] class ActorCell(
 
   final def provider = app.provider
 
-  var futureTimeout: Option[org.jboss.netty.akka.util.Timeout] = None
+  var futureTimeout: Option[Cancellable] = None
 
   var _children = emptyChildren //Reuse same empty instance to avoid allocating new instance of the Ordering and the actual empty instance for every actor
 
