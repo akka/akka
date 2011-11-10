@@ -107,7 +107,7 @@ class Gossiper(remote: Remote) {
   private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[RemoteAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
 
-  private val address = app.defaultAddress
+  private val address = app.address
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")

@@ -83,7 +83,7 @@ class Remote(val app: AkkaApplication) {
   }
 
   def start(): Unit = {
-    val serverAddress = server.app.defaultAddress //Force init of server
+    val serverAddress = server.app.address //Force init of server
     val daemonAddress = remoteDaemon.address //Force init of daemon
     log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
   }
@@ -153,7 +153,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         log.error("Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [{}]", message)
       }
 
-      sender ! Success(app.defaultAddress)
+      sender ! Success(app.address)
     } catch {
       case error: Throwable ⇒ //FIXME doesn't seem sensible
         sender ! Failure(error)

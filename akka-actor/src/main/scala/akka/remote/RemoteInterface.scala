@@ -17,20 +17,19 @@ object RemoteAddress {
   def apply(inetAddress: InetSocketAddress): RemoteAddress = inetAddress match {
     case null ⇒ null
     case inet ⇒
-      val host = inet.getAddress.getHostAddress
-      val portNo = inet.getPort
-      new RemoteAddress {
-        def hostname = host
-        def port = portNo
+      val host = inet.getAddress match {
+        case null  ⇒ inet.getHostName //Fall back to given name
+        case other ⇒ other.getHostAddress
       }
+      val portNo = inet.getPort
+      RemoteAddress(portNo, host)
   }
 }
 
-trait RemoteAddress extends Serializable {
-  def hostname: String
-  def port: Int
+case class RemoteAddress private[akka] (port: Int, hostname: String) {
   @transient
   override lazy val toString = "" + hostname + ":" + port
+
 }
 
 class RemoteException(message: String) extends AkkaException(message)

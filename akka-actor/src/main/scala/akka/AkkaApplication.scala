@@ -152,17 +152,13 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
     case value     ⇒ value
   }
 
-  val defaultAddress = RemoteAddress(System.getProperty("akka.remote.hostname") match {
+  val address = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
   }, System.getProperty("akka.remote.port") match {
     case null | "" ⇒ AkkaConfig.RemoteServerPort
     case value     ⇒ value.toInt
   })
-
-  def hostname: String = defaultAddress.hostname
-
-  def port: Int = defaultAddress.port
 
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)

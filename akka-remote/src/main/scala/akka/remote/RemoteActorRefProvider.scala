@@ -76,7 +76,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
                 //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
                 // }
 
-                def isReplicaNode: Boolean = remoteAddresses exists { some ⇒ some.port == app.port && some.hostname == app.hostname }
+                def isReplicaNode: Boolean = remoteAddresses exists { _ == app.address }
 
                 //app.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(app.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
 
@@ -177,10 +177,10 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
     val remoteAddress = RemoteAddress(actor.hostname, actor.port)
-    if (optimizeLocalScoped_? && remoteAddress == app.defaultAddress) {
+    if (optimizeLocalScoped_? && remoteAddress == app.address) {
       local.actorFor(ActorPath.split(actor.path))
     } else {
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", app.defaultAddress, actor.path, remoteAddress)
+      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", app.address, actor.path, remoteAddress)
       Some(RemoteActorRef(remote.server, remoteAddress, ActorPath(app, actor.path), None)) //Should it be None here
     }
   }
@@ -189,7 +189,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(remoteAddress: RemoteAddress, actorPath: String, actorFactory: () ⇒ Actor) {
-    log.debug("[{}] Instantiating Actor [{}] on node [{}]", app.defaultAddress, actorPath, remoteAddress)
+    log.debug("[{}] Instantiating Actor [{}] on node [{}]", app.address, actorPath, remoteAddress)
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {

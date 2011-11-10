@@ -8,6 +8,7 @@ import akka.AkkaApplication
 import akka.util.Duration
 import akka.routing.{ RouterType, FailureDetectorType }
 import akka.routing.FailureDetectorType._
+import akka.remote.RemoteAddress
 
 object DeploymentConfig {
 
@@ -62,8 +63,6 @@ object DeploymentConfig {
   case object LocalScope extends Scope
 
   case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
-
-  case class RemoteAddress(hostname: String, port: Int)
 
   // --------------------------------
   // --- Home

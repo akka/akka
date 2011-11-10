@@ -129,7 +129,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
     // FIXME (actor path): move the root path to the new root guardian
     val path = app.root
 
-    val address = app.defaultAddress + path.toString
+    val address = app.address + path.toString
 
     override def toString = name
 
@@ -271,7 +271,7 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(app.defaultAddress, actor.path.toString)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(app.address, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 

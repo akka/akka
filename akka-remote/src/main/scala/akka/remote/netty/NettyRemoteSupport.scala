@@ -147,7 +147,7 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder().setHostname(remoteSupport.app.hostname).setPort(remoteSupport.app.port).build)
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(remoteSupport.app.address.hostname).setPort(remoteSupport.app.address.port).build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
 
@@ -428,7 +428,7 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + app.hostname + ":" + app.port
+    case None         ⇒ "Non-running NettyRemoteServer@" + app.address
   }
 
   private val _isRunning = new Switch(false)
@@ -459,9 +459,9 @@ class NettyRemoteSupport(_app: AkkaApplication) extends RemoteSupport(_app) with
 class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Option[ClassLoader]) {
   val log = Logging(remoteSupport.app, this)
   import remoteSupport.serverSettings._
-  import remoteSupport.app.defaultAddress
+  import remoteSupport.app.address
 
-  val name = "NettyRemoteServer@" + defaultAddress
+  val name = "NettyRemoteServer@" + address
 
   private val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool)
 
@@ -478,7 +478,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", CONNECTION_TIMEOUT.toMillis)
 
-  openChannels.add(bootstrap.bind(new InetSocketAddress(defaultAddress.hostname, defaultAddress.port)))
+  openChannels.add(bootstrap.bind(new InetSocketAddress(address.hostname, address.port)))
   remoteSupport.notifyListeners(RemoteServerStarted(remoteSupport))
 
   def shutdown() {

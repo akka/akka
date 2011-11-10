@@ -217,13 +217,13 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           app.mainbus.subscribe(testActor, classOf[Logging.Debug])
           fsm ! "go"
           expectMsgPF(1 second, hint = "processing Event(go,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[" + app.defaultAddress + "/sys/testActor") ⇒ true
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
           }
           expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
           expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
           fsm ! "stop"
           expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[" + app.defaultAddress + "/sys/testActor") ⇒ true
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
           }
           expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
           expectNoMsg(1 second)

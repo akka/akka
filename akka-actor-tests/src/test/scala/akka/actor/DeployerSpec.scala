@@ -7,6 +7,7 @@ package akka.actor
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
+import akka.remote.RemoteAddress
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeployerSpec extends AkkaSpec {
