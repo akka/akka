@@ -172,6 +172,7 @@ object Logging {
    * Marker trait for annotating LogLevel, which must be Int after erasure.
    */
   trait LogLevelType
+
   /**
    * Log level in numeric form, used when deciding whether a certain log
    * statement should generate a log event. Predefined levels are ErrorLevel (1)
@@ -183,6 +184,8 @@ object Logging {
   final val WarningLevel = 2.asInstanceOf[Int with LogLevelType]
   final val InfoLevel = 3.asInstanceOf[Int with LogLevelType]
   final val DebugLevel = 4.asInstanceOf[Int with LogLevelType]
+
+  case object NotDefined
 
   def levelFor(s: String): Option[LogLevel] = s match {
     case "ERROR" | "error"     ⇒ Some(ErrorLevel)
@@ -288,7 +291,7 @@ object Logging {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e          ⇒ debug(Debug("not defined", e.toString))
+        case e          ⇒ debug(Debug(NotDefined, e.toString))
       }
     }
 
