@@ -29,7 +29,7 @@ object MainBusSpec {
   class C extends B1
 }
 
-class MainBusSpec extends AkkaSpec(Configuration(
+class EventStreamSpec extends AkkaSpec(Configuration(
   "akka.stdout-loglevel" -> "WARNING",
   "akka.loglevel" -> "INFO",
   "akka.event-handlers" -> Seq("akka.event.MainBusSpec$MyLog", Logging.StandardOutLoggerName))) {
@@ -39,7 +39,7 @@ class MainBusSpec extends AkkaSpec(Configuration(
   "A MainBus" must {
 
     "manage subscriptions" in {
-      val bus = new MainBus(true)
+      val bus = new EventStream(true)
       bus.start(app)
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
@@ -52,7 +52,7 @@ class MainBusSpec extends AkkaSpec(Configuration(
     }
 
     "manage log levels" in {
-      val bus = new MainBus(false)
+      val bus = new EventStream(false)
       bus.start(app)
       bus.startDefaultLoggers(app, app.AkkaConfig)
       bus.publish(SetTarget(testActor))
@@ -73,7 +73,7 @@ class MainBusSpec extends AkkaSpec(Configuration(
       val b1 = new B1
       val b2 = new B2
       val c = new C
-      val bus = new MainBus(false)
+      val bus = new EventStream(false)
       bus.start(app)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) === true

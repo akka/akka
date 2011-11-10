@@ -155,7 +155,7 @@ object Timeout {
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(app.mainbus, context.self)
+  val log = akka.event.Logging(app.eventStream, context.self)
 }
 
 object Actor {
@@ -168,7 +168,7 @@ object Actor {
   class LoggingReceive(source: AnyRef, r: Receive)(implicit app: ActorSystem) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      app.mainbus.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
+      app.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
       handled
     }
     def apply(o: Any): Unit = r(o)
@@ -414,7 +414,7 @@ trait Actor {
   private[akka] final def apply(msg: Any) = {
 
     def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (app.AkkaConfig.DebugAutoReceive) app.mainbus.publish(Debug(this, "received AutoReceiveMessage " + msg))
+      if (app.AkkaConfig.DebugAutoReceive) app.eventStream.publish(Debug(this, "received AutoReceiveMessage " + msg))
 
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)

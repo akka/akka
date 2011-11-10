@@ -103,7 +103,7 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
-  val log = Logging(app.mainbus, this)
+  val log = Logging(app.eventStream, this)
 
   private[akka] val deployer: Deployer = new Deployer(app)
 

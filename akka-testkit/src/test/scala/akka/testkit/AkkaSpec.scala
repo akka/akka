@@ -16,7 +16,7 @@ import akka.dispatch.FutureTimeoutException
 abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  val log: LoggingAdapter = Logging(app.mainbus, this)
+  val log: LoggingAdapter = Logging(app.eventStream, this)
 
   final override def beforeAll {
     atStartup()

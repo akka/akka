@@ -79,7 +79,7 @@ abstract class EventFilter(occurrences: Int) {
    * remove the filter when the block is finished or aborted.
    */
   def intercept[T](code: ⇒ T)(implicit app: ActorSystem): T = {
-    app.mainbus publish TestEvent.Mute(this)
+    app.eventStream publish TestEvent.Mute(this)
     try {
       val result = code
       if (!awaitDone(app.AkkaConfig.TestEventFilterLeeway))
@@ -88,7 +88,7 @@ abstract class EventFilter(occurrences: Int) {
         else
           throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
       result
-    } finally app.mainbus publish TestEvent.UnMute(this)
+    } finally app.eventStream publish TestEvent.UnMute(this)
   }
 
   /*

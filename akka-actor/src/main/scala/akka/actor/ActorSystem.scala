@@ -101,7 +101,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
     val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
     val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
-    val DebugMainBus = getBool("akka.actor.debug.mainbus", false)
+    val DebugMainBus = getBool("akka.actor.debug.eventStream", false)
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
@@ -161,9 +161,9 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   })
 
   // this provides basic logging (to stdout) until .start() is called below
-  val mainbus = new MainBus(DebugMainBus)
-  mainbus.startStdoutLogger(AkkaConfig)
-  val log = new BusLogging(mainbus, this)
+  val eventStream = new EventStream(DebugMainBus)
+  eventStream.startStdoutLogger(AkkaConfig)
+  val log = new BusLogging(eventStream, this)
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(this)
@@ -193,7 +193,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   private class SystemGuardian extends Actor {
     def receive = {
       case Terminated(_) ⇒
-        mainbus.stopDefaultLoggers()
+        eventStream.stopDefaultLoggers()
         context.self.stop()
     }
   }
@@ -226,8 +226,8 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   deathWatch.subscribe(rootGuardian, systemGuardian)
 
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-  mainbus.start(this)
-  mainbus.startDefaultLoggers(this, AkkaConfig)
+  eventStream.start(this)
+  eventStream.startDefaultLoggers(this, AkkaConfig)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)

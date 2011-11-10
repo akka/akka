@@ -167,12 +167,12 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
         }
       })
       filterException[Logging.EventHandlerException] {
-        app.mainbus.subscribe(testActor, classOf[Logging.Error])
+        app.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
           case Logging.Error(_, `fsm`, "Next state 2 does not exist") ⇒ true
         }
-        app.mainbus.unsubscribe(testActor)
+        app.eventStream.unsubscribe(testActor)
       }
     }
 
@@ -213,7 +213,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
               case StopEvent(r, _, _) ⇒ testActor ! r
             }
           })
-          app.mainbus.subscribe(testActor, classOf[Logging.Debug])
+          app.eventStream.subscribe(testActor, classOf[Logging.Debug])
           fsm ! "go"
           expectMsgPF(1 second, hint = "processing Event(go,null)") {
             case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
@@ -226,7 +226,7 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           }
           expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
           expectNoMsg(1 second)
-          app.mainbus.unsubscribe(testActor)
+          app.eventStream.unsubscribe(testActor)
         }
       }
     }

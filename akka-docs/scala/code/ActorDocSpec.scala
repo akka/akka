@@ -36,8 +36,8 @@ class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
       case e: Logging.Info ⇒ true
       case _               ⇒ false
     }
-    app.mainbus.publish(TestEvent.Mute(filter))
-    app.mainbus.subscribe(testActor, classOf[Logging.Info])
+    app.eventStream.publish(TestEvent.Mute(filter))
+    app.eventStream.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
     expectMsgPF(1 second) { case Logging.Info(_, "received test") ⇒ true }
@@ -45,8 +45,8 @@ class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
     myActor ! "unknown"
     expectMsgPF(1 second) { case Logging.Info(_, "received unknown message") ⇒ true }
 
-    app.mainbus.unsubscribe(testActor)
-    app.mainbus.publish(TestEvent.UnMute(filter))
+    app.eventStream.unsubscribe(testActor)
+    app.eventStream.publish(TestEvent.UnMute(filter))
 
     myActor.stop()
   }

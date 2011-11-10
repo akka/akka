@@ -384,10 +384,10 @@ class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
   override def isShutdown(): Boolean = true
 
   protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit =
-    app.mainbus.publish(DeadLetter(message, sender))
+    app.eventStream.publish(DeadLetter(message, sender))
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.mainbus.publish(DeadLetter(message, this))
+    app.eventStream.publish(DeadLetter(message, this))
     brokenPromise
   }
 

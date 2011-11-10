@@ -162,7 +162,7 @@ abstract class RemoteSupport(val app: ActorSystem) {
                            recipient: ActorRef,
                            loader: Option[ClassLoader]): Unit
 
-  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.mainbus.publish(message)
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.eventStream.publish(message)
 
   override def toString = name
 }

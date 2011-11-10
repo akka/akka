@@ -167,11 +167,11 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "started (" + actor + ")"))
+      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "started (" + actor + ")"))
     } catch {
       case e ⇒
         try {
-          app.mainbus.publish(Error(e, self, "error while creating actor"))
+          app.eventStream.publish(Error(e, self, "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
@@ -181,7 +181,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "restarting"))
+      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarting"))
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -195,14 +195,14 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "restarted"))
+      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarted"))
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
       props.faultHandler.handleSupervisorRestarted(cause, self, children)
     } catch {
       case e ⇒ try {
-        app.mainbus.publish(Error(e, self, "error while creating actor"))
+        app.eventStream.publish(Error(e, self, "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
@@ -223,7 +223,7 @@ private[akka] class ActorCell(
       try {
         try {
           val a = actor
-          if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "stopping"))
+          if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
           if (a ne null) a.postStop()
         } finally {
           //Stop supervised actors
@@ -250,8 +250,8 @@ private[akka] class ActorCell(
       if (!stats.contains(child)) {
         childrenRefs = childrenRefs.updated(child.name, child)
         childrenStats = childrenStats.updated(child, ChildRestartStats())
-        if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "now supervising " + child))
-      } else app.mainbus.publish(Warning(self, "Already supervising " + child))
+        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now supervising " + child))
+      } else app.eventStream.publish(Warning(self, "Already supervising " + child))
     }
 
     try {
@@ -262,10 +262,10 @@ private[akka] class ActorCell(
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
             app.deathWatch.subscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "now monitoring " + subject))
+            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now monitoring " + subject))
           case Unlink(subject) ⇒
             app.deathWatch.unsubscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.mainbus.publish(Debug(self, "stopped monitoring " + subject))
+            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped monitoring " + subject))
           case Suspend()        ⇒ suspend()
           case Resume()         ⇒ resume()
           case Terminate()      ⇒ terminate()
@@ -274,7 +274,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        app.mainbus.publish(Error(e, self, "error while processing " + message))
+        app.eventStream.publish(Error(e, self, "error while processing " + message))
         //TODO FIXME How should problems here be handled?
         throw e
     }
@@ -293,7 +293,7 @@ private[akka] class ActorCell(
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
-              app.mainbus.publish(Error(e, self, e.getMessage))
+              app.eventStream.publish(Error(e, self, e.getMessage))
 
               // prevent any further messages to be processed until the actor has been restarted
               dispatcher.suspend(this)
@@ -313,7 +313,7 @@ private[akka] class ActorCell(
           }
         } catch {
           case e ⇒
-            app.mainbus.publish(Error(e, self, e.getMessage))
+            app.eventStream.publish(Error(e, self, e.getMessage))
             throw e
         }
       }
@@ -322,7 +322,7 @@ private[akka] class ActorCell(
 
   final def handleFailure(fail: Failed): Unit = childrenStats.get(fail.actor) match {
     case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, childrenStats)) throw fail.cause
-    case None        ⇒ app.mainbus.publish(Warning(self, "dropping " + fail + " from unknown child"))
+    case None        ⇒ app.eventStream.publish(Warning(self, "dropping " + fail + " from unknown child"))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {

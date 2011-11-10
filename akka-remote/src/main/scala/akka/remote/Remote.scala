@@ -74,8 +74,8 @@ class Remote(val app: ActorSystem) {
     val remote = new akka.remote.netty.NettyRemoteSupport(app)
     remote.start() //TODO FIXME Any application loader here?
 
-    app.mainbus.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
-    app.mainbus.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
+    app.eventStream.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
+    app.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
     // TODO actually register this provider in app in remote mode
     //provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
@@ -256,7 +256,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
       case problem: Exception ⇒
-        remote.app.mainbus.publish(Logging.Error(problem, remote, problem.getMessage))
+        remote.app.eventStream.publish(Logging.Error(problem, remote, problem.getMessage))
         CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
     }
   }

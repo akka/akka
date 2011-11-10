@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.actor.Terminated
 import akka.util.Subclassification
 
-class MainBus(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
+class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]

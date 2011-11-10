@@ -8,7 +8,7 @@ package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit app: ActorSystem): T = {
     def now = System.currentTimeMillis
 
-    app.mainbus.publish(TestEvent.Mute(eventFilters.toSeq))
+    app.eventStream.publish(TestEvent.Mute(eventFilters.toSeq))
     try {
       val result = block
 
@@ -19,7 +19,7 @@ package object testkit {
 
       result
     } finally {
-      app.mainbus.publish(TestEvent.UnMute(eventFilters.toSeq))
+      app.eventStream.publish(TestEvent.UnMute(eventFilters.toSeq))
     }
   }
 

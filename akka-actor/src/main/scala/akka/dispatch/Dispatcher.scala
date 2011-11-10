@@ -93,7 +93,7 @@ class Dispatcher(
       executorService.get() execute invocation
     } catch {
       case e: RejectedExecutionException ⇒
-        app.mainbus.publish(Warning(this, e.toString))
+        app.eventStream.publish(Warning(this, e.toString))
         throw e
     }
   }
@@ -120,7 +120,7 @@ class Dispatcher(
         } catch {
           case e: RejectedExecutionException ⇒
             try {
-              app.mainbus.publish(Warning(this, e.toString))
+              app.eventStream.publish(Warning(this, e.toString))
             } finally {
               mbox.setAsIdle()
             }

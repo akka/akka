@@ -211,12 +211,12 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
           true
         } catch {
           case ie: InterruptedException ⇒
-            app.mainbus.publish(Error(this, ie))
+            app.eventStream.publish(Error(this, ie))
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            app.mainbus.publish(Error(this, e))
+            app.eventStream.publish(Error(this, e))
             queue.leave
             false
         }

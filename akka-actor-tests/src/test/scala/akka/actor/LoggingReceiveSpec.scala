@@ -33,9 +33,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     case _: Logging.Info  ⇒ true
     case _                ⇒ false
   })
-  appLogging.mainbus.publish(filter)
-  appAuto.mainbus.publish(filter)
-  appLifecycle.mainbus.publish(filter)
+  appLogging.eventStream.publish(filter)
+  appAuto.eventStream.publish(filter)
+  appLifecycle.eventStream.publish(filter)
 
   def ignoreMute(t: TestKit) {
     t.ignoreMsg {
@@ -53,7 +53,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "decorate a Receive" in {
       new TestKit(appLogging) {
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val r: Actor.Receive = {
           case null ⇒
         }
@@ -66,8 +66,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     "be added on Actor if requested" in {
       new TestKit(appLogging) with ImplicitSender {
         ignoreMute(this)
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
-        app.mainbus.subscribe(testActor, classOf[Logging.Error])
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
             case _ ⇒ sender ! "x"
@@ -95,7 +95,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "not duplicate logging" in {
       new TestKit(appLogging) with ImplicitSender {
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
             case _ ⇒ sender ! "x"
@@ -115,7 +115,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "log AutoReceiveMessages if requested" in {
       new TestKit(appAuto) {
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = {
             case _ ⇒
@@ -135,8 +135,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
             val s = ref.toString
             s.contains("MainBusReaper") || s.contains("Supervisor")
         }
-        app.mainbus.subscribe(testActor, classOf[Logging.Debug])
-        app.mainbus.subscribe(testActor, classOf[Logging.Error])
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Error])
         within(3 seconds) {
           val lifecycleGuardian = appLifecycle.guardian
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))

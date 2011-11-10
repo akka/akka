@@ -24,7 +24,7 @@ object JMX {
     case e: InstanceAlreadyExistsException ⇒
       Some(mbeanServer.getObjectInstance(name))
     case e: Exception ⇒
-      app.mainbus.publish(Error(e, this, "Error when registering mbean [%s]".format(mbean)))
+      app.eventStream.publish(Error(e, this, "Error when registering mbean [%s]".format(mbean)))
       None
   }
 
@@ -32,6 +32,6 @@ object JMX {
     mbeanServer.unregisterMBean(mbean)
   } catch {
     case e: InstanceNotFoundException ⇒ {}
-    case e: Exception                 ⇒ app.mainbus.publish(Error(e, this, "Error while unregistering mbean [%s]".format(mbean)))
+    case e: Exception                 ⇒ app.eventStream.publish(Error(e, this, "Error while unregistering mbean [%s]".format(mbean)))
   }
 }

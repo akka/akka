@@ -227,10 +227,10 @@ class BoundedExecutorDecorator(val app: ActorSystem, val executor: ExecutorServi
       })
     } catch {
       case e: RejectedExecutionException ⇒
-        app.mainbus.publish(Warning(this, e.toString))
+        app.eventStream.publish(Warning(this, e.toString))
         semaphore.release
       case e: Throwable ⇒
-        app.mainbus.publish(Error(e, this, e.getMessage))
+        app.eventStream.publish(Error(e, this, e.getMessage))
         throw e
     }
   }

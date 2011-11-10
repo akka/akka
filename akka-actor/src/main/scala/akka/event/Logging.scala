@@ -220,7 +220,7 @@ object Logging {
    * Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.
    */
-  def apply(app: ActorSystem, source: AnyRef): LoggingAdapter = new BusLogging(app.mainbus, source)
+  def apply(app: ActorSystem, source: AnyRef): LoggingAdapter = new BusLogging(app.eventStream, source)
   /**
    * Java API: Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.

@@ -66,7 +66,7 @@ final case class TaskInvocation(app: ActorSystem, function: () ⇒ Unit, cleanup
     try {
       function()
     } catch {
-      case e ⇒ app.mainbus.publish(Error(e, this, e.getMessage))
+      case e ⇒ app.eventStream.publish(Error(e, this, e.getMessage))
     } finally {
       cleanup()
     }
