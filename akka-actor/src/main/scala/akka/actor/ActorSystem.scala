@@ -15,12 +15,9 @@ import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ Executors, TimeUnit }
 
 object ActorSystem {
-
-  type AkkaConfig = a.AkkaConfig.type forSome { val a: ActorSystem }
 
   val Version = "2.0-SNAPSHOT"
 
@@ -74,16 +71,7 @@ object ActorSystem {
   case object Stopped extends ExitStatus
   case class Failed(cause: Throwable) extends ExitStatus
 
-}
-
-class ActorSystem(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
-
-  def this(name: String) = this(name, ActorSystem.defaultConfig)
-  def this() = this("default")
-
-  import ActorSystem._
-
-  object AkkaConfig {
+  class AkkaConfig(val config: Configuration) {
     import config._
     val ConfigVersion = getString("akka.version", Version)
 
@@ -129,15 +117,27 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
     val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
     val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
+
+    if (ConfigVersion != Version)
+      throw new ConfigurationException("Akka JAR version [" + Version +
+        "] does not match the provided config version [" + ConfigVersion + "]")
+
   }
+
+}
+
+class ActorSystem(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
+
+  import ActorSystem._
+
+  def this(name: String) = this(name, ActorSystem.defaultConfig)
+  def this() = this("default")
+
+  val AkkaConfig = new AkkaConfig(config)
 
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
 
   import AkkaConfig._
-
-  if (ConfigVersion != Version)
-    throw new ConfigurationException("Akka JAR version [" + Version +
-      "] does not match the provided config version [" + ConfigVersion + "]")
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
