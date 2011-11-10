@@ -14,11 +14,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
   "round robin router" must {
 
     "be able to shut down its instance" in {
-      val address = "round-robin-0"
+      val path = app / "round-robin-0"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           RoundRobin,
           NrOfInstances(5),
@@ -35,7 +35,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         override def postStop() {
           stopLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       actor ! "hello"
       actor ! "hello"
@@ -49,11 +49,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver messages in a round robin fashion" in {
-      val address = "round-robin-1"
+      val path = app / "round-robin-1"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           RoundRobin,
           NrOfInstances(10),
@@ -75,7 +75,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -93,11 +93,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver a broadcast message using the !" in {
-      val address = "round-robin-2"
+      val path = app / "round-robin-2"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           RoundRobin,
           NrOfInstances(5),
@@ -114,7 +114,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         override def postStop() {
           stopLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
@@ -127,11 +127,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
   "random router" must {
 
     "be able to shut down its instance" in {
-      val address = "random-0"
+      val path = app / "random-0"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           Random,
           NrOfInstances(7),
@@ -147,7 +147,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         override def postStop() {
           stopLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       actor ! "hello"
       actor ! "hello"
@@ -160,11 +160,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver messages in a random fashion" in {
-      val address = "random-1"
+      val path = app / "random-1"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           Random,
           NrOfInstances(10),
@@ -186,7 +186,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
           case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -204,11 +204,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver a broadcast message using the !" in {
-      val address = "random-2"
+      val path = app / "random-2"
 
       app.provider.deployer.deploy(
         Deploy(
-          address,
+          path.toString,
           None,
           Random,
           NrOfInstances(6),
@@ -225,7 +225,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         override def postStop() {
           stopLatch.countDown()
         }
-      }), address)
+      }), path.name)
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)

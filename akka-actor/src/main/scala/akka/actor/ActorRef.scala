@@ -49,7 +49,17 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
-   * Returns the address for the actor.
+   * Returns the name for this actor. Locally unique (across siblings).
+   */
+  def name: String
+
+  /**
+   * Returns the path for this actor (from this actor up to the root actor).
+   */
+  def path: ActorPath
+
+  /**
+   * Returns the absolute address for this actor in the form hostname:port/path/to/actor.
    */
   def address: String
 
@@ -154,17 +164,15 @@ class LocalActorRef private[akka] (
   _app: AkkaApplication,
   props: Props,
   _supervisor: ActorRef,
-  _givenAddress: String,
+  val path: ActorPath,
   val systemService: Boolean = false,
-  private[akka] val uuid: Uuid = newUuid,
   receiveTimeout: Option[Long] = None,
   hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
-  final val address: String = _givenAddress match {
-    case null | Props.randomAddress ⇒ uuid.toString
-    case other                      ⇒ other
-  }
+  def name = path.name
+
+  def address: String = _app.address + path.toString
 
   private[this] val actorCell = new ActorCell(_app, this, props, _supervisor, receiveTimeout, hotswap)
   actorCell.start()
@@ -283,10 +291,10 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * Memento pattern for serializing ActorRefs transparently
  */
 
-case class SerializedActorRef(address: String, hostname: String, port: Int) {
+case class SerializedActorRef(hostname: String, port: Int, path: String) {
   import akka.serialization.Serialization.app
 
-  def this(address: String, inet: InetSocketAddress) = this(address, inet.getAddress.getHostAddress, inet.getPort)
+  def this(inet: InetSocketAddress, path: String) = this(inet.getAddress.getHostAddress, inet.getPort, path)
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
@@ -331,7 +339,7 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
   private[akka] val uuid: Uuid = newUuid()
-  def address = uuid.toString
+  def name: String = uuid.toString
 
   def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
   def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
@@ -365,7 +373,13 @@ object DeadLetterActorRef {
 
 class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
   val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
-  override val address: String = "akka:internal:DeadLetterActorRef"
+
+  override val name: String = "dead-letter"
+
+  // FIXME (actor path): put this under the sys guardian supervisor
+  val path: ActorPath = app.root / "sys" / name
+
+  def address: String = app.address + path.toString
 
   override def isShutdown(): Boolean = true
 
@@ -383,6 +397,11 @@ class DeadLetterActorRef(val app: AkkaApplication) extends MinimalActorRef {
 
 abstract class AskActorRef(protected val app: AkkaApplication)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
+
+  // FIXME (actor path): put this under the tmp guardian supervisor
+  val path: ActorPath = app.root / "tmp" / name
+
+  def address: String = app.address + path.toString
 
   {
     val callback: Future[Any] ⇒ Unit = { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
