@@ -8,6 +8,10 @@ package object actor {
   implicit def actorRef2Scala(ref: ActorRef): ScalaActorRef = ref.asInstanceOf[ScalaActorRef]
   implicit def scala2ActorRef(ref: ScalaActorRef): ActorRef = ref.asInstanceOf[ActorRef]
 
+  // actor path can be used as an actor ref (note: does a lookup in the app using path.ref)
+  implicit def actorPath2Ref(path: ActorPath): ActorRef = path.ref.getOrElse(path.app.deadLetters)
+  implicit def actorPath2ScalaRef(path: ActorPath): ScalaActorRef = actorPath2Ref(path).asInstanceOf[ScalaActorRef]
+
   type Uuid = com.eaio.uuid.UUID
 
   def newUuid(): Uuid = new Uuid()

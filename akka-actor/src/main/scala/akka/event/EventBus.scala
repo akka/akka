@@ -161,15 +161,16 @@ trait SubchannelClassification { this: EventBus ⇒
 
   def publish(event: Event): Unit = {
     val c = classify(event)
-    val recv = cache get c getOrElse {
-      subscriptions.synchronized {
-        cache get c getOrElse {
+    val recv =
+      if (cache contains c) cache(c) // c will never be removed from cache
+      else subscriptions.synchronized {
+        if (cache contains c) cache(c)
+        else {
           val diff = subscriptions.addKey(c)
           cache = cache ++ diff
           cache(c)
         }
       }
-    }
     recv foreach (publish(event, _))
   }
 }

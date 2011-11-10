@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorRef, MinimalActorRef, LocalActorRef, Props }
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props }
 import akka.{ AkkaException, AkkaApplication }
 import akka.AkkaApplication.AkkaConfig
 import akka.util.ReflectiveAccess
@@ -129,7 +129,7 @@ trait LoggingBus extends ActorEventBus {
   }
 
   private def addLogger(app: AkkaApplication, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
-    val actor = app.systemActorOf(Props(clazz), Props.randomAddress)
+    val actor = app.systemActorOf(Props(clazz), Props.randomName)
     actor ! InitializeLogger(this)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
     publish(Info(this, "logger " + clazz.getName + " started"))
@@ -184,8 +184,6 @@ object Logging {
   final val WarningLevel = 2.asInstanceOf[Int with LogLevelType]
   final val InfoLevel = 3.asInstanceOf[Int with LogLevelType]
   final val DebugLevel = 4.asInstanceOf[Int with LogLevelType]
-
-  case object NotDefined
 
   def levelFor(s: String): Option[LogLevel] = s match {
     case "ERROR" | "error"     ⇒ Some(ErrorLevel)
@@ -291,7 +289,7 @@ object Logging {
         case e: Warning ⇒ warning(e)
         case e: Info    ⇒ info(e)
         case e: Debug   ⇒ debug(e)
-        case e          ⇒ debug(Debug(NotDefined, e.toString))
+        case e          ⇒ warning(Warning(this, "received unexpected event of class " + e.getClass + ": " + e))
       }
     }
 
@@ -339,6 +337,9 @@ object Logging {
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
+    override val name: String = "standard-out-logger"
+    val path: ActorPath = null // pathless
+    val address: String = name
     override val toString = "StandardOutLogger"
     override def postMessageToMailbox(obj: Any, sender: ActorRef) { print(obj) }
   }

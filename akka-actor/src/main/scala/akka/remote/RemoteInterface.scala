@@ -26,7 +26,7 @@ object RemoteAddress {
   }
 }
 
-trait RemoteAddress {
+trait RemoteAddress extends Serializable {
   def hostname: String
   def port: Int
   override def toString = "" + hostname + ":" + port

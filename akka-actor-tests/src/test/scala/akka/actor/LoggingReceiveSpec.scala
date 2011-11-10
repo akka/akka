@@ -139,11 +139,15 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         app.mainbus.subscribe(testActor, classOf[Logging.Debug])
         app.mainbus.subscribe(testActor, classOf[Logging.Error])
         within(3 seconds) {
+          val lifecycleGuardian = appLifecycle.guardian
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 
-          expectMsgPF() {
-            case Logging.Debug(`supervisor`, msg: String) if msg startsWith "started" ⇒
-          }
+          val supervisorSet = receiveWhile(messages = 2) {
+            case Logging.Debug(`lifecycleGuardian`, msg: String) if msg startsWith "now supervising" ⇒ 1
+            case Logging.Debug(`supervisor`, msg: String) if msg startsWith "started"                ⇒ 2
+          }.toSet
+          expectNoMsg(Duration.Zero)
+          assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
 
           val actor = new TestActorRef[TestLogActor](app, Props[TestLogActor], supervisor, "none")
 

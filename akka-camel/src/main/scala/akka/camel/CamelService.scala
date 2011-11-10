@@ -26,9 +26,9 @@ import TypedCamelAccess._
  * @author Martin Krasser
  */
 trait CamelService extends Bootable {
-  private[camel] val activationTracker = new LocalActorRef(Props[ActivationTracker], Props.randomAddress, true)
-  private[camel] val consumerPublisher = new LocalActorRef(Props(new ConsumerPublisher(activationTracker)), Props.randomAddress, true)
-  private[camel] val publishRequestor = new LocalActorRef(Props(new ConsumerPublishRequestor), Props.randomAddress, true)
+  private[camel] val activationTracker = new LocalActorRef(Props[ActivationTracker], Props.randomName, true)
+  private[camel] val consumerPublisher = new LocalActorRef(Props(new ConsumerPublisher(activationTracker)), Props.randomName, true)
+  private[camel] val publishRequestor = new LocalActorRef(Props(new ConsumerPublishRequestor), Props.randomName, true)
 
   private val serviceEnabled = config.getList("akka.enabled-modules").exists(_ == "camel")
 

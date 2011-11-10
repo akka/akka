@@ -65,7 +65,7 @@ class NetworkEventStream(val app: AkkaApplication) {
   // FIXME: check that this supervision is correct
   private[akka] val sender = app.provider.actorOf(
     Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")),
-    app.guardian, Props.randomAddress, systemService = true)
+    app.guardian, Props.randomName, systemService = true)
 
   /**
    * Registers a network event stream listener (asyncronously).

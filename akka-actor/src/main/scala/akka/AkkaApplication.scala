@@ -167,6 +167,8 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   def port: Int = defaultAddress.port
 
+  def address: String = hostname + ":" + port.toString
+
   // this provides basic logging (to stdout) until .start() is called below
   val mainbus = new MainBus(DebugMainBus)
   mainbus.startStdoutLogger(AkkaConfig)
@@ -179,6 +181,11 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val reflective = new ReflectiveAccess(this)
+
+  /**
+   * The root actor path for this application.
+   */
+  val root: ActorPath = new RootActorPath(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = reflective.createProvider
@@ -205,14 +212,14 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   }
   private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
 
-  private val guardianInChief: ActorRef =
-    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, "GuardianInChief", true)
+  private val rootGuardian: ActorRef =
+    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, root, true)
 
   protected[akka] val guardian: ActorRef =
-    provider.actorOf(guardianProps, guardianInChief, "ApplicationSupervisor", true)
+    provider.actorOf(guardianProps, rootGuardian, "app", true)
 
   protected[akka] val systemGuardian: ActorRef =
-    provider.actorOf(guardianProps.withCreator(new SystemGuardian), guardianInChief, "SystemSupervisor", true)
+    provider.actorOf(guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
@@ -221,7 +228,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   // chain death watchers so that killing guardian stops the application
   deathWatch.subscribe(systemGuardian, guardian)
-  deathWatch.subscribe(guardianInChief, systemGuardian)
+  deathWatch.subscribe(rootGuardian, systemGuardian)
 
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
   mainbus.start(this)
@@ -238,6 +245,11 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
 
   val scheduler = new DefaultScheduler
   terminationFuture.onComplete(_ ⇒ scheduler.shutdown())
+
+  /**
+   * Create an actor path under the application supervisor (/app).
+   */
+  def /(actorName: String): ActorPath = guardian.path / actorName
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop(): Unit = {

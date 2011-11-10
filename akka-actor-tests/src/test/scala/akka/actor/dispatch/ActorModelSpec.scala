@@ -161,18 +161,14 @@ object ActorModelSpec {
     }
   }
 
-  def assertCountDown(latch: CountDownLatch, wait: Long, hint: AnyRef) {
-    try {
-      assert(latch.await(wait, TimeUnit.MILLISECONDS) === true)
-    } catch {
-      case e ⇒
-        System.err.println("assertCountDown failed was: " + latch.getCount)
-        throw e
-    }
+  def assertCountDown(latch: CountDownLatch, wait: Long, hint: String) {
+    if (!latch.await(wait, TimeUnit.MILLISECONDS))
+      fail("Failed to count down within " + wait + " millis (count at " + latch.getCount + "). " + hint)
   }
 
-  def assertNoCountDown(latch: CountDownLatch, wait: Long, hint: AnyRef) {
-    assert(latch.await(wait, TimeUnit.MILLISECONDS) === false)
+  def assertNoCountDown(latch: CountDownLatch, wait: Long, hint: String) {
+    if (latch.await(wait, TimeUnit.MILLISECONDS))
+      fail("Expected count down to fail after " + wait + " millis. " + hint)
   }
 
   def statsFor(actorRef: ActorRef, dispatcher: MessageDispatcher = null) =
@@ -354,18 +350,21 @@ abstract class ActorModelSpec extends AkkaSpec {
 
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
+        val stopLatch = new CountDownLatch(num)
+        val waitTime = (30 seconds).dilated.toMillis
         val boss = actorOf(Props(context ⇒ {
           case "run" ⇒
-            for (_ ← 1 to num) context.actorOf(props) ! cachedMessage
+            for (_ ← 1 to num) {
+              val child = context.actorOf(props)
+              context.self startsMonitoring child
+              child ! cachedMessage
+            }
+          case Terminated(child) ⇒
+            stopLatch.countDown()
         }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
         boss ! "run"
-        try {
-          assertCountDown(cachedMessage.latch, (20 seconds).dilated.toMillis, "Should process " + num + " countdowns")
-        } catch {
-          case e ⇒
-            System.err.println(this.getClass.getName + " error: " + e.getMessage + " missing count downs == " + cachedMessage.latch.getCount() + " out of " + num)
-            throw e
-        }
+        assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+        assertCountDown(stopLatch, waitTime, "Expected all children to stop")
         boss.stop()
       }
       for (run ← 1 to 3) {
