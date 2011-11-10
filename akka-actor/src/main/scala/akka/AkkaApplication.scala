@@ -5,7 +5,6 @@ package akka
 
 import akka.config._
 import akka.actor._
-import akka.dispatch._
 import akka.event._
 import akka.util.duration._
 import java.net.InetAddress
@@ -13,11 +12,10 @@ import com.eaio.uuid.UUID
 import akka.dispatch.{ Dispatchers, Future }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
-import akka.routing.Routing
-import akka.remote.RemoteSupport
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
+import java.util.concurrent.{ TimeUnit, Executors }
 
 object AkkaApplication {
 
@@ -179,7 +177,7 @@ class AkkaApplication(val name: String, val config: Configuration) extends Actor
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   // Start the scheduler before the provider (to prevent null pointers from happening in e.g. Gossiper)
-  val scheduler = new DefaultScheduler(new HashedWheelTimer)
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val reflective = new ReflectiveAccess(this)

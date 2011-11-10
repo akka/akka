@@ -9,10 +9,9 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.AkkaApplication
-import akka.event.ActorEventBus
 import akka.serialization.Serialization
-import akka.actor.DeadLetterActorRef.SerializedDeadLetterActorRef
 import java.net.InetSocketAddress
+import java.util.concurrent.TimeUnit
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -412,4 +411,58 @@ abstract class AskActorRef(protected val app: AkkaApplication)(timeout: Timeout 
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = app.provider.serialize(this)
+}
+
+import org.jboss.netty.akka.util.{ HashedWheelTimer, TimerTask }
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
+
+  def schedule(receiver: ActorRef, message: Any, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay, timeUnit), initialDelay, timeUnit))
+
+  def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay, timeUnit))
+
+  def scheduleOnce(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(receiver, message), delay, timeUnit))
+
+  def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(f, delay, timeUnit), initialDelay, timeUnit))
+
+  def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay, timeUnit))
+
+  private def createSingleTask(runnable: Runnable): TimerTask =
+    new TimerTask() { def run(timeout: org.jboss.netty.akka.util.Timeout) { runnable.run() } }
+
+  private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
+    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { receiver ! message } }
+
+  private def createContinuousTask(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): TimerTask = {
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        receiver ! message
+        timeout.getTimer.newTimeout(this, delay, timeUnit)
+      }
+    }
+  }
+
+  private def createSingleTask(f: () ⇒ Unit): TimerTask =
+    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
+
+  private def createContinuousTask(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): TimerTask = {
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        f()
+        timeout.getTimer.newTimeout(this, delay, timeUnit)
+      }
+    }
+  }
+
+  private[akka] def stop() = hashedWheelTimer.stop()
+}
+
+class DefaultCancellable(timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
+  def cancel() { timeout.cancel() }
+
+  def isCancelled: Boolean = { timeout.isCancelled }
 }

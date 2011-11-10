@@ -15,24 +15,17 @@
  */
 package org.jboss.netty.akka.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executors;
+import akka.event.LoggingAdapter;
+import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap;
+import org.jboss.netty.akka.util.internal.ReusableIterator;
+
+import java.util.*;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.jboss.netty.akka.logging.InternalLogger;
-import org.jboss.netty.akka.logging.InternalLoggerFactory;
-import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap;
-import org.jboss.netty.akka.util.internal.ReusableIterator;
-import org.jboss.netty.akka.util.internal.SharedResourceMisuseDetector;
 
 /**
  * A {@link Timer} optimized for approximated I/O timeout scheduling.
@@ -82,13 +75,7 @@ import org.jboss.netty.akka.util.internal.SharedResourceMisuseDetector;
  * @version $Rev: 2297 $, $Date: 2010-06-07 10:50:02 +0900 (Mon, 07 Jun 2010) $
  */
 public class HashedWheelTimer implements Timer {
-
-    static final InternalLogger logger =
-        InternalLoggerFactory.getInstance(HashedWheelTimer.class);
     private static final AtomicInteger id = new AtomicInteger();
-
-    private static final SharedResourceMisuseDetector misuseDetector =
-        new SharedResourceMisuseDetector(HashedWheelTimer.class);
 
     private final Worker worker = new Worker();
     final Thread workerThread;
@@ -101,65 +88,7 @@ public class HashedWheelTimer implements Timer {
     final int mask;
     final ReadWriteLock lock = new ReentrantReadWriteLock();
     volatile int wheelCursor;
-
-    /**
-     * Creates a new timer with the default thread factory
-     * ({@link java.util.concurrent.Executors#defaultThreadFactory()}), default tick duration, and
-     * default number of ticks per wheel.
-     */
-    public HashedWheelTimer() {
-        this(Executors.defaultThreadFactory());
-    }
-
-    /**
-     * Creates a new timer with the default thread factory
-     * ({@link java.util.concurrent.Executors#defaultThreadFactory()}) and default number of ticks
-     * per wheel.
-     *
-     * @param tickDuration   the duration between tick
-     * @param unit           the time unit of the {@code tickDuration}
-     */
-    public HashedWheelTimer(long tickDuration, TimeUnit unit) {
-        this(Executors.defaultThreadFactory(), tickDuration, unit);
-    }
-
-    /**
-     * Creates a new timer with the default thread factory
-     * ({@link java.util.concurrent.Executors#defaultThreadFactory()}).
-     *
-     * @param tickDuration   the duration between tick
-     * @param unit           the time unit of the {@code tickDuration}
-     * @param ticksPerWheel  the size of the wheel
-     */
-    public HashedWheelTimer(long tickDuration, TimeUnit unit, int ticksPerWheel) {
-        this(Executors.defaultThreadFactory(), tickDuration, unit, ticksPerWheel);
-    }
-
-    /**
-     * Creates a new timer with the default tick duration and default number of
-     * ticks per wheel.
-     *
-     * @param threadFactory  a {@link java.util.concurrent.ThreadFactory} that creates a
-     *                       background {@link Thread} which is dedicated to
-     *                       {@link TimerTask} execution.
-     */
-    public HashedWheelTimer(ThreadFactory threadFactory) {
-        this(threadFactory, 100, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Creates a new timer with the default number of ticks per wheel.
-     *
-     * @param threadFactory  a {@link java.util.concurrent.ThreadFactory} that creates a
-     *                       background {@link Thread} which is dedicated to
-     *                       {@link TimerTask} execution.
-     * @param tickDuration   the duration between tick
-     * @param unit           the time unit of the {@code tickDuration}
-     */
-    public HashedWheelTimer(
-            ThreadFactory threadFactory, long tickDuration, TimeUnit unit) {
-        this(threadFactory, tickDuration, unit, 512);
-    }
+    private LoggingAdapter logger;
 
     /**
      * Creates a new timer.
@@ -172,6 +101,7 @@ public class HashedWheelTimer implements Timer {
      * @param ticksPerWheel  the size of the wheel
      */
     public HashedWheelTimer(
+            LoggingAdapter logger,
             ThreadFactory threadFactory,
             long tickDuration, TimeUnit unit, int ticksPerWheel) {
 
@@ -190,6 +120,8 @@ public class HashedWheelTimer implements Timer {
                     "ticksPerWheel must be greater than 0: " + ticksPerWheel);
         }
 
+        this.logger = logger;
+
         // Normalize ticksPerWheel to power of two and initialize the wheel.
         wheel = createWheel(ticksPerWheel);
         iterators = createIterators(wheel);
@@ -207,12 +139,7 @@ public class HashedWheelTimer implements Timer {
         }
 
         roundDuration = tickDuration * wheel.length;
-
-        workerThread = threadFactory.newThread(new ThreadRenamingRunnable(
-                        worker, "Hashed wheel timer #" + id.incrementAndGet()));
-
-        // Misuse check
-        misuseDetector.increase();
+        workerThread = threadFactory.newThread(worker);
     }
 
     @SuppressWarnings("unchecked")
@@ -295,8 +222,6 @@ public class HashedWheelTimer implements Timer {
             Thread.currentThread().interrupt();
         }
 
-        misuseDetector.decrease();
-
         Set<Timeout> unprocessedTimeouts = new HashSet<Timeout>();
         for (Set<HashedWheelTimeout> bucket: wheel) {
             unprocessedTimeouts.addAll(bucket);
@@ -323,7 +248,6 @@ public class HashedWheelTimer implements Timer {
         delay = unit.toMillis(delay);
         HashedWheelTimeout timeout = new HashedWheelTimeout(task, currentTime + delay);
         scheduleTimeout(timeout, delay);
-        // TODO : remove
         return timeout;
     }
 
@@ -519,7 +443,7 @@ public class HashedWheelTimer implements Timer {
             try {
                 task.run(this);
             } catch (Throwable t) {
-                logger.warn(
+                logger.warning(
                         "An exception was thrown by " +
                         TimerTask.class.getSimpleName() + ".", t);
             }
