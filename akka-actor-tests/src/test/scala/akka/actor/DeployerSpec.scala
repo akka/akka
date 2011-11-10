@@ -22,7 +22,6 @@ class DeployerSpec extends AkkaSpec {
           None,
           RoundRobin,
           NrOfInstances(3),
-          BannagePeriodFailureDetector(10 seconds),
           RemoteScope(List(
             RemoteAddress("wallace", 2552), RemoteAddress("gromit", 2552))))))
       // ClusterScope(

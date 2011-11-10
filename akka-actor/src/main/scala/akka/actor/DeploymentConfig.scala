@@ -19,7 +19,6 @@ object DeploymentConfig {
     recipe: Option[ActorRecipe],
     routing: Routing = Direct,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
-    failureDetector: FailureDetector = NoOpFailureDetector,
     scope: Scope = LocalScope)
 
   // --------------------------------
@@ -50,21 +49,6 @@ object DeploymentConfig {
   case object LeastCPU extends Routing
   case object LeastRAM extends Routing
   case object LeastMessages extends Routing
-
-  // --------------------------------
-  // --- FailureDetector
-  // --------------------------------
-  sealed trait FailureDetector
-  case class BannagePeriodFailureDetector(timeToBan: Duration) extends FailureDetector
-  case class CustomFailureDetector(className: String) extends FailureDetector
-
-  // For Java API
-  case class NoOpFailureDetector() extends FailureDetector
-  case class RemoveConnectionOnFirstFailureFailureDetector() extends FailureDetector
-
-  // For Scala API
-  case object NoOpFailureDetector extends FailureDetector
-  case object RemoveConnectionOnFirstFailureFailureDetector extends FailureDetector
 
   // --------------------------------
   // --- Scope
@@ -176,16 +160,6 @@ object DeploymentConfig {
     //    case IP(address)       ⇒ throw new UnsupportedOperationException("Specifying preferred node name by 'IP address' is not yet supported. Use the node name like: preferred-nodes = [\"node:node1\"]")
   }
 
-  def failureDetectorTypeFor(failureDetector: FailureDetector): FailureDetectorType = failureDetector match {
-    case NoOpFailureDetector                             ⇒ FailureDetectorType.NoOp
-    case NoOpFailureDetector()                           ⇒ FailureDetectorType.NoOp
-    case BannagePeriodFailureDetector(timeToBan)         ⇒ FailureDetectorType.BannagePeriod(timeToBan)
-    case RemoveConnectionOnFirstFailureFailureDetector   ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
-    case RemoveConnectionOnFirstFailureFailureDetector() ⇒ FailureDetectorType.RemoveConnectionOnFirstFailure
-    case CustomFailureDetector(implClass)                ⇒ FailureDetectorType.Custom(implClass)
-    case unknown                                         ⇒ throw new UnsupportedOperationException("Unknown FailureDetector [" + unknown + "]")
-  }
-
   def routerTypeFor(routing: Routing): RouterType = routing match {
     case _: Direct | Direct               ⇒ RouterType.Direct
     case _: RoundRobin | RoundRobin       ⇒ RouterType.RoundRobin
@@ -255,7 +229,7 @@ class DeploymentConfig(val app: AkkaApplication) {
   def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == app.nodename)
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
-    case Deploy(_, _, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
+    case Deploy(_, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)
     case _ ⇒ None
   }
 

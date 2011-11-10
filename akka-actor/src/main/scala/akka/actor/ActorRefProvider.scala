@@ -162,11 +162,11 @@ class LocalActorRefProvider(val app: AkkaApplication) extends ActorRefProvider {
             (if (systemService) None else deployer.lookupDeployment(address)) match { // see if the deployment already exists, if so use it, if not create actor
 
               // create a local actor
-              case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, _, DeploymentConfig.LocalScope)) ⇒
+              case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
                 new LocalActorRef(app, props, supervisor, address, systemService) // create a local actor
 
               // create a routed actor ref
-              case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, _, DeploymentConfig.LocalScope)) ⇒
+              case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
 
                 val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
                   case RouterType.Direct     ⇒ () ⇒ new DirectRouter

@@ -58,7 +58,7 @@ class RemoteActorRefProvider(val app: AkkaApplication) extends ActorRefProvider 
         case null ⇒
           val actor: ActorRef = try {
             deployer.lookupDeploymentFor(address) match {
-              case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, failureDetectorType, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
+              case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
                 // FIXME move to AccrualFailureDetector as soon as we have the Gossiper up and running and remove the option to select impl in the akka.conf file since we only have one
                 // val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {

@@ -37,7 +37,7 @@ class Remote(val app: AkkaApplication) {
   val shouldCompressData = config.getBool("akka.remote.use-compression", false)
   val remoteSystemDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), DefaultTimeUnit).toMillis.toInt
 
-  val failureDetector = new AccrualFailureDetector(FailureDetectorThreshold, FailureDetectorMaxSampleSize)
+  val failureDetector = new AccrualFailureDetector(app)
 
   //  val gossiper = new Gossiper(this)
 

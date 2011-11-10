@@ -12,6 +12,8 @@ import scala.annotation.tailrec
 
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
+import akka.AkkaApplication
+
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
@@ -22,11 +24,15 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(
-  val threshold: Int = 8,
-  val maxSampleSize: Int = 1000) {
+class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000) {
 
-  final val PhiFactor = 1.0 / math.log(10.0)
+  def this(app: AkkaApplication) {
+    this(
+      app.config.getInt("akka.remote.failure-detector.theshold", 8),
+      app.config.getInt("akka.remote.failure-detector.max-sample-size", 1000))
+  }
+
+  private final val PhiFactor = 1.0 / math.log(10.0)
 
   private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
 

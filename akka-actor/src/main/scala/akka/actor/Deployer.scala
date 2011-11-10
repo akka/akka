@@ -51,7 +51,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
   def isLocal(deployment: Deploy): Boolean = deployment match {
-    case Deploy(_, _, _, _, _, LocalScope) | Deploy(_, _, _, _, _, _: LocalScope) ⇒ true
+    case Deploy(_, _, _, _, LocalScope) | Deploy(_, _, _, _, _: LocalScope) ⇒ true
     case _ ⇒ false
   }
 
@@ -145,50 +145,6 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
         }
 
         // --------------------------------
-        // akka.actor.deployment.<address>.failure-detector.<detector>
-        // --------------------------------
-        val failureDetectorOption: Option[FailureDetector] = addressConfig.getSection("failure-detector") match {
-          case Some(failureDetectorConfig) ⇒
-            failureDetectorConfig.keys.toList match {
-              case Nil ⇒ None
-              case detector :: Nil ⇒
-                detector match {
-                  case "no-op" ⇒
-                    Some(NoOpFailureDetector)
-
-                  case "remove-connection-on-first-failure" ⇒
-                    Some(RemoveConnectionOnFirstFailureFailureDetector)
-
-                  case "bannage-period" ⇒
-                    throw new ConfigurationException(
-                      "Configuration for [" + addressPath + ".failure-detector.bannage-period] must have a 'time-to-ban' option defined")
-
-                  case "bannage-period.time-to-ban" ⇒
-                    failureDetectorConfig.getSection("bannage-period") map { section ⇒
-                      val timeToBan = Duration(section.getInt("time-to-ban", 60), app.AkkaConfig.DefaultTimeUnit)
-                      BannagePeriodFailureDetector(timeToBan)
-                    }
-
-                  case "custom" ⇒
-                    failureDetectorConfig.getSection("custom") map { section ⇒
-                      val implementationClass = section.getString("class").getOrElse(throw new ConfigurationException(
-                        "Configuration for [" + addressPath +
-                          ".failure-detector.custom] must have a 'class' element with the fully qualified name of the failure detector class"))
-                      CustomFailureDetector(implementationClass)
-                    }
-
-                  case _ ⇒ None
-                }
-              case detectors ⇒
-                throw new ConfigurationException(
-                  "Configuration for [" + addressPath +
-                    ".failure-detector] can not have multiple sections - found [" + detectors.mkString(", ") + "]")
-            }
-          case None ⇒ None
-        }
-        val failureDetector = failureDetectorOption getOrElse { NoOpFailureDetector } // fall back to default failure detector
-
-        // --------------------------------
         // akka.actor.deployment.<address>.create-as
         // --------------------------------
         val recipe: Option[ActorRecipe] = addressConfig.getSection("create-as") map { section ⇒
@@ -235,7 +191,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 }
             }
 
-            Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, RemoteScope(remoteAddresses)))
+            Some(Deploy(address, recipe, router, nrOfInstances, RemoteScope(remoteAddresses)))
 
           case None ⇒ // check for 'cluster' config section
 
@@ -266,9 +222,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                       val address = tokenizer.nextElement.asInstanceOf[String]
 
                       protocol match {
-                        //case "host" ⇒ Host(address)
                         case "node" ⇒ Node(address)
-                        //case "ip"   ⇒ IP(address)
                         case _      ⇒ raiseHomeConfigError()
                       }
                     }
@@ -279,7 +233,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                 // --------------------------------
                 clusterConfig.getSection("replication") match {
                   case None ⇒
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Transient)))
+                    Some(Deploy(address, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
                     val storage = replicationConfig.getString("storage", "transaction-log") match {
@@ -298,7 +252,7 @@ class Deployer(val app: AkkaApplication) extends ActorDeployer {
                           ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                           unknown + "]")
                     }
-                    Some(Deploy(address, recipe, router, nrOfInstances, failureDetector, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
+                    Some(Deploy(address, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
                 }
             }
         }
