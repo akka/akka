@@ -84,7 +84,6 @@ public class UntypedCoordinatedIncrementTest {
             Future future = counter.ask("GetCount", askTimeout);
             assertEquals(0, ((Integer)future.get()).intValue());
         }
-        application.eventStream().publish(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {
