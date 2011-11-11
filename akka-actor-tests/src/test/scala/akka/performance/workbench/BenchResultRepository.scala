@@ -11,10 +11,7 @@ import java.io.ObjectOutputStream
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import scala.collection.mutable.{ Map ⇒ MutableMap }
-
-import akka.event.EventHandler
 
 trait BenchResultRepository {
   def add(stats: Stats)
@@ -24,6 +21,8 @@ trait BenchResultRepository {
   def get(name: String, load: Int): Option[Stats]
 
   def getWithHistorical(name: String, load: Int): Seq[Stats]
+
+  def isBaseline(stats: Stats): Boolean
 
   def saveHtmlReport(content: String, name: String): Unit
 
@@ -62,13 +61,18 @@ class FileBenchResultRepository extends BenchResultRepository {
     get(name).find(_.load == load)
   }
 
+  def isBaseline(stats: Stats): Boolean = {
+    baselineStats.get(Key(stats.name, stats.load)) == Some(stats)
+  }
+
   def getWithHistorical(name: String, load: Int): Seq[Stats] = {
     val key = Key(name, load)
     val historical = historicalStats.getOrElse(key, IndexedSeq.empty)
     val baseline = baselineStats.get(key)
     val current = get(name, load)
 
-    (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    val limited = (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    limited.sortBy(_.timestamp)
   }
 
   private def loadFiles() {
@@ -105,10 +109,9 @@ class FileBenchResultRepository extends BenchResultRepository {
       out.writeObject(stats)
     } catch {
       case e: Exception ⇒
-        EventHandler.error(this, "Failed to save [%s] to [%s], due to [%s]".
-          format(stats, f.getAbsolutePath, e.getMessage))
-    }
-    finally {
+        val errMsg = "Failed to save [%s] to [%s], due to [%s]".format(stats, f.getAbsolutePath, e.getMessage)
+        throw new RuntimeException(errMsg)
+    } finally {
       if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
     }
   }
@@ -123,11 +126,8 @@ class FileBenchResultRepository extends BenchResultRepository {
           Some(stats)
         } catch {
           case e: Throwable ⇒
-            EventHandler.error(this, "Failed to load from [%s], due to [%s]".
-              format(f.getAbsolutePath, e.getMessage))
             None
-        }
-        finally {
+        } finally {
           if (in ne null) try { in.close() } catch { case ignore: Exception ⇒ }
         }
       }
@@ -148,10 +148,9 @@ class FileBenchResultRepository extends BenchResultRepository {
       writer.flush()
     } catch {
       case e: Exception ⇒
-        EventHandler.error(this, "Failed to save report to [%s], due to [%s]".
-          format(f.getAbsolutePath, e.getMessage))
-    }
-    finally {
+        val errMsg = "Failed to save report to [%s], due to [%s]".format(f.getAbsolutePath, e.getMessage)
+        throw new RuntimeException(errMsg)
+    } finally {
       if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
     }
   }
