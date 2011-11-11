@@ -181,12 +181,11 @@ object FSMTimingSpec {
     }
     when(TestCancelTimer) {
       case Ev(Tick) ⇒
-        tester ! Tick
         setTimer("hallo", Tock, 1 milli, false)
         TestKit.awaitCond(context.hasMessages, 1 second)
         cancelTimer("hallo")
         setTimer("hallo", Tock, 500 millis, false)
-        stay
+        stay replying Tick
       case Ev(Tock) ⇒
         tester ! Tock
         stay
