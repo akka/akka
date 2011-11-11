@@ -84,7 +84,7 @@ abstract class EventFilter(occurrences: Int) {
       val result = code
       if (!awaitDone(app.AkkaConfig.TestEventFilterLeeway))
         if (todo > 0)
-          throw new AssertionError("Timeout waiting for " + todo + " messages on " + this)
+          throw new AssertionError("Timeout (" + app.AkkaConfig.TestEventFilterLeeway + ") waiting for " + todo + " messages on " + this)
         else
           throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
       result

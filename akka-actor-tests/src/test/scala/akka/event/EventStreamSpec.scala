@@ -36,7 +36,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
   import MainBusSpec._
 
-  "A MainBus" must {
+  "An EventStream" must {
 
     "manage subscriptions" in {
       val bus = new EventStream(true)

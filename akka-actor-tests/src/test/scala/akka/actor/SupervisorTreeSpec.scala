@@ -18,7 +18,7 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 
     "be able to kill the middle actor and see itself and its child restarted" in {
-      filterException[ActorKilledException] {
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
         within(5 seconds) {
           val p = Props(new Actor {
             def receive = {

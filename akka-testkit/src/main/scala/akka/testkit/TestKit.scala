@@ -261,7 +261,7 @@ class TestKit(_app: ActorSystem) {
   def expectMsgPF[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
     val _max = if (max eq Duration.Undefined) remaining else max.dilated
     val o = receiveOne(_max)
-    assert(o ne null, "timeout (" + max + ") during expectMsg: " + hint)
+    assert(o ne null, "timeout (" + _max + ") during expectMsg: " + hint)
     assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
   }
@@ -280,7 +280,7 @@ class TestKit(_app: ActorSystem) {
     @tailrec
     def recv: Any = {
       val o = receiveOne(end - now)
-      assert(o ne null, "timeout (" + max + ") during fishForMessage, hint: " + hint)
+      assert(o ne null, "timeout (" + _max + ") during fishForMessage, hint: " + hint)
       assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
       if (f(o)) o else recv
     }

@@ -4,6 +4,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
 import akka.testkit.AkkaSpec
+import akka.testkit.EventFilter
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
@@ -115,7 +116,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
 
       collectCancellable(app.scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
       // appx 2 pings before crash
-      collectCancellable(app.scheduler.scheduleOnce(actor, Crash, 1000, TimeUnit.MILLISECONDS))
+      EventFilter[Exception]("CRASH", occurrences = 1) intercept {
+        collectCancellable(app.scheduler.scheduleOnce(actor, Crash, 1000, TimeUnit.MILLISECONDS))
+      }
 
       assert(restartLatch.tryAwait(2, TimeUnit.SECONDS))
       // should be enough time for the ping countdown to recover and reach 6 pings
