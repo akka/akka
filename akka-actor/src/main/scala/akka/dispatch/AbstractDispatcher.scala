@@ -222,7 +222,9 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
     if (mailBox.hasSystemMessages) {
       var message = mailBox.systemDrain()
       while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
         val next = message.next
+        message.next = null
         deadLetterMailbox.systemEnqueue(message)
         message = next
       }
