@@ -134,7 +134,7 @@ private[akka] class ActorCell(
     else childrenRefs.get(name)
   }
 
-  final def postMessageToMailbox(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
+  final def tell(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ app.deadLetters

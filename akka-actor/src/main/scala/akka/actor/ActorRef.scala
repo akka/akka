@@ -84,7 +84,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * actor.tell(message, context);
    * </pre>
    */
-  def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
+  def tell(msg: Any, sender: ActorRef): Unit
 
   /**
    * Akka Java API. <p/>
@@ -104,7 +104,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * <p/>
    * Works with '!' and '?'/'ask'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = postMessageToMailbox(message, context.sender)
+  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
   /**
    * Suspends the actor. It will not process messages while suspended.
@@ -239,7 +239,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
 
-  protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit = actorCell.postMessageToMailbox(message, sender)
+  def tell(msg: Any, sender: ActorRef): Unit = actorCell.tell(msg, sender)
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
 
@@ -272,16 +272,19 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit sender: ActorRef = null): Unit = postMessageToMailbox(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = null): Unit = ref.tell(message, sender)
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
    */
   def ?(message: Any)(implicit timeout: Timeout): Future[Any]
 
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
+   * implicit timeout
+   */
   def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
-
-  protected[akka] def postMessageToMailbox(message: Any, sender: ActorRef): Unit
 
   protected[akka] def restart(cause: Throwable): Unit
 }
@@ -327,7 +330,7 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
 
-  protected[akka] def postMessageToMailbox(msg: Any, sender: ActorRef): Unit = ()
+  def tell(msg: Any, sender: ActorRef): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
@@ -352,9 +355,9 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
   def isShutdown = false
 
-  protected[akka] def sendSystemMessage(message: SystemMessage) {}
+  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
 
-  protected[akka] def postMessageToMailbox(msg: Any, sender: ActorRef) {}
+  def tell(msg: Any, sender: ActorRef): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
@@ -383,8 +386,8 @@ class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit =
-    app.eventStream.publish(DeadLetter(message, sender))
+  override def tell(msg: Any, sender: ActorRef): Unit =
+    app.eventStream.publish(DeadLetter(msg, sender))
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
     app.eventStream.publish(DeadLetter(message, this))
@@ -411,7 +414,7 @@ abstract class AskActorRef(protected val app: ActorSystem)(timeout: Timeout = ap
 
   protected def whenDone(): Unit
 
-  protected[akka] override def postMessageToMailbox(message: Any, sender: ActorRef): Unit = message match {
+  override def tell(msg: Any, sender: ActorRef): Unit = msg match {
     case Status.Success(r) ⇒ result.completeWithResult(r)
     case Status.Failure(f) ⇒ result.completeWithException(f)
     case other             ⇒ result.completeWithResult(other)

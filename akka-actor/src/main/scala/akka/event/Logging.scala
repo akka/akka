@@ -341,7 +341,7 @@ object Logging {
     val path: ActorPath = null // pathless
     val address: String = name
     override val toString = "StandardOutLogger"
-    override def postMessageToMailbox(obj: Any, sender: ActorRef) { print(obj) }
+    override def tell(obj: Any, sender: ActorRef) { print(obj) }
   }
   val StandardOutLogger = new StandardOutLogger
   val StandardOutLoggerName = StandardOutLogger.getClass.getName

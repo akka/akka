@@ -267,7 +267,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
-  def postMessageToMailbox(message: Any, sender: ActorRef): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
+  def tell(message: Any, sender: ActorRef): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
 

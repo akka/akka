@@ -84,10 +84,8 @@ class BalancingDispatcher(
 
   protected[akka] override def unregister(actor: ActorCell) = {
     super.unregister(actor)
+    intoTheFray(except = actor)
     buddies.remove(actor)
-    val buddy = buddies.pollFirst()
-    if (buddy ne null)
-      registerForExecution(buddy.mailbox, false, false)
   }
 
   protected[akka] override def shutdown() {
@@ -109,18 +107,27 @@ class BalancingDispatcher(
 
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
     if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
-      if (mbox.isInstanceOf[SharingMailbox] && !mbox.isClosed) buddies.add(mbox.asInstanceOf[SharingMailbox].actor)
-      false
+      mbox match {
+        case share: SharingMailbox if !share.isClosed ⇒ buddies.add(share.actor); false
+        case _                                        ⇒ false
+      }
     } else true
+  }
+
+  def intoTheFray(except: ActorCell): Unit = {
+    var buddy = buddies.pollFirst()
+    while (buddy ne null) {
+      val mbox = buddy.mailbox
+      buddy = if ((buddy eq except) || (!registerForExecution(mbox, false, false) && mbox.isClosed)) buddies.pollFirst() else null
+    }
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue enqueue invocation
 
-    val buddy = buddies.pollFirst()
-    if ((buddy ne null) && (buddy ne receiver))
-      registerForExecution(buddy.mailbox, false, false)
+    intoTheFray(except = receiver)
 
-    registerForExecution(receiver.mailbox, false, false)
+    if (!registerForExecution(receiver.mailbox, false, false))
+      intoTheFray(except = receiver)
   }
 }

@@ -136,12 +136,10 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
     def isShutdown = stopped
 
-    protected[akka] override def postMessageToMailbox(msg: Any, sender: ActorRef) {
-      msg match {
-        case Failed(child, ex)      ⇒ child.stop()
-        case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
-        case _                      ⇒ log.error(this + " received unexpected message " + msg)
-      }
+    override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+      case Failed(child, ex)      ⇒ child.stop()
+      case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
+      case _                      ⇒ log.error(this + " received unexpected message " + msg)
     }
 
     protected[akka] override def sendSystemMessage(message: SystemMessage) {
