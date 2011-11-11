@@ -95,6 +95,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
       try java.lang.Double.parseDouble(System.getProperty("akka.test.timefactor")) catch {
         case _: Exception ⇒ getDouble("akka.test.timefactor", 1.0)
       }
+    val SingleExpectDefaultTimeout = Duration(getDouble("akka.test.single-expect-default", 1), DefaultTimeUnit)
     val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway", 0.5), DefaultTimeUnit)
 
     val LogLevel = getString("akka.loglevel", "INFO")

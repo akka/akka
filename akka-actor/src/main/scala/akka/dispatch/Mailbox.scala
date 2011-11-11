@@ -244,6 +244,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   @tailrec
   final def systemEnqueue(message: SystemMessage): Unit = {
+    assert(message.next eq null)
     if (Mailbox.debug) println(actor + " having enqueued " + message)
     val head = systemQueueGet
     /*
@@ -253,7 +254,10 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
      * Hence, SystemMessage.next does not need to be volatile.
      */
     message.next = head
-    if (!systemQueuePut(head, message)) systemEnqueue(message)
+    if (!systemQueuePut(head, message)) {
+      message.next = null
+      systemEnqueue(message)
+    }
   }
 
   @tailrec

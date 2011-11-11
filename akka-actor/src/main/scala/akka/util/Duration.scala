@@ -121,6 +121,20 @@ object Duration {
   }
 
   val Zero: Duration = new FiniteDuration(0, NANOSECONDS)
+  val Undefined: Duration = new Duration with Infinite {
+    override def toString = "Duration.Undefined"
+    override def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
+    override def +(other: Duration): Duration = throw new IllegalArgumentException("cannot add Undefined duration")
+    override def -(other: Duration): Duration = throw new IllegalArgumentException("cannot subtract Undefined duration")
+    override def *(factor: Double): Duration = throw new IllegalArgumentException("cannot multiply Undefined duration")
+    override def /(factor: Double): Duration = throw new IllegalArgumentException("cannot divide Undefined duration")
+    override def /(other: Duration): Double = throw new IllegalArgumentException("cannot divide Undefined duration")
+    def >(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def >=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def <(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def <=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def unary_- : Duration = throw new IllegalArgumentException("cannot negate Undefined duration")
+  }
 
   trait Infinite {
     this: Duration ⇒
