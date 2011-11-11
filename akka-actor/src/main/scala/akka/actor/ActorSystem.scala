@@ -127,18 +127,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
   }
 
-  object MistSettings {
-    val JettyServer = "jetty"
-    val TimeoutAttribute = "timeout"
-
-    val ConnectionClose = config.getBool("akka.http.connection-close", true)
-    val RootActorBuiltin = config.getBool("akka.http.root-actor-builtin", true)
-    val RootActorID = config.getString("akka.http.root-actor-id", "_httproot")
-    val DefaultTimeout = config.getLong("akka.http.timeout", 1000)
-    val ExpiredHeaderName = config.getString("akka.http.expired-header-name", "Async-Timeout")
-    val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
-  }
-
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
 
   import AkkaConfig._
