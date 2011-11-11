@@ -8,8 +8,7 @@ import akka.AkkaException
 import akka.actor._
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
-import akka.actor.ActorSystem
-import akka.util.ReflectiveAccess
+import akka.util.{ ReflectiveAccess, Duration }
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }

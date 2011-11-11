@@ -11,7 +11,7 @@ import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
 
 /**
- * This trait brings log level handling to the MainBus: it reads the log
+ * This trait brings log level handling to the EventStream: it reads the log
  * levels for the initial logging (StandardOutLogger) and the loggers&level
  * for after-init logging, possibly keeping the StandardOutLogger enabled if
  * it is part of the configured loggers. All configured loggers are treated as
