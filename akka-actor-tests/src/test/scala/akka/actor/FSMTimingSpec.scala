@@ -96,7 +96,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
 
     "receive and cancel a repeated timer" in {
       fsm ! TestRepeatedTimer
-      val seq = receiveWhile(1 second) {
+      val seq = receiveWhile(2 seconds) {
         case Tick ⇒ Tick
       }
       seq must have length 5
@@ -184,8 +184,9 @@ object FSMTimingSpec {
         setTimer("hallo", Tock, 1 milli, false)
         TestKit.awaitCond(context.hasMessages, 1 second)
         cancelTimer("hallo")
+        sender ! Tick
         setTimer("hallo", Tock, 500 millis, false)
-        stay replying Tick
+        stay
       case Ev(Tock) ⇒
         tester ! Tock
         stay
