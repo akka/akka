@@ -160,20 +160,21 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  _app: ActorSystem,
-  props: Props,
+  app: ActorSystem,
+  _props: Props,
   _supervisor: ActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  receiveTimeout: Option[Long] = None,
-  hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
+  _receiveTimeout: Option[Long] = None,
+  _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
   def name = path.name
 
-  def address: String = _app.address + path.toString
+  def address: String = app.address + path.toString
 
-  private[this] val actorCell = new ActorCell(_app, this, props, _supervisor, receiveTimeout, hotswap)
+  @volatile
+  private var actorCell = new ActorCell(app, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
 
   /**
