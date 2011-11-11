@@ -75,6 +75,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val zeromqModuleConfig      = ModuleConfiguration("org.zeromq", TypesafeRepo)
   lazy val twitterModuleConfig     = ModuleConfiguration("com.twitter", "util-core", TwitterRepo)
   lazy val mongoModuleConfig       = ModuleConfiguration("com.mongodb.casbah", ScalaToolsSnapshotRepo)
+ 
+  lazy val scalaLibrary            = ModuleConfiguration("org.scala-lang", ScalaToolsRelRepo)
 
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
