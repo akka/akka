@@ -247,10 +247,9 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   def /(actorName: String): ActorPath = guardian.path / actorName
 
   // TODO shutdown all that other stuff, whatever that may be
-  def stop(): Unit = {
+  def stop() {
     guardian.stop()
   }
 
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
-
 }

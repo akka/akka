@@ -5,8 +5,7 @@
 package akka.actor
 
 import akka.util.Duration
-import akka.routing.{ RouterType, FailureDetectorType }
-import akka.routing.FailureDetectorType._
+import akka.routing.RouterType
 import akka.remote.RemoteAddress
 
 object DeploymentConfig {

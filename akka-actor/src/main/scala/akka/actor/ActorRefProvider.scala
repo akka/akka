@@ -22,8 +22,6 @@ trait ActorRefProvider {
 
   def actorOf(props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(props, supervisor, name, false)
 
-  def actorOf(props: RoutedProps, supervisor: ActorRef, name: String): ActorRef
-
   def actorFor(path: Iterable[String]): Option[ActorRef]
 
   /**
@@ -86,10 +84,6 @@ trait ActorRefFactory {
   def actorOf(factory: ⇒ Actor): ActorRef = actorOf(Props(() ⇒ factory))
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
-
-  def actorOf(props: RoutedProps): ActorRef = actorOf(props, Props.randomName)
-
-  def actorOf(props: RoutedProps, name: String): ActorRef = provider.actorOf(props, guardian, name)
 
   def actorFor(path: String): Option[ActorRef] = actorFor(ActorPath.split(path))
 
