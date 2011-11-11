@@ -222,8 +222,9 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
     if (mailBox.hasSystemMessages) {
       var message = mailBox.systemDrain()
       while (message ne null) {
+        val next = message.next
         deadLetterMailbox.systemEnqueue(message)
-        message = message.next
+        message = next
       }
     }
 

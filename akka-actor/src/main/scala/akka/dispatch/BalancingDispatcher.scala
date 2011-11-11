@@ -37,18 +37,7 @@ class BalancingDispatcher(
   _timeoutMs: Long)
   extends Dispatcher(_app, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
-  private val buddies = new ConcurrentSkipListSet[ActorCell](
-    new Comparator[ActorCell] {
-      def compare(a: ActorCell, b: ActorCell): Int = {
-        /*
-         * make sure that there is no overflow or underflow in comparisons, so 
-         * that the ordering is actually consistent and you cannot have a 
-         * sequence which cyclically is monotone without end.
-         */
-        val diff = ((System.identityHashCode(a) & 0xffffffffL) - (System.identityHashCode(b) & 0xffffffffL))
-        if (diff > 0) 1 else if (diff < 0) -1 else 0
-      }
-    })
+  private val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
 
   protected val messageQueue: MessageQueue = mailboxType match {
     case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {

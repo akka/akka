@@ -4,6 +4,7 @@
 package akka.util
 
 import java.io.{ PrintWriter, StringWriter }
+import java.util.Comparator
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -11,6 +12,20 @@ import java.io.{ PrintWriter, StringWriter }
 object Helpers {
 
   implicit def null2Option[T](t: T): Option[T] = Option(t)
+
+  def compareIdentityHash(a: AnyRef, b: AnyRef): Int = {
+    /*
+     * make sure that there is no overflow or underflow in comparisons, so 
+     * that the ordering is actually consistent and you cannot have a 
+     * sequence which cyclically is monotone without end.
+     */
+    val diff = ((System.identityHashCode(a) & 0xffffffffL) - (System.identityHashCode(b) & 0xffffffffL))
+    if (diff > 0) 1 else if (diff < 0) -1 else 0
+  }
+
+  val IdentityHashComparator = new Comparator[AnyRef] {
+    def compare(a: AnyRef, b: AnyRef): Int = compareIdentityHash(a, b)
+  }
 
   def intToBytes(value: Int): Array[Byte] = {
     val bytes = new Array[Byte](4)
