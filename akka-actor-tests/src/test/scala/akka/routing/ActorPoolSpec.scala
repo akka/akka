@@ -25,6 +25,35 @@ object ActorPoolSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class TypedActorPoolSpec extends AkkaSpec {
+  import ActorPoolSpec._
+  "Actor Pool (2)" must {
+    "support typed actors" in {
+      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+        def lowerBound = 1
+        def upperBound = 5
+        def pressureThreshold = 1
+        def partialFill = true
+        def selectionCount = 1
+        def rampupRate = 0.1
+        def backoffRate = 0.50
+        def backoffThreshold = 0.50
+        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
+        def receive = _route
+      }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
+
+      val results = for (i ← 1 to 20) yield (i, pool.sq(i, 10))
+
+      for ((i, r) ← results) {
+        val value = r.get
+        value must equal(i * i)
+      }
+      app.typedActor.stop(pool)
+    }
+  }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPoolSpec extends AkkaSpec {
   import ActorPoolSpec._
 
@@ -326,29 +355,6 @@ class ActorPoolSpec extends AkkaSpec {
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
 
       pool.stop()
-    }
-
-    "support typed actors" in {
-      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-        def lowerBound = 1
-        def upperBound = 5
-        def pressureThreshold = 1
-        def partialFill = true
-        def selectionCount = 1
-        def rampupRate = 0.1
-        def backoffRate = 0.50
-        def backoffThreshold = 0.50
-        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
-        def receive = _route
-      }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
-
-      val results = for (i ← 1 to 20) yield (i, pool.sq(i, 10))
-
-      for ((i, r) ← results) {
-        val value = r.get
-        value must equal(i * i)
-      }
-      app.typedActor.stop(pool)
     }
 
     "provide default supervision of pooled actors" in {
