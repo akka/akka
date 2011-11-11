@@ -160,6 +160,28 @@ class RoutingSpec extends WordSpec with MustMatchers {
       for (a ← List(broadcast, a1, a2, a3)) a.stop()
     }
 
+    "broadcast with transformation" in {
+      val latch = new TestLatch(30)
+      val a, b, c = actorOf(new Actor {
+        def receive = {
+          case s: String if s.forall(_.isUpper) => latch.countDown
+        }
+      }).start()
+
+      val router = actorOf(new Actor with LoadBalancer {
+        override protected def transform(msg: Any): Any = msg match {
+          case s: String => s.toUpperCase
+          case x => x
+        }
+
+        val seq = CyclicIterator(List(a, b, c))
+      }).start
+
+      for(c <- "abcdefghij") router ! Routing.Broadcast(c.toString)
+
+      latch.await(5 seconds)
+    }
+
     "be defined at" in {
       import akka.actor.ActorRef
 

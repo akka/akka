@@ -112,8 +112,8 @@ class TypedActorSpec extends Spec with ShouldMatchers with BeforeAndAfterEach {
         gotStopped completeWithResult ref.isShutdown
       })
       result.get should equal(100)
-      ref.isShutdown should equal(true)
       gotStopped.get should equal(true)
+      ref.isShutdown should equal(true)
     }
   }
 

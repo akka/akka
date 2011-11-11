@@ -39,6 +39,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val ScalaToolsRelRepo      = MavenRepository("Scala Tools Releases Repo", "http://scala-tools.org/repo-releases")
     lazy val DatabinderRepo         = MavenRepository("Databinder Repo", "http://databinder.net/repo")
     lazy val ScalaToolsSnapshotRepo = MavenRepository("Scala-Tools Snapshot Repo", "http://scala-tools.org/repo-snapshots")
+    lazy val TypesafeRepo           = MavenRepository("Typesafe Repo", "http://repo.typesafe.com/typesafe/releases/")
+    lazy val TwitterRepo            = MavenRepository("Twitter Public Repo", "http://maven.twttr.com")
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -70,6 +72,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val beanstalkModuleConfig   = ModuleConfiguration("beanstalk", AkkaRepo)
   lazy val zkclientModuleConfig    = ModuleConfiguration("zkclient", AkkaRepo)
   lazy val zookeeperModuleConfig   = ModuleConfiguration("org.apache.hadoop.zookeeper", AkkaRepo)
+  lazy val zeromqModuleConfig      = ModuleConfiguration("org.zeromq", TypesafeRepo)
+  lazy val twitterModuleConfig     = ModuleConfiguration("com.twitter", "util-core", TwitterRepo)
+  lazy val mongoModuleConfig       = ModuleConfiguration("com.mongodb.casbah", ScalaToolsSnapshotRepo)
 
   lazy val localMavenRepo          = LocalMavenRepo // Second exception, also fast! ;-)
 
@@ -124,15 +129,19 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.4.1" % "compile" //New BSD
 
+    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.2" // ApacheV2
+
     lazy val sjson      = "net.debasishg" % "sjson_2.9.0" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.9.0" % "0.11" % "test" //ApacheV2
 
     lazy val slf4j   = "org.slf4j"      % "slf4j-api"       % SLF4J_VERSION
     lazy val logback = "ch.qos.logback" % "logback-classic" % "0.9.28" % "runtime"
 
-    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5" //New BSD
-    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"            //ApacheV2
-    lazy val mongoAsync       = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.7"      //ApacheV2
+    lazy val beanstalk        = "beanstalk"                   % "beanstalk_client"        % "1.4.5"     //New BSD
+    lazy val redis            = "net.debasishg"               % "redisclient_2.9.0"       % "2.3.1"     //ApacheV2
+    lazy val mongoAsync  /* "Hammersmith" */    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"    % "0.2.9-1"     //ApacheV2
+
+    lazy val twitterUtilCore  = "com.twitter"                 % "util-core"              % "1.12.2"      // ApacheV2
 
     // Test
 
@@ -159,6 +168,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   lazy val akka_remote      = project("akka-remote",      "akka-remote",      new AkkaRemoteProject(_),               akka_typed_actor)
   lazy val akka_durable_mailboxes = project("akka-durable-mailboxes", "akka-durable-mailboxes", new AkkaDurableMailboxesParentProject(_), akka_remote)
   lazy val akka_http        = project("akka-http",        "akka-http",        new AkkaHttpProject(_),                 akka_actor)
+  lazy val akka_zeromq      = project("akka-zeromq",      "akka-zeromq",      new AkkaZeroMQProject(_),               akka_actor, akka_testkit)
   lazy val akka_samples     = project("akka-samples",     "akka-samples",     new AkkaSamplesParentProject(_))
   lazy val akka_slf4j       = project("akka-slf4j",       "akka-slf4j",       new AkkaSlf4jProject(_),                akka_actor)
   lazy val akka_tutorials   = project("akka-tutorials",   "akka-tutorials",   new AkkaTutorialsParentProject(_),      akka_actor)
@@ -353,6 +363,16 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val scalatest = Dependencies.scalatest
   }
 
+  // -------------------------------------------------------------------------------------------------------------------                                       
+  // akka-zeromq subproject                                                                                                                                    
+  // -------------------------------------------------------------------------------------------------------------------                                       
+                                                                                                                                                               
+  class AkkaZeroMQProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val protobuf   = Dependencies.protobuf
+    val zeromq     = Dependencies.zeromq
+    val scalatest  = Dependencies.scalatest
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // The akka-durable-mailboxes sub-project
   // -------------------------------------------------------------------------------------------------------------------
@@ -366,6 +386,8 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
       project("akka-file-mailbox", "akka-file-mailbox", new AkkaFileMailboxProject(_), akka_mailboxes_common)
     lazy val akka_beanstalk_mailbox =
       project("akka-beanstalk-mailbox", "akka-beanstalk-mailbox", new AkkaBeanstalkMailboxProject(_), akka_mailboxes_common)
+    lazy val akka_mongo_mailbox =
+      project("akka-mongo-mailbox", "akka-mongo-mailbox", new AkkaMongoMailboxProject(_), akka_mailboxes_common)
 
     override def disableCrossPaths = true
 
@@ -387,6 +409,16 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     override def testOptions =
       super.testOptions ++ (if (!redisTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Redis"))) else Seq.empty)
+  }
+
+  class AkkaMongoMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info) {
+    val mongoAsync = Dependencies.mongoAsync
+    //val twitterUtilCore = Dependencies.twitterUtilCore
+
+    lazy val mongoTestsEnabled = systemOptional[Boolean]("mailbox.test.mongo", false)
+
+    override def testOptions =
+      super.testOptions ++ (if (!mongoTestsEnabled.value) Seq(TestFilter(test => !test.name.contains("Mongo"))) else Seq.empty)
   }
 
   class AkkaFileMailboxProject(info: ProjectInfo) extends AkkaDefaultProject(info)
@@ -521,28 +553,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // Default project
   // -------------------------------------------------------------------------------------------------------------------
 
-  //import com.github.olim7t.sbtscalariform._
-  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom /*with ScalariformPlugin*/ {
-
-    /*override def scalariformOptions = Seq(
-      //VerboseScalariform,
-      AlignParameters(true),
-      CompactStringConcatenation(false),
-      IndentPackageBlocks(true),
-      FormatXml(true),
-      PreserveSpaceBeforeArguments(false),
-      DoubleIndentClassDeclaration(false),
-      RewriteArrowSymbols(true),
-      AlignSingleLineCaseStatements(true),
-      SpaceBeforeColon(false),
-      PreserveDanglingCloseParenthesis(false),
-      IndentSpaces(2),
-      IndentLocalDefs(false)
-//      MaxArrowIndent(40),
-//      SpaceInsideBrackets(false),
-//      SpaceInsideParentheses(false),
-      //SpacesWithinPatternBinders(true)
-    )*/
+  class AkkaDefaultProject(info: ProjectInfo) extends DefaultProject(info) with McPom  {
 
     override def disableCrossPaths = true
 

@@ -35,13 +35,6 @@ object RemoteServerSettings {
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 2552)
   val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), TIME_UNIT)
-  val COMPRESSION_SCHEME = config.getString("akka.remote.compression-scheme", "")
-  val ZLIB_COMPRESSION_LEVEL = {
-    val level = config.getInt("akka.remote.zlib-compression-level", 6)
-    if (level < 1 && level > 9) throw new IllegalArgumentException(
-      "zlib compression level has to be within 1-9, with 1 being fastest and 9 being the most compressed")
-    level
-  }
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
 

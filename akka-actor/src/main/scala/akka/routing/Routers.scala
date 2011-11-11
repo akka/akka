@@ -18,8 +18,7 @@ trait Dispatcher { this: Actor ⇒
   protected def broadcast(message: Any) {}
 
   protected def dispatch: Receive = {
-    case Routing.Broadcast(message) ⇒
-      broadcast(message)
+    case Routing.Broadcast(message) ⇒ broadcast(transform(message))
     case a if routes.isDefinedAt(a) ⇒
       if (isSenderDefined) routes(a).forward(transform(a))(someSelf)
       else routes(a).!(transform(a))(None)
@@ -27,7 +26,7 @@ trait Dispatcher { this: Actor ⇒
 
   def receive = dispatch
 
-  private def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
+  protected def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
 }
 
 /**
@@ -40,17 +39,16 @@ abstract class UntypedDispatcher extends UntypedActor {
 
   protected def broadcast(message: Any) {}
 
-  private def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
+  protected def isSenderDefined = self.channel.isInstanceOf[ForwardableChannel]
 
   @throws(classOf[Exception])
-  def onReceive(msg: Any): Unit = {
-    if (msg.isInstanceOf[Routing.Broadcast]) broadcast(msg.asInstanceOf[Routing.Broadcast].message)
-    else {
+  def onReceive(msg: Any): Unit = msg match {
+    case Routing.Broadcast(message) ⇒ broadcast(transform(message))
+    case msg =>
       val r = route(msg)
       if (r eq null) throw new IllegalStateException("No route for " + msg + " defined!")
       if (isSenderDefined) r.forward(transform(msg))(someSelf)
       else r.!(transform(msg))(None)
-    }
   }
 }
 
@@ -61,11 +59,10 @@ abstract class UntypedDispatcher extends UntypedActor {
 trait LoadBalancer extends Dispatcher { self: Actor ⇒
   protected def seq: InfiniteIterator[ActorRef]
 
-  protected def routes = {
-    case x if seq.hasNext ⇒ seq.next
-  }
+  protected def routes = { case x if seq.hasNext ⇒ seq.next }
 
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+  override def broadcast(message: Any) =
+    seq.items.foreach( a => if (isSenderDefined) a.forward(message)(someSelf) else a.!(message)(None))
 
   override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }
@@ -77,11 +74,10 @@ trait LoadBalancer extends Dispatcher { self: Actor ⇒
 abstract class UntypedLoadBalancer extends UntypedDispatcher {
   protected def seq: InfiniteIterator[ActorRef]
 
-  protected def route(msg: Any) =
-    if (seq.hasNext) seq.next
-    else null
+  protected def route(msg: Any) = if (seq.hasNext) seq.next else null
 
-  override def broadcast(message: Any) = seq.items.foreach(_ ! message)
+  override def broadcast(message: Any) =
+    seq.items.foreach( a => if (isSenderDefined) a.forward(message)(someSelf) else a.!(message)(None))
 
   override def isDefinedAt(msg: Any) = seq.exists(_.isDefinedAt(msg))
 }

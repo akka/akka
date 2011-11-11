@@ -21,6 +21,7 @@ Scala API
    routing
    fsm
    http
+   zeromq 
    security
    testing
    tutorial-chat-server

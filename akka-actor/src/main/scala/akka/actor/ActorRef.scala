@@ -739,6 +739,7 @@ class LocalActorRef private[akka] (
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
         a.postStop
       } finally {
+        notifySupervisorWithMessage(Death(this, null))
         currentMessage = null
         setActorSelfFields(actorInstance.get, null)
       }
@@ -923,15 +924,26 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
     faultHandler match {
+      case AllForOneStrategy(trapExit, maxRetries, within) if reason == null => //Stopped
+        {
+          val i = _linkedActors.values.iterator
+          while (i.hasNext) {
+            i.next.stop()
+            i.remove
+          }
+        }
+        
       case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
         restartLinkedActors(reason, maxRetries, within)
+
+      case OneForOneStrategy(trapExit, maxRetries, within) if reason == null => //Stopped
+        _linkedActors.remove(dead.uuid)
 
       case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
-        else dead.stop()
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason)) else dead.stop()
     }
   }
 

@@ -761,58 +761,26 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test
-  def futureMustBeCancelable {
-    val f = Future(Thread.sleep(2000))
-    val f2 = f recover {
-      case _: FutureCanceledException => "canceled"
-    }
-    f.cancel()
-    intercept[FutureCanceledException] ( f.get )
-    assert(f2.get == "canceled")
-  }
+  def ticket1313DeadlockNestedAwait {
+    val simple = Future(()) map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
+    assert(simple.await.isCompleted)
 
-  def listOfFutures = for (x <- 1 to 5) yield Future(Thread.sleep(1000))
-  def isCanceled(f: Future[_]) = f.value match {
-    case Some(Left(_: FutureCanceledException)) => true
-    case _ => false
+    val l1, l2 = new StandardLatch
+    val complex = Future(()) map { _ ⇒
+      Future.blocking()
+      val nested = Future(())
+      nested foreach (_ ⇒ l1.open)
+      l1.await // make sure nested is completed
+      nested foreach (_ ⇒ l2.open)
+      l2.await
+    }
+    assert(complex.await.isCompleted)
   }
 
   @Test
-  def compositeFutureMustBeCancelable {
-    {
-      val lf = listOfFutures
-      val f = Future.sequence(lf)
-      f.cancel()
-      assert(lf forall isCanceled)
-      intercept[FutureCanceledException] ( f.get )
-    }
-    {
-      val lf = listOfFutures
-      val f = Futures.firstCompletedOf(lf)
-      f.cancel()
-      assert(lf forall isCanceled)
-      intercept[FutureCanceledException] ( f.get )
-    }
-    {
-      val lf = listOfFutures
-      val f = Futures.fold(0)(lf)((_,_) => 0)
-      f.cancel()
-      assert(lf forall isCanceled)
-      intercept[FutureCanceledException] ( f.get )
-    }
-    {
-      val lf = listOfFutures
-      val f = Futures.reduce(lf)((_,_) => 0)
-      f.cancel()
-      assert(lf forall isCanceled)
-      intercept[FutureCanceledException] ( f.get )
-    }
-    {
-      val lf = listOfFutures
-      val f = Futures.sequence(scala.collection.JavaConversions.asJavaIterable(lf))
-      f.cancel()
-      assert(lf forall isCanceled)
-      intercept[FutureCanceledException] ( f.get )
-    }
+  def ticket853AlreadyCompletedFutureMustHaveTimeout {
+    val f1 = new AlreadyCompletedFuture(Right(()))
+    val f2 = f1 map (_ => ())
+    assert(f2.get == ())
   }
 }

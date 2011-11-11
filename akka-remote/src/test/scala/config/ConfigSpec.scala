@@ -17,12 +17,11 @@ class ConfigSpec extends WordSpec with MustMatchers {
       import Config.config._
 
       getInt("akka.remote.client.message-frame-size") must equal(Some(1048576))
-      getInt("akka.remote.client.read-timeout") must equal(Some(10))
+      getInt("akka.remote.client.read-timeout") must equal(Some(120))
       getInt("akka.remote.client.reap-futures-delay") must equal(Some(5))
       getInt("akka.remote.client.reconnect-delay") must equal(Some(5))
       getInt("akka.remote.client.reconnection-time-window") must equal(Some(600))
 
-      getString("akka.remote.compression-scheme") must equal(Some(""))
       getString("akka.remote.secure-cookie") must equal(Some(""))
 
       getInt("akka.remote.server.backlog") must equal(Some(4096))
@@ -35,7 +34,6 @@ class ConfigSpec extends WordSpec with MustMatchers {
 
       getBool("akka.remote.ssl.debug") must equal(None)
       getBool("akka.remote.ssl.service") must equal(None)
-      getInt("akka.remote.zlib-compression-level") must equal(Some(6))
       getInt("akka.remote.server.execution-pool-size") must equal(Some(16))
       getInt("akka.remote.server.execution-pool-keepalive") must equal(Some(60))
       getInt("akka.remote.server.max-channel-memory-size") must equal(Some(0))

@@ -46,7 +46,6 @@ case object RedisDurableMailboxStorage extends DurableMailboxStorage("akka.actor
 case object MongoNaiveDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.MongoBasedNaiveMailbox")
 case object BeanstalkDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.BeanstalkBasedMailbox")
 case object FileDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.FileBasedMailbox")
-case object ZooKeeperDurableMailboxStorage extends DurableMailboxStorage("akka.actor.mailbox.ZooKeeperBasedMailbox")
 
 /**
  * The durable equivalent of Dispatcher
@@ -134,7 +133,7 @@ case class DurableThreadBasedDispatcher(
 
 /**
  * Configurator for the DurableDispatcher
- * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "zookeeper", "mongodb" and "file"
+ * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "mongodb" and "file"
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
@@ -154,7 +153,6 @@ class DurableDispatcherConfigurator extends MessageDispatcherConfigurator {
       case "redis"     ⇒ RedisDurableMailboxStorage
       case "mongodb"   ⇒ MongoNaiveDurableMailboxStorage
       case "beanstalk" ⇒ BeanstalkDurableMailboxStorage
-      case "zookeeper" ⇒ ZooKeeperDurableMailboxStorage
       case "file"      ⇒ FileDurableMailboxStorage
       case unknown     ⇒ throw new IllegalArgumentException("[%s] is not a valid storage, valid options are [redis, beanstalk, zookeeper, file]" format unknown)
     }
