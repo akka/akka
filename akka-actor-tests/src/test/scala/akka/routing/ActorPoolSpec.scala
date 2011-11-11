@@ -329,8 +329,6 @@ class ActorPoolSpec extends AkkaSpec {
     }
 
     "support typed actors" in {
-      import RoutingSpec._
-
       val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5
