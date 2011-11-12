@@ -52,10 +52,9 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case class Failed(@BeanProperty actor: ActorRef,
-                  @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case class ChildTerminated(@BeanProperty child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
+case object ChildTerminated extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
@@ -419,8 +418,8 @@ trait Actor {
       msg match {
         case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
         case RevertHotSwap             ⇒ unbecome()
-        case f: Failed                 ⇒ context.handleFailure(f)
-        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct.child)
+        case Failed(cause)             ⇒ context.handleFailure(sender, cause)
+        case ChildTerminated           ⇒ context.handleChildTerminated(sender)
         case Kill                      ⇒ throw new ActorKilledException("Kill")
         case PoisonPill                ⇒ self.stop()
       }

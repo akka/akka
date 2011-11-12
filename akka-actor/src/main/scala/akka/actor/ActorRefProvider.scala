@@ -132,9 +132,9 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
     def isShutdown = stopped
 
     override def tell(msg: Any, sender: ActorRef): Unit = msg match {
-      case Failed(child, ex)      ⇒ child.stop()
-      case ChildTerminated(child) ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
-      case _                      ⇒ log.error(this + " received unexpected message " + msg)
+      case Failed(ex)      ⇒ sender.stop()
+      case ChildTerminated ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
+      case _               ⇒ log.error(this + " received unexpected message " + msg)
     }
 
     protected[akka] override def sendSystemMessage(message: SystemMessage) {

@@ -39,7 +39,7 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def dispatcher: MessageDispatcher
 
-  def handleFailure(fail: Failed): Unit
+  def handleFailure(child: ActorRef, cause: Throwable): Unit
 
   def handleChildTerminated(child: ActorRef): Unit
 
@@ -134,7 +134,8 @@ private[akka] class ActorCell(
     else childrenRefs.get(name)
   }
 
-  final def tell(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
+  final def tell(message: Any, sender: ActorRef): Unit =
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) app.deadLetters else sender))
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ app.deadLetters
@@ -175,7 +176,7 @@ private[akka] class ActorCell(
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          parent ! Failed(self, ActorInitializationException(self, "exception during creation", e))
+          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
         }
     }
 
@@ -206,7 +207,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        parent ! Failed(self, ActorInitializationException(self, "exception during re-creation", e))
+        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
       }
     }
 
@@ -236,7 +237,7 @@ private[akka] class ActorCell(
         }
       } finally {
         try {
-          parent ! ChildTerminated(self)
+          parent.tell(ChildTerminated, self)
           app.deathWatch.publish(Terminated(self))
         } finally {
           currentMessage = null
@@ -302,11 +303,11 @@ private[akka] class ActorCell(
               if (e.isInstanceOf[InterruptedException]) {
                 val ex = ActorInterruptedException(e)
                 props.faultHandler.handleSupervisorFailing(self, children)
-                parent ! Failed(self, ex)
+                parent.tell(Failed(ex), self)
                 throw e //Re-throw InterruptedExceptions as expected
               } else {
                 props.faultHandler.handleSupervisorFailing(self, children)
-                parent ! Failed(self, e)
+                parent.tell(Failed(e), self)
               }
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
@@ -320,9 +321,9 @@ private[akka] class ActorCell(
     }
   }
 
-  final def handleFailure(fail: Failed): Unit = childrenStats.get(fail.actor) match {
-    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, childrenStats)) throw fail.cause
-    case None        ⇒ app.eventStream.publish(Warning(self, "dropping " + fail + " from unknown child"))
+  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenStats.get(child) match {
+    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenStats)) throw cause
+    case None        ⇒ app.eventStream.publish(Warning(self, "dropping Failed(" + cause + ") from unknown child"))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {

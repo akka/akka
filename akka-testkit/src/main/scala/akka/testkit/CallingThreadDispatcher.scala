@@ -208,7 +208,7 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
       }
       if (handle ne null) {
         try {
-          if (Mailbox.debug) println(mbox.actor + " processing message " + handle)
+          if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
           true
         } catch {

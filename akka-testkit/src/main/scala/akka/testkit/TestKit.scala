@@ -95,6 +95,8 @@ class TestKit(_app: ActorSystem) {
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
 
+  def lastSender = lastMessage.sender
+
   /**
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.

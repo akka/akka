@@ -105,7 +105,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
     val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
     val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
-    val DebugMainBus = getBool("akka.actor.debug.eventStream", false)
+    val DebugEventStream = getBool("akka.actor.debug.event-stream", false)
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
@@ -153,7 +153,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   })
 
   // this provides basic logging (to stdout) until .start() is called below
-  val eventStream = new EventStream(DebugMainBus)
+  val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(AkkaConfig)
   val log = new BusLogging(eventStream, this)
 

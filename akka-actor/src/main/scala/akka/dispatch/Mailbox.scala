@@ -173,7 +173,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
           do {
-            if (debug) println(actor + " processing message " + nextMessage)
+            if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
 
             processAllSystemMessages() //After we're done, process all system messages
@@ -197,7 +197,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
-        if (debug) println(actor + " processing system message " + nextMessage)
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs + "/" + actor.childrenStats)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
@@ -245,7 +245,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.next eq null)
-    if (Mailbox.debug) println(actor + " having enqueued " + message)
+    if (Mailbox.debug) println(actor.self + " having enqueued " + message)
     val head = systemQueueGet
     /*
      * this write is safely published by the compareAndSet contained within

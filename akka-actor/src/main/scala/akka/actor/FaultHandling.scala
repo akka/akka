@@ -118,7 +118,7 @@ abstract class FaultHandlingStrategy {
   /**
    * This method is called to act on the failure of a child: restart if the flag is true, stop otherwise.
    */
-  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit
 
   def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
@@ -133,13 +133,12 @@ abstract class FaultHandlingStrategy {
   /**
    * Returns whether it processed the failure or not
    */
-  def handleFailure(fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
-    val cause = fail.cause
+  def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
     val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
     action match {
-      case Resume   ⇒ fail.actor.resume(); true
-      case Restart  ⇒ processFailure(true, fail, stats, children); true
-      case Stop     ⇒ processFailure(false, fail, stats, children); true
+      case Resume   ⇒ child.resume(); true
+      case Restart  ⇒ processFailure(true, child, cause, stats, children); true
+      case Stop     ⇒ processFailure(false, child, cause, stats, children); true
       case Escalate ⇒ false
     }
   }
@@ -192,10 +191,10 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
     //TODO optimization to drop all children here already?
   }
 
-  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
     if (children.nonEmpty) {
       if (restart && children.forall(_._2.requestRestartPermission(retriesWindow)))
-        children.foreach(_._1.restart(fail.cause))
+        children.foreach(_._1.restart(cause))
       else
         children.foreach(_._1.stop())
     }
@@ -246,11 +245,11 @@ case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
 
   def handleChildTerminated(child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 
-  def processFailure(restart: Boolean, fail: Failed, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
     if (restart && stats.requestRestartPermission(retriesWindow))
-      fail.actor.restart(fail.cause)
+      child.restart(cause)
     else
-      fail.actor.stop() //TODO optimization to drop child here already?
+      child.stop() //TODO optimization to drop child here already?
   }
 }
 

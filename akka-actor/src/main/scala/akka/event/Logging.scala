@@ -124,7 +124,11 @@ trait LoggingBus extends ActorEventBus {
     for {
       logger ← loggers
       if logger != StandardOutLogger
-    } logger.stop()
+    } {
+      // this is very necessary, else you get infinite loop with DeadLetter
+      unsubscribe(logger)
+      logger.stop()
+    }
     publish(Info(this, "all default loggers stopped"))
   }
 

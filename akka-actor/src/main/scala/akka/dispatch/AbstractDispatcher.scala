@@ -196,8 +196,8 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
   protected[akka] def unregister(actor: ActorCell) {
     _actors.decrementAndGet()
     val mailBox = actor.mailbox
-    mailBox.becomeClosed()
-    actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
+    actor.mailbox = deadLetterMailbox
+    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up 
     cleanUpMailboxFor(actor, mailBox)
   }
 

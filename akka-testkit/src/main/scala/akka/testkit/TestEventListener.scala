@@ -449,7 +449,7 @@ class TestEventListener extends Logging.DefaultLogger {
     case Mute(filters)         ⇒ filters foreach addFilter
     case UnMute(filters)       ⇒ filters foreach removeFilter
     case event: LogEvent       ⇒ if (!filter(event)) print(event)
-    case DeadLetter(msg: SystemMessage, null, rcp) ⇒
+    case DeadLetter(msg: SystemMessage, _, rcp) ⇒
       val event = Warning(rcp, "received dead system message: " + msg)
       if (!filter(event)) print(event)
     case DeadLetter(msg, snd, rcp) ⇒
