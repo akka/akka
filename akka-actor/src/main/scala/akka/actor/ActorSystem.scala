@@ -9,7 +9,7 @@ import akka.event._
 import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import akka.dispatch.{ Dispatchers, Future }
+import akka.dispatch.{ Dispatchers, Future, Mailbox, Envelope, SystemMessage }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
@@ -210,6 +210,17 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
+  val deadLetterMailbox = new Mailbox(null) {
+    becomeClosed()
+    override def dispatcher = null //MessageDispatcher.this
+    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    override def dequeue() = null
+    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
+    override def systemDrain(): SystemMessage = null
+    override def hasMessages = false
+    override def hasSystemMessages = false
+    override def numberOfMessages = 0
+  }
 
   val deathWatch = provider.createDeathWatch()
 

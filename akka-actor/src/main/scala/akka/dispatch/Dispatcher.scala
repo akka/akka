@@ -78,13 +78,13 @@ class Dispatcher(
 
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     val mbox = receiver.mailbox
-    mbox enqueue invocation
+    mbox.enqueue(receiver.self, invocation)
     registerForExecution(mbox, true, false)
   }
 
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage) = {
     val mbox = receiver.mailbox
-    mbox systemEnqueue invocation
+    mbox.systemEnqueue(receiver.self, invocation)
     registerForExecution(mbox, false, true)
   }
 

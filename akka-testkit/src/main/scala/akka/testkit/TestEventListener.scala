@@ -3,13 +3,15 @@
  */
 package akka.testkit
 
+import scala.annotation.tailrec
 import scala.util.matching.Regex
 
-import akka.actor.Actor
-import akka.event.Logging._
+import akka.actor.{ DeadLetter, ActorSystem }
+import akka.dispatch.SystemMessage
+import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug }
 import akka.event.Logging
+import akka.testkit.TestEvent.{ UnMute, Mute }
 import akka.util.Duration
-import akka.actor.ActorSystem
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -443,10 +445,16 @@ class TestEventListener extends Logging.DefaultLogger {
   var filters: List[EventFilter] = Nil
 
   override def receive = {
-    case InitializeLogger(bus) ⇒ Seq(classOf[Mute], classOf[UnMute]) foreach (bus.subscribe(context.self, _))
+    case InitializeLogger(bus) ⇒ Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter]) foreach (bus.subscribe(context.self, _))
     case Mute(filters)         ⇒ filters foreach addFilter
     case UnMute(filters)       ⇒ filters foreach removeFilter
     case event: LogEvent       ⇒ if (!filter(event)) print(event)
+    case DeadLetter(msg: SystemMessage, null, rcp) ⇒
+      val event = Warning(rcp, "received dead system message: " + msg)
+      if (!filter(event)) print(event)
+    case DeadLetter(msg, snd, rcp) ⇒
+      val event = Warning(rcp, "received dead letter from " + snd + ": " + msg)
+      if (!filter(event)) print(event)
   }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })

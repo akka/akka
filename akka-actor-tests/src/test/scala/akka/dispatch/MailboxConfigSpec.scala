@@ -39,13 +39,13 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
       val exampleMessage = createMessageInvocation("test")
 
-      for (i ← 1 to config.capacity) q.enqueue(exampleMessage)
+      for (i ← 1 to config.capacity) q.enqueue(null, exampleMessage)
 
       q.numberOfMessages must be === config.capacity
       q.hasMessages must be === true
 
       intercept[MessageQueueAppendFailedException] {
-        q.enqueue(exampleMessage)
+        q.enqueue(null, exampleMessage)
       }
 
       q.dequeue must be === exampleMessage
@@ -103,7 +103,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
       val messages = Vector() ++ (for (i ← fromNum to toNum) yield createMessageInvocation(i))
-      for (i ← messages) q.enqueue(i)
+      for (i ← messages) q.enqueue(null, i)
       messages
     }
 

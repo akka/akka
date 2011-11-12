@@ -364,7 +364,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
-case class DeadLetter(message: Any, sender: ActorRef)
+case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
@@ -387,11 +387,13 @@ class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  override def tell(msg: Any, sender: ActorRef): Unit =
-    app.eventStream.publish(DeadLetter(msg, sender))
+  override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+    case d: DeadLetter ⇒ app.eventStream.publish(d)
+    case _             ⇒ app.eventStream.publish(DeadLetter(msg, sender, this))
+  }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.eventStream.publish(DeadLetter(message, this))
+    app.eventStream.publish(DeadLetter(message, app.provider.dummyAskSender, this))
     brokenPromise
   }
 

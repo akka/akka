@@ -49,6 +49,7 @@ trait ActorRefProvider {
 
   private[akka] def terminationFuture: Future[ActorSystem.ExitStatus]
 
+  private[akka] def dummyAskSender: ActorRef
 }
 
 /**
@@ -277,6 +278,8 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
         a.result
     }
   }
+
+  private[akka] val dummyAskSender = new DeadLetterActorRef(app)
 }
 
 class LocalDeathWatch extends DeathWatch with ActorClassification {

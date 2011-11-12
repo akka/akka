@@ -7,7 +7,7 @@ import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue }
 import akka.util._
 import java.util.Queue
-import akka.actor.{ ActorContext, ActorCell }
+import akka.actor.{ ActorContext, ActorCell, ActorRef }
 import java.util.concurrent._
 import atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import annotation.tailrec
@@ -217,7 +217,7 @@ trait MessageQueue {
   /*
    * These method need to be implemented in subclasses; they should not rely on the internal stuff above.
    */
-  def enqueue(handle: Envelope)
+  def enqueue(receiver: ActorRef, handle: Envelope)
 
   def dequeue(): Envelope
 
@@ -230,7 +230,7 @@ trait SystemMessageQueue {
   /**
    * Enqueue a new system message, e.g. by prepending atomically as new head of a single-linked list.
    */
-  def systemEnqueue(message: SystemMessage): Unit
+  def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit
 
   /**
    * Dequeue all messages from system queue and return them as single-linked list.
@@ -243,7 +243,7 @@ trait SystemMessageQueue {
 trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
   @tailrec
-  final def systemEnqueue(message: SystemMessage): Unit = {
+  final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.next eq null)
     if (Mailbox.debug) println(actor + " having enqueued " + message)
     val head = systemQueueGet
@@ -256,7 +256,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
     message.next = head
     if (!systemQueuePut(head, message)) {
       message.next = null
-      systemEnqueue(message)
+      systemEnqueue(receiver, message)
     }
   }
 
@@ -270,7 +270,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
 }
 
 trait UnboundedMessageQueueSemantics extends QueueBasedMessageQueue {
-  final def enqueue(handle: Envelope): Unit = queue add handle
+  final def enqueue(receiver: ActorRef, handle: Envelope): Unit = queue add handle
   final def dequeue(): Envelope = queue.poll()
 }
 
@@ -278,7 +278,7 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
   override def queue: BlockingQueue[Envelope]
 
-  final def enqueue(handle: Envelope) {
+  final def enqueue(receiver: ActorRef, handle: Envelope) {
     if (pushTimeOut.length > 0) {
       queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
         throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
