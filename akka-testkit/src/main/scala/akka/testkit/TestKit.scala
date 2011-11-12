@@ -15,7 +15,6 @@ import akka.actor.ActorSystem
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
 
-  case class SetTimeout(d: Duration)
   case class SetIgnore(i: Ignore)
 
   trait Message {
@@ -29,26 +28,17 @@ object TestActor {
   }
 }
 
-class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[Int, TestActor.Ignore] {
-  import FSM._
+class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   import TestActor._
 
-  startWith(0, None)
-  when(0, stateTimeout = 5 seconds) {
-    case Ev(SetTimeout(d)) ⇒
-      setStateTimeout(0, if (d.finite_?) d else None)
-      stay
-    case Ev(SetIgnore(ign)) ⇒ stay using ign
-    case Ev(StateTimeout) ⇒
-      stop
-    case Event(x: AnyRef, data) ⇒
-      val observe = data map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
-      if (observe)
-        queue.offerLast(RealMessage(x, sender))
+  var ignore: Ignore = None
 
-      stay
+  def receive = {
+    case SetIgnore(ign) ⇒ ignore = ign
+    case x: AnyRef ⇒
+      val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
+      if (observe) queue.offerLast(RealMessage(x, sender))
   }
-  initialize
 }
 
 /**
@@ -111,26 +101,6 @@ class TestKit(_app: ActorSystem) {
    * block end.
    */
   private var lastWasNoMsg = false
-
-  /**
-   * Stop test actor. Should be done at the end of the test unless relying on
-   * test actor timeout.
-   */
-  def stopTestActor() { testActor.stop() }
-
-  /**
-   * Set test actor timeout. By default, the test actor shuts itself down
-   * after 5 seconds of inactivity. Set this to Duration.Inf to disable this
-   * behavior, but make sure that someone will then call `stopTestActor`,
-   * unless you want to leak actors, e.g. wrap test in
-   *
-   * <pre>
-   *   try {
-   *     ...
-   *   } finally { stopTestActor }
-   * </pre>
-   */
-  def setTestActorTimeout(d: Duration) { testActor ! TestActor.SetTimeout(d) }
 
   /**
    * Ignore all messages in the test actor for which the given partial
