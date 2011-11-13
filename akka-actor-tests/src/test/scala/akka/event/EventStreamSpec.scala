@@ -17,7 +17,7 @@ object MainBusSpec {
     var dst: ActorRef = app.deadLetters
     def receive = {
       case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget])
-      case SetTarget(ref)                ⇒ dst = ref
+      case SetTarget(ref)                ⇒ dst = ref; dst ! "OK"
       case e: Logging.LogEvent           ⇒ dst ! e
     }
   }
@@ -55,8 +55,11 @@ class EventStreamSpec extends AkkaSpec(Configuration(
       val bus = new EventStream(false)
       bus.start(app)
       bus.startDefaultLoggers(app, app.AkkaConfig)
-      bus.publish(SetTarget(testActor))
-      within(1 second) {
+      awaitCond({
+        bus.publish(SetTarget(testActor))
+        receiveOne(0.5 seconds) == "OK"
+      }, 5 seconds)
+      within(2 seconds) {
         import Logging._
         verifyLevel(bus, InfoLevel)
         bus.logLevel = WarningLevel
