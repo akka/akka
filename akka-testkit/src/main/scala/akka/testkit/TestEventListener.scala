@@ -8,7 +8,7 @@ import scala.util.matching.Regex
 
 import akka.actor.{ DeadLetter, ActorSystem }
 import akka.dispatch.SystemMessage
-import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug }
+import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
 import akka.testkit.TestEvent.{ UnMute, Mute }
 import akka.util.Duration
@@ -445,10 +445,12 @@ class TestEventListener extends Logging.DefaultLogger {
   var filters: List[EventFilter] = Nil
 
   override def receive = {
-    case InitializeLogger(bus) ⇒ Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter]) foreach (bus.subscribe(context.self, _))
-    case Mute(filters)         ⇒ filters foreach addFilter
-    case UnMute(filters)       ⇒ filters foreach removeFilter
-    case event: LogEvent       ⇒ if (!filter(event)) print(event)
+    case InitializeLogger(bus) ⇒
+      Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter]) foreach (bus.subscribe(context.self, _))
+      sender ! LoggerInitialized
+    case Mute(filters)   ⇒ filters foreach addFilter
+    case UnMute(filters) ⇒ filters foreach removeFilter
+    case event: LogEvent ⇒ if (!filter(event)) print(event)
     case DeadLetter(msg: SystemMessage, _, rcp) ⇒
       val event = Warning(rcp, "received dead system message: " + msg)
       if (!filter(event)) print(event)

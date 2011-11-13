@@ -49,7 +49,7 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
       logger(instance).debug("[{}] [{}]",
         event.thread.getName, message.asInstanceOf[AnyRef])
 
-    case InitializeLogger(_) ⇒ log.info("Slf4jEventHandler started")
+    case InitializeLogger(_) ⇒ log.info("Slf4jEventHandler started"); sender ! LoggerInitialized
   }
 
   def logger(instance: AnyRef): SLFLogger = instance match {

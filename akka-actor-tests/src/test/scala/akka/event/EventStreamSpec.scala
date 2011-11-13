@@ -8,7 +8,7 @@ import akka.config.Configuration
 import akka.util.duration._
 import akka.actor.{ Actor, ActorRef }
 
-object MainBusSpec {
+object EventStreamSpec {
   case class M(i: Int)
 
   case class SetTarget(ref: ActorRef)
@@ -16,7 +16,7 @@ object MainBusSpec {
   class MyLog extends Actor {
     var dst: ActorRef = app.deadLetters
     def receive = {
-      case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget])
+      case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget]); sender ! Logging.LoggerInitialized
       case SetTarget(ref)                ⇒ dst = ref; dst ! "OK"
       case e: Logging.LogEvent           ⇒ dst ! e
     }
@@ -32,9 +32,9 @@ object MainBusSpec {
 class EventStreamSpec extends AkkaSpec(Configuration(
   "akka.stdout-loglevel" -> "WARNING",
   "akka.loglevel" -> "INFO",
-  "akka.event-handlers" -> Seq("akka.event.MainBusSpec$MyLog", Logging.StandardOutLoggerName))) {
+  "akka.event-handlers" -> Seq("akka.event.EventStreamSpec$MyLog", Logging.StandardOutLoggerName))) {
 
-  import MainBusSpec._
+  import EventStreamSpec._
 
   "An EventStream" must {
 
@@ -55,10 +55,8 @@ class EventStreamSpec extends AkkaSpec(Configuration(
       val bus = new EventStream(false)
       bus.start(app)
       bus.startDefaultLoggers(app, app.AkkaConfig)
-      awaitCond({
-        bus.publish(SetTarget(testActor))
-        receiveOne(0.5 seconds) == "OK"
-      }, 5 seconds)
+      bus.publish(SetTarget(testActor))
+      expectMsg("OK")
       within(2 seconds) {
         import Logging._
         verifyLevel(bus, InfoLevel)
