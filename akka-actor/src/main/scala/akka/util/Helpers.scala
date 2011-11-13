@@ -5,6 +5,7 @@ package akka.util
 
 import java.io.{ PrintWriter, StringWriter }
 import java.util.Comparator
+import scala.annotation.tailrec
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -38,6 +39,16 @@ object Helpers {
 
   def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
     (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
+  }
+
+  final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*?"
+
+  @tailrec
+  def base64(l: Long, sb: StringBuilder = new StringBuilder("$")): String = {
+    sb += base64chars.charAt(l.toInt & 63)
+    val next = l >>> 6
+    if (next == 0) sb.toString
+    else base64(next, sb)
   }
 
   def ignore[E: Manifest](body: ⇒ Unit) {

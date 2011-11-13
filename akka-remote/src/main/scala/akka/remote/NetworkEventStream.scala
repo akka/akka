@@ -65,7 +65,7 @@ class NetworkEventStream(val app: ActorSystem) {
   // FIXME: check that this supervision is correct
   private[akka] val sender = app.provider.actorOf(
     Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")),
-    app.guardian, Props.randomName, systemService = true)
+    app.systemGuardian, "network-event-sender", systemService = true)
 
   /**
    * Registers a network event stream listener (asyncronously).
