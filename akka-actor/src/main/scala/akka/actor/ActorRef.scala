@@ -173,6 +173,15 @@ class LocalActorRef private[akka] (
 
   def address: String = app.address + path.toString
 
+  /*
+   * actorCell.start() publishes actorCell & this to the dispatcher, which 
+   * means that messages may be processed theoretically before the constructor 
+   * ends. The JMM guarantees visibility for final fields only after the end
+   * of the constructor, so publish the actorCell safely by making it a
+   * @volatile var which is NOT TO BE WRITTEN TO. The alternative would be to
+   * move start() outside of the constructor, which would basically require
+   * us to use purely factory methods for creating LocalActorRefs.
+   */
   @volatile
   private var actorCell = new ActorCell(app, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
