@@ -34,7 +34,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .buildThreadPool
  * </pre>
  * <p/>
@@ -49,7 +48,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .buildThreadPool();
  * </pre>
  * <p/>
@@ -123,7 +121,13 @@ class Dispatcher(
           executorService.get() execute mbox
           true
         } catch {
-          case e: RejectedExecutionException ⇒ executorService.get() execute mbox; true //Retry once
+          case e: RejectedExecutionException ⇒
+            try {
+              executorService.get() execute mbox
+              true
+            } catch { //Retry once
+              case e: RejectedExecutionException ⇒ mbox.setAsIdle(); throw e
+            }
         }
       } else false
     } else false

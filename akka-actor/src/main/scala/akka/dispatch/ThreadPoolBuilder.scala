@@ -7,10 +7,10 @@ package akka.dispatch
 import java.util.Collection
 import java.util.concurrent._
 import atomic.{ AtomicLong, AtomicInteger }
-import ThreadPoolExecutor.CallerRunsPolicy
 import akka.util.Duration
 import akka.event.Logging.{ Warning, Error }
 import akka.actor.ActorSystem
+import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy }
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -21,7 +21,7 @@ object ThreadPoolConfig {
   val defaultCorePoolSize: Int = 16
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
-  def defaultFlowHandler: FlowHandler = flowHandler(new CallerRunsPolicy)
+  def defaultFlowHandler: FlowHandler = flowHandler(new AbortPolicy)
 
   def flowHandler(rejectionHandler: RejectedExecutionHandler): FlowHandler = Left(rejectionHandler)
   def flowHandler(bounds: Int): FlowHandler = Right(bounds)

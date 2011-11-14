@@ -22,7 +22,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .build
  * </pre>
  * <p/>
@@ -36,7 +35,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .build();
  * </pre>
  * <p/>
