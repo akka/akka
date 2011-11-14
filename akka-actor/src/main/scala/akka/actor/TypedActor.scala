@@ -334,9 +334,9 @@ class TypedActor(val app: ActorSystem) {
         try {
           if (m.isOneWay) m(me)
           else {
-            val s = sender
             try {
               if (m.returnsFuture_?) {
+                val s = sender
                 m(me).asInstanceOf[Future[Any]] onComplete {
                   _.value.get match {
                     case Left(f)  ⇒ s ! Status.Failure(f)
@@ -344,10 +344,10 @@ class TypedActor(val app: ActorSystem) {
                   }
                 }
               } else {
-                s ! m(me)
+                sender ! m(me)
               }
             } catch {
-              case e: Exception ⇒ s ! Status.Failure(e)
+              case e: Exception ⇒ sender ! Status.Failure(e)
             }
           }
         } finally {

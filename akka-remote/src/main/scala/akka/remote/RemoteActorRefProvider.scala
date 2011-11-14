@@ -271,9 +271,9 @@ private[akka] case class RemoteActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 
-  def tell(message: Any, sender: ActorRef): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = remote.app.provider.ask(message, this, timeout)
 
   def suspend(): Unit = ()
 

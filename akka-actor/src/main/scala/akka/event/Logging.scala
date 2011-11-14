@@ -369,7 +369,7 @@ object Logging {
     val path: ActorPath = null // pathless
     val address: String = name
     override val toString = "StandardOutLogger"
-    override def tell(obj: Any, sender: ActorRef) { print(obj) }
+    override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }
   val StandardOutLogger = new StandardOutLogger
   val StandardOutLoggerName = StandardOutLogger.getClass.getName

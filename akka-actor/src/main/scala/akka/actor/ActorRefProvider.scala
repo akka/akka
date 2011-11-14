@@ -149,10 +149,10 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
     def isShutdown = stopped
 
-    override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+    override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
       case Failed(ex)      ⇒ sender.stop()
       case ChildTerminated ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
-      case _               ⇒ log.error(this + " received unexpected message " + msg)
+      case _               ⇒ log.error(this + " received unexpected message " + message)
     }
 
     protected[akka] override def sendSystemMessage(message: SystemMessage) {
@@ -276,11 +276,12 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
-    import akka.dispatch.{ Future, Promise, DefaultPromise }
+    import akka.dispatch.DefaultPromise
     (if (within == null) app.AkkaConfig.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
+      case t if t.duration.length <= 0 ⇒
+        new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
       case t ⇒
-        val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this) }
+        val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this.path.toString) }
         assert(actors.putIfAbsent(a.path.toString, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
         a.result

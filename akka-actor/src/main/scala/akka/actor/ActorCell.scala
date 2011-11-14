@@ -193,7 +193,7 @@ private[akka] class ActorCell(
         try {
           failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
         } finally {
-          clearActorContext()
+          clearActorFields()
           currentMessage = null
           actor = null
         }
@@ -360,7 +360,7 @@ private[akka] class ActorCell(
         if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped"))
       } finally {
         currentMessage = null
-        clearActorContext()
+        clearActorFields()
       }
     }
   }
@@ -396,15 +396,17 @@ private[akka] class ActorCell(
     }
   }
 
-  final def clearActorContext(): Unit = setActorContext(null)
+  final def clearActorFields(): Unit = setActorFields(context = null, self = null)
 
-  final def setActorContext(newContext: ActorContext) {
+  final def setActorFields(context: ActorContext, self: ActorRef) {
     @tailrec
-    def lookupAndSetSelfFields(clazz: Class[_], actor: Actor, newContext: ActorContext): Boolean = {
+    def lookupAndSetField(clazz: Class[_], actor: Actor, name: String, value: Any): Boolean = {
       val success = try {
-        val contextField = clazz.getDeclaredField("context")
-        contextField.setAccessible(true)
-        contextField.set(actor, newContext)
+        val field = clazz.getDeclaredField(name)
+        val was = field.isAccessible
+        field.setAccessible(true)
+        field.set(actor, value)
+        field.setAccessible(was)
         true
       } catch {
         case e: NoSuchFieldException ⇒ false
@@ -413,13 +415,14 @@ private[akka] class ActorCell(
       if (success) true
       else {
         val parent = clazz.getSuperclass
-        if (parent eq null)
-          throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
-        lookupAndSetSelfFields(parent, actor, newContext)
+        if (parent eq null) throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        lookupAndSetField(parent, actor, name, value)
       }
     }
     val a = actor
-    if (a ne null)
-      lookupAndSetSelfFields(a.getClass, a, newContext)
+    if (a ne null) {
+      lookupAndSetField(a.getClass, a, "context", context)
+      lookupAndSetField(a.getClass, a, "self", self)
+    }
   }
 }

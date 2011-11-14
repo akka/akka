@@ -158,7 +158,7 @@ object Routing {
 abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val props: RoutedProps) extends UnsupportedActorRef {
   val router = props.routerFactory()
 
-  override def tell(message: Any, sender: ActorRef) = router.route(message)(sender)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = router.route(message)(sender)
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = router.route(message, timeout)
 }

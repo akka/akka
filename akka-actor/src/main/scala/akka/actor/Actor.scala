@@ -223,10 +223,10 @@ trait Actor {
           "\n\t\t'val actor = Actor.actorOf(new MyActor(..))'")
 
     if (contextStack.isEmpty) noContextError
-    val context = contextStack.head
-    if (context eq null) noContextError
+    val c = contextStack.head
+    if (c eq null) noContextError
     ActorCell.contextStack.set(contextStack.push(null))
-    context
+    c
   }
 
   implicit def app = context.app
@@ -253,22 +253,6 @@ trait Actor {
   def loggable(self: AnyRef)(r: Receive): Receive = if (app.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
-   * Some[ActorRef] representation of the 'self' ActorRef reference.
-   * <p/>
-   * Mainly for internal use, functions as the implicit sender references when invoking
-   * the 'forward' function.
-   */
-  def someSelf: Some[ActorRef with ScalaActorRef] = Some(context.self) //TODO FIXME we might not need this when we switch to sender-in-scope-always
-
-  /*
-   * Option[ActorRef] representation of the 'self' ActorRef reference.
-   * <p/>
-   * Mainly for internal use, functions as the implicit sender references when invoking
-   * one of the message send functions ('!' and '?').
-   */
-  def optionSelf: Option[ActorRef with ScalaActorRef] = someSelf //TODO FIXME we might not need this when we switch to sender-in-scope-always
-
-  /**
    * The 'self' field holds the ActorRef for this actor.
    * <p/>
    * Can be used to send messages to itself:
@@ -276,14 +260,14 @@ trait Actor {
    * self ! message
    * </pre>
    */
-  implicit def self = someSelf.get
+  implicit final val self = context.self
 
   /**
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
   @inline
-  final def sender: ActorRef = context.sender
+  final def sender: ActorRef = context.sender //MUST BE A VAL, TRUST ME
 
   /**
    * Gets the current receive timeout

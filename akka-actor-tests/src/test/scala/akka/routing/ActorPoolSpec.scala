@@ -42,12 +42,11 @@ class TypedActorPoolSpec extends AkkaSpec {
         def receive = _route
       }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
 
-      val results = for (i ← 1 to 20) yield (i, pool.sq(i, 10))
+      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 0))
 
-      for ((i, r) ← results) {
-        val value = r.get
-        value must equal(i * i)
-      }
+      for ((i, r) ← results)
+        r.get must equal(i * i)
+
       app.typedActor.stop(pool)
     }
   }

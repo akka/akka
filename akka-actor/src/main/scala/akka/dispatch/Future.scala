@@ -411,7 +411,7 @@ object Future {
               try {
                 next.apply()
               } catch {
-                case e ⇒ // TODO FIXME: Throwable or Exception, log or do what?
+                case e ⇒ e.printStackTrace() //TODO FIXME strategy for handling exceptions in callbacks
               }
             }
           } finally { _taskStack set None }

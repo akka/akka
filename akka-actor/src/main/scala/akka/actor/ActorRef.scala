@@ -73,7 +73,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * actor.tell(message);
    * </pre>
    */
-  def tell(msg: Any): Unit = this.!(msg)
+  final def tell(msg: Any): Unit = this.!(msg)(null: ActorRef)
 
   /**
    * Java API. <p/>
@@ -84,7 +84,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * actor.tell(message, context);
    * </pre>
    */
-  def tell(msg: Any, sender: ActorRef): Unit
+  final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
   /**
    * Akka Java API. <p/>
@@ -240,7 +240,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
 
-  def tell(msg: Any, sender: ActorRef): Unit = actorCell.tell(msg, sender)
+  def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
 
@@ -273,7 +273,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit sender: ActorRef = null): Unit = ref.tell(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = null): Unit
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
@@ -331,7 +331,7 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
 
-  def tell(msg: Any, sender: ActorRef): Unit = ()
+  def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
@@ -351,17 +351,17 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
   def suspend(): Unit = ()
   def resume(): Unit = ()
 
-  protected[akka] def restart(cause: Throwable): Unit = ()
   def stop(): Unit = ()
 
   def isShutdown = false
 
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
-
-  def tell(msg: Any, sender: ActorRef): Unit = ()
+  def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
+
+  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
+  protected[akka] def restart(cause: Throwable): Unit = ()
 }
 
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
@@ -387,9 +387,9 @@ class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ app.eventStream.publish(d)
-    case _             ⇒ app.eventStream.publish(DeadLetter(msg, sender, this))
+    case _             ⇒ app.eventStream.publish(DeadLetter(message, sender, this))
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
@@ -417,7 +417,7 @@ abstract class AskActorRef(protected val app: ActorSystem)(timeout: Timeout = ap
 
   protected def whenDone(): Unit
 
-  override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case Status.Success(r) ⇒ result.completeWithResult(r)
     case Status.Failure(f) ⇒ result.completeWithException(f)
     case other             ⇒ result.completeWithResult(other)
