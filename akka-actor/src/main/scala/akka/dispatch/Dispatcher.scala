@@ -98,14 +98,15 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(this, actor)
+  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(actor)
 
   protected[akka] def start {}
 
   protected[akka] def shutdown {
     val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
-    if (old ne null)
-      old.shutdownNow()
+    if (old ne null) {
+      old.shutdown()
+    }
   }
 
   /**

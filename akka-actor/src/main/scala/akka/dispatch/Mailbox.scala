@@ -4,12 +4,10 @@
 package akka.dispatch
 
 import akka.AkkaException
-import java.util.{ Comparator, PriorityQueue }
+import java.util.{ Comparator, PriorityQueue, Queue }
 import akka.util._
-import java.util.Queue
-import akka.actor.{ ActorContext, ActorCell, ActorRef }
+import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
-import atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import annotation.tailrec
 import akka.event.Logging.Error
 
@@ -31,7 +29,7 @@ object Mailbox {
   final val Scheduled = 4
 
   // mailbox debugging helper using println (see below)
-  // TODO take this out before release
+  // FIXME TODO take this out before release
   final val debug = false
 }
 
@@ -175,7 +173,6 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           do {
             if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
-
             processAllSystemMessages() //After we're done, process all system messages
 
             nextMessage = if (isActive) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
@@ -210,7 +207,8 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     }
   }
 
-  def dispatcher: MessageDispatcher
+  @inline
+  final def dispatcher: MessageDispatcher = actor.dispatcher
 }
 
 trait MessageQueue {
@@ -299,17 +297,16 @@ trait QueueBasedMessageQueue extends MessageQueue {
  * Mailbox configuration.
  */
 trait MailboxType {
-  def create(dispatcher: MessageDispatcher, receiver: ActorCell): Mailbox
+  def create(receiver: ActorCell): Mailbox
 }
 
 /**
  * It's a case class for Java (new UnboundedMailbox)
  */
 case class UnboundedMailbox() extends MailboxType {
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
-      final val dispatcher = _dispatcher
     }
 }
 
@@ -318,19 +315,17 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new LinkedBlockingQueue[Envelope](capacity)
       final val pushTimeOut = BoundedMailbox.this.pushTimeOut
-      final val dispatcher = _dispatcher
     }
 }
 
 case class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new PriorityBlockingQueue[Envelope](11, cmp)
-      final val dispatcher = _dispatcher
     }
 }
 
@@ -339,11 +334,10 @@ case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final va
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
       final val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut
-      final val dispatcher = _dispatcher
     }
 }
 

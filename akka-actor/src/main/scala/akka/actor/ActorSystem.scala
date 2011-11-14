@@ -212,7 +212,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   val deadLetters = new DeadLetterActorRef(this)
   val deadLetterMailbox = new Mailbox(null) {
     becomeClosed()
-    override def dispatcher = null //MessageDispatcher.this
     override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
     override def dequeue() = null
     override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
