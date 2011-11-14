@@ -28,7 +28,7 @@ class ConfigSpec extends AkkaSpec(ActorSystem("ConfigSpec", Configuration.fromFi
       getInt("akka.actor.default-dispatcher.task-queue-size") must equal(Some(-1))
       getString("akka.actor.default-dispatcher.task-queue-type") must equal(Some("linked"))
       getBool("akka.actor.default-dispatcher.allow-core-timeout") must equal(Some(true))
-      getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("caller-runs"))
+      getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("abort"))
       getInt("akka.actor.default-dispatcher.mailbox-capacity") must equal(Some(-1))
       getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time") must equal(Some(10))
       getLong("akka.actor.dispatcher-shutdown-timeout") must equal(Some(1))
