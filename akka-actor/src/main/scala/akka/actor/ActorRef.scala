@@ -12,6 +12,7 @@ import akka.serialization.Serialization
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
 import java.util.concurrent.TimeUnit
+import akka.event.EventStream
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -384,25 +385,22 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
-  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(app.dispatcher)
+class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath, val dispatcher: MessageDispatcher) extends MinimalActorRef {
+  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
 
   override val name: String = "dead-letter"
 
-  // FIXME (actor path): put this under the sys guardian supervisor
-  val path: ActorPath = app.root / "sys" / name
-
-  def address: String = app.address + path.toString
+  def address: String = path.toString
 
   override def isShutdown(): Boolean = true
 
   override def tell(msg: Any, sender: ActorRef): Unit = msg match {
-    case d: DeadLetter ⇒ app.eventStream.publish(d)
-    case _             ⇒ app.eventStream.publish(DeadLetter(msg, sender, this))
+    case d: DeadLetter ⇒ eventStream.publish(d)
+    case _             ⇒ eventStream.publish(DeadLetter(msg, sender, this))
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.eventStream.publish(DeadLetter(message, app.provider.dummyAskSender, this))
+    eventStream.publish(DeadLetter(message, this, this))
     brokenPromise
   }
 

@@ -6,14 +6,17 @@ package akka.actor
 import akka.config._
 import akka.actor._
 import akka.event._
+import akka.dispatch._
 import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import akka.dispatch.{ Dispatchers, Future, Mailbox, Envelope, SystemMessage }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
+import org.jboss.netty.akka.util.HashedWheelTimer
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 object ActorSystem {
 
@@ -162,10 +165,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  def scheduler = provider.scheduler
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val reflective = new ReflectiveAccess(this)
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
 
   /**
    * The root actor path for this application.
@@ -173,60 +173,29 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   val root: ActorPath = new RootActorPath(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val provider: ActorRefProvider = reflective.createProvider
+  val provider: ActorRefProvider = {
+    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+    val params: Array[Class[_]] = Array(classOf[ActorSystem], classOf[ActorPath], classOf[EventStream], classOf[MessageDispatcher], classOf[Scheduler])
+    val args: Array[AnyRef] = Array(this, root, eventStream, dispatcher, scheduler)
+
+    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, params, args) match {
+      case Left(e)  ⇒ throw e
+      case Right(p) ⇒ p
+    }
+  }
 
   def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+  def guardian: ActorRef = provider.guardian
+  def systemGuardian: ActorRef = provider.systemGuardian
+  def deathWatch: DeathWatch = provider.deathWatch
+  def deadLetters: ActorRef = provider.deadLetters
+  def deadLetterMailbox: Mailbox = provider.deadLetterMailbox
 
-  private class Guardian extends Actor {
-    def receive = {
-      case Terminated(_) ⇒ context.self.stop()
-    }
-  }
-  private class SystemGuardian extends Actor {
-    def receive = {
-      case Terminated(_) ⇒
-        eventStream.stopDefaultLoggers()
-        context.self.stop()
-    }
-  }
-  private val guardianFaultHandlingStrategy = {
-    import akka.actor.FaultHandlingStrategy._
-    OneForOneStrategy {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
-
-  private val rootGuardian: ActorRef =
-    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, root, true)
-
-  protected[akka] val guardian: ActorRef =
-    provider.actorOf(guardianProps, rootGuardian, "app", true)
-
-  protected[akka] val systemGuardian: ActorRef =
-    provider.actorOf(guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val deadLetters = new DeadLetterActorRef(this)
-  val deadLetterMailbox = new Mailbox(null) {
-    becomeClosed()
-    override def dispatcher = null //MessageDispatcher.this
-    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
-    override def dequeue() = null
-    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
-  }
-
-  val deathWatch = provider.createDeathWatch()
-
-  // chain death watchers so that killing guardian stops the application
-  deathWatch.subscribe(systemGuardian, guardian)
-  deathWatch.subscribe(rootGuardian, systemGuardian)
+  terminationFuture.onComplete(_ ⇒ scheduler.stop())
+  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
 
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
   eventStream.start(this)
@@ -251,5 +220,4 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     guardian.stop()
   }
 
-  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
 }

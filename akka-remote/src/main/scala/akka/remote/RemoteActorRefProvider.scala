@@ -17,26 +17,36 @@ import akka.serialization.{ Serialization, Serializer, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
-
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
-
 import com.google.protobuf.ByteString
 import java.util.concurrent.atomic.AtomicBoolean
+import akka.event.EventStream
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
+class RemoteActorRefProvider(
+  val app: ActorSystem,
+  val root: ActorPath,
+  val eventStream: EventStream,
+  val dispatcher: MessageDispatcher,
+  val scheduler: Scheduler) extends ActorRefProvider {
 
   val log = Logging(app, this)
 
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  val local = new LocalActorRefProvider(app)
+  val local = new LocalActorRefProvider(app, root, eventStream, dispatcher, scheduler)
+  def deadLetterMailbox = local.deadLetterMailbox
+  def deadLetters = local.deadLetters
+  def deathWatch = local.deathWatch
+  def guardian = local.guardian
+  def systemGuardian = local.systemGuardian
+
   val remote = new Remote(app)
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
@@ -50,8 +60,6 @@ class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
   def defaultDispatcher = app.dispatcher
   def defaultTimeout = app.AkkaConfig.ActorTimeout
-
-  def scheduler: Scheduler = local.scheduler
 
   private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
     actorOf(props, supervisor, supervisor.path / name, systemService)
@@ -241,8 +249,6 @@ class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
   private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
-
-  private[akka] def dummyAskSender = local.dummyAskSender
 
   private[akka] def tempPath = local.tempPath
 }
