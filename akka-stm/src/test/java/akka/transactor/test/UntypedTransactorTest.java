@@ -96,7 +96,6 @@ public class UntypedTransactorTest {
                 }
             }
         }
-        application.eventStream().publish(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {

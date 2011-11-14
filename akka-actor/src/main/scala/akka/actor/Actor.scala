@@ -52,10 +52,9 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
 }
 
-case class Failed(@BeanProperty actor: ActorRef,
-                  @BeanProperty cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case class ChildTerminated(@BeanProperty child: ActorRef) extends AutoReceivedMessage with PossiblyHarmful
+case object ChildTerminated extends AutoReceivedMessage with PossiblyHarmful
 
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
@@ -382,18 +381,12 @@ trait Actor {
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive, discardOld: Boolean = true) {
-    if (discardOld) unbecome()
-    context.hotswap = context.hotswap.push(behavior)
-  }
+  def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome() {
-    val h = context.hotswap
-    if (h.nonEmpty) context.hotswap = h.pop
-  }
+  def unbecome() { context.unbecome() }
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef
@@ -412,29 +405,11 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-
-    def autoReceiveMessage(msg: AutoReceivedMessage) {
-      if (app.AkkaConfig.DebugAutoReceive) app.eventStream.publish(Debug(this, "received AutoReceiveMessage " + msg))
-
-      msg match {
-        case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
-        case RevertHotSwap             ⇒ unbecome()
-        case f: Failed                 ⇒ context.handleFailure(f)
-        case ct: ChildTerminated       ⇒ context.handleChildTerminated(ct.child)
-        case Kill                      ⇒ throw new ActorKilledException("Kill")
-        case PoisonPill                ⇒ self.stop()
-      }
-    }
-
-    if (msg.isInstanceOf[AutoReceivedMessage])
-      autoReceiveMessage(msg.asInstanceOf[AutoReceivedMessage])
-    else {
-      val behaviorStack = context.hotswap
-      msg match {
-        case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-        case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-        case unknown ⇒ unhandled(unknown)
-      }
+    val behaviorStack = context.hotswap
+    msg match {
+      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
+      case unknown ⇒ unhandled(unknown)
     }
   }
 

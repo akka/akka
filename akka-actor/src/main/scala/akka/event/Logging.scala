@@ -3,15 +3,19 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem }
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, simpleName }
 import akka.AkkaException
 import akka.actor.ActorSystem.AkkaConfig
 import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
+import akka.util.duration._
+import akka.actor.Timeout
+import akka.dispatch.FutureTimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * This trait brings log level handling to the MainBus: it reads the log
+ * This trait brings log level handling to the EventStream: it reads the log
  * levels for the initial logging (StandardOutLogger) and the loggers&level
  * for after-init logging, possibly keeping the StandardOutLogger enabled if
  * it is part of the configured loggers. All configured loggers are treated as
@@ -28,6 +32,7 @@ trait LoggingBus extends ActorEventBus {
   private val guard = new ReentrantGuard
   private var loggers = Seq.empty[ActorRef]
   private var _logLevel: LogLevel = _
+  private val loggerId = new AtomicInteger
 
   /**
    * Query currently set log level. See object Logging for more information.
@@ -124,15 +129,26 @@ trait LoggingBus extends ActorEventBus {
     for {
       logger ← loggers
       if logger != StandardOutLogger
-    } logger.stop()
+    } {
+      // this is very necessary, else you get infinite loop with DeadLetter
+      unsubscribe(logger)
+      logger.stop()
+    }
     publish(Info(this, "all default loggers stopped"))
   }
 
   private def addLogger(app: ActorSystem, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
-    val actor = app.systemActorOf(Props(clazz), Props.randomName)
-    actor ! InitializeLogger(this)
+    val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
+    val actor = app.systemActorOf(Props(clazz), name)
+    implicit val timeout = Timeout(3 seconds)
+    val response = try actor ? InitializeLogger(this) get catch {
+      case _: FutureTimeoutException ⇒
+        publish(Warning(this, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
+    }
+    if (response != LoggerInitialized)
+      throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
-    publish(Info(this, "logger " + clazz.getName + " started"))
+    publish(Info(this, "logger " + name + " started"))
     actor
   }
 
@@ -271,9 +287,21 @@ object Logging {
   /**
    * Message which is sent to each default logger (i.e. from configuration file)
    * after its creation but before attaching it to the logging bus. The logger
-   * actor should handle this message, e.g. to register for more channels.
+   * actor must handle this message, it can be used e.g. to register for more
+   * channels. When done, the logger must respond with a LoggerInitialized
+   * message. This is necessary to ensure that additional subscriptions are in
+   * effect when the logging system finished starting.
    */
   case class InitializeLogger(bus: LoggingBus)
+
+  /**
+   * Response message each logger must send within 1 second after receiving the
+   * InitializeLogger request. If initialization takes longer, send the reply
+   * as soon as subscriptions are set-up.
+   */
+  case object LoggerInitialized
+
+  class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
   trait StdOutLogger {
     import java.text.SimpleDateFormat
@@ -325,7 +353,7 @@ object Logging {
     def instanceName(instance: AnyRef): String = instance match {
       case null        ⇒ "NULL"
       case a: ActorRef ⇒ a.address
-      case _           ⇒ instance.getClass.getSimpleName
+      case _           ⇒ simpleName(instance)
     }
   }
 
@@ -353,7 +381,7 @@ object Logging {
    */
   class DefaultLogger extends Actor with StdOutLogger {
     def receive = {
-      case InitializeLogger(_) ⇒
+      case InitializeLogger(_) ⇒ sender ! LoggerInitialized
       case event: LogEvent     ⇒ print(event)
     }
   }

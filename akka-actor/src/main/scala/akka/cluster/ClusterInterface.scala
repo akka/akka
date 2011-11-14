@@ -414,7 +414,7 @@ trait ClusterNode {
   /**
    * Creates an ActorRef with a Router to a set of clustered actors.
    */
-  def ref(actorAddress: String, router: RouterType, failureDetector: FailureDetectorType): ActorRef
+  def ref(actorAddress: String, router: RouterType): ActorRef
 
   /**
    * Returns the addresses of all actors checked out on this node.

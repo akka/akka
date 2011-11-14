@@ -81,7 +81,7 @@ class TestFSMRef[S, D, T <: Actor](app: ActorSystem, props: Props, supervisor: A
 object TestFSMRef {
 
   def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, Props(creator = () ⇒ factory), app.guardian, Props.randomName)
+    new TestFSMRef(app, Props(creator = () ⇒ factory), app.guardian, TestActorRef.randomName)
 
   def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
     new TestFSMRef(app, Props(creator = () ⇒ factory), app.guardian, name)

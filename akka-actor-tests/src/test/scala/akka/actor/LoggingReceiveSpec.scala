@@ -122,7 +122,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           }
         })
         actor ! PoisonPill
-        expectMsg(300 millis, Logging.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
+        expectMsgPF() {
+          case Logging.Debug(`actor`, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" ⇒ true
+        }
         awaitCond(actor.isShutdown, 100 millis)
       }
     }
@@ -180,9 +182,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
             assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")
           }
 
-          actor.stop()
-          expectMsg(Logging.Debug(actor, "stopping"))
           supervisor.stop()
+          expectMsg(Logging.Debug(supervisor, "stopping"))
+          expectMsg(Logging.Debug(actor, "stopped"))
+          expectMsg(Logging.Debug(supervisor, "stopped"))
         }
       }
     }

@@ -30,7 +30,6 @@ object Props {
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
 
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
-  final val randomName: String = ""
 
   /**
    * The default Props instance, uses the settings from the Props object starting with default*

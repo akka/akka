@@ -23,7 +23,13 @@ package object actor {
   def simpleName(obj: AnyRef): String = {
     val n = obj.getClass.getName
     val i = n.lastIndexOf('.')
-    n.substring(i + 1).replaceAll("\\$+", ".")
+    n.substring(i + 1)
+  }
+
+  def simpleName(clazz: Class[_]): String = {
+    val n = clazz.getName
+    val i = n.lastIndexOf('.')
+    n.substring(i + 1)
   }
 
   implicit def future2actor[T](f: akka.dispatch.Future[T]) = new {

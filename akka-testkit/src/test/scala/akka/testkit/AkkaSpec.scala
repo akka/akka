@@ -55,7 +55,8 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
     "terminate all actors" in {
       import ActorSystem.defaultConfig
       val app = ActorSystem("test", defaultConfig ++ Configuration(
-        "akka.actor.debug.lifecycle" -> true, "akka.loglevel" -> "DEBUG"))
+        "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
+        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG"))
       val spec = new AkkaSpec(app) {
         val ref = Seq(testActor, app.actorOf(Props.empty, "name"))
       }

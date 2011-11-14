@@ -100,21 +100,9 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
 
   /**
-   * Create a blackhole mailbox for the purpose of replacing the real one upon actor termination
+   * a blackhole mailbox for the purpose of replacing the real one upon actor termination
    */
-  protected[akka] val deadLetterMailbox: Mailbox = DeadLetterMailbox
-
-  object DeadLetterMailbox extends Mailbox(null) {
-    becomeClosed()
-    override def dispatcher = null //MessageDispatcher.this
-    override def enqueue(envelope: Envelope) = ()
-    override def dequeue() = null
-    override def systemEnqueue(handle: SystemMessage): Unit = ()
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
-  }
+  import app.deadLetterMailbox
 
   /**
    * Name of this dispatcher.
@@ -208,8 +196,8 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
   protected[akka] def unregister(actor: ActorCell) {
     _actors.decrementAndGet()
     val mailBox = actor.mailbox
-    mailBox.becomeClosed()
-    actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
+    actor.mailbox = deadLetterMailbox
+    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up 
     cleanUpMailboxFor(actor, mailBox)
   }
 
@@ -222,15 +210,18 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
     if (mailBox.hasSystemMessages) {
       var message = mailBox.systemDrain()
       while (message ne null) {
-        deadLetterMailbox.systemEnqueue(message)
-        message = message.next
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        deadLetterMailbox.systemEnqueue(actor.self, message)
+        message = next
       }
     }
 
     if (mailBox.hasMessages) {
       var envelope = mailBox.dequeue
       while (envelope ne null) {
-        deadLetterMailbox.enqueue(envelope)
+        deadLetterMailbox.enqueue(actor.self, envelope)
         envelope = mailBox.dequeue
       }
     }

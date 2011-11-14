@@ -9,6 +9,7 @@ import akka.util.ReflectiveAccess
 import com.eaio.uuid.UUID
 import akka.actor.Props._
 import akka.actor.ActorSystem
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -41,23 +42,25 @@ class TestActorRef[T <: Actor](_app: ActorSystem, _props: Props, _supervisor: Ac
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), Props.randomName)
+  private val number = new AtomicLong
+  private[testkit] def randomName: String = {
+    val l = number.getAndIncrement()
+    "$" + akka.util.Helpers.base64(l)
+  }
+
+  def apply[T <: Actor](factory: ⇒ T)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
 
   def apply[T <: Actor](factory: ⇒ T, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
 
-  def apply[T <: Actor](props: Props)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, Props.randomName)
+  def apply[T <: Actor](props: Props)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
   def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, app.guardian, name)
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, givenName: String)(implicit app: ActorSystem): TestActorRef[T] = {
-    val name: String = givenName match {
-      case null | Props.randomName ⇒ newUuid.toString
-      case given                   ⇒ given
-    }
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit app: ActorSystem): TestActorRef[T] = {
     new TestActorRef(app, props, supervisor, name)
   }
 
-  def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](Props.randomName)
+  def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   def apply[T <: Actor](name: String)(implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }

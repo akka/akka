@@ -3,13 +3,14 @@
  */
 package akka.testkit
 
+import scala.annotation.tailrec
 import scala.util.matching.Regex
-
-import akka.actor.Actor
-import akka.event.Logging._
+import akka.actor.{ DeadLetter, ActorSystem, Terminated }
+import akka.dispatch.{ SystemMessage, Terminate }
+import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
+import akka.testkit.TestEvent.{ UnMute, Mute }
 import akka.util.Duration
-import akka.actor.ActorSystem
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -84,7 +85,7 @@ abstract class EventFilter(occurrences: Int) {
       val result = code
       if (!awaitDone(app.AkkaConfig.TestEventFilterLeeway))
         if (todo > 0)
-          throw new AssertionError("Timeout waiting for " + todo + " messages on " + this)
+          throw new AssertionError("Timeout (" + app.AkkaConfig.TestEventFilterLeeway + ") waiting for " + todo + " messages on " + this)
         else
           throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
       result
@@ -443,10 +444,22 @@ class TestEventListener extends Logging.DefaultLogger {
   var filters: List[EventFilter] = Nil
 
   override def receive = {
-    case InitializeLogger(bus) ⇒ Seq(classOf[Mute], classOf[UnMute]) foreach (bus.subscribe(context.self, _))
-    case Mute(filters)         ⇒ filters foreach addFilter
-    case UnMute(filters)       ⇒ filters foreach removeFilter
-    case event: LogEvent       ⇒ if (!filter(event)) print(event)
+    case InitializeLogger(bus) ⇒
+      Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter]) foreach (bus.subscribe(context.self, _))
+      sender ! LoggerInitialized
+    case Mute(filters)   ⇒ filters foreach addFilter
+    case UnMute(filters) ⇒ filters foreach removeFilter
+    case event: LogEvent ⇒ if (!filter(event)) print(event)
+    case DeadLetter(msg: SystemMessage, _, rcp) ⇒
+      if (!msg.isInstanceOf[Terminate]) {
+        val event = Warning(rcp, "received dead system message: " + msg)
+        if (!filter(event)) print(event)
+      }
+    case DeadLetter(msg, snd, rcp) ⇒
+      if (!msg.isInstanceOf[Terminated]) {
+        val event = Warning(rcp, "received dead letter from " + snd + ": " + msg)
+        if (!filter(event)) print(event)
+      }
   }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })

@@ -160,20 +160,21 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  _app: ActorSystem,
-  props: Props,
+  app: ActorSystem,
+  _props: Props,
   _supervisor: ActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  receiveTimeout: Option[Long] = None,
-  hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
+  _receiveTimeout: Option[Long] = None,
+  _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
 
   def name = path.name
 
-  def address: String = _app.address + path.toString
+  def address: String = app.address + path.toString
 
-  private[this] val actorCell = new ActorCell(_app, this, props, _supervisor, receiveTimeout, hotswap)
+  @volatile
+  private var actorCell = new ActorCell(app, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
 
   /**
@@ -363,7 +364,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 }
 
-case class DeadLetter(message: Any, sender: ActorRef)
+case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
@@ -386,11 +387,13 @@ class DeadLetterActorRef(val app: ActorSystem) extends MinimalActorRef {
 
   override def isShutdown(): Boolean = true
 
-  override def tell(msg: Any, sender: ActorRef): Unit =
-    app.eventStream.publish(DeadLetter(msg, sender))
+  override def tell(msg: Any, sender: ActorRef): Unit = msg match {
+    case d: DeadLetter ⇒ app.eventStream.publish(d)
+    case _             ⇒ app.eventStream.publish(DeadLetter(msg, sender, this))
+  }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    app.eventStream.publish(DeadLetter(message, this))
+    app.eventStream.publish(DeadLetter(message, app.provider.dummyAskSender, this))
     brokenPromise
   }
 

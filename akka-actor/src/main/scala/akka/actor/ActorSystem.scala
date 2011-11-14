@@ -9,7 +9,7 @@ import akka.event._
 import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import akka.dispatch.{ Dispatchers, Future }
+import akka.dispatch.{ Dispatchers, Future, Mailbox, Envelope, SystemMessage }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
@@ -95,6 +95,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
       try java.lang.Double.parseDouble(System.getProperty("akka.test.timefactor")) catch {
         case _: Exception ⇒ getDouble("akka.test.timefactor", 1.0)
       }
+    val SingleExpectDefaultTimeout = Duration(getDouble("akka.test.single-expect-default", 1), DefaultTimeUnit)
     val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway", 0.5), DefaultTimeUnit)
 
     val LogLevel = getString("akka.loglevel", "INFO")
@@ -104,7 +105,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
     val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
     val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
-    val DebugMainBus = getBool("akka.actor.debug.eventStream", false)
+    val DebugEventStream = getBool("akka.actor.debug.event-stream", false)
 
     val DispatcherThroughput = getInt("akka.actor.throughput", 5)
     val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
@@ -125,18 +126,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
     val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
     val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
-  }
-
-  object MistSettings {
-    val JettyServer = "jetty"
-    val TimeoutAttribute = "timeout"
-
-    val ConnectionClose = config.getBool("akka.http.connection-close", true)
-    val RootActorBuiltin = config.getBool("akka.http.root-actor-builtin", true)
-    val RootActorID = config.getString("akka.http.root-actor-id", "_httproot")
-    val DefaultTimeout = config.getLong("akka.http.timeout", 1000)
-    val ExpiredHeaderName = config.getString("akka.http.expired-header-name", "Async-Timeout")
-    val ExpiredHeaderValue = config.getString("akka.http.expired-header-value", "expired")
   }
 
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
@@ -164,7 +153,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   })
 
   // this provides basic logging (to stdout) until .start() is called below
-  val eventStream = new EventStream(DebugMainBus)
+  val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(AkkaConfig)
   val log = new BusLogging(eventStream, this)
 
@@ -221,6 +210,17 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val deadLetters = new DeadLetterActorRef(this)
+  val deadLetterMailbox = new Mailbox(null) {
+    becomeClosed()
+    override def dispatcher = null //MessageDispatcher.this
+    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    override def dequeue() = null
+    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
+    override def systemDrain(): SystemMessage = null
+    override def hasMessages = false
+    override def hasSystemMessages = false
+    override def numberOfMessages = 0
+  }
 
   val deathWatch = provider.createDeathWatch()
 
@@ -247,10 +247,9 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   def /(actorName: String): ActorPath = guardian.path / actorName
 
   // TODO shutdown all that other stuff, whatever that may be
-  def stop(): Unit = {
+  def stop() {
     guardian.stop()
   }
 
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
-
 }

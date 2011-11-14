@@ -10,9 +10,8 @@ import java.util.concurrent.RejectedExecutionException
 import akka.util.Switch
 import java.lang.ref.WeakReference
 import scala.annotation.tailrec
-import akka.actor.ActorCell
+import akka.actor.{ ActorCell, ActorRef, ActorSystem }
 import akka.dispatch._
-import akka.actor.ActorSystem
 
 /*
  * Locking rules:
@@ -129,16 +128,17 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
   }
 
   override def resume(actor: ActorCell) {
-    val mboxopt = getMailbox(actor)
-    if (mboxopt.isEmpty) return
-    val mbox = mboxopt.get
-    val queue = mbox.queue
-    val wasActive = queue.isActive
-    val switched = mbox.suspendSwitch.switchOff {
-      gatherFromAllOtherQueues(mbox, queue)
-    }
-    if (switched && !wasActive) {
-      runQueue(mbox, queue)
+    actor.mailbox match {
+      case mbox: CallingThreadMailbox ⇒
+        val queue = mbox.queue
+        val wasActive = queue.isActive
+        val switched = mbox.suspendSwitch.switchOff {
+          gatherFromAllOtherQueues(mbox, queue)
+        }
+        if (switched && !wasActive) {
+          runQueue(mbox, queue)
+        }
+      case m ⇒ m.systemEnqueue(actor.self, Resume())
     }
   }
 
@@ -147,35 +147,37 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
   override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor) map (_.queue.isEmpty) getOrElse true
 
   protected[akka] override def systemDispatch(receiver: ActorCell, message: SystemMessage) {
-    val mboxopt = getMailbox(receiver)
-    if (mboxopt.isEmpty) return
-    val mbox = mboxopt.get
-    mbox.systemEnqueue(message)
-    val queue = mbox.queue
-    if (!queue.isActive) {
-      queue.enter
-      runQueue(mbox, queue)
+    receiver.mailbox match {
+      case mbox: CallingThreadMailbox ⇒
+        mbox.systemEnqueue(receiver.self, message)
+        val queue = mbox.queue
+        if (!queue.isActive) {
+          queue.enter
+          runQueue(mbox, queue)
+        }
+      case m ⇒ m.systemEnqueue(receiver.self, message)
     }
   }
 
   protected[akka] override def dispatch(receiver: ActorCell, handle: Envelope) {
-    val mboxopt = getMailbox(receiver)
-    if (mboxopt.isEmpty) return
-    val mbox = mboxopt.get
-    val queue = mbox.queue
-    val execute = mbox.suspendSwitch.fold {
-      queue.push(handle)
-      false
-    } {
-      queue.push(handle)
-      if (queue.isActive)
-        false
-      else {
-        queue.enter
-        true
-      }
+    receiver.mailbox match {
+      case mbox: CallingThreadMailbox ⇒
+        val queue = mbox.queue
+        val execute = mbox.suspendSwitch.fold {
+          queue.push(handle)
+          false
+        } {
+          queue.push(handle)
+          if (queue.isActive)
+            false
+          else {
+            queue.enter
+            true
+          }
+        }
+        if (execute) runQueue(mbox, queue)
+      case m ⇒ m.enqueue(receiver.self, handle)
     }
-    if (execute) runQueue(mbox, queue)
   }
 
   protected[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
@@ -206,7 +208,7 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
       }
       if (handle ne null) {
         try {
-          if (Mailbox.debug) println(mbox.actor + " processing message " + handle)
+          if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
           true
         } catch {
@@ -270,7 +272,7 @@ class CallingThreadMailbox(val dispatcher: MessageDispatcher, _receiver: ActorCe
   val lock = new ReentrantLock
   val suspendSwitch = new Switch
 
-  override def enqueue(msg: Envelope) {}
+  override def enqueue(receiver: ActorRef, msg: Envelope) {}
   override def dequeue() = null
   override def hasMessages = true
   override def numberOfMessages = 0

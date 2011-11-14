@@ -22,8 +22,9 @@ trait ActorDeployer {
   private[akka] def deploy(deployment: Deploy): Unit
   private[akka] def lookupDeploymentFor(path: String): Option[Deploy]
   def lookupDeployment(path: String): Option[Deploy] = path match {
-    case null | Props.`randomName` ⇒ None
-    case some                      ⇒ lookupDeploymentFor(some)
+    case null | ""              ⇒ None
+    case s if s.startsWith("$") ⇒ None
+    case some                   ⇒ lookupDeploymentFor(some)
   }
   private[akka] def deploy(deployment: Seq[Deploy]): Unit = deployment foreach (deploy(_))
 }

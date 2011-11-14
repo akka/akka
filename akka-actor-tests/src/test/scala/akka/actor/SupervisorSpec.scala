@@ -9,10 +9,9 @@ import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
 import akka.testkit.TestEvent._
-import akka.testkit.{ EventFilter, ImplicitSender }
+import akka.testkit.{ EventFilter, ImplicitSender, AkkaSpec, filterEvents }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
-import akka.testkit.AkkaSpec
 
 object SupervisorSpec {
   val Timeout = 5 seconds
@@ -296,9 +295,12 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       })
       val dyingActor = (supervisor ? dyingProps).as[ActorRef].get
 
-      intercept[RuntimeException] {
-        (dyingActor.?(DieReply, TimeoutMillis)).get
-      }
+      filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
+        EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
+          intercept[RuntimeException] {
+            (dyingActor.?(DieReply, TimeoutMillis)).get
+          }
+        }
 
       (dyingActor.?(Ping, TimeoutMillis)).as[String] must be === Some(PongMessage)
 

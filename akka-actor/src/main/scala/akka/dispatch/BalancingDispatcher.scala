@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import util.DynamicVariable
-import akka.actor.{ ActorCell, Actor, IllegalActorStateException }
+import akka.actor.{ ActorCell, Actor, IllegalActorStateException, ActorRef }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import java.util.{ Comparator, Queue }
 import annotation.tailrec
@@ -37,18 +37,9 @@ class BalancingDispatcher(
   _timeoutMs: Long)
   extends Dispatcher(_app, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
-  private val buddies = new ConcurrentSkipListSet[ActorCell](
-    new Comparator[ActorCell] {
-      def compare(a: ActorCell, b: ActorCell): Int = {
-        /*
-         * make sure that there is no overflow or underflow in comparisons, so 
-         * that the ordering is actually consistent and you cannot have a 
-         * sequence which cyclically is monotone without end.
-         */
-        val diff = ((System.identityHashCode(a) & 0xffffffffL) - (System.identityHashCode(b) & 0xffffffffL))
-        if (diff > 0) 1 else if (diff < 0) -1 else 0
-      }
-    })
+  import app.deadLetterMailbox
+
+  private val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
 
   protected val messageQueue: MessageQueue = mailboxType match {
     case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
@@ -66,7 +57,7 @@ class BalancingDispatcher(
   protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
 
   class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
-    final def enqueue(handle: Envelope) = messageQueue.enqueue(handle)
+    final def enqueue(receiver: ActorRef, handle: Envelope) = messageQueue.enqueue(receiver, handle)
 
     final def dequeue(): Envelope = messageQueue.dequeue()
 
@@ -97,7 +88,7 @@ class BalancingDispatcher(
     if (mailBox.hasSystemMessages) {
       var messages = mailBox.systemDrain()
       while (messages ne null) {
-        deadLetterMailbox.systemEnqueue(messages) //Send to dead letter queue
+        deadLetterMailbox.systemEnqueue(actor.self, messages) //Send to dead letter queue
         messages = messages.next
         if (messages eq null) //Make sure that any system messages received after the current drain are also sent to the dead letter mbox
           messages = mailBox.systemDrain()
@@ -123,7 +114,7 @@ class BalancingDispatcher(
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
-    messageQueue enqueue invocation
+    messageQueue.enqueue(receiver.self, invocation)
 
     intoTheFray(except = receiver)
 

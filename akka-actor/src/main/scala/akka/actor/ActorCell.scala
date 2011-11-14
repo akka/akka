@@ -25,9 +25,11 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def receiveTimeout_=(timeout: Option[Long]): Unit
 
+  def become(behavior: Actor.Receive, discardOld: Boolean): Unit
+
   def hotswap: Stack[PartialFunction[Any, Unit]]
 
-  def hotswap_=(stack: Stack[PartialFunction[Any, Unit]]): Unit
+  def unbecome(): Unit
 
   def currentMessage: Envelope
 
@@ -39,7 +41,7 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def dispatcher: MessageDispatcher
 
-  def handleFailure(fail: Failed): Unit
+  def handleFailure(child: ActorRef, cause: Throwable): Unit
 
   def handleChildTerminated(child: ActorRef): Unit
 
@@ -85,6 +87,8 @@ private[akka] class ActorCell(
   var currentMessage: Envelope = null
 
   var actor: Actor = _
+
+  var stopping = false
 
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
@@ -134,7 +138,8 @@ private[akka] class ActorCell(
     else childrenRefs.get(name)
   }
 
-  final def tell(message: Any, sender: ActorRef): Unit = dispatcher.dispatch(this, Envelope(message, sender))
+  final def tell(message: Any, sender: ActorRef): Unit =
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) app.deadLetters else sender))
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ app.deadLetters
@@ -175,7 +180,7 @@ private[akka] class ActorCell(
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          parent ! Failed(self, ActorInitializationException(self, "exception during creation", e))
+          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
         }
     }
 
@@ -206,7 +211,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        parent ! Failed(self, ActorInitializationException(self, "exception during re-creation", e))
+        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
       }
     }
 
@@ -217,31 +222,13 @@ private[akka] class ActorCell(
     def terminate() {
       receiveTimeout = None
       cancelReceiveTimeout
-      app.provider.evict(self.path.toString)
-      dispatcher.detach(this)
 
-      try {
-        try {
-          val a = actor
-          if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
-          if (a ne null) a.postStop()
-        } finally {
-          //Stop supervised actors
-          val c = children
-          if (c.nonEmpty) {
-            childrenRefs = emptyChildrenRefs
-            childrenStats = emptyChildrenStats
-            for (child ← c) child.stop()
-          }
-        }
-      } finally {
-        try {
-          parent ! ChildTerminated(self)
-          app.deathWatch.publish(Terminated(self))
-        } finally {
-          currentMessage = null
-          clearActorContext()
-        }
+      val c = children
+      if (c.isEmpty) doTerminate()
+      else {
+        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
+        for (child ← c) child.stop()
+        stopping = true
       }
     }
 
@@ -257,7 +244,11 @@ private[akka] class ActorCell(
     try {
       val isClosed = mailbox.isClosed //Fence plus volatile read
       if (!isClosed) {
-        message match {
+        if (stopping) message match {
+          case Terminate() ⇒ terminate() // to allow retry
+          case _           ⇒
+        }
+        else message match {
           case Create()        ⇒ create()
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
@@ -288,8 +279,16 @@ private[akka] class ActorCell(
         try {
           try {
             cancelReceiveTimeout() // FIXME: leave this here?
-
-            actor(messageHandle.message)
+            messageHandle.message match {
+              case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+              case msg ⇒
+                if (stopping) {
+                  // receiving Terminated in response to stopping children is too common to generate noise
+                  if (!msg.isInstanceOf[Terminated]) app.deadLetterMailbox.enqueue(self, messageHandle)
+                } else {
+                  actor(msg)
+                }
+            }
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
@@ -302,11 +301,11 @@ private[akka] class ActorCell(
               if (e.isInstanceOf[InterruptedException]) {
                 val ex = ActorInterruptedException(e)
                 props.faultHandler.handleSupervisorFailing(self, children)
-                parent ! Failed(self, ex)
+                parent.tell(Failed(ex), self)
                 throw e //Re-throw InterruptedExceptions as expected
               } else {
                 props.faultHandler.handleSupervisorFailing(self, children)
-                parent ! Failed(self, e)
+                parent.tell(Failed(e), self)
               }
           } finally {
             checkReceiveTimeout // Reschedule receive timeout
@@ -320,15 +319,62 @@ private[akka] class ActorCell(
     }
   }
 
-  final def handleFailure(fail: Failed): Unit = childrenStats.get(fail.actor) match {
-    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(fail, stats, childrenStats)) throw fail.cause
-    case None        ⇒ app.eventStream.publish(Warning(self, "dropping " + fail + " from unknown child"))
+  def become(behavior: Actor.Receive, discardOld: Boolean = true) {
+    if (discardOld) unbecome()
+    hotswap = hotswap.push(behavior)
+  }
+
+  def unbecome() {
+    val h = hotswap
+    if (h.nonEmpty) hotswap = h.pop
+  }
+
+  def autoReceiveMessage(msg: Envelope) {
+    if (app.AkkaConfig.DebugAutoReceive) app.eventStream.publish(Debug(self, "received AutoReceiveMessage " + msg))
+
+    if (stopping) msg.message match {
+      case ChildTerminated ⇒ handleChildTerminated(sender)
+      case _               ⇒ app.deadLetterMailbox.enqueue(self, msg)
+    }
+    else msg.message match {
+      case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
+      case RevertHotSwap             ⇒ unbecome()
+      case Failed(cause)             ⇒ handleFailure(sender, cause)
+      case ChildTerminated           ⇒ handleChildTerminated(sender)
+      case Kill                      ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill                ⇒ self.stop()
+    }
+  }
+
+  private def doTerminate() {
+    app.provider.evict(self.path.toString)
+    dispatcher.detach(this)
+
+    try {
+      val a = actor
+      if (a ne null) a.postStop()
+    } finally {
+      try {
+        parent.tell(ChildTerminated, self)
+        app.deathWatch.publish(Terminated(self))
+        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped"))
+      } finally {
+        currentMessage = null
+        clearActorContext()
+      }
+    }
+  }
+
+  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenStats.get(child) match {
+    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenStats)) throw cause
+    case None        ⇒ app.eventStream.publish(Warning(self, "dropping Failed(" + cause + ") from unknown child"))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
     childrenRefs -= child.name
     childrenStats -= child
     props.faultHandler.handleChildTerminated(child, children)
+    if (stopping && childrenStats.isEmpty) doTerminate()
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
