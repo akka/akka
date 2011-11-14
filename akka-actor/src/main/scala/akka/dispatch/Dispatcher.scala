@@ -74,7 +74,9 @@ class Dispatcher(
   extends MessageDispatcher(_app) {
 
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
-  protected[akka] val executorService = new AtomicReference[ExecutorService](new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
+  protected[akka] val executorService = new AtomicReference[ExecutorService](new ExecutorServiceDelegate {
+    lazy val executor = executorServiceFactory.createExecutorService
+  })
 
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     val mbox = receiver.mailbox
@@ -103,9 +105,11 @@ class Dispatcher(
   protected[akka] def start {}
 
   protected[akka] def shutdown {
-    val old = executorService.getAndSet(new LazyExecutorServiceWrapper(executorServiceFactory.createExecutorService))
-    if (old ne null) {
-      old.shutdown()
+    executorService.getAndSet(new ExecutorServiceDelegate {
+      lazy val executor = executorServiceFactory.createExecutorService
+    }) match {
+      case null ⇒
+      case some ⇒ some.shutdown()
     }
   }
 
@@ -113,19 +117,13 @@ class Dispatcher(
    * Returns if it was registered
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
-    if (mbox.shouldBeRegisteredForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
+    if (mbox.shouldBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {
           executorService.get() execute mbox
           true
         } catch {
-          case e: RejectedExecutionException ⇒
-            try {
-              app.eventStream.publish(Warning(this, e.toString))
-            } finally {
-              mbox.setAsIdle()
-            }
-            throw e
+          case e: RejectedExecutionException ⇒ executorService.get() execute mbox; true //Retry once
         }
       } else false
     } else false

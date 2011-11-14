@@ -269,22 +269,3 @@ trait ExecutorServiceDelegate extends ExecutorService {
 
   def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
 }
-
-/**
- * An ExecutorService that only creates the underlying Executor if any of the methods of the ExecutorService are called
- */
-trait LazyExecutorService extends ExecutorServiceDelegate {
-
-  def createExecutor: ExecutorService
-
-  lazy val executor = {
-    createExecutor
-  }
-}
-
-/**
- * A concrete implementation of LazyExecutorService (Scala API)
- */
-class LazyExecutorServiceWrapper(executorFactory: ⇒ ExecutorService) extends LazyExecutorService {
-  def createExecutor = executorFactory
-}
