@@ -13,6 +13,7 @@ import akka.util.duration._
 import akka.actor.Timeout
 import akka.dispatch.FutureTimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+import akka.actor.ActorRefProvider
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -78,7 +79,7 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "StandardOutLogger started"))
   }
 
-  private[akka] def startDefaultLoggers(app: ActorSystem, config: AkkaConfig) {
+  private[akka] def startDefaultLoggers(provider: ActorRefProvider, config: AkkaConfig) {
     val level = levelFor(config.LogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.LogLevel))
       ErrorLevel
@@ -94,7 +95,7 @@ trait LoggingBus extends ActorEventBus {
       } yield {
         try {
           ReflectiveAccess.getClassFor[Actor](loggerName) match {
-            case Right(actorClass) ⇒ addLogger(app, actorClass, level)
+            case Right(actorClass) ⇒ addLogger(provider, actorClass, level)
             case Left(exception)   ⇒ throw exception
           }
         } catch {
@@ -137,9 +138,9 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "all default loggers stopped"))
   }
 
-  private def addLogger(app: ActorSystem, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
+  private def addLogger(provider: ActorRefProvider, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
     val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
-    val actor = app.systemActorOf(Props(clazz), name)
+    val actor = provider.actorOf(Props(clazz), provider.systemGuardian, name, true)
     implicit val timeout = Timeout(3 seconds)
     val response = try actor ? InitializeLogger(this) get catch {
       case _: FutureTimeoutException ⇒

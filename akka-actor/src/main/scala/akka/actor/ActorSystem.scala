@@ -210,8 +210,8 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
 
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-  eventStream.start(this)
-  eventStream.startDefaultLoggers(this, AkkaConfig)
+  eventStream.start(provider)
+  eventStream.startDefaultLoggers(provider, AkkaConfig)
 
   // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
   val deployer = new Deployer(this)

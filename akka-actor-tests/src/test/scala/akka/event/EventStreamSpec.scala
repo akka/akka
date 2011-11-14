@@ -40,7 +40,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
     "manage subscriptions" in {
       val bus = new EventStream(true)
-      bus.start(app)
+      bus.start(app.provider)
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
       within(1 second) {
@@ -53,8 +53,8 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
     "manage log levels" in {
       val bus = new EventStream(false)
-      bus.start(app)
-      bus.startDefaultLoggers(app, app.AkkaConfig)
+      bus.start(app.provider)
+      bus.startDefaultLoggers(app.provider, app.AkkaConfig)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
       within(2 seconds) {
@@ -75,7 +75,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
       val b2 = new B2
       val c = new C
       val bus = new EventStream(false)
-      bus.start(app)
+      bus.start(app.provider)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) === true
         bus.publish(c)
