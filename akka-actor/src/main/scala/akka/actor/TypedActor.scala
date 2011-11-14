@@ -16,7 +16,7 @@ object TypedActor {
    * This class represents a Method call, and has a reference to the Method to be called and the parameters to supply
    * It's sent to the ActorRef backing the TypedActor and can be serialized and deserialized
    */
-  case class MethodCall(app: ActorSystem, method: Method, parameters: Array[AnyRef]) {
+  case class MethodCall(ser: Serialization, method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
     def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
@@ -40,7 +40,7 @@ object TypedActor {
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Serializer.Identifier](), Array[Array[Byte]]())
       case ps ⇒
-        val serializers: Array[Serializer] = ps map app.serialization.findSerializerFor
+        val serializers: Array[Serializer] = ps map ser.findSerializerFor
         val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
         for (i ← 0 until serializers.length)
           serializedParameters(i) = serializers(i) toBinary parameters(i) //Mutable for the sake of sanity
@@ -61,7 +61,7 @@ object TypedActor {
       if (app eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
-      MethodCall(app, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
+      MethodCall(app.serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
@@ -264,7 +264,7 @@ trait TypedActorFactory { this: ActorRefFactory ⇒
  *
  *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
  */
-class TypedActor(val app: ActorSystem) {
+class TypedActor(val AkkaConfig: ActorSystem.AkkaConfig, var ser: Serialization) {
 
   import TypedActor.MethodCall
   /**
@@ -313,7 +313,7 @@ class TypedActor(val app: ActorSystem) {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
-      case Props.`defaultTimeout` ⇒ app.AkkaConfig.ActorTimeout
+      case Props.`defaultTimeout` ⇒ AkkaConfig.ActorTimeout
       case x                      ⇒ x
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar, timeout)).asInstanceOf[T]
@@ -365,7 +365,7 @@ class TypedActor(val app: ActorSystem) {
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        MethodCall(app, method, args) match {
+        MethodCall(ser, method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒

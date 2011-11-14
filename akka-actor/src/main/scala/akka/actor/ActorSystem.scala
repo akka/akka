@@ -209,10 +209,9 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   eventStream.startDefaultLoggers(provider, AkkaConfig)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val typedActor = new TypedActor(this)
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val serialization = new Serialization(this)
+
+  val typedActor = new TypedActor(AkkaConfig, serialization)
 
   /**
    * Create an actor path under the application supervisor (/app).
