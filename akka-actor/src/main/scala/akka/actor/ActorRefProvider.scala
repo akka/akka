@@ -34,6 +34,8 @@ trait ActorRefProvider {
 
   def nodename: String
 
+  def AkkaConfig: ActorSystem.AkkaConfig
+
   /**
    * What deployer will be used to resolve deployment configuration?
    */
