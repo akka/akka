@@ -8,7 +8,7 @@ object NewRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! app.nodename
+      case "identify" ⇒ sender ! app.provider.nodename
     }
   }
 }

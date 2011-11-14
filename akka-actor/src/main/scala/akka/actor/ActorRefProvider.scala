@@ -15,6 +15,7 @@ import akka.event.{ Logging, DeathWatch, ActorClassification, EventStream }
 import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter }
 import akka.util.Helpers
 import akka.AkkaException
+import com.eaio.uuid.UUID
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -30,6 +31,8 @@ trait ActorRefProvider {
   def systemGuardian: ActorRef
 
   def deathWatch: DeathWatch
+
+  def nodename: String
 
   /**
    * What deployer will be used to resolve deployment configuration?
@@ -116,6 +119,7 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(
   private val app: ActorSystem,
+  val AkkaConfig: ActorSystem.AkkaConfig,
   val root: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
@@ -123,7 +127,12 @@ class LocalActorRefProvider(
 
   val log = Logging(eventStream, this)
 
-  private[akka] val deployer: Deployer = new Deployer(app)
+  val nodename: String = System.getProperty("akka.cluster.nodename") match {
+    case null | "" ⇒ new UUID().toString
+    case value     ⇒ value
+  }
+
+  private[akka] val deployer: Deployer = new Deployer(AkkaConfig, eventStream, nodename)
 
   val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(app.dispatcher)
 

@@ -5,9 +5,7 @@
 package akka.actor
 
 import collection.immutable.Seq
-
 import java.util.concurrent.ConcurrentHashMap
-
 import akka.event.Logging
 import akka.actor.DeploymentConfig._
 import akka.AkkaException
@@ -15,6 +13,7 @@ import akka.config.{ Configuration, ConfigurationException }
 import akka.util.Duration
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
+import akka.event.EventStream
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -34,10 +33,10 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val app: ActorSystem) extends ActorDeployer {
+class Deployer(val AkkaConfig: ActorSystem.AkkaConfig, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
 
-  val deploymentConfig = new DeploymentConfig(app)
-  val log = Logging(app.eventStream, this)
+  val deploymentConfig = new DeploymentConfig(nodename)
+  val log = Logging(eventStream, this)
 
   val instance: ActorDeployer = {
     val deployer = new LocalDeployer()
@@ -86,7 +85,7 @@ class Deployer(val app: ActorSystem) extends ActorDeployer {
 
   private[akka] def pathsInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
-    app.config.getSection(deploymentPath) match {
+    AkkaConfig.config.getSection(deploymentPath) match {
       case None ⇒ Nil
       case Some(pathConfig) ⇒
         pathConfig.map.keySet
@@ -98,7 +97,7 @@ class Deployer(val app: ActorSystem) extends ActorDeployer {
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(path: String, configuration: Configuration = app.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(path: String, configuration: Configuration = AkkaConfig.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------

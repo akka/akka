@@ -142,11 +142,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
-  val nodename: String = System.getProperty("akka.cluster.nodename") match {
-    case null | "" ⇒ new UUID().toString
-    case value     ⇒ value
-  }
-
   val address = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
@@ -192,8 +187,8 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
       case Left(e)  ⇒ throw e
       case Right(b) ⇒ b
     }
-    val params: Array[Class[_]] = Array(classOf[ActorSystem], classOf[ActorPath], classOf[EventStream], classOf[MessageDispatcher], classOf[Scheduler])
-    val args: Array[AnyRef] = Array(this, root, eventStream, dispatcher, scheduler)
+    val params: Array[Class[_]] = Array(classOf[ActorSystem], classOf[AkkaConfig], classOf[ActorPath], classOf[EventStream], classOf[MessageDispatcher], classOf[Scheduler])
+    val args: Array[AnyRef] = Array(this, AkkaConfig, root, eventStream, dispatcher, scheduler)
 
     ReflectiveAccess.createInstance[ActorRefProvider](providerClass, params, args) match {
       case Left(e)  ⇒ throw e
@@ -212,9 +207,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   // this starts the reaper actor and the user-configured logging subscribers, which are also actors
   eventStream.start(provider)
   eventStream.startDefaultLoggers(provider, AkkaConfig)
-
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val deployer = new Deployer(this)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val typedActor = new TypedActor(this)

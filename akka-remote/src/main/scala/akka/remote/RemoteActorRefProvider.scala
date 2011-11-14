@@ -30,6 +30,7 @@ import akka.event.EventStream
  */
 class RemoteActorRefProvider(
   val app: ActorSystem,
+  val AkkaConfig: ActorSystem.AkkaConfig,
   val root: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
@@ -40,12 +41,13 @@ class RemoteActorRefProvider(
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  val local = new LocalActorRefProvider(app, root, eventStream, dispatcher, scheduler)
+  val local = new LocalActorRefProvider(app, AkkaConfig, root, eventStream, dispatcher, scheduler)
   def deathWatch = local.deathWatch
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
+  def nodename = local.nodename
 
-  val remote = new Remote(app)
+  val remote = new Remote(app, nodename)
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
 

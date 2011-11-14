@@ -27,15 +27,13 @@ import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Remote(val app: ActorSystem) {
+class Remote(val app: ActorSystem, val nodename: String) {
 
   val log = Logging(app, this)
 
   import app._
   import app.config
   import app.AkkaConfig._
-
-  val nodename = app.nodename
 
   // TODO move to AkkaConfig?
   val shouldCompressData = config.getBool("akka.remote.use-compression", false)
