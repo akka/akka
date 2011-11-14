@@ -236,7 +236,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
             shutdownSchedule = SCHEDULED
             app.scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
-            if (_tasks.get == 0) {
+            if (_tasks.get == 0 && _actors.get() == 0) {
               active switchOff {
                 shutdown() // shut down in the dispatcher's references is zero
               }
