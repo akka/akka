@@ -4,14 +4,10 @@ import akka.performance.workbench.PerformanceSpec
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
-import org.junit.runner.RunWith
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.dispatch.Dispatchers
-import akka.dispatch.Dispatcher
-import akka.dispatch.Dispatchers
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -77,7 +73,7 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
-        val ok = latch.await((5000000 + 500 * repeat) * timeDilation, TimeUnit.MICROSECONDS)
+        val ok = latch.await(((5000000 + 500 * repeat) * timeDilation) / 100, TimeUnit.MICROSECONDS)
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {

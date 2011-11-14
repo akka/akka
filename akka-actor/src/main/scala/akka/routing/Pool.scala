@@ -120,7 +120,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
-        _delegates ++ Vector.fill(requestedCapacity)(self startsMonitoring instance(defaultProps))
+        _delegates ++ Vector.fill(requestedCapacity)(watch(instance(defaultProps)))
 
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
@@ -296,8 +296,10 @@ trait MailboxPressureCapacitor {
 trait ActiveActorsPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ a.underlying.mailbox.isScheduled
-      case _                ⇒ false
+      case a: LocalActorRef ⇒
+        val cell = a.underlying
+        cell.mailbox.isScheduled && cell.currentMessage != null
+      case _ ⇒ false
     }
 }
 
