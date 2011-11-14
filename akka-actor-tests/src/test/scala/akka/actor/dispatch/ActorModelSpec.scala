@@ -421,10 +421,10 @@ class DispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(app, "foo", app.AkkaConfig.DispatcherThroughput,
+    new Dispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, "foo", app.AkkaConfig.DispatcherThroughput,
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
+    ThreadPoolConfig(app.eventStream)).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Dispatcher"
 
@@ -458,10 +458,10 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new BalancingDispatcher(app, "foo", 1, // TODO check why 1 here? (came from old test)
+    new BalancingDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, "foo", 1, // TODO check why 1 here? (came from old test)
       app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
       config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
+    ThreadPoolConfig(app.eventStream)).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
 

@@ -41,8 +41,6 @@ class RemoteActorRefProvider(
   import akka.dispatch.Promise
 
   val local = new LocalActorRefProvider(app, root, eventStream, dispatcher, scheduler)
-  def deadLetterMailbox = local.deadLetterMailbox
-  def deadLetters = local.deadLetters
   def deathWatch = local.deathWatch
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian

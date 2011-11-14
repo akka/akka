@@ -13,6 +13,8 @@ import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, 
 import akka.actor._
 import akka.actor.ActorSystem
 import scala.annotation.tailrec
+import akka.event.EventStream
+import akka.actor.ActorSystem.AkkaConfig
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -61,12 +63,12 @@ case class Supervise(child: ActorRef) extends SystemMessage // sent to superviso
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.startsMonitoring
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.stopsMonitoring
 
-final case class TaskInvocation(app: ActorSystem, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       function()
     } catch {
-      case e ⇒ app.eventStream.publish(Error(e, this, e.getMessage))
+      case e ⇒ eventStream.publish(Error(e, this, e.getMessage))
     } finally {
       cleanup()
     }
@@ -84,7 +86,11 @@ object MessageDispatcher {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
+abstract class MessageDispatcher(
+  val deadLetterMailbox: Mailbox,
+  val eventStream: EventStream,
+  val scheduler: Scheduler) extends Serializable {
+
   import MessageDispatcher._
 
   protected val _tasks = new AtomicLong(0L)
@@ -98,11 +104,6 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
    *  Creates and returns a mailbox for the given actor.
    */
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
-
-  /**
-   * a blackhole mailbox for the purpose of replacing the real one upon actor termination
-   */
-  import app.deadLetterMailbox
 
   /**
    * Name of this dispatcher.
@@ -133,7 +134,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
         shutdownSchedule match {
           case UNSCHEDULED ⇒
             shutdownSchedule = SCHEDULED
-            app.scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+            scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
             shutdownSchedule = RESCHEDULED
           case RESCHEDULED ⇒ //Already marked for reschedule
@@ -154,7 +155,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
     _tasks.getAndIncrement()
     try {
       startIfUnstarted()
-      executeTask(TaskInvocation(app, block, taskCleanup))
+      executeTask(TaskInvocation(eventStream, block, taskCleanup))
     } catch {
       case e ⇒
         _tasks.decrementAndGet
@@ -170,7 +171,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
           shutdownSchedule match {
             case UNSCHEDULED ⇒
               shutdownSchedule = SCHEDULED
-              app.scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+              scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
             case SCHEDULED ⇒
               shutdownSchedule = RESCHEDULED
             case RESCHEDULED ⇒ //Already marked for reschedule
@@ -234,7 +235,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
         shutdownSchedule match {
           case RESCHEDULED ⇒
             shutdownSchedule = SCHEDULED
-            app.scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
+            scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
             if (_tasks.get == 0) {
               active switchOff {
@@ -329,19 +330,19 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
+abstract class MessageDispatcherConfigurator(val AkkaConfig: AkkaConfig, val eventStream: EventStream) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", app.AkkaConfig.MailboxCapacity)
+    val capacity = config.getInt("mailbox-capacity", AkkaConfig.MailboxCapacity)
     if (capacity < 1) UnboundedMailbox()
     else {
       val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", app.AkkaConfig.MailboxPushTimeout.toMillis.toInt),
-        app.AkkaConfig.DefaultTimeUnit)
+        config.getInt("mailbox-push-timeout-time", AkkaConfig.MailboxPushTimeout.toMillis.toInt),
+        AkkaConfig.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -350,8 +351,8 @@ abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(app)).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, app.AkkaConfig.DefaultTimeUnit))),
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(eventStream)).configure(
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),

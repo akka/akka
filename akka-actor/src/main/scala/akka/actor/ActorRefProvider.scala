@@ -31,10 +31,6 @@ trait ActorRefProvider {
 
   def deathWatch: DeathWatch
 
-  def deadLetters: ActorRef
-
-  def deadLetterMailbox: Mailbox
-
   /**
    * What deployer will be used to resolve deployment configuration?
    */
@@ -143,19 +139,6 @@ class LocalActorRefProvider(
   // FIXME (actor path): this could become a cache for the new tree traversal actorFor
   // currently still used for tmp actors (e.g. ask actor refs)
   private val actors = new ConcurrentHashMap[String, AnyRef]
-
-  val deadLetters = new DeadLetterActorRef(eventStream, root / "nul", dispatcher)
-  val deadLetterMailbox = new Mailbox(null) {
-    becomeClosed()
-    override def dispatcher = null //MessageDispatcher.this
-    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
-    override def dequeue() = null
-    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
-  }
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will

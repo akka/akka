@@ -11,6 +11,7 @@ import ThreadPoolExecutor.CallerRunsPolicy
 import akka.util.Duration
 import akka.event.Logging.{ Warning, Error }
 import akka.actor.ActorSystem
+import akka.event.EventStream
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -68,7 +69,7 @@ trait ExecutorServiceFactoryProvider {
 /**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
-case class ThreadPoolConfig(app: ActorSystem,
+case class ThreadPoolConfig(eventStream: EventStream,
                             allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
                             corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
@@ -86,7 +87,7 @@ case class ThreadPoolConfig(app: ActorSystem,
       case Right(bounds) ⇒
         val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory)
         service.allowCoreThreadTimeOut(allowCorePoolTimeout)
-        new BoundedExecutorDecorator(app, service, bounds)
+        new BoundedExecutorDecorator(eventStream, service, bounds)
     }
   }
 }
@@ -210,7 +211,7 @@ class MonitorableThread(runnable: Runnable, name: String)
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BoundedExecutorDecorator(val app: ActorSystem, val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
+class BoundedExecutorDecorator(val eventStream: EventStream, val executor: ExecutorService, bound: Int) extends ExecutorServiceDelegate {
   protected val semaphore = new Semaphore(bound)
 
   override def execute(command: Runnable) = {
@@ -227,10 +228,10 @@ class BoundedExecutorDecorator(val app: ActorSystem, val executor: ExecutorServi
       })
     } catch {
       case e: RejectedExecutionException ⇒
-        app.eventStream.publish(Warning(this, e.toString))
+        eventStream.publish(Warning(this, e.toString))
         semaphore.release
       case e: Throwable ⇒
-        app.eventStream.publish(Error(e, this, e.getMessage))
+        eventStream.publish(Error(e, this, e.getMessage))
         throw e
     }
   }

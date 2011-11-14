@@ -385,8 +385,13 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath, val dispatcher: MessageDispatcher) extends MinimalActorRef {
-  val brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
+class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath) extends MinimalActorRef {
+  @volatile
+  var brokenPromise: Future[Any] = _
+
+  private[akka] def init(dispatcher: MessageDispatcher) {
+    brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
+  }
 
   override val name: String = "dead-letter"
 
@@ -401,6 +406,8 @@ class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath, val 
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
     eventStream.publish(DeadLetter(message, this, this))
+    // leave this in: guard with good visibility against really stupid/weird errors
+    assert(brokenPromise != null)
     brokenPromise
   }
 

@@ -91,7 +91,8 @@ class TestKit(_app: ActorSystem) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)),
+  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue))
+    .copy(dispatcher = new CallingThreadDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler)),
     "testActor" + TestKit.testActorId.incrementAndGet)
 
   private var end: Duration = Duration.Undefined

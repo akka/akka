@@ -8,6 +8,8 @@ import akka.actor._
 import akka.util._
 import com.eaio.uuid.UUID
 import akka.actor.ActorSystem
+import akka.dispatch.Mailbox
+import akka.event.EventStream
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -34,8 +36,15 @@ import akka.actor.ActorSystem
  * @author Roland Kuhn
  * @since 1.2
  */
-class TestFSMRef[S, D, T <: Actor](app: ActorSystem, props: Props, supervisor: ActorRef, name: String)(implicit ev: T <:< FSM[S, D])
-  extends TestActorRef(app, props, supervisor, name) {
+class TestFSMRef[S, D, T <: Actor](
+  app: ActorSystem,
+  _deadLetterMailbox: Mailbox,
+  _eventStream: EventStream,
+  _scheduler: Scheduler,
+  props: Props,
+  supervisor: ActorRef,
+  name: String)(implicit ev: T <:< FSM[S, D])
+  extends TestActorRef(app, _deadLetterMailbox, _eventStream, _scheduler, props, supervisor, name) {
 
   private def fsm: T = underlyingActor
 
@@ -81,8 +90,8 @@ class TestFSMRef[S, D, T <: Actor](app: ActorSystem, props: Props, supervisor: A
 object TestFSMRef {
 
   def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, Props(creator = () ⇒ factory), app.guardian, TestActorRef.randomName)
+    new TestFSMRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, Props(creator = () ⇒ factory), app.guardian, TestActorRef.randomName)
 
   def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, Props(creator = () ⇒ factory), app.guardian, name)
+    new TestFSMRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, Props(creator = () ⇒ factory), app.guardian, name)
 }

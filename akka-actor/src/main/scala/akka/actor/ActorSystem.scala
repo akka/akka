@@ -158,19 +158,33 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(AkkaConfig)
-  val log = new BusLogging(eventStream, this)
-
-  // TODO correctly pull its config from the config
-  val dispatcherFactory = new Dispatchers(this)
-
-  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
+  val log = new BusLogging(eventStream, this) // “this” used only for .getClass in tagging messages
 
   /**
    * The root actor path for this application.
    */
   val root: ActorPath = new RootActorPath(this)
+
+  val deadLetters = new DeadLetterActorRef(eventStream, root / "nul")
+  val deadLetterMailbox = new Mailbox(null) {
+    becomeClosed()
+    override def dispatcher = null //MessageDispatcher.this
+    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    override def dequeue() = null
+    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
+    override def systemDrain(): SystemMessage = null
+    override def hasMessages = false
+    override def hasSystemMessages = false
+    override def numberOfMessages = 0
+  }
+
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
+
+  // TODO correctly pull its config from the config
+  val dispatcherFactory = new Dispatchers(AkkaConfig, eventStream, deadLetterMailbox, scheduler)
+  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+
+  deadLetters.init(dispatcher)
 
   // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = {
@@ -191,8 +205,6 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
-  def deadLetters: ActorRef = provider.deadLetters
-  def deadLetterMailbox: Mailbox = provider.deadLetterMailbox
 
   terminationFuture.onComplete(_ ⇒ scheduler.stop())
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())

@@ -150,7 +150,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           expectNoMsg(Duration.Zero)
           assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
 
-          val actor = new TestActorRef[TestLogActor](app, Props[TestLogActor], supervisor, "none")
+          val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
 
           val set = receiveWhile(messages = 2) {
             case Logging.Debug(`supervisor`, msg: String) if msg startsWith "now supervising" ⇒ 1

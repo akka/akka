@@ -10,6 +10,8 @@ import com.eaio.uuid.UUID
 import akka.actor.Props._
 import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicLong
+import akka.dispatch.Mailbox
+import akka.event.EventStream
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -19,8 +21,15 @@ import java.util.concurrent.atomic.AtomicLong
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](_app: ActorSystem, _props: Props, _supervisor: ActorRef, name: String)
-  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, _supervisor.path / name, false) {
+class TestActorRef[T <: Actor](
+  _app: ActorSystem,
+  _deadLetterMailbox: Mailbox,
+  _eventStream: EventStream,
+  _scheduler: Scheduler,
+  _props: Props,
+  _supervisor: ActorRef,
+  name: String)
+  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_deadLetterMailbox, _eventStream, _scheduler)), _supervisor, _supervisor.path / name, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -57,7 +66,7 @@ object TestActorRef {
   def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, app.guardian, name)
 
   def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit app: ActorSystem): TestActorRef[T] = {
-    new TestActorRef(app, props, supervisor, name)
+    new TestActorRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, props, supervisor, name)
   }
 
   def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](randomName)
