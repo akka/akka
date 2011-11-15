@@ -353,14 +353,8 @@ abstract class ActorModelSpec extends AkkaSpec {
         val stopLatch = new CountDownLatch(num)
         val waitTime = (30 seconds).dilated.toMillis
         val boss = actorOf(Props(context ⇒ {
-          case "run" ⇒
-            for (_ ← 1 to num) {
-              val child = context.actorOf(props)
-              context.self startsMonitoring child
-              child ! cachedMessage
-            }
-          case Terminated(child) ⇒
-            stopLatch.countDown()
+          case "run"             ⇒ for (_ ← 1 to num) (context.self startsMonitoring context.actorOf(props)) ! cachedMessage
+          case Terminated(child) ⇒ stopLatch.countDown()
         }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
         boss ! "run"
         assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)

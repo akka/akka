@@ -34,7 +34,7 @@ object DispatcherFactoryBean {
         val maxPoolSize = if (threadPool.maxPoolSize > -1) Some(threadPool.maxPoolSize) else None
         val keepAlive = if (threadPool.keepAlive > -1) Some(threadPool.keepAlive) else None
         val executorBounds = if (threadPool.bound > -1) Some(threadPool.bound) else None
-        val flowHandler = threadPool.rejectionPolicy match {
+        val flowHandler = threadPool.rejectionPolicy match { //REMOVE THIS FROM THE CONFIG
           case null | ""               ⇒ None
           case "abort-policy"          ⇒ Some(new AbortPolicy())
           case "caller-runs-policy"    ⇒ Some(new CallerRunsPolicy())
@@ -63,7 +63,6 @@ object DispatcherFactoryBean {
           conf_?(corePoolSize)(count ⇒ _.setCorePoolSize(count)),
           conf_?(maxPoolSize)(count ⇒ _.setMaxPoolSize(count)),
           conf_?(executorBounds)(bounds ⇒ _.setExecutorBounds(bounds)),
-          conf_?(flowHandler)(policy ⇒ _.setRejectionPolicy(policy)))
       } else
         ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig())
     }

@@ -403,10 +403,8 @@ private[akka] class ActorCell(
     def lookupAndSetField(clazz: Class[_], actor: Actor, name: String, value: Any): Boolean = {
       val success = try {
         val field = clazz.getDeclaredField(name)
-        val was = field.isAccessible
         field.setAccessible(true)
         field.set(actor, value)
-        field.setAccessible(was)
         true
       } catch {
         case e: NoSuchFieldException ⇒ false

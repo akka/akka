@@ -1,32 +1,32 @@
 package akka.performance.microbench
 
 import akka.performance.workbench.PerformanceSpec
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
-import org.junit.runner.RunWith
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.dispatch.Dispatchers
-import akka.dispatch.Dispatcher
-import akka.dispatch.Dispatchers
+import akka.actor._
+import java.util.concurrent.{ ThreadPoolExecutor, CountDownLatch, TimeUnit }
+import akka.dispatch._
+import java.util.concurrent.ThreadPoolExecutor.AbortPolicy
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TellThroughputPerformanceSpec extends PerformanceSpec {
   import TellThroughputPerformanceSpec._
 
-  val clientDispatcher = app.dispatcherFactory.newDispatcher("client-dispatcher")
+  def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(app, name, 5,
+    0, UnboundedMailbox(), config, 60000), ThreadPoolConfig(app))
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build
 
-  val destinationDispatcher = app.dispatcherFactory.newDispatcher("destination-dispatcher")
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(maxClients)
-    .build
+  val clientDispatcher = createDispatcher("client-dispatcher")
+  val destinationDispatcher = createDispatcher("destination-dispatcher")
+
+  override def atTermination {
+    super.atTermination()
+    System.out.println("Cleaning up after TellThroughputPerformanceSpec")
+    clientDispatcher.shutdown()
+    destinationDispatcher.shutdown()
+  }
 
   val repeat = 30000L * repeatFactor
 
@@ -77,8 +77,29 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
-        val ok = latch.await((5000000 + 500 * repeat) * timeDilation, TimeUnit.MICROSECONDS)
+        val ok = latch.await(((5000000 + 500 * repeat) * timeDilation) / 100, TimeUnit.MICROSECONDS)
         val durationNs = (System.nanoTime - start)
+
+        if (!ok) {
+          System.err.println("Destinations: ")
+          destinations.foreach {
+            case l: LocalActorRef ⇒
+              val m = l.underlying.mailbox
+              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
+          }
+          System.err.println("")
+          System.err.println("Clients: ")
+
+          clients.foreach {
+            case l: LocalActorRef ⇒
+              val m = l.underlying.mailbox
+              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
+          }
+
+          val e = clientDispatcher.asInstanceOf[Dispatcher].executorService.get().asInstanceOf[ExecutorServiceDelegate].executor.asInstanceOf[ThreadPoolExecutor]
+          val q = e.getQueue
+          System.err.println("Client Dispatcher: " + e.getActiveCount + " " + Stream.continually(q.poll()).takeWhile(_ != null).mkString(", "))
+        }
 
         if (!warmup) {
           ok must be(true)

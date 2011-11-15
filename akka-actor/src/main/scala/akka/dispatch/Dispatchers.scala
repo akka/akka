@@ -22,7 +22,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .build
  * </pre>
  * <p/>
@@ -36,7 +35,6 @@ import akka.actor.ActorSystem
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .build();
  * </pre>
  * <p/>
@@ -171,9 +169,7 @@ class Dispatchers(val app: ActorSystem) {
    *   keep-alive-time = 60        # Keep alive time for threads in akka.time-unit
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
-   *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
    *   allow-core-timeout = on     # Allow core threads to time out
-   *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
    *   throughput = 5              # Throughput for Dispatcher
    * }
    * ex: from(config.getConfigMap(identifier).get)

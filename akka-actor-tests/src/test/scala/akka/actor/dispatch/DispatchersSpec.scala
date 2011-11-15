@@ -18,9 +18,7 @@ class DispatchersSpec extends AkkaSpec {
   val keepalivems = "keep-alive-time"
   val corepoolsizefactor = "core-pool-size-factor"
   val maxpoolsizefactor = "max-pool-size-factor"
-  val executorbounds = "executor-bounds"
   val allowcoretimeout = "allow-core-timeout"
-  val rejectionpolicy = "rejection-policy" // abort, caller-runs, discard-oldest, discard
   val throughput = "throughput" // Throughput for Dispatcher
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher

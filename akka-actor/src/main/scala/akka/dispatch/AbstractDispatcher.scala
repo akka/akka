@@ -236,7 +236,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
             shutdownSchedule = SCHEDULED
             app.scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
-            if (_tasks.get == 0) {
+            if (_tasks.get == 0 && _actors.get() == 0) {
               active switchOff {
                 shutdown() // shut down in the dispatcher's references is zero
               }
@@ -354,7 +354,6 @@ abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
       conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, app.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
-      conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
       conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
       conf_?(config getInt "task-queue-size" flatMap {
         case size if size > 0 ⇒
@@ -364,13 +363,6 @@ abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
             case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
           }
         case _ ⇒ None
-      })(queueFactory ⇒ _.setQueueFactory(queueFactory)),
-      conf_?(config getString "rejection-policy" map {
-        case "abort"          ⇒ new AbortPolicy()
-        case "caller-runs"    ⇒ new CallerRunsPolicy()
-        case "discard-oldest" ⇒ new DiscardOldestPolicy()
-        case "discard"        ⇒ new DiscardPolicy()
-        case x                ⇒ throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy [abort|caller-runs|discard-oldest|discard]!" format x)
-      })(policy ⇒ _.setRejectionPolicy(policy)))
+      })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
 }

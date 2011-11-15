@@ -64,8 +64,6 @@ class BalancingDispatcher(
     final def numberOfMessages: Int = messageQueue.numberOfMessages
 
     final def hasMessages: Boolean = messageQueue.hasMessages
-
-    final val dispatcher = BalancingDispatcher.this
   }
 
   protected[akka] override def register(actor: ActorCell) = {

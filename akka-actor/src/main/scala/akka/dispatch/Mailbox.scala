@@ -4,12 +4,10 @@
 package akka.dispatch
 
 import akka.AkkaException
-import java.util.{ Comparator, PriorityQueue }
+import java.util.{ Comparator, PriorityQueue, Queue }
 import akka.util._
-import java.util.Queue
-import akka.actor.{ ActorContext, ActorCell, ActorRef }
+import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
-import atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import annotation.tailrec
 import akka.event.Logging.Error
 
@@ -31,7 +29,7 @@ object Mailbox {
   final val Scheduled = 4
 
   // mailbox debugging helper using println (see below)
-  // TODO take this out before release
+  // FIXME TODO take this out before release
   final val debug = false
 }
 
@@ -45,7 +43,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   final def status: Mailbox.Status = AbstractMailbox.updater.get(this)
 
   @inline
-  final def isActive: Boolean = (status & 3) == Open
+  final def shouldProcessMessage: Boolean = (status & 3) == Open
 
   @inline
   final def isSuspended: Boolean = (status & 3) == Suspended
@@ -63,16 +61,6 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   @inline
   protected final def setStatus(newStatus: Status): Unit =
     AbstractMailbox.updater.set(this, newStatus)
-
-  /**
-   * Internal method to enforce a volatile write of the status
-   */
-  @tailrec
-  final def acknowledgeStatus() {
-    val s = status
-    if (updateStatus(s, s)) ()
-    else acknowledgeStatus()
-  }
 
   /**
    * set new primary status Open. Caller does not need to worry about whether
@@ -130,12 +118,8 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
      * without Scheduled bit set (this is one of the reasons why the numbers
      * cannot be changed in object Mailbox above)
      */
-    if (s >= Scheduled) {
-      updateStatus(s, s & ~Scheduled) || setAsIdle()
-    } else {
-      acknowledgeStatus() // this write is needed to make memory consistent after processMailbox()
-      false
-    }
+
+    updateStatus(s, s & ~Scheduled) || setAsIdle()
   }
 
   /*
@@ -144,15 +128,14 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   protected final def systemQueueGet: SystemMessage = AbstractMailbox.systemQueueUpdater.get(this)
   protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean = AbstractMailbox.systemQueueUpdater.compareAndSet(this, _old, _new)
 
-  def shouldBeRegisteredForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
+  def shouldBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case Closed           ⇒ false
     case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   final def run = {
-    try processMailbox()
-    finally {
+    try processMailbox() finally {
       setAsIdle()
       dispatcher.registerForExecution(this, false, false)
     }
@@ -166,7 +149,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   final def processMailbox() {
     processAllSystemMessages() //First, process all system messages
 
-    if (isActive) {
+    if (shouldProcessMessage) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.isThroughputDefined) { //If we're using throughput, we need to do some book-keeping
@@ -175,10 +158,9 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
           do {
             if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
-
             processAllSystemMessages() //After we're done, process all system messages
 
-            nextMessage = if (isActive) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
+            nextMessage = if (shouldProcessMessage) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
               processedMessages += 1
               if ((processedMessages >= dispatcher.throughput) || (dispatcher.isThroughputDeadlineTimeDefined && System.nanoTime >= deadlineNs)) // If we're throttled, break out
                 null //We reached our boundaries, abort
@@ -210,7 +192,8 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     }
   }
 
-  def dispatcher: MessageDispatcher
+  @inline
+  final def dispatcher: MessageDispatcher = actor.dispatcher
 }
 
 trait MessageQueue {
@@ -299,17 +282,16 @@ trait QueueBasedMessageQueue extends MessageQueue {
  * Mailbox configuration.
  */
 trait MailboxType {
-  def create(dispatcher: MessageDispatcher, receiver: ActorCell): Mailbox
+  def create(receiver: ActorCell): Mailbox
 }
 
 /**
  * It's a case class for Java (new UnboundedMailbox)
  */
 case class UnboundedMailbox() extends MailboxType {
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
-      final val dispatcher = _dispatcher
     }
 }
 
@@ -318,19 +300,17 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new LinkedBlockingQueue[Envelope](capacity)
       final val pushTimeOut = BoundedMailbox.this.pushTimeOut
-      final val dispatcher = _dispatcher
     }
 }
 
 case class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new PriorityBlockingQueue[Envelope](11, cmp)
-      final val dispatcher = _dispatcher
     }
 }
 
@@ -339,11 +319,10 @@ case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final va
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(_dispatcher: MessageDispatcher, receiver: ActorCell) =
+  override def create(receiver: ActorCell) =
     new Mailbox(receiver) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
       final val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut
-      final val dispatcher = _dispatcher
     }
 }
 

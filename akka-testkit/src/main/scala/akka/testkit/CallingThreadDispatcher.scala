@@ -106,7 +106,7 @@ private[testkit] object CallingThreadDispatcher {
 class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thread") extends MessageDispatcher(_app) {
   import CallingThreadDispatcher._
 
-  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(this, actor)
+  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
 
   private def getMailbox(actor: ActorCell): Option[CallingThreadMailbox] = actor.mailbox match {
     case m: CallingThreadMailbox ⇒ Some(m)
@@ -257,7 +257,7 @@ class NestingQueue {
   def isActive = active
 }
 
-class CallingThreadMailbox(val dispatcher: MessageDispatcher, _receiver: ActorCell) extends Mailbox(_receiver) with DefaultSystemMessageQueue {
+class CallingThreadMailbox(_receiver: ActorCell) extends Mailbox(_receiver) with DefaultSystemMessageQueue {
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = {
