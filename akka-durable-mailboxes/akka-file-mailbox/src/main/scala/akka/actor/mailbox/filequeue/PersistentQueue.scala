@@ -18,12 +18,9 @@
 package akka.actor.mailbox.filequeue
 
 import java.io._
-
 import scala.collection.mutable
-
-import akka.event.EventHandler
-
 import akka.config.Configuration
+import akka.event.LoggingAdapter
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {
@@ -35,7 +32,7 @@ class OverlaySetting[T](base: ⇒ T) {
   def apply() = local.getOrElse(base)
 }
 
-class PersistentQueue(persistencePath: String, val name: String, val config: Configuration) {
+class PersistentQueue(persistencePath: String, val name: String, val config: Configuration, log: LoggingAdapter) {
 
   private case object ItemArrived
 
@@ -104,7 +101,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   // (optional) move expired items over to this queue
   val expiredQueue = overlay(PersistentQueue.expiredQueue)
 
-  private var journal = new Journal(new File(persistencePath, name).getCanonicalPath, syncJournal())
+  private var journal = new Journal(new File(persistencePath, name).getCanonicalPath, syncJournal(), log)
 
   // track tentative removals
   private var xidCounter: Int = 0
@@ -142,11 +139,10 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     discardOldWhenFull set config.getBool("akka.actor.mailbox.file-based.discard-old-when-full")
     keepJournal set config.getBool("akka.actor.mailbox.file-based.journal")
     syncJournal set config.getBool("akka.actor.mailbox.file-based.sync-journal")
-    EventHandler.info(this,
-      "Configuring queue %s: journal=%s, max-items=%s, max-size=%s, max-age=%s, max-journal-size=%s, max-memory-size=%s, max-journal-overflow=%s, max-journal-size-absolute=%s, discard-old-when-full=%s, sync-journal=%s"
-        .format(
-          name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),
-          maxJournalOverflow(), maxJournalSizeAbsolute(), discardOldWhenFull(), syncJournal()))
+    log.info("Configuring queue %s: journal=%s, max-items=%s, max-size=%s, max-age=%s, max-journal-size=%s, max-memory-size=%s, max-journal-overflow=%s, max-journal-size-absolute=%s, discard-old-when-full=%s, sync-journal=%s"
+      .format(
+        name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),
+        maxJournalOverflow(), maxJournalSizeAbsolute(), discardOldWhenFull(), syncJournal()))
     if (!keepJournal()) journal.erase()
   }
 
@@ -205,13 +201,11 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     if (keepJournal() && !journal.inReadBehind) {
       if (journal.size > maxJournalSize() * maxJournalOverflow() && queueSize < maxJournalSize()) {
         // force re-creation of the journal.
-        EventHandler.debug(this,
-          "Rolling journal file for '%s' (qsize=%s)".format(name, queueSize))
+        log.debug("Rolling journal file for '{}' (qsize={})", name, queueSize)
         journal.roll(xidCounter, openTransactionIds map { openTransactions(_) }, queue)
       }
       if (queueSize >= maxMemorySize()) {
-        EventHandler.debug(this,
-          "Dropping to read-behind for queue '%s' (%s bytes)".format(name, queueSize))
+        log.debug("Dropping to read-behind for queue '{}' ({} bytes)", name, queueSize)
         journal.startReadBehind
       }
     }
@@ -252,7 +246,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
           if (transaction) journal.removeTentative() else journal.remove()
 
           if ((queueLength == 0) && (journal.size >= maxJournalSize())) {
-            EventHandler.debug(this, "Rolling journal file for '%s'".format(name))
+            log.debug("Rolling journal file for '{}'", name)
             journal.roll(xidCounter, openTransactionIds map { openTransactions(_) }, Nil)
           }
         }
@@ -333,7 +327,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
         _memoryBytes += item.data.length
       }
       if (!journal.inReadBehind) {
-        EventHandler.debug(this, "Coming out of read-behind for queue '%s'".format(name))
+        log.debug("Coming out of read-behind for queue '{}'", name)
       }
     }
   }
@@ -341,7 +335,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   def replayJournal() {
     if (!keepJournal()) return
 
-    EventHandler.debug(this, "Replaying transaction journal for '%s'".format(name))
+    log.debug("Replaying transaction journal for '{}'", name)
     xidCounter = 0
 
     journal.replay(name) {
@@ -349,8 +343,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
         _add(item)
         // when processing the journal, this has to happen after:
         if (!journal.inReadBehind && queueSize >= maxMemorySize()) {
-          EventHandler.debug(this,
-            "Dropping to read-behind for queue '%s' (%s bytes)".format(name, queueSize))
+          log.debug("Dropping to read-behind for queue '{}' ({} bytes)", name, queueSize)
           journal.startReadBehind
         }
       case JournalItem.Remove             ⇒ _remove(false)
@@ -358,12 +351,11 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
       case JournalItem.SavedXid(xid)      ⇒ xidCounter = xid
       case JournalItem.Unremove(xid)      ⇒ _unremove(xid)
       case JournalItem.ConfirmRemove(xid) ⇒ openTransactions.remove(xid)
-      case x                              ⇒ EventHandler.warning(this, "Unexpected item in journal: %s".format(x))
+      case x                              ⇒ log.warning("Unexpected item in journal: {}", x)
     }
 
-    EventHandler.debug(this,
-      "Finished transaction journal for '%s' (%s items, %s bytes)"
-        .format(name, queueLength, journal.size))
+    log.debug("Finished transaction journal for '{}' ({} items, {} bytes)",
+      name, queueLength, journal.size)
     journal.open
 
     // now, any unfinished transactions must be backed out.

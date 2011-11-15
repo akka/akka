@@ -4,54 +4,62 @@
 
 package akka.actor.mailbox
 
-import akka.actor.LocalActorRef
-import akka.dispatch._
-import akka.config.Config._
-import akka.event.EventHandler
-
 import org.apache.commons.io.FileUtils
+import akka.actor.ActorCell
+import akka.config.Configuration
+import akka.dispatch.Envelope
+import akka.event.Logging
+import akka.actor.ActorRef
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-private[akka] object FileBasedMailboxUtil {
-  val queuePath = config.getString("akka.actor.mailbox.file-based.directory-path", "./_mb") // /var/spool/akka
+object FileBasedMailbox {
+  def queuePath(config: Configuration): String = {
+    config.getString("akka.actor.mailbox.file-based.directory-path", "./_mb") // /var/spool/akka
+  }
 }
 
-class FileBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbox(owner) {
-  import FileBasedMailboxUtil._
+class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
+
+  val log = Logging(app, this)
+
+  val queuePath = FileBasedMailbox.queuePath(owner.app.config)
 
   private val queue = try {
     try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case e ⇒ {} }
-    val queue = new filequeue.PersistentQueue(queuePath, name, config)
+    val queue = new filequeue.PersistentQueue(queuePath, name, owner.app.config, log)
     queue.setup // replays journal
     queue.discardExpired
     queue
   } catch {
     case e: Exception ⇒
-      EventHandler.error(e, this, "Could not create a file-based mailbox")
+      log.error(e, "Could not create a file-based mailbox")
       throw e
   }
 
-  def enqueue(message: MessageInvocation) = {
-    EventHandler.debug(this, "\nENQUEUING message in file-based mailbox [%s]".format(message))
-    queue.add(serialize(message))
+  def enqueue(receiver: ActorRef, envelope: Envelope) {
+    log.debug("ENQUEUING message in file-based mailbox [{}]", envelope)
+    queue.add(serialize(envelope))
   }
 
-  def dequeue: MessageInvocation = try {
+  def dequeue(): Envelope = try {
     val item = queue.remove
     if (item.isDefined) {
       queue.confirmRemove(item.get.xid)
-      val messageInvocation = deserialize(item.get.data)
-      EventHandler.debug(this, "\nDEQUEUING message in file-based mailbox [%s]".format(messageInvocation))
-      messageInvocation
+      val envelope = deserialize(item.get.data)
+      log.debug("DEQUEUING message in file-based mailbox [{}]", envelope)
+      envelope
     } else null
   } catch {
     case e: java.util.NoSuchElementException ⇒ null
     case e: Exception ⇒
-      EventHandler.error(e, this, "Couldn't dequeue from file-based mailbox")
+      log.error(e, "Couldn't dequeue from file-based mailbox")
       throw e
   }
+
+  def numberOfMessages: Int = {
+    queue.length.toInt
+  }
+
+  def hasMessages: Boolean = numberOfMessages > 0
 
   /**
    * Completely delete the queue.
@@ -63,7 +71,4 @@ class FileBasedMailbox(val owner: LocalActorRef) extends DurableExecutableMailbo
     case e ⇒ false //review why catch Throwable? And swallow potential Errors?
   }
 
-  def size: Int = queue.length.toInt
-
-  def isEmpty: Boolean = size == 0
 }
