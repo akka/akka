@@ -15,16 +15,8 @@ import org.scalatest.matchers.MustMatchers
 class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit {
   val endpoint = "tcp://127.0.0.1:10000"
   "ConcurrentSocketActor" should {
-     val runTests = try {
-       ZeroMQ.newContext().term //Test for existence of 0MQ
-       true
-     } catch {
-       case e: UnsatisfiedLinkError if e.getMessage == "Unable to load library 'zmq': dlopen(libzmq.dylib, 9): image not found" => false
-     }
-
-    if (runTests) {
-
     "support pub-sub connections" in {
+      checkZeroMQInstallation
       val (publisherProbe, subscriberProbe) = (TestProbe(), TestProbe())
       var context: Option[Context] = None
       var publisher: Option[ActorRef] = None
@@ -59,6 +51,7 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
       }
     }
     "support zero-length message frames" in {
+      checkZeroMQInstallation
       val publisherProbe = TestProbe()
       var publisher: Option[ActorRef] = None
       var context: Option[Context] = None
@@ -76,10 +69,6 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         }
       }
     }
-    } else {
-      "run all tests for 0MQ" ignore { }
-    }
-
     def newPublisher(context: Context, listener: ActorRef) = {
       val publisher = ZeroMQ.newSocket(SocketParameters(context, SocketType.Pub, Some(listener)))
       publisher ! Bind(endpoint)
@@ -93,6 +82,22 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
     }
     def newMessageGenerator(actorRef: Option[ActorRef]) = {
       Some(actorOf(new MessageGeneratorActor(actorRef)).start)
+    }
+    def checkZeroMQInstallation = try {
+      ZeroMQ.version match {
+        case ZeroMQVersion(2, 1, _) => Unit
+        case version => invalidZeroMQVersion(version)
+      }
+    } catch {
+      case e: LinkageError => zeroMQNotInstalled
+    }
+    def invalidZeroMQVersion(version: ZeroMQVersion) {
+      info("WARNING: The tests are not run because invalid ZeroMQ version: %s. Version >= 2.1.x required.".format(version))
+      pending
+    }
+    def zeroMQNotInstalled {
+      info("WARNING: The tests are not run because ZeroMQ is not installed. Version >= 2.1.x required.")
+      pending
     }
   }
   class MessageGeneratorActor(actorRef: Option[ActorRef]) extends Actor {

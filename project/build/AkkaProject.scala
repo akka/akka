@@ -130,7 +130,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
 
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.4.1" % "compile" //New BSD
 
-    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.2" // ApacheV2
+    lazy val zeromq = "org.zeromq" %% "zeromq-scala-binding" % "0.0.3" // ApacheV2
 
     lazy val sjson      = "net.debasishg" % "sjson_2.9.0" % "0.11" % "compile" //ApacheV2
     lazy val sjson_test = "net.debasishg" % "sjson_2.9.0" % "0.11" % "test" //ApacheV2
