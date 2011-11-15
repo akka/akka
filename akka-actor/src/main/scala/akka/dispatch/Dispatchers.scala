@@ -9,7 +9,7 @@ import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.config.Configuration
 import java.util.concurrent.TimeUnit
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /**
  * Scala API. Dispatcher factory.
@@ -22,7 +22,6 @@ import akka.AkkaApplication
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .build
  * </pre>
  * <p/>
@@ -36,14 +35,13 @@ import akka.AkkaApplication
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .build();
  * </pre>
  * <p/>
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Dispatchers(val app: AkkaApplication) {
+class Dispatchers(val app: ActorSystem) {
   val ThroughputDeadlineTimeMillis = app.AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt
   val MailboxType: MailboxType =
     if (app.AkkaConfig.MailboxCapacity < 1) UnboundedMailbox()
@@ -61,7 +59,7 @@ class Dispatchers(val app: AkkaApplication) {
    */
   def newPinnedDispatcher(actor: LocalActorRef) = actor match {
     case null ⇒ new PinnedDispatcher(app, null, "anon", MailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(app, some.underlying, some.underlying.uuid.toString, MailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(app, some.underlying, some.address, MailboxType, DispatcherShutdownMillis)
   }
 
   /**
@@ -72,7 +70,7 @@ class Dispatchers(val app: AkkaApplication) {
    */
   def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
     case null ⇒ new PinnedDispatcher(app, null, "anon", mailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(app, some.underlying, some.underlying.uuid.toString, mailboxType, DispatcherShutdownMillis)
+    case some ⇒ new PinnedDispatcher(app, some.underlying, some.address, mailboxType, DispatcherShutdownMillis)
   }
 
   /**
@@ -171,9 +169,7 @@ class Dispatchers(val app: AkkaApplication) {
    *   keep-alive-time = 60        # Keep alive time for threads in akka.time-unit
    *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
-   *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
    *   allow-core-timeout = on     # Allow core threads to time out
-   *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
    *   throughput = 5              # Throughput for Dispatcher
    * }
    * ex: from(config.getConfigMap(identifier).get)
@@ -206,7 +202,7 @@ class Dispatchers(val app: AkkaApplication) {
   }
 }
 
-class DispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConfigurator(app) {
+class DispatcherConfigurator(app: ActorSystem) extends MessageDispatcherConfigurator(app) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new Dispatcher(app,
       config.getString("name", newUuid.toString),
@@ -218,7 +214,7 @@ class DispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConf
   }
 }
 
-class BalancingDispatcherConfigurator(app: AkkaApplication) extends MessageDispatcherConfigurator(app) {
+class BalancingDispatcherConfigurator(app: ActorSystem) extends MessageDispatcherConfigurator(app) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new BalancingDispatcher(app,
       config.getString("name", newUuid.toString),

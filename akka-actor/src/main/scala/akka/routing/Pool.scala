@@ -93,7 +93,11 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
 
   protected[akka] var _delegates = Vector[ActorRef]()
 
-  val defaultProps: Props = Props.default.withSupervisor(this.self).withDispatcher(this.context.dispatcher)
+  val defaultProps: Props = Props.default.withDispatcher(this.context.dispatcher)
+
+  override def preStart() {
+    resizeIfAppropriate()
+  }
 
   override def postStop() {
     _delegates foreach evict
@@ -103,8 +107,8 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
   protected def _route(): Actor.Receive = {
     // for testing...
     case Stat ⇒
-      channel.tryTell(Stats(_delegates length))
-    case Terminated(victim, _) ⇒
+      sender ! Stats(_delegates length)
+    case Terminated(victim) ⇒
       _delegates = _delegates filterNot { victim == }
     case msg ⇒
       resizeIfAppropriate()
@@ -112,11 +116,11 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
       select(_delegates) foreach { _ forward msg }
   }
 
-  private def resizeIfAppropriate() {
+  protected def resizeIfAppropriate() {
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
-        _delegates ++ Vector.fill(requestedCapacity)(self startsMonitoring instance(defaultProps))
+        _delegates ++ Vector.fill(requestedCapacity)(watch(instance(defaultProps)))
 
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {
@@ -285,17 +289,17 @@ trait MailboxPressureCapacitor {
 
 /**
  * Implements pressure() to return the number of actors currently processing a
- * message whose reply will be sent to a [[akka.dispatch.Future]].
+ * message.
  * In other words, this capacitor counts how many
- * delegates are tied up actively processing a message, as long as the
- * messages have somebody waiting on the result. "One way" messages with
- * no reply would not be counted.
+ * delegates are tied up actively processing a message
  */
-trait ActiveFuturesPressureCapacitor {
+trait ActiveActorsPressureCapacitor {
   def pressure(delegates: Seq[ActorRef]): Int =
     delegates count {
-      case a: LocalActorRef ⇒ a.underlying.channel.isInstanceOf[Promise[_]]
-      case _                ⇒ false
+      case a: LocalActorRef ⇒
+        val cell = a.underlying
+        cell.mailbox.isScheduled && cell.currentMessage != null
+      case _ ⇒ false
     }
 }
 

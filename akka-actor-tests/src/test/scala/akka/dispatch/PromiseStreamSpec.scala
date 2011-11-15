@@ -6,6 +6,7 @@ import akka.actor.Timeout
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PromiseStreamSpec extends AkkaSpec {
 
   "A PromiseStream" must {

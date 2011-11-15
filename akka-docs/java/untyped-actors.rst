@@ -107,7 +107,6 @@ Send messages
 
 Messages are sent to an Actor through one of the 'send' methods.
 * 'tell' means “fire-and-forget”, e.g. send a message asynchronously and return immediately.
-* 'sendRequestReply' means “send-and-reply-eventually”, e.g. send a message asynchronously and wait for a reply through a Future. Here you can specify a timeout. Using timeouts is very important. If no timeout is specified then the actor’s default timeout (set by the 'getContext().setTimeout(..)' method in the 'ActorRef') is used. This method throws an 'ActorTimeoutException' if the call timed out.
 * 'ask' sends a message asynchronously and returns a 'Future'.
 
 In all these methods you have the option of passing along your 'ActorRef' context variable. Make it a practice of doing so because it will allow the receiver actors to be able to respond to your message, since the sender reference is sent along with the message.
@@ -130,29 +129,6 @@ Or with the sender reference passed along:
 If invoked from within an Actor, then the sending actor reference will be implicitly passed along with the message and available to the receiving Actor in its 'getContext().getSender();' method. He can use this to reply to the original sender or use the 'getContext().reply(message);' method.
 
 If invoked from an instance that is **not** an Actor there will be no implicit sender passed along the message and you will get an 'IllegalStateException' if you call 'getContext().reply(..)'.
-
-Send-And-Receive-Eventually
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Using 'sendRequestReply' will send a message to the receiving Actor asynchronously but it will wait for a reply on a 'Future', blocking the sender Actor until either:
-
-* A reply is received, or
-* The Future times out and an 'ActorTimeoutException' is thrown.
-
-You can pass an explicit time-out to the 'sendRequestReply' method and if none is specified then the default time-out defined in the sender Actor will be used.
-
-Here are some examples:
-
-.. code-block:: java
-
-  UntypedActorRef actorRef = ...
-
-  try {
-    Object result = actorRef.sendRequestReply("Hello", getContext(), 1000);
-    ... // handle reply
-  } catch(ActorTimeoutException e) {
-    ... // handle timeout
-  }
 
 Send-And-Receive-Future
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -239,7 +215,7 @@ which you do by Channel.tell(msg)
       String msg = (String)message;
       if (msg.equals("Hello")) {
         // Reply to original sender of message using the channel
-        getContext().channel().tryTell(msg + " from " + getContext().getUuid());
+        getContext().channel().tell(msg + " from " + getContext().getUuid());
       }
     }
   }

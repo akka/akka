@@ -8,14 +8,13 @@ import akka.testkit._
 import akka.util.duration._
 import Actor._
 import akka.util.Duration
-import akka.AkkaApplication
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
-  def createForwardingChain(app: AkkaApplication): ActorRef = {
+  def createForwardingChain(app: ActorSystem): ActorRef = {
     val replier = app.actorOf(new Actor {
-      def receive = { case x ⇒ channel ! x }
+      def receive = { case x ⇒ sender ! x }
     })
 
     def mkforwarder(forwardTo: ActorRef) = app.actorOf(
@@ -27,6 +26,7 @@ object ForwardActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
 

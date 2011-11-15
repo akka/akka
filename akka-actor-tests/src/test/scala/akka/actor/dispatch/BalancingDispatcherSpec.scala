@@ -5,6 +5,7 @@ import akka.dispatch.{ Mailbox, Dispatchers }
 import akka.actor.{ LocalActorRef, IllegalActorStateException, Actor, Props }
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingDispatcherSpec extends AkkaSpec {
 
   def newWorkStealer() = app.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher", 1).build

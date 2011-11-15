@@ -96,13 +96,13 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
 object ActorComponentFeatureTest {
   class CustomIdActor extends Actor {
     protected def receive = {
-      case msg: Message ⇒ channel ! ("Received %s" format msg.body)
+      case msg: Message ⇒ sender ! ("Received %s" format msg.body)
     }
   }
 
   class FailWithMessage extends Actor {
     protected def receive = {
-      case msg: Message ⇒ channel ! Failure(new Exception("test"))
+      case msg: Message ⇒ sender ! Failure(new Exception("test"))
     }
   }
 

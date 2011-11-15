@@ -35,10 +35,10 @@ import org.bson.collection._
 case class MongoDurableMessage(val ownerAddress: String,
                                val receiver: LocalActorRef,
                                val message: Any,
-                               val channel: UntypedChannel,
+                               val sender: UntypedChannel,
                                val _id: ObjectId = new ObjectId) {
 
-  def messageInvocation() = MessageInvocation(this.receiver, this.message, this.channel)
+  def messageInvocation() = MessageInvocation(this.receiver, this.message, this.sender)
 }
 
 // vim: set ts=2 sw=2 sts=2 et:

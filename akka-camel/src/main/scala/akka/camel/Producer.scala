@@ -97,9 +97,9 @@ trait ProducerSupport { this: Actor ⇒
     val exchange = createExchange(pattern).fromRequestMessage(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
-      // Need copies of channel reference here since the callback could be done
+      // Need copies of sender reference here since the callback could be done
       // later by another thread.
-      val replyChannel = channel
+      val replyChannel = sender
 
       def done(doneSync: Boolean) {
         (doneSync, exchange.isFailed) match {
@@ -159,7 +159,7 @@ trait ProducerSupport { this: Actor ⇒
    * actor).
    */
   protected def receiveAfterProduce: Receive = {
-    case msg ⇒ if (!oneway) channel ! msg
+    case msg ⇒ if (!oneway) sender ! msg
   }
 
   /**

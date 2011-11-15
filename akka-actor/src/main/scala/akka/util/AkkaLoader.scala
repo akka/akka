@@ -3,12 +3,12 @@
  */
 
 package akka.util
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
  */
-class AkkaLoader(app: AkkaApplication) {
+class AkkaLoader(app: ActorSystem) {
   private val hasBooted = new Switch(false)
 
   @volatile
@@ -86,6 +86,6 @@ class AkkaLoader(app: AkkaApplication) {
 ==============================================================================
                       Running version %s
 ==============================================================================
-""".format(AkkaApplication.Version))
+""".format(ActorSystem.Version))
   }
 }

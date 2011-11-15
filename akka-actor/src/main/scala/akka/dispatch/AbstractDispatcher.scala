@@ -6,18 +6,18 @@ package akka.dispatch
 
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicLong
-import akka.event.EventHandler
+import akka.event.Logging.Error
 import akka.config.Configuration
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
 import akka.actor._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import scala.annotation.tailrec
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-final case class Envelope(val message: Any, val channel: UntypedChannel) {
+final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
 }
 
@@ -52,21 +52,21 @@ object SystemMessage {
 sealed trait SystemMessage extends PossiblyHarmful {
   var next: SystemMessage = _
 }
-case class Create() extends SystemMessage
-case class Recreate(cause: Throwable) extends SystemMessage
-case class Suspend() extends SystemMessage
-case class Resume() extends SystemMessage
-case class Terminate() extends SystemMessage
-case class Supervise(child: ActorRef) extends SystemMessage
-case class Link(subject: ActorRef) extends SystemMessage
-case class Unlink(subject: ActorRef) extends SystemMessage
+case class Create() extends SystemMessage // send to self from Dispatcher.register
+case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
+case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
+case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.startsMonitoring
+case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.stopsMonitoring
 
-final case class TaskInvocation(app: AkkaApplication, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(app: ActorSystem, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       function()
     } catch {
-      case e ⇒ app.eventHandler.error(e, this, e.getMessage)
+      case e ⇒ app.eventStream.publish(Error(e, this, e.getMessage))
     } finally {
       cleanup()
     }
@@ -78,13 +78,13 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultDispatcher(implicit app: AkkaApplication) = app.dispatcher
+  implicit def defaultDispatcher(implicit app: ActorSystem) = app.dispatcher
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable {
+abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
   import MessageDispatcher._
 
   protected val _tasks = new AtomicLong(0L)
@@ -100,21 +100,9 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
 
   /**
-   * Create a blackhole mailbox for the purpose of replacing the real one upon actor termination
+   * a blackhole mailbox for the purpose of replacing the real one upon actor termination
    */
-  protected[akka] val deadLetterMailbox: Mailbox = DeadLetterMailbox
-
-  object DeadLetterMailbox extends Mailbox(null) {
-    becomeClosed()
-    override def dispatcher = null //MessageDispatcher.this
-    override def enqueue(envelope: Envelope) { envelope.channel sendException new ActorKilledException("Actor has been stopped") }
-    override def dequeue() = null
-    override def systemEnqueue(handle: SystemMessage): Unit = ()
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
-  }
+  import app.deadLetterMailbox
 
   /**
    * Name of this dispatcher.
@@ -208,8 +196,8 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
   protected[akka] def unregister(actor: ActorCell) {
     _actors.decrementAndGet()
     val mailBox = actor.mailbox
-    mailBox.becomeClosed()
-    actor.mailbox = deadLetterMailbox //FIXME getAndSet would be preferrable here
+    actor.mailbox = deadLetterMailbox
+    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up 
     cleanUpMailboxFor(actor, mailBox)
   }
 
@@ -222,15 +210,18 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
     if (mailBox.hasSystemMessages) {
       var message = mailBox.systemDrain()
       while (message ne null) {
-        deadLetterMailbox.systemEnqueue(message)
-        message = message.next
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        deadLetterMailbox.systemEnqueue(actor.self, message)
+        message = next
       }
     }
 
     if (mailBox.hasMessages) {
       var envelope = mailBox.dequeue
       while (envelope ne null) {
-        deadLetterMailbox.enqueue(envelope)
+        deadLetterMailbox.enqueue(actor.self, envelope)
         envelope = mailBox.dequeue
       }
     }
@@ -245,7 +236,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
             shutdownSchedule = SCHEDULED
             app.scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
           case SCHEDULED ⇒
-            if (_tasks.get == 0) {
+            if (_tasks.get == 0 && _actors.get() == 0) {
               active switchOff {
                 shutdown() // shut down in the dispatcher's references is zero
               }
@@ -338,7 +329,7 @@ abstract class MessageDispatcher(val app: AkkaApplication) extends Serializable 
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
+abstract class MessageDispatcherConfigurator(val app: ActorSystem) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
@@ -363,7 +354,6 @@ abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
       conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, app.AkkaConfig.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
-      conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
       conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
       conf_?(config getInt "task-queue-size" flatMap {
         case size if size > 0 ⇒
@@ -373,13 +363,6 @@ abstract class MessageDispatcherConfigurator(val app: AkkaApplication) {
             case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
           }
         case _ ⇒ None
-      })(queueFactory ⇒ _.setQueueFactory(queueFactory)),
-      conf_?(config getString "rejection-policy" map {
-        case "abort"          ⇒ new AbortPolicy()
-        case "caller-runs"    ⇒ new CallerRunsPolicy()
-        case "discard-oldest" ⇒ new DiscardOldestPolicy()
-        case "discard"        ⇒ new DiscardPolicy()
-        case x                ⇒ throw new IllegalArgumentException("[%s] is not a valid rejectionPolicy [abort|caller-runs|discard-oldest|discard]!" format x)
-      })(policy ⇒ _.setRejectionPolicy(policy)))
+      })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
 }

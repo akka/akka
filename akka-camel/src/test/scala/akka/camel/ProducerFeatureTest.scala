@@ -253,16 +253,16 @@ object ProducerFeatureTest {
   class TestResponder extends Actor {
     protected def receive = {
       case msg: Message ⇒ msg.body match {
-        case "fail" ⇒ channel ! Failure(new Exception("failure"), msg.headers)
-        case _      ⇒ channel ! (msg.transformBody { body: String ⇒ "received %s" format body })
+        case "fail" ⇒ sender ! Failure(new Exception("failure"), msg.headers)
+        case _      ⇒ sender ! (msg.transformBody { body: String ⇒ "received %s" format body })
       }
     }
   }
 
   class ReplyingForwardTarget extends Actor {
     protected def receive = {
-      case msg: Message ⇒ channel ! msg.addHeader("test" -> "result")
-      case msg: Failure ⇒ channel ! Failure(msg.cause, msg.headers + ("test" -> "failure"))
+      case msg: Message ⇒ sender ! msg.addHeader("test" -> "result")
+      case msg: Failure ⇒ sender ! Failure(msg.cause, msg.headers + ("test" -> "failure"))
     }
   }
 

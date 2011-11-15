@@ -15,6 +15,6 @@ public class UntypedConsumer1 extends UntypedConsumerActor {
     public void onReceive(Object message) {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
-        channel.tryTell(String.format("received %s", body));
+        sender.tell(String.format("received %s", body));
    }
 }

@@ -1,6 +1,6 @@
 package akka.stm.example;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.stm.*;
 import akka.actor.*;
 
@@ -10,7 +10,7 @@ public class RetryExample {
         System.out.println("Retry example");
         System.out.println();
 
-        AkkaApplication application = new AkkaApplication("RetryExample");
+        ActorSystem application = new ActorSystem("RetryExample");
 
         final Ref<Double> account1 = new Ref<Double>(100.0);
         final Ref<Double> account2 = new Ref<Double>(100.0);

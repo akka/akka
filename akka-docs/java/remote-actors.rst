@@ -353,7 +353,7 @@ Client side usage
   import static akka.actor.Actors.*;
   ActorRef actor = remote().actorFor("hello-service", "localhost", 2552);
 
-  Object result = actor.sendRequestReply("Hello");
+  Object result = actor.ask("Hello").get();
 
 There are many variations on the 'remote()#actorFor' method. Here are some of them:
 
@@ -605,7 +605,6 @@ Message Serialization
 
 All messages that are sent to remote actors needs to be serialized to binary format to be able to travel over the wire to the remote node. This is done by letting your messages extend one of the traits in the 'akka.serialization.Serializable' object. If the messages don't implement any specific serialization trait then the runtime will try to use standard Java serialization.
 
-Here is one example, but full documentation can be found in the :ref:`serialization-java`.
 
 Protobuf
 ^^^^^^^^

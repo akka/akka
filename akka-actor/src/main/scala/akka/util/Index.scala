@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package akka.util
 
 import annotation.tailrec
 
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Comparator, Set ⇒ JSet }
+import scala.collection.mutable
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -99,6 +99,24 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   }
 
   /**
+   * Returns the union of all value sets.
+   */
+  def values: Set[V] = {
+    import scala.collection.JavaConversions._
+    val builder = mutable.Set.empty[V]
+    for {
+      entry ← container.entrySet
+      v ← entry.getValue
+    } builder += v
+    builder.toSet
+  }
+
+  /**
+   * Returns the key set.
+   */
+  def keys = scala.collection.JavaConversions.collectionAsScalaIterable(container.keySet)
+
+  /**
    * Disassociates the value of type V from the key of type K
    * @return true if the value was disassociated from the key and false if it wasn't previously associated with the key
    */
@@ -119,7 +137,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
   /**
    * Disassociates all the values for the specified key
-   * @returns None if the key wasn't associated at all, or Some(scala.Iterable[V]) if it was associated
+   * @return None if the key wasn't associated at all, or Some(scala.Iterable[V]) if it was associated
    */
   def remove(key: K): Option[Iterable[V]] = {
     val set = container get key

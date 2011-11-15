@@ -3,6 +3,7 @@ package akka.dispatch
 import akka.actor.{ Props, LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PriorityDispatcherSpec extends AkkaSpec {
 
   "A PriorityDispatcher" must {
@@ -29,7 +30,7 @@ class PriorityDispatcherSpec extends AkkaSpec {
 
       def receive = {
         case i: Int  ⇒ acc = i :: acc
-        case 'Result ⇒ channel.tryTell(acc)
+        case 'Result ⇒ sender.tell(acc)
       }
     }).withDispatcher(dispatcher)).asInstanceOf[LocalActorRef]
 

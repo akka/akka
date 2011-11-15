@@ -6,8 +6,8 @@
 package akka.dispatch
 
 import akka.AkkaException
-import akka.event.EventHandler
-import akka.actor.{ Actor, UntypedChannel, Timeout, ExceptionChannel }
+import akka.event.Logging.Error
+import akka.actor.Timeout
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
@@ -21,7 +21,7 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
@@ -262,7 +262,7 @@ object Future {
                   result completeWithResult currentValue
                 } catch {
                   case e: Exception ⇒
-                    dispatcher.app.eventHandler.error(e, this, e.getMessage)
+                    dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
                     result completeWithException e
                 } finally {
                   results.clear
@@ -359,6 +359,41 @@ object Future {
 
   // TODO make variant of flow(timeout)(body) which does NOT break type inference
 
+  /**
+   * Assures that any Future tasks initiated in the current thread will be
+   * executed asynchronously, including any tasks currently queued to be
+   * executed in the current thread. This is needed if the current task may
+   * block, causing delays in executing the remaining tasks which in some
+   * cases may cause a deadlock.
+   *
+   * Note: Calling 'Future.await' will automatically trigger this method.
+   *
+   * For example, in the following block of code the call to 'latch.open'
+   * might not be executed until after the call to 'latch.await', causing
+   * a deadlock. By adding 'Future.blocking()' the call to 'latch.open'
+   * will instead be dispatched separately from the current block, allowing
+   * it to be run in parallel:
+   * <pre>
+   * val latch = new StandardLatch
+   * val future = Future() map { _ ⇒
+   *   Future.blocking()
+   *   val nested = Future()
+   *   nested foreach (_ ⇒ latch.open)
+   *   latch.await
+   * }
+   * </pre>
+   */
+  def blocking()(implicit dispatcher: MessageDispatcher): Unit =
+    _taskStack.get match {
+      case Some(taskStack) if taskStack.nonEmpty ⇒
+        val tasks = taskStack.elems
+        taskStack.clear()
+        _taskStack set None
+        dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
+      case Some(_) ⇒ _taskStack set None
+      case _       ⇒ // already None
+    }
+
   private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
     override def initialValue = None
   }
@@ -376,7 +411,7 @@ object Future {
               try {
                 next.apply()
               } catch {
-                case e ⇒ // TODO FIXME: Throwable or Exception, log or do what?
+                case e ⇒ e.printStackTrace() //TODO FIXME strategy for handling exceptions in callbacks
               }
             }
           } finally { _taskStack set None }
@@ -439,7 +474,7 @@ sealed trait Future[+T] extends japi.Future[T] {
         try { Some(BoxedType(m.erasure).cast(v).asInstanceOf[A]) } catch {
           case c: ClassCastException ⇒
             if (v.asInstanceOf[AnyRef] eq null) throw new ClassCastException("null cannot be cast to " + m.erasure)
-            else throw new ClassCastException("" + v + " of class " + v.asInstanceOf[AnyRef].getClass + " cannot be cast to " + m.erasure)
+            else throw new ClassCastException("'" + v + "' of class " + v.asInstanceOf[AnyRef].getClass + " cannot be cast to " + m.erasure)
         }
     }
   }
@@ -596,7 +631,7 @@ sealed trait Future[+T] extends japi.Future[T] {
             Right(f(res))
           } catch {
             case e: Exception ⇒
-              dispatcher.app.eventHandler.error(e, this, e.getMessage)
+              dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
               Left(e)
           })
       }
@@ -648,7 +683,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           future.completeWith(f(r))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventHandler.error(e, this, e.getMessage)
+            dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
             future complete Left(e)
         }
       }
@@ -681,7 +716,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           if (p(res)) r else Left(new MatchError(res))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventHandler.error(e, this, e.getMessage)
+            dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
             Left(e)
         })
       }
@@ -733,11 +768,6 @@ object Promise {
    * Creates a non-completed, new, Promise with the default timeout (akka.actor.timeout in conf)
    */
   def apply[A]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): Promise[A] = apply(timeout)
-
-  /**
-   * Construct a completable channel
-   */
-  def channel(timeout: Long)(implicit dispatcher: MessageDispatcher): ActorPromise = new ActorPromise(timeout)
 }
 
 /**
@@ -781,7 +811,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventHandler.error(e, this, e.getMessage)
+          dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
           fr completeWithException e
       }
     }
@@ -795,7 +825,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventHandler.error(e, this, e.getMessage)
+          dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
           fr completeWithException e
       }
     }
@@ -804,8 +834,8 @@ trait Promise[T] extends Future[T] {
 }
 
 //Companion object to FState, just to provide a cheap, immutable default entry
-private[akka] object FState {
-  def apply[T](): FState[T] = EmptyPending.asInstanceOf[FState[T]]
+private[dispatch] object DefaultPromise {
+  def EmptyPending[T](): FState[T] = emptyPendingValue.asInstanceOf[FState[T]]
 
   /**
    * Represents the internal state of the DefaultCompletableFuture
@@ -824,7 +854,7 @@ private[akka] object FState {
   case object Expired extends FState[Nothing] {
     def value: Option[Either[Throwable, Nothing]] = None
   }
-  val EmptyPending = Pending[Nothing](Nil)
+  private val emptyPendingValue = Pending[Nothing](Nil)
 }
 
 /**
@@ -833,7 +863,7 @@ private[akka] object FState {
 class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDispatcher) extends AbstractPromise with Promise[T] {
   self ⇒
 
-  import FState.{ FState, Success, Failure, Pending, Expired }
+  import DefaultPromise.{ FState, Success, Failure, Pending, Expired }
 
   def this()(implicit dispatcher: MessageDispatcher, timeout: Timeout) = this(timeout)
 
@@ -857,7 +887,9 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     }
   }
 
-  def await(atMost: Duration): this.type = {
+  def await(atMost: Duration): this.type = if (value.isDefined) this else {
+    Future.blocking()
+
     val waitNanos =
       if (timeout.duration.isFinite && atMost.isFinite)
         atMost.toNanos min timeLeft()
@@ -952,7 +984,8 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
               }
             }
           }
-          dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          val timeoutFuture = dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          onComplete(_ ⇒ timeoutFuture.cancel())
           false
         } else true
       } else false
@@ -984,7 +1017,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     } else this
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
-    try { func(this) } catch { case e ⇒ dispatcher.app.eventHandler.error(e, this, "Future onComplete-callback raised an exception") } //TODO catch, everything? Really?
+    try { func(this) } catch { case e ⇒ dispatcher.app.eventStream.publish(Error(e, this, "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
   }
 
   @inline
@@ -994,31 +1027,6 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
 
   private def timeLeftNoinline(): Long = timeLeft()
-}
-
-class ActorPromise(timeout: Timeout)(implicit dispatcher: MessageDispatcher) extends DefaultPromise[Any](timeout)(dispatcher) with UntypedChannel with ExceptionChannel[Any] {
-
-  def !(message: Any)(implicit channel: UntypedChannel) = completeWithResult(message)
-
-  override def sendException(ex: Throwable) = {
-    completeWithException(ex)
-    value == Some(Left(ex))
-  }
-
-  def channel: UntypedChannel = this
-
-}
-
-object ActorPromise {
-  def apply(f: Promise[Any])(timeout: Timeout = f.timeout): ActorPromise =
-    new ActorPromise(timeout)(f.dispatcher) {
-      completeWith(f)
-      override def !(message: Any)(implicit channel: UntypedChannel) = f completeWithResult message
-      override def sendException(ex: Throwable) = {
-        f completeWithException ex
-        f.value == Some(Left(ex))
-      }
-    }
 }
 
 /**

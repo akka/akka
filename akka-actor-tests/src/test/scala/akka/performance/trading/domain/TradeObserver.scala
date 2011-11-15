@@ -8,7 +8,9 @@ abstract trait TradeObserver {
 
 trait SimpleTradeObserver extends TradeObserver {
   override def trade(bid: Bid, ask: Ask) {
-    val c = TotalTradeCounter.counter.incrementAndGet
+    if (!Orderbook.useDummyOrderbook) {
+      TotalTradeCounter.counter.incrementAndGet
+    }
   }
 }
 

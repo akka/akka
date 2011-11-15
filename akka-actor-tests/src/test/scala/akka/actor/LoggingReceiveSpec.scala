@@ -7,10 +7,10 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.AkkaApplication
-import akka.AkkaApplication.defaultConfig
+import akka.actor.ActorSystem.defaultConfig
 import akka.config.Configuration
-import akka.event.EventHandler
+import akka.event.Logging
+import akka.util.Duration
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -18,23 +18,24 @@ object LoggingReceiveSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
 
   val config = defaultConfig ++ Configuration("akka.event-handler-level" -> "DEBUG")
-  val appLogging = AkkaApplication("logging", config ++ Configuration("akka.actor.debug.receive" -> true))
-  val appAuto = AkkaApplication("autoreceive", config ++ Configuration("akka.actor.debug.autoreceive" -> true))
-  val appLifecycle = AkkaApplication("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
+  val appLogging = ActorSystem("logging", config ++ Configuration("akka.actor.debug.receive" -> true))
+  val appAuto = ActorSystem("autoreceive", config ++ Configuration("akka.actor.debug.autoreceive" -> true))
+  val appLifecycle = ActorSystem("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
 
   val filter = TestEvent.Mute(EventFilter.custom {
-    case _: EventHandler.Debug ⇒ true
-    case _: EventHandler.Info  ⇒ true
-    case _                     ⇒ false
+    case _: Logging.Debug ⇒ true
+    case _: Logging.Info  ⇒ true
+    case _                ⇒ false
   })
-  appLogging.eventHandler.notify(filter)
-  appAuto.eventHandler.notify(filter)
-  appLifecycle.eventHandler.notify(filter)
+  appLogging.eventStream.publish(filter)
+  appAuto.eventStream.publish(filter)
+  appLifecycle.eventStream.publish(filter)
 
   def ignoreMute(t: TestKit) {
     t.ignoreMsg {
@@ -42,32 +43,39 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     }
   }
 
+  override def afterAll {
+    appLogging.stop()
+    appAuto.stop()
+    appLifecycle.stop()
+  }
+
   "A LoggingReceive" must {
 
     "decorate a Receive" in {
       new TestKit(appLogging) {
-        app.eventHandler.addListener(testActor)
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val r: Actor.Receive = {
           case null ⇒
         }
         val log = Actor.LoggingReceive(this, r)
         log.isDefinedAt("hallo")
-        expectMsg(1 second, EventHandler.Debug(this, "received unhandled message hallo"))
+        expectMsg(1 second, Logging.Debug(this, "received unhandled message hallo"))
       }
     }
 
     "be added on Actor if requested" in {
       new TestKit(appLogging) with ImplicitSender {
         ignoreMute(this)
-        app.eventHandler.addListener(testActor)
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           }
         })
         actor ! "buh"
         within(1 second) {
-          expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.underlyingActor, "received handled message buh"))
           expectMsg("x")
         }
         val r: Actor.Receive = {
@@ -75,28 +83,27 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         }
         actor ! HotSwap(_ ⇒ r, false)
         filterException[UnhandledMessageException] {
-          within(300 millis) {
+          within(500 millis) {
             actor ! "bah"
             expectMsgPF() {
-              case EventHandler.Error(_: UnhandledMessageException, `actor`, _) ⇒ true
+              case Logging.Error(_: UnhandledMessageException, `actor`, _) ⇒ true
             }
           }
         }
-        actor.stop()
       }
     }
 
     "not duplicate logging" in {
       new TestKit(appLogging) with ImplicitSender {
-        app.eventHandler.addListener(testActor)
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
-            case _ ⇒ channel ! "x"
+            case _ ⇒ sender ! "x"
           })
         })
         actor ! "buh"
         within(1 second) {
-          expectMsg(EventHandler.Debug(actor.underlyingActor, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.underlyingActor, "received handled message buh"))
           expectMsg("x")
         }
       }
@@ -108,14 +115,16 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "log AutoReceiveMessages if requested" in {
       new TestKit(appAuto) {
-        app.eventHandler.addListener(testActor)
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = {
             case _ ⇒
           }
         })
         actor ! PoisonPill
-        expectMsg(300 millis, EventHandler.Debug(actor.underlyingActor, "received AutoReceiveMessage PoisonPill"))
+        expectMsgPF() {
+          case Logging.Debug(`actor`, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" ⇒ true
+        }
         awaitCond(actor.isShutdown, 100 millis)
       }
     }
@@ -123,47 +132,60 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     "log LifeCycle changes if requested" in {
       new TestKit(appLifecycle) {
         ignoreMute(this)
-        app.eventHandler.addListener(testActor)
-        within(2 seconds) {
+        ignoreMsg {
+          case Logging.Debug(ref, _) ⇒
+            val s = ref.toString
+            s.contains("MainBusReaper") || s.contains("Supervisor")
+        }
+        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        app.eventStream.subscribe(testActor, classOf[Logging.Error])
+        within(3 seconds) {
+          val lifecycleGuardian = appLifecycle.guardian
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 
-          expectMsg(EventHandler.Debug(supervisor, "started"))
+          val supervisorSet = receiveWhile(messages = 2) {
+            case Logging.Debug(`lifecycleGuardian`, msg: String) if msg startsWith "now supervising" ⇒ 1
+            case Logging.Debug(`supervisor`, msg: String) if msg startsWith "started"                ⇒ 2
+          }.toSet
+          expectNoMsg(Duration.Zero)
+          assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
 
-          val actor = TestActorRef[TestLogActor](Props[TestLogActor].withSupervisor(supervisor))
+          val actor = new TestActorRef[TestLogActor](app, Props[TestLogActor], supervisor, "none")
 
-          expectMsgPF() {
-            case EventHandler.Debug(ref, msg: String) ⇒ ref == supervisor && msg.startsWith("now supervising")
-          }
-
-          expectMsg(EventHandler.Debug(actor, "started"))
+          val set = receiveWhile(messages = 2) {
+            case Logging.Debug(`supervisor`, msg: String) if msg startsWith "now supervising" ⇒ 1
+            case Logging.Debug(`actor`, msg: String) if msg startsWith "started"              ⇒ 2
+          }.toSet
+          expectNoMsg(Duration.Zero)
+          assert(set == Set(1, 2), set + " was not Set(1, 2)")
 
           supervisor startsMonitoring actor
           expectMsgPF(hint = "now monitoring") {
-            case EventHandler.Debug(ref, msg: String) ⇒
+            case Logging.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
           }
 
           supervisor stopsMonitoring actor
           expectMsgPF(hint = "stopped monitoring") {
-            case EventHandler.Debug(ref, msg: String) ⇒
+            case Logging.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")
           }
 
           filterException[ActorKilledException] {
             actor ! Kill
-            expectMsgPF() {
-              case EventHandler.Error(_: ActorKilledException, `actor`, "Kill") ⇒ true
-            }
-            expectMsg(EventHandler.Debug(actor, "restarting"))
-          }
-          awaitCond(msgAvailable)
-          expectMsgPF(hint = "restarted") {
-            case EventHandler.Debug(`actor`, "restarted") ⇒ true
+            val set = receiveWhile(messages = 3) {
+              case Logging.Error(_: ActorKilledException, `actor`, "Kill") ⇒ 1
+              case Logging.Debug(`actor`, "restarting")                    ⇒ 2
+              case Logging.Debug(`actor`, "restarted")                     ⇒ 3
+            }.toSet
+            expectNoMsg(Duration.Zero)
+            assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")
           }
 
-          actor.stop()
-          expectMsg(EventHandler.Debug(actor, "stopping"))
           supervisor.stop()
+          expectMsg(Logging.Debug(supervisor, "stopping"))
+          expectMsg(Logging.Debug(actor, "stopped"))
+          expectMsg(Logging.Debug(supervisor, "stopped"))
         }
       }
     }

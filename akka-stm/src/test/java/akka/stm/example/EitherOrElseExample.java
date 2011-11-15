@@ -1,6 +1,5 @@
 package akka.stm.example;
 
-import akka.AkkaApplication;
 import akka.stm.*;
 import akka.actor.*;
 
@@ -10,7 +9,7 @@ public class EitherOrElseExample {
         System.out.println("EitherOrElse example");
         System.out.println();
 
-        AkkaApplication application = new AkkaApplication("UntypedTransactorExample");
+        ActorSystem application = new ActorSystem("UntypedTransactorExample");
 
         final Ref<Integer> left = new Ref<Integer>(100);
         final Ref<Integer> right = new Ref<Integer>(100);

@@ -1,7 +1,7 @@
 package akka.dispatch;
 
 import akka.actor.Timeout;
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
@@ -18,8 +18,8 @@ import scala.Some;
 import scala.Right;
 
 public class JavaFutureTests {
-  
-    private final AkkaApplication app = new AkkaApplication();
+
+    private final ActorSystem app = new ActorSystem();
     private final Timeout t = app.AkkaConfig().ActorTimeout();
     private final FutureFactory ff = new FutureFactory(app.dispatcher(), t);
 

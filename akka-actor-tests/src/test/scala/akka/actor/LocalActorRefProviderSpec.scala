@@ -6,63 +6,21 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-import akka.testkit.Testing.sleepFor
+import akka.dispatch.Future
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
-
-object LocalActorRefProviderSpec {
-
-  class NewActor extends Actor {
-    def receive = {
-      case _ ⇒ {}
-    }
-  }
-}
-
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalActorRefProviderSpec extends AkkaSpec {
-  import akka.actor.LocalActorRefProviderSpec._
-
   "An LocalActorRefProvider" must {
 
     "only create one instance of an actor with a specific address in a concurrent environment" in {
       val provider = app.provider
 
-      for (i ← 0 until 100) { // 100 concurrent runs
-        val latch = new CountDownLatch(4)
+      provider.isInstanceOf[LocalActorRefProvider] must be(true)
 
-        var a1: Option[ActorRef] = None
-        var a2: Option[ActorRef] = None
-        var a3: Option[ActorRef] = None
-        var a4: Option[ActorRef] = None
-
+      (0 until 100) foreach { i ⇒ // 100 concurrent runs
         val address = "new-actor" + i
-
-        spawn {
-          a1 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
-          latch.countDown()
-        }
-        spawn {
-          a2 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
-          latch.countDown()
-        }
-        spawn {
-          a3 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
-          latch.countDown()
-        }
-        spawn {
-          a4 = Some(provider.actorOf(Props(creator = () ⇒ new NewActor), address))
-          latch.countDown()
-        }
-
-        latch.await(5, TimeUnit.SECONDS) must be === true
-
-        a1.isDefined must be(true)
-        a2.isDefined must be(true)
-        a3.isDefined must be(true)
-        a4.isDefined must be(true)
-        (a1 == a2) must be(true)
-        (a1 == a3) must be(true)
-        (a1 == a4) must be(true)
+        implicit val timeout = Timeout(5 seconds)
+        ((1 to 4) map { _ ⇒ Future { provider.actorOf(Props(c ⇒ { case _ ⇒ }), app.guardian, address) } }).map(_.get).distinct.size must be(1)
       }
     }
   }

@@ -5,13 +5,17 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.enumerationAsScalaIterator
-import akka.AkkaApplication
+import akka.actor.ActorSystem
+import akka.event.Logging
+import scala.collection.immutable.TreeMap
 
-class Report(app: AkkaApplication,
-             resultRepository: BenchResultRepository,
-             compareResultWith: Option[String] = None) {
+class Report(
+  app: ActorSystem,
+  resultRepository: BenchResultRepository,
+  compareResultWith: Option[String] = None) {
 
-  private def log = System.getProperty("benchmark.logResult", "true").toBoolean
+  private def doLog = System.getProperty("benchmark.logResult", "true").toBoolean
+  val log = Logging(app, this)
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -31,15 +35,20 @@ class Report(app: AkkaApplication,
     sb.append(resultTable)
     sb.append("\n</pre>\n")
 
-    sb.append(img(percentilesAndMeanChart(current)))
     sb.append(img(latencyAndThroughputChart(current)))
 
-    for (stats ← statistics) {
-      compareWithHistoricalPercentiliesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
-    }
+    compareWithHistoricalTpsChart(statistics).foreach(url ⇒ sb.append(img(url)))
 
-    for (stats ← statistics) {
-      comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+    if (current.max > 0L) {
+      sb.append(img(percentilesAndMeanChart(current)))
+
+      for (stats ← statistics) {
+        compareWithHistoricalPercentiliesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+      }
+
+      for (stats ← statistics) {
+        comparePercentilesAndMeanChart(stats).foreach(url ⇒ sb.append(img(url)))
+      }
     }
 
     sb.append("<hr/>\n")
@@ -51,8 +60,8 @@ class Report(app: AkkaApplication,
     val reportName = current.name + "--" + timestamp + ".html"
     resultRepository.saveHtmlReport(sb.toString, reportName)
 
-    if (log) {
-      app.eventHandler.info(this, resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
+    if (doLog) {
+      log.info(resultTable + "Charts in html report: " + resultRepository.htmlReportUrl(reportName))
     }
 
   }
@@ -60,6 +69,11 @@ class Report(app: AkkaApplication,
   def img(url: String): String = {
     """<img src="%s" border="0" width="%s" height="%s" />""".format(
       url, GoogleChartBuilder.ChartWidth, GoogleChartBuilder.ChartHeight) + "\n"
+  }
+
+  protected def timeLegend(stats: Stats): String = {
+    val baseline = if (resultRepository.isBaseline(stats)) " *" else ""
+    legendTimeFormat.format(new Date(stats.timestamp)) + baseline
   }
 
   def percentilesAndMeanChart(stats: Stats): String = {
@@ -83,11 +97,33 @@ class Report(app: AkkaApplication,
     val withHistorical = resultRepository.getWithHistorical(stats.name, stats.load)
     if (withHistorical.size > 1) {
       val chartTitle = stats.name + " vs. historical, " + stats.load + " clients" + ", Percentiles and Mean (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(withHistorical, chartTitle,
-        stats ⇒ legendTimeFormat.format(new Date(stats.timestamp)))
+      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(withHistorical, chartTitle, timeLegend)
       Some(chartUrl)
     } else {
       None
+    }
+  }
+
+  def compareWithHistoricalTpsChart(statistics: Seq[Stats]): Option[String] = {
+
+    if (statistics.isEmpty) {
+      None
+    } else {
+      val histTimestamps = resultRepository.getWithHistorical(statistics.head.name, statistics.head.load).map(_.timestamp)
+      val statsByTimestamp = TreeMap[Long, Seq[Stats]]() ++
+        (for (ts ← histTimestamps) yield {
+          val seq =
+            for (stats ← statistics) yield {
+              val withHistorical: Seq[Stats] = resultRepository.getWithHistorical(stats.name, stats.load)
+              val cell = withHistorical.find(_.timestamp == ts)
+              cell.getOrElse(Stats(stats.name, stats.load, ts))
+            }
+          (ts, seq)
+        })
+
+      val chartTitle = statistics.last.name + " vs. historical, Throughput (TPS)"
+      val chartUrl = GoogleChartBuilder.tpsChartUrl(statsByTimestamp, chartTitle, timeLegend)
+      Some(chartUrl)
     }
   }
 

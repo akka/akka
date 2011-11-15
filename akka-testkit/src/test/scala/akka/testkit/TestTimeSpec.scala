@@ -3,22 +3,10 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.util.Duration
+import akka.config.Configuration
 
-class TestTimeSpec extends AkkaSpec with BeforeAndAfterEach {
-
-  val tf = Duration.timeFactor
-
-  override def beforeEach {
-    val f = Duration.getClass.getDeclaredField("timeFactor")
-    f.setAccessible(true)
-    f.setDouble(Duration, 2.0)
-  }
-
-  override def afterEach {
-    val f = Duration.getClass.getDeclaredField("timeFactor")
-    f.setAccessible(true)
-    f.setDouble(Duration, tf)
-  }
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class TestTimeSpec extends AkkaSpec(Configuration("akka.test.timefactor" -> 2.0)) with BeforeAndAfterEach {
 
   "A TestKit" must {
 
@@ -27,8 +15,9 @@ class TestTimeSpec extends AkkaSpec with BeforeAndAfterEach {
       val now = System.nanoTime
       intercept[AssertionError] { probe.awaitCond(false, Duration("1 second")) }
       val diff = System.nanoTime - now
-      diff must be > 1700000000l
-      diff must be < 3000000000l
+      val target = (1000000000l * app.AkkaConfig.TestTimeFactor).toLong
+      diff must be > (target - 300000000l)
+      diff must be < (target + 1000000000l)
     }
 
   }

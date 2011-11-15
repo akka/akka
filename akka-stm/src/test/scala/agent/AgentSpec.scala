@@ -3,7 +3,7 @@ package akka.agent.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.actor.Timeout
 import akka.agent.Agent
 import akka.stm._
@@ -20,7 +20,7 @@ class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
 
 class AgentSpec extends WordSpec with MustMatchers {
 
-  implicit val app = AkkaApplication("AgentSpec")
+  implicit val app = ActorSystem("AgentSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
   "Agent" should {

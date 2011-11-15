@@ -6,16 +6,78 @@ package akka.routing
 
 import akka.AkkaException
 import akka.actor._
-import akka.event.EventHandler
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
-import akka.AkkaApplication
-import akka.util.ReflectiveAccess
+import akka.util.{ ReflectiveAccess, Duration }
 import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
+
+sealed trait RouterType
+
+/**
+ * Used for declarative configuration of Routing.
+ *
+ * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ */
+object RouterType {
+
+  object Direct extends RouterType
+
+  /**
+   * A RouterType that randomly selects a connection to send a message to.
+   */
+  object Random extends RouterType
+
+  /**
+   * A RouterType that selects the connection by using round robin.
+   */
+  object RoundRobin extends RouterType
+
+  /**
+   * A RouterType that selects the connection by using scatter gather.
+   */
+  object ScatterGather extends RouterType
+
+  /**
+   * A RouterType that selects the connection based on the least amount of cpu usage
+   */
+  object LeastCPU extends RouterType
+
+  /**
+   * A RouterType that select the connection based on the least amount of ram used.
+   */
+  object LeastRAM extends RouterType
+
+  /**
+   * A RouterType that select the connection where the actor has the least amount of messages in its mailbox.
+   */
+  object LeastMessages extends RouterType
+
+  /**
+   * A user-defined custom RouterType.
+   */
+  case class Custom(implClass: String) extends RouterType
+}
+
+/**
+ * Contains the configuration to create local and clustered routed actor references.
+ * Routed ActorRef configuration object, this is thread safe and fully sharable.
+ */
+case class RoutedProps private[akka] (
+  routerFactory: () ⇒ Router = RoutedProps.defaultRouterFactory,
+  connectionManager: ConnectionManager = new LocalConnectionManager(List()),
+  timeout: Timeout = RoutedProps.defaultTimeout,
+  localOnly: Boolean = RoutedProps.defaultLocalOnly) {
+}
+
+object RoutedProps {
+  final val defaultTimeout = Timeout(Duration.MinusInf)
+  final val defaultRouterFactory = () ⇒ new RoundRobinRouter
+  final val defaultLocalOnly = false
+}
 
 /**
  * The Router is responsible for sending a message to one (or more) of its connections. Connections are stored in the
@@ -42,7 +104,7 @@ trait Router {
    *
    * @throws RoutingException if something goes wrong while routing the message
    */
-  def route(message: Any)(implicit sender: Option[ActorRef])
+  def route(message: Any)(implicit sender: ActorRef)
 
   /**
    * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
@@ -50,7 +112,7 @@ trait Router {
    *
    * @throws RoutingExceptionif something goes wrong while routing the message.
    */
-  def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T]
+  def route[T](message: Any, timeout: Timeout): Future[T]
 }
 
 /**
@@ -93,45 +155,35 @@ object Routing {
 /**
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
-abstract private[akka] class AbstractRoutedActorRef(val props: RoutedProps) extends UnsupportedActorRef {
-  private[akka] val uuid: Uuid = newUuid
-
+abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val props: RoutedProps) extends UnsupportedActorRef {
   val router = props.routerFactory()
 
-  override def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
-    val sender = channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
-    router.route(message)(sender)
-  }
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = router.route(message)(sender)
 
-  override def postMessageToMailboxAndCreateFutureResultWithTimeout(
-    message: Any, timeout: Timeout, channel: UntypedChannel): Future[Any] = {
-    val sender = channel match {
-      case ref: ActorRef ⇒ Some(ref)
-      case _             ⇒ None
-    }
-    router.route[Any](message, timeout)(sender)
-  }
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = router.route(message, timeout)
 }
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: String) extends AbstractRoutedActorRef(routedProps) {
+private[akka] class RoutedActorRef(app: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(app, routedProps) {
+
+  val path = supervisor.path / name
+
+  // FIXME (actor path): address normally has host and port, what about routed actor ref?
+  def address = "routed:/" + path.toString
 
   @volatile
   private var running: Boolean = true
 
-  def isShutdown: Boolean = !running
+  override def isShutdown: Boolean = !running
 
-  def stop() {
+  override def stop() {
     synchronized {
       if (running) {
         running = false
-        router.route(Routing.Broadcast(PoisonPill))(Some(this))
+        router.route(Routing.Broadcast(PoisonPill))(this)
       }
     }
   }
@@ -142,8 +194,6 @@ private[akka] class RoutedActorRef(val routedProps: RoutedProps, val address: St
 /**
  * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
  * Router only needs to implement the next method.
- *
- * FIXME: this is also the location where message buffering should be done in case of failure.
  */
 trait BasicRouter extends Router {
 
@@ -154,8 +204,9 @@ trait BasicRouter extends Router {
     this.connectionManager = connectionManager
   }
 
-  def route(message: Any)(implicit sender: Option[ActorRef]) = message match {
+  def route(message: Any)(implicit sender: ActorRef) = message match {
     case Routing.Broadcast(message) ⇒
+
       //it is a broadcast message, we are going to send to message to all connections.
       connectionManager.connections.iterable foreach { connection ⇒
         try {
@@ -182,7 +233,7 @@ trait BasicRouter extends Router {
       }
   }
 
-  def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
+  def route[T](message: Any, timeout: Timeout): Future[T] = message match {
     case Routing.Broadcast(message) ⇒
       throw new RoutingException("Broadcasting using '?'/'ask' is for the time being is not supported. Use ScatterGatherRouter.")
     case _ ⇒
@@ -190,8 +241,7 @@ trait BasicRouter extends Router {
       next match {
         case Some(connection) ⇒
           try {
-            // FIXME is this not wrong? it will not pass on and use the original Future but create a new one. Should reuse 'channel: UntypedChannel' in the AbstractRoutedActorRef
-            connection.?(message, timeout)(sender).asInstanceOf[Future[T]]
+            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it?
           } catch {
             case e: Exception ⇒
               connectionManager.remove(connection)
@@ -204,10 +254,7 @@ trait BasicRouter extends Router {
 
   protected def next: Option[ActorRef]
 
-  private def throwNoConnectionsError = {
-    val error = new RoutingException("No replica connections for router")
-    throw error
-  }
+  private def throwNoConnectionsError = throw new RoutingException("No replica connections for router")
 }
 
 /**
@@ -258,15 +305,17 @@ class DirectRouter extends BasicRouter {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RandomRouter extends BasicRouter {
+  import java.security.SecureRandom
 
   private val state = new AtomicReference[RandomRouterState]
 
-  //FIXME: threadlocal random?
-  private val random = new java.util.Random(System.nanoTime)
+  private val random = new ThreadLocal[SecureRandom] {
+    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
+  }
 
   def next: Option[ActorRef] = currentState.array match {
     case a if a.isEmpty ⇒ None
-    case a              ⇒ Some(a(random.nextInt(a.length)))
+    case a              ⇒ Some(a(random.get.nextInt(a.length)))
   }
 
   @tailrec
@@ -359,11 +408,11 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
    */
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G]
 
-  private def scatterGather[S, G >: S](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[G] = {
+  private def scatterGather[S, G >: S](message: Any, timeout: Timeout): Future[G] = {
     val responses = connectionManager.connections.iterable.flatMap { actor ⇒
       try {
-        if (actor.isShutdown) throw new ActorInitializationException("For compatability - check death first")
-        Some(actor.?(message, timeout)(sender).asInstanceOf[Future[S]])
+        if (actor.isShutdown) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
+        Some(actor.?(message, timeout).asInstanceOf[Future[S]])
       } catch {
         case e: Exception ⇒
           connectionManager.remove(actor)
@@ -376,9 +425,9 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
     else gather(responses)
   }
 
-  override def route[T](message: Any, timeout: Timeout)(implicit sender: Option[ActorRef]): Future[T] = message match {
+  override def route[T](message: Any, timeout: Timeout): Future[T] = message match {
     case Routing.Broadcast(message) ⇒ scatterGather(message, timeout)
-    case message                    ⇒ super.route(message, timeout)(sender)
+    case message                    ⇒ super.route(message, timeout)
   }
 }
 

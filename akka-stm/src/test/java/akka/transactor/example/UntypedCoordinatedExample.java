@@ -1,6 +1,6 @@
 package akka.transactor.example;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.dispatch.Future;
@@ -12,7 +12,7 @@ public class UntypedCoordinatedExample {
         System.out.println("Untyped transactor example");
         System.out.println();
 
-        AkkaApplication application = new AkkaApplication("UntypedCoordinatedExample");
+        ActorSystem application = new ActorSystem("UntypedCoordinatedExample");
 
         ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
         ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));

@@ -10,29 +10,33 @@ import akka.testkit.{ TestKit, filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender {
   import Ticket669Spec._
 
-  override def beforeAll = Thread.interrupted() //remove interrupted status.
+  // TODO: does this really make sense?
+  override def atStartup() {
+    Thread.interrupted() //remove interrupted status.
+  }
 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
-      filterEvents(EventFilter[Exception]("test")) {
-        val supervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), 5, 10000)))
-        val supervised = actorOf(Props[Supervised].withSupervisor(supervisor))
+      filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 5, 10000)))
+        val supervised = (supervisor ? Props[Supervised]).as[ActorRef].get
 
-        supervised.!("test")(Some(testActor))
+        supervised.!("test")(testActor)
         expectMsg("failure1")
         supervisor.stop()
       }
     }
 
     "be able to reply on failure during postStop" in {
-      filterEvents(EventFilter[Exception]("test")) {
-        val supervisor = actorOf(Props(AllForOneStrategy(List(classOf[Exception]), Some(0), None)))
-        val supervised = actorOf(Props[Supervised].withSupervisor(supervisor))
+      filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
+        val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), Some(0), None)))
+        val supervised = (supervisor ? Props[Supervised]).as[ActorRef].get
 
-        supervised.!("test")(Some(testActor))
+        supervised.!("test")(testActor)
         expectMsg("failure2")
         supervisor.stop()
       }
@@ -47,11 +51,11 @@ object Ticket669Spec {
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
-      channel.tryTell("failure1")
+      sender.tell("failure1")
     }
 
     override def postStop() {
-      channel.tryTell("failure2")
+      sender.tell("failure2")
     }
   }
 }

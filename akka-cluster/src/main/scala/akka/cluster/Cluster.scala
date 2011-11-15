@@ -300,7 +300,7 @@ class DefaultClusterNode private[akka] (
     val remote = new akka.cluster.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
-    remote.addListener(RemoteFailureDetector.channel)
+    remote.addListener(RemoteFailureDetector.sender)
     remote.addListener(remoteClientLifeCycleHandler)
     remote
   }
@@ -427,7 +427,7 @@ class DefaultClusterNode private[akka] (
 
       remoteService.shutdown() // shutdown server
 
-      RemoteFailureDetector.channel.stop()
+      RemoteFailureDetector.sender.stop()
       remoteClientLifeCycleHandler.stop()
       remoteDaemon.stop()
 
@@ -1275,7 +1275,7 @@ class DefaultClusterNode private[akka] (
    * Update the list of connections to other nodes in the cluster.
    * Tail recursive, using lockless optimimistic concurrency.
    *
-   * @returns a Map with the remote socket addresses to of disconnected node connections
+   * @return a Map with the remote socket addresses to of disconnected node connections
    */
   @tailrec
   final private[cluster] def connectToAllNewlyArrivedMembershipNodesInCluster(
@@ -1860,7 +1860,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case f: Function0[_] ⇒ try { f() } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomName, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   def handle_fun0_any(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
@@ -1868,7 +1868,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case f: Function0[_] ⇒ try { self.reply(f()) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomName, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   def handle_fun1_arg_unit(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
@@ -1876,7 +1876,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomName, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   def handle_fun1_arg_any(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {
@@ -1884,7 +1884,7 @@ class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
       Props(
         self ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { self.reply(fun.asInstanceOf[Any ⇒ Any](param)) } finally { self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), Props.randomAddress, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+        }).copy(dispatcher = computeGridDispatcher), Props.randomName, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteProtocol.RemoteSystemDaemonMessageProtocol) {

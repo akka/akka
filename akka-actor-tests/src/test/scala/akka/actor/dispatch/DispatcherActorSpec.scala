@@ -9,7 +9,7 @@ import akka.actor.{ Props, Actor }
 object DispatcherActorSpec {
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ channel ! "World"
+      case "Hello"   ⇒ sender ! "World"
       case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
@@ -24,6 +24,7 @@ object DispatcherActorSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatcherActorSpec extends AkkaSpec {
   import DispatcherActorSpec._
 
@@ -45,20 +46,6 @@ class DispatcherActorSpec extends AkkaSpec {
       actor.stop()
     }
 
-    "support ask/exception" in {
-      filterEvents(EventFilter[RuntimeException]("Expected")) {
-        val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
-        try {
-          (actor ? "Failure").get
-          fail("Should have thrown an exception")
-        } catch {
-          case e ⇒
-            assert("Expected exception; to test fault-tolerance" === e.getMessage())
-        }
-        actor.stop()
-      }
-    }
-
     "respect the throughput setting" in {
       val throughputDispatcher = app.dispatcherFactory.
         newDispatcher("THROUGHPUT", 101, 0, app.dispatcherFactory.MailboxType).
@@ -73,7 +60,7 @@ class DispatcherActorSpec extends AkkaSpec {
 
       val slowOne = actorOf(
         Props(context ⇒ {
-          case "hogexecutor" ⇒ context.channel ! "OK"; start.await
+          case "hogexecutor" ⇒ context.sender ! "OK"; start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
@@ -81,10 +68,10 @@ class DispatcherActorSpec extends AkkaSpec {
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
       fastOne ! "sabotage"
       start.countDown()
-      val result = latch.await(10, TimeUnit.SECONDS)
+      latch.await(10, TimeUnit.SECONDS)
       fastOne.stop()
       slowOne.stop()
-      assert(result === true)
+      assert(latch.getCount() === 0)
     }
 
     "respect throughput deadline" in {

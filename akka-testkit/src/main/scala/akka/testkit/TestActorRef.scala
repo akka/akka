@@ -6,10 +6,10 @@ package akka.testkit
 
 import akka.actor._
 import akka.util.ReflectiveAccess
-import akka.event.EventHandler
 import com.eaio.uuid.UUID
 import akka.actor.Props._
-import akka.AkkaApplication
+import akka.actor.ActorSystem
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -19,8 +19,8 @@ import akka.AkkaApplication
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: String)
-  extends LocalActorRef(_app, props.withDispatcher(new CallingThreadDispatcher(_app)), address, false) {
+class TestActorRef[T <: Actor](_app: ActorSystem, _props: Props, _supervisor: ActorRef, name: String)
+  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_app)), _supervisor, _supervisor.path / name, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -35,32 +35,42 @@ class TestActorRef[T <: Actor](_app: AkkaApplication, props: Props, address: Str
    */
   def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
-  override def toString = "TestActor[" + address + ":" + uuid + "]"
+  override def toString = "TestActor[" + address + "]"
 
-  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].uuid == uuid
+  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address
 }
 
 object TestActorRef {
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), Props.randomAddress)
+  private val number = new AtomicLong
+  private[testkit] def randomName: String = {
+    val l = number.getAndIncrement()
+    "$" + akka.util.Helpers.base64(l)
+  }
 
-  def apply[T <: Actor](factory: ⇒ T, address: String)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](Props(factory), address)
+  def apply[T <: Actor](factory: ⇒ T)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
 
-  def apply[T <: Actor](props: Props)(implicit app: AkkaApplication): TestActorRef[T] = apply[T](props, Props.randomAddress)
+  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
 
-  def apply[T <: Actor](props: Props, address: String)(implicit app: AkkaApplication): TestActorRef[T] = new TestActorRef(app, props, address)
+  def apply[T <: Actor](props: Props)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
-  def apply[T <: Actor](implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props.randomAddress)
+  def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, app.guardian, name)
 
-  def apply[T <: Actor](address: String)(implicit m: Manifest[T], app: AkkaApplication): TestActorRef[T] = apply[T](Props({
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit app: ActorSystem): TestActorRef[T] = {
+    new TestActorRef(app, props, supervisor, name)
+  }
+
+  def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](randomName)
+
+  def apply[T <: Actor](name: String)(implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value
-      case Left(exception) ⇒ throw new ActorInitializationException(
+      case Left(exception) ⇒ throw new ActorInitializationException(null,
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +
           "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", exception)
     }
-  }), address)
+  }), name)
 }

@@ -6,6 +6,7 @@ package akka.actor
 
 import akka.testkit._
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class HotSwapSpec extends AkkaSpec {
 
   "An Actor" must {

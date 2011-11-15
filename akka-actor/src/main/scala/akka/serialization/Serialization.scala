@@ -6,7 +6,7 @@ package akka.serialization
 
 import akka.AkkaException
 import akka.util.ReflectiveAccess
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import scala.util.DynamicVariable
 import akka.remote.RemoteSupport
 
@@ -16,7 +16,7 @@ case class NoSerializerFoundException(m: String) extends AkkaException(m)
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
-class Serialization(val app: AkkaApplication) {
+class Serialization(val app: ActorSystem) {
 
   //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
@@ -102,6 +102,6 @@ class Serialization(val app: AkkaApplication) {
 
 object Serialization {
   // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
-  val app = new DynamicVariable[AkkaApplication](null)
+  val app = new DynamicVariable[ActorSystem](null)
 }
 

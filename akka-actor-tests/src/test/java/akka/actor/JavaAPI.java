@@ -1,6 +1,6 @@
 package akka.actor;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.japi.Creator;
 import org.junit.Test;
 import akka.actor.Actors;
@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 
 public class JavaAPI {
 
-  private AkkaApplication app = new AkkaApplication();
+  private ActorSystem app = new ActorSystem();
 
   @Test void mustBeAbleToCreateActorRefFromClass() {
       ActorRef ref = app.actorOf(JavaAPITestActor.class);
@@ -25,9 +25,9 @@ public class JavaAPI {
       assertNotNull(ref);
   }
 
-  @Test void mustAcceptSingleArgTryTell() {
+  @Test void mustAcceptSingleArgTell() {
     ActorRef ref = app.actorOf(JavaAPITestActor.class);
-    ref.tryTell("hallo");
-    ref.tryTell("hallo", ref);
+    ref.tell("hallo");
+    ref.tell("hallo", ref);
   }
 }

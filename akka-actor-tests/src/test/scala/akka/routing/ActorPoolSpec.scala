@@ -2,7 +2,6 @@ package akka.routing
 
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.testkit.Testing._
 import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
@@ -25,6 +24,35 @@ object ActorPoolSpec {
   val faultHandler = OneForOneStrategy(List(classOf[Exception]), 5, 1000)
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class TypedActorPoolSpec extends AkkaSpec {
+  import ActorPoolSpec._
+  "Actor Pool (2)" must {
+    "support typed actors" in {
+      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+        def lowerBound = 1
+        def upperBound = 5
+        def pressureThreshold = 1
+        def partialFill = true
+        def selectionCount = 1
+        def rampupRate = 0.1
+        def backoffRate = 0.50
+        def backoffThreshold = 0.50
+        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
+        def receive = _route
+      }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
+
+      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 0))
+
+      for ((i, r) ← results)
+        r.get must equal(i * i)
+
+      app.typedActor.stop(pool)
+    }
+  }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPoolSpec extends AkkaSpec {
   import ActorPoolSpec._
 
@@ -41,7 +69,7 @@ class ActorPoolSpec extends AkkaSpec {
               case _ ⇒
                 count.incrementAndGet
                 latch.countDown()
-                channel.tryTell("success")
+                sender.tell("success")
             }
           }))
 
@@ -87,8 +115,8 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
-                sleepFor(10 millis)
-                channel.tryTell("Response")
+                (10 millis).dilated.sleep
+                sender.tell("Response")
               }
             }
           }))
@@ -111,11 +139,11 @@ class ActorPoolSpec extends AkkaSpec {
       val count = new AtomicInteger(0)
 
       val pool = actorOf(
-        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
+        Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 count.incrementAndGet
                 latch.countDown()
             }
@@ -141,7 +169,7 @@ class ActorPoolSpec extends AkkaSpec {
         count.set(0)
         for (m ← 0 until loops) {
           pool ? t
-          sleepFor(50 millis)
+          (50 millis).dilated.sleep
         }
       }
 
@@ -179,7 +207,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 count.incrementAndGet
                 latch.countDown()
             }
@@ -233,7 +261,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch1.countDown()
             }
           }))
@@ -261,7 +289,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.uuid.toString, "")
+                delegates put (self.address, "")
                 latch2.countDown()
             }
           }))
@@ -290,7 +318,7 @@ class ActorPoolSpec extends AkkaSpec {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
-                sleepFor(n millis)
+                (n millis).dilated.sleep
                 latch.countDown()
             }
           }))
@@ -310,7 +338,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       for (m ← 0 to 10) pool ! 250
 
-      sleepFor(5 millis)
+      (5 millis).dilated.sleep
 
       val z = (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size
 
@@ -320,237 +348,12 @@ class ActorPoolSpec extends AkkaSpec {
 
       for (m ← 0 to 3) {
         pool ! 1
-        sleepFor(500 millis)
+        (500 millis).dilated.sleep
       }
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
 
       pool.stop()
-    }
-
-    "support typed actors" in {
-      import RoutingSpec._
-      import app.typedActor._
-      def createPool = new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-        def lowerBound = 1
-        def upperBound = 5
-        def pressureThreshold = 1
-        def partialFill = true
-        def selectionCount = 1
-        def rampupRate = 0.1
-        def backoffRate = 0.50
-        def backoffThreshold = 0.50
-        def instance(p: Props) = getActorRefFor(typedActorOf[Foo, FooImpl](p))
-        def receive = _route
-      }
-
-      val pool = createProxy[Foo](createPool, Props().withFaultHandler(faultHandler))
-
-      val results = for (i ← 1 to 100) yield (i, pool.sq(i, 100))
-
-      for ((i, r) ← results) r.get must equal(i * i)
-    }
-
-    "provide default supervision of pooled actors" in {
-      filterException[RuntimeException] {
-        val pingCount = new AtomicInteger(0)
-        val deathCount = new AtomicInteger(0)
-        val keepDying = new AtomicBoolean(false)
-
-        val pool1 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def receive = _route
-            def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case akka.Die ⇒
-                  if (keepDying.get) deathCount.incrementAndGet
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            }))
-          }).withFaultHandler(faultHandler))
-
-        val pool2 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def receive = _route
-            def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case akka.Die ⇒
-                  if (keepDying.get) deathCount.incrementAndGet
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            }))
-          }).withFaultHandler(faultHandler))
-
-        val pool3 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with RoundRobinSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def receive = _route
-            def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
-
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case akka.Die ⇒
-                  if (keepDying.get)
-                    deathCount.incrementAndGet
-
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            }))
-          }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
-
-        // default lifecycle
-        // actor comes back right away
-        pingCount.set(0)
-        keepDying.set(false)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool1 ! akka.Die
-        sleepFor(2 seconds)
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(1)
-
-        // default lifecycle
-        // actor dies completely
-        pingCount.set(0)
-        keepDying.set(true)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool1 ! akka.Die
-        sleepFor(2 seconds)
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(2)
-
-        // permanent lifecycle
-        // actor comes back right away
-        pingCount.set(0)
-        keepDying.set(false)
-        pool2 ! "ping"
-        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool2 ! akka.Die
-        sleepFor(2 seconds)
-        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(1)
-
-        // permanent lifecycle
-        // actor dies completely
-        pingCount.set(0)
-        keepDying.set(true)
-        pool2 ! "ping"
-        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool2 ! akka.Die
-        sleepFor(2 seconds)
-        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-        pool2 ! "ping"
-        (pool2 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(2)
-
-        // temporary lifecycle
-        pingCount.set(0)
-        keepDying.set(false)
-        pool3 ! "ping"
-        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool3 ! akka.Die
-        sleepFor(2 seconds)
-        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-        pool3 ! "ping"
-        pool3 ! "ping"
-        pool3 ! "ping"
-        (pool3 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(4)
-      }
-    }
-
-    "support customizable supervision config of pooled actors" in {
-      filterEvents(EventFilter[IllegalStateException], EventFilter[RuntimeException]) {
-        val pingCount = new AtomicInteger(0)
-        val deathCount = new AtomicInteger(0)
-        var keepDying = new AtomicBoolean(false)
-
-        object BadState
-
-        val pool1 = actorOf(
-          Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveFuturesPressureCapacitor with SmallestMailboxSelector with BasicFilter {
-            def lowerBound = 2
-            def upperBound = 5
-            def rampupRate = 0.1
-            def backoffRate = 0.1
-            def backoffThreshold = 0.5
-            def partialFill = true
-            def selectionCount = 1
-            def receive = _route
-            def pressureThreshold = 1
-            def instance(p: Props) = actorOf(p.withCreator(new Actor {
-              if (deathCount.get > 5) deathCount.set(0)
-              if (deathCount.get > 0) { deathCount.incrementAndGet; throw new IllegalStateException("keep dying") }
-              def receive = {
-                case BadState ⇒
-                  if (keepDying.get) deathCount.incrementAndGet
-                  throw new IllegalStateException
-                case akka.Die ⇒
-                  throw new RuntimeException
-                case _ ⇒ pingCount.incrementAndGet
-              }
-            }))
-          }).withFaultHandler(OneForOneStrategy(List(classOf[IllegalStateException]), 5, 1000)))
-
-        // actor comes back right away
-        pingCount.set(0)
-        keepDying.set(false)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool1 ! BadState
-        sleepFor(2 seconds)
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(1)
-
-        // actor dies completely
-        pingCount.set(0)
-        keepDying.set(true)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pool1 ! BadState
-        sleepFor(2 seconds)
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(1)
-        pool1 ! "ping"
-        (pool1 ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
-        pingCount.get must be(2)
-
-        // kill it
-        intercept[RuntimeException](pool1.?(akka.Die).get)
-      }
     }
   }
 }

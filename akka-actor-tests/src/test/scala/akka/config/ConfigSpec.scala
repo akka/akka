@@ -5,8 +5,10 @@
 package akka.config
 
 import akka.testkit.AkkaSpec
+import akka.actor.ActorSystem
 
-class ConfigSpec extends AkkaSpec {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class ConfigSpec extends AkkaSpec(ActorSystem("ConfigSpec", Configuration.fromFile("config/akka-reference.conf"))) {
 
   "The default configuration file (i.e. akka-reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
@@ -22,11 +24,9 @@ class ConfigSpec extends AkkaSpec {
       getInt("akka.actor.default-dispatcher.keep-alive-time") must equal(Some(60))
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(Some(8.0))
       getDouble("akka.actor.default-dispatcher.max-pool-size-factor") must equal(Some(8.0))
-      getInt("akka.actor.default-dispatcher.executor-bounds") must equal(Some(-1))
       getInt("akka.actor.default-dispatcher.task-queue-size") must equal(Some(-1))
       getString("akka.actor.default-dispatcher.task-queue-type") must equal(Some("linked"))
       getBool("akka.actor.default-dispatcher.allow-core-timeout") must equal(Some(true))
-      getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("caller-runs"))
       getInt("akka.actor.default-dispatcher.mailbox-capacity") must equal(Some(-1))
       getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time") must equal(Some(10))
       getLong("akka.actor.dispatcher-shutdown-timeout") must equal(Some(1))

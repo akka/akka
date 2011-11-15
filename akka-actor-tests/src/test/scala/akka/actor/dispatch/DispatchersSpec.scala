@@ -9,6 +9,7 @@ import akka.dispatch._
 import akka.testkit.AkkaSpec
 import akka.config.Configuration
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec {
 
   import app.dispatcherFactory._
@@ -17,9 +18,7 @@ class DispatchersSpec extends AkkaSpec {
   val keepalivems = "keep-alive-time"
   val corepoolsizefactor = "core-pool-size-factor"
   val maxpoolsizefactor = "max-pool-size-factor"
-  val executorbounds = "executor-bounds"
   val allowcoretimeout = "allow-core-timeout"
-  val rejectionpolicy = "rejection-policy" // abort, caller-runs, discard-oldest, discard
   val throughput = "throughput" // Throughput for Dispatcher
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher

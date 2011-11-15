@@ -60,12 +60,6 @@ Creating Actors
 
 .. includecode:: code/ActorDocSpec.scala#creating-actorOf
 
-Normally you would want to import the ``actorOf`` method like this:
-
-.. includecode:: code/ActorDocSpec.scala#creating-imported
-
-to avoid prefixing it with ``Actor`` every time you use it.
-
 The call to ``actorOf`` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
 ``ActorRef`` is immutable and has a one to one relationship with the Actor it
@@ -86,6 +80,33 @@ Here is an example:
 
 .. includecode:: code/ActorDocSpec.scala#creating-constructor
 
+
+Creating Actors using anonymous classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When spawning actors for specific sub-tasks from within an actor, it may be convenient to include the code to be executed directly in place, using an anonymous class::
+
+  def receive = {
+    case m: DoIt =>
+      actorOf(new Actor {
+        def receive = {
+          case DoIt(msg) =>
+            val replyMsg = doSomeDangerousWork(msg)
+            self.reply(replyMsg)
+            self.stop()
+        }
+        def doSomeDangerousWork(msg: Message) = { ... }
+      }).start() ! m
+  }
+
+.. warning::
+
+  In this case you need to carefully avoid closing over the containing actor’s
+  reference, i.e. do not call methods on the enclosing actor from within the
+  anonymous Actor class. This would break the actor encapsulation and may
+  introduce synchronization bugs and race conditions because the other actor’s
+  code will be scheduled concurrently to the enclosing actor. Unfortunately
+  there is not yet a way to detect these illegal accesses at compile time.
 
 Running a block of code asynchronously
 --------------------------------------
@@ -362,35 +383,17 @@ Reply using the sender
 ----------------------
 
 If you want to have a handle for replying to a message, you can use
-``context.sender``, which gives you an ActorRef. You can reply by sending to
-that ActorRef with ``context.sender ! Message``. You can also store the ActorRef
+``sender``, which gives you an ActorRef. You can reply by sending to
+that ActorRef with ``sender ! Message``. You can also store the ActorRef
 for replying later, or passing on to other actors. If there is no sender (a
-message was sent without an actor or future context) then the context.sender
+message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
 
 .. code-block:: scala
 
   case request =>
       val result = process(request)
-      context.sender ! result       // will have dead-letter actor as default
-      context.sender tryTell result // will return Boolean whether reply succeeded
-
-
-Reply using the reply method
-----------------------------
-
-If you want to send a message back to the original sender of the message you
-just received then you can use the ``context.reply(..)`` method.
-
-.. code-block:: scala
-
-  case request =>
-    val result = process(request)
-    context.reply(result)
-
-In this case the ``result`` will be sent back to the Actor that sent the
-``request``. This is equivalent to using ``context.sender ! result``.
-
+      sender ! result       // will have dead-letter actor as default
 
 Initial receive timeout
 =======================

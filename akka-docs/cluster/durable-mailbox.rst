@@ -18,10 +18,9 @@ in its mailbox.
 .. sidebar:: **IMPORTANT**
 
    None of these mailboxes work with blocking message send, e.g. the message
-   send operations that are relying on futures; ``!!``, ``?``,
-   ``sendRequestReply`` and ``ask``. If the node has crashed
-   and then restarted, the thread that was blocked waiting for the reply is gone
-   and there is no way we can deliver the message.
+   send operations that are relying on futures; ``?`` or ``ask``. If the node
+   has crashed and then restarted, the thread that was blocked waiting for the
+   reply is gone and there is no way we can deliver the message.
 
 The durable mailboxes currently supported are:
 

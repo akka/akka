@@ -3,19 +3,16 @@ package akka.transactor.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
-
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.transactor.Coordinated
 import akka.actor._
 import akka.stm._
 import akka.util.duration._
-import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
-
 import scala.util.Random.{ nextInt ⇒ random }
-
 import java.util.concurrent.CountDownLatch
+import akka.testkit.TestEvent.Mute
 
 object FickleFriends {
   case class FriendlyIncrement(friends: Seq[ActorRef], latch: CountDownLatch)
@@ -56,7 +53,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 
@@ -93,11 +90,12 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   import FickleFriends._
 
@@ -115,10 +113,10 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
-      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
+      app.eventStream.publish(Mute(ignoreExceptions))
       val (counters, coordinator) = actorOfs
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)
@@ -129,7 +127,6 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
       }
       counters foreach (_.stop())
       coordinator.stop()
-      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

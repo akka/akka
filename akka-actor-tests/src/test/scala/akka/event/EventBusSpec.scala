@@ -20,6 +20,7 @@ object EventBusSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfterEach {
   import EventBusSpec._
   type BusType <: EventBus
@@ -146,7 +147,6 @@ object ActorEventBusSpec {
     type Classifier = String
 
     def classify(event: Event) = event.toString
-    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = a compareTo b
     protected def mapSize = 32
     def publish(event: Event, subscriber: Subscriber) = subscriber ! event
   }
@@ -173,7 +173,7 @@ object ScanningEventBusSpec {
 
   class MyScanningEventBus extends ScanningEventBus[Int, akka.japi.Procedure[Int], String] {
     protected def compareClassifiers(a: Classifier, b: Classifier): Int = a compareTo b
-    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = System.identityHashCode(a) - System.identityHashCode(b)
+    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = akka.util.Helpers.compareIdentityHash(a, b)
 
     protected def matches(classifier: Classifier, event: Event): Boolean = event.toString == classifier
 
@@ -200,7 +200,7 @@ class ScanningEventBusSpec extends EventBusSpec("ScanningEventBus") {
 object LookupEventBusSpec {
   class MyLookupEventBus extends akka.event.japi.LookupEventBus[Int, akka.japi.Procedure[Int], String] {
     protected def classify(event: Event): Classifier = event.toString
-    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = System.identityHashCode(a) - System.identityHashCode(b)
+    protected def compareSubscribers(a: Subscriber, b: Subscriber): Int = akka.util.Helpers.compareIdentityHash(a, b)
     protected def mapSize = 32
     protected def publish(event: Event, subscriber: Subscriber): Unit = subscriber(event)
   }

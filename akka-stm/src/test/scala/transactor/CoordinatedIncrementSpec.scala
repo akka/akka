@@ -2,12 +2,11 @@ package akka.transactor.test
 
 import org.scalatest.BeforeAndAfterAll
 
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 import akka.transactor.Coordinated
 import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
-import akka.event.EventHandler
 import akka.transactor.CoordinatedTransactionException
 import akka.testkit._
 
@@ -34,7 +33,7 @@ object CoordinatedIncrement {
         }
       }
 
-      case GetCount ⇒ channel ! count.get
+      case GetCount ⇒ sender ! count.get
     }
   }
 
@@ -53,12 +52,13 @@ object CoordinatedIncrement {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
   implicit val timeout = Timeout(5.seconds.dilated)
 
-  val numCounters = 5
+  val numCounters = 4
 
   def actorOfs = {
     def createCounter(i: Int) = app.actorOf(Props(new Counter("counter" + i)))
@@ -82,20 +82,20 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
 
     "increment no counters with a failing transaction" in {
       val ignoreExceptions = Seq(
-        EventFilter[ExpectedFailureException],
-        EventFilter[CoordinatedTransactionException],
-        EventFilter[ActorTimeoutException])
-      app.eventHandler.notify(TestEvent.Mute(ignoreExceptions))
-      val (counters, failer) = actorOfs
-      val coordinated = Coordinated()
-      counters(0) ! Coordinated(Increment(counters.tail :+ failer))
-      coordinated.await
-      for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 0
+        EventFilter[ExpectedFailureException](),
+        EventFilter[CoordinatedTransactionException](),
+        EventFilter[ActorTimeoutException]())
+      filterEvents(ignoreExceptions) {
+        val (counters, failer) = actorOfs
+        val coordinated = Coordinated()
+        counters(0) ! Coordinated(Increment(counters.tail :+ failer))
+        coordinated.await
+        for (counter ← counters) {
+          (counter ? GetCount).as[Int].get must be === 0
+        }
+        counters foreach (_.stop())
+        failer.stop()
       }
-      counters foreach (_.stop())
-      failer.stop()
-      app.eventHandler.notify(TestEvent.UnMute(ignoreExceptions))
     }
   }
 }

@@ -7,6 +7,7 @@ package akka.util
 import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
+import akka.actor.ActorSystem
 
 class TimerException(message: String) extends RuntimeException(message)
 
@@ -119,16 +120,21 @@ object Duration {
     case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     ⇒ NANOSECONDS
   }
 
-  /*
-   * Testing facilities
-   */
-  val timeFactor: Double = {
-    val factor = System.getProperty("akka.test.timefactor", "1.0")
-    try { factor.toDouble }
-    catch { case e: java.lang.NumberFormatException ⇒ 1.0 }
-  }
-
   val Zero: Duration = new FiniteDuration(0, NANOSECONDS)
+  val Undefined: Duration = new Duration with Infinite {
+    override def toString = "Duration.Undefined"
+    override def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
+    override def +(other: Duration): Duration = throw new IllegalArgumentException("cannot add Undefined duration")
+    override def -(other: Duration): Duration = throw new IllegalArgumentException("cannot subtract Undefined duration")
+    override def *(factor: Double): Duration = throw new IllegalArgumentException("cannot multiply Undefined duration")
+    override def /(factor: Double): Duration = throw new IllegalArgumentException("cannot divide Undefined duration")
+    override def /(other: Duration): Double = throw new IllegalArgumentException("cannot divide Undefined duration")
+    def >(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def >=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def <(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def <=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def unary_- : Duration = throw new IllegalArgumentException("cannot negate Undefined duration")
+  }
 
   trait Infinite {
     this: Duration ⇒
@@ -272,9 +278,10 @@ abstract class Duration extends Serializable {
   def /(other: Duration): Double
   def unary_- : Duration
   def finite_? : Boolean
-  def dilated: Duration = this * Duration.timeFactor
+  def dilated(implicit app: ActorSystem): Duration = this * app.AkkaConfig.TestTimeFactor
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
+  def sleep(): Unit = Thread.sleep(toMillis)
 
   // Java API
   def lt(other: Duration) = this < other

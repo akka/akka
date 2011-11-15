@@ -5,7 +5,6 @@ package akka.actor
 
 import akka.util.ByteString
 import akka.dispatch.Envelope
-import akka.event.EventHandler
 import java.net.InetSocketAddress
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicReference
@@ -25,7 +24,6 @@ import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 import scala.util.continuations._
 import com.eaio.uuid.UUID
-import akka.AkkaApplication
 
 object IO {
 
@@ -292,7 +290,7 @@ private[akka] object IOWorker {
   case object Shutdown extends Request
 }
 
-private[akka] class IOWorker(app: AkkaApplication, ioManager: ActorRef, val bufferSize: Int) {
+private[akka] class IOWorker(app: ActorSystem, ioManager: ActorRef, val bufferSize: Int) {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import IOWorker._
 
@@ -394,12 +392,8 @@ private[akka] class IOWorker(app: AkkaApplication, ioManager: ActorRef, val buff
       case Some(channel) ⇒
         channel.close
         channels -= handle
-        try {
-          handle.owner ! IO.Closed(handle, cause)
-        } catch {
-          case e: ActorInitializationException ⇒
-            app.eventHandler debug (ioManager, "IO.Handle's owner not running")
-        }
+        // TODO: what if handle.owner is no longer running?
+        handle.owner ! IO.Closed(handle, cause)
       case None ⇒
     }
   }

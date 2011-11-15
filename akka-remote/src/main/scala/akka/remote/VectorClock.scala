@@ -40,7 +40,7 @@ case class VectorClock(
 
   def maxVersion: Long = versions.foldLeft(1L)((max, entry) ⇒ math.max(max, entry.version))
 
-  // FIXME implement VectorClock.merge
+  // FIXME Do we need to implement VectorClock.merge?
   def merge(other: VectorClock): VectorClock = {
     sys.error("Not implemented")
   }

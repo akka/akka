@@ -35,6 +35,7 @@ object FSMTransitionSpec {
 
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
   import FSMTransitionSpec._

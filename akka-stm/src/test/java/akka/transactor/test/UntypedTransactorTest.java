@@ -4,14 +4,13 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.Before;
 
-import akka.AkkaApplication;
+import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Future;
-import akka.event.EventHandler;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
@@ -28,12 +27,12 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedTransactorTest {
-    AkkaApplication application = new AkkaApplication("UntypedTransactorTest");
+    ActorSystem application = new ActorSystem("UntypedTransactorTest");
 
     List<ActorRef> counters;
     ActorRef failer;
 
-    int numCounters = 5;
+    int numCounters = 3;
     int timeout = 5;
     int askTimeout = 5000;
 
@@ -76,7 +75,7 @@ public class UntypedTransactorTest {
         EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
         EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
         Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
-        application.eventHandler().notify(new TestEvent.Mute(ignoreExceptions));
+        application.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
         CountDownLatch incrementLatch = new CountDownLatch(numCounters);
         List<ActorRef> actors = new ArrayList<ActorRef>(counters);
         actors.add(failer);
@@ -97,7 +96,6 @@ public class UntypedTransactorTest {
                 }
             }
         }
-        application.eventHandler().notify(new TestEvent.UnMute(ignoreExceptions));
     }
 
     public <A> Seq<A> seq(A... args) {

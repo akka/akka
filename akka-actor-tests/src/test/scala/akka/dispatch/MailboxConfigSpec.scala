@@ -8,10 +8,10 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
 import java.util.{ Queue }
 import akka.util._
 import akka.util.Duration._
-import akka.actor.{ LocalActorRef, Actor, NullChannel }
+import akka.actor.{ LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 
-@RunWith(classOf[JUnitRunner])
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
@@ -39,13 +39,13 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
       val exampleMessage = createMessageInvocation("test")
 
-      for (i ← 1 to config.capacity) q.enqueue(exampleMessage)
+      for (i ← 1 to config.capacity) q.enqueue(null, exampleMessage)
 
       q.numberOfMessages must be === config.capacity
       q.hasMessages must be === true
 
       intercept[MessageQueueAppendFailedException] {
-        q.enqueue(exampleMessage)
+        q.enqueue(null, exampleMessage)
       }
 
       q.dequeue must be === exampleMessage
@@ -80,7 +80,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, NullChannel)
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, app.deadLetters)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null
@@ -103,7 +103,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
       val messages = Vector() ++ (for (i ← fromNum to toNum) yield createMessageInvocation(i))
-      for (i ← messages) q.enqueue(i)
+      for (i ← messages) q.enqueue(null, i)
       messages
     }
 
@@ -141,8 +141,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case u: UnboundedMailbox ⇒ u.create(null, null)
-    case b: BoundedMailbox   ⇒ b.create(null, null)
+    case u: UnboundedMailbox ⇒ u.create(null)
+    case b: BoundedMailbox   ⇒ b.create(null)
   }
 }
 
@@ -150,7 +150,7 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null, null)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null, null)
+    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
   }
 }

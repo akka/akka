@@ -7,7 +7,7 @@ package akka.dispatch;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class AbstractPromise {
-    private volatile Object _ref = FState.apply();
+    private volatile Object _ref = DefaultPromise.EmptyPending();
     protected final static AtomicReferenceFieldUpdater<AbstractPromise, Object> updater =
             AtomicReferenceFieldUpdater.newUpdater(AbstractPromise.class, Object.class, "_ref");
 }

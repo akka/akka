@@ -8,14 +8,13 @@ import java.io.File
 import java.net.{ URL, URLClassLoader }
 import java.util.jar.JarFile
 import akka.util.Bootable
-import akka.AkkaApplication
 
 /**
  * Handles all modules in the deploy directory (load and unload)
  */
 trait BootableActorLoaderService extends Bootable {
 
-  def app: AkkaApplication
+  def app: ActorSystem
 
   val BOOT_CLASSES = app.AkkaConfig.BootClasses
   lazy val applicationLoader = createApplicationClassLoader()
@@ -67,4 +66,4 @@ trait BootableActorLoaderService extends Bootable {
 /**
  * Java API for the default JAX-RS/Mist Initializer
  */
-class DefaultBootableActorLoaderService(val app: AkkaApplication) extends BootableActorLoaderService
+class DefaultBootableActorLoaderService(val app: ActorSystem) extends BootableActorLoaderService

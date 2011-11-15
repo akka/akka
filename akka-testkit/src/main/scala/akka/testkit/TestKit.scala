@@ -10,45 +10,35 @@ import akka.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec
-import akka.AkkaApplication
+import akka.actor.ActorSystem
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
 
-  case class SetTimeout(d: Duration)
   case class SetIgnore(i: Ignore)
 
   trait Message {
     def msg: AnyRef
-    def channel: UntypedChannel
+    def sender: ActorRef
   }
-  case class RealMessage(msg: AnyRef, channel: UntypedChannel) extends Message
+  case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
   case object NullMessage extends Message {
     override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
-    override def channel: UntypedChannel = throw new IllegalActorStateException("last receive did not dequeue a message")
+    override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")
   }
 }
 
-class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[Int, TestActor.Ignore] {
-  import FSM._
+class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   import TestActor._
 
-  startWith(0, None)
-  when(0, stateTimeout = 5 seconds) {
-    case Ev(SetTimeout(d)) ⇒
-      setStateTimeout(0, if (d.finite_?) d else None)
-      stay
-    case Ev(SetIgnore(ign)) ⇒ stay using ign
-    case Ev(StateTimeout) ⇒
-      stop
-    case Event(x: AnyRef, data) ⇒
-      val observe = data map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
-      if (observe)
-        queue.offerLast(RealMessage(x, channel))
+  var ignore: Ignore = None
 
-      stay
+  def receive = {
+    case SetIgnore(ign) ⇒ ignore = ign
+    case x: AnyRef ⇒
+      val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
+      if (observe) queue.offerLast(RealMessage(x, sender))
   }
-  initialize
 }
 
 /**
@@ -86,7 +76,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor with FSM[
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: AkkaApplication) {
+class TestKit(_app: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
@@ -95,39 +85,22 @@ class TestKit(_app: AkkaApplication) {
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
 
+  def lastSender = lastMessage.sender
+
   /**
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = new LocalActorRef(app, Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)), "testActor" + TestKit.testActorId.incrementAndGet(), true)
+  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)),
+    "testActor" + TestKit.testActorId.incrementAndGet)
 
-  private var end: Duration = Duration.Inf
+  private var end: Duration = Duration.Undefined
 
   /**
    * if last assertion was expectNoMsg, disable timing failure upon within()
    * block end.
    */
   private var lastWasNoMsg = false
-
-  /**
-   * Stop test actor. Should be done at the end of the test unless relying on
-   * test actor timeout.
-   */
-  def stopTestActor() { testActor.stop() }
-
-  /**
-   * Set test actor timeout. By default, the test actor shuts itself down
-   * after 5 seconds of inactivity. Set this to Duration.Inf to disable this
-   * behavior, but make sure that someone will then call `stopTestActor`,
-   * unless you want to leak actors, e.g. wrap test in
-   *
-   * <pre>
-   *   try {
-   *     ...
-   *   } finally { stopTestActor }
-   * </pre>
-   */
-  def setTestActorTimeout(d: Duration) { testActor ! TestActor.SetTimeout(d) }
 
   /**
    * Ignore all messages in the test actor for which the given partial
@@ -146,9 +119,11 @@ class TestKit(_app: AkkaApplication) {
   def now: Duration = System.nanoTime.nanos
 
   /**
-   * Obtain time remaining for execution of the innermost enclosing `within` block.
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or missing that it returns the properly dilated default for this
+   * case from AkkaConfig (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = end - now
+  def remaining: Duration = if (end == Duration.Undefined) app.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.
@@ -164,8 +139,8 @@ class TestKit(_app: AkkaApplication) {
    *
    * Note that the timeout is scaled using Duration.timeFactor.
    */
-  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.MinusInf, interval: Duration = 100.millis) {
-    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+  def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
+    val _max = if (max eq Duration.Undefined) remaining else max.dilated
     val stop = now + _max
 
     @tailrec
@@ -199,7 +174,7 @@ class TestKit(_app: AkkaApplication) {
   def within[T](min: Duration, max: Duration)(f: ⇒ T): T = {
     val _max = max.dilated
     val start = now
-    val rem = end - start
+    val rem = if (end == Duration.Undefined) Duration.Inf else end - start
     assert(rem >= min, "required min time " + min + " not possible, only " + format(min.unit, rem) + " left")
 
     lastWasNoMsg = false
@@ -240,7 +215,7 @@ class TestKit(_app: AkkaApplication) {
 
   private def expectMsg_internal[T](max: Duration, obj: T): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsg while waiting for " + obj)
+    assert(o ne null, "timeout (" + max + ") during expectMsg while waiting for " + obj)
     assert(obj == o, "expected " + obj + ", found " + o)
     o.asInstanceOf[T]
   }
@@ -255,10 +230,10 @@ class TestKit(_app: AkkaApplication) {
    *
    * @return the received object as transformed by the partial function
    */
-  def expectMsgPF[T](max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, T]): T = {
-    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+  def expectMsgPF[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
+    val _max = if (max eq Duration.Undefined) remaining else max.dilated
     val o = receiveOne(_max)
-    assert(o ne null, "timeout during expectMsg: " + hint)
+    assert(o ne null, "timeout (" + _max + ") during expectMsg: " + hint)
     assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
     f(o)
   }
@@ -271,13 +246,13 @@ class TestKit(_app: AkkaApplication) {
    * @return the last received messsage, i.e. the first one for which the
    *         partial function returned true
    */
-  def fishForMessage(max: Duration = Duration.MinusInf, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
-    val _max = if (max eq Duration.MinusInf) remaining else max.dilated
+  def fishForMessage(max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
+    val _max = if (max eq Duration.Undefined) remaining else max.dilated
     val end = now + _max
     @tailrec
     def recv: Any = {
       val o = receiveOne(end - now)
-      assert(o ne null, "timeout during fishForMessage, hint: " + hint)
+      assert(o ne null, "timeout (" + _max + ") during fishForMessage, hint: " + hint)
       assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
       if (f(o)) o else recv
     }
@@ -314,7 +289,7 @@ class TestKit(_app: AkkaApplication) {
 
   private def expectMsgClass_internal[C](max: Duration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgClass waiting for " + c)
+    assert(o ne null, "timeout (" + max + ") during expectMsgClass waiting for " + c)
     assert(c isInstance o, "expected " + c + ", found " + o.getClass)
     o.asInstanceOf[C]
   }
@@ -335,7 +310,7 @@ class TestKit(_app: AkkaApplication) {
 
   private def expectMsgAnyOf_internal[T](max: Duration, obj: T*): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgAnyOf waiting for " + obj.mkString("(", ", ", ")"))
+    assert(o ne null, "timeout (" + max + ") during expectMsgAnyOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (_ == o), "found unexpected " + o)
     o.asInstanceOf[T]
   }
@@ -356,7 +331,7 @@ class TestKit(_app: AkkaApplication) {
 
   private def expectMsgAnyClassOf_internal[C](max: Duration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
+    assert(o ne null, "timeout (" + max + ") during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (_ isInstance o), "found unexpected " + o)
     o.asInstanceOf[C]
   }
@@ -452,12 +427,6 @@ class TestKit(_app: AkkaApplication) {
   }
 
   /**
-   * Same as `receiveWhile(remaining)(f)`, but correctly treating the timeFactor.
-   */
-  @deprecated("insert empty first parameter list", "1.2")
-  def receiveWhile[T](f: PartialFunction[AnyRef, T]): Seq[T] = receiveWhile(remaining / Duration.timeFactor)(f)
-
-  /**
    * Receive a series of messages until one does not match the given partial
    * function or the idle timeout is met (disabled by default) or the overall
    * maximum duration is elapsed. Returns the sequence of messages.
@@ -475,12 +444,13 @@ class TestKit(_app: AkkaApplication) {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max: Duration = Duration.MinusInf, idle: Duration = Duration.Inf)(f: PartialFunction[AnyRef, T]): Seq[T] = {
-    val stop = now + (if (max == Duration.MinusInf) remaining else max.dilated)
+  def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
+    val stop = now + (if (max eq Duration.Undefined) remaining else max.dilated)
     var msg: Message = NullMessage
 
     @tailrec
-    def doit(acc: List[T]): List[T] = {
+    def doit(acc: List[T], count: Int): List[T] = {
+      if (count >= messages) return acc.reverse
       receiveOne((stop - now) min idle)
       lastMessage match {
         case NullMessage ⇒
@@ -488,7 +458,7 @@ class TestKit(_app: AkkaApplication) {
           acc.reverse
         case RealMessage(o, _) if (f isDefinedAt o) ⇒
           msg = lastMessage
-          doit(f(o) :: acc)
+          doit(f(o) :: acc, count + 1)
         case RealMessage(o, _) ⇒
           queue.offerFirst(lastMessage)
           lastMessage = msg
@@ -496,7 +466,7 @@ class TestKit(_app: AkkaApplication) {
       }
     }
 
-    val ret = doit(Nil)
+    val ret = doit(Nil, 0)
     lastWasNoMsg = true
     ret
   }
@@ -517,7 +487,7 @@ class TestKit(_app: AkkaApplication) {
     for { x ← 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
-      assert(o ne null, "timeout while expecting " + n + " messages")
+      assert(o ne null, "timeout (" + max + ") while expecting " + n + " messages")
       o
     }
   }
@@ -553,12 +523,47 @@ class TestKit(_app: AkkaApplication) {
 
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
+
+  /**
+   * Block until the given condition evaluates to `true` or the timeout
+   * expires, whichever comes first.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.timeFactor.
+   */
+  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
+    val stop = now + max
+
+    @tailrec
+    def poll(): Boolean = {
+      if (!p) {
+        val toSleep = stop - now
+        if (toSleep <= Duration.Zero) {
+          if (noThrow) false
+          else throw new AssertionError("timeout " + max + " expired")
+        } else {
+          Thread.sleep((toSleep min interval).toMillis)
+          poll()
+        }
+      } else true
+    }
+
+    poll()
+  }
+
+  /**
+   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
+   */
+  def now: Duration = System.nanoTime().nanos
+
 }
 
 /**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
+class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 
   /**
    * Shorthand to get the testActor.
@@ -578,18 +583,18 @@ class TestProbe(_application: AkkaApplication) extends TestKit(_application) {
    * Forward this message as if in the TestActor's receive method with self.forward.
    */
   def forward(actor: ActorRef, msg: AnyRef = lastMessage.msg) {
-    actor.!(msg)(lastMessage.channel)
+    actor.!(msg)(lastMessage.sender)
   }
 
   /**
-   * Get channel of last received message.
+   * Get sender of last received message.
    */
-  def channel = lastMessage.channel
+  def sender = lastMessage.sender
 
 }
 
 object TestProbe {
-  def apply()(implicit app: AkkaApplication) = new TestProbe(app)
+  def apply()(implicit app: ActorSystem) = new TestProbe(app)
 }
 
 trait ImplicitSender { this: TestKit ⇒

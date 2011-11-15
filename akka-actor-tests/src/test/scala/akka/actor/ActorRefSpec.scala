@@ -9,7 +9,6 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
 import akka.util.duration._
-import akka.testkit.Testing.sleepFor
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.dispatch.{ DefaultPromise, Promise, Future }
@@ -18,24 +17,22 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 object ActorRefSpec {
 
-  case class ReplyTo(channel: Channel[Any])
-
-  val latch = TestLatch(4)
+  case class ReplyTo(sender: ActorRef)
 
   class ReplyActor extends Actor {
-    var replyTo: Channel[Any] = null
+    var replyTo: ActorRef = null
 
     def receive = {
       case "complexRequest" ⇒ {
-        replyTo = channel
+        replyTo = sender
         val worker = context.actorOf(Props[WorkerActor])
         worker ! "work"
       }
       case "complexRequest2" ⇒
         val worker = context.actorOf(Props[WorkerActor])
-        worker ! ReplyTo(channel)
+        worker ! ReplyTo(sender)
       case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ channel ! "simpleReply"
+      case "simpleRequest" ⇒ sender ! "simpleReply"
     }
   }
 
@@ -43,7 +40,7 @@ object ActorRefSpec {
     def receive = {
       case "work" ⇒ {
         work
-        channel ! "workDone"
+        sender ! "workDone"
         self.stop()
       }
       case ReplyTo(replyTo) ⇒ {
@@ -53,11 +50,11 @@ object ActorRefSpec {
     }
 
     private def work {
-      sleepFor(1 second)
+      1.second.dilated.sleep
     }
   }
 
-  class SenderActor(replyActor: ActorRef) extends Actor {
+  class SenderActor(replyActor: ActorRef, latch: TestLatch) extends Actor {
 
     def receive = {
       case "complex"  ⇒ replyActor ! "complexRequest"
@@ -74,7 +71,7 @@ object ActorRefSpec {
 
   class OuterActor(val inner: ActorRef) extends Actor {
     def receive = {
-      case "self" ⇒ channel ! self
+      case "self" ⇒ sender ! self
       case x      ⇒ inner forward x
     }
   }
@@ -83,7 +80,7 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "self" ⇒ channel ! self
+      case "self" ⇒ sender ! self
       case x      ⇒ inner forward x
     }
   }
@@ -94,8 +91,8 @@ object ActorRefSpec {
 
   class InnerActor extends Actor {
     def receive = {
-      case "innerself" ⇒ channel ! self
-      case other       ⇒ channel ! other
+      case "innerself" ⇒ sender ! self
+      case other       ⇒ sender ! other
     }
   }
 
@@ -103,8 +100,8 @@ object ActorRefSpec {
     val fail = new InnerActor
 
     def receive = {
-      case "innerself" ⇒ channel ! self
-      case other       ⇒ channel ! other
+      case "innerself" ⇒ sender ! self
+      case other       ⇒ sender ! other
     }
   }
 
@@ -113,6 +110,7 @@ object ActorRefSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorRefSpec extends AkkaSpec {
   import akka.actor.ActorRefSpec._
 
@@ -276,39 +274,22 @@ class ActorRefSpec extends AkkaSpec {
 
       (intercept[java.lang.IllegalStateException] {
         in.readObject
-      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an AkkaApplication in scope." +
+      }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
         " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
     }
 
-    "must throw exception on deserialize if not present in local registry and remoting is not enabled" in {
-      val latch = new CountDownLatch(1)
-      val a = actorOf(new InnerActor {
-        override def postStop {
-          // app.registry.unregister(self)
-          latch.countDown
-        }
-      })
-
-      val inetAddress = app.defaultAddress
-
-      val expectedSerializedRepresentation = SerializedActorRef(
-        a.uuid,
-        a.address,
-        inetAddress.getAddress.getHostAddress,
-        inetAddress.getPort)
-
+    "must throw exception on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
       import java.io._
 
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      out.writeObject(a)
+      val serialized = SerializedActorRef(app.address.hostname, app.address.port, "/this/path/does/not/exist")
+
+      out.writeObject(serialized)
 
       out.flush
       out.close
-
-      a.stop()
-      latch.await(5, TimeUnit.SECONDS) must be === true
 
       Serialization.app.withValue(app) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
@@ -321,7 +302,7 @@ class ActorRefSpec extends AkkaSpec {
     "support nested actorOfs" in {
       val a = actorOf(new Actor {
         val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
-        def receive = { case _ ⇒ channel ! nested }
+        def receive = { case _ ⇒ sender ! nested }
       })
 
       val nested = (a ? "any").as[ActorRef].get
@@ -341,9 +322,10 @@ class ActorRefSpec extends AkkaSpec {
       (a ? "msg").as[String] must be === Some("msg")
     }
 
-    "support reply via channel" in {
+    "support reply via sender" in {
+      val latch = new TestLatch(4)
       val serverRef = actorOf(Props[ReplyActor])
-      val clientRef = actorOf(Props(new SenderActor(serverRef)))
+      val clientRef = actorOf(Props(new SenderActor(serverRef, latch)))
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -369,23 +351,19 @@ class ActorRefSpec extends AkkaSpec {
       val timeout = Timeout(20000)
       val ref = actorOf(Props(new Actor {
         def receive = {
-          case 5    ⇒ channel.tryTell("five")
-          case null ⇒ channel.tryTell("null")
+          case 5    ⇒ sender.tell("five")
+          case null ⇒ sender.tell("null")
         }
       }))
 
       val ffive = (ref ? (5, timeout)).mapTo[String]
       val fnull = (ref ? (null, timeout)).mapTo[String]
-
-      intercept[ActorKilledException] {
-        (ref ? PoisonPill).get
-        fail("shouldn't get here")
-      }
+      ref ! PoisonPill
 
       ffive.get must be("five")
       fnull.get must be("null")
 
-      awaitCond(ref.isShutdown, 100 millis)
+      awaitCond(ref.isShutdown, 2000 millis)
     }
 
     "restart when Kill:ed" in {
@@ -394,12 +372,12 @@ class ActorRefSpec extends AkkaSpec {
 
         val boss = actorOf(Props(new Actor {
 
-          val ref = actorOf(
+          val ref = context.actorOf(
             Props(new Actor {
               def receive = { case _ ⇒ }
               override def preRestart(reason: Throwable, msg: Option[Any]) = latch.countDown()
               override def postRestart(reason: Throwable) = latch.countDown()
-            }).withSupervisor(self))
+            }))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
         }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))

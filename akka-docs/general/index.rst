@@ -9,4 +9,4 @@ General
    event-handler
    slf4j
    supervision
-
+   guaranteed-delivery
