@@ -15,7 +15,6 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
   def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(app, name, 5,
     0, UnboundedMailbox(), config, 60000), ThreadPoolConfig(app))
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setFlowHandler(Left(new AbortPolicy))
     .setCorePoolSize(maxClients)
     .build
 
