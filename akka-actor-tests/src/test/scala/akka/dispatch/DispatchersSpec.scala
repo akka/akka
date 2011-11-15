@@ -20,7 +20,7 @@ object DispatchersSpec {
   val maxpoolsizefactor = "max-pool-size-factor"
   val executorbounds = "executor-bounds"
   val allowcoretimeout = "allow-core-timeout"
-  val rejectionpolicy = "rejection-policy" // abort, caller-runs, discard-oldest, discard
+  val rejectionpolicy = "rejection-policy" // sane, abort, caller-runs, discard-oldest, discard
   val throughput = "throughput" // Throughput for ExecutorBasedEventDrivenDispatcher
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher

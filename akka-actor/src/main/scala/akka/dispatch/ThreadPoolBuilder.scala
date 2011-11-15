@@ -7,7 +7,6 @@ package akka.dispatch
 import java.util.Collection
 import java.util.concurrent._
 import atomic.{ AtomicLong, AtomicInteger }
-import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
 import akka.event.EventHandler
@@ -21,7 +20,7 @@ object ThreadPoolConfig {
   val defaultCorePoolSize: Int = 16
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
-  def defaultFlowHandler: FlowHandler = flowHandler(new CallerRunsPolicy)
+  def defaultFlowHandler: FlowHandler = flowHandler(new SaneRejectedExecutionHandler)
 
   def flowHandler(rejectionHandler: RejectedExecutionHandler): FlowHandler = Left(rejectionHandler)
   def flowHandler(bounds: Int): FlowHandler = Right(bounds)
@@ -259,4 +258,11 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
 
 class LazyExecutorServiceWrapper(executorFactory: ⇒ ExecutorService) extends LazyExecutorService {
   def createExecutor = executorFactory
+}
+
+class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
+  def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor): Unit = {
+    if (threadPoolExecutor.isShutdown) throw new RejectedExecutionException("Shutdown")
+    else runnable.run()
+  }
 }

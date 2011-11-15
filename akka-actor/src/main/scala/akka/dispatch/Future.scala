@@ -905,7 +905,8 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
       if (value.isEmpty) {
         if (!isExpired) {
           val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } } //TODO Reschedule is run prematurely
-          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          val fut = Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
+          onComplete(_ => fut.cancel(true))
           false
         } else true
       } else false
