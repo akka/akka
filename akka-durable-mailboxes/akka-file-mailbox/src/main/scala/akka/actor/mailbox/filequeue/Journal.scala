@@ -20,8 +20,7 @@ package akka.actor.mailbox.filequeue
 import java.io._
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
-
-import akka.event.EventHandler
+import akka.event.LoggingAdapter
 
 // returned from journal replay
 sealed trait JournalItem
@@ -38,7 +37,7 @@ object JournalItem {
 /**
  * Codes for working with the journal file for a PersistentQueue.
  */
-class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
+class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) {
 
   private val queueFile = new File(queuePath)
 
@@ -195,21 +194,20 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean) {
               f(x)
               if (size / TEN_MB > lastUpdate) {
                 lastUpdate = size / TEN_MB
-                EventHandler.info(this,
-                  "Continuing to read '%s' journal; %s MB so far...".format(name, lastUpdate * 10))
+                log.info("Continuing to read '{}' journal; {} MB so far...", name, lastUpdate * 10)
               }
           }
         } while (!done)
       } catch {
         case e: BrokenItemException ⇒
-          EventHandler.error(e, this, "Exception replaying journal for '%s'".format(name))
+          log.error(e, "Exception replaying journal for '{}'", name)
           truncateJournal(e.lastValidPosition)
       }
     } catch {
       case e: FileNotFoundException ⇒
-        EventHandler.info(this, "No transaction journal for '%s'; starting with empty queue.".format(name))
+        log.info("No transaction journal for '{}'; starting with empty queue.", name)
       case e: IOException ⇒
-        EventHandler.error(e, this, "Exception replaying journal for '%s'".format(name))
+        log.error(e, "Exception replaying journal for '{}'", name)
       // this can happen if the server hardware died abruptly in the middle
       // of writing a journal. not awesome but we should recover.
     }

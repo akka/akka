@@ -199,6 +199,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends Serializable {
     actor.mailbox = deadLetterMailbox
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up 
     cleanUpMailboxFor(actor, mailBox)
+    mailBox.cleanUp()
   }
 
   /**

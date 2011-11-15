@@ -20,8 +20,10 @@ package akka.actor.mailbox.filequeue.tools
 import java.io.{ FileNotFoundException, IOException }
 import scala.collection.mutable
 import akka.actor.mailbox.filequeue._
+import akka.event.LoggingAdapter
+import akka.actor.ActorSystem
 
-class QueueDumper(filename: String) {
+class QueueDumper(filename: String, log: LoggingAdapter) {
   var offset = 0L
   var operations = 0L
   var currentXid = 0
@@ -32,7 +34,7 @@ class QueueDumper(filename: String) {
   val openTransactions = new mutable.HashMap[Int, Int]
 
   def apply() {
-    val journal = new Journal(filename, false)
+    val journal = new Journal(filename, false, log)
     var lastDisplay = 0L
 
     try {
@@ -140,9 +142,11 @@ object QDumper {
       System.exit(0)
     }
 
+    val app = ActorSystem()
+
     for (filename ← filenames) {
       println("Queue: " + filename)
-      new QueueDumper(filename)()
+      new QueueDumper(filename, app.log)()
     }
   }
 }

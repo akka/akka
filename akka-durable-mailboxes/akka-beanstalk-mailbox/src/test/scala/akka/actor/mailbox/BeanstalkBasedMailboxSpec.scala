@@ -1,3 +1,4 @@
 package akka.actor.mailbox
 
-class BeanstalkBasedMailboxSpec extends DurableMailboxSpec("Beanstalkd", BeanstalkDurableMailboxStorage)
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class BeanstalkBasedMailboxSpec extends DurableMailboxSpec("Beanstalkd", BeanstalkDurableMailboxType)

@@ -19,15 +19,13 @@ package akka.actor.mailbox.filequeue
 
 import java.io.File
 import java.util.concurrent.CountDownLatch
-
 import scala.collection.mutable
-
-import akka.config.{ Config, Configuration }
-import akka.event.EventHandler
+import akka.config.Configuration
+import akka.event.LoggingAdapter
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
 
-class QueueCollection(queueFolder: String, private var queueConfigs: Configuration) {
+class QueueCollection(queueFolder: String, private var queueConfigs: Configuration, log: LoggingAdapter) {
   private val path = new File(queueFolder)
 
   if (!path.isDirectory) {
@@ -80,10 +78,10 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
         val q = if (name contains '+') {
           val master = name.split('+')(0)
           fanout_queues.getOrElseUpdate(master, new mutable.HashSet[String]) += name
-          EventHandler.debug(this, "Fanout queue %s added to %s".format(name, master))
-          new PersistentQueue(path.getPath, name, queueConfigs)
+          log.debug("Fanout queue {} added to {}", name, master)
+          new PersistentQueue(path.getPath, name, queueConfigs, log)
         } else {
-          new PersistentQueue(path.getPath, name, queueConfigs)
+          new PersistentQueue(path.getPath, name, queueConfigs, log)
         }
         q.setup
         queues(name) = q
@@ -187,7 +185,7 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Configurati
       if (name contains '+') {
         val master = name.split('+')(0)
         fanout_queues.getOrElseUpdate(master, new mutable.HashSet[String]) -= name
-        EventHandler.debug(this, "Fanout queue %s dropped from %s".format(name, master))
+        log.debug("Fanout queue {} dropped from {}", name, master)
       }
     }
   }

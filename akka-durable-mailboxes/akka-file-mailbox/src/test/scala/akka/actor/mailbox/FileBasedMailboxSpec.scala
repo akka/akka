@@ -2,20 +2,21 @@ package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
 
-class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileDurableMailboxStorage) {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileDurableMailboxType) {
 
   def clean {
-    import FileBasedMailboxUtil._
+    val queuePath = FileBasedMailbox.queuePath(app.config)
     FileUtils.deleteDirectory(new java.io.File(queuePath))
   }
 
-  override def beforeAll() {
+  override def atStartup() {
     clean
-    super.beforeAll
+    super.atStartup()
   }
 
-  override def afterEach() {
+  override def atTermination() {
     clean
-    super.afterEach
+    super.atTermination()
   }
 }
