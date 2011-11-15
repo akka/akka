@@ -3,49 +3,44 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ Actor, ActorRef, LocalActorRef, NullChannel, Channel }
-import akka.config.Config.config
-import akka.dispatch._
-import akka.event.EventHandler
-import akka.AkkaException
-import akka.cluster.MessageSerializer
-import akka.cluster.RemoteProtocol.MessageProtocol
+import java.io.InputStream
 
-import MailboxProtocol._
+import org.bson.collection.BSONDocument
+import org.bson.io.BasicOutputBuffer
+import org.bson.io.OutputBuffer
+import org.bson.util.Logging
+import org.bson.SerializableBSONObject
+import org.bson.BSONSerializer
+import org.bson.DefaultBSONDeserializer
+import org.bson.DefaultBSONSerializer
 
-import com.mongodb.async._
+import akka.actor.SerializedActorRef
+import akka.remote.RemoteProtocol.MessageProtocol
+import akka.remote.MessageSerializer
+import akka.actor.ActorSystem
 
-import org.bson.util._
-import org.bson.io.{ BasicOutputBuffer, OutputBuffer }
-import org.bson.types.ObjectId
-import java.io.{ ByteArrayInputStream, InputStream }
-
-import org.bson._
-import org.bson.collection._
-
-object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessage] with Logging {
+class BSONSerializableMailbox(app: ActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
-    EventHandler.debug(this, "Serializing a durable message to MongoDB: %s".format(msg))
-    val msgData = MessageSerializer.serialize(msg.message.asInstanceOf[AnyRef])
-    EventHandler.debug(this, "Serialized Message: %s".format(msgData))
 
     // TODO - Skip the whole map creation step for performance, fun, and profit! (Needs Salat)
     val b = Map.newBuilder[String, Any]
     b += "_id" -> msg._id
-    b += "ownerAddress" -> msg.ownerAddress
+    b += "ownerPath" -> msg.ownerPath
 
-    msg.sender match {
-      case a: ActorRef ⇒ { b += "senderAddress" -> a.address }
-      case _           ⇒ ()
-    }
+    val sender = app.provider.serialize(msg.sender)
+    b += "senderPath" -> sender.path
+    b += "senderHostname" -> sender.hostname
+    b += "senderPort" -> sender.port
+
     /**
      * TODO - Figure out a way for custom serialization of the message instance
      * TODO - Test if a serializer is registered for the message and if not, use toByteString
      */
+    val msgData = MessageSerializer.serialize(app, msg.message.asInstanceOf[AnyRef])
     b += "message" -> new org.bson.types.Binary(0, msgData.toByteArray)
     val doc = b.result
-    EventHandler.debug(this, "Serialized Document: %s".format(doc))
+    app.log.debug("Serialized Document: {}", doc)
     serializer.putObject(doc)
   }
 
@@ -72,25 +67,18 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
   def decode(in: InputStream): MongoDurableMessage = {
     val deserializer = new DefaultBSONDeserializer
     // TODO - Skip the whole doc step for performance, fun, and profit! (Needs Salat / custom Deser)
-    val doc: BSONDocument = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
-    EventHandler.debug(this, "Deserializing a durable message from MongoDB: %s".format(doc))
-
-    val ownerAddress = doc.as[String]("ownerAddress")
-    val owner = Actor.registry.actorFor(ownerAddress) match {
-      case Some(l: LocalActorRef) ⇒ l
-      case Some(a)                ⇒ throw new DurableMailboxException("Recipient of message is not a LocalActorRef: " + a)
-      case None                   ⇒ throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message.")
-    }
-
+    val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
+    app.log.debug("Deserializing a durable message from MongoDB: {}", doc)
     val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg = MessageSerializer.deserialize(msgData)
+    val msg = MessageSerializer.deserialize(app, msgData)
+    val ownerPath = doc.as[String]("ownerPath")
+    val senderPath = doc.as[String]("senderPath")
+    val senderHostname = doc.as[String]("senderHostname")
+    val senderPort = doc.as[Int]("senderPort")
+    val sender = app.provider.deserialize(SerializedActorRef(senderHostname, senderPort, senderPath)).
+      getOrElse(app.deadLetters)
 
-    val sender = if (doc.contains("senderAddress"))
-      Actor.registry.actorFor(doc.as[String]("senderAddress"))
-    else
-      None
-
-    MongoDurableMessage(ownerAddress, owner, msg, sender.getOrElse(NullChannel))
+    MongoDurableMessage(ownerPath, msg, sender)
   }
 
   def checkObject(msg: MongoDurableMessage, isQuery: Boolean = false) = {} // object expected to be OK with this message type.

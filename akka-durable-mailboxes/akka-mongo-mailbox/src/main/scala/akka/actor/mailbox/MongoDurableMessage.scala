@@ -3,22 +3,16 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ LocalActorRef, UntypedChannel, NullChannel }
-import akka.config.Config.config
-import akka.dispatch._
-import akka.event.EventHandler
 import akka.AkkaException
-
-import MailboxProtocol._
-
 import com.mongodb.async._
-
 import org.bson.util._
 import org.bson.io.OutputBuffer
 import org.bson.types.ObjectId
 import java.io.InputStream
-
 import org.bson.collection._
+import akka.actor.LocalActorRef
+import akka.actor.ActorRef
+import akka.dispatch.Envelope
 
 /**
  * A container message for durable mailbox messages, which can be easily stuffed into
@@ -32,13 +26,13 @@ import org.bson.collection._
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-case class MongoDurableMessage(val ownerAddress: String,
-                               val receiver: LocalActorRef,
-                               val message: Any,
-                               val sender: UntypedChannel,
-                               val _id: ObjectId = new ObjectId) {
+case class MongoDurableMessage(
+  val ownerPath: String,
+  val message: Any,
+  val sender: ActorRef,
+  val _id: ObjectId = new ObjectId) {
 
-  def messageInvocation() = MessageInvocation(this.receiver, this.message, this.sender)
+  def envelope() = Envelope(message, sender)
 }
 
 // vim: set ts=2 sw=2 sts=2 et:
