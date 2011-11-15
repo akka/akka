@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.config._
+import akka.config.ConfigurationException
 import akka.actor._
 import akka.event._
 import akka.dispatch._
@@ -16,6 +16,11 @@ import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.{ Executors, TimeUnit }
+import java.io.File
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigParseOptions
+import com.typesafe.config.ConfigRoot
+import com.typesafe.config.ConfigFactory
 
 object ActorSystem {
 
@@ -33,39 +38,11 @@ object ActorSystem {
 
   val GlobalHome = systemHome orElse envHome
 
-  val envConf = System.getenv("AKKA_MODE") match {
-    case null | "" ⇒ None
-    case value     ⇒ Some(value)
-  }
-
-  val systemConf = System.getProperty("akka.mode") match {
-    case null | "" ⇒ None
-    case value     ⇒ Some(value)
-  }
-
-  val defaultLocation = (systemConf orElse envConf).map("akka." + _ + ".conf").getOrElse("akka.conf")
-
-  val fromProperties = try {
-    Some(Configuration.fromFile(System.getProperty("akka.config", "")))
-  } catch { case _ ⇒ None }
-
-  val fromClasspath = try {
-    Some(Configuration.fromResource(defaultLocation, getClass.getClassLoader))
-  } catch { case _ ⇒ None }
-
-  val fromHome = try {
-    Some(Configuration.fromFile(GlobalHome.get + "/config/" + defaultLocation))
-  } catch { case _ ⇒ None }
-
-  val emptyConfig = Configuration.fromString("akka { version = \"" + Version + "\" }")
-
-  val defaultConfig = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
-
-  def create(name: String, config: Configuration): ActorSystem = apply(name, config)
-  def apply(name: String, config: Configuration): ActorSystem = new ActorSystemImpl(name, config).start()
+  def create(name: String, config: Config): ActorSystem = apply(name, config)
+  def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
 
   def create(name: String): ActorSystem = apply(name)
-  def apply(name: String): ActorSystem = apply(name, defaultConfig)
+  def apply(name: String): ActorSystem = apply(name, DefaultConfigurationLoader.defaultConfig)
 
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
@@ -74,56 +51,100 @@ object ActorSystem {
   case object Stopped extends ExitStatus
   case class Failed(cause: Throwable) extends ExitStatus
 
-  class Settings(val config: Configuration) {
+  class Settings(cfg: Config) {
+    val config: ConfigRoot = ConfigFactory.emptyRoot("akka").withFallback(cfg).withFallback(DefaultConfigurationLoader.referenceConfig).resolve()
+
+    import scala.collection.JavaConverters._
+    import akka.config.ConfigImplicits._
     import config._
-    val ConfigVersion = getString("akka.version", Version)
+    val ConfigVersion = getString("akka.version")
 
-    val ProviderClass = getString("akka.actor.provider", "akka.actor.LocalActorRefProvider")
+    val ProviderClass = getString("akka.actor.provider")
 
-    val DefaultTimeUnit = Duration.timeUnit(getString("akka.time-unit", "seconds"))
-    val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout", 5), DefaultTimeUnit))
+    val DefaultTimeUnit = Duration.timeUnit(getString("akka.time-unit"))
+    val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout"), DefaultTimeUnit))
     val ActorTimeoutMillis = ActorTimeout.duration.toMillis
-    val SerializeAllMessages = getBool("akka.actor.serialize-messages", false)
+    val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
-    val TestTimeFactor =
-      try java.lang.Double.parseDouble(System.getProperty("akka.test.timefactor")) catch {
-        case _: Exception ⇒ getDouble("akka.test.timefactor", 1.0)
-      }
-    val SingleExpectDefaultTimeout = Duration(getDouble("akka.test.single-expect-default", 1), DefaultTimeUnit)
-    val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway", 0.5), DefaultTimeUnit)
+    val TestTimeFactor = getDouble("akka.test.timefactor")
+    val SingleExpectDefaultTimeout = Duration(getDouble("akka.test.single-expect-default"), DefaultTimeUnit)
+    val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway"), DefaultTimeUnit)
 
-    val LogLevel = getString("akka.loglevel", "INFO")
-    val StdoutLogLevel = getString("akka.stdout-loglevel", LogLevel)
-    val EventHandlers = getList("akka.event-handlers")
-    val AddLoggingReceive = getBool("akka.actor.debug.receive", false)
-    val DebugAutoReceive = getBool("akka.actor.debug.autoreceive", false)
-    val DebugLifecycle = getBool("akka.actor.debug.lifecycle", false)
-    val FsmDebugEvent = getBool("akka.actor.debug.fsm", false)
-    val DebugEventStream = getBool("akka.actor.debug.event-stream", false)
+    val LogLevel = getString("akka.loglevel")
+    val StdoutLogLevel = getString("akka.stdout-loglevel")
+    val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
+    val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
+    val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
+    val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
+    val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
-    val DispatcherThroughput = getInt("akka.actor.throughput", 5)
-    val DispatcherDefaultShutdown = getLong("akka.actor.dispatcher-shutdown-timeout").
-      map(time ⇒ Duration(time, DefaultTimeUnit)).getOrElse(1 second)
-    val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity", -1)
-    val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time", 10), DefaultTimeUnit)
-    val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.throughput-deadline-time", -1), DefaultTimeUnit)
+    val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
+    val DispatcherDefaultShutdown = Duration(getLong("akka.actor.dispatcher-shutdown-timeout"), DefaultTimeUnit)
+    val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
+    val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time"), DefaultTimeUnit)
+    val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.default-dispatcher.throughput-deadline-time"), DefaultTimeUnit)
 
-    val Home = getString("akka.home")
-    val BootClasses = getList("akka.boot")
+    val Home = config.getStringOption("akka.home")
+    val BootClasses: Seq[String] = getStringList("akka.boot").asScala
 
-    val EnabledModules = getList("akka.enabled-modules")
+    val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
+
+    // TODO move to cluster extension
     val ClusterEnabled = EnabledModules exists (_ == "cluster")
-    val ClusterName = getString("akka.cluster.name", "default")
+    val ClusterName = getString("akka.cluster.name")
 
-    val RemoteTransport = getString("akka.remote.layer", "akka.remote.netty.NettyRemoteSupport")
-    val RemoteServerPort = getInt("akka.remote.server.port", 2552)
-
-    val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
-    val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
+    // TODO move to remote extension
+    val RemoteTransport = getString("akka.remote.layer")
+    val RemoteServerPort = getInt("akka.remote.server.port")
+    val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
+    val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version +
         "] does not match the provided config version [" + ConfigVersion + "]")
+
+  }
+
+  object DefaultConfigurationLoader {
+
+    lazy val defaultConfig: Config = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+
+    val envConf = System.getenv("AKKA_MODE") match {
+      case null | "" ⇒ None
+      case value     ⇒ Some(value)
+    }
+
+    val systemConf = System.getProperty("akka.mode") match {
+      case null | "" ⇒ None
+      case value     ⇒ Some(value)
+    }
+
+    // file extensions (.conf, .json, .properties), are handled by parseFileAnySyntax
+    val defaultLocation = (systemConf orElse envConf).map("akka." + _).getOrElse("akka")
+    private def configParseOptions = ConfigParseOptions.defaults.setAllowMissing(false)
+
+    lazy val fromProperties = try {
+      val property = Option(System.getProperty("akka.config"))
+      property.map(p ⇒
+        ConfigFactory.systemProperties().withFallback(
+          ConfigFactory.parseFileAnySyntax(new File(p), configParseOptions)))
+    } catch { case _ ⇒ None }
+
+    lazy val fromClasspath = try {
+      Option(ConfigFactory.systemProperties().withFallback(
+        ConfigFactory.parseResourceAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
+    } catch { case _ ⇒ None }
+
+    lazy val fromHome = try {
+      Option(ConfigFactory.systemProperties().withFallback(
+        ConfigFactory.parseFileAnySyntax(new File(GlobalHome.get + "/config/" + defaultLocation), configParseOptions)))
+    } catch { case _ ⇒ None }
+
+    val referenceConfig: Config =
+      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf", configParseOptions)
+
+    lazy val emptyConfig = ConfigFactory.systemProperties()
 
   }
 
@@ -165,7 +186,7 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   def stop()
 }
 
-class ActorSystemImpl(val name: String, config: Configuration) extends ActorSystem {
+class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
 
   import ActorSystem._
 

@@ -4,11 +4,24 @@
 package akka.event
 
 import akka.testkit.AkkaSpec
-import akka.config.Configuration
 import akka.util.duration._
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+import scala.collection.JavaConverters._
+import akka.actor.ActorSystem
+import java.io.StringReader
 
 object EventStreamSpec {
+
+  val config = ConfigFactory.parseReader(new StringReader("""
+      akka {
+        stdout-loglevel = WARNING
+        loglevel = INFO
+        event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
+      }
+      """.format(Logging.StandardOutLoggerName)), ConfigParseOptions.defaults)
+
   case class M(i: Int)
 
   case class SetTarget(ref: ActorRef)
@@ -29,10 +42,8 @@ object EventStreamSpec {
   class C extends B1
 }
 
-class EventStreamSpec extends AkkaSpec(Configuration(
-  "akka.stdout-loglevel" -> "WARNING",
-  "akka.loglevel" -> "INFO",
-  "akka.event-handlers" -> Seq("akka.event.EventStreamSpec$MyLog", Logging.StandardOutLoggerName))) {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   import EventStreamSpec._
 

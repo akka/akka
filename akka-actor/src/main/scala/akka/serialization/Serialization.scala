@@ -69,24 +69,26 @@ class Serialization(val system: ActorSystemImpl) {
    * By default always contains the following mapping: "default" -> akka.serialization.JavaSerializer
    * But "default" can be overridden in config
    */
-  val serializers: Map[String, Serializer] =
-    system.settings.config.getSection("akka.actor.serializers")
-      .map(_.map)
-      .getOrElse(Map())
-      .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
-        case (result, (k: String, v: String)) ⇒ result + (k -> serializerOf(v).fold(throw _, identity))
-        case (result, _)                      ⇒ result
-      }
+  val serializers: Map[String, Serializer] = {
+    import scala.collection.JavaConverters._
+    val serializersConf = system.settings.config.getConfig("akka.actor.serializers").toObject.unwrapped.asScala.toMap
+    for ((k: String, v: String) ← serializersConf)
+      yield k -> serializerOf(v).fold(throw _, identity)
+  }
 
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
-  val bindings: Map[String, String] = system.settings.config.getSection("akka.actor.serialization-bindings") map {
-    _.map.foldLeft(Map[String, String]()) {
-      case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
-      case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
-    }
-  } getOrElse Map()
+  val bindings: Map[String, String] = {
+    import akka.config.ConfigImplicits._
+    import scala.collection.JavaConverters._
+    system.settings.config.getConfigOption("akka.actor.serialization-bindings") map {
+      _.toObject.unwrapped.asScala.foldLeft(Map[String, String]()) {
+        case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
+        case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
+      }
+    } getOrElse Map()
+  }
 
   /**
    * serializerMap is a Map whose keys = FQN of class that is serializable and values = the FQN of the serializer to be used for that class

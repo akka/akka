@@ -1,11 +1,9 @@
 package akka.remote
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import java.net.InetSocketAddress
+import akka.testkit.AkkaSpec
 
-class VectorClockSpec extends WordSpec with MustMatchers {
+class VectorClockSpec extends AkkaSpec {
   import VectorClock._
 
   "An VectorClock" must {

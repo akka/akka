@@ -8,12 +8,31 @@ import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
 import akka.remote.RemoteAddress
+import java.io.StringReader
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+
+object DeployerSpec {
+  val deployerConf = ConfigFactory.parseReader(new StringReader("""
+      akka.actor.deployment {
+        /app/service-ping {
+          nr-of-instances = 3
+          remote {
+            nodes = ["wallace:2552", "gromit:2552"]
+          }
+        }
+      }
+      """), ConfigParseOptions.defaults)
+
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DeployerSpec extends AkkaSpec {
+class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
   "A Deployer" must {
+
     "be able to parse 'akka.actor.deployment._' config elements" in {
+      val p = system.settings.config.getString("akka.actor.provider")
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupInConfig("/app/service-ping")
       deployment must be('defined)
 

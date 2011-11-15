@@ -21,11 +21,11 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
  */
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val zkServerAddresses = system.settings.config.getString("akka.actor.mailbox.zookeeper.server-addresses", "localhost:2181")
+  val zkServerAddresses = system.settings.config.getString("akka.actor.mailbox.zookeeper.server-addresses")
   def defaultTimeUnit = system.settings.DefaultTimeUnit
-  val sessionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), defaultTimeUnit).toMillis.toInt
-  val connectionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout", 60), defaultTimeUnit).toMillis.toInt
-  val blockingQueue = system.settings.config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
+  val sessionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.session-timeout"), defaultTimeUnit).toMillis.toInt
+  val connectionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout"), defaultTimeUnit).toMillis.toInt
+  val blockingQueue = system.settings.config.getBoolean("akka.actor.mailbox.zookeeper.blocking-queue")
 
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"

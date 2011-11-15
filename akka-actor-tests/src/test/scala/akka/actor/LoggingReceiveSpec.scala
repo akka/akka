@@ -7,10 +7,12 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.actor.ActorSystem.defaultConfig
-import akka.config.Configuration
 import akka.event.Logging
 import akka.util.Duration
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+import scala.collection.JavaConverters._
+import java.util.Properties
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -22,11 +24,10 @@ object LoggingReceiveSpec {
 class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
-
-  val config = defaultConfig ++ Configuration("akka.event-handler-level" -> "DEBUG")
-  val appLogging = ActorSystem("logging", config ++ Configuration("akka.actor.debug.receive" -> true))
-  val appAuto = ActorSystem("autoreceive", config ++ Configuration("akka.actor.debug.autoreceive" -> true))
-  val appLifecycle = ActorSystem("lifecycle", config ++ Configuration("akka.actor.debug.lifecycle" -> true))
+  val config = ConfigFactory.parseMap(Map("akka.logLevel" -> "DEBUG").asJava)
+  val appLogging = ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))
+  val appAuto = ActorSystem("autoreceive", ConfigFactory.parseMap(Map("akka.actor.debug.autoreceive" -> true).asJava).withFallback(config))
+  val appLifecycle = ActorSystem("lifecycle", ConfigFactory.parseMap(Map("akka.actor.debug.lifecycle" -> true).asJava).withFallback(config))
 
   val filter = TestEvent.Mute(EventFilter.custom {
     case _: Logging.Debug ⇒ true
@@ -70,7 +71,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
-            case _ ⇒ sender ! "x"
+            case x ⇒
+              sender ! "x"
           }
         })
         actor ! "buh"

@@ -5,15 +5,13 @@
 package akka.actor
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-
 import akka.testkit._
 import TestEvent.Mute
 import FSM._
 import akka.util.Duration
 import akka.util.duration._
 import akka.event._
-import akka.actor.ActorSystem.defaultConfig
-import akka.config.Configuration
+import com.typesafe.config.ConfigFactory
 
 object FSMActorSpec {
 
@@ -103,7 +101,7 @@ object FSMActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true)) with ImplicitSender {
+class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with ImplicitSender {
   import FSMActorSpec._
 
   "An FSM Actor" must {
@@ -193,9 +191,10 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
     }
 
     "log events and transitions if asked to do so" in {
-      new TestKit(ActorSystem("fsm event", ActorSystem.defaultConfig ++
-        Configuration("akka.loglevel" -> "DEBUG",
-          "akka.actor.debug.fsm" -> true))) {
+      import scala.collection.JavaConverters._
+      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
+        "akka.actor.debug.fsm" -> true).asJava)
+      new TestKit(ActorSystem("fsm event", config)) {
         EventFilter.debug() intercept {
           val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
             startWith(1, null)

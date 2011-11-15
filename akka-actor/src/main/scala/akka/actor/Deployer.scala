@@ -9,11 +9,12 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.Logging
 import akka.actor.DeploymentConfig._
 import akka.AkkaException
-import akka.config.{ Configuration, ConfigurationException }
+import akka.config.ConfigurationException
 import akka.util.Duration
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
 import akka.event.EventStream
+import com.typesafe.config.Config
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -84,34 +85,40 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
   }
 
   private[akka] def pathsInConfig: List[String] = {
-    val deploymentPath = "akka.actor.deployment"
-    settings.config.getSection(deploymentPath) match {
-      case None ⇒ Nil
-      case Some(pathConfig) ⇒
-        pathConfig.map.keySet
-          .map(path ⇒ path.substring(0, path.indexOf(".")))
-          .toSet.toList // toSet to force uniqueness
+    def pathSubstring(path: String) = {
+      val i = path.indexOf(".")
+      if (i == -1) path else path.substring(0, i)
     }
+
+    import scala.collection.JavaConverters._
+    settings.config.getConfig("akka.actor.deployment").toObject.keySet.asScala
+      .filterNot(path ⇒ path == "default")
+      .map(path ⇒ pathSubstring(path))
+      .toSet.toList // toSet to force uniqueness
   }
 
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(path: String, configuration: Configuration = settings.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(path: String, configuration: Config = settings.config): Option[Deploy] = {
+    import scala.collection.JavaConverters._
+    import akka.config.ConfigImplicits._
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
+
+    val defaultDeploymentConfig = configuration.getConfig("akka.actor.deployment.default")
 
     // --------------------------------
     // akka.actor.deployment.<path>
     // --------------------------------
     val deploymentKey = "akka.actor.deployment." + path
-    configuration.getSection(deploymentKey) match {
+    configuration.getConfigOption(deploymentKey) match {
       case None ⇒ None
-      case Some(pathConfig) ⇒
-
+      case Some(sectionConfig) ⇒
+        val pathConfig = configuration.getConfig(deploymentKey).withFallback(defaultDeploymentConfig)
         // --------------------------------
         // akka.actor.deployment.<path>.router
         // --------------------------------
-        val router: Routing = pathConfig.getString("router", "direct") match {
+        val router: Routing = pathConfig.getString("router") match {
           case "direct"         ⇒ Direct
           case "round-robin"    ⇒ RoundRobin
           case "random"         ⇒ Random
@@ -128,13 +135,13 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
         val nrOfInstances = {
           if (router == Direct) OneNrOfInstances
           else {
-            pathConfig.getAny("nr-of-instances", "1") match {
+            pathConfig.getAnyRef("nr-of-instances").asInstanceOf[Any] match {
               case "auto" ⇒ AutoNrOfInstances
-              case "1"    ⇒ OneNrOfInstances
-              case "0"    ⇒ ZeroNrOfInstances
-              case nrOfReplicas: String ⇒
+              case 1      ⇒ OneNrOfInstances
+              case 0      ⇒ ZeroNrOfInstances
+              case nrOfReplicas: Number ⇒
                 try {
-                  new NrOfInstances(nrOfReplicas.toInt)
+                  new NrOfInstances(nrOfReplicas.intValue)
                 } catch {
                   case e: Exception ⇒
                     throw new ConfigurationException(
@@ -149,31 +156,25 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
         // --------------------------------
         // akka.actor.deployment.<path>.create-as
         // --------------------------------
-        val recipe: Option[ActorRecipe] = pathConfig.getSection("create-as") map { section ⇒
-          val implementationClass = section.getString("class") match {
-            case Some(impl) ⇒
-              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
+        val recipe: Option[ActorRecipe] =
+          pathConfig.getString("create-as.class") match {
+            case "" ⇒ None
+            case impl ⇒
+              val implementationClass = getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
                 "Config option [" + deploymentKey + ".create-as.class] load failed", e), identity)
-            case None ⇒
-              throw new ConfigurationException(
-                "Config option [" + deploymentKey + ".create-as.class] is missing, need the fully qualified name of the class")
+              Some(ActorRecipe(implementationClass))
           }
-          ActorRecipe(implementationClass)
-        }
 
         // --------------------------------
         // akka.actor.deployment.<path>.remote
         // --------------------------------
-        pathConfig.getSection("remote") match {
+        pathConfig.getConfigOption("remote") match {
           case Some(remoteConfig) ⇒ // we have a 'remote' config section
-
-            if (pathConfig.getSection("cluster").isDefined) throw new ConfigurationException(
-              "Configuration for deployment ID [" + path + "] can not have both 'remote' and 'cluster' sections.")
 
             // --------------------------------
             // akka.actor.deployment.<path>.remote.nodes
             // --------------------------------
-            val remoteAddresses = remoteConfig.getList("nodes") match {
+            val remoteAddresses = remoteConfig.getStringList("nodes").asScala.toSeq match {
               case Nil ⇒ Nil
               case nodes ⇒
                 def raiseRemoteNodeParsingError() = throw new ConfigurationException(
@@ -200,7 +201,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
             // --------------------------------
             // akka.actor.deployment.<path>.cluster
             // --------------------------------
-            pathConfig.getSection("cluster") match {
+            pathConfig.getConfigOption("cluster") match {
               case None ⇒ None
               case Some(clusterConfig) ⇒
 
@@ -208,7 +209,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
                 // akka.actor.deployment.<path>.cluster.preferred-nodes
                 // --------------------------------
 
-                val preferredNodes = clusterConfig.getList("preferred-nodes") match {
+                val preferredNodes = clusterConfig.getStringList("preferred-nodes").asScala.toSeq match {
                   case Nil ⇒ Nil
                   case homes ⇒
                     def raiseHomeConfigError() = throw new ConfigurationException(
@@ -233,12 +234,13 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
                 // --------------------------------
                 // akka.actor.deployment.<path>.cluster.replication
                 // --------------------------------
-                clusterConfig.getSection("replication") match {
+                clusterConfig.getConfigOption("replication") match {
                   case None ⇒
                     Some(Deploy(path, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Transient)))
 
                   case Some(replicationConfig) ⇒
-                    val storage = replicationConfig.getString("storage", "transaction-log") match {
+                    val replicationConfigWithFallback = replicationConfig.withFallback(configuration.getConfig("akka.actor.deployment.default.replication"))
+                    val storage = replicationConfigWithFallback.getString("storage") match {
                       case "transaction-log" ⇒ TransactionLog
                       case "data-grid"       ⇒ DataGrid
                       case unknown ⇒
@@ -246,7 +248,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
                           ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
                           unknown + "]")
                     }
-                    val strategy = replicationConfig.getString("strategy", "write-through") match {
+                    val strategy = replicationConfigWithFallback.getString("strategy") match {
                       case "write-through" ⇒ WriteThrough
                       case "write-behind"  ⇒ WriteBehind
                       case unknown ⇒

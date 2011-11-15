@@ -6,14 +6,14 @@ package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
 import akka.actor.ActorCell
-import akka.config.Configuration
 import akka.dispatch.Envelope
 import akka.event.Logging
 import akka.actor.ActorRef
+import com.typesafe.config.Config
 
 object FileBasedMailbox {
-  def queuePath(config: Configuration): String = {
-    config.getString("akka.actor.mailbox.file-based.directory-path", "./_mb") // /var/spool/akka
+  def queuePath(config: Config): String = {
+    config.getString("akka.actor.mailbox.file-based.directory-path") // /var/spool/akka
   }
 }
 

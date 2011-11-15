@@ -35,8 +35,8 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   import AC._
 
   // TODO move to settings?
-  val shouldCompressData = config.getBool("akka.remote.use-compression", false)
-  val remoteSystemDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout", 30), DefaultTimeUnit).toMillis.toInt
+  val shouldCompressData = config.getBoolean("akka.remote.use-compression")
+  val remoteSystemDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout"), DefaultTimeUnit).toMillis.toInt
 
   val failureDetector = new AccrualFailureDetector(system)
 
