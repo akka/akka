@@ -33,7 +33,6 @@ import akka.actor.{ActorInitializationException, ActorRef, simpleName}
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .buildThreadPool
  * </pre>
  * <p/>
@@ -48,7 +47,6 @@ import akka.actor.{ActorInitializationException, ActorRef, simpleName}
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
- *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .buildThreadPool();
  * </pre>
  * <p/>
@@ -103,8 +101,11 @@ class ExecutorBasedEventDrivenDispatcher(
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException ⇒
-        EventHandler.warning(this, e.toString)
-        throw e
+        try { executorService.get() execute invocation } catch {
+          case e2: RejectedExecutionException =>
+            EventHandler.warning(this, e2.toString)
+            throw e2
+        }
     }
   }
 
@@ -150,9 +151,12 @@ class ExecutorBasedEventDrivenDispatcher(
           executorService.get() execute mbox
         } catch {
           case e: RejectedExecutionException ⇒
-            EventHandler.warning(this, e.toString)
-            mbox.dispatcherLock.unlock()
-            throw e
+            try { executorService.get() execute mbox } catch {
+              case e2: RejectedExecutionException =>
+                mbox.dispatcherLock.unlock()
+                EventHandler.warning(this, e2.toString)
+                throw e2
+            }
         }
       } else {
         mbox.dispatcherLock.unlock() //If the dispatcher isn't active or if the actor is suspended, unlock the dispatcher lock

@@ -272,6 +272,7 @@ abstract class MessageDispatcherConfigurator {
         case _ => None
       })(queueFactory => _.setQueueFactory(queueFactory)),
       conf_?(config getString "rejection-policy" map {
+        case "sane"           => new SaneRejectedExecutionHandler()
         case "abort"          ⇒ new AbortPolicy()
         case "caller-runs"    ⇒ new CallerRunsPolicy()
         case "discard-oldest" ⇒ new DiscardOldestPolicy()
