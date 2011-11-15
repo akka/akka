@@ -33,18 +33,20 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         msgNumbers.length must be > 0 
         msgNumbers must equal(for (i <- msgNumbers.head to msgNumbers.last) yield i)
       } finally {
-        msgGenerator.foreach { msgGenerator => 
-          msgGenerator.stop
-          within(2 seconds) { 
-            awaitCond(msgGenerator.isShutdown) 
+        context.foreach { context =>
+          msgGenerator.foreach { msgGenerator => 
+            msgGenerator.stop
+            within(2 seconds) { 
+              awaitCond(msgGenerator.isShutdown) 
+            }
           }
+          subscriber.foreach(_.stop)
+          publisher.foreach(_.stop)
+          subscriberProbe.receiveWhile(1 seconds) { 
+            case msg => msg 
+          }.last must equal(Closed)
+          context.term
         }
-        subscriber.foreach(_.stop)
-        publisher.foreach(_.stop)
-        subscriberProbe.receiveWhile(1 seconds) { 
-          case msg => msg 
-        }.last must equal(Closed)
-        context.foreach(_.term)
       }
     }
     "support zero-length message frames" in {
@@ -56,11 +58,13 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         publisher = newPublisher(context.get, publisherProbe.ref)
         publisher ! ZMQMessage(Seq[Frame]())
       } finally {
-        publisher.foreach(_.stop)
-        publisherProbe.within(5 seconds) {
-          publisherProbe.expectMsg(Closed)
+        context.foreach { context =>
+          publisher.foreach(_.stop)
+          publisherProbe.within(5 seconds) {
+            publisherProbe.expectMsg(Closed)
+          }
+          context.term
         }
-        context.foreach(_.term)
       }
     }
     def newPublisher(context: Context, listener: ActorRef) = {
