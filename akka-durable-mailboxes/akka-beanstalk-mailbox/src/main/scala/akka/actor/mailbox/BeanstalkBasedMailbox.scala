@@ -22,7 +22,7 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
 
   val hostname = app.config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
   val port = app.config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
-  val defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
+  def defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
   val reconnectWindow = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), defaultTimeUnit).toSeconds.toInt
   val messageSubmitDelay = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), defaultTimeUnit).toSeconds.toInt
   val messageSubmitTimeout = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt

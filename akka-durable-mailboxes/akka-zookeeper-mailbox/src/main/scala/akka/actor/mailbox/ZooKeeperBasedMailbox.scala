@@ -22,7 +22,7 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   val zkServerAddresses = app.config.getString("akka.actor.mailbox.zookeeper.server-addresses", "localhost:2181")
-  val defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
+  def defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
   val sessionTimeout = Duration(app.config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), defaultTimeUnit).toMillis.toInt
   val connectionTimeout = Duration(app.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout", 60), defaultTimeUnit).toMillis.toInt
   val blockingQueue = app.config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
@@ -63,5 +63,11 @@ class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
     case e ⇒ false
   }
 
-  def close() = zkClient.close
+  override def cleanUp() {
+    try {
+      zkClient.close()
+    } catch {
+      case e: Exception ⇒ // ignore
+    }
+  }
 }

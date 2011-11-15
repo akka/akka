@@ -40,15 +40,10 @@ class DurableMailboxException private[akka] (message: String, cause: Throwable) 
 abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
-  val app = owner.app
-  val ownerPath = owner.self.path
+  def app = owner.app
+  def ownerPath = owner.self.path
   val ownerPathString = ownerPath.path.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
-
-  val dispatcher: Dispatcher = owner.dispatcher match {
-    case e: Dispatcher ⇒ e
-    case _             ⇒ null
-  }
 
 }
 
@@ -105,7 +100,7 @@ abstract class DurableMailboxType(mailboxFQN: String) extends MailboxType {
   }
 
   //TODO take into consideration a mailboxConfig parameter so one can have bounded mboxes and capacity etc
-  def create(dispatcher: MessageDispatcher, receiver: ActorCell): Mailbox = {
+  def create(receiver: ActorCell): Mailbox = {
     ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](receiver)) match {
       case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
       case Left(exception) ⇒

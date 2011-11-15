@@ -18,11 +18,6 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
     super.atStartup()
   }
 
-  override def afterEach() {
-    // TOOD PN we should close the zkClient in the mailbox, would have been nice with a callback in the mailbox when it is closed
-    super.afterEach()
-  }
-
   override def atTermination() {
     zkServer.shutdown
     super.atTermination()

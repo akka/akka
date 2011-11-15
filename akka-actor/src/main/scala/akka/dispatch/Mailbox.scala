@@ -194,6 +194,12 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
 
   @inline
   final def dispatcher: MessageDispatcher = actor.dispatcher
+
+  /**
+   * Overridable callback to clean up the mailbox,
+   * called when an actor is unregistered.
+   */
+  protected[dispatch] def cleanUp() {}
 }
 
 trait MessageQueue {
