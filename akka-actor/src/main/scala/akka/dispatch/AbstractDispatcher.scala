@@ -107,15 +107,14 @@ abstract class MessageDispatcher(val app: ActorSystem) extends AbstractMessageDi
   /**
    * Attaches the specified actor instance to this dispatcher
    */
-  final def attach(actor: ActorCell) {
-    register(actor)
-  }
+  final def attach(actor: ActorCell): Unit = register(actor)
 
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorCell) {
+  final def detach(actor: ActorCell): Unit = try {
     unregister(actor)
+  } finally {
     ifSensibleToDoSoThenScheduleShutdown()
   }
 
@@ -152,7 +151,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends AbstractMessageDi
     () ⇒ if (inhabitantsUpdater.decrementAndGet(this) == 0) ifSensibleToDoSoThenScheduleShutdown()
 
   /**
-   * Don't call this, this calls you. See "attach" for only invocation
+   * If you override it, you must call it. But only ever once. See "attach" for only invocation
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
@@ -161,7 +160,7 @@ abstract class MessageDispatcher(val app: ActorSystem) extends AbstractMessageDi
   }
 
   /**
-   * Don't call this, this calls you. See "detach" for the only invocation
+   * If you override it, you must call it. But only ever once. See "detach" for the only invocation
    */
   protected[akka] def unregister(actor: ActorCell) {
     inhabitantsUpdater.decrementAndGet(this)
