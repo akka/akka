@@ -4,7 +4,7 @@
 package akka.testkit
 
 import akka.config.Configuration
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
+import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
@@ -12,6 +12,8 @@ import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
+
+object TimingTest extends Tag("timing")
 
 abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
