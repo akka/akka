@@ -132,11 +132,11 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
    * Top-level anchor for the supervision hierarchy of this actor system. Will
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
-  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new UnsupportedActorRef {
+  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new MinimalActorRef {
     @volatile
     var stopped = false
 
-    val name = app.name + "-bubble-walker"
+    override val name = app.name + "-bubble-walker"
 
     // FIXME (actor path): move the root path to the new root guardian
     val path = app.root
@@ -145,9 +145,9 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
     override def toString = name
 
-    def stop() = stopped = true
+    override def stop() = stopped = true
 
-    def isShutdown = stopped
+    override def isShutdown = stopped
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
       case Failed(ex)      ⇒ sender.stop()

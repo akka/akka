@@ -313,31 +313,6 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
 }
 
 /**
- * Trait for ActorRef implementations where most of the methods are not supported.
- */
-trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
-
-  private[akka] final val uuid: akka.actor.Uuid = newUuid()
-
-  def startsWatching(actorRef: ActorRef): ActorRef = actorRef
-
-  def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
-
-  def suspend(): Unit = ()
-
-  def resume(): Unit = ()
-
-  protected[akka] def restart(cause: Throwable): Unit = ()
-
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
-
-  def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
-
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
-}
-
-/**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
 trait MinimalActorRef extends ActorRef with ScalaActorRef {
