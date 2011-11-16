@@ -77,7 +77,7 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
-        val ok = latch.await(((5000000 + 500 * repeat) * timeDilation) / 100, TimeUnit.MICROSECONDS)
+        val ok = latch.await((5000000 + 500 * repeat) * timeDilation, TimeUnit.MICROSECONDS)
         val durationNs = (System.nanoTime - start)
 
         if (!ok) {
