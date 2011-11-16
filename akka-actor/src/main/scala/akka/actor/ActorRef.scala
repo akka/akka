@@ -13,6 +13,7 @@ import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
 import java.util.concurrent.TimeUnit
 import akka.event.EventStream
+import akka.event.DeathWatch
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -161,7 +162,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  app: ActorSystem,
+  app: ActorSystemImpl,
   _props: Props,
   _supervisor: ActorRef,
   val path: ActorPath,
@@ -172,7 +173,7 @@ class LocalActorRef private[akka] (
 
   def name = path.name
 
-  def address: String = app.address + path.toString
+  def address: String = path.toString
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which 
@@ -415,16 +416,15 @@ class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath) exte
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
-abstract class AskActorRef(protected val app: ActorSystem)(timeout: Timeout = app.AkkaConfig.ActorTimeout, dispatcher: MessageDispatcher = app.dispatcher) extends MinimalActorRef {
+abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
-  // FIXME (actor path): put this under the tmp guardian supervisor
-  val path: ActorPath = app.root / "tmp" / name
+  override def name = path.name
 
-  def address: String = app.address + path.toString
+  def address: String = path.toString
 
   {
-    val callback: Future[Any] ⇒ Unit = { _ ⇒ app.deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
+    val callback: Future[Any] ⇒ Unit = { _ ⇒ deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
     result onComplete callback
     result onTimeout callback
   }
@@ -450,5 +450,5 @@ abstract class AskActorRef(protected val app: ActorSystem)(timeout: Timeout = ap
   override def stop(): Unit = if (!isShutdown) result.completeWithException(new ActorKilledException("Stopped"))
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = app.provider.serialize(this)
+  private def writeReplace(): AnyRef = provider.serialize(this)
 }

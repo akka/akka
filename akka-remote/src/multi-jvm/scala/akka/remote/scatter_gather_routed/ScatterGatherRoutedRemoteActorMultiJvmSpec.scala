@@ -9,7 +9,7 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! app.provider.nodename
+      case "hit" ⇒ sender ! system.nodename
       case "end" ⇒ self.stop()
     }
   }
@@ -70,7 +70,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
       remote.start()
 
       barrier("start")
-      val actor = app.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
       actor.asInstanceOf[RoutedActorRef].router.isInstanceOf[ScatterGatherFirstCompletedRouter] must be(true)
 

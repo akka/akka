@@ -149,5 +149,5 @@ class RemoteConnectionManager(
   }
 
   private[remote] def newConnection(remoteAddress: RemoteAddress, actorPath: ActorPath) =
-    RemoteActorRef(remote.server, remoteAddress, actorPath, None)
+    RemoteActorRef(remote.app.provider, remote.server, remoteAddress, actorPath, None)
 }

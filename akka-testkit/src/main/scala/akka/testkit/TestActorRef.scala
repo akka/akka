@@ -22,7 +22,7 @@ import akka.event.EventStream
  * @since 1.1
  */
 class TestActorRef[T <: Actor](
-  _app: ActorSystem,
+  _app: ActorSystemImpl,
   _deadLetterMailbox: Mailbox,
   _eventStream: EventStream,
   _scheduler: Scheduler,
@@ -63,10 +63,12 @@ object TestActorRef {
 
   def apply[T <: Actor](props: Props)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
-  def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, app.guardian, name)
+  def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] =
+    apply[T](props, app.asInstanceOf[ActorSystemImpl].guardian, name)
 
   def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit app: ActorSystem): TestActorRef[T] = {
-    new TestActorRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, props, supervisor, name)
+    val impl = app.asInstanceOf[ActorSystemImpl]
+    new TestActorRef(impl, impl.deadLetterMailbox, app.eventStream, app.scheduler, props, supervisor, name)
   }
 
   def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](randomName)

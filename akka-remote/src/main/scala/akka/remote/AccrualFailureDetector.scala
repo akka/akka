@@ -27,8 +27,8 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
 
   def this(app: ActorSystem) {
     this(
-      app.config.getInt("akka.remote.failure-detector.theshold", 8),
-      app.config.getInt("akka.remote.failure-detector.max-sample-size", 1000))
+      app.AkkaConfig.config.getInt("akka.remote.failure-detector.theshold", 8),
+      app.AkkaConfig.config.getInt("akka.remote.failure-detector.max-sample-size", 1000))
   }
 
   private final val PhiFactor = 1.0 / math.log(10.0)

@@ -6,7 +6,7 @@ package akka.testkit
 import akka.config.Configuration
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
@@ -16,16 +16,16 @@ import akka.dispatch.FutureTimeoutException
 abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  val log: LoggingAdapter = Logging(app.eventStream, this)
+  val log: LoggingAdapter = Logging(system, this)
 
   final override def beforeAll {
     atStartup()
   }
 
   final override def afterAll {
-    app.stop()
-    try app.terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ app.log.warning("failed to stop within 5 seconds")
+    system.stop()
+    try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
+      case _: FutureTimeoutException ⇒ system.log.warning("failed to stop within 5 seconds")
     }
     atTermination()
   }
@@ -34,9 +34,9 @@ abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
 
   protected def atTermination() {}
 
-  def this(config: Configuration) = this(new ActorSystem(getClass.getSimpleName, ActorSystem.defaultConfig ++ config))
+  def this(config: Configuration) = this(ActorSystem(getClass.getSimpleName, ActorSystem.defaultConfig ++ config))
 
-  def actorOf(props: Props): ActorRef = app.actorOf(props)
+  def actorOf(props: Props): ActorRef = system.actorOf(props)
 
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 

@@ -11,7 +11,7 @@ public class UntypedTransactorExample {
         System.out.println("Untyped transactor example");
         System.out.println();
 
-        ActorSystem application = new ActorSystem("UntypedTransactorExample");
+        ActorSystem application = ActorSystem.create("UntypedTransactorExample");
 
         ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCounter.class));
         ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCounter.class));

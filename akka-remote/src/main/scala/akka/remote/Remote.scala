@@ -15,25 +15,24 @@ import akka.actor.DeploymentConfig._
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
-
 import java.net.InetSocketAddress
-
 import com.eaio.uuid.UUID
 import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression }
 import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Remote(val app: ActorSystem, val nodename: String) {
+class Remote(val app: ActorSystemImpl, val nodename: String) {
 
   val log = Logging(app, this)
 
   import app._
-  import app.config
-  import app.AkkaConfig._
+  val AC = AkkaConfig
+  import AC._
 
   // TODO move to AkkaConfig?
   val shouldCompressData = config.getBool("akka.remote.use-compression", false)
@@ -48,11 +47,12 @@ class Remote(val app: ActorSystem, val nodename: String) {
   // FIXME configure computeGridDispatcher to what?
   val computeGridDispatcher = dispatcherFactory.newDispatcher("akka:compute-grid").build
 
+  // FIXME it is probably better to create another supervisor for handling the children created by handle_*
   private[remote] lazy val remoteDaemonSupervisor = app.actorOf(Props(
     OneForOneStrategy(List(classOf[Exception]), None, None)), "akka-system-remote-supervisor") // is infinite restart what we want?
 
   private[remote] lazy val remoteDaemon =
-    app.provider.actorOf(
+    app.provider.actorOf(app,
       Props(new RemoteSystemDaemon(this)).withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
       remoteDaemonSupervisor,
       remoteDaemonServiceName,
@@ -81,7 +81,7 @@ class Remote(val app: ActorSystem, val nodename: String) {
   }
 
   def start(): Unit = {
-    val serverAddress = server.app.address //Force init of server
+    val serverAddress = server.app.root.remoteAddress //Force init of server
     val daemonAddress = remoteDaemon.address //Force init of daemon
     log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
   }
@@ -139,10 +139,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
           }
 
         val actorPath = ActorPath(remote.app, message.getActorPath)
-        val parent = actorPath.parent.ref
+        val parent = app.actorFor(actorPath.parent)
 
         if (parent.isDefined) {
-          app.provider.actorOf(Props(creator = actorFactory), parent.get, actorPath.name)
+          app.provider.actorOf(app, Props(creator = actorFactory), parent.get, actorPath.name)
         } else {
           log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
         }
@@ -180,13 +180,23 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
     // }
   }
 
+  /*
+   * generate name for temporary actor refs
+   */
+  private val tempNumber = new AtomicLong
+  def tempName = {
+    val l = tempNumber.getAndIncrement()
+    "$_" + Helpers.base64(l)
+  }
+  def tempPath = remoteDaemon.path / tempName
+
   // FIXME: handle real remote supervision
   def handle_fun0_unit(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(app,
       Props(
         context ⇒ {
           case f: Function0[_] ⇒ try { f() } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), app.guardian, app.guardian.path / app.provider.tempPath, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
+        }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
   // FIXME: handle real remote supervision
@@ -195,7 +205,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       Props(
         context ⇒ {
           case f: Function0[_] ⇒ try { sender ! f() } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), app.guardian, app.guardian.path / app.provider.tempPath, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
+        }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
   // FIXME: handle real remote supervision
@@ -204,7 +214,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       Props(
         context ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), app.guardian, app.guardian.path / app.provider.tempPath, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
+        }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
   // FIXME: handle real remote supervision
@@ -213,7 +223,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       Props(
         context ⇒ {
           case (fun: Function[_, _], param: Any) ⇒ try { sender ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
-        }).copy(dispatcher = computeGridDispatcher), app.guardian, app.guardian.path / app.provider.tempPath, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
+        }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) forward payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
   }
 
   def handleFailover(message: RemoteSystemDaemonMessageProtocol) {
@@ -230,9 +240,12 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 }
 
 class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLoader: Option[ClassLoader] = None) {
+
+  val provider = remote.app.asInstanceOf[ActorSystemImpl].provider
+
   lazy val sender: ActorRef =
     if (input.hasSender)
-      remote.app.provider.deserialize(
+      provider.deserialize(
         SerializedActorRef(input.getSender.getHost, input.getSender.getPort, input.getSender.getPath)).getOrElse(throw new IllegalStateException("OHNOES"))
     else
       remote.app.deadLetters
@@ -282,7 +295,7 @@ trait RemoteMarshallingOps {
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
-    val rep = app.provider.serialize(actor)
+    val rep = app.asInstanceOf[ActorSystemImpl].provider.serialize(actor)
     ActorRefProtocol.newBuilder.setHost(rep.hostname).setPort(rep.port).setPath(rep.path).build
   }
 

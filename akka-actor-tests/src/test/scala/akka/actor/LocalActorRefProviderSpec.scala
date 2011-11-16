@@ -13,14 +13,15 @@ class LocalActorRefProviderSpec extends AkkaSpec {
   "An LocalActorRefProvider" must {
 
     "only create one instance of an actor with a specific address in a concurrent environment" in {
-      val provider = app.provider
+      val impl = system.asInstanceOf[ActorSystemImpl]
+      val provider = impl.provider
 
       provider.isInstanceOf[LocalActorRefProvider] must be(true)
 
       (0 until 100) foreach { i ⇒ // 100 concurrent runs
         val address = "new-actor" + i
         implicit val timeout = Timeout(5 seconds)
-        ((1 to 4) map { _ ⇒ Future { provider.actorOf(Props(c ⇒ { case _ ⇒ }), app.guardian, address) } }).map(_.get).distinct.size must be(1)
+        ((1 to 4) map { _ ⇒ Future { provider.actorOf(impl, Props(c ⇒ { case _ ⇒ }), impl.guardian, address) } }).map(_.get).distinct.size must be(1)
       }
     }
   }

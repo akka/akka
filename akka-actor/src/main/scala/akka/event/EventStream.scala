@@ -3,11 +3,8 @@
  */
 package akka.event
 
-import akka.actor.{ ActorRef, Actor, Props }
-import akka.actor.ActorSystem
-import akka.actor.Terminated
+import akka.actor.{ ActorRef, Actor, Props, ActorSystemImpl, Terminated }
 import akka.util.Subclassification
-import akka.actor.ActorRefProvider
 
 class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
@@ -42,13 +39,13 @@ class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClas
     super.unsubscribe(subscriber)
   }
 
-  def start(provider: ActorRefProvider) {
-    reaper = provider.actorOf(Props(new Actor {
+  def start(app: ActorSystemImpl) {
+    reaper = app.systemActorOf(Props(new Actor {
       def receive = {
         case ref: ActorRef   ⇒ watch(ref)
         case Terminated(ref) ⇒ unsubscribe(ref)
       }
-    }), provider.systemGuardian, "MainBusReaper", true)
+    }), "MainBusReaper")
     subscribers foreach (reaper ! _)
   }
 

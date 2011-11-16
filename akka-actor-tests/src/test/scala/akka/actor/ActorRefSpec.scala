@@ -247,7 +247,7 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      Serialization.app.withValue(app) {
+      Serialization.app.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         val readA = in.readObject
 
@@ -284,14 +284,14 @@ class ActorRefSpec extends AkkaSpec {
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      val serialized = SerializedActorRef(app.address.hostname, app.address.port, "/this/path/does/not/exist")
+      val serialized = SerializedActorRef(system.root.remoteAddress.hostname, system.root.remoteAddress.port, "/this/path/does/not/exist")
 
       out.writeObject(serialized)
 
       out.flush
       out.close
 
-      Serialization.app.withValue(app) {
+      Serialization.app.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         (intercept[java.lang.IllegalStateException] {
           in.readObject

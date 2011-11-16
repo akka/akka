@@ -224,8 +224,8 @@ class Report(
     sb.append("Akka version: ").append(app.AkkaConfig.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
-    for (key ← app.config.keys) {
-      sb.append("\n  ").append(key).append("=").append(app.config(key))
+    for (key ← app.AkkaConfig.config.keys) {
+      sb.append("\n  ").append(key).append("=").append(app.AkkaConfig.config(key))
     }
 
     sb.toString

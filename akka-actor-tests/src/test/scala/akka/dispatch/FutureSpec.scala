@@ -773,7 +773,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
 
       "ticket812FutureDispatchCleanup" in {
         filterException[FutureTimeoutException] {
-          implicit val dispatcher = app.dispatcherFactory.newDispatcher("ticket812FutureDispatchCleanup").build
+          implicit val dispatcher = system.dispatcherFactory.newDispatcher("ticket812FutureDispatchCleanup").build
           assert(dispatcher.tasks === 0)
           val future = Future({ Thread.sleep(100); "Done" }, 10)
           intercept[FutureTimeoutException] { future.await }

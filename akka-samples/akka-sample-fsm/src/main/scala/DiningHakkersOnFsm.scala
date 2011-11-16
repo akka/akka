@@ -32,7 +32,7 @@ case class TakenBy(hakker: ActorRef)
 class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
 
   // A chopstick begins its existence as available and taken by no one
-  startWith(Available, TakenBy(app.deadLetters))
+  startWith(Available, TakenBy(system.deadLetters))
 
   // When a chopstick is available, it can be taken by a some hakker
   when(Available) {
@@ -47,7 +47,7 @@ class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
     case Event(Take, currentState) ⇒
       stay replying Busy(self)
     case Event(Put, TakenBy(hakker)) if sender == hakker ⇒
-      goto(Available) using TakenBy(app.deadLetters)
+      goto(Available) using TakenBy(system.deadLetters)
   }
 
   // Initialze the chopstick

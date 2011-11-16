@@ -107,7 +107,7 @@ class Gossiper(remote: Remote) {
   private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[RemoteAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
 
-  private val address = app.address
+  private val address = app.root.remoteAddress
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
@@ -153,7 +153,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ RemoteActorRef(remote.server, gossipingNode, remote.remoteDaemon.path, None)
+          val connectionFactory = () ⇒ RemoteActorRef(remote.app.provider, remote.server, gossipingNode, remote.remoteDaemon.path, None)
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }

@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, simpleName }
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, ActorSystemImpl, simpleName }
 import akka.AkkaException
 import akka.actor.ActorSystem.AkkaConfig
 import akka.util.ReflectiveAccess
@@ -79,13 +79,13 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "StandardOutLogger started"))
   }
 
-  private[akka] def startDefaultLoggers(provider: ActorRefProvider, config: AkkaConfig) {
-    val level = levelFor(config.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.LogLevel))
+  private[akka] def startDefaultLoggers(app: ActorSystemImpl) {
+    val level = levelFor(app.AkkaConfig.LogLevel) getOrElse {
+      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + app.AkkaConfig.LogLevel))
       ErrorLevel
     }
     try {
-      val defaultLoggers = config.EventHandlers match {
+      val defaultLoggers = app.AkkaConfig.EventHandlers match {
         case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
         case loggers ⇒ loggers
       }
@@ -95,7 +95,7 @@ trait LoggingBus extends ActorEventBus {
       } yield {
         try {
           ReflectiveAccess.getClassFor[Actor](loggerName) match {
-            case Right(actorClass) ⇒ addLogger(provider, actorClass, level)
+            case Right(actorClass) ⇒ addLogger(app, actorClass, level)
             case Left(exception)   ⇒ throw exception
           }
         } catch {
@@ -138,9 +138,9 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "all default loggers stopped"))
   }
 
-  private def addLogger(provider: ActorRefProvider, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
+  private def addLogger(app: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
     val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
-    val actor = provider.actorOf(Props(clazz), provider.systemGuardian, name, true)
+    val actor = app.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
     val response = try actor ? InitializeLogger(this) get catch {
       case _: FutureTimeoutException ⇒

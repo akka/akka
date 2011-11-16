@@ -22,7 +22,7 @@ import com.eaio.uuid.UUID
  */
 trait ActorRefProvider {
 
-  def actorOf(props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(props, supervisor, name, false)
+  def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(app, props, supervisor, name, false)
 
   def actorFor(path: Iterable[String]): Option[ActorRef]
 
@@ -36,6 +36,8 @@ trait ActorRefProvider {
 
   def AkkaConfig: ActorSystem.AkkaConfig
 
+  def init(app: ActorSystemImpl)
+
   /**
    * What deployer will be used to resolve deployment configuration?
    */
@@ -43,9 +45,9 @@ trait ActorRefProvider {
 
   private[akka] def scheduler: Scheduler
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
+  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
+  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
 
   private[akka] def evict(path: String): Boolean
 
@@ -61,7 +63,7 @@ trait ActorRefProvider {
 
   private[akka] def terminationFuture: Future[ActorSystem.ExitStatus]
 
-  private[akka] def tempPath: String
+  private[akka] def tempName: String
 }
 
 /**
@@ -69,9 +71,11 @@ trait ActorRefProvider {
  */
 trait ActorRefFactory {
 
-  def provider: ActorRefProvider
+  protected def app: ActorSystemImpl
 
-  def dispatcher: MessageDispatcher
+  protected def provider: ActorRefProvider
+
+  protected def dispatcher: MessageDispatcher
 
   /**
    * Father of all children created by this interface.
@@ -85,7 +89,7 @@ trait ActorRefFactory {
     Helpers.base64(l)
   }
 
-  def actorOf(props: Props): ActorRef = provider.actorOf(props, guardian, randomName, false)
+  def actorOf(props: Props): ActorRef = provider.actorOf(app, props, guardian, randomName, false)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
@@ -95,7 +99,7 @@ trait ActorRefFactory {
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.startsWith("$"))
       throw new ActorInitializationException("actor name must not be null, empty or start with $")
-    provider.actorOf(props, guardian, name, false)
+    provider.actorOf(app, props, guardian, name, false)
   }
 
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
@@ -109,6 +113,8 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
+  def actorFor(path: ActorPath): Option[ActorRef] = actorFor(path.path)
+
   def actorFor(path: String): Option[ActorRef] = actorFor(ActorPath.split(path))
 
   def actorFor(path: Iterable[String]): Option[ActorRef] = provider.actorFor(path)
@@ -120,7 +126,6 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
-  private val app: ActorSystem,
   val AkkaConfig: ActorSystem.AkkaConfig,
   val root: ActorPath,
   val eventStream: EventStream,
@@ -136,16 +141,18 @@ class LocalActorRefProvider(
 
   private[akka] val deployer: Deployer = new Deployer(AkkaConfig, eventStream, nodename)
 
-  val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(app.dispatcher)
+  val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(dispatcher)
 
   /*
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
-  def tempPath = {
+  def tempName = {
     val l = tempNumber.getAndIncrement()
     "$_" + Helpers.base64(l)
   }
+  private val tempNode = root / "tmp"
+  def tempPath = tempNode / tempName
 
   // FIXME (actor path): this could become a cache for the new tree traversal actorFor
   // currently still used for tmp actors (e.g. ask actor refs)
@@ -159,12 +166,12 @@ class LocalActorRefProvider(
     @volatile
     var stopped = false
 
-    val name = app.name + "-bubble-walker"
+    val name = "bubble-walker"
 
     // FIXME (actor path): move the root path to the new root guardian
-    val path = app.root
+    val path = root / name
 
-    val address = app.address + path.toString
+    val address = path.toString
 
     override def toString = name
 
@@ -208,20 +215,33 @@ class LocalActorRefProvider(
   }
   private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
 
-  private val rootGuardian: ActorRef = actorOf(guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, root, true)
-
-  val guardian: ActorRef = actorOf(guardianProps, rootGuardian, "app", true)
-
-  val systemGuardian: ActorRef = actorOf(guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+  /*
+   * The problem is that ActorRefs need a reference to the ActorSystem to 
+   * provide their service. Hence they cannot be created while the
+   * constructors of ActorSystem and ActorRefProvider are still running.
+   * The solution is to split out that last part into an init() method,
+   * but it also requires these references to be @volatile.
+   */
+  @volatile
+  private var rootGuardian: ActorRef = _
+  @volatile
+  var guardian: ActorRef = _
+  @volatile
+  var systemGuardian: ActorRef = _
 
   val deathWatch = createDeathWatch()
 
-  // chain death watchers so that killing guardian stops the application
-  deathWatch.subscribe(systemGuardian, guardian)
-  deathWatch.subscribe(rootGuardian, systemGuardian)
+  def init(app: ActorSystemImpl) {
+    rootGuardian = actorOf(app, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, root, true)
+    guardian = actorOf(app, guardianProps, rootGuardian, "app", true)
+    systemGuardian = actorOf(app, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+    // chain death watchers so that killing guardian stops the application
+    deathWatch.subscribe(systemGuardian, guardian)
+    deathWatch.subscribe(rootGuardian, systemGuardian)
+  }
 
   // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "app" name for now)
-  def actorFor(path: Iterable[String]): Option[ActorRef] = findInCache(ActorPath.join(path)) orElse findInTree(Some(app.guardian), path.tail)
+  def actorFor(path: Iterable[String]): Option[ActorRef] = findInCache(ActorPath.join(path)) orElse findInTree(Some(guardian), path.tail)
 
   @tailrec
   private def findInTree(start: Option[ActorRef], path: Iterable[String]): Option[ActorRef] = {
@@ -246,12 +266,12 @@ class LocalActorRefProvider(
    */
   private[akka] def evict(path: String): Boolean = actors.remove(path) ne null
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
-    actorOf(props, supervisor, supervisor.path / name, systemService)
+  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
+    actorOf(app, props, supervisor, supervisor.path / name, systemService)
 
-  private[akka] def actorOf(props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
+  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
     val name = path.name
-    val newFuture = Promise[ActorRef](5000)(app.dispatcher) // FIXME is this proper timeout?
+    val newFuture = Promise[ActorRef](5000)(dispatcher) // FIXME is this proper timeout?
 
     actors.putIfAbsent(path.toString, newFuture) match {
       case null ⇒
@@ -270,7 +290,7 @@ class LocalActorRefProvider(
                 case RouterType.Random     ⇒ () ⇒ new RandomRouter
                 case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
                 case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-                  if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher, app.AkkaConfig.ActorTimeout)
+                  if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, AkkaConfig.ActorTimeout)
                 case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
                 case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
                 case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
@@ -282,7 +302,7 @@ class LocalActorRefProvider(
                 new LocalActorRef(app, props, supervisor, routedPath, systemService)
               }
 
-              actorOf(RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
+              actorOf(app, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
 
             case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
           }
@@ -307,7 +327,7 @@ class LocalActorRefProvider(
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(app: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
     // FIXME: this needs to take supervision into account!
 
     //FIXME clustering should be implemented by cluster actor ref provider
@@ -324,16 +344,16 @@ class LocalActorRefProvider(
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(app.address, actor.path.toString)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(root.remoteAddress, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
     import akka.dispatch.{ Future, Promise, DefaultPromise }
-    (if (within == null) app.AkkaConfig.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(app.dispatcher) //Abort early if nonsensical timeout
+    (if (within == null) AkkaConfig.ActorTimeout else within) match {
+      case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
       case t ⇒
-        val a = new AskActorRef(app)(timeout = t) { def whenDone() = actors.remove(this) }
+        val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher) { def whenDone() = actors.remove(this) }
         assert(actors.putIfAbsent(a.path.toString, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
         a.result

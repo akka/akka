@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 
 public class JavaAPI {
 
-  private ActorSystem app = new ActorSystem();
+  private ActorSystem app = ActorSystem.create();
 
   @Test void mustBeAbleToCreateActorRefFromClass() {
       ActorRef ref = app.actorOf(JavaAPITestActor.class);

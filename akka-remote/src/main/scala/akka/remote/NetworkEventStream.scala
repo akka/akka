@@ -7,7 +7,7 @@ package akka.remote
 import scala.collection.mutable
 import akka.actor.{ LocalActorRef, Actor, ActorRef, Props, newUuid }
 import akka.actor.Actor._
-import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
 
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
@@ -58,12 +58,12 @@ object NetworkEventStream {
   }
 }
 
-class NetworkEventStream(val app: ActorSystem) {
+class NetworkEventStream(app: ActorSystemImpl) {
 
   import NetworkEventStream._
 
   // FIXME: check that this supervision is correct
-  private[akka] val sender = app.provider.actorOf(
+  private[akka] val sender = app.provider.actorOf(app,
     Props[Channel].copy(dispatcher = app.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")),
     app.systemGuardian, "network-event-sender", systemService = true)
 

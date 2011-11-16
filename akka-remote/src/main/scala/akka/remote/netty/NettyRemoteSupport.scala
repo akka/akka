@@ -147,7 +147,8 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(remoteSupport.app.address.hostname).setPort(remoteSupport.app.address.port).build)
+      val addr = remoteSupport.app.root.remoteAddress
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(addr.hostname).setPort(addr.port).build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
 
@@ -350,8 +351,8 @@ class ActiveRemoteClientHandler(
  */
 class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with RemoteMarshallingOps {
 
-  val serverSettings = new RemoteServerSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
-  val clientSettings = new RemoteClientSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
+  val serverSettings = new RemoteServerSettings(app.AkkaConfig.config, app.AkkaConfig.DefaultTimeUnit)
+  val clientSettings = new RemoteClientSettings(app.AkkaConfig.config, app.AkkaConfig.DefaultTimeUnit)
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReadWriteGuard
@@ -428,7 +429,7 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + app.address
+    case None         ⇒ "Non-running NettyRemoteServer@" + app.root.remoteAddress
   }
 
   private val _isRunning = new Switch(false)
@@ -459,7 +460,8 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
 class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Option[ClassLoader]) {
   val log = Logging(remoteSupport.app, this)
   import remoteSupport.serverSettings._
-  import remoteSupport.app.address
+
+  val address = remoteSupport.app.root.remoteAddress
 
   val name = "NettyRemoteServer@" + address
 

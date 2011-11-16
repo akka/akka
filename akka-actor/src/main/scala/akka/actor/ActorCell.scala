@@ -45,7 +45,7 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def handleChildTerminated(child: ActorRef): Unit
 
-  def app: ActorSystem
+  def system: ActorSystem
 
   def parent: ActorRef
 }
@@ -63,7 +63,7 @@ private[akka] object ActorCell {
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 private[akka] class ActorCell(
-  val app: ActorSystem,
+  val app: ActorSystemImpl,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   val parent: ActorRef,
@@ -71,6 +71,8 @@ private[akka] class ActorCell(
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 
   import ActorCell._
+
+  final def system = app
 
   protected final def guardian = self
 

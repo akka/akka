@@ -18,12 +18,12 @@ import akka.dispatch.Dispatchers
 class TellThroughputPerformanceSpec extends PerformanceSpec {
   import TellThroughputPerformanceSpec._
 
-  val clientDispatcher = app.dispatcherFactory.newDispatcher("client-dispatcher")
+  val clientDispatcher = system.dispatcherFactory.newDispatcher("client-dispatcher")
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build
 
-  val destinationDispatcher = app.dispatcherFactory.newDispatcher("destination-dispatcher")
+  val destinationDispatcher = system.dispatcherFactory.newDispatcher("destination-dispatcher")
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build
@@ -71,9 +71,9 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val destinations = for (i ← 0 until numberOfClients)
-          yield app.actorOf(Props(new Destination).withDispatcher(destinationDispatcher))
+          yield system.actorOf(Props(new Destination).withDispatcher(destinationDispatcher))
         val clients = for (dest ← destinations)
-          yield app.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
+          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)

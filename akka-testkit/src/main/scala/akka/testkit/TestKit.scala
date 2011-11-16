@@ -80,7 +80,7 @@ class TestKit(_app: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val app = _app
+  implicit val system = _app
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -91,9 +91,12 @@ class TestKit(_app: ActorSystem) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue))
-    .copy(dispatcher = new CallingThreadDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler)),
-    "testActor" + TestKit.testActorId.incrementAndGet)
+  val testActor: ActorRef = {
+    val impl = system.asInstanceOf[ActorSystemImpl]
+    impl.systemActorOf(Props(new TestActor(queue))
+      .copy(dispatcher = new CallingThreadDispatcher(impl.deadLetterMailbox, impl.eventStream, impl.scheduler)),
+      "testActor" + TestKit.testActorId.incrementAndGet)
+  }
 
   private var end: Duration = Duration.Undefined
 
@@ -124,7 +127,7 @@ class TestKit(_app: ActorSystem) {
    * block or missing that it returns the properly dilated default for this
    * case from AkkaConfig (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) app.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) system.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.

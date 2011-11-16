@@ -253,7 +253,7 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
   var worker: IOWorker = _
 
   override def preStart {
-    worker = new IOWorker(app, self, bufferSize)
+    worker = new IOWorker(system, self, bufferSize)
     worker.start()
   }
 

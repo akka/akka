@@ -28,14 +28,14 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
       // run every 50 millisec
-      collectCancellable(app.scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS))
 
       // after max 1 second it should be executed at least the 3 times already
       assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
       val countDownLatch2 = new CountDownLatch(3)
 
-      collectCancellable(app.scheduler.schedule(() ⇒ countDownLatch2.countDown(), 0, 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(() ⇒ countDownLatch2.countDown(), 0, 50, TimeUnit.MILLISECONDS))
 
       // after max 1 second it should be executed at least the 3 times already
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
@@ -49,8 +49,8 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
 
       // run every 50 millisec
-      collectCancellable(app.scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS))
-      collectCancellable(app.scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS))
 
       // after 1 second the wait should fail
       assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
@@ -86,7 +86,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
 
       (1 to 10).foreach { i ⇒
-        val timeout = collectCancellable(app.scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.SECONDS))
+        val timeout = collectCancellable(system.scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.SECONDS))
         timeout.cancel()
       }
 
@@ -114,10 +114,10 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
       val actor = (supervisor ? props).as[ActorRef].get
 
-      collectCancellable(app.scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
       // appx 2 pings before crash
       EventFilter[Exception]("CRASH", occurrences = 1) intercept {
-        collectCancellable(app.scheduler.scheduleOnce(actor, Crash, 1000, TimeUnit.MILLISECONDS))
+        collectCancellable(system.scheduler.scheduleOnce(actor, Crash, 1000, TimeUnit.MILLISECONDS))
       }
 
       assert(restartLatch.tryAwait(2, TimeUnit.SECONDS))

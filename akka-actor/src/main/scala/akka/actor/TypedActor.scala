@@ -330,7 +330,7 @@ class TypedActor(val AkkaConfig: ActorSystem.AkkaConfig, var ser: Serialization)
     def receive = {
       case m: MethodCall ⇒
         TypedActor.selfReference set proxyVar.get
-        TypedActor.appReference set app
+        TypedActor.appReference set system
         try {
           if (m.isOneWay) m(me)
           else {

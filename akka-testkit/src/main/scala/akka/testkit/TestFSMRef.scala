@@ -37,7 +37,7 @@ import akka.event.EventStream
  * @since 1.2
  */
 class TestFSMRef[S, D, T <: Actor](
-  app: ActorSystem,
+  app: ActorSystemImpl,
   _deadLetterMailbox: Mailbox,
   _eventStream: EventStream,
   _scheduler: Scheduler,
@@ -89,9 +89,13 @@ class TestFSMRef[S, D, T <: Actor](
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, Props(creator = () ⇒ factory), app.guardian, TestActorRef.randomName)
+  def apply[S, D, T <: Actor](factory: ⇒ T)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] = {
+    val impl = app.asInstanceOf[ActorSystemImpl]
+    new TestFSMRef(impl, impl.deadLetterMailbox, impl.eventStream, impl.scheduler, Props(creator = () ⇒ factory), impl.guardian, TestActorRef.randomName)
+  }
 
-  def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] =
-    new TestFSMRef(app, app.deadLetterMailbox, app.eventStream, app.scheduler, Props(creator = () ⇒ factory), app.guardian, name)
+  def apply[S, D, T <: Actor](factory: ⇒ T, name: String)(implicit ev: T <:< FSM[S, D], app: ActorSystem): TestFSMRef[S, D, T] = {
+    val impl = app.asInstanceOf[ActorSystemImpl]
+    new TestFSMRef(impl, impl.deadLetterMailbox, impl.eventStream, impl.scheduler, Props(creator = () ⇒ factory), impl.guardian, name)
+  }
 }

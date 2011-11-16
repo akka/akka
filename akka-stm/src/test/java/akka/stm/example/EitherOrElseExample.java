@@ -9,7 +9,7 @@ public class EitherOrElseExample {
         System.out.println("EitherOrElse example");
         System.out.println();
 
-        ActorSystem application = new ActorSystem("UntypedTransactorExample");
+        ActorSystem application = ActorSystem.create("UntypedTransactorExample");
 
         final Ref<Integer> left = new Ref<Integer>(100);
         final Ref<Integer> right = new Ref<Integer>(100);

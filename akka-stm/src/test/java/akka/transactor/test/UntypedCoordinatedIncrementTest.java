@@ -30,7 +30,7 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedCoordinatedIncrementTest {
-    ActorSystem application = new ActorSystem("UntypedCoordinatedIncrementTest");
+    ActorSystem application = ActorSystem.create("UntypedCoordinatedIncrementTest");
 
     List<ActorRef> counters;
     ActorRef failer;

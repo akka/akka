@@ -12,7 +12,8 @@ import akka.config.Configuration
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec {
 
-  import app.dispatcherFactory._
+  val df = system.dispatcherFactory
+  import df._
 
   val tipe = "type"
   val keepalivems = "keep-alive-time"

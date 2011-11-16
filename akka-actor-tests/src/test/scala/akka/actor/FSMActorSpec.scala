@@ -167,12 +167,12 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
         }
       })
       filterException[Logging.EventHandlerException] {
-        app.eventStream.subscribe(testActor, classOf[Logging.Error])
+        system.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
           case Logging.Error(_, `fsm`, "Next state 2 does not exist") ⇒ true
         }
-        app.eventStream.unsubscribe(testActor)
+        system.eventStream.unsubscribe(testActor)
       }
     }
 
@@ -213,20 +213,20 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
               case StopEvent(r, _, _) ⇒ testActor ! r
             }
           })
-          app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+          system.eventStream.subscribe(testActor, classOf[Logging.Debug])
           fsm ! "go"
           expectMsgPF(1 second, hint = "processing Event(go,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
           }
           expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
           expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
           fsm ! "stop"
           expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
+            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
           }
           expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
           expectNoMsg(1 second)
-          app.eventStream.unsubscribe(testActor)
+          system.eventStream.unsubscribe(testActor)
         }
       }
     }

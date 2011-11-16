@@ -61,11 +61,14 @@ object ActorSystem {
 
   val defaultConfig = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
 
-  def apply(name: String, config: Configuration) = new ActorSystem(name, config)
+  def create(name: String, config: Configuration): ActorSystem = apply(name, config)
+  def apply(name: String, config: Configuration): ActorSystem = new ActorSystemImpl(name, config).start()
 
-  def apply(name: String): ActorSystem = new ActorSystem(name)
+  def create(name: String): ActorSystem = apply(name)
+  def apply(name: String): ActorSystem = apply(name, defaultConfig)
 
-  def apply(): ActorSystem = new ActorSystem()
+  def create(): ActorSystem = apply()
+  def apply(): ActorSystem = apply("default")
 
   sealed trait ExitStatus
   case object Stopped extends ExitStatus
@@ -126,21 +129,53 @@ object ActorSystem {
 
 }
 
-class ActorSystem(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
-
+abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   import ActorSystem._
 
-  def this(name: String) = this(name, ActorSystem.defaultConfig)
-  def this() = this("default")
+  def name: String
+  def AkkaConfig: AkkaConfig
+  def nodename: String
 
-  val AkkaConfig = new AkkaConfig(config)
-
-  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
-
-  import AkkaConfig._
+  /**
+   * Construct a path below the application guardian.
+   */
+  def /(name: String): ActorPath
+  def root: ActorPath
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
+
+  def eventStream: EventStream
+  def log: LoggingAdapter
+
+  def deadLetters: ActorRef
+  def deadLetterMailbox: Mailbox
+
+  // FIXME: Serialization should be an extension
+  def serialization: Serialization
+  // FIXME: TypedActor should be an extension
+  def typedActor: TypedActor
+
+  def scheduler: Scheduler
+  def dispatcherFactory: Dispatchers
+  def dispatcher: MessageDispatcher
+
+  def registerOnTermination(code: ⇒ Unit)
+  def registerOnTermination(code: Runnable)
+  def stop()
+}
+
+class ActorSystemImpl(val name: String, config: Configuration) extends ActorSystem {
+
+  import ActorSystem._
+
+  val AkkaConfig = new AkkaConfig(config)
+
+  protected def app = this
+
+  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
+
+  import AkkaConfig._
 
   val address = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
@@ -158,7 +193,7 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   /**
    * The root actor path for this application.
    */
-  val root: ActorPath = new RootActorPath(this)
+  val root: ActorPath = new RootActorPath(address)
 
   val deadLetters = new DeadLetterActorRef(eventStream, root / "nul")
   val deadLetterMailbox = new Mailbox(null) {
@@ -181,16 +216,21 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
   deadLetters.init(dispatcher)
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
   val provider: ActorRefProvider = {
     val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
       case Left(e)  ⇒ throw e
       case Right(b) ⇒ b
     }
-    val params: Array[Class[_]] = Array(classOf[ActorSystem], classOf[AkkaConfig], classOf[ActorPath], classOf[EventStream], classOf[MessageDispatcher], classOf[Scheduler])
-    val args: Array[AnyRef] = Array(this, AkkaConfig, root, eventStream, dispatcher, scheduler)
+    val arguments = List(
+      classOf[AkkaConfig] -> AkkaConfig,
+      classOf[ActorPath] -> root,
+      classOf[EventStream] -> eventStream,
+      classOf[MessageDispatcher] -> dispatcher,
+      classOf[Scheduler] -> scheduler)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
 
-    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, params, args) match {
+    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }
@@ -200,23 +240,32 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
+  def nodename: String = provider.nodename
 
   terminationFuture.onComplete(_ ⇒ scheduler.stop())
   terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
 
-  // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-  eventStream.start(provider)
-  eventStream.startDefaultLoggers(provider, AkkaConfig)
+  @volatile
+  private var _serialization: Serialization = _
+  def serialization = _serialization
+  @volatile
+  private var _typedActor: TypedActor = _
+  def typedActor = _typedActor
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val serialization = new Serialization(this)
-
-  val typedActor = new TypedActor(AkkaConfig, serialization)
-
-  /**
-   * Create an actor path under the application supervisor (/app).
-   */
   def /(actorName: String): ActorPath = guardian.path / actorName
+
+  def start(): this.type = {
+    _serialization = new Serialization(this)
+    _typedActor = new TypedActor(AkkaConfig, _serialization)
+    provider.init(this)
+    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
+    eventStream.start(this)
+    eventStream.startDefaultLoggers(this)
+    this
+  }
+
+  def registerOnTermination(code: ⇒ Unit) { terminationFuture onComplete (_ ⇒ code) }
+  def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {

@@ -121,7 +121,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   }
 
   override def atStartup() {
-    app.eventStream.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
+    system.eventStream.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
   }
 
   override def beforeEach() = {

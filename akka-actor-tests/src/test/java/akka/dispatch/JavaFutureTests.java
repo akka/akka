@@ -19,7 +19,7 @@ import scala.Right;
 
 public class JavaFutureTests {
 
-    private final ActorSystem app = new ActorSystem();
+    private final ActorSystem app = ActorSystem.create();
     private final Timeout t = app.AkkaConfig().ActorTimeout();
     private final FutureFactory ff = new FutureFactory(app.dispatcher(), t);
 

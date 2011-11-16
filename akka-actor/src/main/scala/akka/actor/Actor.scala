@@ -154,7 +154,7 @@ object Timeout {
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(app.eventStream, context.self)
+  val log = akka.event.Logging(system.eventStream, context.self)
 }
 
 object Actor {
@@ -229,12 +229,12 @@ trait Actor {
     context
   }
 
-  implicit def app = context.app
+  implicit def system = context.system
 
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit def defaultTimeout = app.AkkaConfig.ActorTimeout
+  implicit def defaultTimeout = system.AkkaConfig.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -250,7 +250,7 @@ trait Actor {
    * This method does NOT modify the given Receive unless
    * akka.actor.debug.receive is set within akka.conf.
    */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (app.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
+  def loggable(self: AnyRef)(r: Receive): Receive = if (system.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
    * Some[ActorRef] representation of the 'self' ActorRef reference.

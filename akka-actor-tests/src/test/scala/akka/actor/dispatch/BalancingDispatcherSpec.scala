@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class BalancingDispatcherSpec extends AkkaSpec {
 
-  def newWorkStealer() = app.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher", 1).build
+  def newWorkStealer() = system.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher", 1).build
 
   val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
 
