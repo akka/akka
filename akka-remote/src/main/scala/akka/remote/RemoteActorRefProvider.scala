@@ -291,9 +291,9 @@ private[akka] case class RemoteActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = remote.app.provider.serialize(this)
 
-  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
+  def startsWatching(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
 
-  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
+  def stopsWatching(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
 
   protected[akka] def restart(cause: Throwable): Unit = ()
 

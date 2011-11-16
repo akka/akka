@@ -376,13 +376,13 @@ trait Actor {
    * Registers this actor as a Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def watch(subject: ActorRef): ActorRef = self startsMonitoring subject
+  def watch(subject: ActorRef): ActorRef = self startsWatching subject
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def unwatch(subject: ActorRef): ActorRef = self stopsMonitoring subject
+  def unwatch(subject: ActorRef): ActorRef = self stopsWatching subject
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====

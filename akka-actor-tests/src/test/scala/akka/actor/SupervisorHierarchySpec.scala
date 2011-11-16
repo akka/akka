@@ -53,7 +53,7 @@ class SupervisorHierarchySpec extends AkkaSpec {
       val countDownMax = new CountDownLatch(1)
       val boss = actorOf(Props(new Actor {
         val crasher = context.actorOf(Props(new CountDownActor(countDownMessages)))
-        self startsMonitoring crasher
+        self startsWatching crasher
 
         protected def receive = {
           case "killCrasher" ⇒ crasher ! Kill

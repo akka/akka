@@ -20,7 +20,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
 
-      testActor startsMonitoring terminal
+      testActor startsWatching terminal
 
       testActor ! "ping"
       expectMsg("ping")
@@ -67,7 +67,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       monitor2 ! "ping"
 
-      expectMsg("pong") //Needs to be here since startsMonitoring and stopsMonitoring are asynchronous
+      expectMsg("pong") //Needs to be here since startsWatching and stopsWatching are asynchronous
 
       terminal ! PoisonPill
 
@@ -114,8 +114,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
           }))
 
         val failed, brother = (supervisor ? Props.empty).as[ActorRef].get
-        brother startsMonitoring failed
-        testActor startsMonitoring brother
+        brother startsWatching failed
+        testActor startsWatching brother
 
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {

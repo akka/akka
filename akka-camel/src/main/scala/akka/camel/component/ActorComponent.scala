@@ -293,8 +293,8 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
     callback.done(false)
   }
 
-  def startsMonitoring(actorRef: ActorRef): ActorRef = unsupported
-  def stopsMonitoring(actorRef: ActorRef): ActorRef = unsupported
+  def startsWatching(actorRef: ActorRef): ActorRef = unsupported
+  def stopsWatching(actorRef: ActorRef): ActorRef = unsupported
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))

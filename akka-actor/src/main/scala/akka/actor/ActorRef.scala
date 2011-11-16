@@ -133,7 +133,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def startsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
+  def startsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
   /**
    * Deregisters this actor from being a death monitor of the provided ActorRef
@@ -142,7 +142,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def stopsMonitoring(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
+  def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -212,7 +212,7 @@ class LocalActorRef private[akka] (
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def startsMonitoring(subject: ActorRef): ActorRef = actorCell.startsMonitoring(subject)
+  def startsWatching(subject: ActorRef): ActorRef = actorCell.startsWatching(subject)
 
   /**
    * Deregisters this actor from being a death monitor of the provided ActorRef
@@ -221,7 +221,7 @@ class LocalActorRef private[akka] (
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def stopsMonitoring(subject: ActorRef): ActorRef = actorCell.stopsMonitoring(subject)
+  def stopsWatching(subject: ActorRef): ActorRef = actorCell.stopsWatching(subject)
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -319,9 +319,9 @@ trait UnsupportedActorRef extends ActorRef with ScalaActorRef {
 
   private[akka] final val uuid: akka.actor.Uuid = newUuid()
 
-  def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
+  def startsWatching(actorRef: ActorRef): ActorRef = actorRef
 
-  def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
+  def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
 
   def suspend(): Unit = ()
 
@@ -345,8 +345,8 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString
 
-  def startsMonitoring(actorRef: ActorRef): ActorRef = actorRef
-  def stopsMonitoring(actorRef: ActorRef): ActorRef = actorRef
+  def startsWatching(actorRef: ActorRef): ActorRef = actorRef
+  def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
 
   def suspend(): Unit = ()
   def resume(): Unit = ()

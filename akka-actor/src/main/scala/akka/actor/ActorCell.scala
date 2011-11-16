@@ -118,13 +118,13 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  final def startsMonitoring(subject: ActorRef): ActorRef = {
+  final def startsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
-  final def stopsMonitoring(subject: ActorRef): ActorRef = {
+  final def stopsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject

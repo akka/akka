@@ -228,7 +228,7 @@ class RestartStrategySpec extends AkkaSpec {
       })
       val slave = (boss ? slaveProps).as[ActorRef].get
 
-      boss startsMonitoring slave
+      boss startsWatching slave
 
       slave ! Ping
       slave ! Crash

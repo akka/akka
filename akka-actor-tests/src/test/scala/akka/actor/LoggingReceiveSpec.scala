@@ -159,13 +159,13 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           expectNoMsg(Duration.Zero)
           assert(set == Set(1, 2), set + " was not Set(1, 2)")
 
-          supervisor startsMonitoring actor
+          supervisor startsWatching actor
           expectMsgPF(hint = "now monitoring") {
             case Logging.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
           }
 
-          supervisor stopsMonitoring actor
+          supervisor stopsWatching actor
           expectMsgPF(hint = "stopped monitoring") {
             case Logging.Debug(ref, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")
