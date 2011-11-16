@@ -23,6 +23,7 @@ import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.actor.ActorSystem
 import akka.event.Logging
+import locks.ReentrantReadWriteLock
 import org.jboss.netty.channel._
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
@@ -354,7 +355,7 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
   val clientSettings = new RemoteClientSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
-  private val clientsLock = new ReadWriteGuard
+  private val clientsLock = new ReentrantReadWriteLock
 
   protected[akka] def send(message: Any,
                            senderOption: Option[ActorRef],
@@ -392,32 +393,50 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
     }
   }
 
-  def bindClient(remoteAddress: RemoteAddress, client: RemoteClient, putIfAbsent: Boolean = false): Boolean = clientsLock withWriteGuard {
-    if (putIfAbsent && remoteClients.contains(remoteAddress)) false
-    else {
-      client.connect()
-      remoteClients.put(remoteAddress, client).foreach(_.shutdown())
-      true
+  def bindClient(remoteAddress: RemoteAddress, client: RemoteClient, putIfAbsent: Boolean = false): Boolean = {
+    clientsLock.writeLock().lock()
+    try {
+      if (putIfAbsent && remoteClients.contains(remoteAddress)) false
+      else {
+        client.connect()
+        remoteClients.put(remoteAddress, client).foreach(_.shutdown())
+        true
+      }
+    } finally {
+      clientsLock.writeLock().unlock()
     }
   }
 
-  def unbindClient(remoteAddress: RemoteAddress): Unit = clientsLock withWriteGuard {
-    remoteClients.foreach {
-      case (k, v) ⇒ if (v.isBoundTo(remoteAddress)) { v.shutdown(); remoteClients.remove(k) }
+  def unbindClient(remoteAddress: RemoteAddress): Unit = {
+    clientsLock.writeLock().lock()
+    try {
+      remoteClients.foreach { case (k, v) ⇒ if (v.isBoundTo(remoteAddress)) { v.shutdown(); remoteClients.remove(k) } }
+    } finally {
+      clientsLock.writeLock().unlock()
     }
   }
 
-  def shutdownClientConnection(remoteAddress: RemoteAddress): Boolean = clientsLock withWriteGuard {
-    remoteClients.remove(remoteAddress) match {
-      case Some(client) ⇒ client.shutdown()
-      case None         ⇒ false
+  def shutdownClientConnection(remoteAddress: RemoteAddress): Boolean = {
+    clientsLock.writeLock().lock()
+    try {
+      remoteClients.remove(remoteAddress) match {
+        case Some(client) ⇒ client.shutdown()
+        case None         ⇒ false
+      }
+    } finally {
+      clientsLock.writeLock().unlock()
     }
   }
 
-  def restartClientConnection(remoteAddress: RemoteAddress): Boolean = clientsLock withReadGuard {
-    remoteClients.get(remoteAddress) match {
-      case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
-      case None         ⇒ false
+  def restartClientConnection(remoteAddress: RemoteAddress): Boolean = {
+    clientsLock.readLock().lock()
+    try {
+      remoteClients.get(remoteAddress) match {
+        case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
+        case None         ⇒ false
+      }
+    } finally {
+      clientsLock.readLock().unlock()
     }
   }
 
@@ -448,9 +467,12 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
    */
 
   def shutdown(): Unit = _isRunning switchOff {
-    clientsLock withWriteGuard {
+    clientsLock.writeLock().lock()
+    try {
       remoteClients foreach { case (_, client) ⇒ client.shutdown() }
       remoteClients.clear()
+    } finally {
+      clientsLock.writeLock().unlock()
     }
     currentServer.getAndSet(None) foreach { _.shutdown() }
   }
@@ -636,23 +658,29 @@ class RemoteServerHandler(
 }
 
 class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
-  protected val guard = new ReadWriteGuard
+  protected val guard = new ReentrantReadWriteLock
   protected val open = new AtomicBoolean(true)
 
-  override def add(channel: Channel): Boolean = guard withReadGuard {
-    if (open.get) {
-      super.add(channel)
-    } else {
-      channel.close
-      false
+  override def add(channel: Channel): Boolean = {
+    guard.readLock().lock()
+    try {
+      if (open.get) {
+        super.add(channel)
+      } else {
+        channel.close
+        false
+      }
+    } finally {
+      guard.readLock().unlock()
     }
   }
 
-  override def close(): ChannelGroupFuture = guard withWriteGuard {
-    if (open.getAndSet(false)) {
-      super.close
-    } else {
-      throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
+  override def close(): ChannelGroupFuture = {
+    guard.writeLock().lock()
+    try {
+      if (open.getAndSet(false)) super.close else throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
+    } finally {
+      guard.writeLock().unlock()
     }
   }
 }

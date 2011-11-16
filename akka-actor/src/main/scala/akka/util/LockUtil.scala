@@ -4,15 +4,16 @@
 
 package akka.util
 
-import java.util.concurrent.locks.{ ReentrantReadWriteLock, ReentrantLock }
+import java.util.concurrent.locks.{ ReentrantLock }
 import java.util.concurrent.atomic.{ AtomicBoolean }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 final class ReentrantGuard {
-  val lock = new ReentrantLock
+  final val lock = new ReentrantLock
 
+  @inline
   final def withGuard[T](body: ⇒ T): T = {
     lock.lock
     try {
@@ -21,78 +22,6 @@ final class ReentrantGuard {
       lock.unlock
     }
   }
-}
-
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ReadWriteGuard {
-  private val rwl = new ReentrantReadWriteLock
-  val readLock = rwl.readLock
-  val writeLock = rwl.writeLock
-
-  def withWriteGuard[T](body: ⇒ T): T = {
-    writeLock.lock
-    try {
-      body
-    } finally {
-      writeLock.unlock
-    }
-  }
-
-  def withReadGuard[T](body: ⇒ T): T = {
-    readLock.lock
-    try {
-      body
-    } finally {
-      readLock.unlock
-    }
-  }
-}
-
-/**
- * A very simple lock that uses CAS (Compare-And-Swap)
- * Does not keep track of the owner and isn't Reentrant, so don't nest and try to stick to the if*-methods
- */
-class SimpleLock(startLocked: Boolean = false) extends AtomicBoolean(startLocked) {
-  def ifPossible(perform: () ⇒ Unit): Boolean = {
-    if (tryLock()) {
-      try {
-        perform
-      } finally {
-        unlock()
-      }
-      true
-    } else false
-  }
-
-  def ifPossibleYield[T](perform: () ⇒ T): Option[T] = {
-    if (tryLock()) {
-      try {
-        Some(perform())
-      } finally {
-        unlock()
-      }
-    } else None
-  }
-
-  def ifPossibleApply[T, R](value: T)(function: (T) ⇒ R): Option[R] = {
-    if (tryLock()) {
-      try {
-        Some(function(value))
-      } finally {
-        unlock()
-      }
-    } else None
-  }
-
-  def tryLock() = compareAndSet(false, true)
-
-  def tryUnlock() = compareAndSet(true, false)
-
-  def locked = get
-
-  def unlock(): Unit = set(false)
 }
 
 /**

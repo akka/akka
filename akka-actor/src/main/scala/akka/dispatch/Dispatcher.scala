@@ -93,14 +93,17 @@ class Dispatcher(
       executorService.get() execute invocation
     } catch {
       case e: RejectedExecutionException ⇒
-        app.eventStream.publish(Warning(this, e.toString))
-        throw e
+        try {
+          executorService.get() execute invocation
+        } catch {
+          case e2: RejectedExecutionException ⇒
+            app.eventStream.publish(Warning(this, e2.toString))
+            throw e2
+        }
     }
   }
 
   protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(actor)
-
-  protected[akka] def start {}
 
   protected[akka] def shutdown {
     executorService.getAndSet(new ExecutorServiceDelegate {

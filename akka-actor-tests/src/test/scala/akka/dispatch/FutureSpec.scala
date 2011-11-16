@@ -436,12 +436,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
           f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
           f3.await
           assert(f3.get === "SUCCESS")
-
-          // give time for all callbacks to execute
-          Thread sleep 100
-
-          // make sure all futures are completed in dispatcher
-          assert(implicitly[MessageDispatcher].tasks === 0)
         }
       }
 
@@ -559,10 +553,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
         assert(a.get === 5)
         assert(b.get === 3)
         assert(result2.get === 50)
-        Thread.sleep(100)
-
-        // make sure all futures are completed in dispatcher
-        assert(implicitly[MessageDispatcher].tasks === 0)
       }
 
       "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
@@ -769,18 +759,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
 
         assert(i === count)
 
-      }
-
-      "ticket812FutureDispatchCleanup" in {
-        filterException[FutureTimeoutException] {
-          implicit val dispatcher = app.dispatcherFactory.newDispatcher("ticket812FutureDispatchCleanup").build
-          assert(dispatcher.tasks === 0)
-          val future = Future({ Thread.sleep(100); "Done" }, 10)
-          intercept[FutureTimeoutException] { future.await }
-          assert(dispatcher.tasks === 1)
-          Thread.sleep(200)
-          assert(dispatcher.tasks === 0)
-        }
       }
 
       "run callbacks async" in {

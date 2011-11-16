@@ -283,7 +283,7 @@ class TransactionLog private (
    * If already closed, the call is ignored.
    */
   def close() {
-    if (isOpen.switchOff) {
+    isOpen switchOff {
       EventHandler.debug(this, "Closing transaction log [%s]".format(logId))
       try {
         if (isAsync) {

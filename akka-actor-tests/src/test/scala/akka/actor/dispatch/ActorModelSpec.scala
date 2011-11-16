@@ -99,7 +99,6 @@ object ActorModelSpec {
 
   trait MessageDispatcherInterceptor extends MessageDispatcher {
     val stats = new ConcurrentHashMap[ActorRef, InterceptorStats]
-    val starts = new AtomicLong(0)
     val stops = new AtomicLong(0)
 
     def getStats(actorRef: ActorRef) = {
@@ -135,11 +134,6 @@ object ActorModelSpec {
       super.dispatch(receiver, invocation)
     }
 
-    protected[akka] abstract override def start() {
-      starts.incrementAndGet()
-      super.start()
-    }
-
     protected[akka] abstract override def shutdown() {
       stops.incrementAndGet()
       super.shutdown()
@@ -147,16 +141,14 @@ object ActorModelSpec {
   }
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
-    starts: Long = dispatcher.starts.get(),
     stops: Long = dispatcher.stops.get())(implicit app: ActorSystem) {
     val deadline = System.currentTimeMillis + dispatcher.timeoutMs * 5
     try {
-      await(deadline)(starts == dispatcher.starts.get)
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        app.eventStream.publish(Error(e, dispatcher, "actual: starts=" + dispatcher.starts.get + ",stops=" + dispatcher.stops.get +
-          " required: starts=" + starts + ",stops=" + stops))
+        app.eventStream.publish(Error(e, dispatcher, "actual: stops=" + dispatcher.stops.get +
+          " required: stops=" + stops))
         throw e
     }
   }
@@ -247,11 +239,11 @@ abstract class ActorModelSpec extends AkkaSpec {
 
     "must dynamically handle its own life cycle" in {
       implicit val dispatcher = newInterceptedDispatcher
-      assertDispatcher(dispatcher)(starts = 0, stops = 0)
+      assertDispatcher(dispatcher)(stops = 0)
       val a = newTestActor(dispatcher)
-      assertDispatcher(dispatcher)(starts = 1, stops = 0)
+      assertDispatcher(dispatcher)(stops = 0)
       a.stop()
-      assertDispatcher(dispatcher)(starts = 1, stops = 1)
+      assertDispatcher(dispatcher)(stops = 1)
       assertRef(a, dispatcher)(
         suspensions = 0,
         resumes = 0,
@@ -264,15 +256,15 @@ abstract class ActorModelSpec extends AkkaSpec {
       val futures = for (i ← 1 to 10) yield Future {
         i
       }
-      assertDispatcher(dispatcher)(starts = 2, stops = 2)
+      assertDispatcher(dispatcher)(stops = 2)
 
       val a2 = newTestActor(dispatcher)
       val futures2 = for (i ← 1 to 10) yield Future { i }
 
-      assertDispatcher(dispatcher)(starts = 3, stops = 2)
+      assertDispatcher(dispatcher)(stops = 2)
 
       a2.stop
-      assertDispatcher(dispatcher)(starts = 3, stops = 3)
+      assertDispatcher(dispatcher)(stops = 3)
     }
 
     "process messages one at a time" in {
@@ -363,7 +355,7 @@ abstract class ActorModelSpec extends AkkaSpec {
       }
       for (run ← 1 to 3) {
         flood(50000)
-        assertDispatcher(dispatcher)(starts = run, stops = run)
+        assertDispatcher(dispatcher)(stops = run)
       }
     }
 

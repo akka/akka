@@ -77,11 +77,6 @@ class BalancingDispatcher(
     buddies.remove(actor)
   }
 
-  protected[akka] override def shutdown() {
-    super.shutdown()
-    buddies.clear()
-  }
-
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
     if (mailBox.hasSystemMessages) {
       var messages = mailBox.systemDrain()

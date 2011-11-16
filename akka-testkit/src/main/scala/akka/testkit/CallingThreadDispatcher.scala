@@ -113,8 +113,6 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
     case _                       ⇒ None
   }
 
-  protected[akka] override def start() {}
-
   protected[akka] override def shutdown() {}
 
   protected[akka] override def throughput = 0
