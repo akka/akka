@@ -21,16 +21,16 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
  */
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val zkServerAddresses = app.config.getString("akka.actor.mailbox.zookeeper.server-addresses", "localhost:2181")
-  def defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
-  val sessionTimeout = Duration(app.config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), defaultTimeUnit).toMillis.toInt
-  val connectionTimeout = Duration(app.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout", 60), defaultTimeUnit).toMillis.toInt
-  val blockingQueue = app.config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
+  val zkServerAddresses = system.settings.config.getString("akka.actor.mailbox.zookeeper.server-addresses", "localhost:2181")
+  def defaultTimeUnit = system.settings.DefaultTimeUnit
+  val sessionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.session-timeout", 60), defaultTimeUnit).toMillis.toInt
+  val connectionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout", 60), defaultTimeUnit).toMillis.toInt
+  val blockingQueue = system.settings.config.getBool("akka.actor.mailbox.zookeeper.blocking-queue", true)
 
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
   private val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout)
   private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), blockingQueue)

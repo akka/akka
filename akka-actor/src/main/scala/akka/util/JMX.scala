@@ -18,20 +18,20 @@ object JMX {
   def nameFor(hostname: String, service: String, bean: String): ObjectName =
     new ObjectName("akka.%s:type=%s,name=%s".format(hostname, service, bean.replace(":", "_")))
 
-  def register(name: ObjectName, mbean: AnyRef)(implicit app: ActorSystem): Option[ObjectInstance] = try {
+  def register(name: ObjectName, mbean: AnyRef)(implicit system: ActorSystem): Option[ObjectInstance] = try {
     Some(mbeanServer.registerMBean(mbean, name))
   } catch {
     case e: InstanceAlreadyExistsException ⇒
       Some(mbeanServer.getObjectInstance(name))
     case e: Exception ⇒
-      app.eventStream.publish(Error(e, this, "Error when registering mbean [%s]".format(mbean)))
+      system.eventStream.publish(Error(e, this, "Error when registering mbean [%s]".format(mbean)))
       None
   }
 
-  def unregister(mbean: ObjectName)(implicit app: ActorSystem) = try {
+  def unregister(mbean: ObjectName)(implicit system: ActorSystem) = try {
     mbeanServer.unregisterMBean(mbean)
   } catch {
     case e: InstanceNotFoundException ⇒ {}
-    case e: Exception                 ⇒ app.eventStream.publish(Error(e, this, "Error while unregistering mbean [%s]".format(mbean)))
+    case e: Exception                 ⇒ system.eventStream.publish(Error(e, this, "Error while unregistering mbean [%s]".format(mbean)))
   }
 }

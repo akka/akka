@@ -9,15 +9,15 @@ import static org.junit.Assert.*;
 
 public class JavaAPI {
 
-  private ActorSystem app = new ActorSystem();
+  private ActorSystem system = ActorSystem.create();
 
   @Test void mustBeAbleToCreateActorRefFromClass() {
-      ActorRef ref = app.actorOf(JavaAPITestActor.class);
+      ActorRef ref = system.actorOf(JavaAPITestActor.class);
       assertNotNull(ref);
   }
 
   @Test void mustBeAbleToCreateActorRefFromFactory() {
-      ActorRef ref = app.actorOf(new Props().withCreator(new Creator<Actor>() {
+      ActorRef ref = system.actorOf(new Props().withCreator(new Creator<Actor>() {
           public Actor create() {
               return new JavaAPITestActor();
           }
@@ -26,7 +26,7 @@ public class JavaAPI {
   }
 
   @Test void mustAcceptSingleArgTell() {
-    ActorRef ref = app.actorOf(JavaAPITestActor.class);
+    ActorRef ref = system.actorOf(JavaAPITestActor.class);
     ref.tell("hallo");
     ref.tell("hallo", ref);
   }

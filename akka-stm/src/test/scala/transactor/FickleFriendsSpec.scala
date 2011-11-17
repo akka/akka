@@ -104,9 +104,9 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
   val numCounters = 2
 
   def actorOfs = {
-    def createCounter(i: Int) = app.actorOf(Props(new FickleCounter("counter" + i)))
+    def createCounter(i: Int) = system.actorOf(Props(new FickleCounter("counter" + i)))
     val counters = (1 to numCounters) map createCounter
-    val coordinator = app.actorOf(Props(new Coordinator("coordinator")))
+    val coordinator = system.actorOf(Props(new Coordinator("coordinator")))
     (counters, coordinator)
   }
 
@@ -116,7 +116,7 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
         EventFilter[ExpectedFailureException](),
         EventFilter[CoordinatedTransactionException](),
         EventFilter[ActorTimeoutException]())
-      app.eventStream.publish(Mute(ignoreExceptions))
+      system.eventStream.publish(Mute(ignoreExceptions))
       val (counters, coordinator) = actorOfs
       val latch = new CountDownLatch(1)
       coordinator ! FriendlyIncrement(counters, latch)

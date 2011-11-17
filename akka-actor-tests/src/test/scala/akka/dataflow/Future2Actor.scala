@@ -19,7 +19,7 @@ class Future2ActorSpec extends AkkaSpec {
     }
 
     "support reply via sender" in {
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "do" ⇒ Future(31) pipeTo context.sender
           case "ex" ⇒ Future(throw new AssertionError) pipeTo context.sender

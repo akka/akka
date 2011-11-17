@@ -142,11 +142,11 @@ object QDumper {
       System.exit(0)
     }
 
-    val app = ActorSystem()
+    val system = ActorSystem()
 
     for (filename ← filenames) {
       println("Queue: " + filename)
-      new QueueDumper(filename, app.log)()
+      new QueueDumper(filename, system.log)()
     }
   }
 }

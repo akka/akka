@@ -10,7 +10,7 @@ object DirectRoutedRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! app.nodename
+      case "identify" ⇒ sender ! system.nodename
     }
   }
 }
@@ -47,7 +47,7 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
 
       barrier("start")
 
-      val actor = app.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf[SomeActor]("service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val result = (actor ? "identify").get

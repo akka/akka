@@ -253,7 +253,7 @@ class IOManager(bufferSize: Int = 8192) extends Actor {
   var worker: IOWorker = _
 
   override def preStart {
-    worker = new IOWorker(app, self, bufferSize)
+    worker = new IOWorker(system, self, bufferSize)
     worker.start()
   }
 
@@ -290,7 +290,7 @@ private[akka] object IOWorker {
   case object Shutdown extends Request
 }
 
-private[akka] class IOWorker(app: ActorSystem, ioManager: ActorRef, val bufferSize: Int) {
+private[akka] class IOWorker(system: ActorSystem, ioManager: ActorRef, val bufferSize: Int) {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
   import IOWorker._
 

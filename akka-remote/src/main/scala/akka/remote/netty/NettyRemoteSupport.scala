@@ -39,7 +39,7 @@ abstract class RemoteClient private[akka] (
   val remoteSupport: NettyRemoteSupport,
   val remoteAddress: RemoteAddress) {
 
-  val log = Logging(remoteSupport.app, this)
+  val log = Logging(remoteSupport.system, this)
 
   val name = simpleName(this) + "@" + remoteAddress
 
@@ -148,7 +148,8 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(remoteSupport.app.address.hostname).setPort(remoteSupport.app.address.port).build)
+      val addr = remoteSupport.system.rootPath.remoteAddress
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(addr.hostname).setPort(addr.port).build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
 
@@ -349,10 +350,10 @@ class ActiveRemoteClientHandler(
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with RemoteMarshallingOps {
+class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
 
-  val serverSettings = new RemoteServerSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
-  val clientSettings = new RemoteClientSettings(app.config, app.AkkaConfig.DefaultTimeUnit)
+  val serverSettings = new RemoteServerSettings(system.settings.config, system.settings.DefaultTimeUnit)
+  val clientSettings = new RemoteClientSettings(system.settings.config, system.settings.DefaultTimeUnit)
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
@@ -447,7 +448,7 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + app.address
+    case None         ⇒ "Non-running NettyRemoteServer@" + system.rootPath.remoteAddress
   }
 
   private val _isRunning = new Switch(false)
@@ -479,9 +480,10 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
 }
 
 class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Option[ClassLoader]) {
-  val log = Logging(remoteSupport.app, this)
+  val log = Logging(remoteSupport.system, this)
   import remoteSupport.serverSettings._
-  import remoteSupport.app.address
+
+  val address = remoteSupport.system.rootPath.remoteAddress
 
   val name = "NettyRemoteServer@" + address
 
@@ -583,7 +585,7 @@ class RemoteServerHandler(
   val applicationLoader: Option[ClassLoader],
   val remoteSupport: NettyRemoteSupport) extends SimpleChannelUpstreamHandler {
 
-  val log = Logging(remoteSupport.app, this)
+  val log = Logging(remoteSupport.system, this)
 
   import remoteSupport.serverSettings._
 

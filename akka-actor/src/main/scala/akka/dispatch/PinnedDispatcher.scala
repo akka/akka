@@ -7,14 +7,27 @@ package akka.dispatch
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
 import akka.actor.ActorSystem
+import akka.event.EventStream
+import akka.actor.Scheduler
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class PinnedDispatcher(_app: ActorSystem, _actor: ActorCell, _name: String, _mailboxType: MailboxType, _timeoutMs: Long)
-  extends Dispatcher(_app, _name, Int.MaxValue, -1, _mailboxType, PinnedDispatcher.oneThread(_app), _timeoutMs) {
+class PinnedDispatcher(
+  _prerequisites: DispatcherPrerequisites,
+  _actor: ActorCell,
+  _name: String,
+  _mailboxType: MailboxType,
+  _timeoutMs: Long)
+  extends Dispatcher(_prerequisites,
+    _name,
+    Int.MaxValue,
+    -1,
+    _mailboxType,
+    ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
+    _timeoutMs) {
 
   @volatile
   protected[akka] var owner: ActorCell = _actor
@@ -31,9 +44,5 @@ class PinnedDispatcher(_app: ActorSystem, _actor: ActorCell, _name: String, _mai
     super.unregister(actor)
     owner = null
   }
-}
-
-object PinnedDispatcher {
-  def oneThread(app: ActorSystem): ThreadPoolConfig = ThreadPoolConfig(app, allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1)
 }
 

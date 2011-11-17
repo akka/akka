@@ -17,8 +17,8 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll {
     }
   }, timeout = t))
 
-  val defaultTimeout = app.AkkaConfig.ActorTimeout.duration
-  val testTimeout = if (app.AkkaConfig.ActorTimeout.duration < 400.millis) 500 millis else 100 millis
+  val defaultTimeout = system.settings.ActorTimeout.duration
+  val testTimeout = if (system.settings.ActorTimeout.duration < 400.millis) 500 millis else 100 millis
 
   "An Actor-based Future" must {
 

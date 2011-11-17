@@ -53,7 +53,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "decorate a Receive" in {
       new TestKit(appLogging) {
-        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val r: Actor.Receive = {
           case null ⇒
         }
@@ -66,8 +66,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     "be added on Actor if requested" in {
       new TestKit(appLogging) with ImplicitSender {
         ignoreMute(this)
-        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
-        app.eventStream.subscribe(testActor, classOf[Logging.Error])
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this) {
             case _ ⇒ sender ! "x"
@@ -95,7 +95,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "not duplicate logging" in {
       new TestKit(appLogging) with ImplicitSender {
-        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = loggable(this)(loggable(this) {
             case _ ⇒ sender ! "x"
@@ -115,7 +115,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
     "log AutoReceiveMessages if requested" in {
       new TestKit(appAuto) {
-        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
           def receive = {
             case _ ⇒
@@ -137,10 +137,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
             val s = ref.toString
             s.contains("MainBusReaper") || s.contains("Supervisor")
         }
-        app.eventStream.subscribe(testActor, classOf[Logging.Debug])
-        app.eventStream.subscribe(testActor, classOf[Logging.Error])
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Error])
         within(3 seconds) {
-          val lifecycleGuardian = appLifecycle.guardian
+          val lifecycleGuardian = appLifecycle.asInstanceOf[ActorSystemImpl].guardian
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
 
           val supervisorSet = receiveWhile(messages = 2) {
@@ -150,7 +150,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           expectNoMsg(Duration.Zero)
           assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
 
-          val actor = new TestActorRef[TestLogActor](app, Props[TestLogActor], supervisor, "none")
+          val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
 
           val set = receiveWhile(messages = 2) {
             case Logging.Debug(`supervisor`, msg: String) if msg startsWith "now supervising" ⇒ 1

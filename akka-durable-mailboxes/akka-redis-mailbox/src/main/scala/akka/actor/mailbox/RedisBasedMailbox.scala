@@ -20,7 +20,7 @@ class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in redis-based mailbox [%s]".format(envelope))
@@ -58,8 +58,8 @@ class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with
 
   private[akka] def connect() = {
     new RedisClientPool(
-      app.config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
-      app.config.getInt("akka.actor.mailbox.redis.port", 6379))
+      system.settings.config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
+      system.settings.config.getInt("akka.actor.mailbox.redis.port", 6379))
   }
 
   private def withErrorHandling[T](body: ⇒ T): T = {

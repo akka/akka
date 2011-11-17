@@ -40,7 +40,7 @@ class DurableMailboxException private[akka] (message: String, cause: Throwable) 
 abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
-  def app = owner.app
+  def system = owner.system
   def ownerPath = owner.self.path
   val ownerPathString = ownerPath.path.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
@@ -54,11 +54,11 @@ trait DurableMessageSerialization {
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
     def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-      val serRef = owner.app.provider.serialize(ref)
+      val serRef = owner.system.provider.serialize(ref)
       ActorRefProtocol.newBuilder.setPath(serRef.path).setHost(serRef.hostname).setPort(serRef.port).build
     }
 
-    val message = MessageSerializer.serialize(owner.app, durableMessage.message.asInstanceOf[AnyRef])
+    val message = MessageSerializer.serialize(owner.system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
       .setMessage(message)
       .setRecipient(serializeActorRef(owner.self))
@@ -71,11 +71,11 @@ trait DurableMessageSerialization {
 
     def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = {
       val serRef = SerializedActorRef(refProtocol.getHost, refProtocol.getPort, refProtocol.getPath)
-      owner.app.provider.deserialize(serRef).getOrElse(owner.app.deadLetters)
+      owner.system.provider.deserialize(serRef).getOrElse(owner.system.deadLetters)
     }
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
-    val message = MessageSerializer.deserialize(owner.app, durableMessage.getMessage)
+    val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
     new Envelope(message, sender)

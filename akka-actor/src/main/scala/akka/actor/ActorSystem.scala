@@ -6,18 +6,18 @@ package akka.actor
 import akka.config._
 import akka.actor._
 import akka.event._
+import akka.dispatch._
 import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import akka.dispatch.{ Dispatchers, Future, Mailbox, Envelope, SystemMessage }
 import akka.util.Duration
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
+import org.jboss.netty.akka.util.HashedWheelTimer
+import java.util.concurrent.{ Executors, TimeUnit }
 
 object ActorSystem {
-
-  type AkkaConfig = a.AkkaConfig.type forSome { val a: ActorSystem }
 
   val Version = "2.0-SNAPSHOT"
 
@@ -61,26 +61,20 @@ object ActorSystem {
 
   val defaultConfig = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
 
-  def apply(name: String, config: Configuration) = new ActorSystem(name, config)
+  def create(name: String, config: Configuration): ActorSystem = apply(name, config)
+  def apply(name: String, config: Configuration): ActorSystem = new ActorSystemImpl(name, config).start()
 
-  def apply(name: String): ActorSystem = new ActorSystem(name)
+  def create(name: String): ActorSystem = apply(name)
+  def apply(name: String): ActorSystem = apply(name, defaultConfig)
 
-  def apply(): ActorSystem = new ActorSystem()
+  def create(): ActorSystem = apply()
+  def apply(): ActorSystem = apply("default")
 
   sealed trait ExitStatus
   case object Stopped extends ExitStatus
   case class Failed(cause: Throwable) extends ExitStatus
 
-}
-
-class ActorSystem(val name: String, val config: Configuration) extends ActorRefFactory with TypedActorFactory {
-
-  def this(name: String) = this(name, ActorSystem.defaultConfig)
-  def this() = this("default")
-
-  import ActorSystem._
-
-  object AkkaConfig {
+  class Settings(val config: Configuration) {
     import config._
     val ConfigVersion = getString("akka.version", Version)
 
@@ -126,90 +120,82 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
 
     val FailureDetectorThreshold: Int = getInt("akka.remote.failure-detector.threshold", 8)
     val FailureDetectorMaxSampleSize: Int = getInt("akka.remote.failure-detector.max-sample-size", 1000)
+
+    if (ConfigVersion != Version)
+      throw new ConfigurationException("Akka JAR version [" + Version +
+        "] does not match the provided config version [" + ConfigVersion + "]")
+
   }
 
-  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(props, systemGuardian, address, true)
+}
 
-  import AkkaConfig._
+abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
+  import ActorSystem._
 
-  if (ConfigVersion != Version)
-    throw new ConfigurationException("Akka JAR version [" + Version +
-      "] does not match the provided config version [" + ConfigVersion + "]")
+  def name: String
+  def settings: Settings
+  def nodename: String
+
+  /**
+   * Construct a path below the application guardian.
+   */
+  def /(name: String): ActorPath
+  def rootPath: ActorPath
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
 
-  val nodename: String = System.getProperty("akka.cluster.nodename") match {
-    case null | "" ⇒ new UUID().toString
-    case value     ⇒ value
-  }
+  def eventStream: EventStream
+  def log: LoggingAdapter
+
+  def deadLetters: ActorRef
+  def deadLetterMailbox: Mailbox
+
+  // FIXME: Serialization should be an extension
+  def serialization: Serialization
+  // FIXME: TypedActor should be an extension
+  def typedActor: TypedActor
+
+  def scheduler: Scheduler
+  def dispatcherFactory: Dispatchers
+  def dispatcher: MessageDispatcher
+
+  def registerOnTermination(code: ⇒ Unit)
+  def registerOnTermination(code: Runnable)
+  def stop()
+}
+
+class ActorSystemImpl(val name: String, config: Configuration) extends ActorSystem {
+
+  import ActorSystem._
+
+  val settings = new Settings(config)
+
+  protected def systemImpl = this
+
+  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
+
+  import settings._
 
   val address = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
   }, System.getProperty("akka.remote.port") match {
-    case null | "" ⇒ AkkaConfig.RemoteServerPort
+    case null | "" ⇒ settings.RemoteServerPort
     case value     ⇒ value.toInt
   })
 
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
-  eventStream.startStdoutLogger(AkkaConfig)
-  val log = new BusLogging(eventStream, this)
-
-  // TODO correctly pull its config from the config
-  val dispatcherFactory = new Dispatchers(this)
-
-  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
-
-  def scheduler = provider.scheduler
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val reflective = new ReflectiveAccess(this)
+  eventStream.startStdoutLogger(settings)
+  val log = new BusLogging(eventStream, this) // “this” used only for .getClass in tagging messages
 
   /**
    * The root actor path for this application.
    */
-  val root: ActorPath = new RootActorPath(this)
+  val rootPath: ActorPath = new RootActorPath(address)
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val provider: ActorRefProvider = reflective.createProvider
-
-  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
-
-  private class Guardian extends Actor {
-    def receive = {
-      case Terminated(_) ⇒ context.self.stop()
-    }
-  }
-  private class SystemGuardian extends Actor {
-    def receive = {
-      case Terminated(_) ⇒
-        eventStream.stopDefaultLoggers()
-        context.self.stop()
-    }
-  }
-  private val guardianFaultHandlingStrategy = {
-    import akka.actor.FaultHandlingStrategy._
-    OneForOneStrategy {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
-
-  private val rootGuardian: ActorRef =
-    provider.actorOf(guardianProps, provider.theOneWhoWalksTheBubblesOfSpaceTime, root, true)
-
-  protected[akka] val guardian: ActorRef =
-    provider.actorOf(guardianProps, rootGuardian, "app", true)
-
-  protected[akka] val systemGuardian: ActorRef =
-    provider.actorOf(guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
-
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val deadLetters = new DeadLetterActorRef(this)
+  val deadLetters = new DeadLetterActorRef(eventStream, rootPath / "nul")
   val deadLetterMailbox = new Mailbox(null) {
     becomeClosed()
     override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
@@ -221,34 +207,70 @@ class ActorSystem(val name: String, val config: Configuration) extends ActorRefF
     override def numberOfMessages = 0
   }
 
-  val deathWatch = provider.createDeathWatch()
+  // FIXME make this configurable
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
 
-  // chain death watchers so that killing guardian stops the application
-  deathWatch.subscribe(systemGuardian, guardian)
-  deathWatch.subscribe(rootGuardian, systemGuardian)
+  // TODO correctly pull its config from the config
+  val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-  eventStream.start(this)
-  eventStream.startDefaultLoggers(this, AkkaConfig)
+  deadLetters.init(dispatcher)
 
-  // TODO think about memory consistency effects when doing funky stuff inside an ActorRefProvider's constructor
-  val deployer = new Deployer(this)
+  val provider: ActorRefProvider = {
+    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+    val arguments = List(
+      classOf[Settings] -> settings,
+      classOf[ActorPath] -> rootPath,
+      classOf[EventStream] -> eventStream,
+      classOf[MessageDispatcher] -> dispatcher,
+      classOf[Scheduler] -> scheduler)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val typedActor = new TypedActor(this)
+    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
+      case Left(e)  ⇒ throw e
+      case Right(p) ⇒ p
+    }
+  }
 
-  // TODO think about memory consistency effects when doing funky stuff inside constructor
-  val serialization = new Serialization(this)
+  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+  def guardian: ActorRef = provider.guardian
+  def systemGuardian: ActorRef = provider.systemGuardian
+  def deathWatch: DeathWatch = provider.deathWatch
+  def nodename: String = provider.nodename
 
-  /**
-   * Create an actor path under the application supervisor (/app).
-   */
+  terminationFuture.onComplete(_ ⇒ scheduler.stop())
+  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
+
+  @volatile
+  private var _serialization: Serialization = _
+  def serialization = _serialization
+  @volatile
+  private var _typedActor: TypedActor = _
+  def typedActor = _typedActor
+
   def /(actorName: String): ActorPath = guardian.path / actorName
+
+  def start(): this.type = {
+    if (_serialization != null) throw new IllegalStateException("cannot initialize ActorSystemImpl twice!")
+    _serialization = new Serialization(this)
+    _typedActor = new TypedActor(settings, _serialization)
+    provider.init(this)
+    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
+    eventStream.start(this)
+    eventStream.startDefaultLoggers(this)
+    this
+  }
+
+  def registerOnTermination(code: ⇒ Unit) { terminationFuture onComplete (_ ⇒ code) }
+  def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
   }
 
-  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
 }

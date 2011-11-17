@@ -12,6 +12,8 @@ import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.{ ActorCell, ActorRef, ActorSystem }
 import akka.dispatch._
+import akka.actor.Scheduler
+import akka.event.EventStream
 
 /*
  * Locking rules:
@@ -103,7 +105,9 @@ private[testkit] object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thread") extends MessageDispatcher(_app) {
+class CallingThreadDispatcher(
+  _prerequisites: DispatcherPrerequisites,
+  val name: String = "calling-thread") extends MessageDispatcher(_prerequisites) {
   import CallingThreadDispatcher._
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
@@ -211,12 +215,12 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
           true
         } catch {
           case ie: InterruptedException ⇒
-            app.eventStream.publish(Error(this, ie))
+            prerequisites.eventStream.publish(Error(this, ie))
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            app.eventStream.publish(Error(this, e))
+            prerequisites.eventStream.publish(Error(this, e))
             queue.leave
             false
         }

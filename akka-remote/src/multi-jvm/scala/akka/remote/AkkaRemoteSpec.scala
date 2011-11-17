@@ -5,6 +5,7 @@
 package akka.remote
 
 import akka.testkit._
+import akka.actor.ActorSystemImpl
 
 abstract class AkkaRemoteSpec extends AkkaSpec with MultiJvmSync {
 
@@ -12,7 +13,7 @@ abstract class AkkaRemoteSpec extends AkkaSpec with MultiJvmSync {
    * Helper function for accessing the underlying remoting.
    */
   def remote: Remote = {
-    app.provider match {
+    system.asInstanceOf[ActorSystemImpl].provider match {
       case r: RemoteActorRefProvider ⇒ r.remote
       case _                         ⇒ throw new Exception("Remoting is not enabled")
     }

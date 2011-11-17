@@ -141,13 +141,13 @@ object ActorModelSpec {
   }
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
-    stops: Long = dispatcher.stops.get())(implicit app: ActorSystem) {
+    stops: Long = dispatcher.stops.get())(implicit system: ActorSystem) {
     val deadline = System.currentTimeMillis + dispatcher.timeoutMs * 5
     try {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        app.eventStream.publish(Error(e, dispatcher, "actual: stops=" + dispatcher.stops.get +
+        system.eventStream.publish(Error(e, dispatcher, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
     }
@@ -173,7 +173,7 @@ object ActorModelSpec {
     unregisters: Long = 0,
     msgsReceived: Long = 0,
     msgsProcessed: Long = 0,
-    restarts: Long = 0)(implicit app: ActorSystem) {
+    restarts: Long = 0)(implicit system: ActorSystem) {
     assertRef(actorRef, dispatcher)(
       suspensions,
       resumes,
@@ -191,7 +191,7 @@ object ActorModelSpec {
     unregisters: Long = statsFor(actorRef).unregisters.get(),
     msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
-    restarts: Long = statsFor(actorRef).restarts.get())(implicit app: ActorSystem) {
+    restarts: Long = statsFor(actorRef).restarts.get())(implicit system: ActorSystem) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -204,7 +204,7 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        app.eventStream.publish(Error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        system.eventStream.publish(Error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
           ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e
@@ -227,7 +227,7 @@ abstract class ActorModelSpec extends AkkaSpec {
 
   import ActorModelSpec._
 
-  def newTestActor(dispatcher: MessageDispatcher) = app.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
+  def newTestActor(dispatcher: MessageDispatcher) = system.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String
@@ -310,7 +310,7 @@ abstract class ActorModelSpec extends AkkaSpec {
           try {
             f
           } catch {
-            case e ⇒ app.eventStream.publish(Error(e, this, "error in spawned thread"))
+            case e ⇒ system.eventStream.publish(Error(e, this, "error in spawned thread"))
           }
         }
       }
@@ -407,10 +407,10 @@ class DispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(app, "foo", app.AkkaConfig.DispatcherThroughput,
-      app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
-      config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
+    new Dispatcher(system.dispatcherFactory.prerequisites, "foo", system.settings.DispatcherThroughput,
+      system.dispatcherFactory.ThroughputDeadlineTimeMillis, system.dispatcherFactory.MailboxType,
+      config, system.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
+    ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Dispatcher"
 
@@ -444,14 +444,14 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new BalancingDispatcher(app, "foo", 1, // TODO check why 1 here? (came from old test)
-      app.dispatcherFactory.ThroughputDeadlineTimeMillis, app.dispatcherFactory.MailboxType,
-      config, app.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
-    ThreadPoolConfig(app)).build.asInstanceOf[MessageDispatcherInterceptor]
+    new BalancingDispatcher(system.dispatcherFactory.prerequisites, "foo", 1, // TODO check why 1 here? (came from old test)
+      system.dispatcherFactory.ThroughputDeadlineTimeMillis, system.dispatcherFactory.MailboxType,
+      config, system.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
+    ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
 
-  override def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = app.dispatcher
+  override def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = system.dispatcher
 
   "A " + dispatcherType must {
     "process messages in parallel" in {

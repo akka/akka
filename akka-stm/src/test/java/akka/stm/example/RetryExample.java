@@ -10,7 +10,7 @@ public class RetryExample {
         System.out.println("Retry example");
         System.out.println();
 
-        ActorSystem application = new ActorSystem("RetryExample");
+        ActorSystem application = ActorSystem.create("RetryExample");
 
         final Ref<Double> account1 = new Ref<Double>(100.0);
         final Ref<Double> account2 = new Ref<Double>(100.0);
