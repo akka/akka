@@ -4,14 +4,13 @@
 package akka.zeromq
 
 import com.google.protobuf.Message
-import akka.zeromq.SocketOptionType._
 
 sealed trait Request
+sealed trait SocketOption extends Request
+sealed trait SocketOptionQuery extends Request
 
 case class Connect(endpoint: String) extends Request
 case class Bind(endpoint: String) extends Request
-case class SetSocketOption(optionType: SocketOptionType, value: Any)
-case class GetSocketOption(optionType: SocketOptionType)
 private[zeromq] case object Close extends Request
 
 case class Subscribe(payload: Seq[Byte]) extends Request
@@ -43,3 +42,6 @@ object ZMQMessage {
     ZMQMessage(message.toByteArray)
   }
 }
+
+case class Linger(value: Long) extends SocketOption
+object Linger extends SocketOptionQuery
