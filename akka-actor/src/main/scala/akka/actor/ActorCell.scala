@@ -347,7 +347,9 @@ private[akka] class ActorCell(
   }
 
   private def doTerminate() {
-    app.provider.evict(self.path.toString)
+    if (!app.provider.evict(self.path.toString))
+      app.eventStream.publish(Warning(self, "evict of " + self.path.toString + " failed"))
+
     dispatcher.detach(this)
 
     try {
