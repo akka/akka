@@ -16,7 +16,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
 
   "The default configuration file (i.e. akka-reference.conf)" should {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {
-      val config = ActorSystem("ConfigSpec").config
+      val config = ActorSystem("ConfigSpec").settings.config
 
       import config._
 

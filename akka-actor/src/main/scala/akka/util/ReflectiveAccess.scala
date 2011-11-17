@@ -112,29 +112,3 @@ object ReflectiveAccess {
 
 }
 
-/**
- * Helper class for reflective access to different modules in order to allow optional loading of modules.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ReflectiveAccess(val app: ActorSystem) {
-
-  import ReflectiveAccess._
-
-  def providerClass: Class[_] = {
-    getClassFor(app.AkkaConfig.ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-  }
-
-  def createProvider: ActorRefProvider = {
-    val params: Array[Class[_]] = Array(classOf[ActorSystem])
-    val args: Array[AnyRef] = Array(app)
-
-    createInstance[ActorRefProvider](providerClass, params, args) match {
-      case Right(p) ⇒ p
-      case Left(e)  ⇒ throw e
-    }
-  }
-}

@@ -45,7 +45,7 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def handleChildTerminated(child: ActorRef): Unit
 
-  def app: ActorSystem
+  def system: ActorSystem
 
   def parent: ActorRef
 }
@@ -63,7 +63,7 @@ private[akka] object ActorCell {
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 private[akka] class ActorCell(
-  val app: ActorSystem,
+  val system: ActorSystemImpl,
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   val parent: ActorRef,
@@ -72,11 +72,13 @@ private[akka] class ActorCell(
 
   import ActorCell._
 
+  def systemImpl = system
+
   protected final def guardian = self
 
-  protected def typedActor = app.typedActor
+  protected def typedActor = system.typedActor
 
-  final def provider = app.provider
+  final def provider = system.provider
 
   var futureTimeout: Option[Cancellable] = None
 
@@ -91,7 +93,7 @@ private[akka] class ActorCell(
   var stopping = false
 
   @inline
-  final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
+  final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
 
   final def isShutdown: Boolean = mailbox.isClosed
 
@@ -139,12 +141,12 @@ private[akka] class ActorCell(
   }
 
   final def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) app.deadLetters else sender))
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
 
   final def sender: ActorRef = currentMessage match {
-    case null                      ⇒ app.deadLetters
+    case null                      ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
-    case _                         ⇒ app.deadLetters
+    case _                         ⇒ system.deadLetters
   }
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
@@ -172,11 +174,11 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "started (" + actor + ")"))
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "started (" + actor + ")"))
     } catch {
       case e ⇒
         try {
-          app.eventStream.publish(Error(e, self, "error while creating actor"))
+          system.eventStream.publish(Error(e, self, "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
@@ -186,7 +188,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarting"))
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "restarting"))
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -200,14 +202,14 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarted"))
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "restarted"))
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
       props.faultHandler.handleSupervisorRestarted(cause, self, children)
     } catch {
       case e ⇒ try {
-        app.eventStream.publish(Error(e, self, "error while creating actor"))
+        system.eventStream.publish(Error(e, self, "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
@@ -226,7 +228,7 @@ private[akka] class ActorCell(
       val c = children
       if (c.isEmpty) doTerminate()
       else {
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "stopping"))
         for (child ← c) child.stop()
         stopping = true
       }
@@ -237,8 +239,8 @@ private[akka] class ActorCell(
       if (!stats.contains(child)) {
         childrenRefs = childrenRefs.updated(child.name, child)
         childrenStats = childrenStats.updated(child, ChildRestartStats())
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now supervising " + child))
-      } else app.eventStream.publish(Warning(self, "Already supervising " + child))
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "now supervising " + child))
+      } else system.eventStream.publish(Warning(self, "Already supervising " + child))
     }
 
     try {
@@ -252,11 +254,11 @@ private[akka] class ActorCell(
           case Create()        ⇒ create()
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
-            app.deathWatch.subscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now monitoring " + subject))
+            system.deathWatch.subscribe(self, subject)
+            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "now monitoring " + subject))
           case Unlink(subject) ⇒
-            app.deathWatch.unsubscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped monitoring " + subject))
+            system.deathWatch.unsubscribe(self, subject)
+            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "stopped monitoring " + subject))
           case Suspend()        ⇒ suspend()
           case Resume()         ⇒ resume()
           case Terminate()      ⇒ terminate()
@@ -265,7 +267,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
-        app.eventStream.publish(Error(e, self, "error while processing " + message))
+        system.eventStream.publish(Error(e, self, "error while processing " + message))
         //TODO FIXME How should problems here be handled?
         throw e
     }
@@ -284,7 +286,7 @@ private[akka] class ActorCell(
               case msg ⇒
                 if (stopping) {
                   // receiving Terminated in response to stopping children is too common to generate noise
-                  if (!msg.isInstanceOf[Terminated]) app.deadLetterMailbox.enqueue(self, messageHandle)
+                  if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
                 } else {
                   actor(msg)
                 }
@@ -292,7 +294,7 @@ private[akka] class ActorCell(
             currentMessage = null // reset current message after successful invocation
           } catch {
             case e ⇒
-              app.eventStream.publish(Error(e, self, e.getMessage))
+              system.eventStream.publish(Error(e, self, e.getMessage))
 
               // prevent any further messages to be processed until the actor has been restarted
               dispatcher.suspend(this)
@@ -312,7 +314,7 @@ private[akka] class ActorCell(
           }
         } catch {
           case e ⇒
-            app.eventStream.publish(Error(e, self, e.getMessage))
+            system.eventStream.publish(Error(e, self, e.getMessage))
             throw e
         }
       }
@@ -330,11 +332,11 @@ private[akka] class ActorCell(
   }
 
   def autoReceiveMessage(msg: Envelope) {
-    if (app.AkkaConfig.DebugAutoReceive) app.eventStream.publish(Debug(self, "received AutoReceiveMessage " + msg))
+    if (system.settings.DebugAutoReceive) system.eventStream.publish(Debug(self, "received AutoReceiveMessage " + msg))
 
     if (stopping) msg.message match {
       case ChildTerminated ⇒ handleChildTerminated(sender)
-      case _               ⇒ app.deadLetterMailbox.enqueue(self, msg)
+      case _               ⇒ system.deadLetterMailbox.enqueue(self, msg)
     }
     else msg.message match {
       case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
@@ -347,7 +349,7 @@ private[akka] class ActorCell(
   }
 
   private def doTerminate() {
-    app.provider.evict(self.path.toString)
+    system.provider.evict(self.path.toString)
     dispatcher.detach(this)
 
     try {
@@ -356,8 +358,8 @@ private[akka] class ActorCell(
     } finally {
       try {
         parent.tell(ChildTerminated, self)
-        app.deathWatch.publish(Terminated(self))
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped"))
+        system.deathWatch.publish(Terminated(self))
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self, "stopped"))
       } finally {
         currentMessage = null
         clearActorFields()
@@ -367,7 +369,7 @@ private[akka] class ActorCell(
 
   final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenStats.get(child) match {
     case Some(stats) ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenStats)) throw cause
-    case None        ⇒ app.eventStream.publish(Warning(self, "dropping Failed(" + cause + ") from unknown child"))
+    case None        ⇒ system.eventStream.publish(Warning(self, "dropping Failed(" + cause + ") from unknown child"))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
@@ -385,7 +387,7 @@ private[akka] class ActorCell(
     val recvtimeout = receiveTimeout
     if (recvtimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
       //Only reschedule if desired and there are currently no more messages to be processed
-      futureTimeout = Some(app.scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
+      futureTimeout = Some(system.scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
     }
   }
 

@@ -24,7 +24,7 @@
 
 // public class Pi {
 
-//   private static final ActorSystem app = new ActorSystem();
+//   private static final ActorSystem system = new ActorSystem();
 
 //   public static void main(String[] args) throws Exception {
 //     Pi pi = new Pi();
@@ -109,11 +109,11 @@
 
 //       LinkedList<ActorRef> workers = new LinkedList<ActorRef>();
 //       for (int i = 0; i < nrOfWorkers; i++) {
-//           ActorRef worker = app.actorOf(Worker.class);
+//           ActorRef worker = system.actorOf(Worker.class);
 //           workers.add(worker);
 //       }
 
-//       router = app.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
+//       router = system.actorOf(new RoutedProps().withRoundRobinRouter().withLocalConnections(workers), "pi");
 //     }
 
 //     // message handler
@@ -167,7 +167,7 @@
 //     final CountDownLatch latch = new CountDownLatch(1);
 
 //     // create the master
-//     ActorRef master = app.actorOf(new UntypedActorFactory() {
+//     ActorRef master = system.actorOf(new UntypedActorFactory() {
 //       public UntypedActor create() {
 //         return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
 //       }

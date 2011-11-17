@@ -128,7 +128,7 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val app: ActorSystem) {
+abstract class RemoteSupport(val system: ActorSystem) {
   /**
    * Shuts down the remoting
    */
@@ -162,7 +162,7 @@ abstract class RemoteSupport(val app: ActorSystem) {
                            recipient: ActorRef,
                            loader: Option[ClassLoader]): Unit
 
-  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = app.eventStream.publish(message)
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = system.eventStream.publish(message)
 
   override def toString = name
 }

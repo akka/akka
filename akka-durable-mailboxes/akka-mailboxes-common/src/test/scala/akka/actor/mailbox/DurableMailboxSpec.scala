@@ -26,7 +26,7 @@ object DurableMailboxSpecActorFactory {
 abstract class DurableMailboxSpec(val backendName: String, val mailboxType: DurableMailboxType) extends AkkaSpec with BeforeAndAfterEach {
   import DurableMailboxSpecActorFactory._
 
-  implicit val dispatcher = new Dispatchers(app).newDispatcher(backendName, throughput = 1, mailboxType = mailboxType).build
+  implicit val dispatcher = new Dispatchers(system.settings, system.eventStream, system.deadLetterMailbox, system.scheduler).newDispatcher(backendName, throughput = 1, mailboxType = mailboxType).build
 
   def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef =
     actorOf(Props(new MailboxTestActor).withDispatcher(dispatcher))

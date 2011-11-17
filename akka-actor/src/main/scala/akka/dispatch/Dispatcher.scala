@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
 import akka.actor.{ ActorCell, ActorKilledException }
 import akka.actor.ActorSystem
+import akka.event.EventStream
+import akka.actor.Scheduler
 
 /**
  * Default settings are:
@@ -62,14 +64,16 @@ import akka.actor.ActorSystem
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
 class Dispatcher(
-  _app: ActorSystem,
+  _deadLetterMailbox: Mailbox,
+  _eventStream: EventStream,
+  _scheduler: Scheduler,
   val name: String,
   val throughput: Int,
   val throughputDeadlineTime: Int,
   val mailboxType: MailboxType,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   val timeoutMs: Long)
-  extends MessageDispatcher(_app) {
+  extends MessageDispatcher(_deadLetterMailbox, _eventStream, _scheduler) {
 
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
   protected[akka] val executorService = new AtomicReference[ExecutorService](new ExecutorServiceDelegate {
@@ -97,7 +101,7 @@ class Dispatcher(
           executorService.get() execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            app.eventStream.publish(Warning(this, e2.toString))
+            eventStream.publish(Warning(this, e2.toString))
             throw e2
         }
     }

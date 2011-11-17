@@ -247,7 +247,7 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      Serialization.app.withValue(app) {
+      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         val readA = in.readObject
 
@@ -257,7 +257,7 @@ class ActorRefSpec extends AkkaSpec {
       }
     }
 
-    "throw an exception on deserialize if no app in scope" in {
+    "throw an exception on deserialize if no system in scope" in {
       val a = actorOf[InnerActor]
 
       import java.io._
@@ -275,7 +275,7 @@ class ActorRefSpec extends AkkaSpec {
       (intercept[java.lang.IllegalStateException] {
         in.readObject
       }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }"
+        " Use akka.serialization.Serialization.system.withValue(akkaApplication) { ... }"
     }
 
     "must throw exception on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
@@ -284,14 +284,15 @@ class ActorRefSpec extends AkkaSpec {
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      val serialized = SerializedActorRef(app.address.hostname, app.address.port, "/this/path/does/not/exist")
+      val addr = system.rootPath.remoteAddress
+      val serialized = SerializedActorRef(addr.hostname, addr.port, "/this/path/does/not/exist")
 
       out.writeObject(serialized)
 
       out.flush
       out.close
 
-      Serialization.app.withValue(app) {
+      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         (intercept[java.lang.IllegalStateException] {
           in.readObject

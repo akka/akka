@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 /*
  * This class is responsible for booting up a stack of bundles and then shutting them down
  */
-class AkkaLoader(app: ActorSystem) {
+class AkkaLoader(system: ActorSystem) {
   private val hasBooted = new Switch(false)
 
   @volatile

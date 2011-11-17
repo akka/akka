@@ -12,7 +12,7 @@ public class UntypedCoordinatedExample {
         System.out.println("Untyped transactor example");
         System.out.println();
 
-        ActorSystem application = new ActorSystem("UntypedCoordinatedExample");
+        ActorSystem application = ActorSystem.create("UntypedCoordinatedExample");
 
         ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
         ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));

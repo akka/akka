@@ -18,12 +18,12 @@ class PriorityDispatcherSpec extends AkkaSpec {
       testOrdering(BoundedPriorityMailbox(PriorityGenerator({
         case i: Int  ⇒ i //Reverse order
         case 'Result ⇒ Int.MaxValue
-      }: Any ⇒ Int), 1000, app.AkkaConfig.MailboxPushTimeout))
+      }: Any ⇒ Int), 1000, system.settings.MailboxPushTimeout))
     }
   }
 
   def testOrdering(mboxType: MailboxType) {
-    val dispatcher = app.dispatcherFactory.newDispatcher("Test", 1, -1, mboxType).build
+    val dispatcher = system.dispatcherFactory.newDispatcher("Test", 1, -1, mboxType).build
 
     val actor = actorOf(Props(new Actor {
       var acc: List[Int] = Nil

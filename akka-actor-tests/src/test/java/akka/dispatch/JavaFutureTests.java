@@ -19,9 +19,9 @@ import scala.Right;
 
 public class JavaFutureTests {
 
-    private final ActorSystem app = new ActorSystem();
-    private final Timeout t = app.AkkaConfig().ActorTimeout();
-    private final FutureFactory ff = new FutureFactory(app.dispatcher(), t);
+    private final ActorSystem system = ActorSystem.create();
+    private final Timeout t = system.settings().ActorTimeout();
+    private final FutureFactory ff = new FutureFactory(system.dispatcher(), t);
 
     @Test public void mustBeAbleToMapAFuture() {
         Future<String> f1 = ff.future(new Callable<String>() {
@@ -41,7 +41,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToExecuteAnOnResultCallback() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       f.onResult(new Procedure<String>() {
           public void apply(String result) {
@@ -57,7 +57,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToExecuteAnOnExceptionCallback() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       f.onException(new Procedure<Throwable>() {
           public void apply(Throwable t) {
@@ -74,7 +74,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToExecuteAnOnTimeoutCallback() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       f.onTimeout(new Procedure<Future<String>>() {
           public void apply(Future<String> future) {
@@ -88,7 +88,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToExecuteAnOnCompleteCallback() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       f.onComplete(new Procedure<Future<String>>() {
           public void apply(akka.dispatch.Future<String> future) {
@@ -103,7 +103,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToForeachAFuture() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       f.foreach(new Procedure<String>() {
           public void apply(String future) {
@@ -118,13 +118,13 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToFlatMapAFuture() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       cf.completeWithResult("1000");
       Future<String> f = cf;
       Future<Integer> r = f.flatMap(new Function<String, Future<Integer>>() {
             public Future<Integer> apply(String r) {
                 latch.countDown();
-                Promise<Integer> cf = new akka.dispatch.DefaultPromise<Integer>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+                Promise<Integer> cf = new akka.dispatch.DefaultPromise<Integer>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
                 cf.completeWithResult(Integer.parseInt(r));
                 return cf;
             }
@@ -137,7 +137,7 @@ public class JavaFutureTests {
 
     @Test public void mustBeAbleToFilterAFuture() throws Throwable {
       final CountDownLatch latch = new CountDownLatch(1);
-      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, app.dispatcherFactory().defaultGlobalDispatcher());
+      Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system.dispatcherFactory().defaultGlobalDispatcher());
       Future<String> f = cf;
       Future<String> r = f.filter(new Function<String, Boolean>() {
           public Boolean apply(String r) {

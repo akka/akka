@@ -19,14 +19,14 @@ class ConfiggyPropertyPlaceholderConfigurer extends PropertyPlaceholderConfigure
    */
   override def setLocation(configgyResource: Resource) {
     if (configgyResource eq null) throw new IllegalArgumentException("Property 'config' must be set")
-    val properties = loadAkkaConfig(configgyResource)
+    val properties = loadSettings(configgyResource)
     setProperties(properties)
   }
 
   /**
    * Load the akka.conf and transform to properties.
    */
-  private def loadAkkaConfig(configgyResource: Resource): Properties = {
+  private def loadSettings(configgyResource: Resource): Properties = {
     val config = Configuration.fromFile(configgyResource.getFile.getPath)
     val properties = new Properties()
     config.map.foreach { case (k, v) ⇒ properties.put(k, v.asInstanceOf[AnyRef]); println("(k,v)=" + k + ", " + v) }

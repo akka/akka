@@ -10,6 +10,8 @@ import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, Concur
 import java.util.{ Comparator, Queue }
 import annotation.tailrec
 import akka.actor.ActorSystem
+import akka.event.EventStream
+import akka.actor.Scheduler
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -28,16 +30,16 @@ import akka.actor.ActorSystem
  * @author Viktor Klang
  */
 class BalancingDispatcher(
-  _app: ActorSystem,
+  _deadLetterMailbox: Mailbox,
+  _eventStream: EventStream,
+  _scheduler: Scheduler,
   _name: String,
   throughput: Int,
   throughputDeadlineTime: Int,
   mailboxType: MailboxType,
   config: ThreadPoolConfig,
   _timeoutMs: Long)
-  extends Dispatcher(_app, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
-
-  import app.deadLetterMailbox
+  extends Dispatcher(_deadLetterMailbox, _eventStream, _scheduler, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
   private val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
 

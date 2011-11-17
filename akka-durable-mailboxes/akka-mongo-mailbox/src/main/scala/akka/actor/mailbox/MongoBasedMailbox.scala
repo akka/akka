@@ -28,17 +28,17 @@ class MongoBasedMailboxException(message: String) extends AkkaException(message)
  */
 class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
-  implicit val mailboxBSONSer = new BSONSerializableMailbox(app)
+  implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
   val URI_CONFIG_KEY = "akka.actor.mailbox.mongodb.uri"
   val WRITE_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.write"
   val READ_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.read"
-  val mongoURI = app.config.getString(URI_CONFIG_KEY)
-  val writeTimeout = app.config.getInt(WRITE_TIMEOUT_KEY, 3000)
-  val readTimeout = app.config.getInt(READ_TIMEOUT_KEY, 3000)
+  val mongoURI = system.settings.config.getString(URI_CONFIG_KEY)
+  val writeTimeout = system.settings.config.getInt(WRITE_TIMEOUT_KEY, 3000)
+  val readTimeout = system.settings.config.getInt(READ_TIMEOUT_KEY, 3000)
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
   @volatile
   private var mongo = connect()

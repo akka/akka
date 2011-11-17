@@ -6,7 +6,7 @@ package akka.event
 import akka.testkit.AkkaSpec
 import akka.config.Configuration
 import akka.util.duration._
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
 
 object EventStreamSpec {
   case class M(i: Int)
@@ -14,7 +14,7 @@ object EventStreamSpec {
   case class SetTarget(ref: ActorRef)
 
   class MyLog extends Actor {
-    var dst: ActorRef = app.deadLetters
+    var dst: ActorRef = system.deadLetters
     def receive = {
       case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget]); sender ! Logging.LoggerInitialized
       case SetTarget(ref)                ⇒ dst = ref; dst ! "OK"
@@ -36,11 +36,13 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
   import EventStreamSpec._
 
+  val impl = system.asInstanceOf[ActorSystemImpl]
+
   "An EventStream" must {
 
     "manage subscriptions" in {
       val bus = new EventStream(true)
-      bus.start(app)
+      bus.start(impl)
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
       within(1 second) {
@@ -53,8 +55,8 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
     "manage log levels" in {
       val bus = new EventStream(false)
-      bus.start(app)
-      bus.startDefaultLoggers(app, app.AkkaConfig)
+      bus.start(impl)
+      bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
       within(2 seconds) {
@@ -75,7 +77,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
       val b2 = new B2
       val c = new C
       val bus = new EventStream(false)
-      bus.start(app)
+      bus.start(impl)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) === true
         bus.publish(c)

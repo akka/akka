@@ -7,7 +7,7 @@ package akka.serialization
 import akka.serialization.Serialization._
 import scala.reflect._
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ActorSystemImpl }
 import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import akka.actor.DeadLetterActorRef
 
@@ -24,7 +24,8 @@ object SerializeSpec {
 class SerializeSpec extends AkkaSpec {
   import SerializeSpec._
 
-  import app.serialization._
+  val ser = system.serialization
+  import ser._
 
   "Serialization" must {
 
@@ -68,13 +69,13 @@ class SerializeSpec extends AkkaSpec {
     "serialize DeadLetterActorRef" in {
       val outbuf = new ByteArrayOutputStream()
       val out = new ObjectOutputStream(outbuf)
-      val a = new ActorSystem()
+      val a = ActorSystem()
       out.writeObject(a.deadLetters)
       out.flush()
       out.close()
 
       val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-      Serialization.app.withValue(a) {
+      Serialization.system.withValue(a.asInstanceOf[ActorSystemImpl]) {
         val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
         (deadLetters eq a.deadLetters) must be(true)
       }

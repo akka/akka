@@ -14,14 +14,14 @@ import akka.util.Bootable
  */
 trait BootableActorLoaderService extends Bootable {
 
-  def app: ActorSystem
+  def system: ActorSystem
 
-  val BOOT_CLASSES = app.AkkaConfig.BootClasses
+  val BOOT_CLASSES = system.settings.BootClasses
   lazy val applicationLoader = createApplicationClassLoader()
 
   protected def createApplicationClassLoader(): Option[ClassLoader] = Some({
-    if (app.AkkaConfig.Home.isDefined) {
-      val DEPLOY = app.AkkaConfig.Home.get + "/deploy"
+    if (system.settings.Home.isDefined) {
+      val DEPLOY = system.settings.Home.get + "/deploy"
       val DEPLOY_DIR = new File(DEPLOY)
       if (!DEPLOY_DIR.exists) {
         System.exit(-1)
@@ -59,11 +59,11 @@ trait BootableActorLoaderService extends Bootable {
     super.onUnload()
 
     // FIXME shutdown all actors
-    // app.registry.local.shutdownAll
+    // system.registry.local.shutdownAll
   }
 }
 
 /**
  * Java API for the default JAX-RS/Mist Initializer
  */
-class DefaultBootableActorLoaderService(val app: ActorSystem) extends BootableActorLoaderService
+class DefaultBootableActorLoaderService(val system: ActorSystem) extends BootableActorLoaderService

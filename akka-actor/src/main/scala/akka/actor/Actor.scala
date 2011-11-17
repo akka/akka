@@ -150,11 +150,11 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit app: ActorSystem) = app.AkkaConfig.ActorTimeout
+  implicit def defaultTimeout(implicit system: ActorSystem) = system.settings.ActorTimeout
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(app.eventStream, context.self)
+  val log = akka.event.Logging(system.eventStream, context.self)
 }
 
 object Actor {
@@ -164,17 +164,17 @@ object Actor {
   /**
    * This decorator adds invocation logging to a Receive function.
    */
-  class LoggingReceive(source: AnyRef, r: Receive)(implicit app: ActorSystem) extends Receive {
+  class LoggingReceive(source: AnyRef, r: Receive)(implicit system: ActorSystem) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      app.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
+      system.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
       handled
     }
     def apply(o: Any): Unit = r(o)
   }
 
   object LoggingReceive {
-    def apply(source: AnyRef, r: Receive)(implicit app: ActorSystem): Receive = r match {
+    def apply(source: AnyRef, r: Receive)(implicit system: ActorSystem): Receive = r match {
       case _: LoggingReceive ⇒ r
       case _                 ⇒ new LoggingReceive(source, r)
     }
@@ -229,12 +229,12 @@ trait Actor {
     c
   }
 
-  implicit def app = context.app
+  implicit def system = context.system
 
   /**
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
-  implicit def defaultTimeout = app.AkkaConfig.ActorTimeout
+  implicit def defaultTimeout = system.settings.ActorTimeout
 
   /**
    * Wrap a Receive partial function in a logging enclosure, which sends a
@@ -250,7 +250,7 @@ trait Actor {
    * This method does NOT modify the given Receive unless
    * akka.actor.debug.receive is set within akka.conf.
    */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (app.AkkaConfig.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
+  def loggable(self: AnyRef)(r: Receive): Receive = if (system.settings.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
    * The 'self' field holds the ActorRef for this actor.

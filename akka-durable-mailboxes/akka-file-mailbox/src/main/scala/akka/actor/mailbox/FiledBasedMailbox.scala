@@ -19,13 +19,13 @@ object FileBasedMailbox {
 
 class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
-  val queuePath = FileBasedMailbox.queuePath(owner.app.config)
+  val queuePath = FileBasedMailbox.queuePath(owner.system.settings.config)
 
   private val queue = try {
     try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case e ⇒ {} }
-    val queue = new filequeue.PersistentQueue(queuePath, name, owner.app.config, log)
+    val queue = new filequeue.PersistentQueue(queuePath, name, owner.system.settings.config, log)
     queue.setup // replays journal
     queue.discardExpired
     queue

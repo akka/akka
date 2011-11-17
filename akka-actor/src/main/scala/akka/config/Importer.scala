@@ -54,7 +54,7 @@ class FilesystemImporter(val baseDir: String) extends Importer {
 
 /**
  * An Importer that looks for imported config files in the java resources
- * of the system class loader (usually the jar used to launch this app).
+ * of the system class loader (usually the jar used to launch this system).
  */
 class ResourceImporter(classLoader: ClassLoader) extends Importer {
   def importFile(filename: String): String = {

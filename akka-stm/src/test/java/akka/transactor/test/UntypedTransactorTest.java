@@ -27,7 +27,7 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedTransactorTest {
-    ActorSystem application = new ActorSystem("UntypedTransactorTest");
+    ActorSystem application = ActorSystem.create("UntypedTransactorTest");
 
     List<ActorRef> counters;
     ActorRef failer;

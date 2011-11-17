@@ -3,9 +3,9 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, simpleName }
+import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, ActorSystemImpl, simpleName }
 import akka.AkkaException
-import akka.actor.ActorSystem.AkkaConfig
+import akka.actor.ActorSystem.Settings
 import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
@@ -13,6 +13,7 @@ import akka.util.duration._
 import akka.actor.Timeout
 import akka.dispatch.FutureTimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+import akka.actor.ActorRefProvider
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -65,7 +66,7 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  private[akka] def startStdoutLogger(config: AkkaConfig) {
+  private[akka] def startStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
@@ -78,13 +79,13 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "StandardOutLogger started"))
   }
 
-  private[akka] def startDefaultLoggers(app: ActorSystem, config: AkkaConfig) {
-    val level = levelFor(config.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.LogLevel))
+  private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
+    val level = levelFor(system.settings.LogLevel) getOrElse {
+      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
-      val defaultLoggers = config.EventHandlers match {
+      val defaultLoggers = system.settings.EventHandlers match {
         case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
         case loggers ⇒ loggers
       }
@@ -94,7 +95,7 @@ trait LoggingBus extends ActorEventBus {
       } yield {
         try {
           ReflectiveAccess.getClassFor[Actor](loggerName) match {
-            case Right(actorClass) ⇒ addLogger(app, actorClass, level)
+            case Right(actorClass) ⇒ addLogger(system, actorClass, level)
             case Left(exception)   ⇒ throw exception
           }
         } catch {
@@ -137,9 +138,9 @@ trait LoggingBus extends ActorEventBus {
     publish(Info(this, "all default loggers stopped"))
   }
 
-  private def addLogger(app: ActorSystem, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
+  private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
     val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
-    val actor = app.systemActorOf(Props(clazz), name)
+    val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
     val response = try actor ? InitializeLogger(this) get catch {
       case _: FutureTimeoutException ⇒
@@ -236,12 +237,12 @@ object Logging {
    * Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.
    */
-  def apply(app: ActorSystem, source: AnyRef): LoggingAdapter = new BusLogging(app.eventStream, source)
+  def apply(system: ActorSystem, source: AnyRef): LoggingAdapter = new BusLogging(system.eventStream, source)
   /**
    * Java API: Obtain LoggingAdapter for the given application and source object. The
    * source object is used to identify the source of this logging channel.
    */
-  def getLogger(app: ActorSystem, source: AnyRef): LoggingAdapter = apply(app, source)
+  def getLogger(system: ActorSystem, source: AnyRef): LoggingAdapter = apply(system, source)
   /**
    * Obtain LoggingAdapter for the given event bus and source object. The
    * source object is used to identify the source of this logging channel.

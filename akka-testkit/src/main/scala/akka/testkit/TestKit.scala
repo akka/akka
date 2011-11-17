@@ -76,11 +76,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: ActorSystem) {
+class TestKit(_system: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val app = _app
+  implicit val system = _system
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -91,8 +91,12 @@ class TestKit(_app: ActorSystem) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)),
-    "testActor" + TestKit.testActorId.incrementAndGet)
+  val testActor: ActorRef = {
+    val impl = system.asInstanceOf[ActorSystemImpl]
+    impl.systemActorOf(Props(new TestActor(queue))
+      .copy(dispatcher = new CallingThreadDispatcher(impl.deadLetterMailbox, impl.eventStream, impl.scheduler)),
+      "testActor" + TestKit.testActorId.incrementAndGet)
+  }
 
   private var end: Duration = Duration.Undefined
 
@@ -121,9 +125,9 @@ class TestKit(_app: ActorSystem) {
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
-   * case from AkkaConfig (key "akka.test.single-expect-default").
+   * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) app.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) system.settings.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.
@@ -594,7 +598,7 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 }
 
 object TestProbe {
-  def apply()(implicit app: ActorSystem) = new TestProbe(app)
+  def apply()(implicit system: ActorSystem) = new TestProbe(system)
 }
 
 trait ImplicitSender { this: TestKit ⇒

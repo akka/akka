@@ -32,7 +32,7 @@ case class TakenBy(hakker: ActorRef)
 class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
 
   // A chopstick begins its existence as available and taken by no one
-  startWith(Available, TakenBy(app.deadLetters))
+  startWith(Available, TakenBy(system.deadLetters))
 
   // When a chopstick is available, it can be taken by a some hakker
   when(Available) {
@@ -47,7 +47,7 @@ class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
     case Event(Take, currentState) ⇒
       stay replying Busy(self)
     case Event(Put, TakenBy(hakker)) if sender == hakker ⇒
-      goto(Available) using TakenBy(app.deadLetters)
+      goto(Available) using TakenBy(system.deadLetters)
   }
 
   // Initialze the chopstick
@@ -163,15 +163,15 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
  */
 object DiningHakkersOnFsm {
 
-  val app = ActorSystem()
+  val system = ActorSystem()
 
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield app.actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield system.actorOf(new Chopstick("Chopstick " + i))
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield app.actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
+    } yield system.actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     hakkers.foreach(_ ! Think)
   }

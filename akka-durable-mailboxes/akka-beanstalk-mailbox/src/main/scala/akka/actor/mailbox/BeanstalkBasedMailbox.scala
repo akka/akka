@@ -20,15 +20,15 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
  */
 class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val hostname = app.config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
-  val port = app.config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
-  def defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
-  val reconnectWindow = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitDelay = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitTimeout = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt
-  val messageTimeToLive = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), defaultTimeUnit).toSeconds.toInt
+  val hostname = system.settings.config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
+  val port = system.settings.config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
+  def defaultTimeUnit = system.settings.DefaultTimeUnit
+  val reconnectWindow = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), defaultTimeUnit).toSeconds.toInt
+  val messageSubmitDelay = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), defaultTimeUnit).toSeconds.toInt
+  val messageSubmitTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt
+  val messageTimeToLive = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), defaultTimeUnit).toSeconds.toInt
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
   private val queue = new ThreadLocal[Client] { override def initialValue = connect(name) }
 

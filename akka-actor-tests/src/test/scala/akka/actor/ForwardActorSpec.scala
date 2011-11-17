@@ -12,12 +12,12 @@ import akka.util.Duration
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
-  def createForwardingChain(app: ActorSystem): ActorRef = {
-    val replier = app.actorOf(new Actor {
+  def createForwardingChain(system: ActorSystem): ActorRef = {
+    val replier = system.actorOf(new Actor {
       def receive = { case x ⇒ sender ! x }
     })
 
-    def mkforwarder(forwardTo: ActorRef) = app.actorOf(
+    def mkforwarder(forwardTo: ActorRef) = system.actorOf(
       new Actor {
         def receive = { case x ⇒ forwardTo forward x }
       })
@@ -37,14 +37,14 @@ class ForwardActorSpec extends AkkaSpec {
 
       val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
 
-      val chain = createForwardingChain(app)
+      val chain = createForwardingChain(system)
 
       chain.tell(ExpectedMessage, replyTo)
       latch.await(Duration(5, "s")) must be === true
     }
 
     "forward actor reference when invoking forward on bang bang" in {
-      val chain = createForwardingChain(app)
+      val chain = createForwardingChain(system)
       chain.ask(ExpectedMessage, 5000).get must be === ExpectedMessage
     }
   }

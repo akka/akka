@@ -16,7 +16,7 @@ import akka.testkit.AkkaSpec
 class RestartStrategySpec extends AkkaSpec {
 
   override def atStartup {
-    app.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
+    system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
   object Ping

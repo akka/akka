@@ -14,13 +14,13 @@ import javax.servlet.{ ServletContextListener, ServletContextEvent }
 /**
  * This class can be added to web.xml mappings as a listener to start and postStop Akka.
  *
- * <web-app>
+ * <web-system>
  * ...
  *  <listener>
  *    <listener-class>akka.servlet.Initializer</listener-class>
  *  </listener>
  * ...
- * </web-app>
+ * </web-system>
  */
 class Initializer extends ServletContextListener {
   lazy val loader = new AkkaLoader

@@ -29,7 +29,7 @@ class TypedActorPoolSpec extends AkkaSpec {
   import ActorPoolSpec._
   "Actor Pool (2)" must {
     "support typed actors" in {
-      val pool = app.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
+      val pool = system.createProxy[Foo](new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
         def lowerBound = 1
         def upperBound = 5
         def pressureThreshold = 1
@@ -38,7 +38,7 @@ class TypedActorPoolSpec extends AkkaSpec {
         def rampupRate = 0.1
         def backoffRate = 0.50
         def backoffThreshold = 0.50
-        def instance(p: Props) = app.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
+        def instance(p: Props) = system.typedActor.getActorRefFor(context.typedActorOf[Foo, FooImpl](props = p.withTimeout(10 seconds)))
         def receive = _route
       }, Props().withTimeout(10 seconds).withFaultHandler(faultHandler))
 
@@ -47,7 +47,7 @@ class TypedActorPoolSpec extends AkkaSpec {
       for ((i, r) ← results)
         r.get must equal(i * i)
 
-      app.typedActor.stop(pool)
+      system.typedActor.stop(pool)
     }
   }
 }

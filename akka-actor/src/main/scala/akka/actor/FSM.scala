@@ -28,14 +28,14 @@ object FSM {
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
 
-  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: ActorSystem) {
+  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit system: ActorSystem) {
     private var ref: Option[Cancellable] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
-        ref = Some(app.scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
+        ref = Some(system.scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
       } else {
-        ref = Some(app.scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
+        ref = Some(system.scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
       }
     }
 
@@ -188,7 +188,7 @@ trait FSM[S, D] extends ListenerManagement {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val log = Logging(app.eventStream, context.self)
+  val log = Logging(system, context.self)
 
   /**
    * ****************************************
@@ -522,7 +522,7 @@ trait FSM[S, D] extends ListenerManagement {
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.finite_? && t.length >= 0) {
-          timeoutFuture = Some(app.scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
+          timeoutFuture = Some(system.scheduler.scheduleOnce(self, TimeoutMarker(generation), t.length, t.unit))
         }
       }
     }
@@ -565,7 +565,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   def logDepth: Int = 0
 
-  private val debugEvent = context.app.AkkaConfig.FsmDebugEvent
+  private val debugEvent = system.settings.FsmDebugEvent
 
   private val events = new Array[Event](logDepth)
   private val states = new Array[AnyRef](logDepth)
