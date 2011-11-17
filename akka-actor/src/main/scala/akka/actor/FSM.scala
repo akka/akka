@@ -28,14 +28,14 @@ object FSM {
   case object StateTimeout
   case class TimeoutMarker(generation: Long)
 
-  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit app: ActorSystem) {
+  case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit system: ActorSystem) {
     private var ref: Option[Cancellable] = _
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
-        ref = Some(app.scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
+        ref = Some(system.scheduler.schedule(actor, this, timeout.length, timeout.length, timeout.unit))
       } else {
-        ref = Some(app.scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
+        ref = Some(system.scheduler.scheduleOnce(actor, this, timeout.length, timeout.unit))
       }
     }
 

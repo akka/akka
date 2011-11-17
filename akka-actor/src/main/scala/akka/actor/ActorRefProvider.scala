@@ -22,7 +22,7 @@ import com.eaio.uuid.UUID
  */
 trait ActorRefProvider {
 
-  def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(app, props, supervisor, name, false)
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(system, props, supervisor, name, false)
 
   def actorFor(path: Iterable[String]): Option[ActorRef]
 
@@ -36,7 +36,7 @@ trait ActorRefProvider {
 
   def settings: ActorSystem.Settings
 
-  def init(app: ActorSystemImpl)
+  def init(system: ActorSystemImpl)
 
   /**
    * What deployer will be used to resolve deployment configuration?
@@ -45,9 +45,9 @@ trait ActorRefProvider {
 
   private[akka] def scheduler: Scheduler
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
 
   private[akka] def evict(path: String): Boolean
 
@@ -71,7 +71,7 @@ trait ActorRefProvider {
  */
 trait ActorRefFactory {
 
-  protected def app: ActorSystemImpl
+  protected def systemImpl: ActorSystemImpl
 
   protected def provider: ActorRefProvider
 
@@ -89,7 +89,7 @@ trait ActorRefFactory {
     Helpers.base64(l)
   }
 
-  def actorOf(props: Props): ActorRef = provider.actorOf(app, props, guardian, randomName, false)
+  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName, false)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
@@ -99,7 +99,7 @@ trait ActorRefFactory {
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.startsWith("$"))
       throw new ActorInitializationException("actor name must not be null, empty or start with $")
-    provider.actorOf(app, props, guardian, name, false)
+    provider.actorOf(systemImpl, props, guardian, name, false)
   }
 
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
@@ -231,16 +231,16 @@ class LocalActorRefProvider(
 
   val deathWatch = createDeathWatch()
 
-  def init(app: ActorSystemImpl) {
-    rootGuardian = actorOf(app, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-    guardian = actorOf(app, guardianProps, rootGuardian, "app", true)
-    systemGuardian = actorOf(app, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+  def init(system: ActorSystemImpl) {
+    rootGuardian = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
+    guardian = actorOf(system, guardianProps, rootGuardian, "system", true)
+    systemGuardian = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
     // chain death watchers so that killing guardian stops the application
     deathWatch.subscribe(systemGuardian, guardian)
     deathWatch.subscribe(rootGuardian, systemGuardian)
   }
 
-  // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "app" name for now)
+  // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "system" name for now)
   def actorFor(path: Iterable[String]): Option[ActorRef] = findInCache(ActorPath.join(path)) orElse findInTree(Some(guardian), path.tail)
 
   @tailrec
@@ -266,10 +266,10 @@ class LocalActorRefProvider(
    */
   private[akka] def evict(path: String): Boolean = actors.remove(path) ne null
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
-    actorOf(app, props, supervisor, supervisor.path / name, systemService)
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
+    actorOf(system, props, supervisor, supervisor.path / name, systemService)
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
     val name = path.name
     val newFuture = Promise[ActorRef](5000)(dispatcher) // FIXME is this proper timeout?
 
@@ -280,7 +280,7 @@ class LocalActorRefProvider(
 
             // create a local actor
             case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
-              new LocalActorRef(app, props, supervisor, path, systemService) // create a local actor
+              new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
 
             // create a routed actor ref
             case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
@@ -299,10 +299,10 @@ class LocalActorRefProvider(
 
               val connections: Iterable[ActorRef] = (1 to nrOfInstances.factor) map { i ⇒
                 val routedPath = path.parent / (path.name + ":" + i)
-                new LocalActorRef(app, props, supervisor, routedPath, systemService)
+                new LocalActorRef(system, props, supervisor, routedPath, systemService)
               }
 
-              actorOf(app, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
+              actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
 
             case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
           }
@@ -327,7 +327,7 @@ class LocalActorRefProvider(
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(app: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
     // FIXME: this needs to take supervision into account!
 
     //FIXME clustering should be implemented by cluster actor ref provider
@@ -340,7 +340,7 @@ class LocalActorRefProvider(
     // val localOnly = props.localOnly
     // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
     // else new RoutedActorRef(props, address)
-    new RoutedActorRef(app, props, supervisor, name)
+    new RoutedActorRef(system, props, supervisor, name)
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))

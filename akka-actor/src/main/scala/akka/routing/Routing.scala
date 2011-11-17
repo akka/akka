@@ -155,7 +155,7 @@ object Routing {
 /**
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
-abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val props: RoutedProps) extends UnsupportedActorRef {
+abstract private[akka] class AbstractRoutedActorRef(val system: ActorSystem, val props: RoutedProps) extends UnsupportedActorRef {
   val router = props.routerFactory()
 
   override def tell(message: Any, sender: ActorRef) = router.route(message)(sender)
@@ -167,7 +167,7 @@ abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val pr
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(app: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(app, routedProps) {
+private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(system, routedProps) {
 
   val path = supervisor.path / name
 

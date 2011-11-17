@@ -55,10 +55,10 @@ class RemoteActorRefProvider(
   @volatile
   private var remoteDaemonConnectionManager: RemoteConnectionManager = _
 
-  def init(app: ActorSystemImpl) {
-    local.init(app)
-    remote = new Remote(app, nodename)
-    remoteDaemonConnectionManager = new RemoteConnectionManager(app, remote)
+  def init(system: ActorSystemImpl) {
+    local.init(system)
+    remote = new Remote(system, nodename)
+    remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
   }
 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
@@ -69,11 +69,11 @@ class RemoteActorRefProvider(
   def defaultDispatcher = dispatcher
   def defaultTimeout = settings.ActorTimeout
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
-    actorOf(app, props, supervisor, supervisor.path / name, systemService)
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
+    actorOf(system, props, supervisor, supervisor.path / name, systemService)
 
-  private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef =
-    if (systemService) local.actorOf(app, props, supervisor, path, systemService)
+  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef =
+    if (systemService) local.actorOf(system, props, supervisor, path, systemService)
     else {
       val name = path.name
       val newFuture = Promise[ActorRef](5000)(defaultDispatcher) // FIXME is this proper timeout?
@@ -92,13 +92,13 @@ class RemoteActorRefProvider(
                 //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
                 // }
 
-                def isReplicaNode: Boolean = remoteAddresses exists { _ == app.address }
+                def isReplicaNode: Boolean = remoteAddresses exists { _ == system.address }
 
-                //app.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(app.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
+                //system.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(system.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
 
                 if (isReplicaNode) {
                   // we are on one of the replica node for this remote actor
-                  local.actorOf(app, props, supervisor, name, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create
+                  local.actorOf(system, props, supervisor, name, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create
                 } else {
 
                   // we are on the single "reference" node uses the remote actors on the replica nodes
@@ -135,17 +135,17 @@ class RemoteActorRefProvider(
 
                   val connections = (Map.empty[RemoteAddress, ActorRef] /: remoteAddresses) { (conns, a) ⇒
                     val remoteAddress = RemoteAddress(a.hostname, a.port)
-                    conns + (remoteAddress -> RemoteActorRef(remote.app.provider, remote.server, remoteAddress, path, None))
+                    conns + (remoteAddress -> RemoteActorRef(remote.system.provider, remote.server, remoteAddress, path, None))
                   }
 
-                  val connectionManager = new RemoteConnectionManager(app, remote, connections)
+                  val connectionManager = new RemoteConnectionManager(system, remote, connections)
 
-                  connections.keys foreach { useActorOnNode(app, _, path.toString, props.creator) }
+                  connections.keys foreach { useActorOnNode(system, _, path.toString, props.creator) }
 
-                  actorOf(app, RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), supervisor, name)
+                  actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), supervisor, name)
                 }
 
-              case deploy ⇒ local.actorOf(app, props, supervisor, name, systemService)
+              case deploy ⇒ local.actorOf(system, props, supervisor, name, systemService)
             }
           } catch {
             case e: Exception ⇒
@@ -153,7 +153,7 @@ class RemoteActorRefProvider(
               throw e
           }
 
-          // actor foreach app.registry.register // only for ActorRegistry backward compat, will be removed later
+          // actor foreach system.registry.register // only for ActorRegistry backward compat, will be removed later
 
           newFuture completeWithResult actor
           actors.replace(path.toString, newFuture, actor)
@@ -167,9 +167,9 @@ class RemoteActorRefProvider(
    * Copied from LocalActorRefProvider...
    */
   // FIXME: implement supervision
-  def actorOf(app: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
-    new RoutedActorRef(app, props, supervisor, name)
+    new RoutedActorRef(system, props, supervisor, name)
   }
 
   def actorFor(path: Iterable[String]): Option[ActorRef] = actors.get(ActorPath.join(path)) match {
@@ -198,18 +198,18 @@ class RemoteActorRefProvider(
       local.actorFor(ActorPath.split(actor.path))
     } else {
       log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", rootPath.remoteAddress, actor.path, remoteAddress)
-      Some(RemoteActorRef(remote.app.provider, remote.server, remoteAddress, rootPath / ActorPath.split(actor.path), None)) //Should it be None here
+      Some(RemoteActorRef(remote.system.provider, remote.server, remoteAddress, rootPath / ActorPath.split(actor.path), None)) //Should it be None here
     }
   }
 
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(app: ActorSystem, remoteAddress: RemoteAddress, actorPath: String, actorFactory: () ⇒ Actor) {
+  def useActorOnNode(system: ActorSystem, remoteAddress: RemoteAddress, actorPath: String, actorFactory: () ⇒ Actor) {
     log.debug("[{}] Instantiating Actor [{}] on node [{}]", rootPath, actorPath, remoteAddress)
 
     val actorFactoryBytes =
-      app.serialization.serialize(actorFactory) match {
+      system.serialization.serialize(actorFactory) match {
         case Left(error)  ⇒ throw error
         case Right(bytes) ⇒ if (remote.shouldCompressData) LZF.compress(bytes) else bytes
       }

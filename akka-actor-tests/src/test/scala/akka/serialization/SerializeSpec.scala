@@ -75,7 +75,7 @@ class SerializeSpec extends AkkaSpec {
       out.close()
 
       val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-      Serialization.app.withValue(a.asInstanceOf[ActorSystemImpl]) {
+      Serialization.system.withValue(a.asInstanceOf[ActorSystemImpl]) {
         val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
         (deadLetters eq a.deadLetters) must be(true)
       }

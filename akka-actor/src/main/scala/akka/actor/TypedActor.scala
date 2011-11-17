@@ -57,17 +57,17 @@ object TypedActor {
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val app = akka.serialization.Serialization.app.value
-      if (app eq null) throw new IllegalStateException(
+      val system = akka.serialization.Serialization.system.value
+      if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
-          " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
-      MethodCall(app.serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
+          " Use akka.serialization.Serialization.system.withValue(akkaApplication) { ... }")
+      MethodCall(system.serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
-            deserializedParameters(i) = app.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+            deserializedParameters(i) = system.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
           }
           deserializedParameters
       })
@@ -101,22 +101,22 @@ object TypedActor {
   }
 
   /**
-   * Returns the akka app (for a TypedActor) when inside a method call in a TypedActor.
+   * Returns the akka system (for a TypedActor) when inside a method call in a TypedActor.
    */
-  def app = appReference.get match {
-    case null ⇒ throw new IllegalStateException("Calling TypedActor.app outside of a TypedActor implementation method!")
+  def system = appReference.get match {
+    case null ⇒ throw new IllegalStateException("Calling TypedActor.system outside of a TypedActor implementation method!")
     case some ⇒ some
   }
 
   /**
    * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def dispatcher = app.dispatcher
+  implicit def dispatcher = system.dispatcher
 
   /**
    * Returns the default timeout (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def timeout = app.settings.ActorTimeout
+  implicit def timeout = system.settings.ActorTimeout
 }
 
 trait TypedActorFactory { this: ActorRefFactory ⇒

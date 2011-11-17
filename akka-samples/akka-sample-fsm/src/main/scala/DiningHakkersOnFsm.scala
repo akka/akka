@@ -163,15 +163,15 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
  */
 object DiningHakkersOnFsm {
 
-  val app = ActorSystem()
+  val system = ActorSystem()
 
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield app.actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield system.actorOf(new Chopstick("Chopstick " + i))
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield app.actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
+    } yield system.actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
 
     hakkers.foreach(_ ! Think)
   }

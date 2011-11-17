@@ -17,7 +17,7 @@ import akka.config.Configuration
 
 object FSMActorSpec {
 
-  class Latches(implicit app: ActorSystem) {
+  class Latches(implicit system: ActorSystem) {
     val unlockedLatch = TestLatch()
     val lockedLatch = TestLatch()
     val unhandledLatch = TestLatch()

@@ -162,7 +162,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
-  app: ActorSystemImpl,
+  system: ActorSystemImpl,
   _props: Props,
   _supervisor: ActorRef,
   val path: ActorPath,
@@ -185,7 +185,7 @@ class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = new ActorCell(app, this, _props, _supervisor, _receiveTimeout, _hotswap)
+  private var actorCell = new ActorCell(system, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
 
   /**
@@ -306,17 +306,17 @@ trait ScalaActorRef { ref: ActorRef ⇒
  */
 
 case class SerializedActorRef(hostname: String, port: Int, path: String) {
-  import akka.serialization.Serialization.app
+  import akka.serialization.Serialization.system
 
   def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
   def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = {
-    if (app.value eq null) throw new IllegalStateException(
+    if (system.value eq null) throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.app.withValue(akkaApplication) { ... }")
-    app.value.provider.deserialize(this) match {
+        " Use akka.serialization.Serialization.system.withValue(akkaApplication) { ... }")
+    system.value.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
     }
@@ -380,7 +380,7 @@ case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
-    private def readResolve(): AnyRef = Serialization.app.value.deadLetters
+    private def readResolve(): AnyRef = Serialization.system.value.deadLetters
   }
 
   val serialized = new SerializedDeadLetterActorRef

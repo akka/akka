@@ -80,7 +80,7 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultDispatcher(implicit app: ActorSystem) = app.dispatcher
+  implicit def defaultDispatcher(implicit system: ActorSystem) = system.dispatcher
 }
 
 /**

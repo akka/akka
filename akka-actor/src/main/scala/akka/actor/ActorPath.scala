@@ -14,14 +14,14 @@ object ActorPath {
   /**
    * Create an actor path from a string.
    */
-  def apply(app: ActorSystem, path: String): ActorPath =
-    apply(app, split(path))
+  def apply(system: ActorSystem, path: String): ActorPath =
+    apply(system, split(path))
 
   /**
    * Create an actor path from an iterable.
    */
-  def apply(app: ActorSystem, path: Iterable[String]): ActorPath =
-    path.foldLeft(app.rootPath)(_ / _)
+  def apply(system: ActorSystem, path: Iterable[String]): ActorPath =
+    path.foldLeft(system.rootPath)(_ / _)
 
   /**
    * Split a string path into an iterable.

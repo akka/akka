@@ -22,14 +22,14 @@ import akka.event.EventStream
  * @since 1.1
  */
 class TestActorRef[T <: Actor](
-  _app: ActorSystemImpl,
+  _system: ActorSystemImpl,
   _deadLetterMailbox: Mailbox,
   _eventStream: EventStream,
   _scheduler: Scheduler,
   _props: Props,
   _supervisor: ActorRef,
   name: String)
-  extends LocalActorRef(_app, _props.withDispatcher(new CallingThreadDispatcher(_deadLetterMailbox, _eventStream, _scheduler)), _supervisor, _supervisor.path / name, false) {
+  extends LocalActorRef(_system, _props.withDispatcher(new CallingThreadDispatcher(_deadLetterMailbox, _eventStream, _scheduler)), _supervisor, _supervisor.path / name, false) {
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
@@ -57,23 +57,23 @@ object TestActorRef {
     "$" + akka.util.Helpers.base64(l)
   }
 
-  def apply[T <: Actor](factory: ⇒ T)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
+  def apply[T <: Actor](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
 
-  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit app: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
+  def apply[T <: Actor](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
 
-  def apply[T <: Actor](props: Props)(implicit app: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
+  def apply[T <: Actor](props: Props)(implicit system: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
-  def apply[T <: Actor](props: Props, name: String)(implicit app: ActorSystem): TestActorRef[T] =
-    apply[T](props, app.asInstanceOf[ActorSystemImpl].guardian, name)
+  def apply[T <: Actor](props: Props, name: String)(implicit system: ActorSystem): TestActorRef[T] =
+    apply[T](props, system.asInstanceOf[ActorSystemImpl].guardian, name)
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit app: ActorSystem): TestActorRef[T] = {
-    val impl = app.asInstanceOf[ActorSystemImpl]
-    new TestActorRef(impl, impl.deadLetterMailbox, app.eventStream, app.scheduler, props, supervisor, name)
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] = {
+    val impl = system.asInstanceOf[ActorSystemImpl]
+    new TestActorRef(impl, impl.deadLetterMailbox, system.eventStream, system.scheduler, props, supervisor, name)
   }
 
-  def apply[T <: Actor](implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](randomName)
+  def apply[T <: Actor](implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
-  def apply[T <: Actor](name: String)(implicit m: Manifest[T], app: ActorSystem): TestActorRef[T] = apply[T](Props({
+  def apply[T <: Actor](name: String)(implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
     import ReflectiveAccess.{ createInstance, noParams, noArgs }
     createInstance[T](m.erasure, noParams, noArgs) match {
       case Right(value) ⇒ value

@@ -76,11 +76,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: ActorSystem) {
+class TestKit(_system: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val system = _app
+  implicit val system = _system
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -598,7 +598,7 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 }
 
 object TestProbe {
-  def apply()(implicit app: ActorSystem) = new TestProbe(app)
+  def apply()(implicit system: ActorSystem) = new TestProbe(system)
 }
 
 trait ImplicitSender { this: TestKit ⇒

@@ -56,14 +56,14 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {
       import ActorSystem.defaultConfig
-      val app = ActorSystem("test", defaultConfig ++ Configuration(
+      val system = ActorSystem("test", defaultConfig ++ Configuration(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG"))
-      val spec = new AkkaSpec(app) {
-        val ref = Seq(testActor, app.actorOf(Props.empty, "name"))
+      val spec = new AkkaSpec(system) {
+        val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
       spec.ref foreach (_ must not be 'shutdown)
-      app.stop()
+      system.stop()
       spec.awaitCond(spec.ref forall (_.isShutdown), 2 seconds)
     }
   }

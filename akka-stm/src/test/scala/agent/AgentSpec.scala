@@ -20,7 +20,7 @@ class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
 
 class AgentSpec extends WordSpec with MustMatchers {
 
-  implicit val app = ActorSystem("AgentSpec")
+  implicit val system = ActorSystem("AgentSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
   "Agent" should {

@@ -25,15 +25,15 @@ object TestBarrier {
 class TestBarrier(count: Int) {
   private val barrier = new CyclicBarrier(count)
 
-  def await()(implicit app: ActorSystem): Unit = await(TestBarrier.DefaultTimeout)
+  def await()(implicit system: ActorSystem): Unit = await(TestBarrier.DefaultTimeout)
 
-  def await(timeout: Duration)(implicit app: ActorSystem) {
+  def await(timeout: Duration)(implicit system: ActorSystem) {
     try {
       barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
       case e: TimeoutException ⇒
         throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
-          format (timeout.toString, app.settings.TestTimeFactor))
+          format (timeout.toString, system.settings.TestTimeFactor))
     }
   }
 

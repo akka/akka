@@ -12,12 +12,12 @@ import akka.util.Duration
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
-  def createForwardingChain(app: ActorSystem): ActorRef = {
-    val replier = app.actorOf(new Actor {
+  def createForwardingChain(system: ActorSystem): ActorRef = {
+    val replier = system.actorOf(new Actor {
       def receive = { case x ⇒ sender ! x }
     })
 
-    def mkforwarder(forwardTo: ActorRef) = app.actorOf(
+    def mkforwarder(forwardTo: ActorRef) = system.actorOf(
       new Actor {
         def receive = { case x ⇒ forwardTo forward x }
       })

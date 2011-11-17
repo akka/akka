@@ -150,7 +150,7 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit app: ActorSystem) = app.settings.ActorTimeout
+  implicit def defaultTimeout(implicit system: ActorSystem) = system.settings.ActorTimeout
 }
 
 trait ActorLogging { this: Actor ⇒
@@ -164,17 +164,17 @@ object Actor {
   /**
    * This decorator adds invocation logging to a Receive function.
    */
-  class LoggingReceive(source: AnyRef, r: Receive)(implicit app: ActorSystem) extends Receive {
+  class LoggingReceive(source: AnyRef, r: Receive)(implicit system: ActorSystem) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      app.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
+      system.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
       handled
     }
     def apply(o: Any): Unit = r(o)
   }
 
   object LoggingReceive {
-    def apply(source: AnyRef, r: Receive)(implicit app: ActorSystem): Receive = r match {
+    def apply(source: AnyRef, r: Receive)(implicit system: ActorSystem): Receive = r match {
       case _: LoggingReceive ⇒ r
       case _                 ⇒ new LoggingReceive(source, r)
     }

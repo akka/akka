@@ -68,10 +68,10 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     //   val actor = actorOf(new Actor {
     //     def receive = { case Ping ⇒ ticks.countDown }
     //   })
-    //   val numActors = app.registry.local.actors.length
+    //   val numActors = system.registry.local.actors.length
     //   (1 to 1000).foreach(_ ⇒ collectFuture(Scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.MILLISECONDS)))
     //   assert(ticks.await(10, TimeUnit.SECONDS))
-    //   assert(app.registry.local.actors.length === numActors)
+    //   assert(system.registry.local.actors.length === numActors)
     // }
 
     /**

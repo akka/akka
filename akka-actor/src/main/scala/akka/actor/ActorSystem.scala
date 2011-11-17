@@ -171,7 +171,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
 
   val settings = new Settings(config)
 
-  protected def app = this
+  protected def systemImpl = this
 
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
 

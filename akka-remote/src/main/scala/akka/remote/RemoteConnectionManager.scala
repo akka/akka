@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicReference
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteConnectionManager(
-  app: ActorSystem,
+  system: ActorSystem,
   remote: Remote,
   initialConnections: Map[RemoteAddress, ActorRef] = Map.empty[RemoteAddress, ActorRef])
   extends ConnectionManager {
 
-  val log = Logging(app, this)
+  val log = Logging(system, this)
 
   // FIXME is this VersionedIterable really needed? It is not used I think. Complicates API. See 'def connections' etc.
   case class State(version: Long, connections: Map[RemoteAddress, ActorRef])
@@ -149,5 +149,5 @@ class RemoteConnectionManager(
   }
 
   private[remote] def newConnection(remoteAddress: RemoteAddress, actorPath: ActorPath) =
-    RemoteActorRef(remote.app.provider, remote.server, remoteAddress, actorPath, None)
+    RemoteActorRef(remote.system.provider, remote.server, remoteAddress, actorPath, None)
 }

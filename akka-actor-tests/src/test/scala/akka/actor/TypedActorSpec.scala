@@ -341,7 +341,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      Serialization.app.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method must be(m.method)
@@ -360,7 +360,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-      Serialization.app.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method must be(m.method)

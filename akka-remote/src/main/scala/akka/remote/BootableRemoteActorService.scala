@@ -21,26 +21,26 @@ trait BootableRemoteActorService extends Bootable {
   def settings: RemoteServerSettings
 
   protected lazy val remoteServerThread = new Thread(new Runnable() {
-    def run = app.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
+    def run = system.remote.start(self.applicationLoader.getOrElse(null)) //Use config host/port
   }, "Akka RemoteModule Service")
 
   def startRemoteService() { remoteServerThread.start() }
 
   abstract override def onLoad() {
-    if (app.reflective.ClusterModule.isEnabled && settings.isRemotingEnabled) {
-      app.eventHandler.info(this, "Initializing Remote Actors Service...")
+    if (system.reflective.ClusterModule.isEnabled && settings.isRemotingEnabled) {
+      system.eventHandler.info(this, "Initializing Remote Actors Service...")
       startRemoteService()
-      app.eventHandler.info(this, "Remote Actors Service initialized")
+      system.eventHandler.info(this, "Remote Actors Service initialized")
     }
     super.onLoad()
   }
 
   abstract override def onUnload() {
-    app.eventHandler.info(this, "Shutting down Remote Actors Service")
+    system.eventHandler.info(this, "Shutting down Remote Actors Service")
 
-    app.remote.shutdown()
+    system.remote.shutdown()
     if (remoteServerThread.isAlive) remoteServerThread.join(1000)
-    app.eventHandler.info(this, "Remote Actors Service has been shut down")
+    system.eventHandler.info(this, "Remote Actors Service has been shut down")
     super.onUnload()
   }
 }

@@ -39,8 +39,8 @@ class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClas
     super.unsubscribe(subscriber)
   }
 
-  def start(app: ActorSystemImpl) {
-    reaper = app.systemActorOf(Props(new Actor {
+  def start(system: ActorSystemImpl) {
+    reaper = system.systemActorOf(Props(new Actor {
       def receive = {
         case ref: ActorRef   ⇒ watch(ref)
         case Terminated(ref) ⇒ unsubscribe(ref)
