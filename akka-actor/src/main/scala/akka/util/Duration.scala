@@ -278,7 +278,7 @@ abstract class Duration extends Serializable {
   def /(other: Duration): Double
   def unary_- : Duration
   def finite_? : Boolean
-  def dilated(implicit app: ActorSystem): Duration = this * app.AkkaConfig.TestTimeFactor
+  def dilated(implicit app: ActorSystem): Duration = this * app.settings.TestTimeFactor
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
   def sleep(): Unit = Thread.sleep(toMillis)

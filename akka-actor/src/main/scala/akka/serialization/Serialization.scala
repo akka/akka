@@ -70,7 +70,7 @@ class Serialization(val app: ActorSystemImpl) {
    * But "default" can be overridden in config
    */
   val serializers: Map[String, Serializer] =
-    app.AkkaConfig.config.getSection("akka.actor.serializers")
+    app.settings.config.getSection("akka.actor.serializers")
       .map(_.map)
       .getOrElse(Map())
       .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
@@ -81,7 +81,7 @@ class Serialization(val app: ActorSystemImpl) {
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
-  val bindings: Map[String, String] = app.AkkaConfig.config.getSection("akka.actor.serialization-bindings") map {
+  val bindings: Map[String, String] = app.settings.config.getSection("akka.actor.serialization-bindings") map {
     _.map.foldLeft(Map[String, String]()) {
       case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
       case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?

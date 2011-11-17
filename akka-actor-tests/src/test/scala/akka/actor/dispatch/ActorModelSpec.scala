@@ -421,7 +421,7 @@ class DispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(system.deadLetterMailbox, system.eventStream, system.scheduler, "foo", system.AkkaConfig.DispatcherThroughput,
+    new Dispatcher(system.deadLetterMailbox, system.eventStream, system.scheduler, "foo", system.settings.DispatcherThroughput,
       system.dispatcherFactory.ThroughputDeadlineTimeMillis, system.dispatcherFactory.MailboxType,
       config, system.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
     ThreadPoolConfig(system.eventStream)).build.asInstanceOf[MessageDispatcherInterceptor]

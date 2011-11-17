@@ -33,7 +33,7 @@ trait ActorDeployer {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val AkkaConfig: ActorSystem.AkkaConfig, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
+class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(nodename)
   val log = Logging(eventStream, this)
@@ -85,7 +85,7 @@ class Deployer(val AkkaConfig: ActorSystem.AkkaConfig, val eventStream: EventStr
 
   private[akka] def pathsInConfig: List[String] = {
     val deploymentPath = "akka.actor.deployment"
-    AkkaConfig.config.getSection(deploymentPath) match {
+    settings.config.getSection(deploymentPath) match {
       case None ⇒ Nil
       case Some(pathConfig) ⇒
         pathConfig.map.keySet
@@ -97,7 +97,7 @@ class Deployer(val AkkaConfig: ActorSystem.AkkaConfig, val eventStream: EventStr
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(path: String, configuration: Configuration = AkkaConfig.config): Option[Deploy] = {
+  private[akka] def lookupInConfig(path: String, configuration: Configuration = settings.config): Option[Deploy] = {
     import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
 
     // --------------------------------

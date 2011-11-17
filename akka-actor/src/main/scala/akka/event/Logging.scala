@@ -5,7 +5,7 @@ package akka.event
 
 import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, ActorSystemImpl, simpleName }
 import akka.AkkaException
-import akka.actor.ActorSystem.AkkaConfig
+import akka.actor.ActorSystem.Settings
 import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
@@ -66,7 +66,7 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  private[akka] def startStdoutLogger(config: AkkaConfig) {
+  private[akka] def startStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
@@ -80,12 +80,12 @@ trait LoggingBus extends ActorEventBus {
   }
 
   private[akka] def startDefaultLoggers(app: ActorSystemImpl) {
-    val level = levelFor(app.AkkaConfig.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + app.AkkaConfig.LogLevel))
+    val level = levelFor(app.settings.LogLevel) getOrElse {
+      StandardOutLogger.print(Error(new EventHandlerException, this, "unknown akka.stdout-loglevel " + app.settings.LogLevel))
       ErrorLevel
     }
     try {
-      val defaultLoggers = app.AkkaConfig.EventHandlers match {
+      val defaultLoggers = app.settings.EventHandlers match {
         case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
         case loggers ⇒ loggers
       }

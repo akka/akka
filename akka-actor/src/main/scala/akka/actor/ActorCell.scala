@@ -174,7 +174,7 @@ private[akka] class ActorCell(
       actor = created
       created.preStart()
       checkReceiveTimeout
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "started (" + actor + ")"))
+      if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "started (" + actor + ")"))
     } catch {
       case e ⇒
         try {
@@ -188,7 +188,7 @@ private[akka] class ActorCell(
 
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarting"))
+      if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "restarting"))
       val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
@@ -202,7 +202,7 @@ private[akka] class ActorCell(
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
-      if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "restarted"))
+      if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "restarted"))
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
@@ -228,7 +228,7 @@ private[akka] class ActorCell(
       val c = children
       if (c.isEmpty) doTerminate()
       else {
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
+        if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "stopping"))
         for (child ← c) child.stop()
         stopping = true
       }
@@ -239,7 +239,7 @@ private[akka] class ActorCell(
       if (!stats.contains(child)) {
         childrenRefs = childrenRefs.updated(child.name, child)
         childrenStats = childrenStats.updated(child, ChildRestartStats())
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now supervising " + child))
+        if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "now supervising " + child))
       } else app.eventStream.publish(Warning(self, "Already supervising " + child))
     }
 
@@ -255,10 +255,10 @@ private[akka] class ActorCell(
           case Recreate(cause) ⇒ recreate(cause)
           case Link(subject) ⇒
             app.deathWatch.subscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "now monitoring " + subject))
+            if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "now monitoring " + subject))
           case Unlink(subject) ⇒
             app.deathWatch.unsubscribe(self, subject)
-            if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped monitoring " + subject))
+            if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped monitoring " + subject))
           case Suspend()        ⇒ suspend()
           case Resume()         ⇒ resume()
           case Terminate()      ⇒ terminate()
@@ -332,7 +332,7 @@ private[akka] class ActorCell(
   }
 
   def autoReceiveMessage(msg: Envelope) {
-    if (app.AkkaConfig.DebugAutoReceive) app.eventStream.publish(Debug(self, "received AutoReceiveMessage " + msg))
+    if (app.settings.DebugAutoReceive) app.eventStream.publish(Debug(self, "received AutoReceiveMessage " + msg))
 
     if (stopping) msg.message match {
       case ChildTerminated ⇒ handleChildTerminated(sender)
@@ -359,7 +359,7 @@ private[akka] class ActorCell(
       try {
         parent.tell(ChildTerminated, self)
         app.deathWatch.publish(Terminated(self))
-        if (app.AkkaConfig.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped"))
+        if (app.settings.DebugLifecycle) app.eventStream.publish(Debug(self, "stopped"))
       } finally {
         currentMessage = null
         clearActorContext()

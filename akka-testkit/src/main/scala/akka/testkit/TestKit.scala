@@ -125,9 +125,9 @@ class TestKit(_app: ActorSystem) {
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
-   * case from AkkaConfig (key "akka.test.single-expect-default").
+   * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) system.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) system.settings.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.

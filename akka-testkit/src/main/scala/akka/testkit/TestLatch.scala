@@ -36,7 +36,7 @@ class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
   def await(timeout: Duration): Boolean = {
     val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (!opened) throw new TestLatchTimeoutException(
-      "Timeout of %s with time factor of %s" format (timeout.toString, app.AkkaConfig.TestTimeFactor))
+      "Timeout of %s with time factor of %s" format (timeout.toString, app.settings.TestTimeFactor))
     opened
   }
 
@@ -46,7 +46,7 @@ class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
   def awaitTimeout(timeout: Duration = TestLatch.DefaultTimeout) = {
     val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (opened) throw new TestLatchNoTimeoutException(
-      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, app.AkkaConfig.TestTimeFactor))
+      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, app.settings.TestTimeFactor))
     opened
   }
 

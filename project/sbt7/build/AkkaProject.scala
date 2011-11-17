@@ -525,7 +525,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   class AkkaSbtPluginProject(info: ProjectInfo) extends PluginProject(info) {
     val srcManagedScala = "src_managed" / "main" / "scala"
 
-    lazy val addAkkaConfig = systemOptional[Boolean]("akka.release", false)
+    lazy val addSettings = systemOptional[Boolean]("akka.release", false)
 
     lazy val generateAkkaSbtPlugin = {
       val cleanSrcManaged = cleanTask(srcManagedScala) named ("clean src_managed")
@@ -533,7 +533,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
         info.parent match {
           case Some(project: ParentProject) =>
             xsbt.FileUtilities.write((srcManagedScala / "AkkaProject.scala").asFile,
-                                     GenerateAkkaSbtPlugin(project, addAkkaConfig.value))
+                                     GenerateAkkaSbtPlugin(project, addSettings.value))
           case _ =>
         }
         None
@@ -550,9 +550,9 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   }
 
   object GenerateAkkaSbtPlugin {
-  def apply(project: ParentProject, addAkkaConfig: Boolean): String = {
+  def apply(project: ParentProject, addSettings: Boolean): String = {
     val extraConfigs = {
-      if (addAkkaConfig) Set(ModuleConfiguration("se.scalablesolutions.akka", Repositories.AkkaRepo))
+      if (addSettings) Set(ModuleConfiguration("se.scalablesolutions.akka", Repositories.AkkaRepo))
       else Set.empty[ModuleConfiguration]
     }
     val akkaModules = project.subProjects.values.map(_.name).flatMap{

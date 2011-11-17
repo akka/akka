@@ -9,7 +9,7 @@ class ClusterSpec extends AkkaSpec {
     "be able to parse 'akka.actor.cluster._' config elements" in {
 
       // TODO: make it use its own special config?
-      val config = system.AkkaConfig.config
+      val config = system.settings.config
       import config._
 
       //akka.cluster

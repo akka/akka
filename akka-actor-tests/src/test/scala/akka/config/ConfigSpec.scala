@@ -13,7 +13,7 @@ class ConfigSpec extends AkkaSpec(ActorSystem("ConfigSpec", Configuration.fromFi
   "The default configuration file (i.e. akka-reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
 
-      val config = system.AkkaConfig.config
+      val config = system.settings.config
       import config._
 
       getList("akka.boot") must equal(Nil)

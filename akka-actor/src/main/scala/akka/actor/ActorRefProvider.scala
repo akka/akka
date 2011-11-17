@@ -34,7 +34,7 @@ trait ActorRefProvider {
 
   def nodename: String
 
-  def AkkaConfig: ActorSystem.AkkaConfig
+  def settings: ActorSystem.Settings
 
   def init(app: ActorSystemImpl)
 
@@ -126,7 +126,7 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
-  val AkkaConfig: ActorSystem.AkkaConfig,
+  val settings: ActorSystem.Settings,
   val rootPath: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
@@ -139,7 +139,7 @@ class LocalActorRefProvider(
     case value     ⇒ value
   }
 
-  private[akka] val deployer: Deployer = new Deployer(AkkaConfig, eventStream, nodename)
+  private[akka] val deployer: Deployer = new Deployer(settings, eventStream, nodename)
 
   val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(dispatcher)
 
@@ -290,7 +290,7 @@ class LocalActorRefProvider(
                 case RouterType.Random     ⇒ () ⇒ new RandomRouter
                 case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
                 case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-                  if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, AkkaConfig.ActorTimeout)
+                  if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, settings.ActorTimeout)
                 case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
                 case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
                 case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
@@ -350,7 +350,7 @@ class LocalActorRefProvider(
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
     import akka.dispatch.{ Future, Promise, DefaultPromise }
-    (if (within == null) AkkaConfig.ActorTimeout else within) match {
+    (if (within == null) settings.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒ new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
       case t ⇒
         val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher) { def whenDone() = actors.remove(this) }

@@ -151,7 +151,7 @@ class Agent[T](initialValue: T, app: ActorSystem) {
   def sendOff(f: T ⇒ T): Unit = {
     send((value: T) ⇒ {
       suspend()
-      val pinnedDispatcher = new PinnedDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, null, "agent-send-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
+      val pinnedDispatcher = new PinnedDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, null, "agent-send-off", UnboundedMailbox(), app.settings.ActorTimeoutMillis)
       val threadBased = app.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
       threadBased ! Update(f)
       value
@@ -169,7 +169,7 @@ class Agent[T](initialValue: T, app: ActorSystem) {
     val result = new DefaultPromise[T](timeout)(app.dispatcher)
     send((value: T) ⇒ {
       suspend()
-      val pinnedDispatcher = new PinnedDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, null, "agent-alter-off", UnboundedMailbox(), app.AkkaConfig.ActorTimeoutMillis)
+      val pinnedDispatcher = new PinnedDispatcher(app.deadLetterMailbox, app.eventStream, app.scheduler, null, "agent-alter-off", UnboundedMailbox(), app.settings.ActorTimeoutMillis)
       val threadBased = app.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
       result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
       value

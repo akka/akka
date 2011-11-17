@@ -12,8 +12,8 @@ package object testkit {
     try {
       val result = block
 
-      val stop = now + app.AkkaConfig.TestEventFilterLeeway.toMillis
-      val failed = eventFilters filterNot (_.awaitDone(Duration(stop - now, MILLISECONDS))) map ("Timeout (" + app.AkkaConfig.TestEventFilterLeeway + ") waiting for " + _)
+      val stop = now + app.settings.TestEventFilterLeeway.toMillis
+      val failed = eventFilters filterNot (_.awaitDone(Duration(stop - now, MILLISECONDS))) map ("Timeout (" + app.settings.TestEventFilterLeeway + ") waiting for " + _)
       if (failed.nonEmpty)
         throw new AssertionError("Filter completion error:\n" + failed.mkString("\n"))
 

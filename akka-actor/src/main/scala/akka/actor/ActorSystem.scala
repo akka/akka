@@ -74,7 +74,7 @@ object ActorSystem {
   case object Stopped extends ExitStatus
   case class Failed(cause: Throwable) extends ExitStatus
 
-  class AkkaConfig(val config: Configuration) {
+  class Settings(val config: Configuration) {
     import config._
     val ConfigVersion = getString("akka.version", Version)
 
@@ -133,7 +133,7 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   import ActorSystem._
 
   def name: String
-  def AkkaConfig: AkkaConfig
+  def settings: Settings
   def nodename: String
 
   /**
@@ -169,25 +169,25 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
 
   import ActorSystem._
 
-  val AkkaConfig = new AkkaConfig(config)
+  val settings = new Settings(config)
 
   protected def app = this
 
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
 
-  import AkkaConfig._
+  import settings._
 
   val address = RemoteAddress(System.getProperty("akka.remote.hostname") match {
     case null | "" ⇒ InetAddress.getLocalHost.getHostAddress
     case value     ⇒ value
   }, System.getProperty("akka.remote.port") match {
-    case null | "" ⇒ AkkaConfig.RemoteServerPort
+    case null | "" ⇒ settings.RemoteServerPort
     case value     ⇒ value.toInt
   })
 
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
-  eventStream.startStdoutLogger(AkkaConfig)
+  eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, this) // “this” used only for .getClass in tagging messages
 
   /**
@@ -211,7 +211,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
   val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
 
   // TODO correctly pull its config from the config
-  val dispatcherFactory = new Dispatchers(AkkaConfig, eventStream, deadLetterMailbox, scheduler)
+  val dispatcherFactory = new Dispatchers(settings, eventStream, deadLetterMailbox, scheduler)
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   deadLetters.init(dispatcher)
@@ -222,7 +222,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
       case Right(b) ⇒ b
     }
     val arguments = List(
-      classOf[AkkaConfig] -> AkkaConfig,
+      classOf[Settings] -> settings,
       classOf[ActorPath] -> rootPath,
       classOf[EventStream] -> eventStream,
       classOf[MessageDispatcher] -> dispatcher,
@@ -256,7 +256,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
 
   def start(): this.type = {
     _serialization = new Serialization(this)
-    _typedActor = new TypedActor(AkkaConfig, _serialization)
+    _typedActor = new TypedActor(settings, _serialization)
     provider.init(this)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     eventStream.start(this)

@@ -351,8 +351,8 @@ class ActiveRemoteClientHandler(
  */
 class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with RemoteMarshallingOps {
 
-  val serverSettings = new RemoteServerSettings(app.AkkaConfig.config, app.AkkaConfig.DefaultTimeUnit)
-  val clientSettings = new RemoteClientSettings(app.AkkaConfig.config, app.AkkaConfig.DefaultTimeUnit)
+  val serverSettings = new RemoteServerSettings(app.settings.config, app.settings.DefaultTimeUnit)
+  val clientSettings = new RemoteClientSettings(app.settings.config, app.settings.DefaultTimeUnit)
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReadWriteGuard

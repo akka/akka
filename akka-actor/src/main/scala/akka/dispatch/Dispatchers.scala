@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
-import akka.actor.ActorSystem.AkkaConfig
+import akka.actor.ActorSystem.Settings
 
 /**
  * Scala API. Dispatcher factory.
@@ -47,19 +47,19 @@ import akka.actor.ActorSystem.AkkaConfig
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Dispatchers(
-  val AkkaConfig: ActorSystem.AkkaConfig,
+  val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler) {
 
-  val ThroughputDeadlineTimeMillis = AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt
+  val ThroughputDeadlineTimeMillis = settings.DispatcherThroughputDeadlineTime.toMillis.toInt
   val MailboxType: MailboxType =
-    if (AkkaConfig.MailboxCapacity < 1) UnboundedMailbox()
-    else BoundedMailbox(AkkaConfig.MailboxCapacity, AkkaConfig.MailboxPushTimeout)
-  val DispatcherShutdownMillis = AkkaConfig.DispatcherDefaultShutdown.toMillis
+    if (settings.MailboxCapacity < 1) UnboundedMailbox()
+    else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
+  val DispatcherShutdownMillis = settings.DispatcherDefaultShutdown.toMillis
 
   lazy val defaultGlobalDispatcher =
-    AkkaConfig.config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
+    settings.config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -105,7 +105,7 @@ class Dispatchers(
    * Has a fluent builder interface for configuring its semantics.
    */
   def newDispatcher(name: String) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(deadLetterMailbox, eventStream, scheduler, name, AkkaConfig.DispatcherThroughput,
+    ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(deadLetterMailbox, eventStream, scheduler, name, settings.DispatcherThroughput,
       ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig(eventStream))
 
   /**
@@ -132,7 +132,7 @@ class Dispatchers(
    * Has a fluent builder interface for configuring its semantics.
    */
   def newBalancingDispatcher(name: String) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒ new BalancingDispatcher(deadLetterMailbox, eventStream, scheduler, name, AkkaConfig.DispatcherThroughput,
+    ThreadPoolConfigDispatcherBuilder(config ⇒ new BalancingDispatcher(deadLetterMailbox, eventStream, scheduler, name, settings.DispatcherThroughput,
       ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig(eventStream))
 
   /**
@@ -166,7 +166,7 @@ class Dispatchers(
    * or else use the supplied default dispatcher
    */
   def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
-    AkkaConfig.config getSection key flatMap from getOrElse default
+    settings.config getSection key flatMap from getOrElse default
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below
@@ -193,8 +193,8 @@ class Dispatchers(
    */
   def from(cfg: Configuration): Option[MessageDispatcher] = {
     cfg.getString("type") flatMap {
-      case "Dispatcher"          ⇒ Some(new DispatcherConfigurator(AkkaConfig, deadLetterMailbox, eventStream, scheduler))
-      case "BalancingDispatcher" ⇒ Some(new BalancingDispatcherConfigurator(AkkaConfig, deadLetterMailbox, eventStream, scheduler))
+      case "Dispatcher"          ⇒ Some(new DispatcherConfigurator(settings, deadLetterMailbox, eventStream, scheduler))
+      case "BalancingDispatcher" ⇒ Some(new BalancingDispatcherConfigurator(settings, deadLetterMailbox, eventStream, scheduler))
       case "GlobalDispatcher"    ⇒ None //TODO FIXME remove this
       case fqn ⇒
         ReflectiveAccess.getClassFor[MessageDispatcherConfigurator](fqn) match {
@@ -214,26 +214,26 @@ class Dispatchers(
   }
 }
 
-class DispatcherConfigurator(AkkaConfig: AkkaConfig, deadLetterMailbox: Mailbox, eventStream: EventStream, scheduler: Scheduler) extends MessageDispatcherConfigurator(AkkaConfig, eventStream) {
+class DispatcherConfigurator(settings: Settings, deadLetterMailbox: Mailbox, eventStream: EventStream, scheduler: Scheduler) extends MessageDispatcherConfigurator(settings, eventStream) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new Dispatcher(deadLetterMailbox, eventStream, scheduler,
       config.getString("name", newUuid.toString),
-      config.getInt("throughput", AkkaConfig.DispatcherThroughput),
-      config.getInt("throughput-deadline-time", AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt),
+      config.getInt("throughput", settings.DispatcherThroughput),
+      config.getInt("throughput-deadline-time", settings.DispatcherThroughputDeadlineTime.toMillis.toInt),
       mailboxType(config),
       threadPoolConfig,
-      AkkaConfig.DispatcherDefaultShutdown.toMillis)).build
+      settings.DispatcherDefaultShutdown.toMillis)).build
   }
 }
 
-class BalancingDispatcherConfigurator(AkkaConfig: AkkaConfig, deadLetterMailbox: Mailbox, eventStream: EventStream, scheduler: Scheduler) extends MessageDispatcherConfigurator(AkkaConfig, eventStream) {
+class BalancingDispatcherConfigurator(settings: Settings, deadLetterMailbox: Mailbox, eventStream: EventStream, scheduler: Scheduler) extends MessageDispatcherConfigurator(settings, eventStream) {
   def configure(config: Configuration): MessageDispatcher = {
     configureThreadPool(config, threadPoolConfig ⇒ new BalancingDispatcher(deadLetterMailbox, eventStream, scheduler,
       config.getString("name", newUuid.toString),
-      config.getInt("throughput", AkkaConfig.DispatcherThroughput),
-      config.getInt("throughput-deadline-time", AkkaConfig.DispatcherThroughputDeadlineTime.toMillis.toInt),
+      config.getInt("throughput", settings.DispatcherThroughput),
+      config.getInt("throughput-deadline-time", settings.DispatcherThroughputDeadlineTime.toMillis.toInt),
       mailboxType(config),
       threadPoolConfig,
-      AkkaConfig.DispatcherDefaultShutdown.toMillis)).build
+      settings.DispatcherDefaultShutdown.toMillis)).build
   }
 }

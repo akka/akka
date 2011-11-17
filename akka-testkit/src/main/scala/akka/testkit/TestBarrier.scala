@@ -33,7 +33,7 @@ class TestBarrier(count: Int) {
     } catch {
       case e: TimeoutException ⇒
         throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
-          format (timeout.toString, app.AkkaConfig.TestTimeFactor))
+          format (timeout.toString, app.settings.TestTimeFactor))
     }
   }
 

@@ -116,7 +116,7 @@ object TypedActor {
   /**
    * Returns the default timeout (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def timeout = app.AkkaConfig.ActorTimeout
+  implicit def timeout = app.settings.ActorTimeout
 }
 
 trait TypedActorFactory { this: ActorRefFactory ⇒
@@ -264,7 +264,7 @@ trait TypedActorFactory { this: ActorRefFactory ⇒
  *
  *  TypedActors needs, just like Actors, to be Stopped when they are no longer needed, use TypedActor.stop(proxy)
  */
-class TypedActor(val AkkaConfig: ActorSystem.AkkaConfig, var ser: Serialization) {
+class TypedActor(val settings: ActorSystem.Settings, var ser: Serialization) {
 
   import TypedActor.MethodCall
   /**
@@ -313,7 +313,7 @@ class TypedActor(val AkkaConfig: ActorSystem.AkkaConfig, var ser: Serialization)
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val timeout = props.timeout match {
-      case Props.`defaultTimeout` ⇒ AkkaConfig.ActorTimeout
+      case Props.`defaultTimeout` ⇒ settings.ActorTimeout
       case x                      ⇒ x
     }
     val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(actorVar, timeout)).asInstanceOf[T]

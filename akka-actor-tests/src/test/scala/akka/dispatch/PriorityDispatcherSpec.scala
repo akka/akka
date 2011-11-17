@@ -18,7 +18,7 @@ class PriorityDispatcherSpec extends AkkaSpec {
       testOrdering(BoundedPriorityMailbox(PriorityGenerator({
         case i: Int  ⇒ i //Reverse order
         case 'Result ⇒ Int.MaxValue
-      }: Any ⇒ Int), 1000, system.AkkaConfig.MailboxPushTimeout))
+      }: Any ⇒ Int), 1000, system.settings.MailboxPushTimeout))
     }
   }
 

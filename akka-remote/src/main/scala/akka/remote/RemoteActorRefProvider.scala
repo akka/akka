@@ -29,7 +29,7 @@ import akka.event.EventStream
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider(
-  val AkkaConfig: ActorSystem.AkkaConfig,
+  val settings: ActorSystem.Settings,
   val rootPath: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
@@ -40,7 +40,7 @@ class RemoteActorRefProvider(
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  val local = new LocalActorRefProvider(AkkaConfig, rootPath, eventStream, dispatcher, scheduler)
+  val local = new LocalActorRefProvider(settings, rootPath, eventStream, dispatcher, scheduler)
   def deathWatch = local.deathWatch
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
@@ -67,7 +67,7 @@ class RemoteActorRefProvider(
   private[akka] def deployer: Deployer = local.deployer
 
   def defaultDispatcher = dispatcher
-  def defaultTimeout = AkkaConfig.ActorTimeout
+  def defaultTimeout = settings.ActorTimeout
 
   private[akka] def actorOf(app: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
     actorOf(app, props, supervisor, supervisor.path / name, systemService)

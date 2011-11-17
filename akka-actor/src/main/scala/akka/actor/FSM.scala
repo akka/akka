@@ -565,7 +565,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   def logDepth: Int = 0
 
-  private val debugEvent = system.AkkaConfig.FsmDebugEvent
+  private val debugEvent = system.settings.FsmDebugEvent
 
   private val events = new Array[Event](logDepth)
   private val states = new Array[AnyRef](logDepth)

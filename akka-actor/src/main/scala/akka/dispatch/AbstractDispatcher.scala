@@ -14,7 +14,7 @@ import akka.actor._
 import akka.actor.ActorSystem
 import scala.annotation.tailrec
 import akka.event.EventStream
-import akka.actor.ActorSystem.AkkaConfig
+import akka.actor.ActorSystem.Settings
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -330,19 +330,19 @@ abstract class MessageDispatcher(
 /**
  * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
  */
-abstract class MessageDispatcherConfigurator(val AkkaConfig: AkkaConfig, val eventStream: EventStream) {
+abstract class MessageDispatcherConfigurator(val settings: Settings, val eventStream: EventStream) {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
   def configure(config: Configuration): MessageDispatcher
 
   def mailboxType(config: Configuration): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", AkkaConfig.MailboxCapacity)
+    val capacity = config.getInt("mailbox-capacity", settings.MailboxCapacity)
     if (capacity < 1) UnboundedMailbox()
     else {
       val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", AkkaConfig.MailboxPushTimeout.toMillis.toInt),
-        AkkaConfig.DefaultTimeUnit)
+        config.getInt("mailbox-push-timeout-time", settings.MailboxPushTimeout.toMillis.toInt),
+        settings.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -352,7 +352,7 @@ abstract class MessageDispatcherConfigurator(val AkkaConfig: AkkaConfig, val eve
 
     //Apply the following options to the config if they are present in the config
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(eventStream)).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, AkkaConfig.DefaultTimeUnit))),
+      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, settings.DefaultTimeUnit))),
       conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
