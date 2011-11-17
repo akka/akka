@@ -30,7 +30,7 @@ import akka.event.EventStream
  */
 class RemoteActorRefProvider(
   val AkkaConfig: ActorSystem.AkkaConfig,
-  val root: ActorPath,
+  val rootPath: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
   val scheduler: Scheduler) extends ActorRefProvider {
@@ -40,7 +40,7 @@ class RemoteActorRefProvider(
   import java.util.concurrent.ConcurrentHashMap
   import akka.dispatch.Promise
 
-  val local = new LocalActorRefProvider(AkkaConfig, root, eventStream, dispatcher, scheduler)
+  val local = new LocalActorRefProvider(AkkaConfig, rootPath, eventStream, dispatcher, scheduler)
   def deathWatch = local.deathWatch
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
@@ -194,11 +194,11 @@ class RemoteActorRefProvider(
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
     val remoteAddress = RemoteAddress(actor.hostname, actor.port)
-    if (optimizeLocalScoped_? && remoteAddress == root.remoteAddress) {
+    if (optimizeLocalScoped_? && remoteAddress == rootPath.remoteAddress) {
       local.actorFor(ActorPath.split(actor.path))
     } else {
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", root.remoteAddress, actor.path, remoteAddress)
-      Some(RemoteActorRef(remote.app.provider, remote.server, remoteAddress, root / ActorPath.split(actor.path), None)) //Should it be None here
+      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", rootPath.remoteAddress, actor.path, remoteAddress)
+      Some(RemoteActorRef(remote.app.provider, remote.server, remoteAddress, rootPath / ActorPath.split(actor.path), None)) //Should it be None here
     }
   }
 
@@ -206,7 +206,7 @@ class RemoteActorRefProvider(
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(app: ActorSystem, remoteAddress: RemoteAddress, actorPath: String, actorFactory: () ⇒ Actor) {
-    log.debug("[{}] Instantiating Actor [{}] on node [{}]", root, actorPath, remoteAddress)
+    log.debug("[{}] Instantiating Actor [{}] on node [{}]", rootPath, actorPath, remoteAddress)
 
     val actorFactoryBytes =
       app.serialization.serialize(actorFactory) match {

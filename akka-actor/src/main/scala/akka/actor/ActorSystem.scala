@@ -140,7 +140,7 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    * Construct a path below the application guardian.
    */
   def /(name: String): ActorPath
-  def root: ActorPath
+  def rootPath: ActorPath
 
   val startTime = System.currentTimeMillis
   def uptime = (System.currentTimeMillis - startTime) / 1000
@@ -193,9 +193,9 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
   /**
    * The root actor path for this application.
    */
-  val root: ActorPath = new RootActorPath(address)
+  val rootPath: ActorPath = new RootActorPath(address)
 
-  val deadLetters = new DeadLetterActorRef(eventStream, root / "nul")
+  val deadLetters = new DeadLetterActorRef(eventStream, rootPath / "nul")
   val deadLetterMailbox = new Mailbox(null) {
     becomeClosed()
     override def dispatcher = null //MessageDispatcher.this
@@ -223,7 +223,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
     }
     val arguments = List(
       classOf[AkkaConfig] -> AkkaConfig,
-      classOf[ActorPath] -> root,
+      classOf[ActorPath] -> rootPath,
       classOf[EventStream] -> eventStream,
       classOf[MessageDispatcher] -> dispatcher,
       classOf[Scheduler] -> scheduler)

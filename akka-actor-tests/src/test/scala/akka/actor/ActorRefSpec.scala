@@ -284,7 +284,8 @@ class ActorRefSpec extends AkkaSpec {
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      val serialized = SerializedActorRef(system.root.remoteAddress.hostname, system.root.remoteAddress.port, "/this/path/does/not/exist")
+      val addr = system.rootPath.remoteAddress
+      val serialized = SerializedActorRef(addr.hostname, addr.port, "/this/path/does/not/exist")
 
       out.writeObject(serialized)
 

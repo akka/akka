@@ -81,7 +81,7 @@ class Remote(val app: ActorSystemImpl, val nodename: String) {
   }
 
   def start(): Unit = {
-    val serverAddress = server.app.root.remoteAddress //Force init of server
+    val serverAddress = server.app.rootPath.remoteAddress //Force init of server
     val daemonAddress = remoteDaemon.address //Force init of daemon
     log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
   }

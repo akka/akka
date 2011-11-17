@@ -127,7 +127,7 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(
   val AkkaConfig: ActorSystem.AkkaConfig,
-  val root: ActorPath,
+  val rootPath: ActorPath,
   val eventStream: EventStream,
   val dispatcher: MessageDispatcher,
   val scheduler: Scheduler) extends ActorRefProvider {
@@ -151,7 +151,7 @@ class LocalActorRefProvider(
     val l = tempNumber.getAndIncrement()
     "$_" + Helpers.base64(l)
   }
-  private val tempNode = root / "tmp"
+  private val tempNode = rootPath / "tmp"
   def tempPath = tempNode / tempName
 
   // FIXME (actor path): this could become a cache for the new tree traversal actorFor
@@ -169,7 +169,7 @@ class LocalActorRefProvider(
     val name = "bubble-walker"
 
     // FIXME (actor path): move the root path to the new root guardian
-    val path = root / name
+    val path = rootPath / name
 
     val address = path.toString
 
@@ -232,7 +232,7 @@ class LocalActorRefProvider(
   val deathWatch = createDeathWatch()
 
   def init(app: ActorSystemImpl) {
-    rootGuardian = actorOf(app, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, root, true)
+    rootGuardian = actorOf(app, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
     guardian = actorOf(app, guardianProps, rootGuardian, "app", true)
     systemGuardian = actorOf(app, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
     // chain death watchers so that killing guardian stops the application
@@ -344,7 +344,7 @@ class LocalActorRefProvider(
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(root.remoteAddress, actor.path.toString)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.remoteAddress, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 

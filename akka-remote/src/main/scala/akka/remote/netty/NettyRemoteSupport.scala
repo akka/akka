@@ -147,7 +147,7 @@ class ActiveRemoteClient private[akka] (
     def sendSecureCookie(connection: ChannelFuture) {
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SECURE_COOKIE.nonEmpty) handshake.setCookie(SECURE_COOKIE.get)
-      val addr = remoteSupport.app.root.remoteAddress
+      val addr = remoteSupport.app.rootPath.remoteAddress
       handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder.setHostname(addr.hostname).setPort(addr.port).build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
@@ -429,7 +429,7 @@ class NettyRemoteSupport(_app: ActorSystem) extends RemoteSupport(_app) with Rem
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + app.root.remoteAddress
+    case None         ⇒ "Non-running NettyRemoteServer@" + app.rootPath.remoteAddress
   }
 
   private val _isRunning = new Switch(false)
@@ -461,7 +461,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   val log = Logging(remoteSupport.app, this)
   import remoteSupport.serverSettings._
 
-  val address = remoteSupport.app.root.remoteAddress
+  val address = remoteSupport.app.rootPath.remoteAddress
 
   val name = "NettyRemoteServer@" + address
 
