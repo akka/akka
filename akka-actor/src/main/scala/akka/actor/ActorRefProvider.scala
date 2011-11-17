@@ -32,23 +32,32 @@ trait ActorRefProvider {
 
   def deathWatch: DeathWatch
 
+  // FIXME: remove/replace
   def nodename: String
 
   def settings: ActorSystem.Settings
 
   def init(system: ActorSystemImpl)
 
-  /**
-   * What deployer will be used to resolve deployment configuration?
-   */
   private[akka] def deployer: Deployer
 
   private[akka] def scheduler: Scheduler
 
+  /**
+   * Create an Actor with the given name below the given supervisor.
+   */
   private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
 
+  /**
+   * Create an Actor with the given full path below the given supervisor.
+   *
+   * FIXME: Remove! this is dangerous!
+   */
   private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
 
+  /**
+   * Remove this path from the lookup map.
+   */
   private[akka] def evict(path: String): Boolean
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
@@ -57,13 +66,16 @@ trait ActorRefProvider {
 
   private[akka] def createDeathWatch(): DeathWatch
 
+  /**
+   * Create AskActorRef to hook up message send to recipient with Future receiver.
+   */
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
 
-  private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef
-
+  /**
+   * This Future is completed upon termination of this ActorRefProvider, which
+   * is usually initiated by stopping the guardian via ActorSystem.stop().
+   */
   private[akka] def terminationFuture: Future[ActorSystem.ExitStatus]
-
-  private[akka] def tempName: String
 }
 
 /**
@@ -134,6 +146,7 @@ class LocalActorRefProvider(
 
   val log = Logging(eventStream, this)
 
+  // FIXME remove/replave (clustering shall not leak into akka-actor)
   val nodename: String = System.getProperty("akka.cluster.nodename") match {
     case null | "" ⇒ new UUID().toString
     case value     ⇒ value
@@ -147,10 +160,7 @@ class LocalActorRefProvider(
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
-  def tempName = {
-    val l = tempNumber.getAndIncrement()
-    "$_" + Helpers.base64(l)
-  }
+  def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
   private val tempNode = rootPath / "tmp"
   def tempPath = tempNode / tempName
 
@@ -225,19 +235,21 @@ class LocalActorRefProvider(
   @volatile
   private var rootGuardian: ActorRef = _
   @volatile
-  var guardian: ActorRef = _
+  private var _guardian: ActorRef = _
   @volatile
-  var systemGuardian: ActorRef = _
+  private var _systemGuardian: ActorRef = _
+  def guardian = _guardian
+  def systemGuardian = _systemGuardian
 
   val deathWatch = createDeathWatch()
 
   def init(system: ActorSystemImpl) {
     rootGuardian = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-    guardian = actorOf(system, guardianProps, rootGuardian, "system", true)
-    systemGuardian = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+    _guardian = actorOf(system, guardianProps, rootGuardian, "app", true)
+    _systemGuardian = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
     // chain death watchers so that killing guardian stops the application
-    deathWatch.subscribe(systemGuardian, guardian)
-    deathWatch.subscribe(rootGuardian, systemGuardian)
+    deathWatch.subscribe(_systemGuardian, _guardian)
+    deathWatch.subscribe(rootGuardian, _systemGuardian)
   }
 
   // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "system" name for now)

@@ -208,6 +208,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
     override def numberOfMessages = 0
   }
 
+  // FIXME make this configurable
   val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
 
   // TODO correctly pull its config from the config
@@ -255,6 +256,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
   def /(actorName: String): ActorPath = guardian.path / actorName
 
   def start(): this.type = {
+    if (_serialization != null) throw new IllegalStateException("cannot initialize ActorSystemImpl twice!")
     _serialization = new Serialization(this)
     _typedActor = new TypedActor(settings, _serialization)
     provider.init(this)

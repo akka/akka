@@ -185,10 +185,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
-  def tempName = {
-    val l = tempNumber.getAndIncrement()
-    "$_" + Helpers.base64(l)
-  }
+  def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
   def tempPath = remoteDaemon.path / tempName
 
   // FIXME: handle real remote supervision
