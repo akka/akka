@@ -4,11 +4,14 @@
 package akka.zeromq
 
 import com.google.protobuf.Message
+import akka.zeromq.SocketOptionType._
 
 sealed trait Request
 
 case class Connect(endpoint: String) extends Request
 case class Bind(endpoint: String) extends Request
+case class SetSocketOption(optionType: SocketOptionType, value: Any)
+case class GetSocketOption(optionType: SocketOptionType)
 private[zeromq] case object Close extends Request
 
 case class Subscribe(payload: Seq[Byte]) extends Request

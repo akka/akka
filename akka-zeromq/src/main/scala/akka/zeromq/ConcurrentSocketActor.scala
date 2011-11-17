@@ -5,6 +5,7 @@ package akka.zeromq
 
 import akka.actor.{Actor, ReceiveTimeout}
 import akka.dispatch.MessageDispatcher
+import akka.zeromq.SocketOptionType._
 import org.zeromq.ZMQ.{Socket, Poller}
 import org.zeromq.{ZMQ => JZMQ}
 
@@ -32,6 +33,10 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters, dispatcher
       socket.unsubscribe(topic.toArray)
     case ReceiveTimeout =>
       pollAndReceiveFrames()
+    case SetSocketOption(Linger, value: Long) =>
+      socket.setLinger(value)
+    case GetSocketOption(Linger) =>
+      self.reply(socket.getLinger)
   }
   override def preStart {
     poller.register(socket, Poller.POLLIN)
