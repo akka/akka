@@ -16,6 +16,7 @@ import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.{ Executors, TimeUnit }
+import java.util.concurrent.ConcurrentHashMap
 
 object ActorSystem {
 
@@ -163,9 +164,12 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   def registerOnTermination(code: ⇒ Unit)
   def registerOnTermination(code: Runnable)
   def stop()
+
+  def registerExtension(ext: Extension[_ <: AnyRef])
+  def extension[T <: AnyRef](key: ExtensionKey[T]): T
 }
 
-class ActorSystemImpl(val name: String, config: Configuration) extends ActorSystem {
+class ActorSystemImpl private[actor] (val name: String, config: Configuration) extends ActorSystem {
 
   import ActorSystem._
 
@@ -258,6 +262,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     eventStream.start(this)
     eventStream.startDefaultLoggers(this)
+    loadExtensions()
     this
   }
 
@@ -273,4 +278,28 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
     terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
   }
 
+  private val extensions = new ConcurrentHashMap[ExtensionKey[_], Extension[_]]
+
+  def registerExtension(ext: Extension[_ <: AnyRef]) {
+    val key = ext.init(this)
+    extensions.put(key, ext) match {
+      case null ⇒
+      case old  ⇒ log.warning("replacing extension {}:{} with {}", key, old, ext)
+    }
+  }
+
+  def extension[T <: AnyRef](key: ExtensionKey[T]): T = extensions.get(key) match {
+    case null ⇒ throw new NullPointerException("trying to get non-registered extension " + key)
+    case x    ⇒ x.asInstanceOf[T]
+  }
+
+  private def loadExtensions() {
+    config.getList("akka.extensions") foreach { fqcn ⇒
+      import ReflectiveAccess._
+      createInstance[Extension[_ <: AnyRef]](fqcn, noParams, noArgs) match {
+        case Left(ex)   ⇒ log.error(ex, "Exception trying to load extension " + fqcn)
+        case Right(ext) ⇒ if (ext.isInstanceOf[Extension[_]]) registerExtension(ext) else log.error("Class {} is not an Extension", fqcn)
+      }
+    }
+  }
 }

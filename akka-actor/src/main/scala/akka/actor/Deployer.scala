@@ -98,7 +98,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
    * Lookup deployment in 'akka.conf' configuration file.
    */
   private[akka] def lookupInConfig(path: String, configuration: Configuration = settings.config): Option[Deploy] = {
-    import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
+    import akka.util.ReflectiveAccess.getClassFor
 
     // --------------------------------
     // akka.actor.deployment.<path>
