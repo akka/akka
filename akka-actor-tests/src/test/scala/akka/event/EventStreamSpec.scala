@@ -102,7 +102,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
   private def verifyLevel(bus: LoggingBus, level: Logging.LogLevel) {
     import Logging._
-    val allmsg = Seq(Debug(this, "debug"), Info(this, "info"), Warning(this, "warning"), Error(this, "error"))
+    val allmsg = Seq(Debug("", "debug"), Info("", "info"), Warning("", "warning"), Error("", "error"))
     val msg = allmsg filter (_.level <= level)
     allmsg foreach bus.publish
     msg foreach (x ⇒ expectMsg(x))

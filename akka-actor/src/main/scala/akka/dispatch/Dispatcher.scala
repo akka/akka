@@ -99,7 +99,7 @@ class Dispatcher(
           executorService.get() execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Warning(this, e2.toString))
+            prerequisites.eventStream.publish(Warning("Dispatcher", e2.toString))
             throw e2
         }
     }

@@ -3,8 +3,15 @@
  */
 package akka.event
 
-import akka.actor.{ ActorRef, Actor, Props, ActorSystemImpl, Terminated }
+import akka.actor.{ ActorRef, Actor, Props, ActorSystemImpl, Terminated, ActorSystem, simpleName }
 import akka.util.Subclassification
+
+object EventStream {
+  implicit def fromActorSystem(system: ActorSystem) = system.eventStream
+}
+
+class A(x: Int = 0) extends Exception("x=" + x)
+class B extends A
 
 class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
@@ -24,18 +31,18 @@ class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClas
   protected def publish(event: AnyRef, subscriber: ActorRef) = subscriber ! event
 
   override def subscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
-    if (debug) publish(Logging.Debug(this, "subscribing " + subscriber + " to channel " + channel))
+    if (debug) publish(Logging.Debug(simpleName(this), "subscribing " + subscriber + " to channel " + channel))
     if (reaper ne null) reaper ! subscriber
     super.subscribe(subscriber, channel)
   }
 
   override def unsubscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
-    if (debug) publish(Logging.Debug(this, "unsubscribing " + subscriber + " from channel " + channel))
+    if (debug) publish(Logging.Debug(simpleName(this), "unsubscribing " + subscriber + " from channel " + channel))
     super.unsubscribe(subscriber, channel)
   }
 
   override def unsubscribe(subscriber: ActorRef) {
-    if (debug) publish(Logging.Debug(this, "unsubscribing " + subscriber + " from all channels"))
+    if (debug) publish(Logging.Debug(simpleName(this), "unsubscribing " + subscriber + " from all channels"))
     super.unsubscribe(subscriber)
   }
 

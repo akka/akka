@@ -69,7 +69,7 @@ final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit,
     try {
       function()
     } catch {
-      case e ⇒ eventStream.publish(Error(e, this, e.getMessage))
+      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
     } finally {
       cleanup()
     }

@@ -188,7 +188,7 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
-  val log = new BusLogging(eventStream, this) // “this” used only for .getClass in tagging messages
+  val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
   /**
    * The root actor path for this application.

@@ -147,7 +147,7 @@ object ActorModelSpec {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        system.eventStream.publish(Error(e, dispatcher, "actual: stops=" + dispatcher.stops.get +
+        system.eventStream.publish(Error(e, dispatcher.toString, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
     }
@@ -204,7 +204,7 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        system.eventStream.publish(Error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        system.eventStream.publish(Error(e, dispatcher.toString, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
           ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e
@@ -310,7 +310,7 @@ abstract class ActorModelSpec extends AkkaSpec {
           try {
             f
           } catch {
-            case e ⇒ system.eventStream.publish(Error(e, this, "error in spawned thread"))
+            case e ⇒ system.eventStream.publish(Error(e, "spawn", "error in spawned thread"))
           }
         }
       }

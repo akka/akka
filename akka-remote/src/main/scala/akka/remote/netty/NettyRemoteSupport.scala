@@ -39,7 +39,7 @@ abstract class RemoteClient private[akka] (
   val remoteSupport: NettyRemoteSupport,
   val remoteAddress: RemoteAddress) {
 
-  val log = Logging(remoteSupport.system, this)
+  val log = Logging(remoteSupport.system, "RemoteClient")
 
   val name = simpleName(this) + "@" + remoteAddress
 
@@ -351,7 +351,7 @@ class ActiveRemoteClientHandler(
  * Provides the implementation of the Netty remote support
  */
 class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
-  val log = Logging(system, this)
+  val log = Logging(system, "NettyRemoteSupport")
 
   val serverSettings = new RemoteServerSettings(system.settings.config, system.settings.DefaultTimeUnit)
   val clientSettings = new RemoteClientSettings(system.settings.config, system.settings.DefaultTimeUnit)
@@ -481,7 +481,7 @@ class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) wi
 }
 
 class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Option[ClassLoader]) {
-  val log = Logging(remoteSupport.system, this)
+  val log = Logging(remoteSupport.system, "NettyRemoteServer")
   import remoteSupport.serverSettings._
 
   val address = remoteSupport.system.rootPath.remoteAddress
@@ -586,7 +586,7 @@ class RemoteServerHandler(
   val applicationLoader: Option[ClassLoader],
   val remoteSupport: NettyRemoteSupport) extends SimpleChannelUpstreamHandler {
 
-  val log = Logging(remoteSupport.system, this)
+  val log = Logging(remoteSupport.system, "RemoteServerHandler")
 
   import remoteSupport.serverSettings._
 
