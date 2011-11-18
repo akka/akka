@@ -117,7 +117,7 @@ Summary of the essential parts for using Akka with Maven:
 .. code-block:: xml
 
   <dependency>
-    <groupId>se.scalablesolutions.akka</groupId>
+    <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-actor</artifactId>
     <version>2.0-SNAPSHOT</version>
   </dependency>
@@ -145,7 +145,7 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
 
 
 Using Akka with Eclipse

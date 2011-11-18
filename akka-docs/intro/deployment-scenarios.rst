@@ -54,7 +54,7 @@ To use the plugin, first add a plugin definition to your sbt project by creating
 
    resolvers += Classpaths.typesafeResolver
 
-   addSbtPlugin("se.scalablesolutions.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT")
+   addSbtPlugin("com.typesafe.akka" % "akka-sbt-plugin" % "2.0-SNAPSHOT")
 
 Then use the AkkaKernelPlugin settings. In a 'light' configuration (build.sbt)::
 
@@ -75,7 +75,7 @@ Or in a 'full' configuration (Build.scala). For example::
          version := "0.1",
          scalaVersion := "2.9.1"
          resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-         libraryDependencies += "se.scalablesolutions.akka" % "akka-kernel" % "2.0-SNAPSHOT"
+         libraryDependencies += "com.typesafe.akka" % "akka-kernel" % "2.0-SNAPSHOT"
        )
      )
    }

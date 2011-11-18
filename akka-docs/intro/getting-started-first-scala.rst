@@ -192,7 +192,7 @@ in the directory you want to create your project in::
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
 
 Create a directory ``src/main/scala`` in which you will store the Scala source
 files.
@@ -202,11 +202,11 @@ modules beyond ``akka-actor``, you can add these as ``libraryDependencies`` in
 ``build.sbt``. Note that there must be a blank line between each. Here is an
 example adding ``akka-remote`` and ``akka-stm``::
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-remote" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-stm" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-stm" % "2.0-SNAPSHOT"
 
 So, now we are all set.
 
