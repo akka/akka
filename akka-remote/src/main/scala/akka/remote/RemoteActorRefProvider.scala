@@ -13,15 +13,14 @@ import akka.dispatch._
 import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.event.{ DeathWatch, Logging }
-import akka.serialization.{ Serialization, Serializer, Compression }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
-import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
 import com.google.protobuf.ByteString
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.event.EventStream
+import java.util.concurrent.ConcurrentHashMap
+import akka.dispatch.Promise
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -36,11 +35,8 @@ class RemoteActorRefProvider(
   val scheduler: Scheduler) extends ActorRefProvider {
 
   val log = Logging(eventStream, this)
-
-  import java.util.concurrent.ConcurrentHashMap
-  import akka.dispatch.Promise
-
   val local = new LocalActorRefProvider(settings, rootPath, eventStream, dispatcher, scheduler)
+
   def deathWatch = local.deathWatch
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
@@ -59,6 +55,7 @@ class RemoteActorRefProvider(
     local.init(system)
     remote = new Remote(system, nodename)
     remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
+    terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
   private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime

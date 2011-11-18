@@ -242,7 +242,7 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
       case Left(e)  ⇒ throw e
       case Right(b) ⇒ b
     }
-    val arguments = List(
+    val arguments = Seq(
       classOf[Settings] -> settings,
       classOf[ActorPath] -> rootPath,
       classOf[EventStream] -> eventStream,
@@ -263,9 +263,6 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
   def deathWatch: DeathWatch = provider.deathWatch
   def nodename: String = provider.nodename
 
-  terminationFuture.onComplete(_ ⇒ scheduler.stop())
-  terminationFuture.onComplete(_ ⇒ dispatcher.shutdown())
-
   @volatile
   private var _serialization: Serialization = _
   def serialization = _serialization
@@ -275,8 +272,7 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
 
   def /(actorName: String): ActorPath = guardian.path / actorName
 
-  def start(): this.type = {
-    if (_serialization != null) throw new IllegalStateException("cannot initialize ActorSystemImpl twice!")
+  private lazy val _start: this.type = {
     _serialization = new Serialization(this)
     _typedActor = new TypedActor(settings, _serialization)
     provider.init(this)
@@ -286,12 +282,16 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
     this
   }
 
+  def start() = _start
+
   def registerOnTermination(code: ⇒ Unit) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
+    terminationFuture onComplete (_ ⇒ scheduler.stop())
+    terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
   }
 
 }

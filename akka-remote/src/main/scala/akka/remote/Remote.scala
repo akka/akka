@@ -31,8 +31,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   val log = Logging(system, this)
 
   import system._
-  val AC = settings
-  import AC._
+  import settings._
 
   // TODO move to settings?
   val shouldCompressData = config.getBoolean("akka.remote.use-compression")

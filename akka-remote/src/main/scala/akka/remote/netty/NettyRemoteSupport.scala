@@ -351,6 +351,7 @@ class ActiveRemoteClientHandler(
  * Provides the implementation of the Netty remote support
  */
 class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
+  val log = Logging(system, this)
 
   val serverSettings = new RemoteServerSettings(system.settings.config, system.settings.DefaultTimeUnit)
   val clientSettings = new RemoteClientSettings(system.settings.config, system.settings.DefaultTimeUnit)
@@ -474,8 +475,8 @@ class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) wi
       remoteClients.clear()
     } finally {
       clientsLock.writeLock().unlock()
+      currentServer.getAndSet(None) foreach { _.shutdown() }
     }
-    currentServer.getAndSet(None) foreach { _.shutdown() }
   }
 }
 
