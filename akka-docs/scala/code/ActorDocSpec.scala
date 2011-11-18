@@ -8,7 +8,6 @@ import akka.util.duration._
 //#imports
 import akka.actor.Actor
 import akka.event.Logging
-import com.typesafe.config.Config
 
 //#imports
 
@@ -31,7 +30,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     // testing the actor
 
-    // TODO: convert docs to AkkaSpec(Configuration(...))
+    // TODO: convert docs to AkkaSpec(Map(...))
     val filter = EventFilter.custom {
       case e: Logging.Info ⇒ true
       case _               ⇒ false
