@@ -14,14 +14,13 @@ import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
-import java.io.StringReader
 
 object TimingTest extends Tag("timing")
 
 object AkkaSpec {
   val testConf =
     ActorSystem.DefaultConfigurationLoader.defaultConfig.withFallback(
-      ConfigFactory.parseReader(new StringReader("""
+      ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
@@ -32,7 +31,7 @@ object AkkaSpec {
           }
         }
       }
-      """), ConfigParseOptions.defaults))
+      """, ConfigParseOptions.defaults))
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._

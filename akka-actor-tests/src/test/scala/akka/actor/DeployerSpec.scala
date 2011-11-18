@@ -8,12 +8,11 @@ import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
 import akka.remote.RemoteAddress
-import java.io.StringReader
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 
 object DeployerSpec {
-  val deployerConf = ConfigFactory.parseReader(new StringReader("""
+  val deployerConf = ConfigFactory.parseString("""
       akka.actor.deployment {
         /app/service-ping {
           nr-of-instances = 3
@@ -22,7 +21,7 @@ object DeployerSpec {
           }
         }
       }
-      """), ConfigParseOptions.defaults)
+      """, ConfigParseOptions.defaults)
 
 }
 

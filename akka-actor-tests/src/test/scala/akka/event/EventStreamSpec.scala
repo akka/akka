@@ -10,17 +10,16 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
-import java.io.StringReader
 
 object EventStreamSpec {
 
-  val config = ConfigFactory.parseReader(new StringReader("""
+  val config = ConfigFactory.parseString("""
       akka {
         stdout-loglevel = WARNING
         loglevel = INFO
         event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
       }
-      """.format(Logging.StandardOutLoggerName)), ConfigParseOptions.defaults)
+      """.format(Logging.StandardOutLoggerName), ConfigParseOptions.defaults)
 
   case class M(i: Int)
 

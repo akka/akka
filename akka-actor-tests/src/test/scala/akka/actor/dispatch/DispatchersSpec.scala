@@ -8,7 +8,6 @@ import scala.reflect.{ Manifest }
 import akka.dispatch._
 import akka.testkit.AkkaSpec
 import scala.collection.JavaConverters._
-import java.io.StringReader
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 
@@ -36,14 +35,13 @@ class DispatchersSpec extends AkkaSpec {
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
-  val dispatcherConf = ConfigFactory.parseReader(
-    new StringReader("""
+  val dispatcherConf = ConfigFactory.parseString("""
       myapp {
         mydispatcher {
           throughput = 17
         }
       }
-      """), ConfigParseOptions.defaults)
+      """, ConfigParseOptions.defaults)
 
   lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
     validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t).asJava).withFallback(defaultDispatcherConfig)))).toMap
