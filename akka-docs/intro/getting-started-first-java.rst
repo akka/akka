@@ -180,7 +180,7 @@ It should now look something like this:
 
         <dependencies>
             <dependency>
-                <groupId>se.scalablesolutions.akka</groupId>
+                <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-actor</artifactId>
                 <version>2.0-SNAPSHOT</version>
             </dependency>
