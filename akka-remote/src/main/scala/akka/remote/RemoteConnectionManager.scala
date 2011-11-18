@@ -25,7 +25,7 @@ class RemoteConnectionManager(
   initialConnections: Map[RemoteAddress, ActorRef] = Map.empty[RemoteAddress, ActorRef])
   extends ConnectionManager {
 
-  val log = Logging(system, this)
+  val log = Logging(system, "RemoteConnectionManager")
 
   // FIXME is this VersionedIterable really needed? It is not used I think. Complicates API. See 'def connections' etc.
   case class State(version: Long, connections: Map[RemoteAddress, ActorRef])

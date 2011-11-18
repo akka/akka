@@ -34,7 +34,8 @@ class RemoteActorRefProvider(
   val dispatcher: MessageDispatcher,
   val scheduler: Scheduler) extends ActorRefProvider {
 
-  val log = Logging(eventStream, this)
+  val log = Logging(eventStream, "RemoteActorRefProvider")
+
   val local = new LocalActorRefProvider(settings, rootPath, eventStream, dispatcher, scheduler)
 
   def deathWatch = local.deathWatch

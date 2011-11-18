@@ -38,7 +38,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   val writeTimeout = system.settings.config.getInt(WRITE_TIMEOUT_KEY, 3000)
   val readTimeout = system.settings.config.getInt(READ_TIMEOUT_KEY, 3000)
 
-  val log = Logging(system, this)
+  val log = Logging(system, "MongoBasedMailbox")
 
   @volatile
   private var mongo = connect()

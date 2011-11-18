@@ -30,7 +30,7 @@ class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
-  val log = Logging(system, this)
+  val log = Logging(system, "ZooKeeperBasedMailbox")
 
   private val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout)
   private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), blockingQueue)

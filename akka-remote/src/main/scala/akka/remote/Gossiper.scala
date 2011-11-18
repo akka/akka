@@ -102,7 +102,7 @@ class Gossiper(remote: Remote) {
     nodeMembershipChangeListeners: Set[NodeMembershipChangeListener] = Set.empty[NodeMembershipChangeListener])
 
   private val system = remote.system
-  private val log = Logging(system, this)
+  private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[RemoteAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config

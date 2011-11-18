@@ -18,7 +18,7 @@ object TimingTest extends Tag("timing")
 abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  val log: LoggingAdapter = Logging(system, this)
+  val log: LoggingAdapter = Logging(system, this.getClass)
 
   final override def beforeAll {
     atStartup()

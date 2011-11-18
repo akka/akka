@@ -28,7 +28,7 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
   val messageSubmitTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt
   val messageTimeToLive = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), defaultTimeUnit).toSeconds.toInt
 
-  val log = Logging(system, this)
+  val log = Logging(system, "BeanstalkBasedMailbox")
 
   private val queue = new ThreadLocal[Client] { override def initialValue = connect(name) }
 

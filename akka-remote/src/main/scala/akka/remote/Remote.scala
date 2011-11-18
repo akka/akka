@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class Remote(val system: ActorSystemImpl, val nodename: String) {
 
-  val log = Logging(system, this)
+  val log = Logging(system, "Remote")
 
   import system._
   import settings._
@@ -264,7 +264,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
         .newInstance(exception.getMessage).asInstanceOf[Throwable]
     } catch {
       case problem: Exception ⇒
-        remote.system.eventStream.publish(Logging.Error(problem, remote, problem.getMessage))
+        remote.system.eventStream.publish(Logging.Error(problem, "RemoteMessage", problem.getMessage))
         CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException(problem, classname, exception.getMessage)
     }
   }

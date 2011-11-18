@@ -144,7 +144,7 @@ class LocalActorRefProvider(
   val dispatcher: MessageDispatcher,
   val scheduler: Scheduler) extends ActorRefProvider {
 
-  val log = Logging(eventStream, this)
+  val log = Logging(eventStream, "LocalActorRefProvider")
 
   // FIXME remove/replave (clustering shall not leak into akka-actor)
   val nodename: String = System.getProperty("akka.cluster.nodename") match {
