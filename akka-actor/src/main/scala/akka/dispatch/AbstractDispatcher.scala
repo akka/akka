@@ -236,10 +236,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if (mbox.dispatcher eq this) {
-      mbox.becomeOpen()
+    if ((mbox.dispatcher eq this) && mbox.becomeOpen())
       registerForExecution(mbox, false, false)
-    }
   }
 
   /**

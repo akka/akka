@@ -26,19 +26,6 @@ object Helpers {
     def compare(a: AnyRef, b: AnyRef): Int = compareIdentityHash(a, b)
   }
 
-  def intToBytes(value: Int): Array[Byte] = {
-    val bytes = new Array[Byte](4)
-    bytes(0) = (value >>> 24).asInstanceOf[Byte]
-    bytes(1) = (value >>> 16).asInstanceOf[Byte]
-    bytes(2) = (value >>> 8).asInstanceOf[Byte]
-    bytes(3) = value.asInstanceOf[Byte]
-    bytes
-  }
-
-  def bytesToInt(bytes: Array[Byte], offset: Int): Int = {
-    (0 until 4).foldLeft(0)((value, index) ⇒ value + ((bytes(index + offset) & 0x000000FF) << ((4 - 1 - index) * 8)))
-  }
-
   final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*?"
 
   @tailrec

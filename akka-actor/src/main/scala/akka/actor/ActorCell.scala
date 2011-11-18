@@ -167,6 +167,7 @@ private[akka] class ActorCell(
     }
   }
 
+  //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage) {
 
     def create(): Unit = try {
@@ -244,26 +245,23 @@ private[akka] class ActorCell(
     }
 
     try {
-      val isClosed = mailbox.isClosed //Fence plus volatile read
-      if (!isClosed) {
-        if (stopping) message match {
-          case Terminate() ⇒ terminate() // to allow retry
-          case _           ⇒
-        }
-        else message match {
-          case Create()        ⇒ create()
-          case Recreate(cause) ⇒ recreate(cause)
-          case Link(subject) ⇒
-            system.deathWatch.subscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.toString, "now monitoring " + subject))
-          case Unlink(subject) ⇒
-            system.deathWatch.unsubscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.toString, "stopped monitoring " + subject))
-          case Suspend()        ⇒ suspend()
-          case Resume()         ⇒ resume()
-          case Terminate()      ⇒ terminate()
-          case Supervise(child) ⇒ supervise(child)
-        }
+      if (stopping) message match {
+        case Terminate() ⇒ terminate() // to allow retry
+        case _           ⇒
+      }
+      else message match {
+        case Create()        ⇒ create()
+        case Recreate(cause) ⇒ recreate(cause)
+        case Link(subject) ⇒
+          system.deathWatch.subscribe(self, subject)
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.toString, "now monitoring " + subject))
+        case Unlink(subject) ⇒
+          system.deathWatch.unsubscribe(self, subject)
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.toString, "stopped monitoring " + subject))
+        case Suspend()        ⇒ suspend()
+        case Resume()         ⇒ resume()
+        case Terminate()      ⇒ terminate()
+        case Supervise(child) ⇒ supervise(child)
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
@@ -273,50 +271,48 @@ private[akka] class ActorCell(
     }
   }
 
+  //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope) {
     try {
-      val isClosed = mailbox.isClosed //Fence plus volatile read
-      if (!isClosed) {
-        currentMessage = messageHandle
+      currentMessage = messageHandle
+      try {
         try {
-          try {
-            cancelReceiveTimeout() // FIXME: leave this here?
-            messageHandle.message match {
-              case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-              case msg ⇒
-                if (stopping) {
-                  // receiving Terminated in response to stopping children is too common to generate noise
-                  if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
-                } else {
-                  actor(msg)
-                }
-            }
-            currentMessage = null // reset current message after successful invocation
-          } catch {
-            case e ⇒
-              system.eventStream.publish(Error(e, self.toString, e.getMessage))
-
-              // prevent any further messages to be processed until the actor has been restarted
-              dispatcher.suspend(this)
-
-              // make sure that InterruptedException does not leave this thread
-              if (e.isInstanceOf[InterruptedException]) {
-                val ex = ActorInterruptedException(e)
-                props.faultHandler.handleSupervisorFailing(self, children)
-                parent.tell(Failed(ex), self)
-                throw e //Re-throw InterruptedExceptions as expected
+          cancelReceiveTimeout() // FIXME: leave this here?
+          messageHandle.message match {
+            case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+            case msg ⇒
+              if (stopping) {
+                // receiving Terminated in response to stopping children is too common to generate noise
+                if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
               } else {
-                props.faultHandler.handleSupervisorFailing(self, children)
-                parent.tell(Failed(e), self)
+                actor(msg)
               }
-          } finally {
-            checkReceiveTimeout // Reschedule receive timeout
           }
+          currentMessage = null // reset current message after successful invocation
         } catch {
           case e ⇒
             system.eventStream.publish(Error(e, self.toString, e.getMessage))
-            throw e
+
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
+
+            // make sure that InterruptedException does not leave this thread
+            if (e.isInstanceOf[InterruptedException]) {
+              val ex = ActorInterruptedException(e)
+              props.faultHandler.handleSupervisorFailing(self, children)
+              parent.tell(Failed(ex), self)
+              throw e //Re-throw InterruptedExceptions as expected
+            } else {
+              props.faultHandler.handleSupervisorFailing(self, children)
+              parent.tell(Failed(e), self)
+            }
+        } finally {
+          checkReceiveTimeout // Reschedule receive timeout
         }
+      } catch {
+        case e ⇒
+          system.eventStream.publish(Error(e, self.toString, e.getMessage))
+          throw e
       }
     }
   }

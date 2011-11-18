@@ -232,9 +232,6 @@ abstract class ActorModelSpec extends AkkaSpec {
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String
 
-  // BalancingDispatcher of course does not work when another actor is in the pool, so overridden below
-  protected def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = dispatcher
-
   "A " + dispatcherType must {
 
     "must dynamically handle its own life cycle" in {
@@ -347,9 +344,25 @@ abstract class ActorModelSpec extends AkkaSpec {
         val boss = actorOf(Props(context ⇒ {
           case "run"             ⇒ for (_ ← 1 to num) (context.self startsWatching context.actorOf(props)) ! cachedMessage
           case Terminated(child) ⇒ stopLatch.countDown()
-        }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
+        }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("boss")))
         boss ! "run"
-        assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+        try {
+          assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+        } catch {
+          case e ⇒
+            val buddies = dispatcher.asInstanceOf[BalancingDispatcher].buddies
+            val mq = dispatcher.asInstanceOf[BalancingDispatcher].messageQueue
+
+            System.err.println("Buddies left: ")
+            buddies.toArray foreach {
+              case cell: ActorCell ⇒
+                System.err.println(" - " + cell.self.path + " " + cell.isShutdown + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
+            }
+
+            System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
+
+            throw e
+        }
         assertCountDown(stopLatch, waitTime, "Expected all children to stop")
         boss.stop()
       }
@@ -450,8 +463,6 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
-
-  override def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = system.dispatcher
 
   "A " + dispatcherType must {
     "process messages in parallel" in {
