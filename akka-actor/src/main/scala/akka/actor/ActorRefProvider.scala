@@ -13,9 +13,9 @@ import akka.config.ConfigurationException
 import akka.dispatch.{ SystemMessage, Supervise, Promise, MessageDispatcher, Future, DefaultPromise, Dispatcher, Mailbox, Envelope }
 import akka.event.{ Logging, DeathWatch, ActorClassification, EventStream }
 import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter }
-import akka.util.Helpers
 import akka.AkkaException
 import com.eaio.uuid.UUID
+import akka.util.{ Switch, Helpers }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -75,7 +75,7 @@ trait ActorRefProvider {
    * This Future is completed upon termination of this ActorRefProvider, which
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
-  private[akka] def terminationFuture: Future[ActorSystem.ExitStatus]
+  private[akka] def terminationFuture: Future[Unit]
 }
 
 /**
@@ -154,7 +154,7 @@ class LocalActorRefProvider(
 
   private[akka] val deployer: Deployer = new Deployer(settings, eventStream, nodename)
 
-  val terminationFuture = new DefaultPromise[ActorSystem.ExitStatus](Timeout.never)(dispatcher)
+  val terminationFuture = new DefaultPromise[Unit](Timeout.never)(dispatcher)
 
   /*
    * generate name for temporary actor refs
@@ -173,8 +173,10 @@ class LocalActorRefProvider(
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new MinimalActorRef {
+    val stopped = new Switch(false)
+
     @volatile
-    var stopped = false
+    var causeOfTermination: Option[Throwable] = None
 
     override val name = "bubble-walker"
 
@@ -185,17 +187,17 @@ class LocalActorRefProvider(
 
     override def toString = name
 
-    override def stop() = stopped = true
+    override def stop() = stopped switchOn { terminationFuture.complete(causeOfTermination.toLeft(())) }
 
-    override def isShutdown = stopped
+    override def isShutdown = stopped.isOn
 
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-      case Failed(ex)      ⇒ sender.stop()
-      case ChildTerminated ⇒ terminationFuture.completeWithResult(ActorSystem.Stopped)
+    override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
+      case Failed(ex)      ⇒ causeOfTermination = Some(ex); sender.stop()
+      case ChildTerminated ⇒ stop()
       case _               ⇒ log.error(this + " received unexpected message " + message)
-    }
+    })
 
-    protected[akka] override def sendSystemMessage(message: SystemMessage) {
+    protected[akka] override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
         case Supervise(child) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _                ⇒ log.error(this + " received unexpected system message " + message)

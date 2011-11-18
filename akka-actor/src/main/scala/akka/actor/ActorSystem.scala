@@ -70,10 +70,6 @@ object ActorSystem {
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
-  sealed trait ExitStatus
-  case object Stopped extends ExitStatus
-  case class Failed(cause: Throwable) extends ExitStatus
-
   class Settings(val config: Configuration) {
     import config._
     val ConfigVersion = getString("akka.version", Version)
@@ -235,8 +231,8 @@ class ActorSystemImpl(val name: String, config: Configuration) extends ActorSyst
       case Right(p) ⇒ p
     }
   }
-
-  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+  //FIXME Set this to a Failure when things bubble to the top
+  def terminationFuture: Future[Unit] = provider.terminationFuture
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
