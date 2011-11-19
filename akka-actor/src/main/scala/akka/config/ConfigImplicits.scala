@@ -11,13 +11,6 @@ object ConfigImplicits {
 
 class ConfigWrapper(config: Config) {
 
-  def getStringOption(path: String): Option[String] = {
-    config.hasPath(path) match {
-      case false ⇒ None
-      case true  ⇒ Some(config.getString(path))
-    }
-  }
-
   def getConfigOption(path: String): Option[Config] = {
     config.hasPath(path) match {
       case false ⇒ None

@@ -48,10 +48,12 @@ object ActorSystem {
   def apply(): ActorSystem = apply("default")
 
   class Settings(cfg: Config) {
-    val config: ConfigRoot = ConfigFactory.emptyRoot("akka").withFallback(cfg).withFallback(DefaultConfigurationLoader.referenceConfig).resolve()
+    private def referenceConfig: Config =
+      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf",
+        ConfigParseOptions.defaults.setAllowMissing(false))
+    val config: ConfigRoot = ConfigFactory.emptyRoot("akka").withFallback(cfg).withFallback(referenceConfig).resolve()
 
     import scala.collection.JavaConverters._
-    import akka.config.ConfigImplicits._
     import config._
     val ConfigVersion = getString("akka.version")
 
@@ -81,16 +83,19 @@ object ActorSystem {
     val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time"), DefaultTimeUnit)
     val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.default-dispatcher.throughput-deadline-time"), DefaultTimeUnit)
 
-    val Home = config.getStringOption("akka.home")
+    val Home = config.getString("akka.home") match {
+      case "" ⇒ None
+      case x  ⇒ Some(x)
+    }
     val BootClasses: Seq[String] = getStringList("akka.boot").asScala
 
     val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
 
-    // TODO move to cluster extension
+    // FIXME move to cluster extension
     val ClusterEnabled = EnabledModules exists (_ == "cluster")
     val ClusterName = getString("akka.cluster.name")
 
-    // TODO move to remote extension
+    // FIXME move to remote extension
     val RemoteTransport = getString("akka.remote.layer")
     val RemoteServerPort = getInt("akka.remote.server.port")
     val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
@@ -104,43 +109,41 @@ object ActorSystem {
 
   object DefaultConfigurationLoader {
 
-    lazy val defaultConfig: Config = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
-
-    val envConf = System.getenv("AKKA_MODE") match {
-      case null | "" ⇒ None
-      case value     ⇒ Some(value)
-    }
-
-    val systemConf = System.getProperty("akka.mode") match {
-      case null | "" ⇒ None
-      case value     ⇒ Some(value)
-    }
+    val defaultConfig: Config = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
 
     // file extensions (.conf, .json, .properties), are handled by parseFileAnySyntax
-    val defaultLocation = (systemConf orElse envConf).map("akka." + _).getOrElse("akka")
+    val defaultLocation: String = (systemMode orElse envMode).map("akka." + _).getOrElse("akka")
+
+    private def envMode = System.getenv("AKKA_MODE") match {
+      case null | "" ⇒ None
+      case value     ⇒ Some(value)
+    }
+
+    private def systemMode = System.getProperty("akka.mode") match {
+      case null | "" ⇒ None
+      case value     ⇒ Some(value)
+    }
+
     private def configParseOptions = ConfigParseOptions.defaults.setAllowMissing(false)
 
-    lazy val fromProperties = try {
+    private def fromProperties = try {
       val property = Option(System.getProperty("akka.config"))
       property.map(p ⇒
-        ConfigFactory.systemProperties().withFallback(
+        ConfigFactory.systemProperties.withFallback(
           ConfigFactory.parseFileAnySyntax(new File(p), configParseOptions)))
     } catch { case _ ⇒ None }
 
-    lazy val fromClasspath = try {
-      Option(ConfigFactory.systemProperties().withFallback(
+    private def fromClasspath = try {
+      Option(ConfigFactory.systemProperties.withFallback(
         ConfigFactory.parseResourceAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
     } catch { case _ ⇒ None }
 
-    lazy val fromHome = try {
-      Option(ConfigFactory.systemProperties().withFallback(
+    private def fromHome = try {
+      Option(ConfigFactory.systemProperties.withFallback(
         ConfigFactory.parseFileAnySyntax(new File(GlobalHome.get + "/config/" + defaultLocation), configParseOptions)))
     } catch { case _ ⇒ None }
 
-    val referenceConfig: Config =
-      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf", configParseOptions)
-
-    lazy val emptyConfig = ConfigFactory.systemProperties()
+    private def emptyConfig = ConfigFactory.systemProperties
 
   }
 

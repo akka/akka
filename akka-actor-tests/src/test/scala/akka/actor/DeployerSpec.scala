@@ -32,7 +32,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
   "A Deployer" must {
 
     "be able to parse 'akka.actor.deployment._' config elements" in {
-      val p = system.settings.config.getString("akka.actor.provider")
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupInConfig("/app/service-ping")
       deployment must be('defined)
 

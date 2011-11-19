@@ -129,13 +129,13 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
 
   def configure(config: Config) = synchronized {
     maxItems set Some(config.getInt("akka.actor.mailbox.file-based.max-items"))
-    maxSize set Some(config.getLong("akka.actor.mailbox.file-based.max-size"))
-    maxItemSize set Some(config.getLong("akka.actor.mailbox.file-based.max-item-size"))
+    maxSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-size"))
+    maxItemSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-item-size"))
     maxAge set Some(config.getInt("akka.actor.mailbox.file-based.max-age"))
-    maxJournalSize set Some(config.getLong("akka.actor.mailbox.file-based.max-journal-size"))
-    maxMemorySize set Some(config.getLong("akka.actor.mailbox.file-based.max-memory-size"))
+    maxJournalSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-journal-size"))
+    maxMemorySize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-memory-size"))
     maxJournalOverflow set Some(config.getInt("akka.actor.mailbox.file-based.max-journal-overflow"))
-    maxJournalSizeAbsolute set Some(config.getLong("akka.actor.mailbox.file-based.max-journal-size-absolute"))
+    maxJournalSizeAbsolute set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-journal-size-absolute"))
     discardOldWhenFull set Some(config.getBoolean("akka.actor.mailbox.file-based.discard-old-when-full"))
     keepJournal set Some(config.getBoolean("akka.actor.mailbox.file-based.keep-journal"))
     syncJournal set Some(config.getBoolean("akka.actor.mailbox.file-based.sync-journal"))
