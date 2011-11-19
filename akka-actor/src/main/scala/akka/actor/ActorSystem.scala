@@ -21,6 +21,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
+import java.lang.reflect.InvocationTargetException
 
 object ActorSystem {
 
@@ -251,8 +252,9 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
     val values: Array[AnyRef] = arguments map (_._2) toArray
 
     ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
-      case Left(e)  ⇒ throw e
-      case Right(p) ⇒ p
+      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
+      case Left(e)                            ⇒ throw e
+      case Right(p)                           ⇒ p
     }
   }
   //FIXME Set this to a Failure when things bubble to the top

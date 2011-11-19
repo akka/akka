@@ -80,14 +80,17 @@ class Serialization(val system: ActorSystemImpl) {
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
   val bindings: Map[String, String] = {
-    import akka.config.ConfigImplicits._
     import scala.collection.JavaConverters._
-    system.settings.config.getConfigOption("akka.actor.serialization-bindings") map {
-      _.toObject.unwrapped.asScala.foldLeft(Map[String, String]()) {
-        case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
-        case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
-      }
-    } getOrElse Map()
+    val configPath = "akka.actor.serialization-bindings"
+    system.settings.config.hasPath(configPath) match {
+      case false ⇒ Map()
+      case true ⇒
+        val serializationBindings = system.settings.config.getConfig(configPath).toObject.unwrapped.asScala
+        serializationBindings.foldLeft(Map[String, String]()) {
+          case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
+          case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
+        }
+    }
   }
 
   /**

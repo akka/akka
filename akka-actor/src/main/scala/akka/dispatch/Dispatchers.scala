@@ -175,12 +175,12 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * or else use the supplied default dispatcher
    */
   def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher, cfg: Config = settings.config): MessageDispatcher = {
-    import akka.config.ConfigImplicits._
     import scala.collection.JavaConverters._
     def simpleName = key.substring(key.lastIndexOf('.') + 1)
-    cfg.getConfigOption(key) match {
-      case None ⇒ default
-      case Some(conf) ⇒
+    cfg.hasPath(key) match {
+      case false ⇒ default
+      case true ⇒
+        val conf = cfg.getConfig(key)
         val confWithName = conf.withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
         from(confWithName).getOrElse(default)
     }
