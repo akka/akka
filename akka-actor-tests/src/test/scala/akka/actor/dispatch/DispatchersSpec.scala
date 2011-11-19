@@ -50,7 +50,7 @@ class DispatchersSpec extends AkkaSpec {
   "Dispatchers" must {
 
     "use default dispatcher if type is missing" in {
-      val dispatcher = from(ConfigFactory.parseMap(Map().asJava).withFallback(defaultDispatcherConfig))
+      val dispatcher = from(ConfigFactory.empty.withFallback(defaultDispatcherConfig))
       dispatcher.map(_.name) must be(Some("DefaultDispatcher"))
     }
 

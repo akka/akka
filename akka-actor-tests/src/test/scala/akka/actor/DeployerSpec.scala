@@ -16,6 +16,7 @@ object DeployerSpec {
       akka.actor.deployment {
         /app/service-ping {
           nr-of-instances = 3
+          router = "round-robin"
           remote {
             nodes = ["wallace:2552", "gromit:2552"]
           }
