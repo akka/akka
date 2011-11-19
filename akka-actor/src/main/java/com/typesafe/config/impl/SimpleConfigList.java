@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import java.util.ArrayList;

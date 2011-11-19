@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config;
 
 /**
@@ -20,9 +23,6 @@ public interface ConfigRoot extends Config {
 
     @Override
     ConfigRoot withFallback(ConfigMergeable fallback);
-
-    @Override
-    ConfigRoot withFallbacks(ConfigMergeable... fallbacks);
 
     /**
      * Gets the global app name that this root represents.

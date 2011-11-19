@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import java.io.IOException;
@@ -177,11 +180,12 @@ final class PropertiesParser {
                     .get(parentPath) : root;
 
             AbstractConfigObject o = new SimpleConfigObject(origin, scope,
-                    ResolveStatus.RESOLVED);
+                    ResolveStatus.RESOLVED, false /* ignoresFallbacks */);
             parent.put(scopePath.last(), o);
         }
 
         // return root config object
-        return new SimpleConfigObject(origin, root, ResolveStatus.RESOLVED);
+        return new SimpleConfigObject(origin, root, ResolveStatus.RESOLVED,
+                false /* ignoresFallbacks */);
     }
 }

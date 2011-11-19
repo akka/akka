@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import java.util.ArrayList;
@@ -6,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.typesafe.config.ConfigException;
-import com.typesafe.config.ConfigMergeable;
 import com.typesafe.config.ConfigOrigin;
 import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
@@ -25,17 +27,19 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     // than one piece everything is stringified and concatenated
     final private List<Object> pieces;
     // the length of any prefixes added with relativized()
-    final int prefixLength;
+    final private int prefixLength;
+    final private boolean ignoresFallbacks;
 
     ConfigSubstitution(ConfigOrigin origin, List<Object> pieces) {
-        this(origin, pieces, 0);
+        this(origin, pieces, 0, false);
     }
 
     private ConfigSubstitution(ConfigOrigin origin, List<Object> pieces,
-            int prefixLength) {
+            int prefixLength, boolean ignoresFallbacks) {
         super(origin);
         this.pieces = pieces;
         this.prefixLength = prefixLength;
+        this.ignoresFallbacks = ignoresFallbacks;
     }
 
     @Override
@@ -52,26 +56,41 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     }
 
     @Override
-    public AbstractConfigValue withFallback(ConfigMergeable mergeable) {
-        ConfigValue other = mergeable.toValue();
+    protected ConfigSubstitution newCopy(boolean ignoresFallbacks) {
+        return new ConfigSubstitution(origin(), pieces, prefixLength, ignoresFallbacks);
+    }
 
-        if (other instanceof AbstractConfigObject
-                || other instanceof Unmergeable) {
-            // if we turn out to be an object, and the fallback also does,
-            // then a merge may be required; delay until we resolve.
-            List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
-            newStack.add(this);
-            if (other instanceof Unmergeable)
-                newStack.addAll(((Unmergeable) other).unmergedValues());
-            else
-                newStack.add((AbstractConfigValue) other);
-            return new ConfigDelayedMerge(
-                    AbstractConfigObject.mergeOrigins(newStack), newStack);
-        } else {
-            // if the other is not an object, there won't be anything
-            // to merge with, so we are it even if we are an object.
-            return this;
-        }
+    @Override
+    protected boolean ignoresFallbacks() {
+        return ignoresFallbacks;
+    }
+
+    @Override
+    protected AbstractConfigValue mergedWithTheUnmergeable(Unmergeable fallback) {
+        if (ignoresFallbacks)
+            throw new ConfigException.BugOrBroken("should not be reached");
+
+        // if we turn out to be an object, and the fallback also does,
+        // then a merge may be required; delay until we resolve.
+        List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
+        newStack.add(this);
+        newStack.addAll(fallback.unmergedValues());
+        return new ConfigDelayedMerge(AbstractConfigObject.mergeOrigins(newStack), newStack,
+                ((AbstractConfigValue) fallback).ignoresFallbacks());
+    }
+
+    @Override
+    protected AbstractConfigValue mergedWithObject(AbstractConfigObject fallback) {
+        if (ignoresFallbacks)
+            throw new ConfigException.BugOrBroken("should not be reached");
+
+        // if we turn out to be an object, and the fallback also does,
+        // then a merge may be required; delay until we resolve.
+        List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
+        newStack.add(this);
+        newStack.add(fallback);
+        return new ConfigDelayedMerge(AbstractConfigObject.mergeOrigins(newStack), newStack,
+                fallback.ignoresFallbacks());
     }
 
     @Override
@@ -198,7 +217,7 @@ final class ConfigSubstitution extends AbstractConfigValue implements
             }
         }
         return new ConfigSubstitution(origin(), newPieces, prefixLength
-                + prefix.length());
+                + prefix.length(), ignoresFallbacks);
     }
 
     @Override

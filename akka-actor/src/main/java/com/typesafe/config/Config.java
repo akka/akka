@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config;
 
 import java.util.List;
@@ -52,9 +55,6 @@ public interface Config extends ConfigMergeable {
 
     @Override
     Config withFallback(ConfigMergeable other);
-
-    @Override
-    Config withFallbacks(ConfigMergeable... others);
 
     @Override
     ConfigObject toValue();

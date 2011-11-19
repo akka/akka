@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import java.util.AbstractMap;
@@ -17,21 +20,23 @@ final class SimpleConfigObject extends AbstractConfigObject {
     // this map should never be modified - assume immutable
     final private Map<String, AbstractConfigValue> value;
     final private boolean resolved;
+    final private boolean ignoresFallbacks;
 
     SimpleConfigObject(ConfigOrigin origin,
-            Map<String, AbstractConfigValue> value, ResolveStatus status) {
+            Map<String, AbstractConfigValue> value, ResolveStatus status,
+            boolean ignoresFallbacks) {
         super(origin);
         if (value == null)
             throw new ConfigException.BugOrBroken(
                     "creating config object with null map");
         this.value = value;
         this.resolved = status == ResolveStatus.RESOLVED;
+        this.ignoresFallbacks = ignoresFallbacks;
     }
 
     SimpleConfigObject(ConfigOrigin origin,
             Map<String, AbstractConfigValue> value) {
-        this(origin, value, ResolveStatus.fromValues(value
-                .values()));
+        this(origin, value, ResolveStatus.fromValues(value.values()), false /* ignoresFallbacks */);
     }
 
     @Override
@@ -40,14 +45,18 @@ final class SimpleConfigObject extends AbstractConfigObject {
     }
 
     @Override
-    public SimpleConfigObject newCopy(ResolveStatus newStatus) {
-        return new SimpleConfigObject(origin(), value,
-                newStatus);
+    protected SimpleConfigObject newCopy(ResolveStatus newStatus, boolean newIgnoresFallbacks) {
+        return new SimpleConfigObject(origin(), value, newStatus, newIgnoresFallbacks);
     }
 
     @Override
     ResolveStatus resolveStatus() {
         return ResolveStatus.fromBoolean(resolved);
+    }
+
+    @Override
+    protected boolean ignoresFallbacks() {
+        return ignoresFallbacks;
     }
 
     @Override

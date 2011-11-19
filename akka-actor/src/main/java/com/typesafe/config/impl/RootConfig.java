@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import com.typesafe.config.ConfigMergeable;
@@ -32,20 +35,14 @@ final class RootConfig extends SimpleConfig implements ConfigRoot {
         // if the object is already resolved then we should end up returning
         // "this" here, since asRoot() should return this if the path
         // is unchanged.
-        SimpleConfig resolved = resolvedObject(options).toConfig();
-        return resolved.asRoot(rootPath);
+        AbstractConfigObject resolved = resolvedObject(options);
+        return newRootIfObjectChanged(this, resolved);
     }
 
     @Override
     public RootConfig withFallback(ConfigMergeable value) {
         // this can return "this" if the withFallback does nothing
-        return super.withFallback(value).asRoot(rootPath);
-    }
-
-    @Override
-    public RootConfig withFallbacks(ConfigMergeable... values) {
-        // this can return "this" if the withFallbacks does nothing
-        return super.withFallbacks(values).asRoot(rootPath);
+        return newRootIfObjectChanged(this, super.withFallback(value).toObject());
     }
 
     Path rootPathObject() {

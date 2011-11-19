@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config.impl;
 
 import java.util.ArrayList;
@@ -18,25 +21,40 @@ class ConfigDelayedMergeObject extends AbstractConfigObject implements
         Unmergeable {
 
     final private List<AbstractConfigValue> stack;
+    final private boolean ignoresFallbacks;
 
     ConfigDelayedMergeObject(ConfigOrigin origin,
             List<AbstractConfigValue> stack) {
+        this(origin, stack, false /* ignoresFallbacks */);
+    }
+
+    ConfigDelayedMergeObject(ConfigOrigin origin, List<AbstractConfigValue> stack,
+            boolean ignoresFallbacks) {
         super(origin);
         this.stack = stack;
+        this.ignoresFallbacks = ignoresFallbacks;
+
         if (stack.isEmpty())
             throw new ConfigException.BugOrBroken(
                     "creating empty delayed merge object");
         if (!(stack.get(0) instanceof AbstractConfigObject))
             throw new ConfigException.BugOrBroken(
                     "created a delayed merge object not guaranteed to be an object");
+
+        for (AbstractConfigValue v : stack) {
+            if (v instanceof ConfigDelayedMerge || v instanceof ConfigDelayedMergeObject)
+                throw new ConfigException.BugOrBroken(
+                        "placed nested DelayedMerge in a ConfigDelayedMergeObject, should have consolidated stack");
+        }
     }
 
     @Override
-    public ConfigDelayedMergeObject newCopy(ResolveStatus status) {
+    protected ConfigDelayedMergeObject newCopy(ResolveStatus status,
+            boolean ignoresFallbacks) {
         if (status != resolveStatus())
             throw new ConfigException.BugOrBroken(
                     "attempt to create resolved ConfigDelayedMergeObject");
-        return new ConfigDelayedMergeObject(origin(), stack);
+        return new ConfigDelayedMergeObject(origin(), stack, ignoresFallbacks);
     }
 
     @Override
@@ -64,36 +82,32 @@ class ConfigDelayedMergeObject extends AbstractConfigObject implements
         for (AbstractConfigValue o : stack) {
             newStack.add(o.relativized(prefix));
         }
-        return new ConfigDelayedMergeObject(origin(), newStack);
+        return new ConfigDelayedMergeObject(origin(), newStack,
+                ignoresFallbacks);
+    }
+
+    @Override
+    protected boolean ignoresFallbacks() {
+        return ignoresFallbacks;
+    }
+
+    @Override
+    protected ConfigDelayedMergeObject mergedWithObject(AbstractConfigObject fallback) {
+        if (ignoresFallbacks)
+            throw new ConfigException.BugOrBroken("should not be reached");
+
+        // since we are an object, and the fallback is, we'll need to
+        // merge the fallback once we resolve.
+        List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
+        newStack.addAll(stack);
+        newStack.add(fallback);
+        return new ConfigDelayedMergeObject(AbstractConfigObject.mergeOrigins(newStack), newStack,
+                fallback.ignoresFallbacks());
     }
 
     @Override
     public ConfigDelayedMergeObject withFallback(ConfigMergeable mergeable) {
-        ConfigValue other = mergeable.toValue();
-
-        if (other instanceof AbstractConfigObject
-                || other instanceof Unmergeable) {
-            // since we are an object, and the fallback could be,
-            // then a merge may be required; delay until we resolve.
-            List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
-            newStack.addAll(stack);
-            if (other instanceof Unmergeable)
-                newStack.addAll(((Unmergeable) other).unmergedValues());
-            else
-                newStack.add((AbstractConfigValue) other);
-            return new ConfigDelayedMergeObject(
-                    AbstractConfigObject.mergeOrigins(newStack),
-                    newStack);
-        } else {
-            // if the other is not an object, there won't be anything
-            // to merge with.
-            return this;
-        }
-    }
-
-    @Override
-    public ConfigDelayedMergeObject withFallbacks(ConfigMergeable... others) {
-        return (ConfigDelayedMergeObject) super.withFallbacks(others);
+        return (ConfigDelayedMergeObject) super.withFallback(mergeable);
     }
 
     @Override

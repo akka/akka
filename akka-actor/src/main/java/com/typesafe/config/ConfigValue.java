@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config;
 
 /**
@@ -29,7 +32,4 @@ public interface ConfigValue extends ConfigMergeable {
 
     @Override
     ConfigValue withFallback(ConfigMergeable other);
-
-    @Override
-    ConfigValue withFallbacks(ConfigMergeable... fallbacks);
 }

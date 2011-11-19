@@ -1,3 +1,6 @@
+/**
+ *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ */
 package com.typesafe.config;
 
 /**
@@ -18,35 +21,16 @@ public interface ConfigMergeable {
      * Config instances do anything in this method (they need to merge the
      * fallback keys into themselves). All other values just return the original
      * value, since they automatically override any fallback.
-     *
+     * 
      * The semantics of merging are described in
      * https://github.com/havocp/config/blob/master/HOCON.md
-     *
-     * Prefer <code>withFallbacks()</code>, listing all your fallbacks at once,
-     * over this method.
-     *
-     * <i>When using this method, there is an easy way to write a wrong
-     * loop.</i> Even if you don't loop, it's easy to do the equivalent wrong
-     * thing.
-     *
-     * <code>
-     *   // WRONG
-     *   for (ConfigMergeable fallback : fallbacks) {
-     *       // DO NOT DO THIS
-     *       result = result.withFallback(fallback);
-     *   }
-     * </code>
-     *
-     * This is wrong because when <code>result</code> is an object and
-     * <code>fallback</code> is a non-object,
-     * <code>result.withFallback(fallback)</code> returns an object. Then if
-     * there are more objects, they are merged into that object. But the correct
-     * semantics are that a non-object will block merging any more objects later
-     * in the list. To get it right, you need to iterate backward. Simplest
-     * solution: prefer <code>withFallbacks()</code> which is harder to get
-     * wrong, and merge all your fallbacks in one call to
-     * <code>withFallbacks()</code>.
-     *
+     * 
+     * Note that objects do not merge "across" non-objects; if you do
+     * <code>object.withFallback(nonObject).withFallback(otherObject)</code>,
+     * then <code>otherObject</code> will simply be ignored. This is an
+     * intentional part of how merging works. Both non-objects, and any object
+     * which has fallen back to a non-object, block subsequent fallbacks.
+     * 
      * @param other
      *            an object whose keys should be used if the keys are not
      *            present in this one
@@ -54,14 +38,4 @@ public interface ConfigMergeable {
      *         used)
      */
     ConfigMergeable withFallback(ConfigMergeable other);
-
-    /**
-     * Convenience method just calls withFallback() on each of the values;
-     * earlier values in the list win over later ones. The semantics of merging
-     * are described in https://github.com/havocp/config/blob/master/HOCON.md
-     *
-     * @param fallbacks
-     * @return a version of the object with the requested fallbacks merged in
-     */
-    ConfigMergeable withFallbacks(ConfigMergeable... others);
 }
