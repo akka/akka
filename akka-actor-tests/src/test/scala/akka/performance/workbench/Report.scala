@@ -3,8 +3,6 @@ package akka.performance.workbench
 import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.enumerationAsScalaIterator
 import akka.actor.ActorSystem
 import akka.event.Logging
 import scala.collection.immutable.TreeMap
@@ -224,8 +222,8 @@ class Report(
     sb.append("Akka version: ").append(system.settings.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
-    for (key ← system.settings.config.keys) {
-      sb.append("\n  ").append(key).append("=").append(system.settings.config(key))
+    for ((key, value) ← system.settings.config.toObject) {
+      sb.append("\n  ").append(key).append("=").append(value)
     }
 
     sb.toString

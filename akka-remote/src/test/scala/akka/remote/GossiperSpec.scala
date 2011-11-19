@@ -1,13 +1,11 @@
 package akka.remote
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import java.net.InetSocketAddress
+import akka.testkit.AkkaSpec
 
-class GossiperSpec extends WordSpec with MustMatchers {
+class GossiperSpec extends AkkaSpec {
 
-  "An Gossiper" should {
+  "An Gossiper" must {
 
     "..." in {
     }

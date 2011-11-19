@@ -15,23 +15,24 @@
  */
 package org.jboss.netty.akka.util;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * A task which is executed after the delay specified with
- * {@link Timer#newTimeout(org.jboss.netty.akka.util.TimerTask, long, java.util.concurrent.TimeUnit)}.
- *
+ * {@link Timer#newTimeout(org.jboss.netty.akka.util.TimerTask, long, java.util.concurrent.TimeUnit)}
+ * .
+ * 
  * @author <a href="http://www.jboss.org/netty/">The Netty Project</a>
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @version $Rev: 2080 $, $Date: 2010-01-26 18:04:19 +0900 (Tue, 26 Jan 2010) $
  */
 public interface TimerTask {
 
-    /**
-     * Executed after the delay specified with
-     * {@link Timer#newTimeout(org.jboss.netty.akka.util.TimerTask, long, java.util.concurrent.TimeUnit)}.
-     *
-     * @param timeout a handle which is associated with this task
-     */
-    void run(Timeout timeout) throws Exception;
+  /**
+   * Executed after the delay specified with
+   * {@link Timer#newTimeout(org.jboss.netty.akka.util.TimerTask, long, java.util.concurrent.TimeUnit)}
+   * .
+   * 
+   * @param timeout
+   *          a handle which is associated with this task
+   */
+  void run(Timeout timeout) throws Exception;
 }

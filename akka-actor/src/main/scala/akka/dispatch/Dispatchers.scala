@@ -7,12 +7,13 @@ package akka.dispatch
 import akka.actor.LocalActorRef
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
-import akka.config.Configuration
 import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
 import akka.actor.ActorSystem.Settings
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 trait DispatcherPrerequisites {
   def eventStream: EventStream
@@ -63,8 +64,11 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
   val DispatcherShutdownMillis = settings.DispatcherDefaultShutdown.toMillis
 
+  val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
+
+  // TODO PN Shouldn't we fail hard if default-dispatcher is wrong?
   lazy val defaultGlobalDispatcher =
-    settings.config.getSection("akka.actor.default-dispatcher").flatMap(from) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
+    from(defaultDispatcherConfig) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -170,11 +174,21 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
    */
-  def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher): MessageDispatcher =
-    settings.config getSection key flatMap from getOrElse default
+  def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher, cfg: Config = settings.config): MessageDispatcher = {
+    import scala.collection.JavaConverters._
+    def simpleName = key.substring(key.lastIndexOf('.') + 1)
+    cfg.hasPath(key) match {
+      case false ⇒ default
+      case true ⇒
+        val conf = cfg.getConfig(key)
+        val confWithName = conf.withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
+        from(confWithName).getOrElse(default)
+    }
+  }
 
   /*
-   * Creates of obtains a dispatcher from a ConfigMap according to the format below
+   * Creates of obtains a dispatcher from a ConfigMap according to the format below.
+   * Uses default values from default-dispatcher. 
    *
    * default-dispatcher {
    *   type = "Dispatcher"         # Must be one of the following
@@ -187,15 +201,16 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *   allow-core-timeout = on     # Allow core threads to time out
    *   throughput = 5              # Throughput for Dispatcher
    * }
-   * ex: from(config.getConfigMap(identifier).get)
+   * ex: from(config.getConfig(identifier).get)
    *
    * Gotcha: Only configures the dispatcher if possible
-   * Returns: None if "type" isn't specified in the config
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
    */
-  def from(cfg: Configuration): Option[MessageDispatcher] = {
-    cfg.getString("type") flatMap {
+  def from(cfg: Config): Option[MessageDispatcher] = {
+    val cfgWithFallback = cfg.withFallback(defaultDispatcherConfig)
+
+    val dispatcherConfigurator = cfgWithFallback.getString("type") match {
       case "Dispatcher"          ⇒ Some(new DispatcherConfigurator())
       case "BalancingDispatcher" ⇒ Some(new BalancingDispatcherConfigurator())
       case fqn ⇒
@@ -210,20 +225,20 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           case Left(exception) ⇒
             throw new IllegalArgumentException("Unknown MessageDispatcherConfigurator type [%s]" format fqn, exception)
         }
-    } map {
-      _.configure(cfg, settings, prerequisites)
     }
+
+    dispatcherConfigurator map (_.configure(cfgWithFallback, settings, prerequisites))
   }
 }
 
 class DispatcherConfigurator() extends MessageDispatcherConfigurator() {
-  def configure(config: Configuration, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher = {
+  def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher = {
     configureThreadPool(config,
       settings,
       threadPoolConfig ⇒ new Dispatcher(prerequisites,
-        config.getString("name", newUuid.toString),
-        config.getInt("throughput", settings.DispatcherThroughput),
-        config.getInt("throughput-deadline-time", settings.DispatcherThroughputDeadlineTime.toMillis.toInt),
+        config.getString("name"),
+        config.getInt("throughput"),
+        config.getInt("throughput-deadline-time"),
         mailboxType(config, settings),
         threadPoolConfig,
         settings.DispatcherDefaultShutdown.toMillis)).build
@@ -231,13 +246,13 @@ class DispatcherConfigurator() extends MessageDispatcherConfigurator() {
 }
 
 class BalancingDispatcherConfigurator() extends MessageDispatcherConfigurator() {
-  def configure(config: Configuration, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher = {
+  def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher = {
     configureThreadPool(config,
       settings,
       threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-        config.getString("name", newUuid.toString),
-        config.getInt("throughput", settings.DispatcherThroughput),
-        config.getInt("throughput-deadline-time", settings.DispatcherThroughputDeadlineTime.toMillis.toInt),
+        config.getString("name"),
+        config.getInt("throughput"),
+        config.getInt("throughput-deadline-time"),
         mailboxType(config, settings),
         threadPoolConfig,
         settings.DispatcherDefaultShutdown.toMillis)).build

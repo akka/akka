@@ -58,8 +58,8 @@ class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with
 
   private[akka] def connect() = {
     new RedisClientPool(
-      system.settings.config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
-      system.settings.config.getInt("akka.actor.mailbox.redis.port", 6379))
+      system.settings.config.getString("akka.actor.mailbox.redis.hostname"),
+      system.settings.config.getInt("akka.actor.mailbox.redis.port"))
   }
 
   private def withErrorHandling[T](body: ⇒ T): T = {

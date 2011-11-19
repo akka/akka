@@ -6,7 +6,6 @@ package akka.dispatch
 
 import java.util.concurrent._
 import akka.event.Logging.Error
-import akka.config.Configuration
 import akka.util.{ Duration, Switch, ReentrantGuard }
 import atomic.{ AtomicInteger, AtomicLong }
 import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
@@ -16,6 +15,7 @@ import locks.ReentrantLock
 import scala.annotation.tailrec
 import akka.event.EventStream
 import akka.actor.ActorSystem.Settings
+import com.typesafe.config.Config
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -290,33 +290,32 @@ abstract class MessageDispatcherConfigurator() {
   /**
    * Returns an instance of MessageDispatcher given a Configuration
    */
-  def configure(config: Configuration, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher
+  def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher
 
-  def mailboxType(config: Configuration, settings: Settings): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity", settings.MailboxCapacity)
+  def mailboxType(config: Config, settings: Settings): MailboxType = {
+    val capacity = config.getInt("mailbox-capacity")
     if (capacity < 1) UnboundedMailbox()
     else {
-      val duration = Duration(
-        config.getInt("mailbox-push-timeout-time", settings.MailboxPushTimeout.toMillis.toInt),
-        settings.DefaultTimeUnit)
+      val duration = Duration(config.getInt("mailbox-push-timeout-time"), settings.DefaultTimeUnit)
       BoundedMailbox(capacity, duration)
     }
   }
 
-  def configureThreadPool(config: Configuration,
+  def configureThreadPool(config: Config,
                           settings: Settings,
                           createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
+
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
-      conf_?(config getInt "keep-alive-time")(time ⇒ _.setKeepAliveTime(Duration(time, settings.DefaultTimeUnit))),
-      conf_?(config getDouble "core-pool-size-factor")(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
-      conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
-      conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
-      conf_?(config getInt "task-queue-size" flatMap {
+      conf_?(Some(config getInt "keep-alive-time"))(time ⇒ _.setKeepAliveTime(Duration(time, settings.DefaultTimeUnit))),
+      conf_?(Some(config getDouble "core-pool-size-factor"))(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
+      conf_?(Some(config getDouble "max-pool-size-factor"))(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
+      conf_?(Some(config getBoolean "allow-core-timeout"))(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
+      conf_?(Some(config getInt "task-queue-size") flatMap {
         case size if size > 0 ⇒
-          config getString "task-queue-type" map {
+          Some(config getString "task-queue-type") map {
             case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
             case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
             case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)

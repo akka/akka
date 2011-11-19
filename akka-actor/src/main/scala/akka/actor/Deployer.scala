@@ -9,11 +9,12 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.event.Logging
 import akka.actor.DeploymentConfig._
 import akka.AkkaException
-import akka.config.{ Configuration, ConfigurationException }
+import akka.config.ConfigurationException
 import akka.util.Duration
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
 import akka.event.EventStream
+import com.typesafe.config.Config
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
@@ -77,188 +78,183 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     instance.lookupDeploymentFor(path)
 
   private[akka] def deploymentsInConfig: List[Deploy] = {
-    for {
-      path ← pathsInConfig
-      deployment ← lookupInConfig(path)
-    } yield deployment
+    for (path ← pathsInConfig) yield lookupInConfig(path)
   }
 
   private[akka] def pathsInConfig: List[String] = {
-    val deploymentPath = "akka.actor.deployment"
-    settings.config.getSection(deploymentPath) match {
-      case None ⇒ Nil
-      case Some(pathConfig) ⇒
-        pathConfig.map.keySet
-          .map(path ⇒ path.substring(0, path.indexOf(".")))
-          .toSet.toList // toSet to force uniqueness
+    def pathSubstring(path: String) = {
+      val i = path.indexOf(".")
+      if (i == -1) path else path.substring(0, i)
     }
+
+    import scala.collection.JavaConverters._
+    settings.config.getConfig("akka.actor.deployment").toObject.keySet.asScala
+      .filterNot("default" ==)
+      .map(path ⇒ pathSubstring(path))
+      .toSet.toList // toSet to force uniqueness
   }
 
   /**
    * Lookup deployment in 'akka.conf' configuration file.
    */
-  private[akka] def lookupInConfig(path: String, configuration: Configuration = settings.config): Option[Deploy] = {
-    import akka.util.ReflectiveAccess.{ createInstance, emptyArguments, emptyParams, getClassFor }
+  private[akka] def lookupInConfig(path: String, configuration: Config = settings.config): Deploy = {
+    import scala.collection.JavaConverters._
+    import akka.util.ReflectiveAccess.getClassFor
+
+    val defaultDeploymentConfig = configuration.getConfig("akka.actor.deployment.default")
 
     // --------------------------------
     // akka.actor.deployment.<path>
     // --------------------------------
     val deploymentKey = "akka.actor.deployment." + path
-    configuration.getSection(deploymentKey) match {
-      case None ⇒ None
-      case Some(pathConfig) ⇒
+    val deployment = configuration.getConfig(deploymentKey)
 
-        // --------------------------------
-        // akka.actor.deployment.<path>.router
-        // --------------------------------
-        val router: Routing = pathConfig.getString("router", "direct") match {
-          case "direct"         ⇒ Direct
-          case "round-robin"    ⇒ RoundRobin
-          case "random"         ⇒ Random
-          case "scatter-gather" ⇒ ScatterGather
-          case "least-cpu"      ⇒ LeastCPU
-          case "least-ram"      ⇒ LeastRAM
-          case "least-messages" ⇒ LeastMessages
-          case routerClassName  ⇒ CustomRouter(routerClassName)
-        }
-
-        // --------------------------------
-        // akka.actor.deployment.<path>.nr-of-instances
-        // --------------------------------
-        val nrOfInstances = {
-          if (router == Direct) OneNrOfInstances
-          else {
-            pathConfig.getAny("nr-of-instances", "1") match {
-              case "auto" ⇒ AutoNrOfInstances
-              case "1"    ⇒ OneNrOfInstances
-              case "0"    ⇒ ZeroNrOfInstances
-              case nrOfReplicas: String ⇒
-                try {
-                  new NrOfInstances(nrOfReplicas.toInt)
-                } catch {
-                  case e: Exception ⇒
-                    throw new ConfigurationException(
-                      "Config option [" + deploymentKey +
-                        ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
-                        nrOfReplicas + "]")
-                }
-            }
-          }
-        }
-
-        // --------------------------------
-        // akka.actor.deployment.<path>.create-as
-        // --------------------------------
-        val recipe: Option[ActorRecipe] = pathConfig.getSection("create-as") map { section ⇒
-          val implementationClass = section.getString("class") match {
-            case Some(impl) ⇒
-              getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
-                "Config option [" + deploymentKey + ".create-as.class] load failed", e), identity)
-            case None ⇒
-              throw new ConfigurationException(
-                "Config option [" + deploymentKey + ".create-as.class] is missing, need the fully qualified name of the class")
-          }
-          ActorRecipe(implementationClass)
-        }
-
-        // --------------------------------
-        // akka.actor.deployment.<path>.remote
-        // --------------------------------
-        pathConfig.getSection("remote") match {
-          case Some(remoteConfig) ⇒ // we have a 'remote' config section
-
-            if (pathConfig.getSection("cluster").isDefined) throw new ConfigurationException(
-              "Configuration for deployment ID [" + path + "] can not have both 'remote' and 'cluster' sections.")
-
-            // --------------------------------
-            // akka.actor.deployment.<path>.remote.nodes
-            // --------------------------------
-            val remoteAddresses = remoteConfig.getList("nodes") match {
-              case Nil ⇒ Nil
-              case nodes ⇒
-                def raiseRemoteNodeParsingError() = throw new ConfigurationException(
-                  "Config option [" + deploymentKey +
-                    ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + nodes.mkString(", ") + "]")
-
-                nodes map { node ⇒
-                  val tokenizer = new java.util.StringTokenizer(node, ":")
-                  val hostname = tokenizer.nextElement.toString
-                  if ((hostname eq null) || (hostname == "")) raiseRemoteNodeParsingError()
-                  val port = try tokenizer.nextElement.toString.toInt catch {
-                    case e: Exception ⇒ raiseRemoteNodeParsingError()
-                  }
-                  if (port == 0) raiseRemoteNodeParsingError()
-
-                  RemoteAddress(new InetSocketAddress(hostname, port))
-                }
-            }
-
-            Some(Deploy(path, recipe, router, nrOfInstances, RemoteScope(remoteAddresses)))
-
-          case None ⇒ // check for 'cluster' config section
-
-            // --------------------------------
-            // akka.actor.deployment.<path>.cluster
-            // --------------------------------
-            pathConfig.getSection("cluster") match {
-              case None ⇒ None
-              case Some(clusterConfig) ⇒
-
-                // --------------------------------
-                // akka.actor.deployment.<path>.cluster.preferred-nodes
-                // --------------------------------
-
-                val preferredNodes = clusterConfig.getList("preferred-nodes") match {
-                  case Nil ⇒ Nil
-                  case homes ⇒
-                    def raiseHomeConfigError() = throw new ConfigurationException(
-                      "Config option [" + deploymentKey +
-                        ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
-                        homes + "]")
-
-                    homes map { home ⇒
-                      if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
-
-                      val tokenizer = new java.util.StringTokenizer(home, ":")
-                      val protocol = tokenizer.nextElement
-                      val address = tokenizer.nextElement.asInstanceOf[String]
-
-                      protocol match {
-                        case "node" ⇒ Node(address)
-                        case _      ⇒ raiseHomeConfigError()
-                      }
-                    }
-                }
-
-                // --------------------------------
-                // akka.actor.deployment.<path>.cluster.replication
-                // --------------------------------
-                clusterConfig.getSection("replication") match {
-                  case None ⇒
-                    Some(Deploy(path, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Transient)))
-
-                  case Some(replicationConfig) ⇒
-                    val storage = replicationConfig.getString("storage", "transaction-log") match {
-                      case "transaction-log" ⇒ TransactionLog
-                      case "data-grid"       ⇒ DataGrid
-                      case unknown ⇒
-                        throw new ConfigurationException("Config option [" + deploymentKey +
-                          ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
-                          unknown + "]")
-                    }
-                    val strategy = replicationConfig.getString("strategy", "write-through") match {
-                      case "write-through" ⇒ WriteThrough
-                      case "write-behind"  ⇒ WriteBehind
-                      case unknown ⇒
-                        throw new ConfigurationException("Config option [" + deploymentKey +
-                          ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
-                          unknown + "]")
-                    }
-                    Some(Deploy(path, recipe, router, nrOfInstances, deploymentConfig.ClusterScope(preferredNodes, Replication(storage, strategy))))
-                }
-            }
-        }
+    val deploymentWithFallback = deployment.withFallback(defaultDeploymentConfig)
+    // --------------------------------
+    // akka.actor.deployment.<path>.router
+    // --------------------------------
+    val router: Routing = deploymentWithFallback.getString("router") match {
+      case "direct"         ⇒ Direct
+      case "round-robin"    ⇒ RoundRobin
+      case "random"         ⇒ Random
+      case "scatter-gather" ⇒ ScatterGather
+      case "least-cpu"      ⇒ LeastCPU
+      case "least-ram"      ⇒ LeastRAM
+      case "least-messages" ⇒ LeastMessages
+      case routerClassName  ⇒ CustomRouter(routerClassName)
     }
+
+    // --------------------------------
+    // akka.actor.deployment.<path>.nr-of-instances
+    // --------------------------------
+    val nrOfInstances = {
+      if (router == Direct) OneNrOfInstances
+      else {
+        def invalidNrOfInstances(wasValue: Any) = new ConfigurationException(
+          "Config option [" + deploymentKey +
+            ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
+            wasValue + "]")
+
+        deploymentWithFallback.getAnyRef("nr-of-instances").asInstanceOf[Any] match {
+          case "auto" ⇒ AutoNrOfInstances
+          case 1      ⇒ OneNrOfInstances
+          case 0      ⇒ ZeroNrOfInstances
+          case nrOfReplicas: Number ⇒
+            try {
+              new NrOfInstances(nrOfReplicas.intValue)
+            } catch {
+              case e: Exception ⇒ throw invalidNrOfInstances(nrOfReplicas)
+            }
+          case unknown ⇒ throw invalidNrOfInstances(unknown)
+        }
+      }
+    }
+
+    // --------------------------------
+    // akka.actor.deployment.<path>.create-as
+    // --------------------------------
+    val recipe: Option[ActorRecipe] =
+      deploymentWithFallback.getString("create-as.class") match {
+        case "" ⇒ None
+        case impl ⇒
+          val implementationClass = getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
+            "Config option [" + deploymentKey + ".create-as.class] load failed", e), identity)
+          Some(ActorRecipe(implementationClass))
+      }
+
+    val remoteNodes = deploymentWithFallback.getStringList("remote.nodes").asScala.toSeq
+    val clusterPreferredNodes = deploymentWithFallback.getStringList("cluster.preferred-nodes").asScala.toSeq
+
+    // --------------------------------
+    // akka.actor.deployment.<path>.remote
+    // --------------------------------
+    def parseRemote: Scope = {
+      def raiseRemoteNodeParsingError() = throw new ConfigurationException(
+        "Config option [" + deploymentKey +
+          ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + remoteNodes.mkString(", ") + "]")
+
+      val remoteAddresses = remoteNodes map { node ⇒
+        val tokenizer = new java.util.StringTokenizer(node, ":")
+        val hostname = tokenizer.nextElement.toString
+        if ((hostname eq null) || (hostname == "")) raiseRemoteNodeParsingError()
+        val port = try tokenizer.nextElement.toString.toInt catch {
+          case e: Exception ⇒ raiseRemoteNodeParsingError()
+        }
+        if (port == 0) raiseRemoteNodeParsingError()
+
+        RemoteAddress(new InetSocketAddress(hostname, port))
+      }
+
+      RemoteScope(remoteAddresses)
+    }
+
+    // --------------------------------
+    // akka.actor.deployment.<path>.cluster
+    // --------------------------------
+    def parseCluster: Scope = {
+      def raiseHomeConfigError() = throw new ConfigurationException(
+        "Config option [" + deploymentKey +
+          ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
+          clusterPreferredNodes + "]")
+
+      val remoteNodes = clusterPreferredNodes map { home ⇒
+        if (!(home.startsWith("host:") || home.startsWith("node:") || home.startsWith("ip:"))) raiseHomeConfigError()
+
+        val tokenizer = new java.util.StringTokenizer(home, ":")
+        val protocol = tokenizer.nextElement
+        val address = tokenizer.nextElement.asInstanceOf[String]
+
+        // TODO host and ip protocols?
+        protocol match {
+          case "node" ⇒ Node(address)
+          case _      ⇒ raiseHomeConfigError()
+        }
+      }
+      deploymentConfig.ClusterScope(remoteNodes, parseClusterReplication)
+    }
+
+    // --------------------------------
+    // akka.actor.deployment.<path>.cluster.replication
+    // --------------------------------
+    def parseClusterReplication: ReplicationScheme = {
+      deployment.hasPath("cluster.replication") match {
+        case false ⇒ Transient
+        case true ⇒
+          val replicationConfigWithFallback = deploymentWithFallback.getConfig("cluster.replication")
+          val storage = replicationConfigWithFallback.getString("storage") match {
+            case "transaction-log" ⇒ TransactionLog
+            case "data-grid"       ⇒ DataGrid
+            case unknown ⇒
+              throw new ConfigurationException("Config option [" + deploymentKey +
+                ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
+                unknown + "]")
+          }
+          val strategy = replicationConfigWithFallback.getString("strategy") match {
+            case "write-through" ⇒ WriteThrough
+            case "write-behind"  ⇒ WriteBehind
+            case unknown ⇒
+              throw new ConfigurationException("Config option [" + deploymentKey +
+                ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
+                unknown + "]")
+          }
+          Replication(storage, strategy)
+      }
+    }
+
+    val scope = (remoteNodes, clusterPreferredNodes) match {
+      case (Nil, Nil) ⇒
+        LocalScope
+      case (_, Nil) ⇒
+        // we have a 'remote' config section
+        parseRemote
+      case (Nil, _) ⇒
+        // we have a 'cluster' config section
+        parseCluster
+      case (_, _) ⇒ throw new ConfigurationException(
+        "Configuration for deployment ID [" + path + "] can not have both 'remote' and 'cluster' sections.")
+    }
+
+    Deploy(path, recipe, router, nrOfInstances, scope)
   }
 
   private[akka] def throwDeploymentBoundException(deployment: Deploy): Nothing = {
