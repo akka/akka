@@ -28,7 +28,7 @@ package akka.actor
  * object MyExtension extends ExtensionKey[MyExtension]
  * }}}
  *
- * Java exmple:
+ * Java example:
  *
  * {{{
  * static class MyExtension implements Extension<MyExtension> {
