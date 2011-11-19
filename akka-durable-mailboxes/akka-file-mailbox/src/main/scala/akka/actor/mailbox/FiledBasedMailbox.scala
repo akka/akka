@@ -19,7 +19,7 @@ object FileBasedMailbox {
 
 class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val log = Logging(system, this)
+  val log = Logging(system, "FileBasedMailbox")
 
   val queuePath = FileBasedMailbox.queuePath(owner.system.settings.config)
 

@@ -99,7 +99,7 @@ class Dispatcher(
           executorService.get() execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Warning(this, e2.toString))
+            prerequisites.eventStream.publish(Warning("Dispatcher", e2.toString))
             throw e2
         }
     }
@@ -107,20 +107,16 @@ class Dispatcher(
 
   protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(actor)
 
-  protected[akka] def shutdown {
-    executorService.getAndSet(new ExecutorServiceDelegate {
+  protected[akka] def shutdown: Unit =
+    Option(executorService.getAndSet(new ExecutorServiceDelegate {
       lazy val executor = executorServiceFactory.createExecutorService
-    }) match {
-      case null ⇒
-      case some ⇒ some.shutdown()
-    }
-  }
+    })) foreach { _.shutdown() }
 
   /**
    * Returns if it was registered
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
-    if (mbox.shouldBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
+    if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {
           executorService.get() execute mbox

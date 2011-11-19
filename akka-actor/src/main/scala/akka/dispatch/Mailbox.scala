@@ -128,15 +128,20 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   protected final def systemQueueGet: SystemMessage = AbstractMailbox.systemQueueUpdater.get(this)
   protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean = AbstractMailbox.systemQueueUpdater.compareAndSet(this, _old, _new)
 
-  def shouldBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
+  final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case Closed           ⇒ false
     case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
   final def run = {
-    try processMailbox() finally {
-      setAsIdle()
+    try {
+      if (!isClosed) { //Volatile read, needed here
+        processAllSystemMessages() //First, deal with any system messages
+        processMailbox() //Then deal with messages
+      }
+    } finally {
+      setAsIdle() //Volatile write, needed here
       dispatcher.registerForExecution(this, false, false)
     }
   }
@@ -146,9 +151,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
    *
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-  final def processMailbox() {
-    processAllSystemMessages() //First, process all system messages
-
+  private final def processMailbox() {
     if (shouldProcessMessage) {
       var nextMessage = dequeue()
       if (nextMessage ne null) { //If we have a message
@@ -175,7 +178,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     }
   }
 
-  def processAllSystemMessages() {
+  final def processAllSystemMessages() {
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
@@ -187,7 +190,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
       }
     } catch {
       case e ⇒
-        actor.system.eventStream.publish(Error(e, actor.self, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
+        actor.system.eventStream.publish(Error(e, actor.self.toString, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
   }

@@ -20,7 +20,7 @@ class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
 
-  val log = Logging(system, this)
+  val log = Logging(system, "RedisBasedMailbox")
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in redis-based mailbox [%s]".format(envelope))

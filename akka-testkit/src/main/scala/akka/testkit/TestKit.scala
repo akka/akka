@@ -602,5 +602,5 @@ object TestProbe {
 }
 
 trait ImplicitSender { this: TestKit ⇒
-  implicit def implicitSenderTestActor = testActor
+  implicit def self = testActor
 }

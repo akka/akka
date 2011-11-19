@@ -164,11 +164,12 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           case Ev("go") ⇒ goto(2)
         }
       })
+      val name = fsm.toString
       filterException[Logging.EventHandlerException] {
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
-          case Logging.Error(_, `fsm`, "Next state 2 does not exist") ⇒ true
+          case Logging.Error(_, `name`, "Next state 2 does not exist") ⇒ true
         }
         system.eventStream.unsubscribe(testActor)
       }
@@ -212,18 +213,19 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
               case StopEvent(r, _, _) ⇒ testActor ! r
             }
           })
+          val name = fsm.toString
           system.eventStream.subscribe(testActor, classOf[Logging.Debug])
           fsm ! "go"
           expectMsgPF(1 second, hint = "processing Event(go,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
+            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
           }
-          expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
-          expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
+          expectMsg(1 second, Logging.Debug(name, "setting timer 't'/1500 milliseconds: Shutdown"))
+          expectMsg(1 second, Logging.Debug(name, "transition 1 -> 2"))
           fsm ! "stop"
           expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
+            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
           }
-          expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
+          expectMsgAllOf(1 second, Logging.Debug(name, "canceling timer 't'"), Normal)
           expectNoMsg(1 second)
           system.eventStream.unsubscribe(testActor)
         }

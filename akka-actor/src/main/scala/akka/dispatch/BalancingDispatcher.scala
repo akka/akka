@@ -12,6 +12,7 @@ import annotation.tailrec
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -39,9 +40,10 @@ class BalancingDispatcher(
   _timeoutMs: Long)
   extends Dispatcher(_prerequisites, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
 
-  private val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
+  val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
+  val rebalance = new AtomicBoolean(false)
 
-  protected val messageQueue: MessageQueue = mailboxType match {
+  val messageQueue: MessageQueue = mailboxType match {
     case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
       final val queue = new ConcurrentLinkedQueue[Envelope]
     }
@@ -66,13 +68,13 @@ class BalancingDispatcher(
 
   protected[akka] override def register(actor: ActorCell) = {
     super.register(actor)
-    registerForExecution(actor.mailbox, false, false) //Allow newcomers to be productive from the first moment
+    buddies.add(actor)
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
-    super.unregister(actor)
     buddies.remove(actor)
-    intoTheFray(except = actor)
+    super.unregister(actor)
+    intoTheFray(except = actor) //When someone leaves, he tosses a friend into the fray
   }
 
   protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
@@ -88,29 +90,27 @@ class BalancingDispatcher(
     }
   }
 
-  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessagesHint: Boolean, hasSystemMessagesHint: Boolean): Boolean = {
-    if (!super.registerForExecution(mbox, hasMessagesHint, hasSystemMessagesHint)) {
-      mbox match {
-        case share: SharingMailbox if !share.isClosed ⇒ buddies.add(share.actor); false
-        case _                                        ⇒ false
-      }
-    } else true
-  }
+  def intoTheFray(except: ActorCell): Unit =
+    if (rebalance.compareAndSet(false, true)) {
+      try {
+        val i = buddies.iterator()
 
-  def intoTheFray(except: ActorCell): Unit = {
-    var buddy = buddies.pollFirst()
-    while (buddy ne null) {
-      val mbox = buddy.mailbox
-      buddy = if ((buddy eq except) || (!registerForExecution(mbox, false, false) && mbox.isClosed)) buddies.pollFirst() else null
+        @tailrec
+        def throwIn(): Unit = {
+          val n = if (i.hasNext) i.next() else null
+          if (n eq null) ()
+          else if ((n ne except) && registerForExecution(n.mailbox, false, false)) ()
+          else throwIn()
+        }
+        throwIn()
+      } finally {
+        rebalance.set(false)
+      }
     }
-  }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-
+    registerForExecution(receiver.mailbox, false, false)
     intoTheFray(except = receiver)
-
-    if (!registerForExecution(receiver.mailbox, false, false))
-      intoTheFray(except = receiver)
   }
 }

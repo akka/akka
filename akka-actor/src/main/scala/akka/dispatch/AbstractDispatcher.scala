@@ -69,7 +69,7 @@ final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit,
     try {
       function()
     } catch {
-      case e ⇒ eventStream.publish(Error(e, this, e.getMessage))
+      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
     } finally {
       cleanup()
     }
@@ -236,10 +236,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if (mbox.dispatcher eq this) {
-      mbox.becomeOpen()
+    if ((mbox.dispatcher eq this) && mbox.becomeOpen())
       registerForExecution(mbox, false, false)
-    }
   }
 
   /**

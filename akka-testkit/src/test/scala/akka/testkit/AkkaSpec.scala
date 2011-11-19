@@ -43,7 +43,7 @@ object AkkaSpec {
 abstract class AkkaSpec(_application: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf))
   extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  val log: LoggingAdapter = Logging(system, this)
+  val log: LoggingAdapter = Logging(system, this.getClass)
 
   final override def beforeAll {
     atStartup()

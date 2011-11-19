@@ -14,13 +14,7 @@ import java.util.concurrent.atomic._
 
 object ActorLifeCycleSpec {
 
-}
-
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
-  import ActorLifeCycleSpec._
-
-  class LifeCycleTestActor(id: String, generationProvider: AtomicInteger) extends Actor {
+  class LifeCycleTestActor(testActor: ActorRef, id: String, generationProvider: AtomicInteger) extends Actor {
     def report(msg: Any) = testActor ! message(msg)
     def message(msg: Any): Tuple3[Any, String, Int] = (msg, id, currentGen)
     val currentGen = generationProvider.getAndIncrement()
@@ -29,6 +23,12 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     def receive = { case "status" ⇒ sender ! message("OK") }
   }
 
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
+  import ActorLifeCycleSpec._
+
   "An Actor" must {
 
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
@@ -36,7 +36,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
         val id = newUuid().toString
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
         val gen = new AtomicInteger(0)
-        val restarterProps = Props(new LifeCycleTestActor(id, gen) {
+        val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen) {
           override def preRestart(reason: Throwable, message: Option[Any]) { report("preRestart") }
           override def postRestart(reason: Throwable) { report("postRestart") }
         })
@@ -70,7 +70,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
         val id = newUuid().toString
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
         val gen = new AtomicInteger(0)
-        val restarterProps = Props(new LifeCycleTestActor(id, gen))
+        val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen))
         val restarter = (supervisor ? restarterProps).as[ActorRef].get
 
         expectMsg(("preStart", id, 0))
@@ -100,7 +100,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
       val id = newUuid().toString
       val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
       val gen = new AtomicInteger(0)
-      val props = Props(new LifeCycleTestActor(id, gen))
+      val props = Props(new LifeCycleTestActor(testActor, id, gen))
       val a = (supervisor ? props).as[ActorRef].get
       expectMsg(("preStart", id, 0))
       a ! "status"

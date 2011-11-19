@@ -13,6 +13,7 @@ import akka.cluster.ClusterNode
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
 import akka.event.Logging.Debug
+import akka.event.LogSource
 import akka.experimental
 import akka.AkkaException
 
@@ -166,7 +167,7 @@ object Actor {
   class LoggingReceive(source: AnyRef, r: Receive)(implicit system: ActorSystem) extends Receive {
     def isDefinedAt(o: Any) = {
       val handled = r.isDefinedAt(o)
-      system.eventStream.publish(Debug(source, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
+      system.eventStream.publish(Debug(LogSource.fromAnyRef(source), "received " + (if (handled) "handled" else "unhandled") + " message " + o))
       handled
     }
     def apply(o: Any): Unit = r(o)

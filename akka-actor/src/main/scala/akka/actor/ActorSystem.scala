@@ -47,10 +47,6 @@ object ActorSystem {
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
-  sealed trait ExitStatus
-  case object Stopped extends ExitStatus
-  case class Failed(cause: Throwable) extends ExitStatus
-
   class Settings(cfg: Config) {
     val config: ConfigRoot = ConfigFactory.emptyRoot("akka").withFallback(cfg).withFallback(DefaultConfigurationLoader.referenceConfig).resolve()
 
@@ -209,7 +205,7 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
-  val log = new BusLogging(eventStream, this) // “this” used only for .getClass in tagging messages
+  val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
   /**
    * The root actor path for this application.
@@ -256,8 +252,8 @@ class ActorSystemImpl(val name: String, config: Config) extends ActorSystem {
       case Right(p) ⇒ p
     }
   }
-
-  def terminationFuture: Future[ExitStatus] = provider.terminationFuture
+  //FIXME Set this to a Failure when things bubble to the top
+  def terminationFuture: Future[Unit] = provider.terminationFuture
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch

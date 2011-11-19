@@ -13,7 +13,7 @@ class Report(
   compareResultWith: Option[String] = None) {
 
   private def doLog = System.getProperty("benchmark.logResult", "true").toBoolean
-  val log = Logging(system, this)
+  val log = Logging(system, "Report")
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")

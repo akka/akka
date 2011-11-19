@@ -110,6 +110,8 @@ class CallingThreadDispatcher(
   val name: String = "calling-thread") extends MessageDispatcher(_prerequisites) {
   import CallingThreadDispatcher._
 
+  val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
+
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
 
   private def getMailbox(actor: ActorCell): Option[CallingThreadMailbox] = actor.mailbox match {
@@ -215,12 +217,12 @@ class CallingThreadDispatcher(
           true
         } catch {
           case ie: InterruptedException ⇒
-            prerequisites.eventStream.publish(Error(this, ie))
+            log.error(ie, "Interrupted during message processing")
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            prerequisites.eventStream.publish(Error(this, e))
+            log.error(e, "Error during message processing")
             queue.leave
             false
         }

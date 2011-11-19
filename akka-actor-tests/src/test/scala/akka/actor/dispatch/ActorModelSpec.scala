@@ -147,7 +147,7 @@ object ActorModelSpec {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
       case e ⇒
-        system.eventStream.publish(Error(e, dispatcher, "actual: stops=" + dispatcher.stops.get +
+        system.eventStream.publish(Error(e, dispatcher.toString, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
     }
@@ -204,7 +204,7 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        system.eventStream.publish(Error(e, dispatcher, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        system.eventStream.publish(Error(e, dispatcher.toString, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
           ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e
@@ -231,9 +231,6 @@ abstract class ActorModelSpec extends AkkaSpec {
 
   protected def newInterceptedDispatcher: MessageDispatcherInterceptor
   protected def dispatcherType: String
-
-  // BalancingDispatcher of course does not work when another actor is in the pool, so overridden below
-  protected def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = dispatcher
 
   "A " + dispatcherType must {
 
@@ -310,7 +307,7 @@ abstract class ActorModelSpec extends AkkaSpec {
           try {
             f
           } catch {
-            case e ⇒ system.eventStream.publish(Error(e, this, "error in spawned thread"))
+            case e ⇒ system.eventStream.publish(Error(e, "spawn", "error in spawned thread"))
           }
         }
       }
@@ -347,9 +344,25 @@ abstract class ActorModelSpec extends AkkaSpec {
         val boss = actorOf(Props(context ⇒ {
           case "run"             ⇒ for (_ ← 1 to num) (context.self startsWatching context.actorOf(props)) ! cachedMessage
           case Terminated(child) ⇒ stopLatch.countDown()
-        }).withDispatcher(wavesSupervisorDispatcher(dispatcher)))
+        }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("boss")))
         boss ! "run"
-        assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+        try {
+          assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
+        } catch {
+          case e ⇒
+            val buddies = dispatcher.asInstanceOf[BalancingDispatcher].buddies
+            val mq = dispatcher.asInstanceOf[BalancingDispatcher].messageQueue
+
+            System.err.println("Buddies left: ")
+            buddies.toArray foreach {
+              case cell: ActorCell ⇒
+                System.err.println(" - " + cell.self.path + " " + cell.isShutdown + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
+            }
+
+            System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
+
+            throw e
+        }
         assertCountDown(stopLatch, waitTime, "Expected all children to stop")
         boss.stop()
       }
@@ -450,8 +463,6 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"
-
-  override def wavesSupervisorDispatcher(dispatcher: MessageDispatcher) = system.dispatcher
 
   "A " + dispatcherType must {
     "process messages in parallel" in {

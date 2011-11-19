@@ -37,7 +37,7 @@ trait ActorDeployer {
 class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(nodename)
-  val log = Logging(eventStream, this)
+  val log = Logging(eventStream, "Deployer")
 
   val instance: ActorDeployer = {
     val deployer = new LocalDeployer()
