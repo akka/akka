@@ -3,6 +3,7 @@
  */
 package akka.actor.mailbox
 
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.LocalActorRef
 import akka.util.Duration
 import akka.AkkaException
@@ -22,9 +23,8 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   val zkServerAddresses = system.settings.config.getString("akka.actor.mailbox.zookeeper.server-addresses")
-  def defaultTimeUnit = system.settings.DefaultTimeUnit
-  val sessionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.session-timeout"), defaultTimeUnit).toMillis.toInt
-  val connectionTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.zookeeper.connection-timeout"), defaultTimeUnit).toMillis.toInt
+  val sessionTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.zookeeper.session-timeout"), MILLISECONDS)
+  val connectionTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.zookeeper.connection-timeout"), MILLISECONDS)
   val blockingQueue = system.settings.config.getBoolean("akka.actor.mailbox.zookeeper.blocking-queue")
 
   val queueNode = "/queues"

@@ -20,6 +20,7 @@ import com.eaio.uuid.UUID
 import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression }
 import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
@@ -35,7 +36,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   // TODO move to settings?
   val shouldCompressData = config.getBoolean("akka.remote.use-compression")
-  val remoteSystemDaemonAckTimeout = Duration(config.getInt("akka.remote.remote-daemon-ack-timeout"), DefaultTimeUnit).toMillis.toInt
+  val remoteSystemDaemonAckTimeout = Duration(config.getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
 
   val failureDetector = new AccrualFailureDetector(system)
 

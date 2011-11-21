@@ -6,22 +6,22 @@ package akka.remote
 
 import akka.util.Duration
 import akka.config.ConfigurationException
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.Config
 
-class RemoteClientSettings(config: Config, defaultTimeUnit: TimeUnit) {
+class RemoteClientSettings(config: Config) {
   val SECURE_COOKIE: Option[String] = config.getString("akka.remote.secure-cookie") match {
     case ""     ⇒ None
     case cookie ⇒ Some(cookie)
   }
 
-  val RECONNECTION_TIME_WINDOW = Duration(config.getInt("akka.remote.client.reconnection-time-window"), defaultTimeUnit).toMillis
-  val READ_TIMEOUT = Duration(config.getInt("akka.remote.client.read-timeout"), defaultTimeUnit)
-  val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay"), defaultTimeUnit)
+  val RECONNECTION_TIME_WINDOW = Duration(config.getMilliseconds("akka.remote.client.reconnection-time-window"), MILLISECONDS).toMillis
+  val READ_TIMEOUT = Duration(config.getMilliseconds("akka.remote.client.read-timeout"), MILLISECONDS)
+  val RECONNECT_DELAY = Duration(config.getMilliseconds("akka.remote.client.reconnect-delay"), MILLISECONDS)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size")
 }
 
-class RemoteServerSettings(config: Config, defaultTimeUnit: TimeUnit) {
+class RemoteServerSettings(config: Config) {
   import scala.collection.JavaConverters._
   val isRemotingEnabled = config.getStringList("akka.enabled-modules").asScala.exists(_ == "cluster") //TODO FIXME Shouldn't this be "remote"?
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.server.message-frame-size")
@@ -40,7 +40,7 @@ class RemoteServerSettings(config: Config, defaultTimeUnit: TimeUnit) {
 
   val UNTRUSTED_MODE = config.getBoolean("akka.remote.server.untrusted-mode")
   val PORT = config.getInt("akka.remote.server.port")
-  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout"), defaultTimeUnit)
+  val CONNECTION_TIMEOUT = Duration(config.getMilliseconds("akka.remote.server.connection-timeout"), MILLISECONDS)
 
   val BACKLOG = config.getInt("akka.remote.server.backlog")
 }

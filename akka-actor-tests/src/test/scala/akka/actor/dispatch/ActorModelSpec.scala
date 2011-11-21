@@ -142,7 +142,7 @@ object ActorModelSpec {
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
     stops: Long = dispatcher.stops.get())(implicit system: ActorSystem) {
-    val deadline = System.currentTimeMillis + dispatcher.timeoutMs * 5
+    val deadline = System.currentTimeMillis + dispatcher.shutdownTimeout.toMillis * 5
     try {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
@@ -421,8 +421,8 @@ class DispatcherModelSpec extends ActorModelSpec {
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new Dispatcher(system.dispatcherFactory.prerequisites, "foo", system.settings.DispatcherThroughput,
-      system.dispatcherFactory.ThroughputDeadlineTimeMillis, system.dispatcherFactory.MailboxType,
-      config, system.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
+      system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
+      config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Dispatcher"
@@ -458,8 +458,8 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
 
   def newInterceptedDispatcher = ThreadPoolConfigDispatcherBuilder(config ⇒
     new BalancingDispatcher(system.dispatcherFactory.prerequisites, "foo", 1, // TODO check why 1 here? (came from old test)
-      system.dispatcherFactory.ThroughputDeadlineTimeMillis, system.dispatcherFactory.MailboxType,
-      config, system.dispatcherFactory.DispatcherShutdownMillis) with MessageDispatcherInterceptor,
+      system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
+      config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
     ThreadPoolConfig()).build.asInstanceOf[MessageDispatcherInterceptor]
 
   def dispatcherType = "Balancing Dispatcher"

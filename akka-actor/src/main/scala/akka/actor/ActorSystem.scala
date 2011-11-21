@@ -15,7 +15,9 @@ import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.{ Executors, TimeUnit }
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigParseOptions
@@ -61,14 +63,12 @@ object ActorSystem {
 
     val ProviderClass = getString("akka.actor.provider")
 
-    val DefaultTimeUnit = Duration.timeUnit(getString("akka.time-unit"))
-    val ActorTimeout = Timeout(Duration(getInt("akka.actor.timeout"), DefaultTimeUnit))
-    val ActorTimeoutMillis = ActorTimeout.duration.toMillis
+    val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
     val TestTimeFactor = getDouble("akka.test.timefactor")
-    val SingleExpectDefaultTimeout = Duration(getDouble("akka.test.single-expect-default"), DefaultTimeUnit)
-    val TestEventFilterLeeway = Duration(getDouble("akka.test.filter-leeway"), DefaultTimeUnit)
+    val SingleExpectDefaultTimeout = Duration(getMilliseconds("akka.test.single-expect-default"), MILLISECONDS)
+    val TestEventFilterLeeway = Duration(getMilliseconds("akka.test.filter-leeway"), MILLISECONDS)
 
     val LogLevel = getString("akka.loglevel")
     val StdoutLogLevel = getString("akka.stdout-loglevel")
@@ -80,10 +80,10 @@ object ActorSystem {
     val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
     val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
-    val DispatcherDefaultShutdown = Duration(getLong("akka.actor.dispatcher-shutdown-timeout"), DefaultTimeUnit)
+    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.dispatcher-shutdown-timeout"), MILLISECONDS)
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
-    val MailboxPushTimeout = Duration(getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time"), DefaultTimeUnit)
-    val DispatcherThroughputDeadlineTime = Duration(getInt("akka.actor.default-dispatcher.throughput-deadline-time"), DefaultTimeUnit)
+    val MailboxPushTimeout = Duration(getNanoseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time"), NANOSECONDS)
+    val DispatcherThroughputDeadlineTime = Duration(getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), NANOSECONDS)
 
     val Home = config.getString("akka.home") match {
       case "" ⇒ None
@@ -335,7 +335,7 @@ class ActorSystemImpl(val name: String, _config: Config) extends ActorSystem {
   }
 
   // FIXME make this configurable
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, TimeUnit.MILLISECONDS, 512))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, MILLISECONDS, 512))
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))

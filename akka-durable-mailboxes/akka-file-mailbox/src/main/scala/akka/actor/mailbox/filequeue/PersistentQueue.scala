@@ -21,6 +21,8 @@ import java.io._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
 import com.typesafe.config.Config
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {
@@ -131,7 +133,7 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
     maxItems set Some(config.getInt("akka.actor.mailbox.file-based.max-items"))
     maxSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-size"))
     maxItemSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-item-size"))
-    maxAge set Some(config.getInt("akka.actor.mailbox.file-based.max-age"))
+    maxAge set Some(Duration(config.getMilliseconds("akka.actor.mailbox.file-based.max-age"), TimeUnit.MILLISECONDS).toSeconds.toInt)
     maxJournalSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-journal-size"))
     maxMemorySize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-memory-size"))
     maxJournalOverflow set Some(config.getInt("akka.actor.mailbox.file-based.max-journal-overflow"))
