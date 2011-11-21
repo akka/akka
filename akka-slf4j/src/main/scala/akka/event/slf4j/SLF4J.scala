@@ -21,7 +21,6 @@ trait SLF4JLogging {
 
 object Logger {
   def apply(logger: String): SLFLogger = SLFLoggerFactory getLogger logger
-  def apply(clazz: Class[_]): SLFLogger = apply(clazz.getName)
   def root: SLFLogger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
 
@@ -33,29 +32,26 @@ object Logger {
 class Slf4jEventHandler extends Actor with SLF4JLogging {
 
   def receive = {
-    case event @ Error(cause, instance, message) ⇒
-      logger(instance).error("[{}] [{}] [{}]",
+    case event @ Error(cause, logSource, message) ⇒
+      Logger(logSource).error("[{}] [{}] [{}]",
         Array[AnyRef](event.thread.getName, message.asInstanceOf[AnyRef], stackTraceFor(cause)))
 
-    case event @ Warning(instance, message) ⇒
-      logger(instance).warn("[{}] [{}]",
+    case event @ Warning(logSource, message) ⇒
+      Logger(logSource).warn("[{}] [{}]",
         event.thread.getName, message.asInstanceOf[AnyRef])
 
-    case event @ Info(instance, message) ⇒
-      logger(instance).info("[{}] [{}]",
+    case event @ Info(logSource, message) ⇒
+      Logger(logSource).info("[{}] [{}]",
         event.thread.getName, message.asInstanceOf[AnyRef])
 
-    case event @ Debug(instance, message) ⇒
-      logger(instance).debug("[{}] [{}]",
+    case event @ Debug(logSource, message) ⇒
+      Logger(logSource).debug("[{}] [{}]",
         event.thread.getName, message.asInstanceOf[AnyRef])
 
-    case InitializeLogger(_) ⇒ log.info("Slf4jEventHandler started"); sender ! LoggerInitialized
+    case InitializeLogger(_) ⇒
+      log.info("Slf4jEventHandler started")
+      sender ! LoggerInitialized
   }
 
-  def logger(instance: AnyRef): SLFLogger = instance match {
-    // TODO make sure that this makes sense (i.e. should be the full path after Peter’s changes)
-    case a: ActorRef ⇒ Logger(a.address)
-    case _           ⇒ Logger(instance.getClass)
-  }
 }
 
