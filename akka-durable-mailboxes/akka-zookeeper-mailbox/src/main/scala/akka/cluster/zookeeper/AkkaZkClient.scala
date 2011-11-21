@@ -6,15 +6,16 @@ package akka.cluster.zookeeper
 import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
+import akka.util.Duration
 
 /**
  * ZooKeeper client. Holds the ZooKeeper connection and manages its session.
  */
 class AkkaZkClient(zkServers: String,
-                   sessionTimeout: Int,
-                   connectionTimeout: Int,
+                   sessionTimeout: Duration,
+                   connectionTimeout: Duration,
                    zkSerializer: ZkSerializer = new SerializableSerializer)
-  extends ZkClient(zkServers, sessionTimeout, connectionTimeout, zkSerializer) {
+  extends ZkClient(zkServers, sessionTimeout.toMillis.toInt, connectionTimeout.toMillis.toInt, zkSerializer) {
 
   def connection: ZkConnection = _connection.asInstanceOf[ZkConnection]
 

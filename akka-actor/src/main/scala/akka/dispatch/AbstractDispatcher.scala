@@ -135,7 +135,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
       shutdownScheduleUpdater.get(this) match {
         case UNSCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(this, UNSCHEDULED, SCHEDULED)) {
-            scheduler.scheduleOnce(shutdownAction, timeoutMs, TimeUnit.MILLISECONDS)
+            scheduler.scheduleOnce(shutdownAction, shutdownTimeout.toMillis, TimeUnit.MILLISECONDS)
             ()
           } else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
@@ -210,17 +210,18 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            scheduler.scheduleOnce(this, timeoutMs, TimeUnit.MILLISECONDS)
+            scheduler.scheduleOnce(this, shutdownTimeout.toMillis, TimeUnit.MILLISECONDS)
           else run()
       }
     }
   }
 
   /**
-   * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down, in Ms
-   * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or otherwise, 1 Second
+   * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down,
+   * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or default specified in
+   * akka-actor-reference.conf
    */
-  protected[akka] def timeoutMs: Long
+  protected[akka] def shutdownTimeout: Duration
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -257,10 +258,10 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   // TODO check whether this should not actually be a property of the mailbox
   protected[akka] def throughput: Int
-  protected[akka] def throughputDeadlineTime: Int
+  protected[akka] def throughputDeadlineTime: Duration
 
   @inline
-  protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime > 0
+  protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
   @inline
   protected[akka] final val isThroughputDefined = throughput > 1
 
@@ -296,7 +297,7 @@ abstract class MessageDispatcherConfigurator() {
     val capacity = config.getInt("mailbox-capacity")
     if (capacity < 1) UnboundedMailbox()
     else {
-      val duration = Duration(config.getInt("mailbox-push-timeout-time"), settings.DefaultTimeUnit)
+      val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
       BoundedMailbox(capacity, duration)
     }
   }
@@ -309,7 +310,7 @@ abstract class MessageDispatcherConfigurator() {
     //Apply the following options to the config if they are present in the config
 
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig()).configure(
-      conf_?(Some(config getInt "keep-alive-time"))(time ⇒ _.setKeepAliveTime(Duration(time, settings.DefaultTimeUnit))),
+      conf_?(Some(config getMilliseconds "keep-alive-time"))(time ⇒ _.setKeepAliveTime(Duration(time, TimeUnit.MILLISECONDS))),
       conf_?(Some(config getDouble "core-pool-size-factor"))(factor ⇒ _.setCorePoolSizeFromFactor(factor)),
       conf_?(Some(config getDouble "max-pool-size-factor"))(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(Some(config getBoolean "allow-core-timeout"))(allow ⇒ _.setAllowCoreThreadTimeout(allow)),

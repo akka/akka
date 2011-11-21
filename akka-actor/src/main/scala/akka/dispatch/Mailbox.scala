@@ -157,7 +157,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.isThroughputDefined) { //If we're using throughput, we need to do some book-keeping
           var processedMessages = 0
-          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
+          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
           do {
             if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage

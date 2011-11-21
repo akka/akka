@@ -353,8 +353,8 @@ class ActiveRemoteClientHandler(
 class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
-  val serverSettings = new RemoteServerSettings(system.settings.config, system.settings.DefaultTimeUnit)
-  val clientSettings = new RemoteClientSettings(system.settings.config, system.settings.DefaultTimeUnit)
+  val serverSettings = new RemoteServerSettings(system.settings.config)
+  val clientSettings = new RemoteClientSettings(system.settings.config)
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
