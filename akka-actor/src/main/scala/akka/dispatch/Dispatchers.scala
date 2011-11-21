@@ -58,11 +58,9 @@ case class DefaultDispatcherPrerequisites(
  */
 class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
 
-  val ThroughputDeadlineTimeMillis = settings.DispatcherThroughputDeadlineTime.toMillis.toInt
   val MailboxType: MailboxType =
     if (settings.MailboxCapacity < 1) UnboundedMailbox()
     else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
-  val DispatcherShutdownMillis = settings.DispatcherDefaultShutdown.toMillis
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
@@ -77,8 +75,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(actor: LocalActorRef) = actor match {
-    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", MailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, MailboxType, DispatcherShutdownMillis)
+    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", MailboxType, settings.DispatcherDefaultShutdown)
+    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, MailboxType, settings.DispatcherDefaultShutdown)
   }
 
   /**
@@ -88,8 +86,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
-    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", mailboxType, DispatcherShutdownMillis)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, mailboxType, DispatcherShutdownMillis)
+    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", mailboxType, settings.DispatcherDefaultShutdown)
+    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, mailboxType, settings.DispatcherDefaultShutdown)
   }
 
   /**
@@ -98,7 +96,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(name: String, mailboxType: MailboxType) =
-    new PinnedDispatcher(prerequisites, null, name, mailboxType, DispatcherShutdownMillis)
+    new PinnedDispatcher(prerequisites, null, name, mailboxType, settings.DispatcherDefaultShutdown)
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -106,7 +104,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * E.g. each actor consumes its own thread.
    */
   def newPinnedDispatcher(name: String) =
-    new PinnedDispatcher(prerequisites, null, name, MailboxType, DispatcherShutdownMillis)
+    new PinnedDispatcher(prerequisites, null, name, MailboxType, settings.DispatcherDefaultShutdown)
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -115,7 +113,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newDispatcher(name: String) =
     ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(prerequisites, name, settings.DispatcherThroughput,
-      ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      settings.DispatcherThroughputDeadlineTime, MailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
@@ -124,16 +122,17 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(prerequisites, name, throughput, ThroughputDeadlineTimeMillis, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      new Dispatcher(prerequisites, name, throughput, settings.DispatcherThroughputDeadlineTime, mailboxType,
+        config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+  def newDispatcher(name: String, throughput: Int, throughputDeadline: Duration, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(prerequisites, name, throughput, throughputDeadlineMs, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      new Dispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -142,7 +141,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newBalancingDispatcher(name: String) =
     ThreadPoolConfigDispatcherBuilder(config ⇒ new BalancingDispatcher(prerequisites, name, settings.DispatcherThroughput,
-      ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      settings.DispatcherThroughputDeadlineTime, MailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -151,7 +150,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newBalancingDispatcher(name: String, throughput: Int) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(prerequisites, name, throughput, ThroughputDeadlineTimeMillis, MailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      new BalancingDispatcher(prerequisites, name, throughput, settings.DispatcherThroughputDeadlineTime, MailboxType,
+        config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
@@ -160,16 +160,18 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newBalancingDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(prerequisites, name, throughput, ThroughputDeadlineTimeMillis, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      new BalancingDispatcher(prerequisites, name, throughput, settings.DispatcherThroughputDeadlineTime, mailboxType,
+        config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
    * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
-  def newBalancingDispatcher(name: String, throughput: Int, throughputDeadlineMs: Int, mailboxType: MailboxType) =
+  def newBalancingDispatcher(name: String, throughput: Int, throughputDeadline: Duration, mailboxType: MailboxType) =
     ThreadPoolConfigDispatcherBuilder(config ⇒
-      new BalancingDispatcher(prerequisites, name, throughput, throughputDeadlineMs, mailboxType, config, DispatcherShutdownMillis), ThreadPoolConfig())
+      new BalancingDispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType,
+        config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
    * or else use the supplied default dispatcher
@@ -238,10 +240,10 @@ class DispatcherConfigurator() extends MessageDispatcherConfigurator() {
       threadPoolConfig ⇒ new Dispatcher(prerequisites,
         config.getString("name"),
         config.getInt("throughput"),
-        config.getInt("throughput-deadline-time"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType(config, settings),
         threadPoolConfig,
-        settings.DispatcherDefaultShutdown.toMillis)).build
+        settings.DispatcherDefaultShutdown)).build
   }
 }
 
@@ -252,9 +254,9 @@ class BalancingDispatcherConfigurator() extends MessageDispatcherConfigurator() 
       threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
         config.getString("name"),
         config.getInt("throughput"),
-        config.getInt("throughput-deadline-time"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType(config, settings),
         threadPoolConfig,
-        settings.DispatcherDefaultShutdown.toMillis)).build
+        settings.DispatcherDefaultShutdown)).build
   }
 }

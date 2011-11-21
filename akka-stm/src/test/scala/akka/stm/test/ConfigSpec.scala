@@ -30,7 +30,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.parseResource(classOf[ConfigSpec
       getString("akka.stm.propagation") must equal("requires")
       getBoolean("akka.stm.quick-release") must equal(true)
       getBoolean("akka.stm.speculative") must equal(true)
-      getLong("akka.stm.timeout") must equal(5)
+      getMilliseconds("akka.stm.timeout") must equal(5 * 1000)
       getString("akka.stm.trace-level") must equal("none")
       getBoolean("akka.stm.write-skew") must equal(true)
     }

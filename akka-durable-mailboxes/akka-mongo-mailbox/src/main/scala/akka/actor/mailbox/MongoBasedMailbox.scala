@@ -12,6 +12,8 @@ import akka.dispatch.Envelope
 import akka.event.Logging
 import akka.dispatch.DefaultPromise
 import akka.actor.ActorRef
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -36,8 +38,8 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   val WRITE_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.write"
   val READ_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.read"
   val mongoURI = if (config.hasPath(URI_CONFIG_KEY)) Some(config.getString(URI_CONFIG_KEY)) else None
-  val writeTimeout = config.getInt(WRITE_TIMEOUT_KEY)
-  val readTimeout = config.getInt(READ_TIMEOUT_KEY)
+  val writeTimeout = Duration(config.getMilliseconds(WRITE_TIMEOUT_KEY), TimeUnit.MILLISECONDS)
+  val readTimeout = Duration(config.getInt(READ_TIMEOUT_KEY), TimeUnit.MILLISECONDS)
 
   val log = Logging(system, "MongoBasedMailbox")
 

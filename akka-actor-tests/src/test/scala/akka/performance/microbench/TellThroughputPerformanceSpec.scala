@@ -6,6 +6,7 @@ import akka.actor._
 import java.util.concurrent.{ ThreadPoolExecutor, CountDownLatch, TimeUnit }
 import akka.dispatch._
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy
+import akka.util.Duration
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -14,7 +15,7 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
   def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒
     new Dispatcher(system.dispatcherFactory.prerequisites, name, 5,
-      0, UnboundedMailbox(), config, 60000), ThreadPoolConfig())
+      Duration.Zero, UnboundedMailbox(), config, Duration(60, TimeUnit.SECONDS)), ThreadPoolConfig())
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build

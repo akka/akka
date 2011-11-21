@@ -5,6 +5,7 @@ package akka.actor.mailbox
 
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.LocalActorRef
 import akka.util.Duration
 import akka.AkkaException
@@ -22,11 +23,10 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
 
   val hostname = system.settings.config.getString("akka.actor.mailbox.beanstalk.hostname")
   val port = system.settings.config.getInt("akka.actor.mailbox.beanstalk.port")
-  def defaultTimeUnit = system.settings.DefaultTimeUnit
-  val reconnectWindow = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window"), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitDelay = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay"), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitTimeout = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout"), defaultTimeUnit).toSeconds.toInt
-  val messageTimeToLive = Duration(system.settings.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live"), defaultTimeUnit).toSeconds.toInt
+  val reconnectWindow = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.reconnect-window"), MILLISECONDS).toSeconds.toInt
+  val messageSubmitDelay = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-submit-delay"), MILLISECONDS).toSeconds.toInt
+  val messageSubmitTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-submit-timeout"), MILLISECONDS).toSeconds.toInt
+  val messageTimeToLive = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-time-to-live"), MILLISECONDS).toSeconds.toInt
 
   val log = Logging(system, "BeanstalkBasedMailbox")
 

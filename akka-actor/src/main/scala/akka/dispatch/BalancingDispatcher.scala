@@ -13,6 +13,7 @@ import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
 import java.util.concurrent.atomic.AtomicBoolean
+import akka.util.Duration
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -34,11 +35,11 @@ class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _name: String,
   throughput: Int,
-  throughputDeadlineTime: Int,
+  throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   config: ThreadPoolConfig,
-  _timeoutMs: Long)
-  extends Dispatcher(_prerequisites, _name, throughput, throughputDeadlineTime, mailboxType, config, _timeoutMs) {
+  _shutdownTimeout: Duration)
+  extends Dispatcher(_prerequisites, _name, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
   val rebalance = new AtomicBoolean(false)
