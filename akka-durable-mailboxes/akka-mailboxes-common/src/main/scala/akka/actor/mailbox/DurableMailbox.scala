@@ -5,12 +5,10 @@ package akka.actor.mailbox
 
 import akka.util.ReflectiveAccess
 import java.lang.reflect.InvocationTargetException
-
 import akka.AkkaException
 import akka.actor.ActorCell
 import akka.actor.ActorRef
 import akka.actor.SerializedActorRef
-import akka.config.Configuration
 import akka.dispatch.Envelope
 import akka.dispatch.DefaultSystemMessageQueue
 import akka.dispatch.Dispatcher
@@ -25,6 +23,7 @@ import akka.remote.RemoteProtocol.RemoteMessageProtocol
 import akka.remote.RemoteActorRefProvider
 import akka.remote.netty.NettyRemoteServer
 import akka.serialization.Serialization
+import com.typesafe.config.Config
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -130,8 +129,9 @@ case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(
 class DurableMailboxConfigurator {
   // TODO PN #896: when and how is this class supposed to be used? Can we remove it?
 
-  def mailboxType(config: Configuration): MailboxType = {
-    val storage = config.getString("storage") map {
+  def mailboxType(config: Config): MailboxType = {
+    if (!config.hasPath("storage")) throw new DurableMailboxException("No 'storage' defined for durable mailbox")
+    config.getString("storage") match {
       case "redis"     ⇒ RedisDurableMailboxType
       case "mongodb"   ⇒ MongoDurableMailboxType
       case "beanstalk" ⇒ BeanstalkDurableMailboxType
@@ -139,7 +139,5 @@ class DurableMailboxConfigurator {
       case "file"      ⇒ FileDurableMailboxType
       case fqn         ⇒ FqnDurableMailboxType(fqn)
     }
-
-    storage.getOrElse(throw new DurableMailboxException("No 'storage' defined for durable mailbox"))
   }
 }

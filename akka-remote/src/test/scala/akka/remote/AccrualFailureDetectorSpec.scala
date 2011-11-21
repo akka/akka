@@ -1,13 +1,11 @@
 package akka.remote
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
 import java.net.InetSocketAddress
+import akka.testkit.AkkaSpec
 
-class AccrualFailureDetectorSpec extends WordSpec with MustMatchers {
+class AccrualFailureDetectorSpec extends AkkaSpec {
 
-  "An AccrualFailureDetector" should {
+  "An AccrualFailureDetector" must {
     val conn = RemoteAddress(new InetSocketAddress("localhost", 2552))
 
     "mark node as available after a series of successful heartbeats" in {

@@ -239,7 +239,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
-      // send a bunch over the theshold and observe an increment
+      // send a bunch over the threshold and observe an increment
       loops = 15
       loop(500)
 

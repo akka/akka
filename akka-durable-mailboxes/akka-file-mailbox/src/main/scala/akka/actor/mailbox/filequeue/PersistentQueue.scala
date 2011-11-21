@@ -19,8 +19,8 @@ package akka.actor.mailbox.filequeue
 
 import java.io._
 import scala.collection.mutable
-import akka.config.Configuration
 import akka.event.LoggingAdapter
+import com.typesafe.config.Config
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {
@@ -32,7 +32,7 @@ class OverlaySetting[T](base: ⇒ T) {
   def apply() = local.getOrElse(base)
 }
 
-class PersistentQueue(persistencePath: String, val name: String, val config: Configuration, log: LoggingAdapter) {
+class PersistentQueue(persistencePath: String, val name: String, val config: Config, log: LoggingAdapter) {
 
   private case object ItemArrived
 
@@ -127,18 +127,18 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   //config.subscribe { c => configure(c.getOrElse(new Config)) }
   configure(config)
 
-  def configure(config: Configuration) = synchronized {
-    maxItems set config.getInt("akka.actor.mailbox.file-based.max-items")
-    maxSize set config.getLong("akka.actor.mailbox.file-based.max-size")
-    maxItemSize set config.getLong("akka.actor.mailbox.file-based.max-item-size")
-    maxAge set config.getInt("akka.actor.mailbox.file-based.max-age")
-    maxJournalSize set config.getLong("akka.actor.mailbox.file-based.max-journal-size")
-    maxMemorySize set config.getLong("akka.actor.mailbox.file-based.max-memory-size")
-    maxJournalOverflow set config.getInt("akka.actor.mailbox.file-based.max-journal-overflow")
-    maxJournalSizeAbsolute set config.getLong("akka.actor.mailbox.file-based.max-journal-size-absolute")
-    discardOldWhenFull set config.getBool("akka.actor.mailbox.file-based.discard-old-when-full")
-    keepJournal set config.getBool("akka.actor.mailbox.file-based.journal")
-    syncJournal set config.getBool("akka.actor.mailbox.file-based.sync-journal")
+  def configure(config: Config) = synchronized {
+    maxItems set Some(config.getInt("akka.actor.mailbox.file-based.max-items"))
+    maxSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-size"))
+    maxItemSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-item-size"))
+    maxAge set Some(config.getInt("akka.actor.mailbox.file-based.max-age"))
+    maxJournalSize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-journal-size"))
+    maxMemorySize set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-memory-size"))
+    maxJournalOverflow set Some(config.getInt("akka.actor.mailbox.file-based.max-journal-overflow"))
+    maxJournalSizeAbsolute set Some(config.getMemorySizeInBytes("akka.actor.mailbox.file-based.max-journal-size-absolute"))
+    discardOldWhenFull set Some(config.getBoolean("akka.actor.mailbox.file-based.discard-old-when-full"))
+    keepJournal set Some(config.getBoolean("akka.actor.mailbox.file-based.keep-journal"))
+    syncJournal set Some(config.getBoolean("akka.actor.mailbox.file-based.sync-journal"))
     log.info("Configuring queue %s: journal=%s, max-items=%s, max-size=%s, max-age=%s, max-journal-size=%s, max-memory-size=%s, max-journal-overflow=%s, max-journal-size-absolute=%s, discard-old-when-full=%s, sync-journal=%s"
       .format(
         name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),

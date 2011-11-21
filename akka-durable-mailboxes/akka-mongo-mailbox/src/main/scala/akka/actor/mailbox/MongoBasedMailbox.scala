@@ -31,12 +31,13 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
+  def config = system.settings.config
   val URI_CONFIG_KEY = "akka.actor.mailbox.mongodb.uri"
   val WRITE_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.write"
   val READ_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.read"
-  val mongoURI = system.settings.config.getString(URI_CONFIG_KEY)
-  val writeTimeout = system.settings.config.getInt(WRITE_TIMEOUT_KEY, 3000)
-  val readTimeout = system.settings.config.getInt(READ_TIMEOUT_KEY, 3000)
+  val mongoURI = if (config.hasPath(URI_CONFIG_KEY)) Some(config.getString(URI_CONFIG_KEY)) else None
+  val writeTimeout = config.getInt(WRITE_TIMEOUT_KEY)
+  val readTimeout = config.getInt(READ_TIMEOUT_KEY)
 
   val log = Logging(system, "MongoBasedMailbox")
 
