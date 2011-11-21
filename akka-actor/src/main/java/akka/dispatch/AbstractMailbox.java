@@ -4,15 +4,18 @@
 
 package akka.dispatch;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import akka.util.Unsafe;
 
-abstract class AbstractMailbox {
-    private volatile int _status; // not initialized because this is faster: 0 == Open
-    protected final static AtomicIntegerFieldUpdater<AbstractMailbox> updater =
-      AtomicIntegerFieldUpdater.newUpdater(AbstractMailbox.class, "_status");
+final class AbstractMailbox {
+    final static long mailboxStatusOffset;
+    final static long systemMessageOffset;
 
-    private volatile SystemMessage _systemQueue; // not initialized because this is faster
-    protected final static AtomicReferenceFieldUpdater<AbstractMailbox, SystemMessage> systemQueueUpdater =
-      AtomicReferenceFieldUpdater.newUpdater(AbstractMailbox.class, SystemMessage.class, "_systemQueue");
+    static {
+        try {
+          mailboxStatusOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_status"));
+          systemMessageOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_systemQueue"));
+        } catch(Throwable t){
+            throw new ExceptionInInitializerError(t);
+        }
+    }
 }

@@ -350,16 +350,20 @@ abstract class ActorModelSpec extends AkkaSpec {
           assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
         } catch {
           case e ⇒
-            val buddies = dispatcher.asInstanceOf[BalancingDispatcher].buddies
-            val mq = dispatcher.asInstanceOf[BalancingDispatcher].messageQueue
+            dispatcher match {
+              case dispatcher: BalancingDispatcher ⇒
+                val buddies = dispatcher.buddies
+                val mq = dispatcher.messageQueue
 
-            System.err.println("Buddies left: ")
-            buddies.toArray foreach {
-              case cell: ActorCell ⇒
-                System.err.println(" - " + cell.self.path + " " + cell.isShutdown + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
+                System.err.println("Buddies left: ")
+                buddies.toArray foreach {
+                  case cell: ActorCell ⇒
+                    System.err.println(" - " + cell.self.path + " " + cell.isShutdown + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
+                }
+
+                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
+              case _ =>
             }
-
-            System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
 
             throw e
         }
