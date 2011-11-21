@@ -63,6 +63,8 @@ abstract class AkkaSpec(_application: ActorSystem = ActorSystem(getClass.getSimp
 
   def this(config: Config) = this(ActorSystem(getClass.getSimpleName, config.withFallback(AkkaSpec.testConf)))
 
+  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
+
   def this(configMap: Map[String, _]) = {
     this(AkkaSpec.mapToConfig(configMap).withFallback(AkkaSpec.testConf))
   }
