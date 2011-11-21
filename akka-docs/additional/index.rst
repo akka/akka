@@ -4,6 +4,7 @@ Additional Information
 .. toctree::
    :maxdepth: 2
 
+   durable-mailbox
    add-on-modules
    articles
    benchmarks
