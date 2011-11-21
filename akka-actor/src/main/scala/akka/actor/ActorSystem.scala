@@ -256,13 +256,19 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    *
    * {{{
    * class MyActor extends Actor {
-   *   val ext = context.app.extension(MyExtension.key)
+   *   val ext: MyExtension = context.app.extension(MyExtension.key)
    * }
    * }}}
    *
-   * @return `null` if extension is not found
+   * Throws IllegalArgumentException if the extension key is not found.
    */
   def extension[T <: AnyRef](key: ExtensionKey[T]): T
+
+  /**
+   * Query presence of a specific extension. Beware that this key needs to be
+   * “the same” as the one used for registration (it is using a HashMap).
+   */
+  def hasExtension(key: ExtensionKey[_]): Boolean
 }
 
 class ActorSystemImpl private[actor] (val name: String, config: Configuration) extends ActorSystem {
@@ -385,9 +391,11 @@ class ActorSystemImpl private[actor] (val name: String, config: Configuration) e
   }
 
   def extension[T <: AnyRef](key: ExtensionKey[T]): T = extensions.get(key) match {
-    case null ⇒ throw new NullPointerException("trying to get non-registered extension " + key)
+    case null ⇒ throw new IllegalArgumentException("trying to get non-registered extension " + key)
     case x    ⇒ x.asInstanceOf[T]
   }
+
+  def hasExtension(key: ExtensionKey[_]): Boolean = extensions.get(key) != null
 
   private def loadExtensions() {
     config.getList("akka.extensions") foreach { fqcn ⇒
