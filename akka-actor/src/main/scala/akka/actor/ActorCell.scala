@@ -20,8 +20,6 @@ trait ActorContext extends ActorRefFactory with TypedActorFactory {
 
   def self: ActorRef
 
-  def hasMessages: Boolean
-
   def receiveTimeout: Option[Long]
 
   def receiveTimeout_=(timeout: Option[Long]): Unit
@@ -109,8 +107,6 @@ private[akka] class ActorCell(
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
 
   final def isShutdown: Boolean = mailbox.isClosed
-
-  def hasMessages: Boolean = mailbox.hasMessages
 
   final def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)
