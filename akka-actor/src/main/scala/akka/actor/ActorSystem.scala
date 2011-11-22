@@ -93,6 +93,9 @@ object ActorSystem {
 
     val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
 
+    val SchedulerTickDuration = getInt("akka.scheduler.tickDuration")
+    val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+
     // FIXME move to cluster extension
     val ClusterEnabled = EnabledModules exists (_ == "cluster")
     val ClusterName = getString("akka.cluster.name")
@@ -334,8 +337,7 @@ class ActorSystemImpl(val name: String, _config: Config) extends ActorSystem {
     override def numberOfMessages = 0
   }
 
-  // FIXME make this configurable
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, MILLISECONDS, 512))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, MILLISECONDS, settings.SchedulerTicksPerWheel))
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))

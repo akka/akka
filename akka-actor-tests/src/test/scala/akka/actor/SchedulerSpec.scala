@@ -124,5 +124,28 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       // should be enough time for the ping countdown to recover and reach 6 pings
       assert(pingLatch.await(4, TimeUnit.SECONDS))
     }
+
+    "never fire prematurely" in {
+      val ticks = new CountDownLatch(300)
+
+      case class Msg(ts: Long)
+
+      val actor = actorOf(new Actor {
+        def receive = {
+          case Msg(ts) ⇒
+            val now = System.currentTimeMillis
+            // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
+            if (now - ts < 10) throw new RuntimeException("Interval is too small: " + (now - ts))
+            ticks.countDown()
+        }
+      })
+
+      (1 to 300).foreach { i ⇒
+        collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.currentTimeMillis()), 10, TimeUnit.MILLISECONDS))
+        Thread.sleep(5)
+      }
+
+      assert(ticks.await(2, TimeUnit.SECONDS) == true)
+    }
   }
 }
