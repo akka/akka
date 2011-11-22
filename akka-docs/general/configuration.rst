@@ -11,9 +11,10 @@ Configuration
 Specifying the configuration file
 ---------------------------------
 
-If you don't specify a configuration file then Akka uses default values, corresponding to the ``akka-reference.conf``
-that you see below. You can specify your own configuration file to override any property in the reference config.
-You only have to define the properties that differ from the default configuration.
+If you don't specify a configuration file then Akka uses default values, corresponding to the reference 
+configuration files that you see below. You can specify your own configuration file to override any 
+property in the reference config. You only have to define the properties that differ from the default 
+configuration.
 
 The location of the config file to use can be specified in various ways:
 
@@ -29,22 +30,74 @@ The location of the config file to use can be specified in various ways:
 If several of these ways to specify the config file are used at the same time the precedence is the order as given above,
 i.e. you can always redefine the location with the ``-Dakka.config=...`` system property.
 
+You may also specify the configuration programmatically when instantiating the ``ActorSystem``.
+
+.. includecode:: code/ConfigDocSpec.scala
+   :include: imports,custom-config
+
+The ``ConfigFactory`` provides several methods to parse the configuration from various sources.
 
 Defining the configuration file
 -------------------------------
 
-Here is the reference configuration file:
+Each Akka module has a reference configuration file with the default values.
 
-.. literalinclude:: ../../config/akka-reference.conf
+*akka-actor:*
+
+.. literalinclude:: ../../akka-actor/src/main/resources/akka-actor-reference.conf
+   :language: none
+
+*akka-remote:*
+
+.. literalinclude:: ../../akka-remote/src/main/resources/akka-remote-reference.conf
+   :language: none
+   
+*akka-serialization:*
+
+.. literalinclude:: ../../akka-actor/src/main/resources/akka-serialization-reference.conf
+   :language: none
+
+*akka-testkit:*
+
+.. literalinclude:: ../../akka-testkit/src/main/resources/akka-testkit-reference.conf
+   :language: none
+
+*akka-beanstalk-mailbox:*
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/akka-beanstalk-mailbox-reference.conf
+   :language: none
+
+*akka-file-mailbox:*
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/akka-file-mailbox-reference.conf
+   :language: none
+
+*akka-mongo-mailbox:*
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/akka-mongo-mailbox-reference.conf
+   :language: none
+
+*akka-redis-mailbox:*
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/akka-redis-mailbox-reference.conf
+   :language: none
+
+*akka-zookeeper-mailbox:*
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/akka-zookeeper-mailbox-reference.conf
    :language: none
 
 A custom ``akka.conf`` might look like this::
 
-  # In this file you can override any option defined in the 'akka-reference.conf' file.
-  # Copy in all or parts of the 'akka-reference.conf' file and modify as you please.
+  # In this file you can override any option defined in the reference files.
+  # Copy in parts of the reference files and modify as you please.
 
   akka {
     event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
+    loglevel        = DEBUG  # Options: ERROR, WARNING, INFO, DEBUG
+                             # this level is used by the configured loggers (see "event-handlers") as soon
+                             # as they have been started; before that, see "stdout-loglevel"
+    stdout-loglevel = DEBUG  # Loglevel for the very basic logger activated during AkkaApplication startup
 
     # Comma separated list of the enabled modules.
     enabled-modules = ["camel", "remote"]
@@ -56,7 +109,9 @@ A custom ``akka.conf`` might look like this::
             "sample.myservice.Boot"]
 
     actor {
-      throughput = 10  # Throughput for Dispatcher, set to 1 for complete fairness
+      default-dispatcher {
+        throughput = 10  # Throughput for default Dispatcher, set to 1 for complete fairness
+      }
     }
 
     remote {
@@ -67,6 +122,12 @@ A custom ``akka.conf`` might look like this::
   }
 
 .. _-Dakka.mode:
+
+Config file format
+------------------
+
+The configuration file syntax is described in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+specification. Note that it supports three formats; conf, json, and properties. 
 
 Specifying files for different modes
 ------------------------------------

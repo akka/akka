@@ -36,7 +36,7 @@ case class DefaultDispatcherPrerequisites(
  *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .build
  * </pre>
  * <p/>
@@ -49,7 +49,7 @@ case class DefaultDispatcherPrerequisites(
  *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .build();
  * </pre>
  * <p/>
@@ -174,7 +174,9 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
   /**
    * Utility function that tries to load the specified dispatcher config from the akka.conf
-   * or else use the supplied default dispatcher
+   * or if not defined it uses the supplied dispatcher.
+   * Uses default values from default-dispatcher, i.e. all options doesn't need to be defined
+   * in config.
    */
   def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher, cfg: Config = settings.config): MessageDispatcher = {
     import scala.collection.JavaConverters._
@@ -192,7 +194,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * Creates of obtains a dispatcher from a ConfigMap according to the format below.
    * Uses default values from default-dispatcher. 
    *
-   * default-dispatcher {
+   * my-dispatcher {
    *   type = "Dispatcher"         # Must be one of the following
    *                               # Dispatcher, (BalancingDispatcher, only valid when all actors using it are of the same type),
    *                               # A FQCN to a class inheriting MessageDispatcherConfigurator with a no-arg visible constructor

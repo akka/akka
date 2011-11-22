@@ -21,6 +21,7 @@ import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compressi
 import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.serialization.SerializationExtension
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
@@ -34,9 +35,11 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   import system._
   import settings._
 
-  // TODO move to settings?
-  val shouldCompressData = config.getBoolean("akka.remote.use-compression")
-  val remoteSystemDaemonAckTimeout = Duration(config.getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
+  private[remote] val remoteExtension = RemoteExtension(system)
+  private[remote] val serializationExtension = SerializationExtension(system)
+  private[remote] val remoteAddress = {
+    RemoteAddress(remoteExtension.settings.serverSettings.Hostname, remoteExtension.settings.serverSettings.Port)
+  }
 
   val failureDetector = new AccrualFailureDetector(system)
 
@@ -81,7 +84,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   }
 
   def start(): Unit = {
-    val serverAddress = server.system.rootPath.remoteAddress //Force init of server
+    val serverAddress = server.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress //Force init of server
     val daemonAddress = remoteDaemon.address //Force init of daemon
     log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
   }
@@ -131,10 +134,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       if (message.hasActorPath) {
 
         val actorFactoryBytes =
-          if (shouldCompressData) LZF.uncompress(message.getPayload.toByteArray) else message.getPayload.toByteArray
+          if (remoteExtension.settings.ShouldCompressData) LZF.uncompress(message.getPayload.toByteArray) else message.getPayload.toByteArray
 
         val actorFactory =
-          system.serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
+          serializationExtension.serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
             case Left(error)     ⇒ throw error
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
@@ -152,12 +155,13 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         log.error("Actor 'address' for actor to instantiate is not defined, ignoring remote system daemon command [{}]", message)
       }
 
-      sender ! Success(systemImpl.address)
+      sender ! Success(remoteAddress)
     } catch {
       case error: Throwable ⇒ //FIXME doesn't seem sensible
         sender ! Failure(error)
         throw error
     }
+
   }
 
   // FIXME implement handleRelease
@@ -230,7 +234,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
   }
 
   private def payloadFor[T](message: RemoteSystemDaemonMessageProtocol, clazz: Class[T]): T = {
-    system.serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
+    serializationExtension.serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
       case Left(error)     ⇒ throw error
       case Right(instance) ⇒ instance.asInstanceOf[T]
     }

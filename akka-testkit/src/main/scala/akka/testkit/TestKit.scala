@@ -71,7 +71,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  *
  * It should be noted that for CI servers and the like all maximum Durations
  * are scaled using their Duration.dilated method, which uses the
- * Duration.timeFactor settable via akka.conf entry "akka.test.timefactor".
+ * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
  *
  * @author Roland Kuhn
  * @since 1.1
@@ -81,6 +81,7 @@ class TestKit(_system: ActorSystem) {
   import TestActor.{ Message, RealMessage, NullMessage }
 
   implicit val system = _system
+  val testKitExtension = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -127,7 +128,7 @@ class TestKit(_system: ActorSystem) {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) system.settings.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) testKitExtension.settings.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.
@@ -141,7 +142,8 @@ class TestKit(_system: ActorSystem) {
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
    *
-   * Note that the timeout is scaled using Duration.timeFactor.
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
    */
   def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
     val _max = if (max eq Duration.Undefined) remaining else max.dilated
@@ -165,8 +167,8 @@ class TestKit(_system: ActorSystem) {
    * take maximum wait times are available in a version which implicitly uses
    * the remaining time governed by the innermost enclosing `within` block.
    *
-   * Note that the max Duration is scaled by Duration.timeFactor while the min
-   * Duration is not.
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor", while the min Duration is not.
    *
    * <pre>
    * val ret = within(50 millis) {
@@ -535,7 +537,8 @@ object TestKit {
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
    *
-   * Note that the timeout is scaled using Duration.timeFactor.
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor"
    */
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max
@@ -561,6 +564,14 @@ object TestKit {
    * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
    */
   def now: Duration = System.nanoTime().nanos
+
+  /**
+   * Java API. Scale timeouts (durations) during tests with the configured
+   * 'akka.test.timefactor'.
+   */
+  def dilated(duration: Duration, system: ActorSystem): Duration = {
+    duration * TestKitExtension(system).settings.TestTimeFactor
+  }
 
 }
 

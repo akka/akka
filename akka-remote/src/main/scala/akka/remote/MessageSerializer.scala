@@ -8,18 +8,19 @@ import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
 import com.google.protobuf.ByteString
 import akka.actor.ActorSystem
+import akka.serialization.SerializationExtension
 
 object MessageSerializer {
 
   def deserialize(system: ActorSystem, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
     val clazz = loadManifest(classLoader, messageProtocol)
-    system.serialization.deserialize(messageProtocol.getMessage.toByteArray,
+    SerializationExtension(system).serialization.deserialize(messageProtocol.getMessage.toByteArray,
       clazz, classLoader).fold(x ⇒ throw x, identity)
   }
 
   def serialize(system: ActorSystem, message: AnyRef): MessageProtocol = {
     val builder = MessageProtocol.newBuilder
-    val bytes = system.serialization.serialize(message).fold(x ⇒ throw x, identity)
+    val bytes = SerializationExtension(system).serialization.serialize(message).fold(x ⇒ throw x, identity)
     builder.setMessage(ByteString.copyFrom(bytes))
     builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
     builder.build

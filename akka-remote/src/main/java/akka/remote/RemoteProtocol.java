@@ -2785,7 +2785,7 @@ public final class RemoteProtocol {
     }
     
     // required uint32 port = 2;
-    public static final int PORT_FIELD_NUMBER = 2;
+    public static final int Port_FIELD_NUMBER = 2;
     private int port_;
     public boolean hasPort() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
@@ -4602,7 +4602,7 @@ public final class RemoteProtocol {
     }
     
     // required uint32 port = 2;
-    public static final int PORT_FIELD_NUMBER = 2;
+    public static final int Port_FIELD_NUMBER = 2;
     private int port_;
     public boolean hasPort() {
       return ((bitField0_ & 0x00000002) == 0x00000002);

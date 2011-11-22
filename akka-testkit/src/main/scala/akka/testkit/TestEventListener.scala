@@ -81,11 +81,12 @@ abstract class EventFilter(occurrences: Int) {
    */
   def intercept[T](code: ⇒ T)(implicit system: ActorSystem): T = {
     system.eventStream publish TestEvent.Mute(this)
+    val testKitExtension = TestKitExtension(system)
     try {
       val result = code
-      if (!awaitDone(system.settings.TestEventFilterLeeway))
+      if (!awaitDone(testKitExtension.settings.TestEventFilterLeeway))
         if (todo > 0)
-          throw new AssertionError("Timeout (" + system.settings.TestEventFilterLeeway + ") waiting for " + todo + " messages on " + this)
+          throw new AssertionError("Timeout (" + testKitExtension.settings.TestEventFilterLeeway + ") waiting for " + todo + " messages on " + this)
         else
           throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
       result

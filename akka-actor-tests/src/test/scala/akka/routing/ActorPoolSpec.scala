@@ -2,7 +2,7 @@ package akka.routing
 
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
+import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.AkkaSpec

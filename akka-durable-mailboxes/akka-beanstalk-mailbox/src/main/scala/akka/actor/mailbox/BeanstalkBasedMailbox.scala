@@ -21,12 +21,9 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
  */
 class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val hostname = system.settings.config.getString("akka.actor.mailbox.beanstalk.hostname")
-  val port = system.settings.config.getInt("akka.actor.mailbox.beanstalk.port")
-  val reconnectWindow = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.reconnect-window"), MILLISECONDS).toSeconds.toInt
-  val messageSubmitDelay = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-submit-delay"), MILLISECONDS).toSeconds.toInt
-  val messageSubmitTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-submit-timeout"), MILLISECONDS).toSeconds.toInt
-  val messageTimeToLive = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.beanstalk.message-time-to-live"), MILLISECONDS).toSeconds.toInt
+  private val settings = BeanstalkBasedMailboxExtension(owner.system).settings
+  private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
+  private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
 
   val log = Logging(system, "BeanstalkBasedMailbox")
 
@@ -36,7 +33,7 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
-    Some(queue.get.put(65536, messageSubmitDelay, messageTimeToLive, serialize(envelope)).toInt)
+    Some(queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt)
   }
 
   def dequeue(): Envelope = try {
@@ -87,15 +84,16 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
     while (!connected) {
       attempts += 1
       try {
-        client = new ClientImpl(hostname, port)
+        client = new ClientImpl(settings.Hostname, settings.Port)
         client.useTube(name)
         client.watch(name)
         connected = true
       } catch {
         case e: Exception ⇒
-          log.error(e, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".format(reconnectWindow, e))
+          log.error(e, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".
+            format(settings.ReconnectWindow.toSeconds, e))
           try {
-            Thread.sleep(1000 * reconnectWindow)
+            Thread.sleep(settings.ReconnectWindow.toMillis)
           } catch {
             case e: InterruptedException ⇒ {}
           }

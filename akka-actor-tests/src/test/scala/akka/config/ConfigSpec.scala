@@ -45,8 +45,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.parseResource(classOf[ConfigSpec
       getBoolean("akka.actor.serialize-messages") must equal(false)
       settings.SerializeAllMessages must equal(false)
 
-      getString("akka.remote.layer") must equal("akka.cluster.netty.NettyRemoteSupport")
-      getInt("akka.remote.server.port") must equal(2552)
     }
   }
 }
