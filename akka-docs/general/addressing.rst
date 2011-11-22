@@ -31,71 +31,171 @@ depending on the configuration of the actor system:
 - Remote actor references represent actors which are reachable using remote 
   communication, i.e. sending messages to them will serialize the messages 
   transparently and send them to the other JVM.
+- There are several special types of actor references which behave like local 
+  actor references for all practical purposes:
+
+  - :class:`AskActorRef` is the special representation of a :meth:`Promise` for 
+    the purpose of being completed by the response from an actor; it is created 
+    by the :meth:`ActorRef.ask` invocation.
+  - :class:`DeadLetterActorRef` is the default implementation of the dead 
+    letters service, where all messages are re-routed whose targets are shut 
+    down or non-existent.
+
+- And then there are some one-off internal implementations which you should 
+  never really see:
+
+  - There is an actor reference which does not represent an actor but acts only 
+    as a pseudo-supervisor for the root guardian, we call it “the one who walks 
+    the bubbles of space-time”.
+  - The first logging service started before actually firing up actor creation 
+    facilities is a fake actor reference which accepts log events and prints 
+    them directly to standard output; it is :class:`Logging.StandardOutLogger`.
+
 - **(Future Extension)** Cluster actor references represent clustered actor 
   services which may be replicated, migrated or load-balanced across multiple 
   cluster nodes. As such they are virtual names which the cluster service 
   translates into local or remote actor references as appropriate.
-- Unresolved actor references are obtained by querying an actor system and may 
-  potentially represent one or more actors.
-
-How are Actor References obtained?
-----------------------------------
-
-An actor system is typically started by creating actors beneath the guardian 
-actor using the :meth:`ActorSystem.actorOf` method, which returns a reference 
-to the newly created actor. Each actor has direct access to references for its 
-parent, itself and its children. These references may be sent within messages 
-to other actors, enabling those to reply directly.
-
-Looking up Actors by Absolute Path
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In addition, actor references may be looked up using the 
-:meth:`ActorSystem.actorFor` method, which returns an unresolved actor 
-reference. Sending messages to such a reference will traverse the actor 
-hierarchy of the actor system from top to bottom by passing messages from 
-supervisor to child until either the target is reached or failure is certain 
-(i.e. a name in the path does not exist). Since this process takes time, 
-replies from the found actors—which include their sender reference—should be 
-used to replace them by direct actor references.
-
-Looking up Actors by Relative Path
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The third method for obtaining actor references is 
-:meth:`ActorContext.actorFor`, which is available inside any actor as 
-``context.actorFor``. This yields an unresolved actor reference much like its 
-twin on :class:`ActorSystem`, but instead of looking up the path starting from 
-the root of the actor tree it starts out on the current actor. Path elements 
-consisting of two dots (``".."``) may be used to access the parent actor and 
-other names are interpreted as globbing patterns. You can for example send a 
-message to all your siblings by using a path like ``"../*"`` (this will include 
-yourself).
 
 What is an Actor Path?
 ----------------------
 
 Since actors are created in a strictly hierarchical fashion, there exists a 
-unique sequence of actor names given by following the tree of actors up until 
-the root of the actor system. This sequence can be seen as enclosing folders in 
-a file system, hence we adopted the name “path” to refer to it.
+unique sequence of actor names given by recursively following the supervision 
+links between child and parent down towards the root of the actor system. This 
+sequence can be seen as enclosing folders in a file system, hence we adopted 
+the name “path” to refer to it. As in some real file-systems there also are 
+“symbolic links”, i.e. one actor may be reachable using more than one path, 
+where all but one involve some translation which decouples part of the path 
+from the actor’s actual supervision ancestor line; these specialities are 
+described in the sub-sections to follow.
 
 Each actor path has an address component, describing the protocol and location 
 by which the corresponding actor is reachable, followed by the names of the 
 actors in the hierarchy from the root up. Examples are::
 
-  "jvm://my-system/app/service-a/worker1"
-  "akka://serv.example.com:5678/app/service-b"
+  "akka://my-system/app/service-a/worker1"               // purely local
+  "akka://my-system@serv.example.com:5678/app/service-b" // local or remote
+  "cluster://my-cluster/service-c"                       // clustered (Future Extension)
 
-where the first represents a purely local actor reference while the second 
-stands for a remote actor reference. Each actor has access to its path, and you 
-may construct paths and pass them to :meth:`ActorSystem.actorFor` in order to 
-obtain a corresponding actor reference.
+Here, ``akka`` is the default remote protocol for the 2.0 release, and others 
+are pluggable. The interpretation of the host & port part (i.e. 
+``serv.example.com:5678`` in the example) depends on the transport mechanism 
+used, but it should abide by the URI structural rules.
 
-One important aspect is that actor paths never span multiple actor systems or 
-JVMs. An actor path always represents the physical location of an actor. This 
-means that the supervision hierarchy and the path hierarchy of an actor may 
-diverge if one of its ancestors is remotely supervised.
+Logical Actor Paths
+^^^^^^^^^^^^^^^^^^^
+
+The unique path obtained by following the parental supervision links towards 
+the root guardian is called the logical actor path. This path matches exactly 
+the creation ancestry of an actor, so it is completely deterministic as soon as 
+the actor system’s remoting configuration (and with it the address component of 
+the path) is set.
+
+Physical Actor Paths
+^^^^^^^^^^^^^^^^^^^^
+
+While the logical actor path describes the functional location within one actor 
+system, configuration-based transparent remoting means that an actor may be 
+created on a different network host as its parent, i.e. within a different 
+actor system. In this case, following the actor path from the root guardian up 
+entails traversing the network, which is a costly operation. Therefore, each 
+actor also has a physical path, starting at the root guardian of the actor 
+system where the actual actor object resides. Using this path as sender 
+reference when querying other actors will let them reply directly to this 
+actor, minimizing delays incurred by routing.
+
+One important aspect is that a physical actor path never spans multiple actor 
+systems or JVMs. This means that the logical path (supervision hierarchy) and 
+the physical path (actor deployment) of an actor may diverge if one of its 
+ancestors is remotely supervised.
+
+Virtual Actor Paths **(Future Extension)**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to be able to replicate and migrate actors across a cluster of Akka 
+nodes, another level of indirection has to be introduced. The cluster component 
+therefore provides a translation from virtual paths to physical paths which may 
+change in reaction to node failures, cluster rebalancing, etc.
+
+*This area is still under active development, expect updates in this section 
+for the 2.1 release.*
+
+How are Actor References obtained?
+----------------------------------
+
+There are two general categories to how actor references may be obtained: by 
+creating actors or by looking them up, where the latter functionality comes in 
+the two flavours of creating actor references from concrete actor paths and 
+querying the logical actor hierarchy.
+
+*While local and remote actor references and their paths work in the same way 
+concerning the facilities mentioned below, the exact semantics of clustered 
+actor references and their paths—while certainly as similar as possible—may 
+differ in certain aspects, owing to the virtual nature of those paths. Expect 
+updates for the 2.1 release.*
+
+Creating Actors
+^^^^^^^^^^^^^^^
+
+An actor system is typically started by creating actors above the guardian 
+actor using the :meth:`ActorSystem.actorOf` method and then using 
+:meth:`ActorContext.actorOf` from within the created actors to spawn the actor 
+tree. These methods return a reference to the newly created actors. Each actor 
+has direct access to references for its parent, itself and its children. These 
+references may be sent within messages to other actors, enabling those to reply 
+directly.
+
+Looking up Actors by Concrete Path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition, actor references may be looked up using the 
+:meth:`ActorSystem.actorFor` method, which returns an (unverified) local, 
+remote or clustered actor reference. Sending messages to such a reference or 
+attempting to observe its livelyhood will traverse the actor hierarchy of the 
+actor system from top to bottom by passing messages from parent to child until 
+either the target is reached or failure is certain, i.e. a name in the path 
+does not exist (in practice this process will be optimized using caches, but it 
+still has added cost compared to using the physical actor path, can for example 
+to obtained from the sender reference included in replies from that actor). The 
+messages passed are handled automatically by Akka, so this process is not 
+visible to client code.
+
+Absolute vs. Relative Paths
+```````````````````````````
+
+In addition to :meth:`ActorSystem.actorFor` there is also 
+:meth:`ActorContext.actorFor`, which is available inside any actor as 
+``context.actorFor``. This yields an actor reference much like its twin on 
+:class:`ActorSystem`, but instead of looking up the path starting from the root 
+of the actor tree it starts out on the current actor. Path elements consisting 
+of two dots (``".."``) may be used to access the parent actor. You can for 
+example send a message to a specific sibling::
+
+  context.actorFor("../brother") ! msg
+
+Querying the Logical Actor Hierarchy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since the actor system forms a file-system like hierarchy, matching on paths is 
+possible in the same was as supported by Unix shells: you may replace (parts 
+of) path element names with wildcards (`"*"` and `"?"`) to formulate a 
+selection which may match zero or more actual actors. Because the result is not 
+a single actor reference, it has a different type :class:`ActorSelection` and 
+does not support the full set of operations an :class:`ActorRef` does. 
+Selections may be formulated using the :meth:`ActorSystem.actorSelection` and 
+:meth:`ActorContext.actorSelection` methods and do support sending messages::
+
+  context.actorSelection("../*") ! msg
+
+will send `msg` to all siblings including the current actor. As for references 
+obtained using `actorFor`, a traversal of the supervision hierarchy is done in 
+order to perform the message send. As the exact set of actors which match a 
+selection may change even while a message is making its way to the recipients, 
+it is not possible to watch a selection for liveliness changes. In order to do 
+that, resolve the uncertainty by sending a request and gathering all answers, 
+extracting the sender references, and then watch all discovered concrete 
+actors. This scheme of resolving a selection may be improved upon in a future 
+release.
 
 The Interplay with Remote Deployment
 ------------------------------------
@@ -112,6 +212,21 @@ parent node in the actor’s path) do not represent the same actor. However,
 looking up the child’s name within the supervisor will find it on the remote 
 node, preserving logical structure e.g. when sending to an unresolved actor 
 reference.
+
+The Interplay with Clustering **(Future Extension)**
+----------------------------------------------------
+
+*This section is subject to change!*
+
+When creating a scaled-out actor subtree, a cluster name is created for a 
+routed actor reference, where sending to this reference will send to one (or 
+more) of the actual actors created in the cluster. In order for those actors to 
+be able to query other actors while processing their messages, their sender 
+reference must be unique for each of the replicas, which means that physical 
+paths will be used as ``self`` references for these instances. In the case 
+of replication for achieving fault-tolerance the opposite is required: the 
+``self`` reference will be a virtual (cluster) path so that in case of 
+migration or fail-over communication is resumed with the fresh instance.
 
 What is the Address part used for?
 ----------------------------------
@@ -136,7 +251,7 @@ other actors are found. The next level consists of the following:
 - ``"/sys"`` is the guardian actor for all system-created top-level actors, 
   e.g. logging listeners or actors automatically deployed by configuration at 
   the start of the actor system.
-- ``"/nul"`` is the dead letter actor, which is where all messages sent to 
+- ``"/nil"`` is the dead letter actor, which is where all messages sent to 
   stopped or non-existing actors are re-routed.
 - ``"/tmp"`` is the guardian for all short-lived system-created actors, e.g.  
   those which are used in the implementation of :meth:`ActorRef.ask`.
