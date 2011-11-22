@@ -83,8 +83,8 @@ private[akka] class ActorCell(
 
   var futureTimeout: Option[Cancellable] = None
 
+  //FIXME TODO Coalesce childrenRefs and ChildrenStats into one field, this to conserve memory
   var childrenRefs = emptyChildrenRefs
-
   var childrenStats = emptyChildrenStats
 
   var currentMessage: Envelope = null
