@@ -9,6 +9,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
 import java.util.concurrent.TimeUnit
 import akka.event.Logging.{ Debug, Warning, Error }
+import akka.util.Helpers
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -92,13 +93,22 @@ private[akka] class ActorCell(
 
   var stopping = false
 
+  @volatile //This must be volatile since it isn't protected by the mailbox status
+  var mailbox: Mailbox = _
+
+  var nextNameSequence: Long = 0
+
+  //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
+  override protected def randomName(): String = {
+    val n = nextNameSequence + 1
+    nextNameSequence = n
+    Helpers.base64(n)
+  }
+
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
 
   final def isShutdown: Boolean = mailbox.isClosed
-
-  @volatile //This must be volatile since it isn't protected by the mailbox status
-  var mailbox: Mailbox = _
 
   def hasMessages: Boolean = mailbox.hasMessages
 

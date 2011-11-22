@@ -94,14 +94,9 @@ trait ActorRefFactory {
    */
   protected def guardian: ActorRef
 
-  private val number = new AtomicLong
+  protected def randomName(): String
 
-  private def randomName: String = {
-    val l = number.getAndIncrement()
-    Helpers.base64(l)
-  }
-
-  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName, false)
+  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
 
   /*
    * TODO this will have to go at some point, because creating two actors with

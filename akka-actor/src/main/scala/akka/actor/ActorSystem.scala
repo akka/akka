@@ -10,8 +10,6 @@ import akka.dispatch._
 import akka.util.duration._
 import java.net.InetAddress
 import com.eaio.uuid.UUID
-import akka.util.Duration
-import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
@@ -25,6 +23,8 @@ import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ConcurrentHashMap
+import akka.util.{ Helpers, Duration, ReflectiveAccess }
+import java.util.concurrent.atomic.AtomicLong
 
 object ActorSystem {
 
@@ -369,6 +369,9 @@ class ActorSystemImpl(val name: String, _config: Config) extends ActorSystem {
   def systemGuardian: ActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
   def nodename: String = provider.nodename
+
+  private final val nextName = new AtomicLong
+  override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
   @volatile
   private var _serialization: Serialization = _

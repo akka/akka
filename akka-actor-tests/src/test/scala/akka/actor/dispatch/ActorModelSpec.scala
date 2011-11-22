@@ -362,7 +362,7 @@ abstract class ActorModelSpec extends AkkaSpec {
                 }
 
                 System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
-              case _ =>
+              case _ ⇒
             }
 
             throw e
