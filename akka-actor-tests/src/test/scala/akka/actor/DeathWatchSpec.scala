@@ -96,7 +96,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         terminal ! Kill
 
         expectTerminationOf(terminal)
-        terminal.isShutdown must be === true
+        terminal.isTerminated must be === true
 
         supervisor.stop()
       }
@@ -123,7 +123,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
           case FF(Failed(DeathPactException(`failed`))) if lastSender eq brother ⇒ 2
           case Terminated(`brother`) ⇒ 3
         }
-        testActor must not be 'shutdown
+        testActor.isTerminated must not be true
         result must be(Seq(1, 2, 3))
       }
     }

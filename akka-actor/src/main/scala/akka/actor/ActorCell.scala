@@ -118,7 +118,7 @@ private[akka] class ActorCell(
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
 
-  final def isShutdown: Boolean = mailbox.isClosed
+  final def isTerminated: Boolean = mailbox.isClosed
 
   final def start(): Unit = {
     mailbox = dispatcher.createMailbox(this)
@@ -153,7 +153,7 @@ private[akka] class ActorCell(
   final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
 
   final def getChild(name: String): Option[ActorRef] =
-    if (isShutdown) None else childrenRefs.get(name).map(_.child)
+    if (isTerminated) None else childrenRefs.get(name).map(_.child)
 
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))

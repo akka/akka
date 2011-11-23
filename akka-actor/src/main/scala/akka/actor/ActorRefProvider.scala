@@ -184,7 +184,7 @@ class LocalActorRefProvider(
 
     override def stop() = stopped switchOn { terminationFuture.complete(causeOfTermination.toLeft(())) }
 
-    override def isShutdown = stopped.isOn
+    override def isTerminated = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
       case Failed(ex)      ⇒ causeOfTermination = Some(ex); sender.stop()

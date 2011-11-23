@@ -160,7 +160,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
         expectMsgPF(5 seconds) {
           case Terminated(`a`) ⇒ true
         }
-        a must be('shutdown)
+        a.isTerminated must be(true)
         assertThread
       }
     }
@@ -224,7 +224,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       ref("work")
-      ref.isShutdown must be(true)
+      ref.isTerminated must be(true)
     }
 
   }
