@@ -60,22 +60,6 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
 
     /**
      * ticket #372
-     * FIXME rewrite the test so that registry is not used
-     */
-    // "not create actors" in {
-    //   object Ping
-    //   val ticks = new CountDownLatch(1000)
-    //   val actor = actorOf(new Actor {
-    //     def receive = { case Ping ⇒ ticks.countDown }
-    //   })
-    //   val numActors = system.registry.local.actors.length
-    //   (1 to 1000).foreach(_ ⇒ collectFuture(Scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.MILLISECONDS)))
-    //   assert(ticks.await(10, TimeUnit.SECONDS))
-    //   assert(system.registry.local.actors.length === numActors)
-    // }
-
-    /**
-     * ticket #372
      */
     "be cancellable" in {
       object Ping
