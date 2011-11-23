@@ -19,6 +19,7 @@ import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
 import com.google.protobuf.ByteString
+import akka.util.Duration
 
 /**
  * Interface for node membership change listener.
@@ -122,8 +123,8 @@ class Gossiper(remote: Remote) {
 
   {
     // start periodic gossip and cluster scrutinization - default is run them every second with 1/2 second in between
-    system.scheduler schedule (() ⇒ initateGossip(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
-    system.scheduler schedule (() ⇒ scrutinize(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
+    system.scheduler schedule (() ⇒ initateGossip(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
+    system.scheduler schedule (() ⇒ scrutinize(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
   }
 
   /**

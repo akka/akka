@@ -13,7 +13,6 @@ import com.eaio.uuid.UUID
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
@@ -22,9 +21,9 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.ConcurrentHashMap
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{ TimeUnit, Executors, ConcurrentHashMap }
 
 object ActorSystem {
 
@@ -93,7 +92,7 @@ object ActorSystem {
 
     val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
 
-    val SchedulerTickDuration = getInt("akka.scheduler.tickDuration")
+    val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), TimeUnit.MILLISECONDS)
     val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
 
     // FIXME move to cluster extension
@@ -337,7 +336,7 @@ class ActorSystemImpl(val name: String, _config: Config) extends ActorSystem {
     override def numberOfMessages = 0
   }
 
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, MILLISECONDS, settings.SchedulerTicksPerWheel))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel))
 
   // TODO correctly pull its config from the config
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))

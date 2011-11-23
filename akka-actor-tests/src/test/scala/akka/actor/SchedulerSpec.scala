@@ -5,6 +5,7 @@ import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ ConcurrentLinkedQueue, CountDownLatch, TimeUnit }
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
+import akka.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
@@ -28,14 +29,14 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
       // run every 50 millisec
-      collectCancellable(system.scheduler.schedule(tickActor, Tick, 0, 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(tickActor, Tick, Duration(0, TimeUnit.MILLISECONDS), Duration(50, TimeUnit.MILLISECONDS)))
 
       // after max 1 second it should be executed at least the 3 times already
       assert(countDownLatch.await(1, TimeUnit.SECONDS))
 
       val countDownLatch2 = new CountDownLatch(3)
 
-      collectCancellable(system.scheduler.schedule(() ⇒ countDownLatch2.countDown(), 0, 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(() ⇒ countDownLatch2.countDown(), Duration(0, TimeUnit.MILLISECONDS), Duration(50, TimeUnit.MILLISECONDS)))
 
       // after max 1 second it should be executed at least the 3 times already
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
@@ -49,8 +50,8 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
 
       // run every 50 millisec
-      collectCancellable(system.scheduler.scheduleOnce(tickActor, Tick, 50, TimeUnit.MILLISECONDS))
-      collectCancellable(system.scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), 50, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.scheduleOnce(tickActor, Tick, Duration(50, TimeUnit.MILLISECONDS)))
+      collectCancellable(system.scheduler.scheduleOnce(() ⇒ countDownLatch.countDown(), Duration(50, TimeUnit.MILLISECONDS)))
 
       // after 1 second the wait should fail
       assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
@@ -86,7 +87,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
 
       (1 to 10).foreach { i ⇒
-        val timeout = collectCancellable(system.scheduler.scheduleOnce(actor, Ping, 1, TimeUnit.SECONDS))
+        val timeout = collectCancellable(system.scheduler.scheduleOnce(actor, Ping, Duration(1, TimeUnit.SECONDS)))
         timeout.cancel()
       }
 
@@ -114,10 +115,10 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       })
       val actor = (supervisor ? props).as[ActorRef].get
 
-      collectCancellable(system.scheduler.schedule(actor, Ping, 500, 500, TimeUnit.MILLISECONDS))
+      collectCancellable(system.scheduler.schedule(actor, Ping, Duration(500, TimeUnit.MILLISECONDS), Duration(500, TimeUnit.MILLISECONDS)))
       // appx 2 pings before crash
       EventFilter[Exception]("CRASH", occurrences = 1) intercept {
-        collectCancellable(system.scheduler.scheduleOnce(actor, Crash, 1000, TimeUnit.MILLISECONDS))
+        collectCancellable(system.scheduler.scheduleOnce(actor, Crash, Duration(1000, TimeUnit.MILLISECONDS)))
       }
 
       assert(restartLatch.tryAwait(2, TimeUnit.SECONDS))
@@ -133,19 +134,19 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       val actor = actorOf(new Actor {
         def receive = {
           case Msg(ts) ⇒
-            val now = System.currentTimeMillis
-            // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
-            if (now - ts < 10) throw new RuntimeException("Interval is too small: " + (now - ts))
+            val now = System.nanoTime()
+            // Make sure that no message has been dispatched before the scheduled time (10ms = 10000000ns) has occurred
+            if (now - ts < 10000000) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
       })
 
       (1 to 300).foreach { i ⇒
-        collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.currentTimeMillis()), 10, TimeUnit.MILLISECONDS))
+        collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.nanoTime()), Duration(10, TimeUnit.MILLISECONDS)))
         Thread.sleep(5)
       }
 
-      assert(ticks.await(2, TimeUnit.SECONDS) == true)
+      assert(ticks.await(3, TimeUnit.SECONDS) == true)
     }
   }
 }

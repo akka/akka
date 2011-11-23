@@ -16,6 +16,7 @@
 package org.jboss.netty.akka.util;
 
 import akka.event.LoggingAdapter;
+import akka.util.Duration;
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap;
 import org.jboss.netty.akka.util.internal.ReusableIterator;
 
@@ -96,24 +97,24 @@ public class HashedWheelTimer implements Timer {
      * @param threadFactory  a {@link java.util.concurrent.ThreadFactory} that creates a
      *                       background {@link Thread} which is dedicated to
      *                       {@link TimerTask} execution.
-     * @param tickDuration   the duration between tick
-     * @param unit           the time unit of the {@code tickDuration}
+     * @param duration       the duration between ticks
      * @param ticksPerWheel  the size of the wheel
      */
     public HashedWheelTimer(
             LoggingAdapter logger,
             ThreadFactory threadFactory,
-            long tickDuration, TimeUnit unit, int ticksPerWheel) {
+            Duration duration,
+            int ticksPerWheel) {
 
         if (threadFactory == null) {
             throw new NullPointerException("threadFactory");
         }
-        if (unit == null) {
-            throw new NullPointerException("unit");
+        if (duration == null) {
+            throw new NullPointerException("duration");
         }
-        if (tickDuration <= 0) {
+        if (duration.toNanos() <= 0) {
             throw new IllegalArgumentException(
-                    "tickDuration must be greater than 0: " + tickDuration);
+                    "duration must be greater than 0 ns: " + duration.toNanos());
         }
         if (ticksPerWheel <= 0) {
             throw new IllegalArgumentException(
@@ -128,14 +129,14 @@ public class HashedWheelTimer implements Timer {
         mask = wheel.length - 1;
 
         // Convert tickDuration to milliseconds.
-        this.tickDuration = tickDuration = unit.toMillis(tickDuration);
+        this.tickDuration = duration.toMillis();
 
         // Prevent overflow.
         if (tickDuration == Long.MAX_VALUE ||
                 tickDuration >= Long.MAX_VALUE / wheel.length) {
             throw new IllegalArgumentException(
                     "tickDuration is too long: " +
-                    tickDuration +  ' ' + unit);
+                    tickDuration +  ' ' + duration.unit());
         }
 
         roundDuration = tickDuration * wheel.length;
@@ -231,23 +232,22 @@ public class HashedWheelTimer implements Timer {
         return Collections.unmodifiableSet(unprocessedTimeouts);
     }
 
-    public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
+    public Timeout newTimeout(TimerTask task, Duration delay) {
         final long currentTime = System.currentTimeMillis();
 
         if (task == null) {
             throw new NullPointerException("task");
         }
-        if (unit == null) {
-            throw new NullPointerException("unit");
+        if (delay == null) {
+            throw new NullPointerException("delay");
         }
 
         if (!workerThread.isAlive()) {
             start();
         }
 
-        delay = unit.toMillis(delay);
-        HashedWheelTimeout timeout = new HashedWheelTimeout(task, currentTime + delay);
-        scheduleTimeout(timeout, delay);
+        HashedWheelTimeout timeout = new HashedWheelTimeout(task, currentTime + delay.toMillis());
+        scheduleTimeout(timeout, delay.toMillis());
         return timeout;
     }
 

@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
 import java.util.concurrent.TimeUnit
 import akka.event.Logging.{ Debug, Warning, Error }
-import akka.util.Helpers
+import akka.util.{ Duration, Helpers }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -395,7 +395,7 @@ private[akka] class ActorCell(
     val recvtimeout = receiveTimeout
     if (recvtimeout.isDefined && dispatcher.mailboxIsEmpty(this)) {
       //Only reschedule if desired and there are currently no more messages to be processed
-      futureTimeout = Some(system.scheduler.scheduleOnce(self, ReceiveTimeout, recvtimeout.get, TimeUnit.MILLISECONDS))
+      futureTimeout = Some(system.scheduler.scheduleOnce(self, ReceiveTimeout, Duration(recvtimeout.get, TimeUnit.MILLISECONDS)))
     }
   }
 

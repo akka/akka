@@ -5,6 +5,7 @@ package sample.fsm.dining.become
 
 import akka.actor.{ ActorRef, Actor, ActorSystem }
 import java.util.concurrent.TimeUnit
+import akka.util.Duration
 
 /*
  * First we define our messages, they basically speak for themselves
@@ -77,7 +78,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Taken(`chopstickToWaitFor`) ⇒
       println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
       become(eating)
-      system.scheduler.scheduleOnce(self, Think, 5, TimeUnit.SECONDS)
+      system.scheduler.scheduleOnce(self, Think, Duration(5, TimeUnit.SECONDS))
 
     case Busy(chopstick) ⇒
       become(thinking)
@@ -106,7 +107,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
       left ! Put(self)
       right ! Put(self)
       println("%s puts down his chopsticks and starts to think", name)
-      system.scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
+      system.scheduler.scheduleOnce(self, Eat, Duration(5, TimeUnit.SECONDS))
   }
 
   //All hakkers start in a non-eating state
@@ -114,7 +115,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Think ⇒
       println("%s starts to think", name)
       become(thinking)
-      system.scheduler.scheduleOnce(self, Eat, 5, TimeUnit.SECONDS)
+      system.scheduler.scheduleOnce(self, Eat, Duration(5, TimeUnit.SECONDS))
   }
 }
 
