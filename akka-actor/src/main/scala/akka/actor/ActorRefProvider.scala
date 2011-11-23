@@ -411,6 +411,9 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
   private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
     new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { receiver ! message } }
 
+  private def createSingleTask(f: () ⇒ Unit): TimerTask =
+    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
+
   private def createContinuousTask(receiver: ActorRef, message: Any, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
@@ -419,9 +422,6 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
       }
     }
   }
-
-  private def createSingleTask(f: () ⇒ Unit): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
 
   private def createContinuousTask(f: () ⇒ Unit, delay: Duration): TimerTask = {
     new TimerTask {
