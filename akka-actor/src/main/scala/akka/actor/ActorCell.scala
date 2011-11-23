@@ -54,9 +54,7 @@ private[akka] object ActorCell {
     override def initialValue = Stack[ActorContext]()
   }
 
-  val emptyChildrenRefs = TreeMap[String, ActorRef]()
-
-  val emptyChildrenStats = TreeMap[ActorRef, ChildRestartStats]()
+  val emptyChildrenRefs = TreeMap[String, ChildRestartStats]()
 }
 
 //vars don't need volatile since it's protected with the mailbox status
@@ -81,9 +79,7 @@ private[akka] class ActorCell(
 
   var futureTimeout: Option[Cancellable] = None
 
-  //FIXME TODO Coalesce childrenRefs and ChildrenStats into one field, this to conserve memory
-  var childrenRefs = emptyChildrenRefs
-  var childrenStats = emptyChildrenStats
+  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   var currentMessage: Envelope = null
 
@@ -138,13 +134,10 @@ private[akka] class ActorCell(
     subject
   }
 
-  final def children: Iterable[ActorRef] = childrenStats.keys
+  final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
 
-  final def getChild(name: String): Option[ActorRef] = {
-    val isClosed = mailbox.isClosed // fence plus volatile read
-    if (isClosed) None
-    else childrenRefs.get(name)
-  }
+  final def getChild(name: String): Option[ActorRef] =
+    if (isShutdown) None else childrenRefs.get(name).map(_.child)
 
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
@@ -242,12 +235,16 @@ private[akka] class ActorCell(
     }
 
     def supervise(child: ActorRef): Unit = {
-      val stats = childrenStats
-      if (!stats.contains(child)) {
-        childrenRefs = childrenRefs.updated(child.name, child)
-        childrenStats = childrenStats.updated(child, ChildRestartStats())
+      val stat = childrenRefs.get(child.name)
+      if (stat.isDefined) {
+        if (stat.get.child == child)
+          system.eventStream.publish(Warning(self.toString, "Already supervising " + child))
+        else
+          system.eventStream.publish(Warning(self.toString, "Already supervising other child with same name '" + child.name + "', old: " + stat.get + " new: " + child))
+      } else {
+        childrenRefs = childrenRefs.updated(child.name, ChildRestartStats(child))
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.toString, "now supervising " + child))
-      } else system.eventStream.publish(Warning(self.toString, "Already supervising " + child))
+      }
     }
 
     try {
@@ -286,13 +283,9 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here?
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg ⇒
-              if (stopping) {
-                // receiving Terminated in response to stopping children is too common to generate noise
-                if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
-              } else {
-                actor(msg)
-              }
+            case msg if stopping ⇒ // receiving Terminated in response to stopping children is too common to generate noise
+              if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
+            case msg ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
@@ -371,16 +364,16 @@ private[akka] class ActorCell(
     }
   }
 
-  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenStats.get(child) match {
-    case Some(stats) ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenStats)) throw cause
-    case None        ⇒ system.eventStream.publish(Warning(self.toString, "dropping Failed(" + cause + ") from unknown child"))
+  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.name) match {
+    case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenRefs.values)) throw cause
+    case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.toString, "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
+    case None                                ⇒ system.eventStream.publish(Warning(self.toString, "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
     childrenRefs -= child.name
-    childrenStats -= child
     props.faultHandler.handleChildTerminated(child, children)
-    if (stopping && childrenStats.isEmpty) doTerminate()
+    if (stopping && childrenRefs.isEmpty) doTerminate()
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

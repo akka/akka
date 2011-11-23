@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
 
-case class ChildRestartStats(var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
+case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
 
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
@@ -118,7 +118,7 @@ abstract class FaultHandlingStrategy {
   /**
    * This method is called to act on the failure of a child: restart if the flag is true, stop otherwise.
    */
-  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit
 
   def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
@@ -133,7 +133,7 @@ abstract class FaultHandlingStrategy {
   /**
    * Returns whether it processed the failure or not
    */
-  def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Boolean = {
+  def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
     action match {
       case Resume   ⇒ child.resume(); true
@@ -191,12 +191,12 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
     //TODO optimization to drop all children here already?
   }
 
-  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (children.nonEmpty) {
-      if (restart && children.forall(_._2.requestRestartPermission(retriesWindow)))
-        children.foreach(_._1.restart(cause))
+      if (restart && children.forall(_.requestRestartPermission(retriesWindow)))
+        children.foreach(_.child.restart(cause))
       else
-        children.foreach(_._1.stop())
+        children.foreach(_.child.stop())
     }
   }
 }
@@ -245,7 +245,7 @@ case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
 
   def handleChildTerminated(child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 
-  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]): Unit = {
+  def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (restart && stats.requestRestartPermission(retriesWindow))
       child.restart(cause)
     else

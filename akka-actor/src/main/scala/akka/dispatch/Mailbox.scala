@@ -188,7 +188,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs + "/" + actor.childrenStats)
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!

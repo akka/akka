@@ -107,7 +107,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         case class FF(fail: Failed)
         val supervisor = actorOf(Props[Supervisor]
           .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {
-            override def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[(ActorRef, ChildRestartStats)]) = {
+            override def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
               testActor.tell(FF(Failed(cause)), child)
               super.handleFailure(child, cause, stats, children)
             }
