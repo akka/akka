@@ -85,10 +85,12 @@ private[akka] class ActorCell(
 
   final def provider = system.provider
 
-  def receiveTimeout: Option[Long] = if (receiveTimeoutData._1 > 0) Some(receiveTimeoutData._1) else None
+  override def receiveTimeout: Option[Long] = if (receiveTimeoutData._1 > 0) Some(receiveTimeoutData._1) else None
 
-  def receiveTimeout_=(timeout: Option[Long]): Unit =
-    receiveTimeoutData = (if (timeout.isEmpty || timeout.get < 1) -1 else timeout.get, receiveTimeoutData._2)
+  override def receiveTimeout_=(timeout: Option[Long]): Unit = {
+    val timeoutMs = if (timeout.isDefined && timeout.get > 0) timeout.get else -1
+    receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
+  }
 
   var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get, emptyCancellable) else emptyReceiveTimeoutData

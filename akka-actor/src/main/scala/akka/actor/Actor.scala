@@ -266,7 +266,6 @@ trait Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor, else None.
    */
-  @inline
   final def sender: ActorRef = context.sender
 
   /**
