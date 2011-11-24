@@ -129,7 +129,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         expectMsgPF() {
           case Logging.Debug(`name`, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" ⇒ true
         }
-        awaitCond(actor.isShutdown, 100 millis)
+        awaitCond(actor.isTerminated, 100 millis)
       }
     }
 

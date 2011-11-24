@@ -364,7 +364,7 @@ class ActorRefSpec extends AkkaSpec {
       ffive.get must be("five")
       fnull.get must be("null")
 
-      awaitCond(ref.isShutdown, 2000 millis)
+      awaitCond(ref.isTerminated, 2000 millis)
     }
 
     "restart when Kill:ed" in {

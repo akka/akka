@@ -44,7 +44,7 @@ trait ListenerManagement {
   def hasListeners: Boolean = !listeners.isEmpty
 
   /**
-   * Checks if a specific listener is registered. Pruned eventually when isShutdown==true in notify.
+   * Checks if a specific listener is registered. Pruned eventually when isTerminated==true in notify.
    */
   def hasListener(listener: ActorRef): Boolean = listeners.contains(listener)
 
@@ -54,7 +54,7 @@ trait ListenerManagement {
       val iterator = listeners.iterator
       while (iterator.hasNext) {
         val listener = iterator.next
-        if (listener.isShutdown) iterator.remove()
+        if (listener.isTerminated) iterator.remove()
         else listener ! msg
       }
     }
@@ -67,7 +67,7 @@ trait ListenerManagement {
     val iterator = listeners.iterator
     while (iterator.hasNext) {
       val listener = iterator.next
-      if (listener.isShutdown) iterator.remove()
+      if (listener.isTerminated) iterator.remove()
       else f(listener)
     }
   }

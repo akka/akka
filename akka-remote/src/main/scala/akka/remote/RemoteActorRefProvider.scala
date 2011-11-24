@@ -281,7 +281,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def address = remoteAddress + path.toString
 
-  def isShutdown: Boolean = !running
+  def isTerminated: Boolean = !running
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
 

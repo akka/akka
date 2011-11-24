@@ -80,11 +80,11 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
       filterEvents(EventFilter[Exception]("Expected exception")) {
         val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
         val actor = (supervisor ? Props[CrashingActor]).as[ActorRef].get
-        actor.isShutdown must be(false)
+        actor.isTerminated must be(false)
         actor ! "Die"
         state.finished.await
         1.second.dilated.sleep()
-        actor.isShutdown must be(true)
+        actor.isTerminated must be(true)
         supervisor.stop()
       }
     }

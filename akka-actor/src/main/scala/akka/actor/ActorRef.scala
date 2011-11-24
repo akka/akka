@@ -126,7 +126,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   /**
    * Is the actor shut down?
    */
-  def isShutdown: Boolean
+  def isTerminated: Boolean
 
   /**
    * Registers this actor to be a death monitor of the provided ActorRef
@@ -189,11 +189,10 @@ class LocalActorRef private[akka] (
   actorCell.start()
 
   /**
-   * Is the actor shut down?
+   * Is the actor terminated?
    * If this method returns true, it will never return false again, but if it returns false, you cannot be sure if it's alive still (race condition)
    */
-  //FIXME TODO RENAME TO isTerminated
-  def isShutdown: Boolean = actorCell.isShutdown
+  override def isTerminated: Boolean = actorCell.isTerminated
 
   /**
    * Suspends the actor so that it will not process messages until resumed. The
@@ -242,7 +241,7 @@ class LocalActorRef private[akka] (
   // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor
-    while ((instance eq null) && !actorCell.isShutdown) {
+    while ((instance eq null) && !actorCell.isTerminated) {
       try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
       instance = actorCell.actor
     }
@@ -339,7 +338,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
   def stop(): Unit = ()
 
-  def isShutdown = false
+  def isTerminated = false
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
@@ -373,7 +372,7 @@ class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath) exte
 
   def address: String = path.toString
 
-  override def isShutdown(): Boolean = true
+  override def isTerminated(): Boolean = true
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ eventStream.publish(d)
@@ -420,9 +419,9 @@ abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deat
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
 
-  override def isShutdown = result.isCompleted || result.isExpired
+  override def isTerminated = result.isCompleted || result.isExpired
 
-  override def stop(): Unit = if (!isShutdown) result.completeWithException(new ActorKilledException("Stopped"))
+  override def stop(): Unit = if (!isTerminated) result.completeWithException(new ActorKilledException("Stopped"))
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = provider.serialize(this)

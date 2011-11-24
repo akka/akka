@@ -4,14 +4,7 @@
 
 package akka.util
 
-import akka.dispatch.Envelope
 import akka.actor._
-import DeploymentConfig.ReplicationScheme
-import akka.config.ModuleNotAvailableException
-import akka.event.Logging.Debug
-import akka.cluster.ClusterNode
-import akka.routing.{ RoutedProps, Router }
-import akka.actor.ActorSystem
 
 object ReflectiveAccess {
 

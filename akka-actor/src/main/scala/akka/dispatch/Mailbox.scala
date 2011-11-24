@@ -63,7 +63,6 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
   @inline
   protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
     Unsafe.instance.compareAndSwapInt(this, AbstractMailbox.mailboxStatusOffset, oldStatus, newStatus)
-  //AbstractMailbox.updater.compareAndSet(this, oldStatus, newStatus)
 
   @inline
   protected final def setStatus(newStatus: Status): Unit = _status = newStatus
@@ -132,7 +131,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
    * AtomicReferenceFieldUpdater for system queue
    */
   protected final def systemQueueGet: SystemMessage = _systemQueue
-  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean = //AbstractMailbox.systemQueueUpdater.compareAndSet(this, _old, _new)
+  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
@@ -189,7 +188,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs + "/" + actor.childrenStats)
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
