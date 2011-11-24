@@ -134,15 +134,15 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       val actor = actorOf(new Actor {
         def receive = {
           case Msg(ts) ⇒
-            val now = System.currentTimeMillis
-            // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
-            if (now - ts < 10) throw new RuntimeException("Interval is too small: " + (now - ts))
+            val now = System.nanoTime
+            // Make sure that no message has been dispatched before the scheduled time (10ms = 10000000ns) has occurred
+            if (now - ts < 10000000) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
       })
 
       (1 to 300).foreach { i ⇒
-        collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.currentTimeMillis), 10 milliseconds))
+        collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.nanoTime), 10 milliseconds))
         Thread.sleep(5)
       }
 
