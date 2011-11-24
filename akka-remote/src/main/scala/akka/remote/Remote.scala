@@ -281,6 +281,8 @@ trait RemoteMarshallingOps {
 
   def system: ActorSystem
 
+  protected def useUntrustedMode: Boolean
+
   def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
     val arp = AkkaRemoteProtocol.newBuilder
     arp.setMessage(rmp)
@@ -323,15 +325,15 @@ trait RemoteMarshallingOps {
     messageBuilder
   }
 
-  def receiveMessage(remoteMessage: RemoteMessage, untrustedMode: Boolean) {
+  def receiveMessage(remoteMessage: RemoteMessage) {
     val recipient = remoteMessage.recipient
 
     remoteMessage.payload match {
       case Left(t) ⇒ throw t
       case Right(r) ⇒ r match {
-        case _: Terminate                              ⇒ if (untrustedMode) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else recipient.stop()
-        case _: AutoReceivedMessage if (untrustedMode) ⇒ throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
-        case m                                         ⇒ recipient.!(m)(remoteMessage.sender)
+        case _: Terminate ⇒ if (useUntrustedMode) throw new SecurityException("RemoteModule server is operating is untrusted mode, can not stop the actor") else recipient.stop()
+        case _: AutoReceivedMessage if (useUntrustedMode) ⇒ throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
+        case m ⇒ recipient.!(m)(remoteMessage.sender)
       }
     }
   }

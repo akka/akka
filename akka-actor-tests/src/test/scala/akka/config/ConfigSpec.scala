@@ -5,12 +5,10 @@
 package akka.config
 
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
-import java.io.File
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import scala.collection.JavaConverters._
-import java.util.concurrent.TimeUnit
+import akka.util.duration._
 import akka.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -37,7 +35,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.parseResource(classOf[ConfigSpec
       getInt("akka.actor.default-dispatcher.mailbox-capacity") must equal(-1)
       getMilliseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time") must equal(10 * 1000)
       getMilliseconds("akka.actor.dispatcher-shutdown-timeout") must equal(1 * 1000)
-      settings.DispatcherDefaultShutdown must equal(Duration(1, TimeUnit.SECONDS))
+      settings.DispatcherDefaultShutdown must equal(1 second)
       getInt("akka.actor.default-dispatcher.throughput") must equal(5)
       settings.DispatcherThroughput must equal(5)
       getMilliseconds("akka.actor.default-dispatcher.throughput-deadline-time") must equal(0)

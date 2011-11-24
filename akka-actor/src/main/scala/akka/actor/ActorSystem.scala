@@ -13,7 +13,6 @@ import com.eaio.uuid.UUID
 import akka.serialization.Serialization
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -23,10 +22,11 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
 import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.ConcurrentHashMap
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import scala.annotation.tailrec
 import akka.serialization.SerializationExtension
 
@@ -93,6 +93,9 @@ object ActorSystem {
     val BootClasses: Seq[String] = getStringList("akka.boot").asScala
 
     val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
+
+    val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
+    val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version +
@@ -297,8 +300,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
-  // FIXME make this configurable
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, 100, MILLISECONDS, 512))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel))
 
   val provider: ActorRefProvider = {
     val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {

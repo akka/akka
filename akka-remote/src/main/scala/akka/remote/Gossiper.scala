@@ -8,6 +8,7 @@ import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
 import akka.util.duration._
+import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import java.util.concurrent.atomic.AtomicReference
@@ -122,8 +123,8 @@ class Gossiper(remote: Remote) {
 
   {
     // start periodic gossip and cluster scrutinization - default is run them every second with 1/2 second in between
-    system.scheduler schedule (() ⇒ initateGossip(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
-    system.scheduler schedule (() ⇒ scrutinize(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
+    system.scheduler schedule (() ⇒ initateGossip(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
+    system.scheduler schedule (() ⇒ scrutinize(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
   }
 
   /**

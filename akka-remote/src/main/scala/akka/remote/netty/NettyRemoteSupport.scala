@@ -95,8 +95,8 @@ abstract class RemoteClient private[akka] (
 }
 
 class PassiveRemoteClient(val currentChannel: Channel,
-                          remoteSupport: NettyRemoteSupport,
-                          remoteAddress: RemoteAddress)
+  remoteSupport: NettyRemoteSupport,
+  remoteAddress: RemoteAddress)
   extends RemoteClient(remoteSupport, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
@@ -297,7 +297,7 @@ class ActiveRemoteClientHandler(
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-          client.remoteSupport.receiveMessage(new RemoteMessage(arp.getMessage, client.remoteSupport, client.loader), untrustedMode = false) //TODO FIXME Sensible or not?
+          client.remoteSupport.receiveMessage(new RemoteMessage(arp.getMessage, client.remoteSupport, client.loader))
 
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.remoteSupport, client.remoteAddress)
@@ -364,11 +364,15 @@ class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) wi
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
 
-  protected[akka] def send(message: Any,
-                           senderOption: Option[ActorRef],
-                           recipientAddress: RemoteAddress,
-                           recipient: ActorRef,
-                           loader: Option[ClassLoader]): Unit = {
+  override protected def useUntrustedMode = serverSettings.UntrustedMode
+
+  protected[akka] def send(
+    message: Any,
+    senderOption: Option[ActorRef],
+    recipientAddress: RemoteAddress,
+    recipient: ActorRef,
+    loader: Option[ClassLoader]): Unit = {
+
     clientsLock.readLock.lock
     try {
       val client = remoteClients.get(recipientAddress) match {
@@ -634,7 +638,7 @@ class RemoteServerHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
-        remoteSupport.receiveMessage(new RemoteMessage(remote.getMessage, remoteSupport, applicationLoader), UntrustedMode)
+        remoteSupport.receiveMessage(new RemoteMessage(remote.getMessage, remoteSupport, applicationLoader))
 
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         val instruction = remote.getInstruction
