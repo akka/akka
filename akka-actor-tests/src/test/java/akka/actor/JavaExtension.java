@@ -13,33 +13,27 @@ import static org.junit.Assert.*;
 
 public class JavaExtension {
 
-  static class TestExtension implements Extension<TestExtension> {
-    private ActorSystemImpl system;
-    public static ExtensionKey<TestExtension> key = new ExtensionKey<TestExtension>() {
-    };
+  static class Provider implements ExtensionProvider {
+    public Extension lookup() { return defaultInstance; }
+  }
 
-    public ExtensionKey<TestExtension> key() {
-      return key;
-    }
+  public final static TestExtension defaultInstance = new TestExtension();
 
-    public void init(ActorSystemImpl system) {
-      this.system = system;
-    }
-
-    public ActorSystemImpl getSystem() {
-      return system;
+   static class TestExtension extends AbstractExtension<ActorSystemImpl> {
+    public ActorSystemImpl createExtension(ActorSystemImpl i) {
+      return i;
     }
   }
 
-  private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$TestExtension\" ]",
+  private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]",
       ConfigParseOptions.defaults());
 
   private ActorSystem system = ActorSystem.create("JavaExtension", c);
 
   @Test
   public void mustBeAccessible() {
-    final ActorSystemImpl s = system.extension(TestExtension.key).getSystem();
-    assertSame(s, system);
+    assertSame(system.extension(defaultInstance), system);
+    assertSame(defaultInstance.apply(system), system);
   }
 
 }

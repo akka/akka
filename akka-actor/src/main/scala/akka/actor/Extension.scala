@@ -16,53 +16,22 @@ package akka.actor
  * The extension itself can be created in any way desired and has full access
  * to the ActorSystem implementation.
  *
- * Scala example:
- *
- * {{{
- * class MyExtension extends Extension[MyExtension] {
- *   def key = MyExtension
- *   def init(system: ActorSystemImpl) {
- *     ... // initialize here
- *   }
- * }
- * object MyExtension extends ExtensionKey[MyExtension]
- * }}}
- *
- * Java example:
- *
- * {{{
- * static class MyExtension implements Extension<MyExtension> {
- *   public static ExtensionKey<MyExtension> key = new ExtensionKey<MyExtension>() {};
- *
- *   public ExtensionKey<TestExtension> key() {
- *    return key;
- *   }
- *   public void init(ActorSystemImpl system) {
- *     ... // initialize here
- *   }
- * }
- * }}}
  */
 trait Extension[T <: AnyRef] {
-
-  /**
-   * This method is called by the ActorSystem upon registering this extension.
-   * The key returned is used for looking up extensions, hence it must be a
-   * suitable hash key and available to all clients of the extension. This is
-   * best achieved by storing it in a static field (Java) or as/in an object
-   * (Scala).
-   */
-  def key: ExtensionKey[T]
-
-  // FIXME ActorSystemImpl exposed to user API. We might well choose to introduce a new interface for this level of access, just so we can shuffle around the implementation
-  /**
-   * This method is called by the ActorSystem when the extension is registered
-   * to trigger initialization of the extension.
-   */
-  def init(system: ActorSystemImpl): Unit
+  def apply(system: ActorSystem): T = system.registerExtension(this)
+  def createExtension(system: ActorSystemImpl): T
 }
 
 /**
- * Marker trait identifying a registered [[akka.actor.Extension]].
+ * Java API for Extension
  */
-trait ExtensionKey[T <: AnyRef]
+abstract class AbstractExtension[T <: AnyRef] extends Extension[T]
+
+/**
+ * To be able to load an Extension from the configuration,
+ * a class that implements ExtensionProvider must be specified.
+ * The lookup method should return the canonical reference to the extension.
+ */
+trait ExtensionProvider {
+  def lookup(): Extension[_ <: AnyRef]
+}

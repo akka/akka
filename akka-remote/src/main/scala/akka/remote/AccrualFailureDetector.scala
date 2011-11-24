@@ -27,8 +27,8 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
 
   def this(system: ActorSystem) {
     this(
-      RemoteExtension(system).settings.FailureDetectorThreshold,
-      RemoteExtension(system).settings.FailureDetectorMaxSampleSize)
+      RemoteExtension(system).FailureDetectorThreshold,
+      RemoteExtension(system).FailureDetectorMaxSampleSize)
   }
 
   private final val PhiFactor = 1.0 / math.log(10.0)

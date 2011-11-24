@@ -14,7 +14,7 @@ class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with 
 
   val log = Logging(system, "FileBasedMailbox")
 
-  private val settings = FileBasedMailboxExtension(owner.system).settings
+  private val settings = FileBasedMailboxExtension(owner.system)
   val queuePath = settings.QueuePath
 
   private val queue = try {

@@ -21,11 +21,11 @@ import java.io.File
 import java.util.concurrent.CountDownLatch
 import scala.collection.mutable
 import akka.event.LoggingAdapter
-import akka.actor.mailbox.FileBasedMailboxExtension
+import akka.actor.mailbox.FileBasedMailboxSettings
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
 
-class QueueCollection(queueFolder: String, settings: FileBasedMailboxExtension.Settings, log: LoggingAdapter) {
+class QueueCollection(queueFolder: String, settings: FileBasedMailboxSettings, log: LoggingAdapter) {
   private val path = new File(queueFolder)
 
   if (!path.isDirectory) {

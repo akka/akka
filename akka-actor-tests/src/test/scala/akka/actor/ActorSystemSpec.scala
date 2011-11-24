@@ -10,28 +10,21 @@ import com.typesafe.config.ConfigFactory
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
 object ActorSystemSpec {
-
-  class TestExtension extends Extension[TestExtension] {
-    var system: ActorSystemImpl = _
-
-    def key = TestExtension
-
-    def init(system: ActorSystemImpl) {
-      this.system = system
-    }
+  object TestExtension extends Extension[ActorSystem] with ExtensionProvider {
+    def lookup = this
+    def createExtension(s: ActorSystemImpl) = s
   }
-
-  object TestExtension extends ExtensionKey[TestExtension]
-
 }
 
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.ActorSystemSpec$TestExtension"]""") {
+class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.ActorSystemSpec$TestExtension$"]""") {
   import ActorSystemSpec._
 
   "An ActorSystem" must {
 
     "support extensions" in {
-      system.extension(TestExtension).system must be === system
+      TestExtension(system) must be === system
+      system.extension(TestExtension) must be === system
+      system.hasExtension(TestExtension) must be(true)
     }
 
   }

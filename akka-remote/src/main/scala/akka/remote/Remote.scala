@@ -36,9 +36,9 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   import settings._
 
   private[remote] val remoteExtension = RemoteExtension(system)
-  private[remote] val serializationExtension = SerializationExtension(system)
+  private[remote] val serialization = SerializationExtension(system)
   private[remote] val remoteAddress = {
-    RemoteAddress(remoteExtension.settings.serverSettings.Hostname, remoteExtension.settings.serverSettings.Port)
+    RemoteAddress(remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
   }
 
   val failureDetector = new AccrualFailureDetector(system)
@@ -134,10 +134,10 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
       if (message.hasActorPath) {
 
         val actorFactoryBytes =
-          if (remoteExtension.settings.ShouldCompressData) LZF.uncompress(message.getPayload.toByteArray) else message.getPayload.toByteArray
+          if (remoteExtension.ShouldCompressData) LZF.uncompress(message.getPayload.toByteArray) else message.getPayload.toByteArray
 
         val actorFactory =
-          serializationExtension.serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
+          serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
             case Left(error)     ⇒ throw error
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
@@ -234,7 +234,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
   }
 
   private def payloadFor[T](message: RemoteSystemDaemonMessageProtocol, clazz: Class[T]): T = {
-    serializationExtension.serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
+    serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
       case Left(error)     ⇒ throw error
       case Right(instance) ⇒ instance.asInstanceOf[T]
     }

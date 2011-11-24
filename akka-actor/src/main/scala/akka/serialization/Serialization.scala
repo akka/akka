@@ -8,14 +8,57 @@ import akka.AkkaException
 import akka.util.ReflectiveAccess
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import scala.util.DynamicVariable
+import com.typesafe.config.{ ConfigRoot, ConfigParseOptions, ConfigFactory, Config }
+import com.typesafe.config.Config._
+import akka.config.ConfigurationException
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
+
+object Serialization {
+
+  // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
+  val currentSystem = new DynamicVariable[ActorSystemImpl](null)
+
+  class Settings(cfg: Config) {
+    private def referenceConfig: Config =
+      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-serialization-reference.conf",
+        ConfigParseOptions.defaults.setAllowMissing(false))
+    val config: ConfigRoot = ConfigFactory.emptyRoot("akka-serialization").withFallback(cfg).withFallback(referenceConfig).resolve()
+
+    import scala.collection.JavaConverters._
+    import config._
+
+    val Serializers: Map[String, String] = {
+      toStringMap(getConfig("akka.actor.serializers"))
+    }
+
+    val SerializationBindings: Map[String, Seq[String]] = {
+      val configPath = "akka.actor.serialization-bindings"
+      hasPath(configPath) match {
+        case false ⇒ Map()
+        case true ⇒
+          val serializationBindings: Map[String, Seq[String]] = getConfig(configPath).toObject.unwrapped.asScala.toMap.map {
+            case (k: String, v: java.util.Collection[_]) ⇒ (k -> v.asScala.toSeq.asInstanceOf[Seq[String]])
+            case invalid                                 ⇒ throw new ConfigurationException("Invalid serialization-bindings [%s]".format(invalid))
+          }
+          serializationBindings
+
+      }
+    }
+
+    private def toStringMap(mapConfig: Config): Map[String, String] =
+      mapConfig.toObject.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
+  }
+}
 
 /**
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
 class Serialization(val system: ActorSystemImpl) {
+  import Serialization._
+
+  val settings = new Settings(system.applicationConfig)
 
   //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
@@ -27,7 +70,7 @@ class Serialization(val system: ActorSystemImpl) {
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
     try {
-      Serialization.system.withValue(system) {
+      currentSystem.withValue(system) {
         Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader))
       }
     } catch { case e: Exception ⇒ Left(e) }
@@ -63,15 +106,13 @@ class Serialization(val system: ActorSystemImpl) {
     }
   }
 
-  // serializers and bindings needs to be lazy because Serialization is initialized from SerializationExtension, which is needed here
-
   /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "default" -> akka.serialization.JavaSerializer
    * But "default" can be overridden in config
    */
   lazy val serializers: Map[String, Serializer] = {
-    val serializersConf = SerializationExtension(system).settings.Serializers
+    val serializersConf = settings.Serializers
     for ((k: String, v: String) ← serializersConf)
       yield k -> serializerOf(v).fold(throw _, identity)
   }
@@ -80,7 +121,7 @@ class Serialization(val system: ActorSystemImpl) {
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
   lazy val bindings: Map[String, String] = {
-    val configBindings = SerializationExtension(system).settings.SerializationBindings
+    val configBindings = settings.SerializationBindings
     configBindings.foldLeft(Map[String, String]()) {
       case (result, (k: String, vs: Seq[_])) ⇒
         //All keys which are lists, take the Strings from them and Map them
@@ -101,10 +142,5 @@ class Serialization(val system: ActorSystemImpl) {
    */
   lazy val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
-}
-
-object Serialization {
-  // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
-  val system = new DynamicVariable[ActorSystemImpl](null)
 }
 

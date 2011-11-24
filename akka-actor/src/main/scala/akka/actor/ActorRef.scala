@@ -305,17 +305,17 @@ trait ScalaActorRef { ref: ActorRef ⇒
  */
 
 case class SerializedActorRef(hostname: String, port: Int, path: String) {
-  import akka.serialization.Serialization.system
+  import akka.serialization.Serialization.currentSystem
 
   def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
   def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = {
-    if (system.value eq null) throw new IllegalStateException(
+  def readResolve(): AnyRef = currentSystem.value match {
+    case null ⇒ throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.system.withValue(system) { ... }")
-    system.value.provider.deserialize(this) match {
+        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+    case someSystem ⇒ someSystem.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
     }
@@ -354,7 +354,7 @@ case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
-    private def readResolve(): AnyRef = Serialization.system.value.deadLetters
+    private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters
   }
 
   val serialized = new SerializedDeadLetterActorRef

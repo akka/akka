@@ -58,11 +58,11 @@ object TypedActor {
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val system = akka.serialization.Serialization.system.value
+      val system = akka.serialization.Serialization.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
-          " Use akka.serialization.Serialization.system.withValue(system) { ... }")
-      val serialization = SerializationExtension(system).serialization
+          " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+      val serialization = SerializationExtension(system)
       MethodCall(serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()

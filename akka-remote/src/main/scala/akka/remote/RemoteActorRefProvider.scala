@@ -55,13 +55,13 @@ class RemoteActorRefProvider(
   @volatile
   private var system: ActorSystemImpl = _
   private lazy val remoteExtension = RemoteExtension(system)
-  private lazy val serializationExtension = SerializationExtension(system)
+  private lazy val serialization = SerializationExtension(system)
   lazy val rootPath: ActorPath = {
-    val remoteAddress = RemoteAddress(remoteExtension.settings.serverSettings.Hostname, remoteExtension.settings.serverSettings.Port)
+    val remoteAddress = RemoteAddress(remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
     new RootActorPath(remoteAddress)
   }
   private lazy val local = new LocalActorRefProvider(settings, eventStream, scheduler, rootPath,
-    remoteExtension.settings.NodeName, remoteExtension.settings.ClusterName)
+    remoteExtension.NodeName, remoteExtension.ClusterName)
   private[akka] lazy val remote = new Remote(system, nodename)
   private lazy val remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
 
@@ -219,9 +219,9 @@ class RemoteActorRefProvider(
     log.debug("[{}] Instantiating Actor [{}] on node [{}]", rootPath, actorPath, remoteAddress)
 
     val actorFactoryBytes =
-      serializationExtension.serialization.serialize(actorFactory) match {
+      serialization.serialize(actorFactory) match {
         case Left(error)  ⇒ throw error
-        case Right(bytes) ⇒ if (remoteExtension.settings.ShouldCompressData) LZF.compress(bytes) else bytes
+        case Right(bytes) ⇒ if (remoteExtension.ShouldCompressData) LZF.compress(bytes) else bytes
       }
 
     val command = RemoteSystemDaemonMessageProtocol.newBuilder
@@ -241,7 +241,7 @@ class RemoteActorRefProvider(
   private def sendCommandToRemoteNode(connection: ActorRef, command: RemoteSystemDaemonMessageProtocol, withACK: Boolean) {
     if (withACK) {
       try {
-        val f = connection ? (command, remoteExtension.settings.RemoteSystemDaemonAckTimeout)
+        val f = connection ? (command, remoteExtension.RemoteSystemDaemonAckTimeout)
         (try f.await.value catch { case _: FutureTimeoutException ⇒ None }) match {
           case Some(Right(receiver)) ⇒
             log.debug("Remote system command sent to [{}] successfully received", receiver)
