@@ -3,10 +3,10 @@ package akka.testkit
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.util.Duration
-import akka.config.Configuration
+import com.typesafe.config.Config
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TestTimeSpec extends AkkaSpec(Configuration("akka.test.timefactor" -> 2.0)) with BeforeAndAfterEach {
+class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) with BeforeAndAfterEach {
 
   "A TestKit" must {
 
@@ -15,7 +15,7 @@ class TestTimeSpec extends AkkaSpec(Configuration("akka.test.timefactor" -> 2.0)
       val now = System.nanoTime
       intercept[AssertionError] { probe.awaitCond(false, Duration("1 second")) }
       val diff = System.nanoTime - now
-      val target = (1000000000l * system.settings.TestTimeFactor).toLong
+      val target = (1000000000l * testKitExtension.settings.TestTimeFactor).toLong
       diff must be > (target - 300000000l)
       diff must be < (target + 300000000l)
     }

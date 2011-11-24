@@ -9,6 +9,8 @@ import akka.actor.ActorCell
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -20,14 +22,14 @@ class PinnedDispatcher(
   _actor: ActorCell,
   _name: String,
   _mailboxType: MailboxType,
-  _timeoutMs: Long)
+  _shutdownTimeout: Duration)
   extends Dispatcher(_prerequisites,
     _name,
     Int.MaxValue,
-    -1,
+    Duration.Zero,
     _mailboxType,
     ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
-    _timeoutMs) {
+    _shutdownTimeout) {
 
   @volatile
   protected[akka] var owner: ActorCell = _actor

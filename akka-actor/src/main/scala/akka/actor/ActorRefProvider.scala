@@ -15,7 +15,9 @@ import akka.event.{ Logging, DeathWatch, ActorClassification, EventStream }
 import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter }
 import akka.AkkaException
 import com.eaio.uuid.UUID
-import akka.util.{ Switch, Helpers }
+import akka.util.{ Duration, Switch, Helpers }
+import akka.remote.RemoteAddress
+import akka.remote.LocalOnly
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -32,8 +34,16 @@ trait ActorRefProvider {
 
   def deathWatch: DeathWatch
 
-  // FIXME: remove/replace
+  // FIXME: remove/replace?
   def nodename: String
+  // FIXME: remove/replace?
+  def clustername: String
+
+  /**
+   * The root path for all actors within this actor system, including remote
+   * address if enabled.
+   */
+  def rootPath: ActorPath
 
   def settings: ActorSystem.Settings
 
@@ -94,14 +104,9 @@ trait ActorRefFactory {
    */
   protected def guardian: ActorRef
 
-  private val number = new AtomicLong
+  protected def randomName(): String
 
-  private def randomName: String = {
-    val l = number.getAndIncrement()
-    Helpers.base64(l)
-  }
-
-  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName, false)
+  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
 
   /*
    * TODO this will have to go at some point, because creating two actors with
@@ -139,22 +144,19 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
-  val rootPath: ActorPath,
   val eventStream: EventStream,
-  val dispatcher: MessageDispatcher,
-  val scheduler: Scheduler) extends ActorRefProvider {
+  val scheduler: Scheduler,
+  val rootPath: ActorPath,
+  val nodename: String,
+  val clustername: String) extends ActorRefProvider {
+
+  def this(settings: ActorSystem.Settings, eventStream: EventStream, scheduler: Scheduler) {
+    this(settings, eventStream, scheduler, new RootActorPath(LocalOnly), "local", "local")
+  }
 
   val log = Logging(eventStream, "LocalActorRefProvider")
 
-  // FIXME remove/replave (clustering shall not leak into akka-actor)
-  val nodename: String = System.getProperty("akka.cluster.nodename") match {
-    case null | "" ⇒ new UUID().toString
-    case value     ⇒ value
-  }
-
   private[akka] val deployer: Deployer = new Deployer(settings, eventStream, nodename)
-
-  val terminationFuture = new DefaultPromise[Unit](Timeout.never)(dispatcher)
 
   /*
    * generate name for temporary actor refs
@@ -189,7 +191,7 @@ class LocalActorRefProvider(
 
     override def stop() = stopped switchOn { terminationFuture.complete(causeOfTermination.toLeft(())) }
 
-    override def isShutdown = stopped.isOn
+    override def isTerminated = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
       case Failed(ex)      ⇒ causeOfTermination = Some(ex); sender.stop()
@@ -232,26 +234,23 @@ class LocalActorRefProvider(
    * provide their service. Hence they cannot be created while the
    * constructors of ActorSystem and ActorRefProvider are still running.
    * The solution is to split out that last part into an init() method,
-   * but it also requires these references to be @volatile.
+   * but it also requires these references to be @volatile and lazy.
    */
   @volatile
-  private var rootGuardian: ActorRef = _
-  @volatile
-  private var _guardian: ActorRef = _
-  @volatile
-  private var _systemGuardian: ActorRef = _
-  def guardian = _guardian
-  def systemGuardian = _systemGuardian
+  private var system: ActorSystemImpl = _
+  def dispatcher: MessageDispatcher = system.dispatcher
+  lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
+  lazy val rootGuardian: ActorRef = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
+  lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
+  lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
 
   val deathWatch = createDeathWatch()
 
-  def init(system: ActorSystemImpl) {
-    rootGuardian = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-    _guardian = actorOf(system, guardianProps, rootGuardian, "app", true)
-    _systemGuardian = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+  def init(_system: ActorSystemImpl) {
+    system = _system
     // chain death watchers so that killing guardian stops the application
-    deathWatch.subscribe(_systemGuardian, _guardian)
-    deathWatch.subscribe(rootGuardian, _systemGuardian)
+    deathWatch.subscribe(systemGuardian, guardian)
+    deathWatch.subscribe(rootGuardian, systemGuardian)
   }
 
   // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "system" name for now)
@@ -395,20 +394,20 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
 
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
 
-  def schedule(receiver: ActorRef, message: Any, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay, timeUnit), initialDelay, timeUnit))
+  def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
 
-  def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay, timeUnit))
+  def schedule(f: () ⇒ Unit, initialDelay: Duration, delay: Duration): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(f, delay), initialDelay))
 
-  def scheduleOnce(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(receiver, message), delay, timeUnit))
+  def scheduleOnce(runnable: Runnable, delay: Duration): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay))
 
-  def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(f, delay, timeUnit), initialDelay, timeUnit))
+  def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(receiver, message), delay))
 
-  def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay, timeUnit))
+  def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay))
 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() { def run(timeout: org.jboss.netty.akka.util.Timeout) { runnable.run() } }
@@ -416,23 +415,23 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
   private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
     new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { receiver ! message } }
 
-  private def createContinuousTask(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): TimerTask = {
+  private def createSingleTask(f: () ⇒ Unit): TimerTask =
+    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
+
+  private def createContinuousTask(receiver: ActorRef, message: Any, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
         receiver ! message
-        timeout.getTimer.newTimeout(this, delay, timeUnit)
+        timeout.getTimer.newTimeout(this, delay)
       }
     }
   }
 
-  private def createSingleTask(f: () ⇒ Unit): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
-
-  private def createContinuousTask(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): TimerTask = {
+  private def createContinuousTask(f: () ⇒ Unit, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
         f()
-        timeout.getTimer.newTimeout(this, delay, timeUnit)
+        timeout.getTimer.newTimeout(this, delay)
       }
     }
   }

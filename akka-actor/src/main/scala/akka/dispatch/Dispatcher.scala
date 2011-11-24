@@ -11,6 +11,7 @@ import akka.actor.{ ActorCell, ActorKilledException }
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
+import akka.util.Duration
 
 /**
  * Default settings are:
@@ -35,7 +36,7 @@ import akka.actor.Scheduler
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .buildThreadPool
  * </pre>
  * <p/>
@@ -49,7 +50,7 @@ import akka.actor.Scheduler
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .buildThreadPool();
  * </pre>
  * <p/>
@@ -67,10 +68,10 @@ class Dispatcher(
   _prerequisites: DispatcherPrerequisites,
   val name: String,
   val throughput: Int,
-  val throughputDeadlineTime: Int,
+  val throughputDeadlineTime: Duration,
   val mailboxType: MailboxType,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  val timeoutMs: Long)
+  val shutdownTimeout: Duration)
   extends MessageDispatcher(_prerequisites) {
 
   protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)

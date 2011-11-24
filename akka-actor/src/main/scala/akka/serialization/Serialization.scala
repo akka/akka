@@ -8,7 +8,6 @@ import akka.AkkaException
 import akka.util.ReflectiveAccess
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import scala.util.DynamicVariable
-import akka.remote.RemoteSupport
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -46,7 +45,7 @@ class Serialization(val system: ActorSystemImpl) {
    * Tries to load the specified Serializer by the FQN
    */
   def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
-    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.emptyParams, ReflectiveAccess.emptyArguments)
+    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs)
 
   private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
     if (bindings.isEmpty)
@@ -64,39 +63,43 @@ class Serialization(val system: ActorSystemImpl) {
     }
   }
 
+  // serializers and bindings needs to be lazy because Serialization is initialized from SerializationExtension, which is needed here
+
   /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "default" -> akka.serialization.JavaSerializer
    * But "default" can be overridden in config
    */
-  val serializers: Map[String, Serializer] =
-    system.settings.config.getSection("akka.actor.serializers")
-      .map(_.map)
-      .getOrElse(Map())
-      .foldLeft(Map[String, Serializer]("default" -> akka.serialization.JavaSerializer)) {
-        case (result, (k: String, v: String)) ⇒ result + (k -> serializerOf(v).fold(throw _, identity))
-        case (result, _)                      ⇒ result
-      }
+  lazy val serializers: Map[String, Serializer] = {
+    val serializersConf = SerializationExtension(system).settings.Serializers
+    for ((k: String, v: String) ← serializersConf)
+      yield k -> serializerOf(v).fold(throw _, identity)
+  }
 
   /**
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
-  val bindings: Map[String, String] = system.settings.config.getSection("akka.actor.serialization-bindings") map {
-    _.map.foldLeft(Map[String, String]()) {
-      case (result, (k: String, vs: List[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) }) //All keys which are lists, take the Strings from them and Map them
-      case (result, _)                        ⇒ result //For any other values, just skip them, TODO: print out warnings?
+  lazy val bindings: Map[String, String] = {
+    val configBindings = SerializationExtension(system).settings.SerializationBindings
+    configBindings.foldLeft(Map[String, String]()) {
+      case (result, (k: String, vs: Seq[_])) ⇒
+        //All keys which are lists, take the Strings from them and Map them
+        result ++ (vs collect { case v: String ⇒ (v, k) })
+      case (result, x) ⇒
+        //For any other values, just skip them
+        result
     }
-  } getOrElse Map()
+  }
 
   /**
    * serializerMap is a Map whose keys = FQN of class that is serializable and values = the FQN of the serializer to be used for that class
    */
-  val serializerMap: Map[String, Serializer] = bindings mapValues serializers
+  lazy val serializerMap: Map[String, Serializer] = bindings mapValues serializers
 
   /**
    * Maps from a Serializer.Identifier (Byte) to a Serializer instance (optimization)
    */
-  val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
+  lazy val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
 }
 

@@ -36,11 +36,17 @@ object Mailbox {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with MessageQueue with SystemMessageQueue with Runnable {
+abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMessageQueue with Runnable {
   import Mailbox._
 
+  @volatile
+  protected var _status: Status = _ //0 by default
+
+  @volatile
+  protected var _systemQueue: SystemMessage = _ //null by default
+
   @inline
-  final def status: Mailbox.Status = AbstractMailbox.updater.get(this)
+  final def status: Mailbox.Status = _status
 
   @inline
   final def shouldProcessMessage: Boolean = (status & 3) == Open
@@ -56,11 +62,10 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
 
   @inline
   protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
-    AbstractMailbox.updater.compareAndSet(this, oldStatus, newStatus)
+    Unsafe.instance.compareAndSwapInt(this, AbstractMailbox.mailboxStatusOffset, oldStatus, newStatus)
 
   @inline
-  protected final def setStatus(newStatus: Status): Unit =
-    AbstractMailbox.updater.set(this, newStatus)
+  protected final def setStatus(newStatus: Status): Unit = _status = newStatus
 
   /**
    * set new primary status Open. Caller does not need to worry about whether
@@ -125,8 +130,9 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
   /*
    * AtomicReferenceFieldUpdater for system queue
    */
-  protected final def systemQueueGet: SystemMessage = AbstractMailbox.systemQueueUpdater.get(this)
-  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean = AbstractMailbox.systemQueueUpdater.compareAndSet(this, _old, _new)
+  protected final def systemQueueGet: SystemMessage = _systemQueue
+  protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean =
+    Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
@@ -157,7 +163,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
       if (nextMessage ne null) { //If we have a message
         if (dispatcher.isThroughputDefined) { //If we're using throughput, we need to do some book-keeping
           var processedMessages = 0
-          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + TimeUnit.MILLISECONDS.toNanos(dispatcher.throughputDeadlineTime) else 0
+          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
           do {
             if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
@@ -182,7 +188,7 @@ abstract class Mailbox(val actor: ActorCell) extends AbstractMailbox with Messag
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs + "/" + actor.childrenStats)
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!

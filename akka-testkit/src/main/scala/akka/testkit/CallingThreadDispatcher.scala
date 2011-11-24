@@ -14,6 +14,8 @@ import akka.actor.{ ActorCell, ActorRef, ActorSystem }
 import akka.dispatch._
 import akka.actor.Scheduler
 import akka.event.EventStream
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 /*
  * Locking rules:
@@ -122,10 +124,10 @@ class CallingThreadDispatcher(
   protected[akka] override def shutdown() {}
 
   protected[akka] override def throughput = 0
-  protected[akka] override def throughputDeadlineTime = 0
+  protected[akka] override def throughputDeadlineTime = Duration.Zero
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
-  protected[akka] override def timeoutMs = 100L
+  protected[akka] override def shutdownTimeout = Duration(100L, TimeUnit.MILLISECONDS)
 
   override def suspend(actor: ActorCell) {
     getMailbox(actor) foreach (_.suspendSwitch.switchOn)

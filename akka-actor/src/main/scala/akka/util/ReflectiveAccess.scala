@@ -4,23 +4,13 @@
 
 package akka.util
 
-import akka.dispatch.Envelope
 import akka.actor._
-import DeploymentConfig.ReplicationScheme
-import akka.config.ModuleNotAvailableException
-import akka.event.Logging.Debug
-import akka.cluster.ClusterNode
-import akka.routing.{ RoutedProps, Router }
-import akka.actor.ActorSystem
 
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
-  val emptyParams: Array[Class[_]] = Array()
-  val emptyArguments: Array[AnyRef] = Array()
-
-  val noParams = Array[Class[_]]()
-  val noArgs = Array[AnyRef]()
+  val noParams: Array[Class[_]] = Array()
+  val noArgs: Array[AnyRef] = Array()
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],

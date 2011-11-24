@@ -2,7 +2,7 @@ package akka.routing
 
 import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
-import akka.testkit.{ TestLatch, filterEvents, EventFilter, filterException }
+import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.AkkaSpec
@@ -239,7 +239,7 @@ class ActorPoolSpec extends AkkaSpec {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
-      // send a bunch over the theshold and observe an increment
+      // send a bunch over the threshold and observe an increment
       loops = 15
       loop(500)
 

@@ -32,7 +32,7 @@ class RoutingSpec extends AkkaSpec {
 
       val props = RoutedProps(routerFactory = () ⇒ new DirectRouter, connectionManager = new LocalConnectionManager(List(actor1)))
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isShutdown must be(false)
+      actor.isTerminated must be(false)
     }
 
     "send message to connection" in {
@@ -86,7 +86,7 @@ class RoutingSpec extends AkkaSpec {
 
       val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(List(actor1)))
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isShutdown must be(false)
+      actor.isTerminated must be(false)
     }
 
     //In this test a bunch of actors are created and each actor has its own counter.
@@ -195,7 +195,7 @@ class RoutingSpec extends AkkaSpec {
 
       val props = RoutedProps(routerFactory = () ⇒ new RandomRouter, connectionManager = new LocalConnectionManager(List(actor1)))
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isShutdown must be(false)
+      actor.isTerminated must be(false)
     }
 
     "deliver a broadcast message" in {
@@ -313,7 +313,7 @@ class RoutingSpec extends AkkaSpec {
       val props = RoutedProps(routerFactory = () ⇒ new ScatterGatherFirstCompletedRouter, connectionManager = new LocalConnectionManager(List(newActor(0))))
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
 
-      actor.isShutdown must be(false)
+      actor.isTerminated must be(false)
     }
 
     "deliver one-way messages in a round robin fashion" in {

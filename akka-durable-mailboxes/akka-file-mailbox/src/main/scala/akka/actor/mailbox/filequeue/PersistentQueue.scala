@@ -19,8 +19,10 @@ package akka.actor.mailbox.filequeue
 
 import java.io._
 import scala.collection.mutable
-import akka.config.Configuration
 import akka.event.LoggingAdapter
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
+import akka.actor.mailbox.FileBasedMailboxExtension
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {
@@ -32,7 +34,7 @@ class OverlaySetting[T](base: ⇒ T) {
   def apply() = local.getOrElse(base)
 }
 
-class PersistentQueue(persistencePath: String, val name: String, val config: Configuration, log: LoggingAdapter) {
+class PersistentQueue(persistencePath: String, val name: String, val settings: FileBasedMailboxExtension.Settings, log: LoggingAdapter) {
 
   private case object ItemArrived
 
@@ -123,22 +125,20 @@ class PersistentQueue(persistencePath: String, val name: String, val config: Con
   def memoryBytes: Long = synchronized { _memoryBytes }
   def inReadBehind = synchronized { journal.inReadBehind }
 
-  //FIXME, segment commented out, might have damaged semantics, investigate.
-  //config.subscribe { c => configure(c.getOrElse(new Config)) }
-  configure(config)
+  configure(settings)
 
-  def configure(config: Configuration) = synchronized {
-    maxItems set config.getInt("akka.actor.mailbox.file-based.max-items")
-    maxSize set config.getLong("akka.actor.mailbox.file-based.max-size")
-    maxItemSize set config.getLong("akka.actor.mailbox.file-based.max-item-size")
-    maxAge set config.getInt("akka.actor.mailbox.file-based.max-age")
-    maxJournalSize set config.getLong("akka.actor.mailbox.file-based.max-journal-size")
-    maxMemorySize set config.getLong("akka.actor.mailbox.file-based.max-memory-size")
-    maxJournalOverflow set config.getInt("akka.actor.mailbox.file-based.max-journal-overflow")
-    maxJournalSizeAbsolute set config.getLong("akka.actor.mailbox.file-based.max-journal-size-absolute")
-    discardOldWhenFull set config.getBool("akka.actor.mailbox.file-based.discard-old-when-full")
-    keepJournal set config.getBool("akka.actor.mailbox.file-based.journal")
-    syncJournal set config.getBool("akka.actor.mailbox.file-based.sync-journal")
+  def configure(settings: FileBasedMailboxExtension.Settings) = synchronized {
+    maxItems set Some(settings.MaxItems)
+    maxSize set Some(settings.MaxSize)
+    maxItemSize set Some(settings.MaxItemSize)
+    maxAge set Some(settings.MaxAge.toSeconds.toInt)
+    maxJournalSize set Some(settings.MaxJournalSize)
+    maxMemorySize set Some(settings.MaxMemorySize)
+    maxJournalOverflow set Some(settings.MaxJournalOverflow)
+    maxJournalSizeAbsolute set Some(settings.MaxJournalSizeAbsolute)
+    discardOldWhenFull set Some(settings.DiscardOldWhenFull)
+    keepJournal set Some(settings.KeepJournal)
+    syncJournal set Some(settings.SyncJournal)
     log.info("Configuring queue %s: journal=%s, max-items=%s, max-size=%s, max-age=%s, max-journal-size=%s, max-memory-size=%s, max-journal-overflow=%s, max-journal-size-absolute=%s, discard-old-when-full=%s, sync-journal=%s"
       .format(
         name, keepJournal(), maxItems(), maxSize(), maxAge(), maxJournalSize(), maxMemorySize(),

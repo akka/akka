@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.actor.{ Props, Actor }
+import akka.util.Duration
+import akka.util.duration._
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -48,7 +50,7 @@ class DispatcherActorSpec extends AkkaSpec {
 
     "respect the throughput setting" in {
       val throughputDispatcher = system.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 101, 0, system.dispatcherFactory.MailboxType).
+        newDispatcher("THROUGHPUT", 101, Duration.Zero, system.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
 
@@ -75,9 +77,9 @@ class DispatcherActorSpec extends AkkaSpec {
     }
 
     "respect throughput deadline" in {
-      val deadlineMs = 100
+      val deadline = 100 millis
       val throughputDispatcher = system.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 2, deadlineMs, system.dispatcherFactory.MailboxType).
+        newDispatcher("THROUGHPUT", 2, deadline, system.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
       val works = new AtomicBoolean(true)
@@ -100,7 +102,7 @@ class DispatcherActorSpec extends AkkaSpec {
       slowOne ! "ping"
       fastOne ! "ping"
       assert(ready.await(2, TimeUnit.SECONDS) === true)
-      Thread.sleep(deadlineMs + 10) // wait just a bit more than the deadline
+      Thread.sleep(deadline.toMillis + 10) // wait just a bit more than the deadline
       start.countDown()
       assert(latch.await(2, TimeUnit.SECONDS) === true)
     }

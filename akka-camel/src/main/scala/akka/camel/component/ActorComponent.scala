@@ -268,7 +268,7 @@ private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCall
   @volatile
   private var running: Boolean = true
 
-  def isShutdown: Boolean = !running
+  def isTerminated: Boolean = !running
 
   def suspend(): Unit = ()
 

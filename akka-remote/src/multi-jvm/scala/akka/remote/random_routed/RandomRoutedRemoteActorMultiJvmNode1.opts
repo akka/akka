@@ -1,1 +1,1 @@
--Dakka.cluster.nodename=node1 -Dakka.remote.hostname=localhost -Dakka.remote.port=9991
+-Dakka.cluster.nodename=node1 -Dakka.remote.server.hostname=localhost -Dakka.remote.server.port=9991
