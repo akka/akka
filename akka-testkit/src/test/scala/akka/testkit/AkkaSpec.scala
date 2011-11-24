@@ -40,8 +40,8 @@ object AkkaSpec {
 
 }
 
-abstract class AkkaSpec(_application: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf))
-  extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
+abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf))
+  extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
@@ -66,7 +66,7 @@ abstract class AkkaSpec(_application: ActorSystem = ActorSystem(getClass.getSimp
   def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
 
   def this(configMap: Map[String, _]) = {
-    this(AkkaSpec.mapToConfig(configMap).withFallback(AkkaSpec.testConf))
+    this(AkkaSpec.mapToConfig(configMap))
   }
 
   def actorOf(props: Props): ActorRef = system.actorOf(props)

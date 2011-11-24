@@ -26,6 +26,8 @@ object RemoteAddress {
   }
 }
 
+object LocalOnly extends RemoteAddress(0, "local")
+
 case class RemoteAddress private[akka] (port: Int, hostname: String) {
   @transient
   override lazy val toString = "" + hostname + ":" + port

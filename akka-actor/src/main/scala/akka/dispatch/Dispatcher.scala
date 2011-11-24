@@ -36,7 +36,7 @@ import akka.util.Duration
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .buildThreadPool
  * </pre>
  * <p/>
@@ -50,7 +50,7 @@ import akka.util.Duration
  *     .withNewThreadPoolWithBoundedBlockingQueue(100)
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
- *     .setKeepAliveTimeInMillis(60000)
+ *     .setKeepAliveTime(60 seconds)
  *     .buildThreadPool();
  * </pre>
  * <p/>

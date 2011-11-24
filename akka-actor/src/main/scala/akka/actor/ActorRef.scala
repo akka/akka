@@ -314,7 +314,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
   def readResolve(): AnyRef = {
     if (system.value eq null) throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.system.withValue(akkaApplication) { ... }")
+        " Use akka.serialization.Serialization.system.withValue(system) { ... }")
     system.value.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
@@ -360,11 +360,18 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val eventStream: EventStream, val path: ActorPath) extends MinimalActorRef {
+class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   @volatile
-  var brokenPromise: Future[Any] = _
+  private var brokenPromise: Future[Any] = _
+  @volatile
+  private var _path: ActorPath = _
+  def path: ActorPath = {
+    assert(_path != null)
+    _path
+  }
 
-  private[akka] def init(dispatcher: MessageDispatcher) {
+  private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
+    _path = rootPath / "nul"
     brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
   }
 

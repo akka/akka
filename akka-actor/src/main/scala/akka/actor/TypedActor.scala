@@ -10,6 +10,7 @@ import akka.util.{ Duration }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
+import akka.serialization.SerializationExtension
 
 object TypedActor {
   /**
@@ -60,14 +61,15 @@ object TypedActor {
       val system = akka.serialization.Serialization.system.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
-          " Use akka.serialization.Serialization.system.withValue(akkaApplication) { ... }")
-      MethodCall(system.serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
+          " Use akka.serialization.Serialization.system.withValue(system) { ... }")
+      val serialization = SerializationExtension(system).serialization
+      MethodCall(serialization, ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
-            deserializedParameters(i) = system.serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+            deserializedParameters(i) = serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
           }
           deserializedParameters
       })

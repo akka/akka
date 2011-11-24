@@ -21,7 +21,7 @@ object ActorPath {
    * Create an actor path from an iterable.
    */
   def apply(system: ActorSystem, path: Iterable[String]): ActorPath =
-    path.foldLeft(system.rootPath)(_ / _)
+    path.foldLeft(system.asInstanceOf[ActorSystemImpl].provider.rootPath)(_ / _)
 
   /**
    * Split a string path into an iterable.

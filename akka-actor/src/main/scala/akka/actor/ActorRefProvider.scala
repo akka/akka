@@ -16,6 +16,8 @@ import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Ro
 import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
+import akka.remote.RemoteAddress
+import akka.remote.LocalOnly
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -32,8 +34,16 @@ trait ActorRefProvider {
 
   def deathWatch: DeathWatch
 
-  // FIXME: remove/replace
+  // FIXME: remove/replace?
   def nodename: String
+  // FIXME: remove/replace?
+  def clustername: String
+
+  /**
+   * The root path for all actors within this actor system, including remote
+   * address if enabled.
+   */
+  def rootPath: ActorPath
 
   def settings: ActorSystem.Settings
 
@@ -134,22 +144,19 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  */
 class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
-  val rootPath: ActorPath,
   val eventStream: EventStream,
-  val dispatcher: MessageDispatcher,
-  val scheduler: Scheduler) extends ActorRefProvider {
+  val scheduler: Scheduler,
+  val rootPath: ActorPath,
+  val nodename: String,
+  val clustername: String) extends ActorRefProvider {
+
+  def this(settings: ActorSystem.Settings, eventStream: EventStream, scheduler: Scheduler) {
+    this(settings, eventStream, scheduler, new RootActorPath(LocalOnly), "local", "local")
+  }
 
   val log = Logging(eventStream, "LocalActorRefProvider")
 
-  // FIXME remove/replave (clustering shall not leak into akka-actor)
-  val nodename: String = System.getProperty("akka.cluster.nodename") match {
-    case null | "" ⇒ new UUID().toString
-    case value     ⇒ value
-  }
-
   private[akka] val deployer: Deployer = new Deployer(settings, eventStream, nodename)
-
-  val terminationFuture = new DefaultPromise[Unit](Timeout.never)(dispatcher)
 
   /*
    * generate name for temporary actor refs
@@ -227,26 +234,23 @@ class LocalActorRefProvider(
    * provide their service. Hence they cannot be created while the
    * constructors of ActorSystem and ActorRefProvider are still running.
    * The solution is to split out that last part into an init() method,
-   * but it also requires these references to be @volatile.
+   * but it also requires these references to be @volatile and lazy.
    */
   @volatile
-  private var rootGuardian: ActorRef = _
-  @volatile
-  private var _guardian: ActorRef = _
-  @volatile
-  private var _systemGuardian: ActorRef = _
-  def guardian = _guardian
-  def systemGuardian = _systemGuardian
+  private var system: ActorSystemImpl = _
+  def dispatcher: MessageDispatcher = system.dispatcher
+  lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
+  lazy val rootGuardian: ActorRef = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
+  lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
+  lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
 
   val deathWatch = createDeathWatch()
 
-  def init(system: ActorSystemImpl) {
-    rootGuardian = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-    _guardian = actorOf(system, guardianProps, rootGuardian, "app", true)
-    _systemGuardian = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+  def init(_system: ActorSystemImpl) {
+    system = _system
     // chain death watchers so that killing guardian stops the application
-    deathWatch.subscribe(_systemGuardian, _guardian)
-    deathWatch.subscribe(rootGuardian, _systemGuardian)
+    deathWatch.subscribe(systemGuardian, guardian)
+    deathWatch.subscribe(rootGuardian, systemGuardian)
   }
 
   // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "system" name for now)

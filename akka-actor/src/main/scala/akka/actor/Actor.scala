@@ -9,7 +9,6 @@ import akka.dispatch._
 import akka.routing._
 import akka.util.Duration
 import akka.remote.RemoteSupport
-import akka.cluster.ClusterNode
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
 import akka.event.Logging.Debug

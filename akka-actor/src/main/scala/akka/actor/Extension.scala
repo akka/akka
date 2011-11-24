@@ -20,9 +20,9 @@ package akka.actor
  *
  * {{{
  * class MyExtension extends Extension[MyExtension] {
- *   def init(system: ActorSystemImpl): ExtensionKey[MyExtension] = {
+ *   def key = MyExtension
+ *   def init(system: ActorSystemImpl) {
  *     ... // initialize here
- *     MyExtension
  *   }
  * }
  * object MyExtension extends ExtensionKey[MyExtension]
@@ -34,14 +34,17 @@ package akka.actor
  * static class MyExtension implements Extension<MyExtension> {
  *   public static ExtensionKey<MyExtension> key = new ExtensionKey<MyExtension>() {};
  *
- *   public ExtensionKey<MyExtension> init(ActorSystemImpl system) {
+ *   public ExtensionKey<TestExtension> key() {
+ *    return key;
+ *   }
+ *   public void init(ActorSystemImpl system) {
  *     ... // initialize here
- *     return key;
  *   }
  * }
  * }}}
  */
 trait Extension[T <: AnyRef] {
+
   /**
    * This method is called by the ActorSystem upon registering this extension.
    * The key returned is used for looking up extensions, hence it must be a
@@ -49,7 +52,14 @@ trait Extension[T <: AnyRef] {
    * best achieved by storing it in a static field (Java) or as/in an object
    * (Scala).
    */
-  def init(system: ActorSystemImpl): ExtensionKey[T]
+  def key: ExtensionKey[T]
+
+  // FIXME ActorSystemImpl exposed to user API. We might well choose to introduce a new interface for this level of access, just so we can shuffle around the implementation
+  /**
+   * This method is called by the ActorSystem when the extension is registered
+   * to trigger initialization of the extension.
+   */
+  def init(system: ActorSystemImpl): Unit
 }
 
 /**

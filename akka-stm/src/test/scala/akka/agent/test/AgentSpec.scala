@@ -2,15 +2,15 @@ package akka.agent.test
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-
 import akka.actor.ActorSystem
 import akka.actor.Timeout
 import akka.agent.Agent
 import akka.stm._
 import akka.util.Duration
 import akka.util.duration._
-
 import java.util.concurrent.CountDownLatch
+import akka.testkit.AkkaSpec
+import akka.testkit._
 
 class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   val latch = new CountDownLatch(num)
@@ -18,12 +18,11 @@ class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   def await(timeout: Duration) = latch.await(timeout.length, timeout.unit)
 }
 
-class AgentSpec extends WordSpec with MustMatchers {
+class AgentSpec extends AkkaSpec {
 
-  implicit val system = ActorSystem("AgentSpec")
   implicit val timeout = Timeout(5.seconds.dilated)
 
-  "Agent" should {
+  "Agent" must {
     "update with send dispatches in order sent" in {
       val countDown = new CountDownFunction[String]
 

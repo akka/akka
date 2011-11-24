@@ -4,7 +4,7 @@
 package akka.actor.dispatch
 
 import org.scalatest.Assertions._
-import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
+import akka.testkit._
 import akka.dispatch._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
