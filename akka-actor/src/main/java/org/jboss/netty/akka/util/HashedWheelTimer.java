@@ -74,14 +74,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author <a href="http://www.jboss.org/netty/">The Netty Project</a>
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @version $Rev: 2297 $, $Date: 2010-06-07 10:50:02 +0900 (Mon, 07 Jun 2010) $
+ *
+ * The original implementation has been slightly altered to fit the specific requirements of Akka.
  */
 public class HashedWheelTimer implements Timer {
-    private static final AtomicInteger id = new AtomicInteger();
-
     private final Worker worker = new Worker();
     final Thread workerThread;
     final AtomicBoolean shutdown = new AtomicBoolean();
-
     private final long roundDuration;
     final long tickDuration;
     final Set<HashedWheelTimeout>[] wheel;
@@ -113,12 +112,10 @@ public class HashedWheelTimer implements Timer {
             throw new NullPointerException("duration");
         }
         if (duration.toNanos() <= 0) {
-            throw new IllegalArgumentException(
-                    "duration must be greater than 0 ns: " + duration.toNanos());
+            throw new IllegalArgumentException("duration must be greater than 0 ns: " + duration.toNanos());
         }
         if (ticksPerWheel <= 0) {
-            throw new IllegalArgumentException(
-                    "ticksPerWheel must be greater than 0: " + ticksPerWheel);
+            throw new IllegalArgumentException("ticksPerWheel must be greater than 0: " + ticksPerWheel);
         }
 
         this.logger = logger;
@@ -128,15 +125,12 @@ public class HashedWheelTimer implements Timer {
         iterators = createIterators(wheel);
         mask = wheel.length - 1;
 
-        // Convert tickDuration to milliseconds.
-        this.tickDuration = duration.toMillis();
+        // Convert to standardized tickDuration
+        this.tickDuration = duration.toNanos();
 
         // Prevent overflow.
-        if (tickDuration == Long.MAX_VALUE ||
-                tickDuration >= Long.MAX_VALUE / wheel.length) {
-            throw new IllegalArgumentException(
-                    "tickDuration is too long: " +
-                    tickDuration +  ' ' + duration.unit());
+        if (tickDuration == Long.MAX_VALUE || tickDuration >= Long.MAX_VALUE / wheel.length) {
+            throw new IllegalArgumentException("tickDuration is too long: " + tickDuration +  ' ' + duration.unit());
         }
 
         roundDuration = tickDuration * wheel.length;
@@ -157,8 +151,7 @@ public class HashedWheelTimer implements Timer {
         ticksPerWheel = normalizeTicksPerWheel(ticksPerWheel);
         Set<HashedWheelTimeout>[] wheel = new Set[ticksPerWheel];
         for (int i = 0; i < wheel.length; i ++) {
-            wheel[i] = new MapBackedSet<HashedWheelTimeout>(
-                    new ConcurrentIdentityHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
+            wheel[i] = new MapBackedSet<HashedWheelTimeout>(new ConcurrentIdentityHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
         }
         return wheel;
     }
@@ -233,7 +226,7 @@ public class HashedWheelTimer implements Timer {
     }
 
     public Timeout newTimeout(TimerTask task, Duration delay) {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = System.nanoTime();
 
         if (task == null) {
             throw new NullPointerException("task");
@@ -246,8 +239,8 @@ public class HashedWheelTimer implements Timer {
             start();
         }
 
-        HashedWheelTimeout timeout = new HashedWheelTimeout(task, currentTime + delay.toMillis());
-        scheduleTimeout(timeout, delay.toMillis());
+        HashedWheelTimeout timeout = new HashedWheelTimeout(task, currentTime + delay.toNanos());
+        scheduleTimeout(timeout, delay.toNanos());
         return timeout;
     }
 
@@ -261,11 +254,8 @@ public class HashedWheelTimer implements Timer {
         // Prepare the required parameters to schedule the timeout object.
         final long lastRoundDelay = delay % roundDuration;
         final long lastTickDelay = delay % tickDuration;
-        final long relativeIndex =
-            lastRoundDelay / tickDuration + (lastTickDelay != 0? 1 : 0);
-
-        final long remainingRounds =
-            delay / roundDuration - (delay % roundDuration == 0? 1 : 0);
+        final long relativeIndex = lastRoundDelay / tickDuration + (lastTickDelay != 0? 1 : 0);
+        final long remainingRounds = delay / roundDuration - (delay % roundDuration == 0? 1 : 0);
 
         // Add the timeout to the wheel.
         lock.readLock().lock();
@@ -292,7 +282,7 @@ public class HashedWheelTimer implements Timer {
             List<HashedWheelTimeout> expiredTimeouts =
                 new ArrayList<HashedWheelTimeout>();
 
-            startTime = System.currentTimeMillis();
+            startTime = System.nanoTime();
             tick = 1;
 
             while (!shutdown.get()) {
@@ -304,8 +294,7 @@ public class HashedWheelTimer implements Timer {
             }
         }
 
-        private void fetchExpiredTimeouts(
-                List<HashedWheelTimeout> expiredTimeouts, long deadline) {
+        private void fetchExpiredTimeouts(List<HashedWheelTimeout> expiredTimeouts, long deadline) {
 
             // Find the expired timeouts and decrease the round counter
             // if necessary.  Note that we don't send the notification
@@ -371,15 +360,17 @@ public class HashedWheelTimer implements Timer {
             long deadline = startTime + tickDuration * tick;
 
             for (;;) {
-                final long currentTime = System.currentTimeMillis();
-                final long sleepTime = tickDuration * tick - (currentTime - startTime);
+                final long currentTime = System.nanoTime();
+                final long sleepTime = (tickDuration * tick - (currentTime - startTime));
 
                 if (sleepTime <= 0) {
                     break;
                 }
 
                 try {
-                    Thread.sleep(sleepTime);
+                    long milliSeconds = TimeUnit.NANOSECONDS.toMillis(sleepTime);
+                    int nanoSeconds = (int) (sleepTime - (milliSeconds * 1000000));
+                    Thread.sleep(milliSeconds, nanoSeconds);
                 } catch (InterruptedException e) {
                     if (shutdown.get()) {
                         return -1;
@@ -451,7 +442,7 @@ public class HashedWheelTimer implements Timer {
 
         @Override
         public String toString() {
-            long currentTime = System.currentTimeMillis();
+            long currentTime = System.nanoTime();
             long remaining = deadline - currentTime;
 
             StringBuilder buf = new StringBuilder(192);
@@ -477,3 +468,4 @@ public class HashedWheelTimer implements Timer {
         }
     }
 }
+
