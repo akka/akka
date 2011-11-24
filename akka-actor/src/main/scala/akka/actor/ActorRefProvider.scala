@@ -16,7 +16,7 @@ import akka.actor.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch.{ SystemMessage, Supervise, Promise, MessageDispatcher, Future, DefaultPromise }
 import akka.event.{ Logging, DeathWatch, ActorClassification }
-import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter }
+import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter, BroadcastRouter }
 import akka.util.Helpers
 import akka.AkkaException
 
@@ -211,13 +211,14 @@ class LocalActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
 
             // create a routed actor ref
             case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
-
+              implicit val dispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
+              implicit val timeout = app.AkkaConfig.ActorTimeout
               val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-                case RouterType.Direct     ⇒ () ⇒ new DirectRouter
-                case RouterType.Random     ⇒ () ⇒ new RandomRouter
-                case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
-                case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-                  if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher, app.AkkaConfig.ActorTimeout)
+                case RouterType.Direct            ⇒ () ⇒ new DirectRouter
+                case RouterType.Random            ⇒ () ⇒ new RandomRouter
+                case RouterType.Broadcast         ⇒ () ⇒ new BroadcastRouter
+                case RouterType.RoundRobin        ⇒ () ⇒ new RoundRobinRouter
+                case RouterType.ScatterGather     ⇒ () ⇒ new ScatterGatherFirstCompletedRouter
                 case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
                 case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
                 case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")

@@ -68,14 +68,6 @@ class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
             deployer.lookupDeploymentFor(path.toString) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
-                // FIXME move to AccrualFailureDetector as soon as we have the Gossiper up and running and remove the option to select impl in the akka.conf file since we only have one
-                // val failureDetector = DeploymentConfig.failureDetectorTypeFor(failureDetectorType) match {
-                //   case FailureDetectorType.NoOp                           ⇒ new NoOpFailureDetector
-                //   case FailureDetectorType.RemoveConnectionOnFirstFailure ⇒ new RemoveConnectionOnFirstFailureFailureDetector
-                //   case FailureDetectorType.BannagePeriod(timeToBan)       ⇒ new BannagePeriodFailureDetector(timeToBan)
-                //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
-                // }
-
                 def isReplicaNode: Boolean = remoteAddresses exists { _ == app.address }
 
                 //app.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(app.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
@@ -85,6 +77,9 @@ class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
                   local.actorOf(props, supervisor, name, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create
                 } else {
 
+                  implicit val dispatcher = if (props.dispatcher == Props.defaultDispatcher) app.dispatcher else props.dispatcher
+                  implicit val timeout = app.AkkaConfig.ActorTimeout
+
                   // we are on the single "reference" node uses the remote actors on the replica nodes
                   val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
                     case RouterType.Direct ⇒
@@ -92,6 +87,12 @@ class RemoteActorRefProvider(val app: ActorSystem) extends ActorRefProvider {
                         "Actor [%s] configured with Direct router must have exactly 1 remote node configured. Found [%s]"
                           .format(name, remoteAddresses.mkString(", ")))
                       () ⇒ new DirectRouter
+
+                    case RouterType.Broadcast ⇒
+                      if (remoteAddresses.size != 1) throw new ConfigurationException(
+                        "Actor [%s] configured with Broadcast router must have exactly 1 remote node configured. Found [%s]"
+                          .format(name, remoteAddresses.mkString(", ")))
+                      () ⇒ new BroadcastRouter
 
                     case RouterType.Random ⇒
                       if (remoteAddresses.size < 1) throw new ConfigurationException(
