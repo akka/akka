@@ -15,6 +15,7 @@
  */
 package org.jboss.netty.akka.util;
 
+import akka.util.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +42,7 @@ public interface Timer {
      * @throws IllegalStateException if this timer has been
      *                               {@linkplain #stop() stopped} already
      */
-    Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
+    Timeout newTimeout(TimerTask task, Duration delay);
 
     /**
      * Releases all resources acquired by this {@link org.jboss.netty.akka.util.Timer} and cancels all
