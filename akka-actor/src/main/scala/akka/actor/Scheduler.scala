@@ -9,46 +9,50 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Rework of David Pollak's ActorPing class in the Lift Project
- * which is licensed under the Apache 2 License.
  */
 package akka.actor
 
-import java.util.concurrent._
 import akka.util.Duration
-import akka.AkkaException
 
-case class SchedulerException(msg: String, e: Throwable) extends AkkaException(msg, e) {
-  def this(msg: String) = this(msg, null)
-}
+trait Scheduler {
+  /**
+   * Schedules a message to be sent repeatedly with an initial delay and frequency.
+   * E.g. if you would like a message to be sent immediately and thereafter every 500ms you would set
+   * delay = Duration.Zero and frequency = Duration(500, TimeUnit.MILLISECONDS)
+   */
+  def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, frequency: Duration): Cancellable
 
-trait JScheduler {
-  def schedule(receiver: ActorRef, message: Any, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable
-  def scheduleOnce(runnable: Runnable, delay: Long, timeUnit: TimeUnit): Cancellable
-  def scheduleOnce(receiver: ActorRef, message: Any, delay: Long, timeUnit: TimeUnit): Cancellable
-}
+  /**
+   * Schedules a function to be run repeatedly with an initial delay and a frequency.
+   * E.g. if you would like the function to be run after 2 seconds and thereafter every 100ms you would set
+   * delay = Duration(2, TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   */
+  def schedule(f: () ⇒ Unit, initialDelay: Duration, frequency: Duration): Cancellable
 
-abstract class Scheduler extends JScheduler {
-  def schedule(f: () ⇒ Unit, initialDelay: Long, delay: Long, timeUnit: TimeUnit): Cancellable
+  /**
+   * Schedules a Runnable to be run once with a delay, i.e. a time period that has to pass before the runnable is executed.
+   */
+  def scheduleOnce(runnable: Runnable, delay: Duration): Cancellable
 
-  def scheduleOnce(f: () ⇒ Unit, delay: Long, timeUnit: TimeUnit): Cancellable
+  /**
+   * Schedules a message to be sent once with a delay, i.e. a time period that has to pass before the message is sent.
+   */
+  def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable
 
-  def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
-    schedule(receiver, message, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
-
-  def schedule(f: () ⇒ Unit, initialDelay: Duration, delay: Duration): Cancellable =
-    schedule(f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
-
-  def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable =
-    scheduleOnce(receiver, message, delay.length, delay.unit)
-
-  def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable =
-    scheduleOnce(f, delay.length, delay.unit)
+  /**
+   * Schedules a function to be run once with a delay, i.e. a time period that has to pass before the function is run.
+   */
+  def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable
 }
 
 trait Cancellable {
+  /**
+   * Cancels the underlying scheduled task.
+   */
   def cancel(): Unit
 
+  /**
+   * Checks if the underlying scheduled task has been cancelled.
+   */
   def isCancelled: Boolean
 }

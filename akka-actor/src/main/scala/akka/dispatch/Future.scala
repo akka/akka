@@ -956,12 +956,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
                 else func(DefaultPromise.this)
               }
             }
           }
-          val timeoutFuture = dispatcher.prerequisites.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          val timeoutFuture = dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
           onComplete(_ ⇒ timeoutFuture.cancel())
           false
         } else true
@@ -983,12 +983,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
                 else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) })
               }
             }
           }
-          dispatcher.prerequisites.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
           promise
       }
     } else this
