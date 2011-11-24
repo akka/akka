@@ -127,7 +127,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
     }
 
     "never fire prematurely" in {
-      val ticks = new CountDownLatch(5000)
+      val ticks = new CountDownLatch(300)
 
       case class Msg(ts: Long)
 
@@ -141,12 +141,12 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
         }
       })
 
-      (1 to 5000).foreach { i ⇒
+      (1 to 300).foreach { i ⇒
         collectCancellable(system.scheduler.scheduleOnce(actor, Msg(System.currentTimeMillis), 10 milliseconds))
         Thread.sleep(5)
       }
 
-      assert(ticks.await(20, TimeUnit.SECONDS) == true)
+      assert(ticks.await(3, TimeUnit.SECONDS) == true)
     }
 
     "schedule with different initial delay and frequency" in {
