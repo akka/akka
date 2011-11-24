@@ -8,13 +8,12 @@ import akka.util.duration._
 //#imports
 import akka.actor.Actor
 import akka.event.Logging
-import akka.config.Configuration
 
 //#imports
 
 //#my-actor
 class MyActor extends Actor {
-  val log = Logging(app, this)
+  val log = Logging(system, this)
   def receive = {
     case "test" ⇒ log.info("received test")
     case _      ⇒ log.info("received unknown message")
@@ -22,7 +21,7 @@ class MyActor extends Actor {
 }
 //#my-actor
 
-class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
+class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "creating actor with AkkaSpec.actorOf" in {
     //#creating-actorOf
@@ -31,13 +30,13 @@ class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
 
     // testing the actor
 
-    // TODO: convert docs to AkkaSpec(Configuration(...))
+    // TODO: convert docs to AkkaSpec(Map(...))
     val filter = EventFilter.custom {
       case e: Logging.Info ⇒ true
       case _               ⇒ false
     }
-    app.eventStream.publish(TestEvent.Mute(filter))
-    app.eventStream.subscribe(testActor, classOf[Logging.Info])
+    system.eventStream.publish(TestEvent.Mute(filter))
+    system.eventStream.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
     expectMsgPF(1 second) { case Logging.Info(_, "received test") ⇒ true }
@@ -45,8 +44,8 @@ class ActorDocSpec extends AkkaSpec(Configuration("akka.loglevel" -> "INFO")) {
     myActor ! "unknown"
     expectMsgPF(1 second) { case Logging.Info(_, "received unknown message") ⇒ true }
 
-    app.eventStream.unsubscribe(testActor)
-    app.eventStream.publish(TestEvent.UnMute(filter))
+    system.eventStream.unsubscribe(testActor)
+    system.eventStream.publish(TestEvent.UnMute(filter))
 
     myActor.stop()
   }

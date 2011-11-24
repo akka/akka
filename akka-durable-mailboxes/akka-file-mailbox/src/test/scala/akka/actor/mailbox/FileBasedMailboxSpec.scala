@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils
 class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileDurableMailboxType) {
 
   def clean {
-    val queuePath = FileBasedMailbox.queuePath(app.config)
+    val queuePath = FileBasedMailboxExtension(system).settings.QueuePath
     FileUtils.deleteDirectory(new java.io.File(queuePath))
   }
 

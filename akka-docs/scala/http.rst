@@ -99,7 +99,7 @@ If you want to use jetty-run in SBT you need to exclude the version of Jetty tha
 
   override def ivyXML =
     <dependencies>
-      <dependency org="se.scalablesolutions.akka" name="akka-http" rev="AKKA_VERSION_GOES_HERE">
+      <dependency org="com.typesafe.akka" name="akka-http" rev="AKKA_VERSION_GOES_HERE">
         <exclude module="jetty"/>
       </dependency>
     </dependencies>

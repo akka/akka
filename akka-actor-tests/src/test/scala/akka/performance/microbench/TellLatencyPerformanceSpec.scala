@@ -17,7 +17,7 @@ import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistic
 class TellLatencyPerformanceSpec extends PerformanceSpec {
   import TellLatencyPerformanceSpec._
 
-  val clientDispatcher = app.dispatcherFactory.newDispatcher("client-dispatcher")
+  val clientDispatcher = system.dispatcherFactory.newDispatcher("client-dispatcher")
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(8)
     .build
@@ -62,13 +62,13 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val clients = (for (i ← 0 until numberOfClients) yield {
-          val destination = app.actorOf[Destination]
-          val w4 = app.actorOf(new Waypoint(destination))
-          val w3 = app.actorOf(new Waypoint(w4))
-          val w2 = app.actorOf(new Waypoint(w3))
-          val w1 = app.actorOf(new Waypoint(w2))
+          val destination = system.actorOf[Destination]
+          val w4 = system.actorOf(new Waypoint(destination))
+          val w3 = system.actorOf(new Waypoint(w4))
+          val w2 = system.actorOf(new Waypoint(w3))
+          val w1 = system.actorOf(new Waypoint(w2))
           Props(new Client(w1, latch, repeatsPerClient, clientDelayMicros, stat)).withDispatcher(clientDispatcher)
-        }).toList.map(app.actorOf(_))
+        }).toList.map(system.actorOf(_))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)

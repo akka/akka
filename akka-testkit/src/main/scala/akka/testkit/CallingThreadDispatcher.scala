@@ -12,6 +12,10 @@ import java.lang.ref.WeakReference
 import scala.annotation.tailrec
 import akka.actor.{ ActorCell, ActorRef, ActorSystem }
 import akka.dispatch._
+import akka.actor.Scheduler
+import akka.event.EventStream
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 /*
  * Locking rules:
@@ -103,8 +107,12 @@ private[testkit] object CallingThreadDispatcher {
  * @author Roland Kuhn
  * @since 1.1
  */
-class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thread") extends MessageDispatcher(_app) {
+class CallingThreadDispatcher(
+  _prerequisites: DispatcherPrerequisites,
+  val name: String = "calling-thread") extends MessageDispatcher(_prerequisites) {
   import CallingThreadDispatcher._
+
+  val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
 
@@ -116,10 +124,10 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
   protected[akka] override def shutdown() {}
 
   protected[akka] override def throughput = 0
-  protected[akka] override def throughputDeadlineTime = 0
+  protected[akka] override def throughputDeadlineTime = Duration.Zero
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
-  protected[akka] override def timeoutMs = 100L
+  protected[akka] override def shutdownTimeout = Duration(100L, TimeUnit.MILLISECONDS)
 
   override def suspend(actor: ActorCell) {
     getMailbox(actor) foreach (_.suspendSwitch.switchOn)
@@ -211,12 +219,12 @@ class CallingThreadDispatcher(_app: ActorSystem, val name: String = "calling-thr
           true
         } catch {
           case ie: InterruptedException ⇒
-            app.eventStream.publish(Error(this, ie))
+            log.error(ie, "Interrupted during message processing")
             Thread.currentThread().interrupt()
             intex = ie
             true
           case e ⇒
-            app.eventStream.publish(Error(this, e))
+            log.error(e, "Error during message processing")
             queue.leave
             false
         }

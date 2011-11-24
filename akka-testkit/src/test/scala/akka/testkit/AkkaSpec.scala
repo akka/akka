@@ -3,29 +3,56 @@
  */
 package akka.testkit
 
-import akka.config.Configuration
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
+import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
 
-abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
-  extends TestKit(_application) with WordSpec with MustMatchers with BeforeAndAfterAll {
+object TimingTest extends Tag("timing")
 
-  val log: LoggingAdapter = Logging(app.eventStream, this)
+object AkkaSpec {
+  val testConf =
+    ActorSystem.DefaultConfigurationLoader.defaultConfig.withFallback(
+      ConfigFactory.parseString("""
+      akka {
+        event-handlers = ["akka.testkit.TestEventListener"]
+        loglevel = "WARNING"
+        actor {
+          default-dispatcher {
+            core-pool-size = 4
+            max-pool-size  = 32
+          }
+        }
+      }
+      """, ConfigParseOptions.defaults))
+
+  def mapToConfig(map: Map[String, Any]): Config = {
+    import scala.collection.JavaConverters._
+    ConfigFactory.parseMap(map.asJava)
+  }
+
+}
+
+abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf))
+  extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
+
+  val log: LoggingAdapter = Logging(system, this.getClass)
 
   final override def beforeAll {
     atStartup()
   }
 
   final override def afterAll {
-    app.stop()
-    try app.terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ app.log.warning("failed to stop within 5 seconds")
+    system.stop()
+    try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
+      case _: FutureTimeoutException ⇒ system.log.warning("failed to stop within 5 seconds")
     }
     atTermination()
   }
@@ -34,9 +61,15 @@ abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
 
   protected def atTermination() {}
 
-  def this(config: Configuration) = this(new ActorSystem(getClass.getSimpleName, ActorSystem.defaultConfig ++ config))
+  def this(config: Config) = this(ActorSystem(getClass.getSimpleName, config.withFallback(AkkaSpec.testConf)))
 
-  def actorOf(props: Props): ActorRef = app.actorOf(props)
+  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
+
+  def this(configMap: Map[String, _]) = {
+    this(AkkaSpec.mapToConfig(configMap))
+  }
+
+  def actorOf(props: Props): ActorRef = system.actorOf(props)
 
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
@@ -53,16 +86,18 @@ abstract class AkkaSpec(_application: ActorSystem = ActorSystem())
 class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {
-      import ActorSystem.defaultConfig
-      val app = ActorSystem("test", defaultConfig ++ Configuration(
+      import ActorSystem.DefaultConfigurationLoader.defaultConfig
+      import scala.collection.JavaConverters._
+      val conf = Map(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
-        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG"))
-      val spec = new AkkaSpec(app) {
-        val ref = Seq(testActor, app.actorOf(Props.empty, "name"))
+        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
+      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(defaultConfig))
+      val spec = new AkkaSpec(system) {
+        val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
-      spec.ref foreach (_ must not be 'shutdown)
-      app.stop()
-      spec.awaitCond(spec.ref forall (_.isShutdown), 2 seconds)
+      spec.ref foreach (_.isTerminated must not be true)
+      system.stop()
+      spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
   }
 }

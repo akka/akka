@@ -35,7 +35,7 @@ trait Consumer { this: Actor ⇒
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
-   * should be auto-acknowledged or app-acknowledged.
+   * should be auto-acknowledged or system-acknowledged.
    */
   def autoack = true
 
@@ -79,7 +79,7 @@ abstract class UntypedConsumerActor extends UntypedActor with Consumer {
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
-   * should be auto-acknowledged or app-acknowledged.
+   * should be auto-acknowledged or system-acknowledged.
    */
   def isAutoack() = super.autoack
 }

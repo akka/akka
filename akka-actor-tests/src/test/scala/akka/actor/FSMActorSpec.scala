@@ -5,19 +5,17 @@
 package akka.actor
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-
 import akka.testkit._
 import TestEvent.Mute
 import FSM._
 import akka.util.Duration
 import akka.util.duration._
 import akka.event._
-import akka.actor.ActorSystem.defaultConfig
-import akka.config.Configuration
+import com.typesafe.config.ConfigFactory
 
 object FSMActorSpec {
 
-  class Latches(implicit app: ActorSystem) {
+  class Latches(implicit system: ActorSystem) {
     val unlockedLatch = TestLatch()
     val lockedLatch = TestLatch()
     val unhandledLatch = TestLatch()
@@ -103,7 +101,7 @@ object FSMActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true)) with ImplicitSender {
+class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with ImplicitSender {
   import FSMActorSpec._
 
   "An FSM Actor" must {
@@ -166,13 +164,14 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
           case Ev("go") ⇒ goto(2)
         }
       })
+      val name = fsm.toString
       filterException[Logging.EventHandlerException] {
-        app.eventStream.subscribe(testActor, classOf[Logging.Error])
+        system.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
-          case Logging.Error(_, `fsm`, "Next state 2 does not exist") ⇒ true
+          case Logging.Error(_, `name`, "Next state 2 does not exist") ⇒ true
         }
-        app.eventStream.unsubscribe(testActor)
+        system.eventStream.unsubscribe(testActor)
       }
     }
 
@@ -193,9 +192,10 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
     }
 
     "log events and transitions if asked to do so" in {
-      new TestKit(ActorSystem("fsm event", ActorSystem.defaultConfig ++
-        Configuration("akka.loglevel" -> "DEBUG",
-          "akka.actor.debug.fsm" -> true))) {
+      import scala.collection.JavaConverters._
+      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
+        "akka.actor.debug.fsm" -> true).asJava)
+      new TestKit(ActorSystem("fsm event", config)) {
         EventFilter.debug() intercept {
           val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
             startWith(1, null)
@@ -213,20 +213,21 @@ class FSMActorSpec extends AkkaSpec(Configuration("akka.actor.debug.fsm" -> true
               case StopEvent(r, _, _) ⇒ testActor ! r
             }
           })
-          app.eventStream.subscribe(testActor, classOf[Logging.Debug])
+          val name = fsm.toString
+          system.eventStream.subscribe(testActor, classOf[Logging.Debug])
           fsm ! "go"
           expectMsgPF(1 second, hint = "processing Event(go,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(go,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
+            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
           }
-          expectMsg(1 second, Logging.Debug(fsm, "setting timer 't'/1500 milliseconds: Shutdown"))
-          expectMsg(1 second, Logging.Debug(fsm, "transition 1 -> 2"))
+          expectMsg(1 second, Logging.Debug(name, "setting timer 't'/1500 milliseconds: Shutdown"))
+          expectMsg(1 second, Logging.Debug(name, "transition 1 -> 2"))
           fsm ! "stop"
           expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-            case Logging.Debug(`fsm`, s: String) if s.startsWith("processing Event(stop,null) from Actor[" + app.address + "/sys/testActor") ⇒ true
+            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
           }
-          expectMsgAllOf(1 second, Logging.Debug(fsm, "canceling timer 't'"), Normal)
+          expectMsgAllOf(1 second, Logging.Debug(name, "canceling timer 't'"), Normal)
           expectNoMsg(1 second)
-          app.eventStream.unsubscribe(testActor)
+          system.eventStream.unsubscribe(testActor)
         }
       }
     }

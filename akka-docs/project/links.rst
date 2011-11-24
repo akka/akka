@@ -47,4 +47,22 @@ directly.
 * http://download.java.net/maven/glassfish
 * http://databinder.net/repo   
 
+SNAPSHOT Versions
+=================
+
+Nightly builds are available in `<http://repo.typesafe.com/typesafe/maven-timestamps/>`_ repository as
+timestamped snapshot versions. Pick a timestamp from 
+`<http://repo.typesafe.com/typesafe/maven-timestamps/com/typesafe/akka/akka-actor/>`_. 
+All Akka modules that belong to the same build have the same timestamp.
+
+Make sure that you add the repository to the sbt resolvers or maven repositories::
+ 
+  resolvers += "Typesafe Timestamp Repo" at "http://repo.typesafe.com/typesafe/maven-timestamps/"
+  
+Define the library dependencies with the timestamp as version::
+
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-20111118-000627"
+
+    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0-20111118-000627"
+
 

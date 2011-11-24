@@ -11,8 +11,6 @@ import akka.actor.ActorSystem
 
 trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
 
-  def app: ActorSystem
-
   def isBenchmark() = System.getProperty("benchmark") == "true"
 
   def minClients() = System.getProperty("benchmark.minClients", "1").toInt;
@@ -29,7 +27,7 @@ trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
   }
 
   val resultRepository = BenchResultRepository()
-  lazy val report = new Report(app, resultRepository, compareResultWith)
+  lazy val report = new Report(system, resultRepository, compareResultWith)
 
   /**
    * To compare two tests with each other you can override this method, in

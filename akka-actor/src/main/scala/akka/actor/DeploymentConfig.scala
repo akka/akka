@@ -75,10 +75,11 @@ object DeploymentConfig {
   // --------------------------------
 
   class NrOfInstances(val factor: Int) extends Serializable {
-    if (factor < 0) throw new IllegalArgumentException("nr-of-instances can not be negative")
+    // note that -1 is used for AutoNrOfInstances
+    if (factor < -1) throw new IllegalArgumentException("nr-of-instances can not be negative")
     override def hashCode = 0 + factor.##
     override def equals(other: Any) = NrOfInstances.unapply(this) == NrOfInstances.unapply(other)
-    override def toString = "NrOfInstances(" + factor + ")"
+    override def toString = if (factor == -1) "NrOfInstances(auto)" else "NrOfInstances(" + factor + ")"
   }
 
   object NrOfInstances {
@@ -97,7 +98,7 @@ object DeploymentConfig {
   // For Java API
   class AutoNrOfInstances extends NrOfInstances(-1)
   class ZeroNrOfInstances extends NrOfInstances(0)
-  class OneNrOfInstances extends NrOfInstances(0)
+  class OneNrOfInstances extends NrOfInstances(1)
 
   // For Scala API
   case object AutoNrOfInstances extends AutoNrOfInstances
@@ -217,13 +218,13 @@ object DeploymentConfig {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DeploymentConfig(val app: ActorSystem) {
+class DeploymentConfig(val nodename: String) {
 
   import DeploymentConfig._
 
-  case class ClusterScope(preferredNodes: Iterable[Home] = Vector(Node(app.nodename)), replication: ReplicationScheme = Transient) extends Scope
+  case class ClusterScope(preferredNodes: Iterable[Home] = Vector(Node(nodename)), replication: ReplicationScheme = Transient) extends Scope
 
-  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == app.nodename)
+  def isHomeNode(homes: Iterable[Home]): Boolean = homes exists (home ⇒ nodeNameFor(home) == nodename)
 
   def replicationSchemeFor(deployment: Deploy): Option[ReplicationScheme] = deployment match {
     case Deploy(_, _, _, _, ClusterScope(_, replicationScheme)) ⇒ Some(replicationScheme)

@@ -21,7 +21,7 @@ import akka.performance.trading.domain.Orderbook
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TradingLatencyPerformanceSpec extends PerformanceSpec {
 
-  val clientDispatcher = app.dispatcherFactory.newDispatcher("client-dispatcher")
+  val clientDispatcher = system.dispatcherFactory.newDispatcher("client-dispatcher")
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build
@@ -38,7 +38,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
   override def beforeEach() {
     super.beforeEach()
     stat = new SynchronizedDescriptiveStatistics
-    tradingSystem = new AkkaTradingSystem(app)
+    tradingSystem = new AkkaTradingSystem(system)
     tradingSystem.start()
     TotalTradeCounter.reset()
     stat = new SynchronizedDescriptiveStatistics
@@ -99,7 +99,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
       val clients = (for (i ← 0 until numberOfClients) yield {
         val receiver = receivers(i % receivers.size)
         val props = Props(new Client(receiver, orders, latch, ordersPerClient, clientDelayMicros)).withDispatcher(clientDispatcher)
-        app.actorOf(props)
+        system.actorOf(props)
       })
 
       clients.foreach(_ ! "run")

@@ -10,7 +10,7 @@ import System.{currentTimeMillis => now}
 import java.util.concurrent.CountDownLatch
 //#imports
 
-//#app
+//#system
 object Pi extends App {
 
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
@@ -127,5 +127,5 @@ object Pi extends App {
     latch.await()
   }
 }
-//#app
+//#system
 

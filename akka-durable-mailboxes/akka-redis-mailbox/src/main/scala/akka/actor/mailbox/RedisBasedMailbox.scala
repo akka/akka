@@ -17,10 +17,13 @@ class RedisBasedMailboxException(message: String) extends AkkaException(message)
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
+
+  private val settings = RedisBasedMailboxExtension(owner.system).settings
+
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
 
-  val log = Logging(app, this)
+  val log = Logging(system, "RedisBasedMailbox")
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in redis-based mailbox [%s]".format(envelope))
@@ -57,9 +60,7 @@ class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with
   def hasMessages: Boolean = numberOfMessages > 0 //TODO review find other solution, this will be very expensive
 
   private[akka] def connect() = {
-    new RedisClientPool(
-      app.config.getString("akka.actor.mailbox.redis.hostname", "127.0.0.1"),
-      app.config.getInt("akka.actor.mailbox.redis.port", 6379))
+    new RedisClientPool(settings.Hostname, settings.Port)
   }
 
   private def withErrorHandling[T](body: ⇒ T): T = {

@@ -21,10 +21,10 @@ class TestLatchNoTimeoutException(message: String) extends RuntimeException(mess
 object TestLatch {
   val DefaultTimeout = Duration(5, TimeUnit.SECONDS)
 
-  def apply(count: Int = 1)(implicit app: ActorSystem) = new TestLatch(count)
+  def apply(count: Int = 1)(implicit system: ActorSystem) = new TestLatch(count)
 }
 
-class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
+class TestLatch(count: Int = 1)(implicit system: ActorSystem) {
   private var latch = new CountDownLatch(count)
 
   def countDown() = latch.countDown()
@@ -34,9 +34,10 @@ class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
   def await(): Boolean = await(TestLatch.DefaultTimeout)
 
   def await(timeout: Duration): Boolean = {
+    val testKitExtension = TestKitExtension(system)
     val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (!opened) throw new TestLatchTimeoutException(
-      "Timeout of %s with time factor of %s" format (timeout.toString, app.AkkaConfig.TestTimeFactor))
+      "Timeout of %s with time factor of %s" format (timeout.toString, testKitExtension.settings.TestTimeFactor))
     opened
   }
 
@@ -44,9 +45,10 @@ class TestLatch(count: Int = 1)(implicit app: ActorSystem) {
    * Timeout is expected. Throws exception if latch is opened before timeout.
    */
   def awaitTimeout(timeout: Duration = TestLatch.DefaultTimeout) = {
+    val testKitExtension = TestKitExtension(system)
     val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (opened) throw new TestLatchNoTimeoutException(
-      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, app.AkkaConfig.TestTimeFactor))
+      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, testKitExtension.settings.TestTimeFactor))
     opened
   }
 

@@ -1,14 +1,8 @@
 package akka.dispatch
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import java.util.concurrent.{ TimeUnit, CountDownLatch, BlockingQueue }
-import java.util.{ Queue }
+import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import akka.util._
-import akka.util.Duration._
-import akka.actor.{ LocalActorRef, Actor }
+import akka.util.duration._
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -23,7 +17,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
-      implicit val within = Duration(1, TimeUnit.SECONDS)
+      implicit val within = 1 second
 
       val f = spawn {
         q.dequeue
@@ -33,7 +27,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     }
 
     "create a bounded mailbox with 10 capacity and with push timeout" in {
-      val config = BoundedMailbox(10, Duration(10, TimeUnit.MILLISECONDS))
+      val config = BoundedMailbox(10, 10 milliseconds)
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
@@ -58,11 +52,11 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     }
 
     "dequeue what was enqueued properly for bounded mailboxes" in {
-      testEnqueueDequeue(BoundedMailbox(10000, Duration(-1, TimeUnit.MILLISECONDS)))
+      testEnqueueDequeue(BoundedMailbox(10000, -1 millisecond))
     }
 
     "dequeue what was enqueued properly for bounded mailboxes with pushTimeout" in {
-      testEnqueueDequeue(BoundedMailbox(10000, Duration(100, TimeUnit.MILLISECONDS)))
+      testEnqueueDequeue(BoundedMailbox(10000, 100 milliseconds))
     }
   }
 
@@ -80,7 +74,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, app.deadLetters)
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null
@@ -97,7 +91,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
   }
 
   def testEnqueueDequeue(config: MailboxType) {
-    implicit val within = Duration(10, TimeUnit.SECONDS)
+    implicit val within = 10 seconds
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 

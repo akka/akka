@@ -28,17 +28,12 @@ class MongoBasedMailboxException(message: String) extends AkkaException(message)
  */
 class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
-  implicit val mailboxBSONSer = new BSONSerializableMailbox(app)
+  implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
-  val URI_CONFIG_KEY = "akka.actor.mailbox.mongodb.uri"
-  val WRITE_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.write"
-  val READ_TIMEOUT_KEY = "akka.actor.mailbox.mongodb.timeout.read"
-  val mongoURI = app.config.getString(URI_CONFIG_KEY)
-  val writeTimeout = app.config.getInt(WRITE_TIMEOUT_KEY, 3000)
-  val readTimeout = app.config.getInt(READ_TIMEOUT_KEY, 3000)
+  private val settings = MongoBasedMailboxExtension(owner.system).settings
 
-  val log = Logging(app, this)
+  val log = Logging(system, "MongoBasedMailbox")
 
   @volatile
   private var mongo = connect()
@@ -48,7 +43,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
-    val result = new DefaultPromise[Boolean](writeTimeout)(dispatcher)
+    val result = new DefaultPromise[Boolean](settings.WriteTimeout)(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
         case Right((oid, wr)) ⇒ result.completeWithResult(true)
@@ -67,7 +62,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
-    val envelopePromise = new DefaultPromise[Envelope](readTimeout)(dispatcher)
+    val envelopePromise = new DefaultPromise[Envelope](settings.ReadTimeout)(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
         case Some(msg) ⇒ {
@@ -87,7 +82,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   }
 
   def numberOfMessages: Int = {
-    val count = new DefaultPromise[Int](readTimeout)(dispatcher)
+    val count = new DefaultPromise[Int](settings.ReadTimeout)(dispatcher)
     mongo.count()(count.completeWithResult)
     count.as[Int].getOrElse(-1)
   }
@@ -96,9 +91,9 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   def hasMessages: Boolean = numberOfMessages > 0
 
   private[akka] def connect() = {
-    require(mongoURI.isDefined, "Mongo URI (%s) must be explicitly defined in akka.conf; will not assume defaults for safety sake.".format(URI_CONFIG_KEY))
-    log.info("CONNECTING mongodb uri : [{}]", mongoURI)
-    val _dbh = MongoConnection.fromURI(mongoURI.get) match {
+    require(settings.MongoURI.isDefined, "Mongo URI (%s) must be explicitly defined in akka.conf; will not assume defaults for safety sake.".format(settings.UriConfigKey))
+    log.info("CONNECTING mongodb uri : [{}]", settings.MongoURI)
+    val _dbh = MongoConnection.fromURI(settings.MongoURI.get) match {
       case (conn, None, None) ⇒ {
         throw new UnsupportedOperationException("You must specify a database name to use with MongoDB; please see the MongoDB Connection URI Spec: 'http://www.mongodb.org/display/DOCS/Connections'")
       }

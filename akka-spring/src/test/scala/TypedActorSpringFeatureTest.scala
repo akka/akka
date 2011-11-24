@@ -60,7 +60,7 @@ class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with B
     myPojo
   }
 
-  feature("parse Spring app context") {
+  feature("parse Spring system context") {
 
     scenario("akka:typed-actor and akka:supervision and akka:dispatcher can be used as top level elements") {
       val context = new ClassPathResource("/typed-actor-config.xml")

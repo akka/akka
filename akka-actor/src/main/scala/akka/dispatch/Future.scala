@@ -262,7 +262,7 @@ object Future {
                   result completeWithResult currentValue
                 } catch {
                   case e: Exception ⇒
-                    dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+                    dispatcher.prerequisites.eventStream.publish(Error(e, "Future.fold", e.getMessage))
                     result completeWithException e
                 } finally {
                   results.clear
@@ -631,7 +631,7 @@ sealed trait Future[+T] extends japi.Future[T] {
             Right(f(res))
           } catch {
             case e: Exception ⇒
-              dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+              dispatcher.prerequisites.eventStream.publish(Error(e, "Future.map", e.getMessage))
               Left(e)
           })
       }
@@ -683,7 +683,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           future.completeWith(f(r))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+            dispatcher.prerequisites.eventStream.publish(Error(e, "Future.flatMap", e.getMessage))
             future complete Left(e)
         }
       }
@@ -716,7 +716,7 @@ sealed trait Future[+T] extends japi.Future[T] {
           if (p(res)) r else Left(new MatchError(res))
         } catch {
           case e: Exception ⇒
-            dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+            dispatcher.prerequisites.eventStream.publish(Error(e, "Future.filter", e.getMessage))
             Left(e)
         })
       }
@@ -731,29 +731,6 @@ sealed trait Future[+T] extends japi.Future[T] {
     case Some(Left(e))  ⇒ throw e
     case Some(Right(r)) ⇒ Some(r)
     case _              ⇒ None
-  }
-}
-
-package japi {
-  /* Java API */
-  trait Future[+T] { self: akka.dispatch.Future[T] ⇒
-    private[japi] final def onTimeout[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onTimeout(proc(_))
-    private[japi] final def onResult[A >: T](proc: Procedure[A]): this.type = self.onResult({ case r ⇒ proc(r.asInstanceOf[A]) }: PartialFunction[T, Unit])
-    private[japi] final def onException(proc: Procedure[Throwable]): this.type = self.onException({ case t: Throwable ⇒ proc(t) }: PartialFunction[Throwable, Unit])
-    private[japi] final def onComplete[A >: T](proc: Procedure[akka.dispatch.Future[A]]): this.type = self.onComplete(proc(_))
-    private[japi] final def map[A >: T, B](f: JFunc[A, B], timeout: Timeout): akka.dispatch.Future[B] = {
-      implicit val t = timeout
-      self.map(f(_))
-    }
-    private[japi] final def flatMap[A >: T, B](f: JFunc[A, akka.dispatch.Future[B]], timeout: Timeout): akka.dispatch.Future[B] = {
-      implicit val t = timeout
-      self.flatMap(f(_))
-    }
-    private[japi] final def foreach[A >: T](proc: Procedure[A]): Unit = self.foreach(proc(_))
-    private[japi] final def filter[A >: T](p: JFunc[A, java.lang.Boolean], timeout: Timeout): akka.dispatch.Future[A] = {
-      implicit val t = timeout
-      self.filter((a: Any) ⇒ p(a.asInstanceOf[A])).asInstanceOf[akka.dispatch.Future[A]]
-    }
   }
 }
 
@@ -811,7 +788,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+          dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
           fr completeWithException e
       }
     }
@@ -825,7 +802,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e: Exception ⇒
-          dispatcher.app.eventStream.publish(Error(e, this, e.getMessage))
+          dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
           fr completeWithException e
       }
     }
@@ -979,12 +956,12 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.app.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
                 else func(DefaultPromise.this)
               }
             }
           }
-          val timeoutFuture = dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          val timeoutFuture = dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
           onComplete(_ ⇒ timeoutFuture.cancel())
           false
         } else true
@@ -1006,18 +983,18 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.app.scheduler.scheduleOnce(this, timeLeftNoinline(), NANOS)
+                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
                 else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) })
               }
             }
           }
-          dispatcher.app.scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
           promise
       }
     } else this
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
-    try { func(this) } catch { case e ⇒ dispatcher.app.eventStream.publish(Error(e, this, "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
+    try { func(this) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
   }
 
   @inline

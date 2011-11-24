@@ -5,12 +5,10 @@ package akka.actor.mailbox
 
 import akka.util.ReflectiveAccess
 import java.lang.reflect.InvocationTargetException
-
 import akka.AkkaException
 import akka.actor.ActorCell
 import akka.actor.ActorRef
 import akka.actor.SerializedActorRef
-import akka.config.Configuration
 import akka.dispatch.Envelope
 import akka.dispatch.DefaultSystemMessageQueue
 import akka.dispatch.Dispatcher
@@ -25,6 +23,7 @@ import akka.remote.RemoteProtocol.RemoteMessageProtocol
 import akka.remote.RemoteActorRefProvider
 import akka.remote.netty.NettyRemoteServer
 import akka.serialization.Serialization
+import com.typesafe.config.Config
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -40,7 +39,7 @@ class DurableMailboxException private[akka] (message: String, cause: Throwable) 
 abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
-  def app = owner.app
+  def system = owner.system
   def ownerPath = owner.self.path
   val ownerPathString = ownerPath.path.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
@@ -54,11 +53,11 @@ trait DurableMessageSerialization {
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
     def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-      val serRef = owner.app.provider.serialize(ref)
+      val serRef = owner.system.provider.serialize(ref)
       ActorRefProtocol.newBuilder.setPath(serRef.path).setHost(serRef.hostname).setPort(serRef.port).build
     }
 
-    val message = MessageSerializer.serialize(owner.app, durableMessage.message.asInstanceOf[AnyRef])
+    val message = MessageSerializer.serialize(owner.system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
       .setMessage(message)
       .setRecipient(serializeActorRef(owner.self))
@@ -71,11 +70,11 @@ trait DurableMessageSerialization {
 
     def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = {
       val serRef = SerializedActorRef(refProtocol.getHost, refProtocol.getPort, refProtocol.getPath)
-      owner.app.provider.deserialize(serRef).getOrElse(owner.app.deadLetters)
+      owner.system.provider.deserialize(serRef).getOrElse(owner.system.deadLetters)
     }
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
-    val message = MessageSerializer.deserialize(owner.app, durableMessage.getMessage)
+    val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
     new Envelope(message, sender)
@@ -130,8 +129,9 @@ case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(
 class DurableMailboxConfigurator {
   // TODO PN #896: when and how is this class supposed to be used? Can we remove it?
 
-  def mailboxType(config: Configuration): MailboxType = {
-    val storage = config.getString("storage") map {
+  def mailboxType(config: Config): MailboxType = {
+    if (!config.hasPath("storage")) throw new DurableMailboxException("No 'storage' defined for durable mailbox")
+    config.getString("storage") match {
       case "redis"     ⇒ RedisDurableMailboxType
       case "mongodb"   ⇒ MongoDurableMailboxType
       case "beanstalk" ⇒ BeanstalkDurableMailboxType
@@ -139,7 +139,5 @@ class DurableMailboxConfigurator {
       case "file"      ⇒ FileDurableMailboxType
       case fqn         ⇒ FqnDurableMailboxType(fqn)
     }
-
-    storage.getOrElse(throw new DurableMailboxException("No 'storage' defined for durable mailbox"))
   }
 }

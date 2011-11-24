@@ -3,19 +3,17 @@ package akka.performance.workbench
 import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.enumerationAsScalaIterator
 import akka.actor.ActorSystem
 import akka.event.Logging
 import scala.collection.immutable.TreeMap
 
 class Report(
-  app: ActorSystem,
+  system: ActorSystem,
   resultRepository: BenchResultRepository,
   compareResultWith: Option[String] = None) {
 
   private def doLog = System.getProperty("benchmark.logResult", "true").toBoolean
-  val log = Logging(app, this)
+  val log = Logging(system, "Report")
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -221,11 +219,11 @@ class Report(
     sb.append("Args:\n  ").append(args)
     sb.append("\n")
 
-    sb.append("Akka version: ").append(app.AkkaConfig.ConfigVersion)
+    sb.append("Akka version: ").append(system.settings.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
-    for (key ← app.config.keys) {
-      sb.append("\n  ").append(key).append("=").append(app.config(key))
+    for ((key, value) ← system.settings.config.toObject) {
+      sb.append("\n  ").append(key).append("=").append(value)
     }
 
     sb.toString

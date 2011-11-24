@@ -4,23 +4,13 @@
 
 package akka.util
 
-import akka.dispatch.Envelope
 import akka.actor._
-import DeploymentConfig.ReplicationScheme
-import akka.config.ModuleNotAvailableException
-import akka.event.Logging.Debug
-import akka.cluster.ClusterNode
-import akka.routing.{ RoutedProps, Router }
-import akka.actor.ActorSystem
 
 object ReflectiveAccess {
 
   val loader = getClass.getClassLoader
-  val emptyParams: Array[Class[_]] = Array()
-  val emptyArguments: Array[AnyRef] = Array()
-
-  val noParams = Array[Class[_]]()
-  val noArgs = Array[AnyRef]()
+  val noParams: Array[Class[_]] = Array()
+  val noArgs: Array[AnyRef] = Array()
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
@@ -112,29 +102,3 @@ object ReflectiveAccess {
 
 }
 
-/**
- * Helper class for reflective access to different modules in order to allow optional loading of modules.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
-class ReflectiveAccess(val app: ActorSystem) {
-
-  import ReflectiveAccess._
-
-  def providerClass: Class[_] = {
-    getClassFor(app.AkkaConfig.ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-  }
-
-  def createProvider: ActorRefProvider = {
-    val params: Array[Class[_]] = Array(classOf[ActorSystem])
-    val args: Array[AnyRef] = Array(app)
-
-    createInstance[ActorRefProvider](providerClass, params, args) match {
-      case Right(p) ⇒ p
-      case Left(e)  ⇒ throw e
-    }
-  }
-}

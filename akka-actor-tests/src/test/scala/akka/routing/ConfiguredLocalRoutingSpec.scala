@@ -11,12 +11,14 @@ import akka.routing.Routing.Broadcast
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec {
 
+  val deployer = system.asInstanceOf[ActorSystemImpl].provider.deployer
+
   "round robin router" must {
 
     "be able to shut down its instance" in {
-      val path = app / "round-robin-0"
+      val path = system / "round-robin-0"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -27,7 +29,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -49,9 +51,9 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver messages in a round robin fashion" in {
-      val path = app / "round-robin-1"
+      val path = system / "round-robin-1"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -69,7 +71,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         replies = replies + (i -> 0)
       }
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
           case "hit" ⇒ sender ! id
@@ -93,9 +95,9 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver a broadcast message using the !" in {
-      val path = app / "round-robin-2"
+      val path = system / "round-robin-2"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -106,7 +108,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(5)
       val stopLatch = new CountDownLatch(5)
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }
@@ -127,9 +129,9 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
   "random router" must {
 
     "be able to shut down its instance" in {
-      val path = app / "random-0"
+      val path = system / "random-0"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -139,7 +141,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
 
       val stopLatch = new CountDownLatch(7)
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ {}
         }
@@ -160,9 +162,9 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver messages in a random fashion" in {
-      val path = app / "random-1"
+      val path = system / "random-1"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -180,7 +182,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
         replies = replies + (i -> 0)
       }
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
           case "hit" ⇒ sender ! id
@@ -204,9 +206,9 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
     }
 
     "deliver a broadcast message using the !" in {
-      val path = app / "random-2"
+      val path = system / "random-2"
 
-      app.provider.deployer.deploy(
+      deployer.deploy(
         Deploy(
           path.toString,
           None,
@@ -217,7 +219,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec {
       val helloLatch = new CountDownLatch(6)
       val stopLatch = new CountDownLatch(6)
 
-      val actor = app.actorOf(Props(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "hello" ⇒ helloLatch.countDown()
         }

@@ -7,12 +7,15 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.reflect.{ Manifest }
 import akka.dispatch._
 import akka.testkit.AkkaSpec
-import akka.config.Configuration
+import scala.collection.JavaConverters._
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec {
 
-  import app.dispatcherFactory._
+  val df = system.dispatcherFactory
+  import df._
 
   val tipe = "type"
   val keepalivems = "keep-alive-time"
@@ -30,19 +33,45 @@ class DispatchersSpec extends AkkaSpec {
 
   def validTypes = typesAndValidators.keys.toList
 
+  val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
+
+  val dispatcherConf = ConfigFactory.parseString("""
+      myapp {
+        mydispatcher {
+          throughput = 17
+        }
+      }
+      """, ConfigParseOptions.defaults)
+
   lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
-    validTypes.map(t ⇒ (t, from(Configuration.fromMap(Map(tipe -> t))))).toMap
+    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t).asJava).withFallback(defaultDispatcherConfig)))).toMap
   }
 
   "Dispatchers" must {
 
-    "yield None if type is missing" in {
-      assert(from(Configuration.fromMap(Map())) === None)
+    "use default dispatcher if type is missing" in {
+      val dispatcher = from(ConfigFactory.empty.withFallback(defaultDispatcherConfig))
+      dispatcher.map(_.name) must be(Some("DefaultDispatcher"))
+    }
+
+    "use defined properties" in {
+      val dispatcher = from(ConfigFactory.parseMap(Map("throughput" -> 17).asJava).withFallback(defaultDispatcherConfig))
+      dispatcher.map(_.throughput) must be(Some(17))
+    }
+
+    "use defined properties when fromConfig" in {
+      val dispatcher = fromConfig("myapp.mydispatcher", cfg = dispatcherConf)
+      dispatcher.throughput must be(17)
+    }
+
+    "use specific name when fromConfig" in {
+      val dispatcher = fromConfig("myapp.mydispatcher", cfg = dispatcherConf)
+      dispatcher.name must be("mydispatcher")
     }
 
     "throw IllegalArgumentException if type does not exist" in {
       intercept[IllegalArgumentException] {
-        from(Configuration.fromMap(Map(tipe -> "typedoesntexist")))
+        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist").asJava).withFallback(defaultDispatcherConfig))
       }
     }
 
@@ -53,9 +82,6 @@ class DispatchersSpec extends AkkaSpec {
       assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1).get)))
     }
 
-    "default to default while loading the default" in {
-      assert(from(Configuration.fromMap(Map())).getOrElse(defaultGlobalDispatcher) == defaultGlobalDispatcher)
-    }
   }
 
 }

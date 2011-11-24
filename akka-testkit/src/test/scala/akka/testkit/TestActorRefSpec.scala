@@ -160,7 +160,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
         expectMsgPF(5 seconds) {
           case Terminated(`a`) ⇒ true
         }
-        a must be('shutdown)
+        a.isTerminated must be(true)
         assertThread
       }
     }
@@ -170,8 +170,8 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
-
-          val ref = new TestActorRef(app, Props(new TActor {
+          val impl = system.asInstanceOf[ActorSystemImpl]
+          val ref = new TestActorRef(impl, impl.dispatcherFactory.prerequisites, Props(new TActor {
             def receiveT = { case _ ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
             override def postRestart(reason: Throwable) { counter -= 1 }
@@ -224,7 +224,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     "proxy apply for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       ref("work")
-      ref.isShutdown must be(true)
+      ref.isTerminated must be(true)
     }
 
   }

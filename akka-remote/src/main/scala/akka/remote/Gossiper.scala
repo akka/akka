@@ -8,17 +8,16 @@ import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
 import akka.util.duration._
+import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
-
 import java.util.concurrent.atomic.AtomicReference
 import java.security.SecureRandom
 import System.{ currentTimeMillis ⇒ newTimestamp }
-
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
-
 import com.google.protobuf.ByteString
+import akka.serialization.SerializationExtension
 
 /**
  * Interface for node membership change listener.
@@ -101,13 +100,15 @@ class Gossiper(remote: Remote) {
     currentGossip: Gossip,
     nodeMembershipChangeListeners: Set[NodeMembershipChangeListener] = Set.empty[NodeMembershipChangeListener])
 
-  private val app = remote.app
-  private val log = Logging(app, this)
+  private val system = remote.system
+  private val remoteExtension = RemoteExtension(system)
+  private val serializationExtension = SerializationExtension(system)
+  private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
-  private val connectionManager = new RemoteConnectionManager(app, remote, Map.empty[RemoteAddress, ActorRef])
+  private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[RemoteAddress, ActorRef])
   private val seeds = Set(address) // FIXME read in list of seeds from config
 
-  private val address = app.address
+  private val address = system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
@@ -122,8 +123,8 @@ class Gossiper(remote: Remote) {
 
   {
     // start periodic gossip and cluster scrutinization - default is run them every second with 1/2 second in between
-    app.scheduler schedule (() ⇒ initateGossip(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
-    app.scheduler schedule (() ⇒ scrutinize(), initalDelayForGossip.toSeconds, gossipFrequency.toSeconds, timeUnit)
+    system.scheduler schedule (() ⇒ initateGossip(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
+    system.scheduler schedule (() ⇒ scrutinize(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
   }
 
   /**
@@ -153,7 +154,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ RemoteActorRef(remote.server, gossipingNode, remote.remoteDaemon.path, None)
+          val connectionFactory = () ⇒ RemoteActorRef(remote.system.provider, remote.server, gossipingNode, remote.remoteDaemon.path, None)
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }
@@ -237,7 +238,7 @@ class Gossiper(remote: Remote) {
       throw new IllegalStateException("Connection for [" + peer + "] is not set up"))
 
     try {
-      (connection ? (toRemoteMessage(newGossip), remote.remoteSystemDaemonAckTimeout)).as[Status] match {
+      (connection ? (toRemoteMessage(newGossip), remoteExtension.settings.RemoteSystemDaemonAckTimeout)).as[Status] match {
         case Some(Success(receiver)) ⇒
           log.debug("Gossip sent to [{}] was successfully received", receiver)
 
@@ -299,7 +300,7 @@ class Gossiper(remote: Remote) {
   }
 
   private def toRemoteMessage(gossip: Gossip): RemoteProtocol.RemoteSystemDaemonMessageProtocol = {
-    val gossipAsBytes = app.serialization.serialize(gossip) match {
+    val gossipAsBytes = serializationExtension.serialization.serialize(gossip) match {
       case Left(error)  ⇒ throw error
       case Right(bytes) ⇒ bytes
     }

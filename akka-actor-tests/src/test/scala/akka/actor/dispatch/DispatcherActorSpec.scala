@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.actor.{ Props, Actor }
+import akka.util.Duration
+import akka.util.duration._
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -33,22 +35,22 @@ class DispatcherActorSpec extends AkkaSpec {
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
-      val actor = actorOf(Props[OneWayTestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+      val actor = actorOf(Props[OneWayTestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
       val result = actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       actor.stop()
     }
 
     "support ask/reply" in {
-      val actor = actorOf(Props[TestActor].withDispatcher(app.dispatcherFactory.newDispatcher("test").build))
+      val actor = actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
       actor.stop()
     }
 
     "respect the throughput setting" in {
-      val throughputDispatcher = app.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 101, 0, app.dispatcherFactory.MailboxType).
+      val throughputDispatcher = system.dispatcherFactory.
+        newDispatcher("THROUGHPUT", 101, Duration.Zero, system.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
 
@@ -75,9 +77,9 @@ class DispatcherActorSpec extends AkkaSpec {
     }
 
     "respect throughput deadline" in {
-      val deadlineMs = 100
-      val throughputDispatcher = app.dispatcherFactory.
-        newDispatcher("THROUGHPUT", 2, deadlineMs, app.dispatcherFactory.MailboxType).
+      val deadline = 100 millis
+      val throughputDispatcher = system.dispatcherFactory.
+        newDispatcher("THROUGHPUT", 2, deadline, system.dispatcherFactory.MailboxType).
         setCorePoolSize(1).
         build
       val works = new AtomicBoolean(true)
@@ -100,7 +102,7 @@ class DispatcherActorSpec extends AkkaSpec {
       slowOne ! "ping"
       fastOne ! "ping"
       assert(ready.await(2, TimeUnit.SECONDS) === true)
-      Thread.sleep(deadlineMs + 10) // wait just a bit more than the deadline
+      Thread.sleep(deadline.toMillis + 10) // wait just a bit more than the deadline
       start.countDown()
       assert(latch.await(2, TimeUnit.SECONDS) === true)
     }

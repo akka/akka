@@ -71,16 +71,17 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  *
  * It should be noted that for CI servers and the like all maximum Durations
  * are scaled using their Duration.dilated method, which uses the
- * Duration.timeFactor settable via akka.conf entry "akka.test.timefactor".
+ * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
  *
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_app: ActorSystem) {
+class TestKit(_system: ActorSystem) {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val app = _app
+  implicit val system = _system
+  val testKitExtension = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -91,8 +92,12 @@ class TestKit(_app: ActorSystem) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = app.systemActorOf(Props(new TestActor(queue)).copy(dispatcher = new CallingThreadDispatcher(app)),
-    "testActor" + TestKit.testActorId.incrementAndGet)
+  val testActor: ActorRef = {
+    val impl = system.asInstanceOf[ActorSystemImpl]
+    impl.systemActorOf(Props(new TestActor(queue))
+      .copy(dispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites)),
+      "testActor" + TestKit.testActorId.incrementAndGet)
+  }
 
   private var end: Duration = Duration.Undefined
 
@@ -121,9 +126,9 @@ class TestKit(_app: ActorSystem) {
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
-   * case from AkkaConfig (key "akka.test.single-expect-default").
+   * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) app.AkkaConfig.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) testKitExtension.settings.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.
@@ -137,7 +142,8 @@ class TestKit(_app: ActorSystem) {
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
    *
-   * Note that the timeout is scaled using Duration.timeFactor.
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
    */
   def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
     val _max = if (max eq Duration.Undefined) remaining else max.dilated
@@ -161,8 +167,8 @@ class TestKit(_app: ActorSystem) {
    * take maximum wait times are available in a version which implicitly uses
    * the remaining time governed by the innermost enclosing `within` block.
    *
-   * Note that the max Duration is scaled by Duration.timeFactor while the min
-   * Duration is not.
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor", while the min Duration is not.
    *
    * <pre>
    * val ret = within(50 millis) {
@@ -531,7 +537,8 @@ object TestKit {
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
    *
-   * Note that the timeout is scaled using Duration.timeFactor.
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.test.timefactor"
    */
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max
@@ -557,6 +564,14 @@ object TestKit {
    * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
    */
   def now: Duration = System.nanoTime().nanos
+
+  /**
+   * Java API. Scale timeouts (durations) during tests with the configured
+   * 'akka.test.timefactor'.
+   */
+  def dilated(duration: Duration, system: ActorSystem): Duration = {
+    duration * TestKitExtension(system).settings.TestTimeFactor
+  }
 
 }
 
@@ -594,9 +609,9 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 }
 
 object TestProbe {
-  def apply()(implicit app: ActorSystem) = new TestProbe(app)
+  def apply()(implicit system: ActorSystem) = new TestProbe(system)
 }
 
 trait ImplicitSender { this: TestKit ⇒
-  implicit def implicitSenderTestActor = testActor
+  implicit def self = testActor
 }

@@ -5,6 +5,7 @@ package akka.actor.mailbox
 
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.LocalActorRef
 import akka.util.Duration
 import akka.AkkaException
@@ -20,15 +21,11 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
  */
 class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val hostname = app.config.getString("akka.actor.mailbox.beanstalk.hostname", "0.0.0.0")
-  val port = app.config.getInt("akka.actor.mailbox.beanstalk.port", 11300)
-  def defaultTimeUnit = app.AkkaConfig.DefaultTimeUnit
-  val reconnectWindow = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.reconnect-window", 5), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitDelay = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-delay", 0), defaultTimeUnit).toSeconds.toInt
-  val messageSubmitTimeout = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-submit-timeout", 5), defaultTimeUnit).toSeconds.toInt
-  val messageTimeToLive = Duration(app.config.getInt("akka.actor.mailbox.beanstalk.message-time-to-live", 120), defaultTimeUnit).toSeconds.toInt
+  private val settings = BeanstalkBasedMailboxExtension(owner.system).settings
+  private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
+  private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
 
-  val log = Logging(app, this)
+  val log = Logging(system, "BeanstalkBasedMailbox")
 
   private val queue = new ThreadLocal[Client] { override def initialValue = connect(name) }
 
@@ -36,7 +33,7 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
-    Some(queue.get.put(65536, messageSubmitDelay, messageTimeToLive, serialize(envelope)).toInt)
+    Some(queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt)
   }
 
   def dequeue(): Envelope = try {
@@ -87,15 +84,16 @@ class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
     while (!connected) {
       attempts += 1
       try {
-        client = new ClientImpl(hostname, port)
+        client = new ClientImpl(settings.Hostname, settings.Port)
         client.useTube(name)
         client.watch(name)
         connected = true
       } catch {
         case e: Exception ⇒
-          log.error(e, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".format(reconnectWindow, e))
+          log.error(e, "Unable to connect to Beanstalk. Retrying in [%s] seconds: %s".
+            format(settings.ReconnectWindow.toSeconds, e))
           try {
-            Thread.sleep(1000 * reconnectWindow)
+            Thread.sleep(settings.ReconnectWindow.toMillis)
           } catch {
             case e: InterruptedException ⇒ {}
           }

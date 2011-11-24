@@ -11,7 +11,7 @@ import org.junit.{ After, Test }
 class CallingThreadDispatcherModelSpec extends ActorModelSpec {
   import ActorModelSpec._
 
-  def newInterceptedDispatcher = new CallingThreadDispatcher(app, "test") with MessageDispatcherInterceptor
+  def newInterceptedDispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites, "test") with MessageDispatcherInterceptor
   def dispatcherType = "Calling Thread Dispatcher"
 
 }

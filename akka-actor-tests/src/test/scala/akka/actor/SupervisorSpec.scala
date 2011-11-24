@@ -9,7 +9,7 @@ import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
 import akka.testkit.TestEvent._
-import akka.testkit.{ EventFilter, ImplicitSender, AkkaSpec, filterEvents }
+import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -121,7 +121,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   }
 
   override def atStartup() {
-    app.eventStream.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
+    system.eventStream.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
   }
 
   override def beforeEach() = {

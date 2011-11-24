@@ -42,7 +42,7 @@ object IOActorSpec {
 
   class SimpleEchoClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
-    lazy val socket: SocketHandle = connect(ioManager, host, port, reader)
+    lazy val socket: SocketHandle = connect(ioManager, host, port)(reader)
     lazy val reader: ActorRef = context.actorOf {
       new Actor with IO {
         def receiveIO = {

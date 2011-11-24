@@ -159,7 +159,7 @@ object Routing {
 /**
  * An Abstract convenience implementation for building an ActorReference that uses a Router.
  */
-abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val props: RoutedProps) extends MinimalActorRef {
+abstract private[akka] class AbstractRoutedActorRef(val system: ActorSystem, val props: RoutedProps) extends MinimalActorRef {
   val router = props.routerFactory()
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = router.route(message)(sender)
@@ -171,7 +171,7 @@ abstract private[akka] class AbstractRoutedActorRef(val app: ActorSystem, val pr
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(app: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(app, routedProps) {
+private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(system, routedProps) {
 
   val path = supervisor.path / name
 
@@ -181,7 +181,7 @@ private[akka] class RoutedActorRef(app: ActorSystem, val routedProps: RoutedProp
   @volatile
   private var running: Boolean = true
 
-  override def isShutdown: Boolean = !running
+  override def isTerminated: Boolean = !running
 
   override def stop() {
     synchronized {
@@ -444,7 +444,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
   private def scatterGather[S, G >: S](message: Any, timeout: Timeout): Future[G] = {
     val responses = connectionManager.connections.iterable.flatMap { actor ⇒
       try {
-        if (actor.isShutdown) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
+        if (actor.isTerminated) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
         Some(actor.?(message, timeout).asInstanceOf[Future[S]])
       } catch {
         case e: Exception ⇒

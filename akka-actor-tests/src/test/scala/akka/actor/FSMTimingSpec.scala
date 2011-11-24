@@ -24,7 +24,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
 
   "A Finite State Machine" must {
 
-    "receive StateTimeout" in {
+    "receive StateTimeout" taggedAs TimingTest in {
       within(1 second) {
         within(500 millis, 1 second) {
           fsm ! TestStateTimeout
@@ -34,7 +34,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "cancel a StateTimeout" in {
+    "cancel a StateTimeout" taggedAs TimingTest in {
       within(1 second) {
         fsm ! TestStateTimeout
         fsm ! Cancel
@@ -44,7 +44,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "allow StateTimeout override" in {
+    "allow StateTimeout override" taggedAs TimingTest in {
       within(500 millis) {
         fsm ! TestStateTimeoutOverride
         expectNoMsg
@@ -56,8 +56,8 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "receive single-shot timer" in {
-      within(1.5 seconds) {
+    "receive single-shot timer" taggedAs TimingTest in {
+      within(2 seconds) {
         within(500 millis, 1 second) {
           fsm ! TestSingleTimer
           expectMsg(Tick)
@@ -67,7 +67,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "correctly cancel a named timer" in {
+    "correctly cancel a named timer" taggedAs TimingTest in {
       fsm ! TestCancelTimer
       within(500 millis) {
         fsm ! Tick
@@ -80,7 +80,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       expectMsg(1 second, Transition(fsm, TestCancelTimer, Initial))
     }
 
-    "not get confused between named and state timers" in {
+    "not get confused between named and state timers" taggedAs TimingTest in {
       fsm ! TestCancelStateTimerInNamedTimerMessage
       fsm ! Tick
       expectMsg(500 millis, Tick)
@@ -94,7 +94,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "receive and cancel a repeated timer" in {
+    "receive and cancel a repeated timer" taggedAs TimingTest in {
       fsm ! TestRepeatedTimer
       val seq = receiveWhile(2 seconds) {
         case Tick ⇒ Tick
@@ -105,9 +105,9 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
-    "notify unhandled messages" in {
-      filterEvents(EventFilter.warning("unhandled event Tick in state TestUnhandled", source = fsm, occurrences = 1),
-        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled", source = fsm, occurrences = 1)) {
+    "notify unhandled messages" taggedAs TimingTest in {
+      filterEvents(EventFilter.warning("unhandled event Tick in state TestUnhandled", source = fsm.toString, occurrences = 1),
+        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled", source = fsm.toString, occurrences = 1)) {
           fsm ! TestUnhandled
           within(1 second) {
             fsm ! Tick
@@ -182,7 +182,7 @@ object FSMTimingSpec {
     when(TestCancelTimer) {
       case Ev(Tick) ⇒
         setTimer("hallo", Tock, 1 milli, false)
-        TestKit.awaitCond(context.hasMessages, 1 second)
+        TestKit.awaitCond(!context.dispatcher.mailboxIsEmpty(context.asInstanceOf[ActorCell]), 1 second)
         cancelTimer("hallo")
         sender ! Tick
         setTimer("hallo", Tock, 500 millis, false)
@@ -209,7 +209,7 @@ object FSMTimingSpec {
       case Ev(Tick) ⇒
         suspend(self)
         setTimer("named", Tock, 1 millis, false)
-        TestKit.awaitCond(context.hasMessages, 1 second)
+        TestKit.awaitCond(!context.dispatcher.mailboxIsEmpty(context.asInstanceOf[ActorCell]), 1 second)
         stay forMax (1 millis) replying Tick
       case Ev(Tock) ⇒
         goto(TestCancelStateTimerInNamedTimerMessage2)

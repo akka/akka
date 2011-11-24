@@ -10,6 +10,7 @@ import akka.util.Duration
 import akka.event.Logging.{ Warning, Error }
 import akka.actor.ActorSystem
 import java.util.concurrent._
+import akka.event.EventStream
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -63,8 +64,7 @@ trait ExecutorServiceFactoryProvider {
 /**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
-case class ThreadPoolConfig(app: ActorSystem,
-                            allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
+case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
                             corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,

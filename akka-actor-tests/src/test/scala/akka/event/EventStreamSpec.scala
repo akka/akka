@@ -4,17 +4,29 @@
 package akka.event
 
 import akka.testkit.AkkaSpec
-import akka.config.Configuration
 import akka.util.duration._
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+import scala.collection.JavaConverters._
+import akka.actor.ActorSystem
 
 object EventStreamSpec {
+
+  val config = ConfigFactory.parseString("""
+      akka {
+        stdout-loglevel = WARNING
+        loglevel = INFO
+        event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
+      }
+      """.format(Logging.StandardOutLoggerName), ConfigParseOptions.defaults)
+
   case class M(i: Int)
 
   case class SetTarget(ref: ActorRef)
 
   class MyLog extends Actor {
-    var dst: ActorRef = app.deadLetters
+    var dst: ActorRef = system.deadLetters
     def receive = {
       case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget]); sender ! Logging.LoggerInitialized
       case SetTarget(ref)                ⇒ dst = ref; dst ! "OK"
@@ -29,18 +41,18 @@ object EventStreamSpec {
   class C extends B1
 }
 
-class EventStreamSpec extends AkkaSpec(Configuration(
-  "akka.stdout-loglevel" -> "WARNING",
-  "akka.loglevel" -> "INFO",
-  "akka.event-handlers" -> Seq("akka.event.EventStreamSpec$MyLog", Logging.StandardOutLoggerName))) {
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   import EventStreamSpec._
+
+  val impl = system.asInstanceOf[ActorSystemImpl]
 
   "An EventStream" must {
 
     "manage subscriptions" in {
       val bus = new EventStream(true)
-      bus.start(app)
+      bus.start(impl)
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
       within(1 second) {
@@ -53,8 +65,8 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
     "manage log levels" in {
       val bus = new EventStream(false)
-      bus.start(app)
-      bus.startDefaultLoggers(app, app.AkkaConfig)
+      bus.start(impl)
+      bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
       within(2 seconds) {
@@ -75,7 +87,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
       val b2 = new B2
       val c = new C
       val bus = new EventStream(false)
-      bus.start(app)
+      bus.start(impl)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) === true
         bus.publish(c)
@@ -100,7 +112,7 @@ class EventStreamSpec extends AkkaSpec(Configuration(
 
   private def verifyLevel(bus: LoggingBus, level: Logging.LogLevel) {
     import Logging._
-    val allmsg = Seq(Debug(this, "debug"), Info(this, "info"), Warning(this, "warning"), Error(this, "error"))
+    val allmsg = Seq(Debug("", "debug"), Info("", "info"), Warning("", "warning"), Error("", "error"))
     val msg = allmsg filter (_.level <= level)
     allmsg foreach bus.publish
     msg foreach (x ⇒ expectMsg(x))

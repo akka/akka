@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.remote.RemoteAddress
+
 object ActorPath {
   final val separator = "/"
 
@@ -12,14 +14,14 @@ object ActorPath {
   /**
    * Create an actor path from a string.
    */
-  def apply(app: ActorSystem, path: String): ActorPath =
-    apply(app, split(path))
+  def apply(system: ActorSystem, path: String): ActorPath =
+    apply(system, split(path))
 
   /**
    * Create an actor path from an iterable.
    */
-  def apply(app: ActorSystem, path: Iterable[String]): ActorPath =
-    path.foldLeft(app.root)(_ / _)
+  def apply(system: ActorSystem, path: Iterable[String]): ActorPath =
+    path.foldLeft(system.asInstanceOf[ActorSystemImpl].provider.rootPath)(_ / _)
 
   /**
    * Split a string path into an iterable.
@@ -58,9 +60,9 @@ object ActorPath {
  */
 trait ActorPath {
   /**
-   * The akka application for this path.
+   * The RemoteAddress for this path.
    */
-  def app: ActorSystem
+  def remoteAddress: RemoteAddress
 
   /**
    * The name of the actor that this path refers to.
@@ -78,9 +80,9 @@ trait ActorPath {
   def /(child: String): ActorPath
 
   /**
-   * Find the ActorRef for this path.
+   * Recursively create a descendant’s path by appending all child names.
    */
-  def ref: Option[ActorRef]
+  def /(child: Iterable[String]): ActorPath = (this /: child)(_ / _)
 
   /**
    * String representation of this path. Different from toString for root path.
@@ -98,15 +100,13 @@ trait ActorPath {
   def isRoot: Boolean
 }
 
-class RootActorPath(val app: ActorSystem) extends ActorPath {
+class RootActorPath(val remoteAddress: RemoteAddress) extends ActorPath {
 
   def name: String = "/"
 
   def parent: ActorPath = this
 
-  def /(child: String): ActorPath = new ChildActorPath(app, this, child)
-
-  def ref: Option[ActorRef] = app.actorFor(path)
+  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
 
   def string: String = ""
 
@@ -117,11 +117,9 @@ class RootActorPath(val app: ActorSystem) extends ActorPath {
   override def toString = ActorPath.separator
 }
 
-class ChildActorPath(val app: ActorSystem, val parent: ActorPath, val name: String) extends ActorPath {
+class ChildActorPath(val remoteAddress: RemoteAddress, val parent: ActorPath, val name: String) extends ActorPath {
 
-  def /(child: String): ActorPath = new ChildActorPath(app, this, child)
-
-  def ref: Option[ActorRef] = app.actorFor(path)
+  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
 
   def string: String = parent.string + ActorPath.separator + name
 
