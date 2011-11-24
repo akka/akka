@@ -21,11 +21,11 @@ import java.io.File
 import java.util.concurrent.CountDownLatch
 import scala.collection.mutable
 import akka.event.LoggingAdapter
-import com.typesafe.config.Config
+import akka.actor.mailbox.FileBasedMailboxExtension
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
 
-class QueueCollection(queueFolder: String, private var queueConfigs: Config, log: LoggingAdapter) {
+class QueueCollection(queueFolder: String, settings: FileBasedMailboxExtension.Settings, log: LoggingAdapter) {
   private val path = new File(queueFolder)
 
   if (!path.isDirectory) {
@@ -45,13 +45,6 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Config, log
   // hits/misses on removing items from the queue
   val queueHits = new Counter()
   val queueMisses = new Counter()
-
-  /* FIXME, segment commented out, might have damaged semantics, investigate.
-  queueConfigs.subscribe { c =>
-    synchronized {
-      queueConfigs = c.getOrElse(new Config)
-    }
-  }*/
 
   // preload any queues
   def loadQueues() {
@@ -79,9 +72,9 @@ class QueueCollection(queueFolder: String, private var queueConfigs: Config, log
           val master = name.split('+')(0)
           fanout_queues.getOrElseUpdate(master, new mutable.HashSet[String]) += name
           log.debug("Fanout queue {} added to {}", name, master)
-          new PersistentQueue(path.getPath, name, queueConfigs, log)
+          new PersistentQueue(path.getPath, name, settings, log)
         } else {
-          new PersistentQueue(path.getPath, name, queueConfigs, log)
+          new PersistentQueue(path.getPath, name, settings, log)
         }
         q.setup
         queues(name) = q

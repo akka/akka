@@ -1,17 +1,32 @@
-package akka.actor
+package akka.remote
 
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterSpec extends AkkaSpec {
+class RemoteConfigSpec extends AkkaSpec {
 
   "ClusterSpec: A Deployer" must {
     "be able to parse 'akka.actor.cluster._' config elements" in {
 
-      // TODO: make it use its own special config?
-      val config = system.settings.config
+      val config = RemoteExtension(system).settings.config
       import config._
 
+      //akka.remote.server
+      getInt("akka.remote.server.port") must equal(2552)
+      getInt("akka.remote.server.message-frame-size") must equal(1048576)
+      getMilliseconds("akka.remote.server.connection-timeout") must equal(120 * 1000)
+      getBoolean("akka.remote.server.require-cookie") must equal(false)
+      getBoolean("akka.remote.server.untrusted-mode") must equal(false)
+      getInt("akka.remote.server.backlog") must equal(4096)
+
+      //akka.remote.client
+      getBoolean("akka.remote.client.buffering.retry-message-send-on-failure") must equal(false)
+      getInt("akka.remote.client.buffering.capacity") must equal(-1)
+      getMilliseconds("akka.remote.client.reconnect-delay") must equal(5 * 1000)
+      getMilliseconds("akka.remote.client.read-timeout") must equal(3600 * 1000)
+      getMilliseconds("akka.remote.client.reconnection-time-window") must equal(600 * 1000)
+
+      // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
       //akka.cluster
       getString("akka.cluster.name") must equal("test-cluster")
       getString("akka.cluster.zookeeper-server-addresses") must equal("localhost:2181")
@@ -34,21 +49,6 @@ class ClusterSpec extends AkkaSpec {
       getInt("akka.cluster.replication.snapshot-frequency") must equal(1000)
       getMilliseconds("akka.cluster.replication.timeout") must equal(30 * 1000)
 
-      //akka.remote.server
-      getInt("akka.remote.server.port") must equal(2552)
-      getInt("akka.remote.server.message-frame-size") must equal(1048576)
-      getMilliseconds("akka.remote.server.connection-timeout") must equal(120 * 1000)
-      getBoolean("akka.remote.server.require-cookie") must equal(false)
-      getBoolean("akka.remote.server.untrusted-mode") must equal(false)
-      getInt("akka.remote.server.backlog") must equal(4096)
-
-      //akka.remote.client
-      getBoolean("akka.remote.client.buffering.retry-message-send-on-failure") must equal(false)
-      getInt("akka.remote.client.buffering.capacity") must equal(-1)
-      getMilliseconds("akka.remote.client.reconnect-delay") must equal(5 * 1000)
-      getMilliseconds("akka.remote.client.read-timeout") must equal(3600 * 1000)
-      getMilliseconds("akka.remote.client.reap-futures-delay") must equal(5 * 1000)
-      getMilliseconds("akka.remote.client.reconnection-time-window") must equal(600 * 1000)
     }
   }
 }

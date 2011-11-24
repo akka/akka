@@ -9,7 +9,7 @@ import akka.util.duration._
 import akka.{ Die, Ping }
 import akka.actor.Actor._
 import akka.testkit.TestEvent._
-import akka.testkit.{ EventFilter, ImplicitSender, AkkaSpec, filterEvents }
+import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 

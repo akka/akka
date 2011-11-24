@@ -22,18 +22,17 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
  */
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  val zkServerAddresses = system.settings.config.getString("akka.actor.mailbox.zookeeper.server-addresses")
-  val sessionTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.zookeeper.session-timeout"), MILLISECONDS)
-  val connectionTimeout = Duration(system.settings.config.getMilliseconds("akka.actor.mailbox.zookeeper.connection-timeout"), MILLISECONDS)
-  val blockingQueue = system.settings.config.getBoolean("akka.actor.mailbox.zookeeper.blocking-queue")
-
+  private val settings = ZooKeeperBasedMailboxExtension(owner.system).settings
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
   val log = Logging(system, "ZooKeeperBasedMailbox")
 
-  private val zkClient = new AkkaZkClient(zkServerAddresses, sessionTimeout, connectionTimeout)
-  private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), blockingQueue)
+  private val zkClient = new AkkaZkClient(
+    settings.ZkServerAddresses,
+    settings.SessionTimeout,
+    settings.ConnectionTimeout)
+  private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), settings.BlockingQueue)
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in zookeeper-based mailbox [%s]".format(envelope))

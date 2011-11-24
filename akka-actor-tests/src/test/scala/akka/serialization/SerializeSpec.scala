@@ -10,8 +10,30 @@ import akka.testkit.AkkaSpec
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import akka.actor.DeadLetterActorRef
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
 
 object SerializeSpec {
+
+  val serializationConf = ConfigFactory.parseString("""
+    akka {
+      actor {
+        serializers {
+          java = "akka.serialization.JavaSerializer"
+          proto = "akka.testing.ProtobufSerializer"
+          sjson = "akka.testing.SJSONSerializer"
+          default = "akka.serialization.JavaSerializer"
+        }
+    
+        serialization-bindings {
+          java = ["akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
+          sjson = ["akka.serialization.SerializeSpec$Person"]
+          proto = ["com.google.protobuf.Message", "akka.actor.ProtobufProtocol$MyMessage"]
+        }
+      }
+    }
+  """, ConfigParseOptions.defaults)
+
   @BeanInfo
   case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
   @BeanInfo
@@ -21,16 +43,23 @@ object SerializeSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SerializeSpec extends AkkaSpec {
+class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
   import SerializeSpec._
 
-  val ser = system.serialization
+  val ser = SerializationExtension(system).serialization
   import ser._
+
+  val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
+  val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
 
   "Serialization" must {
 
+    "have correct bindings" in {
+      ser.bindings(addr.getClass.getName) must be("java")
+      ser.bindings(person.getClass.getName) must be("sjson")
+    }
+
     "serialize Address" in {
-      val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
       val b = serialize(addr) match {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
@@ -42,7 +71,7 @@ class SerializeSpec extends AkkaSpec {
     }
 
     "serialize Person" in {
-      val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+
       val b = serialize(person) match {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
@@ -54,7 +83,7 @@ class SerializeSpec extends AkkaSpec {
     }
 
     "serialize record with default serializer" in {
-      val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+
       val r = Record(100, person)
       val b = serialize(r) match {
         case Left(exception) ⇒ fail(exception)
