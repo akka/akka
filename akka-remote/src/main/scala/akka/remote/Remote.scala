@@ -71,22 +71,21 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   lazy val eventStream = new NetworkEventStream(system)
 
-  lazy val server: RemoteSupport = {
-    val remote = new akka.remote.netty.NettyRemoteSupport(system)
+  @volatile
+  private var _server: RemoteSupport = _
+  def server = _server
+
+  def start(): Unit = {
+    val remote = new akka.remote.netty.NettyRemoteSupport(system, this)
     remote.start() //TODO FIXME Any application loader here?
 
     system.eventStream.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
     system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
-    // TODO actually register this provider in system in remote mode
-    //provider.register(ActorRefProvider.RemoteProvider, new RemoteActorRefProvider)
-    remote
-  }
+    _server = remote
 
-  def start(): Unit = {
-    val serverAddress = server.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress //Force init of server
     val daemonAddress = remoteDaemon.address //Force init of daemon
-    log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
+    log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", remoteAddress, daemonAddress)
   }
 }
 

@@ -102,7 +102,7 @@ class RemoteActorRefProvider(
                 //   case FailureDetectorType.Custom(implClass)              ⇒ FailureDetector.createCustomFailureDetector(implClass)
                 // }
 
-                def isReplicaNode: Boolean = remoteAddresses exists { _ == rootPath.remoteAddress }
+                def isReplicaNode: Boolean = remoteAddresses exists { _ == remote.remoteAddress }
 
                 //system.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(system.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
 
@@ -204,10 +204,10 @@ class RemoteActorRefProvider(
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
     val remoteAddress = RemoteAddress(actor.hostname, actor.port)
-    if (optimizeLocalScoped_? && remoteAddress == rootPath.remoteAddress) {
+    if (optimizeLocalScoped_? && remoteAddress == remote.remoteAddress) {
       local.actorFor(ActorPath.split(actor.path))
     } else {
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", rootPath.remoteAddress, actor.path, remoteAddress)
+      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", remote.remoteAddress, actor.path, remoteAddress)
       Some(RemoteActorRef(remote.system.provider, remote.server, remoteAddress, rootPath / ActorPath.split(actor.path), None)) //Should it be None here
     }
   }

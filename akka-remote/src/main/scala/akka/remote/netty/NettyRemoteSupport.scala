@@ -95,8 +95,8 @@ abstract class RemoteClient private[akka] (
 }
 
 class PassiveRemoteClient(val currentChannel: Channel,
-  remoteSupport: NettyRemoteSupport,
-  remoteAddress: RemoteAddress)
+                          remoteSupport: NettyRemoteSupport,
+                          remoteAddress: RemoteAddress)
   extends RemoteClient(remoteSupport, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
@@ -141,7 +141,7 @@ class ActiveRemoteClient private[akka] (
 
   def currentChannel = connection.getChannel
 
-  private val senderRemoteAddress = remoteSupport.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+  private val senderRemoteAddress = remoteSupport.remote.remoteAddress
 
   /**
    * Connect to remote server.
@@ -355,7 +355,7 @@ class ActiveRemoteClientHandler(
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
+class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends RemoteSupport(_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
   val serverSettings = RemoteExtension(system).settings.serverSettings
@@ -458,7 +458,7 @@ class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) wi
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+    case None         ⇒ "Non-running NettyRemoteServer@" + remote.remoteAddress
   }
 
   private val _isRunning = new Switch(false)
@@ -493,7 +493,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   val log = Logging(remoteSupport.system, "NettyRemoteServer")
   import remoteSupport.serverSettings._
 
-  val address = remoteSupport.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+  val address = remoteSupport.remote.remoteAddress
 
   val name = "NettyRemoteServer@" + address
 

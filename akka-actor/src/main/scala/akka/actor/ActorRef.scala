@@ -303,10 +303,12 @@ trait ScalaActorRef { ref: ActorRef ⇒
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-
+// FIXME: remove and replace by ActorPath.toString
 case class SerializedActorRef(hostname: String, port: Int, path: String) {
   import akka.serialization.Serialization.system
 
+  // FIXME this is broken, but see above
+  def this(address: Address, path: String) = this(address.hostPort, 0, path)
   def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
   def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 

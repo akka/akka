@@ -28,10 +28,10 @@ object RemoteAddress {
 
 object LocalOnly extends RemoteAddress(0, "local")
 
-case class RemoteAddress private[akka] (port: Int, hostname: String) {
+case class RemoteAddress private[akka] (port: Int, hostname: String) extends Address {
+  def protocol = "akka"
   @transient
-  override lazy val toString = "" + hostname + ":" + port
-
+  lazy val hostPort = hostname + ":" + port
 }
 
 class RemoteException(message: String) extends AkkaException(message)

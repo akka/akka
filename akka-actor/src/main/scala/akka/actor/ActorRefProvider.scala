@@ -130,7 +130,7 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def actorFor(path: ActorPath): Option[ActorRef] = actorFor(path.path)
+  def actorFor(path: ActorPath): Option[ActorRef] = actorFor(path.pathElements)
 
   def actorFor(path: String): Option[ActorRef] = actorFor(ActorPath.split(path))
 
@@ -357,7 +357,7 @@ class LocalActorRefProvider(
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.remoteAddress, actor.path.toString)
+  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.address, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 

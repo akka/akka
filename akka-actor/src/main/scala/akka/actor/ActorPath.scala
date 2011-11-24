@@ -1,10 +1,8 @@
 /**
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package akka.actor
-
-import akka.remote.RemoteAddress
+import scala.annotation.tailrec
 
 object ActorPath {
   final val separator = "/"
@@ -60,9 +58,10 @@ object ActorPath {
  */
 trait ActorPath {
   /**
-   * The RemoteAddress for this path.
+   * The Address under which this path can be reached; walks up the tree to
+   * the RootActorPath.
    */
-  def remoteAddress: RemoteAddress
+  def address: Address = root.address
 
   /**
    * The name of the actor that this path refers to.
@@ -85,48 +84,63 @@ trait ActorPath {
   def /(child: Iterable[String]): ActorPath = (this /: child)(_ / _)
 
   /**
-   * String representation of this path. Different from toString for root path.
-   */
-  def string: String
-
-  /**
    * Sequence of names for this path.
    */
-  def path: Iterable[String]
+  def pathElements: Iterable[String]
 
   /**
-   * Is this the root path?
+   * Walk up the tree to obtain and return the RootActorPath.
    */
-  def isRoot: Boolean
+  def root: RootActorPath
 }
 
-class RootActorPath(val remoteAddress: RemoteAddress) extends ActorPath {
-
-  def name: String = "/"
+/**
+ * Root of the hierarchy of ActorPaths. There is exactly root per ActorSystem
+ * and node (for remote-enabled or clustered systems).
+ */
+class RootActorPath(override val address: Address, val name: String = ActorPath.separator) extends ActorPath {
 
   def parent: ActorPath = this
 
-  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
+  def root: RootActorPath = this
 
-  def string: String = ""
+  def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def path: Iterable[String] = Iterable.empty
+  def pathElements: Iterable[String] = Iterable.empty
 
-  def isRoot: Boolean = true
-
-  override def toString = ActorPath.separator
+  override val toString = address + ActorPath.separator
 }
 
-class ChildActorPath(val remoteAddress: RemoteAddress, val parent: ActorPath, val name: String) extends ActorPath {
+class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
 
-  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
+  def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def string: String = parent.string + ActorPath.separator + name
+  def pathElements: Iterable[String] = {
+    @tailrec
+    def rec(p: ActorPath, acc: List[String]): Iterable[String] = p match {
+      case r: RootActorPath ⇒ acc
+      case _                ⇒ rec(p.parent, p.name :: acc)
+    }
+    rec(this, Nil)
+  }
 
-  def path: Iterable[String] = parent.path ++ Iterable(name)
+  def root = {
+    @tailrec
+    def rec(p: ActorPath): RootActorPath = p match {
+      case r: RootActorPath ⇒ r
+      case _                ⇒ rec(p.parent)
+    }
+    rec(this)
+  }
 
-  def isRoot: Boolean = false
-
-  override def toString = string
+  override def toString = {
+    @tailrec
+    def rec(p: ActorPath, s: String): String = p match {
+      case r: RootActorPath ⇒ r + s
+      case _ if s.isEmpty   ⇒ rec(p.parent, name)
+      case _                ⇒ rec(p.parent, p.name + ActorPath.separator + s)
+    }
+    rec(this, "")
+  }
 }
 

@@ -41,7 +41,7 @@ abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with Defa
 
   def system = owner.system
   def ownerPath = owner.self.path
-  val ownerPathString = ownerPath.path.mkString("/")
+  val ownerPathString = ownerPath.pathElements.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
 }
