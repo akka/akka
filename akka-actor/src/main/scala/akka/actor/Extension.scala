@@ -54,11 +54,12 @@ trait Extension[T <: AnyRef] {
    */
   def key: ExtensionKey[T]
 
+  // FIXME ActorSystemImpl exposed to user API. We might well choose to introduce a new interface for this level of access, just so we can shuffle around the implementation
   /**
    * This method is called by the ActorSystem when the extension is registered
    * to trigger initialization of the extension.
    */
-  def init(system: ActorSystemImpl)
+  def init(system: ActorSystemImpl): Unit
 }
 
 /**

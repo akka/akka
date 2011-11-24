@@ -389,15 +389,15 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
      * Returns any extension registered to the specified key or returns null if not registered
      */
     @tailrec
-    def lookupExtension[T <: AnyRef](key: ExtensionKey[T]): T = extensions.get(key) match {
-      case c: CountDownLatch ⇒ c.await(); lookupExtension(key) //Registration in process, await completion and retry
-      case e: Extension[_]   ⇒ e.asInstanceOf[T] //Profit!
-      case null              ⇒ null.asInstanceOf[T] //Doesn't exist
+    def findExtension[T <: AnyRef](key: ExtensionKey[T]): Option[T] = extensions.get(key) match {
+      case c: CountDownLatch ⇒ c.await(); findExtension(key) //Registration in process, await completion and retry
+      case e: Extension[_]   ⇒ Some(e.asInstanceOf[T]) //Profit!
+      case null              ⇒ None //Doesn't exist
     }
 
-    lookupExtension(ext.key) match {
-      case e: Extension[_] ⇒ e.asInstanceOf[Extension[T]] //Profit!
-      case null ⇒ //Doesn't already exist, commence registration
+    findExtension(ext.key) match {
+      case Some(e: Extension[_]) ⇒ e.asInstanceOf[Extension[T]] //Profit!
+      case None ⇒ //Doesn't already exist, commence registration
         val inProcessOfRegistration = new CountDownLatch(1)
         extensions.putIfAbsent(ext.key, inProcessOfRegistration) match { // Signal that registration is in process
           case null ⇒ try { // Signal was successfully sent
