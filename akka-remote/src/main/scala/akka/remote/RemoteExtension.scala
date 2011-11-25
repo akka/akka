@@ -39,6 +39,7 @@ class RemoteExtensionSettings(cfg: Config) extends Extension {
   val ClusterName = getString("akka.cluster.name")
   val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_))
 
+  // FIXME remove nodename from config - should only be passed as command line arg or read from properties file etc.
   val NodeName: String = config.getString("akka.cluster.nodename") match {
     case ""    ⇒ new UUID().toString
     case value ⇒ value

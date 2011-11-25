@@ -13,6 +13,8 @@ import java.io.{ PrintWriter, PrintStream }
 import java.net.InetSocketAddress
 
 object RemoteAddress {
+  def apply(host: String, port: Int): RemoteAddress = apply(new InetSocketAddress(host, port))
+
   def apply(inetAddress: InetSocketAddress): RemoteAddress = inetAddress match {
     case null ⇒ null
     case inet ⇒
@@ -21,25 +23,25 @@ object RemoteAddress {
         case other ⇒ other.getHostAddress
       }
       val portNo = inet.getPort
-      RemoteAddress(host, portNo)
+      RemoteAddress(portNo, host)
   }
 
   def apply(address: String): RemoteAddress = {
     val index = address.indexOf(":")
     if (index < 1) throw new IllegalArgumentException(
       "Remote address must be a string on the format [\"hostname:port\"], was [" + address + "]")
-    RemoteAddress(
-      address.substring(0, index - 1),
-      address.substring(index, address.length).toInt)
+    val hostname = address.substring(0, index)
+    val port = address.substring(index + 1, address.length).toInt
+    apply(new InetSocketAddress(hostname, port)) // want the fallback in this method
   }
 }
 
-case class RemoteAddress(hostname: String, port: Int) {
+case class RemoteAddress private[remote] (port: Int, hostname: String) {
   @transient
   override lazy val toString = "" + hostname + ":" + port
 }
 
-object LocalOnly extends RemoteAddress("local", 0)
+object LocalOnly extends RemoteAddress(0, "local")
 
 class RemoteException(message: String) extends AkkaException(message)
 
