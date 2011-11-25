@@ -46,7 +46,7 @@ object SerializeSpec {
 class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
   import SerializeSpec._
 
-  val ser = SerializationExtension(system).serialization
+  val ser = SerializationExtension(system)
   import ser._
 
   val addr = Address("120", "Monroe Street", "Santa Clara", "95050")
@@ -104,7 +104,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
       out.close()
 
       val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-      Serialization.system.withValue(a.asInstanceOf[ActorSystemImpl]) {
+      Serialization.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
         val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
         (deadLetters eq a.deadLetters) must be(true)
       }
