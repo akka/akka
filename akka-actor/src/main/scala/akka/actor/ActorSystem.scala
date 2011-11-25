@@ -290,7 +290,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel), this)
 
   val provider: ActorRefProvider = {
     val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
