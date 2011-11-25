@@ -106,13 +106,13 @@ class Gossiper(remote: Remote) {
 
   private val system = remote.system
   private val remoteExtension = RemoteExtension(system)
-  private val serializationExtension = SerializationExtension(system)
+  private val serialization = SerializationExtension(system)
   private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[RemoteAddress, ActorRef])
 
   private val seeds = {
-    val seeds = RemoteExtension(system).settings.SeedNodes
+    val seeds = remoteExtension.SeedNodes
     if (seeds.isEmpty) throw new ConfigurationException(
       "At least one seed node must be defined in the configuration [akka.cluster.seed-nodes]")
     else seeds
@@ -248,7 +248,7 @@ class Gossiper(remote: Remote) {
       throw new IllegalStateException("Connection for [" + peer + "] is not set up"))
 
     try {
-      (connection ? (toRemoteMessage(newGossip), remoteExtension.settings.RemoteSystemDaemonAckTimeout)).as[Status] match {
+      (connection ? (toRemoteMessage(newGossip), remoteExtension.RemoteSystemDaemonAckTimeout)).as[Status] match {
         case Some(Success(receiver)) ⇒
           log.debug("Gossip sent to [{}] was successfully received", receiver)
 
@@ -310,7 +310,7 @@ class Gossiper(remote: Remote) {
   }
 
   private def toRemoteMessage(gossip: Gossip): RemoteProtocol.RemoteSystemDaemonMessageProtocol = {
-    val gossipAsBytes = serializationExtension.serialization.serialize(gossip) match {
+    val gossipAsBytes = serialization.serialize(gossip) match {
       case Left(error)  ⇒ throw error
       case Right(bytes) ⇒ bytes
     }

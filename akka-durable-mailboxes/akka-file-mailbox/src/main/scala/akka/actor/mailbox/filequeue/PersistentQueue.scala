@@ -22,7 +22,7 @@ import scala.collection.mutable
 import akka.event.LoggingAdapter
 import akka.util.Duration
 import java.util.concurrent.TimeUnit
-import akka.actor.mailbox.FileBasedMailboxExtension
+import akka.actor.mailbox.FileBasedMailboxSettings
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {
@@ -34,7 +34,7 @@ class OverlaySetting[T](base: ⇒ T) {
   def apply() = local.getOrElse(base)
 }
 
-class PersistentQueue(persistencePath: String, val name: String, val settings: FileBasedMailboxExtension.Settings, log: LoggingAdapter) {
+class PersistentQueue(persistencePath: String, val name: String, val settings: FileBasedMailboxSettings, log: LoggingAdapter) {
 
   private case object ItemArrived
 
@@ -127,7 +127,7 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
 
   configure(settings)
 
-  def configure(settings: FileBasedMailboxExtension.Settings) = synchronized {
+  def configure(settings: FileBasedMailboxSettings) = synchronized {
     maxItems set Some(settings.MaxItems)
     maxSize set Some(settings.MaxSize)
     maxItemSize set Some(settings.MaxItemSize)
