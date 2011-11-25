@@ -12,9 +12,9 @@ package object testkit {
     try {
       val result = block
 
-      val testKitExtension = TestKitExtension(system)
-      val stop = now + testKitExtension.settings.TestEventFilterLeeway.toMillis
-      val failed = eventFilters filterNot (_.awaitDone(Duration(stop - now, MILLISECONDS))) map ("Timeout (" + testKitExtension.settings.TestEventFilterLeeway + ") waiting for " + _)
+      val testKitSettings = TestKitExtension(system)
+      val stop = now + testKitSettings.TestEventFilterLeeway.toMillis
+      val failed = eventFilters filterNot (_.awaitDone(Duration(stop - now, MILLISECONDS))) map ("Timeout (" + testKitSettings.TestEventFilterLeeway + ") waiting for " + _)
       if (failed.nonEmpty)
         throw new AssertionError("Filter completion error:\n" + failed.mkString("\n"))
 
@@ -45,7 +45,7 @@ package object testkit {
    */
   class TestDuration(duration: Duration) {
     def dilated(implicit system: ActorSystem): Duration = {
-      duration * TestKitExtension(system).settings.TestTimeFactor
+      duration * TestKitExtension(system).TestTimeFactor
     }
   }
 }

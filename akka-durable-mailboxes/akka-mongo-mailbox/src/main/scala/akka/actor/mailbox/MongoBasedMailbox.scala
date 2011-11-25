@@ -31,7 +31,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
-  private val settings = MongoBasedMailboxExtension(owner.system).settings
+  private val settings = MongoBasedMailboxExtension(owner.system)
 
   val log = Logging(system, "MongoBasedMailbox")
 

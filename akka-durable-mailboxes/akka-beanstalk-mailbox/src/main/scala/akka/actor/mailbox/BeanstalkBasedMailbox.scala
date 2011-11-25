@@ -21,7 +21,7 @@ class BeanstalkBasedMailboxException(message: String) extends AkkaException(mess
  */
 class BeanstalkBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  private val settings = BeanstalkBasedMailboxExtension(owner.system).settings
+  private val settings = BeanstalkBasedMailboxExtension(owner.system)
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
   private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
 
