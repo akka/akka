@@ -11,6 +11,7 @@ import scala.annotation.tailrec
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
+import collection.JavaConverters
 
 /**
  * An Iterable that also contains a version.
@@ -84,6 +85,10 @@ trait ConnectionManager {
  * Manages local connections for a router, e.g. local actors.
  */
 class LocalConnectionManager(initialConnections: Iterable[ActorRef]) extends ConnectionManager {
+
+  def this(linkedList: java.util.LinkedList[ActorRef]) {
+    this(JavaConverters.iterableAsScalaIterableConverter(linkedList).asScala)
+  }
 
   case class State(version: Long, connections: Iterable[ActorRef]) extends VersionedIterable[ActorRef] {
     def iterable = connections

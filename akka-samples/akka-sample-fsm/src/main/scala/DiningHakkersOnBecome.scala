@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>.
+ */
 package sample.fsm.dining.become
 
 //Akka adaptation of
@@ -7,8 +10,8 @@ import akka.actor.{ ActorRef, Actor, ActorSystem }
 import akka.util.duration._
 
 /*
- * First we define our messages, they basically speak for themselves
- */
+* First we define our messages, they basically speak for themselves
+*/
 sealed trait DiningHakkerMessage
 case class Busy(chopstick: ActorRef) extends DiningHakkerMessage
 case class Put(hakker: ActorRef) extends DiningHakkerMessage
@@ -18,9 +21,9 @@ object Eat extends DiningHakkerMessage
 object Think extends DiningHakkerMessage
 
 /*
- * A Chopstick is an actor, it can be taken, and put back
- */
-class Chopstick(name: String) extends Actor {
+* A Chopstick is an actor, it can be taken, and put back
+*/
+class Chopstick extends Actor {
 
   //When a Chopstick is taken by a hakker
   //It will refuse to be taken by other hakkers
@@ -44,8 +47,8 @@ class Chopstick(name: String) extends Actor {
 }
 
 /*
- * A hakker is an awesome dude or dudett who either thinks about hacking or has to eat ;-)
- */
+* A hakker is an awesome dude or dudett who either thinks about hacking or has to eat ;-)
+*/
 class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
 
   //When a hakker is thinking it can become hungry
@@ -75,7 +78,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
   //back to think about how he should obtain his chopsticks :-)
   def waiting_for(chopstickToWaitFor: ActorRef, otherChopstick: ActorRef): Receive = {
     case Taken(`chopstickToWaitFor`) ⇒
-      println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
+      println("%s has picked up %s and %s and starts to eat".format(name, left.name, right.name))
       become(eating)
       system.scheduler.scheduleOnce(self, Think, 5 seconds)
 
@@ -105,27 +108,33 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
       become(thinking)
       left ! Put(self)
       right ! Put(self)
-      println("%s puts down his chopsticks and starts to think", name)
+      println("%s puts down his chopsticks and starts to think".format(name))
       system.scheduler.scheduleOnce(self, Eat, 5 seconds)
   }
 
   //All hakkers start in a non-eating state
   def receive = {
     case Think ⇒
-      println("%s starts to think", name)
+      println("%s starts to think".format(name))
       become(thinking)
       system.scheduler.scheduleOnce(self, Eat, 5 seconds)
   }
 }
 
 /*
- * Alright, here's our test-harness
- */
+* Alright, here's our test-harness
+*/
 object DiningHakkers {
   val system = ActorSystem()
+
+  def main(args: Array[String]) {
+    run
+  }
+
   def run {
     //Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield system.actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield system.actorOf[Chopstick]("Chopstick " + i)
+
     //Create 5 awesome hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex

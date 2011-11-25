@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
+import akka.japi.Creator
 
 sealed trait RouterType
 
@@ -66,11 +67,17 @@ object RouterType {
  * Contains the configuration to create local and clustered routed actor references.
  * Routed ActorRef configuration object, this is thread safe and fully sharable.
  */
-case class RoutedProps private[akka] (
+private[akka] case class RoutedProps(
   routerFactory: () ⇒ Router = RoutedProps.defaultRouterFactory,
   connectionManager: ConnectionManager = new LocalConnectionManager(List()),
   timeout: Timeout = RoutedProps.defaultTimeout,
   localOnly: Boolean = RoutedProps.defaultLocalOnly) {
+
+  // Java API
+  def this(creator: Creator[Router], connectionManager: ConnectionManager, timeout: Timeout, localOnly: Boolean) {
+    this(() ⇒ creator.create(), connectionManager, timeout, localOnly)
+  }
+
 }
 
 object RoutedProps {
@@ -167,7 +174,7 @@ abstract private[akka] class AbstractRoutedActorRef(val system: ActorSystem, val
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(system, routedProps) {
+class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, override val name: String) extends AbstractRoutedActorRef(system, routedProps) {
 
   val path = supervisor.path / name
 
@@ -346,7 +353,7 @@ class RandomRouter extends BasicRouter {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RoundRobinRouter extends BasicRouter {
+private[akka] class RoundRobinRouter extends BasicRouter {
 
   private val state = new AtomicReference[RoundRobinState]
 

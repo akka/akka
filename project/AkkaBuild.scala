@@ -243,23 +243,31 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample)
-    // aggregate = Seq(fsmSample, camelSample)
+    aggregate = Seq(antsSample, helloSample, osgiSample, fsmSample)
   )
 
-  // lazy val antsSample = Project(
-  //   id = "akka-sample-ants",
-  //   base = file("akka-samples/akka-sample-ants"),
-  //   dependencies = Seq(stm),
-  //   settings = defaultSettings
-  // )
+  lazy val antsSample = Project(
+    id = "akka-sample-ants",
+    base = file("akka-samples/akka-sample-ants"),
+    dependencies = Seq(actor, stm),
+    settings = defaultSettings
+  )
 
-  // lazy val chatSample = Project(
-  //   id = "akka-sample-chat",
-  //   base = file("akka-samples/akka-sample-chat"),
-  //   dependencies = Seq(cluster),
-  //   settings = defaultSettings
-  // )
+  lazy val helloSample = Project(
+    id = "akka-sample-hello",
+    base = file("akka-samples/akka-sample-hello"),
+    dependencies = Seq(actor),
+    settings = defaultSettings
+  )
+
+  lazy val osgiSample = Project(
+    id = "akka-sample-osgi",
+    base = file("akka-samples/akka-sample-osgi"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.sampleOsgi
+    )
+  )
 
   lazy val fsmSample = Project(
     id = "akka-sample-fsm",
@@ -268,6 +276,21 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
+  // lazy val chatSample = Project(
+  //   id = "akka-sample-chat",
+  //   base = file("akka-samples/akka-sample-chat"),
+  //   dependencies = Seq(cluster),
+  //   settings = defaultSettings
+  // )
+
+  //  lazy val samples = Project(
+  //    id = "akka-samples",
+  //    base = file("akka-samples"),
+  //    settings = parentSettings,
+  //    aggregate = Seq(fsmSample)
+  //    // aggregate = Seq(fsmSample, camelSample)
+  //  )
+
   // lazy val camelSample = Project(
   //   id = "akka-sample-camel",
   //   base = file("akka-samples/akka-sample-camel"),
@@ -275,13 +298,6 @@ object AkkaBuild extends Build {
   //   settings = defaultSettings ++ Seq(
   //     libraryDependencies ++= Dependencies.sampleCamel
   //   )
-  // )
-
-  // lazy val helloSample = Project(
-  //   id = "akka-sample-hello",
-  //   base = file("akka-samples/akka-sample-hello"),
-  //   dependencies = Seq(kernel),
-  //   settings = defaultSettings
   // )
 
   // lazy val remoteSample = Project(
@@ -295,22 +311,24 @@ object AkkaBuild extends Build {
     id = "akka-tutorials",
     base = file("akka-tutorials"),
     settings = parentSettings,
-    aggregate = Seq(firstTutorial, secondTutorial)
+    aggregate = Seq(firstTutorial)
   )
 
   lazy val firstTutorial = Project(
     id = "akka-tutorial-first",
     base = file("akka-tutorials/akka-tutorial-first"),
-    dependencies = Seq(actor),
-    settings = defaultSettings
+    dependencies = Seq(actor, testkit),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.tutorials
+    )
   )
 
-  lazy val secondTutorial = Project(
-    id = "akka-tutorial-second",
-    base = file("akka-tutorials/akka-tutorial-second"),
-    dependencies = Seq(actor),
-    settings = defaultSettings
-  )
+  //  lazy val secondTutorial = Project(
+  //    id = "akka-tutorial-second",
+  //    base = file("akka-tutorials/akka-tutorial-second"),
+  //    dependencies = Seq(actor),
+  //    settings = defaultSettings
+  //  )
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -447,6 +465,10 @@ object Dependencies {
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
   //   Test.junit, Test.scalatest, Test.logback)
+
+  val sampleOsgi = Seq(osgi)
+
+  val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit)
 }

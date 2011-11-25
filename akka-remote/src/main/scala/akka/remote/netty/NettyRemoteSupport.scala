@@ -95,8 +95,8 @@ abstract class RemoteClient private[akka] (
 }
 
 class PassiveRemoteClient(val currentChannel: Channel,
-  remoteSupport: NettyRemoteSupport,
-  remoteAddress: RemoteAddress)
+                          remoteSupport: NettyRemoteSupport,
+                          remoteAddress: RemoteAddress)
   extends RemoteClient(remoteSupport, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {

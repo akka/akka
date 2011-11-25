@@ -4,22 +4,23 @@
 
 package sample.ants
 
+import scala.util.Random.{ nextInt ⇒ randomInt }
+import akka.actor.{ ActorSystem, Actor, ActorRef }
+import akka.util.Duration
+import akka.util.duration._
 import java.util.concurrent.TimeUnit
-import scala.util.Random.{nextInt => randomInt}
-import akka.actor.{Actor, ActorRef, Scheduler}
-import akka.actor.Actor.actorOf
 import akka.stm._
 
 object Config {
-  val Dim = 80               // dimensions of square world
-  val AntsSqrt = 20          // number of ants = AntsSqrt^2
-  val FoodPlaces = 35        // number of places with food
-  val FoodRange = 100        // range of amount of food at a place
-  val PherScale = 10         // scale factor for pheromone drawing
-  val AntMillis = 100        // how often an ant behaves (milliseconds)
-  val EvapMillis = 1000      // how often pheromone evaporation occurs (milliseconds)
-  val EvapRate = 0.99f       // pheromone evaporation rate
-  val StartDelay = 1000      // delay before everything kicks off (milliseconds)
+  val Dim = 80 // dimensions of square world
+  val AntsSqrt = 20 // number of ants = AntsSqrt^2
+  val FoodPlaces = 35 // number of places with food
+  val FoodRange = 100 // range of amount of food at a place
+  val PherScale = 10 // scale factor for pheromone drawing
+  val AntMillis = 100 // how often an ant behaves (milliseconds)
+  val EvapMillis = 1000 // how often pheromone evaporation occurs (milliseconds)
+  val EvapRate = 0.99f // pheromone evaporation rate
+  val StartDelay = 1000 milliseconds // delay before everything kicks off (milliseconds)
 }
 
 case class Ant(dir: Int, food: Boolean = false) {
@@ -32,7 +33,7 @@ case class Ant(dir: Int, food: Boolean = false) {
 case class Cell(food: Int = 0, pher: Float = 0, ant: Option[Ant] = None, home: Boolean = false) {
   def addFood(i: Int) = copy(food = food + i)
   def addPher(x: Float) = copy(pher = pher + x)
-  def alterPher(f: Float => Float) = copy(pher = f(pher))
+  def alterPher(f: Float ⇒ Float) = copy(pher = f(pher))
   def putAnt(antOpt: Option[Ant]) = copy(ant = antOpt)
   def makeHome = copy(home = true)
 }
@@ -45,10 +46,10 @@ class Place(initCell: Cell = EmptyCell) extends Ref(initCell) {
   def food(i: Int) = alter(_.addFood(i))
   def hasFood = food > 0
   def pher: Float = cell.pher
-  def pher(f: Float => Float) = alter(_.alterPher(f))
+  def pher(f: Float ⇒ Float) = alter(_.alterPher(f))
   def trail = alter(_.addPher(1))
   def ant: Option[Ant] = cell.ant
-  def ant(f: Ant => Ant): Cell = alter(_.putAnt(ant map f))
+  def ant(f: Ant ⇒ Ant): Cell = alter(_.putAnt(ant map f))
   def enter(antOpt: Option[Ant]): Cell = alter(_.putAnt(antOpt))
   def enter(ant: Ant): Cell = enter(Some(ant))
   def leave = enter(None)
@@ -62,10 +63,12 @@ case object Ping
 object World {
   import Config._
 
+  val system = ActorSystem()
+
   val homeOff = Dim / 4
   lazy val places = Vector.fill(Dim, Dim)(new Place)
   lazy val ants = setup
-  lazy val evaporator = actorOf[Evaporator]
+  lazy val evaporator = system.actorOf[Evaporator]
 
   private val snapshotFactory = TransactionFactory(readonly = true, familyName = "snapshot")
 
@@ -74,14 +77,14 @@ object World {
   def place(loc: (Int, Int)) = places(loc._1)(loc._2)
 
   private def setup = atomic {
-    for (i <- 1 to FoodPlaces) {
+    for (i ← 1 to FoodPlaces) {
       place(randomInt(Dim), randomInt(Dim)) food (randomInt(FoodRange))
     }
     val homeRange = homeOff until (AntsSqrt + homeOff)
-    for (x <- homeRange; y <- homeRange) yield {
+    for (x ← homeRange; y ← homeRange) yield {
       place(x, y).makeHome
       place(x, y) enter Ant(randomInt(8))
-      actorOf(new AntActor(x, y))
+      system.actorOf(new AntActor(x, y))
     }
   }
 
@@ -91,7 +94,7 @@ object World {
   }
 
   private def pingEvery(millis: Long)(actor: ActorRef) =
-    Scheduler.schedule(actor, Ping, Config.StartDelay, millis, TimeUnit.MILLISECONDS)
+    system.scheduler.schedule(actor, Ping, Config.StartDelay, Duration(millis, TimeUnit.MILLISECONDS))
 }
 
 object Util {
@@ -106,13 +109,13 @@ object Util {
   def dimBound(n: Int) = bound(Dim, n)
 
   val dirDelta = Map(0 -> (0, -1), 1 -> (1, -1), 2 -> (1, 0), 3 -> (1, 1),
-                     4 -> (0, 1), 5 -> (-1, 1), 6 -> (-1, 0), 7 -> (-1, -1))
+    4 -> (0, 1), 5 -> (-1, 1), 6 -> (-1, 0), 7 -> (-1, -1))
   def deltaLoc(x: Int, y: Int, dir: Int) = {
     val (dx, dy) = dirDelta(dirBound(dir))
     (dimBound(x + dx), dimBound(y + dy))
   }
 
-  def rankBy[A, B: Ordering](xs: Seq[A], f: A => B) = Map(xs.sortBy(f).zip(Stream from 1): _*)
+  def rankBy[A, B: Ordering](xs: Seq[A], f: A ⇒ B) = Map(xs.sortBy(f).zip(Stream from 1): _*)
 
   def roulette(slices: Seq[Int]) = {
     val total = slices.sum
@@ -128,7 +131,7 @@ object Util {
 
 trait WorldActor extends Actor {
   def act
-  def receive = { case Ping => act }
+  def receive = { case Ping ⇒ act }
 }
 
 class AntActor(initLoc: (Int, Int)) extends WorldActor {
@@ -140,8 +143,8 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
   val name = "ant-from-" + initLoc._1 + "-" + initLoc._2
   implicit val txFactory = TransactionFactory(familyName = name)
 
-  val homing = (p: Place) => p.pher + (100 * (if (p.home) 0 else 1))
-  val foraging = (p: Place) => p.pher + p.food
+  val homing = (p: Place) ⇒ p.pher + (100 * (if (p.home) 0 else 1))
+  val foraging = (p: Place) ⇒ p.pher + p.food
 
   def loc = locRef.getOrElse(initLoc)
   def newLoc(l: (Int, Int)) = locRef swap l
@@ -149,7 +152,7 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
   def act = atomic {
     val (x, y) = loc
     val current = place(x, y)
-    for (ant <- current.ant) {
+    for (ant ← current.ant) {
       val ahead = place(deltaLoc(x, y, ant.dir))
       if (ant.food) { // homing
         if (current.home) dropFood
@@ -166,7 +169,7 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
   def move = {
     val (x, y) = loc
     val from = place(x, y)
-    for (ant <- from.ant) {
+    for (ant ← from.ant) {
       val toLoc = deltaLoc(x, y, ant.dir)
       val to = place(toLoc)
       to enter ant
@@ -188,11 +191,11 @@ class AntActor(initLoc: (Int, Int)) extends WorldActor {
     current ant (_.dropOff.turnAround)
   }
 
-  def random[A: Ordering](ranking: Place => A) = {
+  def random[A: Ordering](ranking: Place ⇒ A) = {
     val (x, y) = loc
     val current = place(x, y)
-    for (ant <- current.ant) {
-      val delta = (turn: Int) => place(deltaLoc(x, y, ant.dir + turn))
+    for (ant ← current.ant) {
+      val delta = (turn: Int) ⇒ place(deltaLoc(x, y, ant.dir + turn))
       val ahead = delta(0)
       val aheadLeft = delta(-1)
       val aheadRight = delta(+1)
@@ -211,9 +214,9 @@ class Evaporator extends WorldActor {
   import World._
 
   implicit val txFactory = TransactionFactory(familyName = "evaporator")
-  val evaporate = (pher: Float) => pher * EvapRate
+  val evaporate = (pher: Float) ⇒ pher * EvapRate
 
-  def act = for (x <- 0 until Dim; y <- 0 until Dim) {
+  def act = for (x ← 0 until Dim; y ← 0 until Dim) {
     atomic { place(x, y) pher evaporate }
   }
 }

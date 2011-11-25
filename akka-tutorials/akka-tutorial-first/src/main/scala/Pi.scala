@@ -1,113 +1,114 @@
-// /**
-//  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
-//  */
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.tutorial.first.scala
 
-// package akka.tutorial.first.scala
+import java.util.concurrent.CountDownLatch
+import akka.routing.{ RoutedActorRef, LocalConnectionManager, RoundRobinRouter, RoutedProps }
+import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
 
-// import akka.actor.{ Actor, PoisonPill, ActorSystem }
-// import Actor._
-// import java.util.concurrent.CountDownLatch
-// import akka.routing.Routing.Broadcast
-// import akka.routing.{ RoutedProps, Routing }
+object Pi extends App {
 
-// object Pi extends App {
+  val system = ActorSystem()
 
-//   val system = ActorSystem()
+  // Initiate the calculation
+  calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
-//   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
+  // ====================
+  // ===== Messages =====
+  // ====================
+  sealed trait PiMessage
 
-//   // ====================
-//   // ===== Messages =====
-//   // ====================
-//   sealed trait PiMessage
+  case object Calculate extends PiMessage
 
-//   case object Calculate extends PiMessage
+  case class Work(start: Int, nrOfElements: Int) extends PiMessage
 
-//   case class Work(start: Int, nrOfElements: Int) extends PiMessage
+  case class Result(value: Double) extends PiMessage
 
-//   case class Result(value: Double) extends PiMessage
+  // ==================
+  // ===== Worker =====
+  // ==================
+  class Worker extends Actor {
 
-//   // ==================
-//   // ===== Worker =====
-//   // ==================
-//   class Worker extends Actor {
+    // define the work
+    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
+      var acc = 0.0
+      for (i ← start until (start + nrOfElements))
+        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
+      acc
+    }
 
-//     // define the work
-//     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
-//       var acc = 0.0
-//       for (i ← start until (start + nrOfElements))
-//         acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
-//       acc
-//     }
+    def receive = {
+      case Work(start, nrOfElements) ⇒ sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
+    }
+  }
 
-//     def receive = {
-//       case Work(start, nrOfElements) ⇒ sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
-//     }
-//   }
+  // ==================
+  // ===== Master =====
+  // ==================
+  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+    extends Actor {
 
-//   // ==================
-//   // ===== Master =====
-//   // ==================
-//   class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
-//     extends Actor {
+    var pi: Double = _
+    var nrOfResults: Int = _
+    var start: Long = _
 
-//     var pi: Double = _
-//     var nrOfResults: Int = _
-//     var start: Long = _
+    // create the workers
+    val workers = Vector.fill(nrOfWorkers)(system.actorOf[Worker])
 
-//     // create the workers
-//     val workers = Vector.fill(nrOfWorkers)(system.actorOf[Worker])
+    // wrap them with a load-balancing router
+    val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(workers))
+    val router = new RoutedActorRef(system, props, self, "pi")
 
-//     // wrap them with a load-balancing router
-//     val router = system.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(workers), "pi")
+    // message handler
+    def receive = {
+      case Calculate ⇒
+        // schedule work
+        for (i ← 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
+      case Result(value) ⇒
+        // handle result from the worker
+        pi += value
+        nrOfResults += 1
 
-//     // message handler
-//     def receive = {
-//       case Calculate ⇒
-//         // schedule work
-//         for (i ← 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
+        // Stop this actor and all its supervised children
+        if (nrOfResults == nrOfMessages) self.stop()
+    }
 
-//         // send a PoisonPill to all workers telling them to shut down themselves
-//         router ! Broadcast(PoisonPill)
+    override def preStart() {
+      start = System.currentTimeMillis
+    }
 
-//         // send a PoisonPill to the router, telling him to shut himself down
-//         router ! PoisonPill
+    override def postStop() {
+      // tell the world that the calculation is complete
+      println(
+        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
+          .format(pi, (System.currentTimeMillis - start)))
+      latch.countDown()
+    }
+  }
 
-//       case Result(value) ⇒
-//         // handle result from the worker
-//         pi += value
-//         nrOfResults += 1
-//         if (nrOfResults == nrOfMessages) self.stop()
-//     }
+  object Master {
+    val impl = system.asInstanceOf[ActorSystemImpl]
+  }
 
-//     override def preStart() {
-//       start = System.currentTimeMillis
-//     }
+  // ==================
+  // ===== Run it =====
+  // ==================
+  def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
 
-//     override def postStop() {
-//       // tell the world that the calculation is complete
-//       println(
-//         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-//           .format(pi, (System.currentTimeMillis - start)))
-//       latch.countDown()
-//     }
-//   }
+    // this latch is only plumbing to know when the calculation is completed
+    val latch = new CountDownLatch(1)
 
-//   // ==================
-//   // ===== Run it =====
-//   // ==================
-//   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
+    // create the master
+    val master = system.actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
 
-//     // this latch is only plumbing to know when the calculation is completed
-//     val latch = new CountDownLatch(1)
+    // start the calculation
+    master ! Calculate
 
-//     // create the master
-//     val master = system.actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+    // wait for master to shut down
+    latch.await()
 
-//     // start the calculation
-//     master ! Calculate
-
-//     // wait for master to shut down
-//     latch.await()
-//   }
-// }
+    // Shut down the system
+    system.stop()
+  }
+}

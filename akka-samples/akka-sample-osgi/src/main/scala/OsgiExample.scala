@@ -3,29 +3,27 @@
  */
 package sample.osgi
 
-import akka.actor.Actor
-import akka.actor.Actor._
-
 import org.osgi.framework.{ BundleActivator, BundleContext }
+import akka.actor.{ Timeout, ActorSystem, Actor }
 
 class Activator extends BundleActivator {
+  val system = ActorSystem()
 
   def start(context: BundleContext) {
     println("Starting the OSGi example ...")
-    val echo = actorOf[EchoActor]
-    val answer = (echo ? "OSGi example").as[String]
+    val echo = system.actorOf[EchoActor]
+    val answer = (echo ? ("OSGi example", Timeout(100))).as[String]
     println(answer getOrElse "No answer!")
   }
 
   def stop(context: BundleContext) {
-    Actor.registry.local.shutdownAll()
+    system.stop()
     println("Stopped the OSGi example.")
   }
 }
 
 class EchoActor extends Actor {
-
   override def receive = {
-    case x => reply(x)
+    case x ⇒ sender ! x
   }
 }

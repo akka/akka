@@ -39,8 +39,8 @@ By using this software in any fashion, you are agreeing to be bound by
 the terms of this license.
 You must not remove this notice, or any other, from this software.
 
-[ants.clj]:http://clojure.googlegroups.com/web/ants.clj
-[akka]:http://akkasource.org
-[spde]:http://technically.us/spde/
+[ants.clj]: http://clojure.googlegroups.com/web/ants.clj
+[akka]: http://akka.io
+[spde]: http://technically.us/spde/
 [sbt]: http://code.google.com/p/simple-build-tool/
 [cpl]: http://opensource.org/licenses/cpl1.0.php
