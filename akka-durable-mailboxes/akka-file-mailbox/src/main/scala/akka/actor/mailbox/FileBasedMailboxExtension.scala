@@ -9,14 +9,14 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.{ ExtensionProvider, ActorSystem, Extension, ActorSystemImpl }
+import akka.actor._
 
-object FileBasedMailboxExtension extends Extension[FileBasedMailboxSettings] with ExtensionProvider {
+object FileBasedMailboxExtension extends ExtensionId[FileBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new FileBasedMailboxSettings(system.applicationConfig)
 }
 
-class FileBasedMailboxSettings(cfg: Config) {
+class FileBasedMailboxSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-file-mailbox-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))

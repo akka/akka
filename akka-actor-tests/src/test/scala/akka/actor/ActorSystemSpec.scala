@@ -10,10 +10,12 @@ import com.typesafe.config.ConfigFactory
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
 object ActorSystemSpec {
-  object TestExtension extends Extension[ActorSystem] with ExtensionProvider {
+  object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
     def lookup = this
-    def createExtension(s: ActorSystemImpl) = s
+    def createExtension(s: ActorSystemImpl) = new TestExtension(s)
   }
+
+  class TestExtension(val system: ActorSystemImpl) extends Extension
 }
 
 class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.ActorSystemSpec$TestExtension$"]""") {
@@ -22,8 +24,8 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.ActorSy
   "An ActorSystem" must {
 
     "support extensions" in {
-      TestExtension(system) must be === system
-      system.extension(TestExtension) must be === system
+      TestExtension(system).system must be === system
+      system.extension(TestExtension).system must be === system
       system.hasExtension(TestExtension) must be(true)
     }
 

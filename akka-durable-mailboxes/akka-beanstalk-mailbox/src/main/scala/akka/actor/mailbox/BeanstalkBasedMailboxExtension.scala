@@ -9,14 +9,14 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.{ ExtensionProvider, ActorSystem, Extension, ActorSystemImpl }
+import akka.actor._
 
-object BeanstalkBasedMailboxExtension extends Extension[BeanstalkMailboxSettings] with ExtensionProvider {
+object BeanstalkBasedMailboxExtension extends ExtensionId[BeanstalkMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new BeanstalkMailboxSettings(system.applicationConfig)
 }
 
-class BeanstalkMailboxSettings(cfg: Config) {
+class BeanstalkMailboxSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-beanstalk-mailbox-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))

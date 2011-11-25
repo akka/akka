@@ -3,21 +3,19 @@
  */
 package akka.testkit
 
-import akka.actor.ActorSystem
-import akka.actor.Extension
-import akka.actor.ActorSystemImpl
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.actor.{ ExtensionId, ActorSystem, Extension, ActorSystemImpl }
 
-object TestKitExtension extends Extension[TestKitSettings] {
+object TestKitExtension extends ExtensionId[TestKitSettings] {
   def createExtension(system: ActorSystemImpl): TestKitSettings = new TestKitSettings(system.applicationConfig)
 }
 
-class TestKitSettings(cfg: Config) {
+class TestKitSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-testkit-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))

@@ -17,21 +17,35 @@ package akka.actor
  * to the ActorSystem implementation.
  *
  */
-trait Extension[T <: AnyRef] {
+
+/**
+ * Market interface to signify an Akka Extension
+ */
+trait Extension
+
+/**
+ * Identifies an Extension
+ * Lookup of Extensions is done by object identity, so the Id must be the same wherever it's used,
+ * otherwise you'll get the same extension loaded multiple times.
+ */
+trait ExtensionId[T <: Extension] {
   def apply(system: ActorSystem): T = system.registerExtension(this)
   def createExtension(system: ActorSystemImpl): T
 }
 
 /**
- * Java API for Extension
+ * Java API for ExtensionId
  */
-abstract class AbstractExtension[T <: AnyRef] extends Extension[T]
+abstract class AbstractExtensionId[T <: Extension] extends ExtensionId[T]
 
 /**
- * To be able to load an Extension from the configuration,
- * a class that implements ExtensionProvider must be specified.
+ * To be able to load an ExtensionId from the configuration,
+ * a class that implements ExtensionIdProvider must be specified.
  * The lookup method should return the canonical reference to the extension.
  */
-trait ExtensionProvider {
-  def lookup(): Extension[_ <: AnyRef]
+trait ExtensionIdProvider {
+  /**
+   * Returns the canonical ExtensionId for this Extension
+   */
+  def lookup(): ExtensionId[_ <: Extension]
 }

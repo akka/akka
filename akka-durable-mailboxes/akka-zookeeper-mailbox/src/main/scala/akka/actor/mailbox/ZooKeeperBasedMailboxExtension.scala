@@ -9,13 +9,13 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.{ ExtensionProvider, ActorSystem, Extension, ActorSystemImpl }
+import akka.actor._
 
-object ZooKeeperBasedMailboxExtension extends Extension[ZooKeeperBasedMailboxSettings] with ExtensionProvider {
+object ZooKeeperBasedMailboxExtension extends ExtensionId[ZooKeeperBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new ZooKeeperBasedMailboxSettings(system.applicationConfig)
 }
-class ZooKeeperBasedMailboxSettings(cfg: Config) {
+class ZooKeeperBasedMailboxSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-zookeeper-mailbox-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))

@@ -256,7 +256,7 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    * This method has putIfAbsent-semantics, this method can potentially block, waiting for the initialization
    * of the payload, if is in the process of registration from another Thread of execution
    */
-  def registerExtension[T <: AnyRef](ext: Extension[T]): T
+  def registerExtension[T <: Extension](ext: ExtensionId[T]): T
 
   /**
    * Returns the payload that is associated with the provided extension
@@ -264,13 +264,13 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    * This method can potentially block, waiting for the initialization
    * of the payload, if is in the process of registration from another Thread of execution
    */
-  def extension[T <: AnyRef](ext: Extension[T]): T
+  def extension[T <: Extension](ext: ExtensionId[T]): T
 
   /**
    * Returns whether the specified extension is already registered, this method can potentially block, waiting for the initialization
    * of the payload, if is in the process of registration from another Thread of execution
    */
-  def hasExtension(ext: Extension[_ <: AnyRef]): Boolean
+  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
 class ActorSystemImpl(val name: String, val applicationConfig: Config) extends ActorSystem {
@@ -367,28 +367,30 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
   }
 
-  private val extensions = new ConcurrentIdentityHashMap[Extension[_], AnyRef]
+  private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
 
   /**
    * Returns any extension registered to the specified Extension or returns null if not registered
    */
   @tailrec
-  private def findExtension[T <: AnyRef](ext: Extension[T]): T = extensions.get(ext) match {
+  private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
     case c: CountDownLatch ⇒ c.await(); findExtension(ext) //Registration in process, await completion and retry
     case other             ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
   }
 
   @tailrec
-  final def registerExtension[T <: AnyRef](ext: Extension[T]): T = {
+  final def registerExtension[T <: Extension](ext: ExtensionId[T]): T = {
     findExtension(ext) match {
       case null ⇒ //Doesn't already exist, commence registration
         val inProcessOfRegistration = new CountDownLatch(1)
         extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
           case null ⇒ try { // Signal was successfully sent
-            val instance = ext.createExtension(this) // Create and initialize the extension
-            if (instance == null) throw new IllegalStateException("Extension instance created as null for Extension: " + ext)
-            extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
-            instance //Profit!
+            ext.createExtension(this) match { // Create and initialize the extension
+              case null ⇒ throw new IllegalStateException("Extension instance created as null for Extension: " + ext)
+              case instance ⇒
+                extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
+                instance //Profit!
+            }
           } catch {
             case t ⇒
               extensions.remove(ext, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
@@ -402,21 +404,22 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     }
   }
 
-  def extension[T <: AnyRef](ext: Extension[T]): T = findExtension(ext) match {
+  def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
     case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension " + ext)
     case some ⇒ some.asInstanceOf[T]
   }
 
-  def hasExtension(ext: Extension[_ <: AnyRef]): Boolean = findExtension(ext) != null
+  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
       import ReflectiveAccess._
-      getObjectFor[ExtensionProvider](fqcn).fold(_ ⇒ createInstance[ExtensionProvider](fqcn, noParams, noArgs), Right(_)) match {
-        case Right(p: ExtensionProvider) ⇒ registerExtension(p.lookup())
-        case Right(other)                ⇒ log.error("'{}' is not an ExtensionProvider, skipping...", fqcn)
-        case Left(problem)               ⇒ log.error(problem, "While trying to load extension '{}', skipping...", fqcn)
+      getObjectFor[AnyRef](fqcn).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+        case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
+        case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
+        case Right(other)                  ⇒ log.error("'{}' is not an ExtensionIdProvider or ExtensionId, skipping...", fqcn)
+        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension '{}', skipping...", fqcn)
       }
 
     }

@@ -6,11 +6,11 @@ package akka.serialization
 
 import akka.AkkaException
 import akka.util.ReflectiveAccess
-import akka.actor.{ ActorSystem, ActorSystemImpl }
 import scala.util.DynamicVariable
 import com.typesafe.config.{ ConfigRoot, ConfigParseOptions, ConfigFactory, Config }
 import com.typesafe.config.Config._
 import akka.config.ConfigurationException
+import akka.actor.{ Extension, ActorSystem, ActorSystemImpl }
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -55,7 +55,7 @@ object Serialization {
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
-class Serialization(val system: ActorSystemImpl) {
+class Serialization(val system: ActorSystemImpl) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.applicationConfig)

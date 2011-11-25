@@ -11,12 +11,12 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
-object MongoBasedMailboxExtension extends Extension[MongoBasedMailboxSettings] with ExtensionProvider {
+object MongoBasedMailboxExtension extends ExtensionId[MongoBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new MongoBasedMailboxSettings(system.applicationConfig)
 }
 
-class MongoBasedMailboxSettings(cfg: Config) {
+class MongoBasedMailboxSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-mongo-mailbox-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))

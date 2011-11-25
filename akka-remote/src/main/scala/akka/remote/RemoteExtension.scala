@@ -14,12 +14,12 @@ import akka.config.ConfigurationException
 import com.eaio.uuid.UUID
 import akka.actor._
 
-object RemoteExtension extends Extension[RemoteExtensionSettings] with ExtensionProvider {
+object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.applicationConfig)
 }
 
-class RemoteExtensionSettings(cfg: Config) {
+class RemoteExtensionSettings(cfg: Config) extends Extension {
   private def referenceConfig: Config =
     ConfigFactory.parseResource(classOf[ActorSystem], "/akka-remote-reference.conf",
       ConfigParseOptions.defaults.setAllowMissing(false))
