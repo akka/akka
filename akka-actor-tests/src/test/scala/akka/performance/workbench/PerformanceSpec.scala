@@ -15,7 +15,10 @@ trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
 
   def minClients() = System.getProperty("benchmark.minClients", "1").toInt;
 
-  def maxClients() = System.getProperty("benchmark.maxClients", "40").toInt;
+  def maxClients() = {
+    val default = if (isBenchmark) "48" else "4"
+    System.getProperty("benchmark.maxClients", default).toInt;
+  }
 
   def repeatFactor() = {
     val defaultRepeatFactor = if (isBenchmark) "150" else "2"
