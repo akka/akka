@@ -11,13 +11,17 @@ import akka.util.duration._
 import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
+import akka.config.ConfigurationException
+import akka.serialization.SerializationExtension
+
 import java.util.concurrent.atomic.AtomicReference
 import java.security.SecureRandom
 import System.{ currentTimeMillis ⇒ newTimestamp }
+
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
+
 import com.google.protobuf.ByteString
-import akka.serialization.SerializationExtension
 
 /**
  * Interface for node membership change listener.
@@ -36,9 +40,8 @@ case class Gossip(
   availableNodes: Set[RemoteAddress] = Set.empty[RemoteAddress],
   unavailableNodes: Set[RemoteAddress] = Set.empty[RemoteAddress])
 
+// ====== START - NEW GOSSIP IMPLEMENTATION ======
 /*
-  // ====== NEW GOSSIP IMPLEMENTATION ======
-
   case class Gossip(
     version: VectorClock,
     node: RemoteAddress,
@@ -74,6 +77,7 @@ case class Gossip(
     changes: Vector[VNodeMod],
     status: PendingPartitioningStatus)
 */
+// ====== END - NEW GOSSIP IMPLEMENTATION ======
 
 /**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
@@ -106,7 +110,13 @@ class Gossiper(remote: Remote) {
   private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
   private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[RemoteAddress, ActorRef])
-  private val seeds = Set(address) // FIXME read in list of seeds from config
+
+  private val seeds = {
+    val seeds = RemoteExtension(system).settings.SeedNodes
+    if (seeds.isEmpty) throw new ConfigurationException(
+      "At least one seed node must be defined in the configuration [akka.cluster.seed-nodes]")
+    else seeds
+  }
 
   private val address = system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
   private val nodeFingerprint = address.##

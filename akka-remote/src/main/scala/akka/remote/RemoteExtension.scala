@@ -17,6 +17,8 @@ import java.net.InetAddress
 import akka.config.ConfigurationException
 import com.eaio.uuid.UUID
 
+import scala.collection.JavaConverters._
+
 object RemoteExtensionKey extends ExtensionKey[RemoteExtension]
 
 object RemoteExtension {
@@ -43,6 +45,7 @@ object RemoteExtension {
 
     // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
     val ClusterName = getString("akka.cluster.name")
+    val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_))
 
     val NodeName: String = config.getString("akka.cluster.nodename") match {
       case ""    ⇒ new UUID().toString
@@ -65,7 +68,6 @@ object RemoteExtension {
     }
 
     class RemoteServerSettings {
-      import scala.collection.JavaConverters._
       val MessageFrameSize = config.getInt("akka.remote.server.message-frame-size")
       val SecureCookie: Option[String] = config.getString("akka.remote.secure-cookie") match {
         case ""     ⇒ None
