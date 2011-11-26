@@ -429,6 +429,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        // FIXME: consider executing runnable inside main dispatcher to prevent blocking of scheduler
         runnable.run()
       }
     }
@@ -451,12 +452,11 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
         // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
-        receiver.isTerminated match {
-          case false ⇒
-            receiver ! message
-            timeout.getTimer.newTimeout(this, delay)
-          case true ⇒
-            system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
+        if (!receiver.isTerminated) {
+          receiver ! message
+          timeout.getTimer.newTimeout(this, delay)
+        } else {
+          system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
         }
       }
     }
@@ -474,7 +474,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private[akka] def stop() = hashedWheelTimer.stop()
 }
 
-class DefaultCancellable(timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
+class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
   def cancel() {
     timeout.cancel()
   }
