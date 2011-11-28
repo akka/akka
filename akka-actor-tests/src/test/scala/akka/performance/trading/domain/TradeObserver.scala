@@ -6,15 +6,13 @@ abstract trait TradeObserver {
   def trade(bid: Bid, ask: Ask)
 }
 
-trait SimpleTradeObserver extends TradeObserver {
+trait TotalTradeObserver extends TradeObserver {
   override def trade(bid: Bid, ask: Ask) {
-    if (!Orderbook.useDummyOrderbook) {
-      TotalTradeCounter.counter.incrementAndGet
-    }
+    TotalTradeCounter.counter.incrementAndGet
   }
 }
 
-trait StandbyTradeObserver extends TradeObserver {
+trait NopTradeObserver extends TradeObserver {
   override def trade(bid: Bid, ask: Ask) {
   }
 }
