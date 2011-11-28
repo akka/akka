@@ -424,7 +424,7 @@ object Dependency {
     val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
     val Scalatest    = "1.6.1"
-    val Slf4j        = "1.6.0"
+    val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
     val Rabbit       = "2.3.1"
