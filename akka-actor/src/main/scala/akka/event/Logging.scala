@@ -268,6 +268,7 @@ object Logging {
   val AllLogLevels = Seq(ErrorLevel: AnyRef, WarningLevel, InfoLevel, DebugLevel).asInstanceOf[Seq[LogLevel]]
 
   val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+  val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
   val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
   val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
@@ -311,7 +312,12 @@ object Logging {
     def level = ErrorLevel
   }
   object Error {
-    def apply(logSource: String, message: Any) = new Error(new EventHandlerException, logSource, message)
+    def apply(logSource: String, message: Any) = new Error(NoCause, logSource, message)
+
+    /** Null Object used for errors without cause Throwable */
+    object NoCause extends RuntimeException {
+      setStackTrace(Array.empty[StackTraceElement])
+    }
   }
 
   case class Warning(logSource: String, message: Any = "") extends LogEvent {
@@ -363,13 +369,15 @@ object Logging {
       }
     }
 
-    def error(event: Error) =
-      println(errorFormat.format(
+    def error(event: Error) = {
+      val f = if (event.cause == Error.NoCause) errorFormatWithoutCause else errorFormat
+      println(f.format(
         timestamp,
         event.thread.getName,
         event.logSource,
         event.message,
         stackTraceFor(event.cause)))
+    }
 
     def warning(event: Warning) =
       println(warningFormat.format(
@@ -429,14 +437,14 @@ object Logging {
   }
 
   def stackTraceFor(e: Throwable) = {
-    if (e ne null) {
+    if ((e eq null) || e == Error.NoCause) {
+      ""
+    } else {
       import java.io.{ StringWriter, PrintWriter }
       val sw = new StringWriter
       val pw = new PrintWriter(sw)
       e.printStackTrace(pw)
       sw.toString
-    } else {
-      "[NO STACK TRACE]"
     }
   }
 
