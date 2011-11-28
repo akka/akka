@@ -14,6 +14,7 @@ import akka.actor.Timeout
 import akka.dispatch.FutureTimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorRefProvider
+import scala.util.control.NoStackTrace
 
 object LoggingBus {
   implicit def fromActorSystem(system: ActorSystem): LoggingBus = system.eventStream
@@ -315,9 +316,7 @@ object Logging {
     def apply(logSource: String, message: Any) = new Error(NoCause, logSource, message)
 
     /** Null Object used for errors without cause Throwable */
-    object NoCause extends RuntimeException {
-      setStackTrace(Array.empty[StackTraceElement])
-    }
+    object NoCause extends NoStackTrace
   }
 
   case class Warning(logSource: String, message: Any = "") extends LogEvent {
