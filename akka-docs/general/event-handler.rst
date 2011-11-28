@@ -16,7 +16,7 @@ You can configure which event handlers should be registered at boot time. That i
   akka {
     # event handlers to register at boot time (EventHandler$DefaultListener logs to STDOUT)
     event-handlers = ["akka.event.EventHandler$DefaultListener"]
-    event-handler-level = "DEBUG" # Options: ERROR, WARNING, INFO, DEBUG
+    loglevel = "DEBUG" # Options: ERROR, WARNING, INFO, DEBUG
   }
 
 The default one logs to STDOUT and is registered by default. It is not intended to be used for production. There is also an :ref:`slf4j` event handler available in the 'akka-slf4j' module.
