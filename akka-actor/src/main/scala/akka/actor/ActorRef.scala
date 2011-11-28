@@ -381,7 +381,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ eventStream.publish(d)
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
