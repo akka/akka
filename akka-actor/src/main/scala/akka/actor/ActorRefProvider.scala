@@ -429,8 +429,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        // FIXME: consider executing runnable inside main dispatcher to prevent blocking of scheduler
-        runnable.run()
+        system.dispatcher.dispatchTask(() ⇒ runnable.run())
       }
     }
 
@@ -444,7 +443,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(f: () ⇒ Unit): TimerTask =
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        f()
+        system.dispatcher.dispatchTask(f)
       }
     }
 
@@ -465,7 +464,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createContinuousTask(f: () ⇒ Unit, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        f()
+        system.dispatcher.dispatchTask(f)
         timeout.getTimer.newTimeout(this, delay)
       }
     }
