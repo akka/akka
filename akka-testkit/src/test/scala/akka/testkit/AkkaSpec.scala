@@ -24,6 +24,7 @@ object AkkaSpec {
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
+        stdout-loglevel = "WARNING"
         actor {
           default-dispatcher {
             core-pool-size = 4
