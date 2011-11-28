@@ -267,12 +267,11 @@ object AkkaBuild extends Build {
     publishArtifact in Compile := false
   )
 
-  val testExcludes = SettingKey[Seq[String]]("test-excludes")
+  val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
+  val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
+  val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
-  def akkaTestExcludes: Seq[String] = {
-    val exclude = System.getProperty("akka.test.exclude", "")
-    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
-  }
+  val defaultExcludedTags = Seq("timing")
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
@@ -290,9 +289,37 @@ object AkkaBuild extends Build {
     // disable parallel tests
     parallelExecution in Test := false,
 
-    // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
-    testExcludes := akkaTestExcludes,
-    testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+    // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
+    excludeTestNames := {
+      val exclude = System.getProperty("akka.test.names.exclude", "")
+      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+    },
+
+    // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
+    excludeTestTags := {
+      val exclude = System.getProperty("akka.test.tags.exclude", "")
+      if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
+    },
+
+    // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
+    includeTestTags := {
+      val include = System.getProperty("akka.test.tags.include", "")
+      if (include.isEmpty) Seq.empty else include.split(",").toSeq
+    },
+
+    // add filters for tests excluded by name
+    testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+
+    // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
+    testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
+      val tags = (excludes.toSet -- includes.toSet).toSeq
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+    },
+
+    // add arguments for tests included by tag
+    testOptions in Test <++= includeTestTags map { tags =>
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+    },
 
     // show full stack traces
     testOptions in Test += Tests.Argument("-oF")

@@ -11,13 +11,15 @@ import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
 import akka.actor.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch.{ SystemMessage, Supervise, Promise, MessageDispatcher, Future, DefaultPromise, Dispatcher, Mailbox, Envelope }
-import akka.event.{ Logging, DeathWatch, ActorClassification, EventStream }
 import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter, BroadcastRouter }
 import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
 import akka.remote.RemoteAddress
 import akka.remote.LocalOnly
+import akka.event._
+import akka.event.Logging.Error._
+import akka.event.Logging.Warning
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -36,6 +38,7 @@ trait ActorRefProvider {
 
   // FIXME: remove/replace?
   def nodename: String
+
   // FIXME: remove/replace?
   def clustername: String
 
@@ -162,8 +165,11 @@ class LocalActorRefProvider(
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
+
   def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
+
   private val tempNode = rootPath / "tmp"
+
   def tempPath = tempNode / tempName
 
   // FIXME (actor path): this could become a cache for the new tree traversal actorFor
@@ -189,7 +195,9 @@ class LocalActorRefProvider(
 
     override def toString = name
 
-    override def stop() = stopped switchOn { terminationFuture.complete(causeOfTermination.toLeft(())) }
+    override def stop() = stopped switchOn {
+      terminationFuture.complete(causeOfTermination.toLeft(()))
+    }
 
     override def isTerminated = stopped.isOn
 
@@ -212,6 +220,7 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒ context.self.stop()
     }
   }
+
   private class SystemGuardian extends Actor {
     def receive = {
       case Terminated(_) ⇒
@@ -219,6 +228,7 @@ class LocalActorRefProvider(
         context.self.stop()
     }
   }
+
   private val guardianFaultHandlingStrategy = {
     import akka.actor.FaultHandlingStrategy._
     OneForOneStrategy {
@@ -238,7 +248,9 @@ class LocalActorRefProvider(
    */
   @volatile
   private var system: ActorSystemImpl = _
+
   def dispatcher: MessageDispatcher = system.dispatcher
+
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
   lazy val rootGuardian: ActorRef = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
   lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
@@ -289,7 +301,8 @@ class LocalActorRefProvider(
     actors.putIfAbsent(path.toString, newFuture) match {
       case null ⇒
         val actor: ActorRef = try {
-          (if (systemService) None else deployer.lookupDeployment(path.toString)) match { // see if the deployment already exists, if so use it, if not create actor
+          (if (systemService) None else deployer.lookupDeployment(path.toString)) match {
+            // see if the deployment already exists, if so use it, if not create actor
 
             // create a local actor
             case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
@@ -358,6 +371,7 @@ class LocalActorRefProvider(
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
+
   private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.remoteAddress, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
@@ -368,7 +382,9 @@ class LocalActorRefProvider(
       case t if t.duration.length <= 0 ⇒
         new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
       case t ⇒
-        val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher) { def whenDone() = actors.remove(this) }
+        val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher) {
+          def whenDone() = actors.remove(this)
+        }
         assert(actors.putIfAbsent(a.path.toString, a) eq null) //If this fails, we're in deep trouble
         recipient.tell(message, a)
         a.result
@@ -393,7 +409,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
   }
 }
 
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) extends Scheduler {
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
@@ -411,19 +427,37 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
     new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay))
 
   private def createSingleTask(runnable: Runnable): TimerTask =
-    new TimerTask() { def run(timeout: org.jboss.netty.akka.util.Timeout) { runnable.run() } }
+    new TimerTask() {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        // FIXME: consider executing runnable inside main dispatcher to prevent blocking of scheduler
+        runnable.run()
+      }
+    }
 
   private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { receiver ! message } }
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        receiver ! message
+      }
+    }
 
   private def createSingleTask(f: () ⇒ Unit): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        f()
+      }
+    }
 
   private def createContinuousTask(receiver: ActorRef, message: Any, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        receiver ! message
-        timeout.getTimer.newTimeout(this, delay)
+        // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
+        if (!receiver.isTerminated) {
+          receiver ! message
+          timeout.getTimer.newTimeout(this, delay)
+        } else {
+          system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
+        }
       }
     }
   }
@@ -440,9 +474,13 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
   private[akka] def stop() = hashedWheelTimer.stop()
 }
 
-class DefaultCancellable(timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
-  def cancel() { timeout.cancel() }
+class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
+  def cancel() {
+    timeout.cancel()
+  }
 
-  def isCancelled: Boolean = { timeout.isCancelled }
+  def isCancelled: Boolean = {
+    timeout.isCancelled
+  }
 }
 
