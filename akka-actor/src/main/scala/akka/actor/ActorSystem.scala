@@ -64,17 +64,18 @@ object ActorSystem {
 
     import scala.collection.JavaConverters._
     import config._
+
     val ConfigVersion = getString("akka.version")
 
     val ProviderClass = getString("akka.actor.provider")
 
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
-    // TODO This isn't used anywhere. Remove?
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
     val LogLevel = getString("akka.loglevel")
     val StdoutLogLevel = getString("akka.stdout-loglevel")
     val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
     val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
@@ -101,6 +102,10 @@ object ActorSystem {
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version +
         "] does not match the provided config version [" + ConfigVersion + "]")
+
+    override def toString: String = {
+      config.toString
+    }
 
   }
 
@@ -164,6 +169,11 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    * The core settings extracted from the supplied configuration.
    */
   def settings: Settings
+
+  /**
+   * Log the configuration.
+   */
+  def logConfiguration(): Unit
 
   /**
    * The logical node name where this actor system resides.
@@ -279,6 +289,8 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
 
   val settings = new Settings(applicationConfig)
 
+  def logConfiguration(): Unit = log.info(settings.toString)
+
   protected def systemImpl = this
 
   private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
@@ -352,6 +364,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     eventStream.start(this)
     eventStream.startDefaultLoggers(this)
     loadExtensions()
+    if (LogConfigOnStart) logConfiguration()
     this
   }
 
