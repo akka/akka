@@ -289,9 +289,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
 
   val settings = new Settings(applicationConfig)
 
-  def logConfiguration(): Unit = {
-    log.info(settings.toString)
-  }
+  def logConfiguration(): Unit = log.info(settings.toString)
 
   protected def systemImpl = this
 
