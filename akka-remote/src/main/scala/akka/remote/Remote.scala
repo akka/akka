@@ -38,7 +38,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   private[remote] val remoteExtension = RemoteExtension(system)
   private[remote] val serializationExtension = SerializationExtension(system)
   private[remote] val remoteAddress = {
-    RemoteAddress(remoteExtension.settings.serverSettings.Hostname, remoteExtension.settings.serverSettings.Port)
+    RemoteAddress(system.name, remoteExtension.settings.serverSettings.Hostname, remoteExtension.settings.serverSettings.Port)
   }
 
   val failureDetector = new AccrualFailureDetector(system)
@@ -141,13 +141,17 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
 
-        val actorPath = ActorPath(systemImpl, message.getActorPath)
-        val parent = system.actorFor(actorPath.parent)
-
-        if (parent.isDefined) {
-          systemImpl.provider.actorOf(systemImpl, Props(creator = actorFactory), parent.get, actorPath.name)
-        } else {
-          log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
+        message.getActorPath match {
+          case RemoteActorPath(addr, elems) if addr == remoteAddress && elems.size > 0 ⇒
+            val name = elems.last
+            system.actorFor(elems.dropRight(1)) match {
+              case x if x eq system.deadLetters ⇒
+                log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
+              case parent ⇒
+                systemImpl.provider.actorOf(systemImpl, Props(creator = actorFactory), parent, name)
+            }
+          case _ ⇒
+            log.error("remote path does not match path from message [{}]", message)
         }
 
       } else {
@@ -251,7 +255,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
     else
       remote.system.deadLetters
 
-  lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath).getOrElse(remote.system.deadLetters)
+  lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath)
 
   lazy val payload: Either[Throwable, AnyRef] =
     if (input.hasException) Left(parseException())

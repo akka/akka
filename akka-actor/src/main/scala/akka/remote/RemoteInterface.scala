@@ -6,32 +6,40 @@ package akka.remote
 
 import akka.actor._
 import akka.AkkaException
-
 import scala.reflect.BeanProperty
 import java.io.{ PrintWriter, PrintStream }
-
 import java.net.InetSocketAddress
+import java.net.URI
+import java.net.URISyntaxException
+import java.net.InetAddress
 
 object RemoteAddress {
-  def apply(host: String, port: Int): RemoteAddress = apply(new InetSocketAddress(host, port))
-  def apply(inetAddress: InetSocketAddress): RemoteAddress = inetAddress match {
-    case null ⇒ null
-    case inet ⇒
-      val host = inet.getAddress match {
-        case null  ⇒ inet.getHostName //Fall back to given name
-        case other ⇒ other.getHostAddress
-      }
-      val portNo = inet.getPort
-      RemoteAddress(portNo, host)
+  def apply(system: String, host: String, port: Int) = {
+    val ip = InetAddress.getByName(host)
+    new RemoteAddress(system, host, ip, port)
   }
 }
 
-object LocalOnly extends RemoteAddress(0, "local")
-
-case class RemoteAddress private[akka] (port: Int, hostname: String) extends Address {
+case class RemoteAddress(system: String, host: String, ip: InetAddress, port: Int) extends Address {
   def protocol = "akka"
   @transient
-  lazy val hostPort = hostname + ":" + port
+  lazy val hostPort = system + "@" + host + ":" + port
+}
+
+object RemoteActorPath {
+  def unapply(addr: String): Option[(RemoteAddress, Iterable[String])] = {
+    try {
+      val uri = new URI(addr)
+      if (uri.getScheme != "akka") return None
+      if (uri.getUserInfo == null) return None
+      if (uri.getHost == null) return None
+      if (uri.getPort == -1) return None
+      if (uri.getPath == null) return None
+      Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), uri.getPath.split("/").drop(1))
+    } catch {
+      case _: URISyntaxException ⇒ None
+    }
+  }
 }
 
 class RemoteException(message: String) extends AkkaException(message)

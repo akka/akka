@@ -5,9 +5,11 @@ package akka.event
 
 import akka.actor.{ ActorRef, Actor, Props, ActorSystemImpl, Terminated, ActorSystem, simpleName }
 import akka.util.Subclassification
+import java.util.concurrent.atomic.AtomicInteger
 
 object EventStream {
   implicit def fromActorSystem(system: ActorSystem) = system.eventStream
+  val generation = new AtomicInteger
 }
 
 class A(x: Int = 0) extends Exception("x=" + x)
@@ -52,8 +54,12 @@ class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClas
         case ref: ActorRef   ⇒ watch(ref)
         case Terminated(ref) ⇒ unsubscribe(ref)
       }
-    }), "MainBusReaper")
+    }), "MainBusReaper-" + EventStream.generation.incrementAndGet())
     subscribers foreach (reaper ! _)
+  }
+
+  def stop() {
+    reaper.stop()
   }
 
 }

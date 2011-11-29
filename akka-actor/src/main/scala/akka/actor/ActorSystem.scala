@@ -55,7 +55,7 @@ object ActorSystem {
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
-  class Settings(cfg: Config) {
+  class Settings(cfg: Config, val name: String) {
     private def referenceConfig: Config =
       ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf",
         ConfigParseOptions.defaults.setAllowMissing(false))
@@ -287,11 +287,34 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
 
   import ActorSystem._
 
-  val settings = new Settings(applicationConfig)
+  val settings = new Settings(applicationConfig, name)
 
   protected def systemImpl = this
 
-  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
+  private val systemActors = new ConcurrentHashMap[String, ActorRef]
+
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
+    if (systemActors.putIfAbsent(name, deadLetters) eq null) {
+      val actor = provider.actorOf(this, props, systemGuardian, name, true)
+      systemActors.replace(name, actor)
+      deathWatch.subscribe(systemActorsJanitor, actor)
+      actor
+    } else throw new InvalidActorNameException("system actor name " + name + " is not unique!")
+  }
+
+  private val actors = new ConcurrentHashMap[String, ActorRef]
+
+  protected def isDuplicate(name: String): Boolean = {
+    actors.putIfAbsent(name, deadLetters) ne null
+  }
+
+  override def actorOf(props: Props, name: String): ActorRef = {
+    val actor = super.actorOf(props, name)
+    // this would have thrown an exception in case of a duplicate name
+    actors.replace(name, actor)
+    deathWatch.subscribe(actorsJanitor, actor)
+    actor
+  }
 
   import settings._
 
@@ -301,25 +324,6 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
   val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel))
-
-  val provider: ActorRefProvider = {
-    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-    val arguments = Seq(
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler)
-    val types: Array[Class[_]] = arguments map (_._1) toArray
-    val values: Array[AnyRef] = arguments map (_._2) toArray
-
-    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
-      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
-      case Left(e)                            ⇒ throw e
-      case Right(p)                           ⇒ p
-    }
-  }
 
   val deadLetters = new DeadLetterActorRef(eventStream)
   val deadLetterMailbox = new Mailbox(null) {
@@ -331,6 +335,35 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     override def hasMessages = false
     override def hasSystemMessages = false
     override def numberOfMessages = 0
+  }
+
+  val provider: ActorRefProvider = {
+    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+    val arguments = Seq(
+      classOf[String] -> name,
+      classOf[Settings] -> settings,
+      classOf[EventStream] -> eventStream,
+      classOf[Scheduler] -> scheduler,
+      classOf[ActorRef] -> deadLetters)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
+
+    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
+      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
+      case Left(e)                            ⇒ throw e
+      case Right(p)                           ⇒ p
+    }
+  }
+
+  val actorsJanitor = MinimalActorRef(provider.rootPath) {
+    case Terminated(x) ⇒ actors.remove(x.path.name)
+  }
+
+  val systemActorsJanitor = MinimalActorRef(provider.rootPath) {
+    case Terminated(x) ⇒ systemActors.remove(x.path.name)
   }
 
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))

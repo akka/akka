@@ -309,7 +309,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
 
   // FIXME this is broken, but see above
   def this(address: Address, path: String) = this(address.hostPort, 0, path)
-  def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
+  def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.host, remoteAddress.port, path)
   def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -349,6 +349,15 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
   protected[akka] def restart(cause: Throwable): Unit = ()
+}
+
+object MinimalActorRef {
+  def apply(_path: ActorPath)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
+    def path = _path
+    def address = path.toString
+    override def !(message: Any)(implicit sender: ActorRef = null): Unit =
+      if (receive.isDefinedAt(message)) receive(message)
+  }
 }
 
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
@@ -399,7 +408,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
-abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
+class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
   override def name = path.name
@@ -412,7 +421,7 @@ abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deat
     result onTimeout callback
   }
 
-  protected def whenDone(): Unit
+  protected def whenDone(): Unit = {}
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case Status.Success(r) ⇒ result.completeWithResult(r)

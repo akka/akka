@@ -97,6 +97,10 @@ private[akka] class ActorCell(
 
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
+  protected def isDuplicate(name: String): Boolean = {
+    childrenRefs contains name
+  }
+
   var currentMessage: Envelope = null
 
   var actor: Actor = _
@@ -152,8 +156,13 @@ private[akka] class ActorCell(
 
   final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
 
-  final def getChild(name: String): Option[ActorRef] =
-    if (isTerminated) None else childrenRefs.get(name).map(_.child)
+  final def getChild(name: String): ActorRef =
+    if (isTerminated) null
+    else {
+      val c = childrenRefs
+      if (c contains name) c(name).child
+      else null
+    }
 
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
@@ -360,9 +369,6 @@ private[akka] class ActorCell(
   }
 
   private def doTerminate() {
-    if (!system.provider.evict(self.path.toString))
-      system.eventStream.publish(Warning(self.toString, "evict of " + self.path.toString + " failed"))
-
     dispatcher.detach(this)
 
     try {

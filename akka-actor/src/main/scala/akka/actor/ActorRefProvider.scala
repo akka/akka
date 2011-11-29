@@ -17,21 +17,26 @@ import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
 import akka.remote.RemoteAddress
-import akka.remote.LocalOnly
+import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 
 /**
  * Interface for all ActorRef providers to implement.
  */
 trait ActorRefProvider {
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String): ActorRef = actorOf(system, props, supervisor, name, false)
-
-  def actorFor(path: Iterable[String]): Option[ActorRef]
-
+  /**
+   * Reference to the supervisor used for all top-level user actors.
+   */
   def guardian: ActorRef
 
+  /**
+   * Reference to the supervisor used for all top-level system actors.
+   */
   def systemGuardian: ActorRef
 
+  /**
+   * Reference to the death watch service.
+   */
   def deathWatch: DeathWatch
 
   // FIXME: remove/replace?
@@ -47,6 +52,12 @@ trait ActorRefProvider {
 
   def settings: ActorSystem.Settings
 
+  /**
+   * Initialization of an ActorRefProvider happens in two steps: first
+   * construction of the object with settings, eventStream, scheduler, etc.
+   * and then—when the ActorSystem is constructed—the second phase during
+   * which actors may be created (e.g. the guardians).
+   */
   def init(system: ActorSystemImpl)
 
   private[akka] def deployer: Deployer
@@ -54,21 +65,33 @@ trait ActorRefProvider {
   private[akka] def scheduler: Scheduler
 
   /**
-   * Create an Actor with the given name below the given supervisor.
+   * Actor factory with create-only semantics: will create an actor as
+   * described by props with the given supervisor and path (may be different
+   * in case of remote supervision). If systemService is true, deployment is
+   * bypassed (local-only).
    */
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean = false): ActorRef
 
   /**
-   * Create an Actor with the given full path below the given supervisor.
-   *
-   * FIXME: Remove! this is dangerous!
+   * Create actor reference for a specified local or remote path. If no such
+   * actor exists, it will be (equivalent to) a dead letter reference.
    */
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
+  def actorFor(path: ActorPath): ActorRef
 
   /**
-   * Remove this path from the lookup map.
+   * Create actor reference for a specified local or remote path, which will
+   * be parsed using java.net.URI. If no such actor exists, it will be
+   * (equivalent to) a dead letter reference.
    */
-  private[akka] def evict(path: String): Boolean
+  def actorFor(s: String): ActorRef
+
+  /**
+   * Create actor reference for the specified child path starting at the root
+   * guardian. This method always returns an actor which is “logically local”,
+   * i.e. it cannot be used to obtain a reference to an actor which is not
+   * physically or logically attached to this actor system.
+   */
+  def actorFor(p: Iterable[String]): ActorRef
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
 
@@ -106,16 +129,20 @@ trait ActorRefFactory {
 
   protected def randomName(): String
 
+  /**
+   * Child names must be unique within the context of one parent; implement
+   * this method to have the default implementation of actorOf perform the
+   * check (and throw an exception if necessary).
+   */
+  protected def isDuplicate(name: String): Boolean
+
   def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
 
-  /*
-   * TODO this will have to go at some point, because creating two actors with
-   * the same address can race on the cluster, and then you never know which
-   * implementation wins
-   */
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.startsWith("$"))
-      throw new ActorInitializationException("actor name must not be null, empty or start with $")
+      throw new InvalidActorNameException("actor name must not be null, empty or start with $")
+    if (isDuplicate(name))
+      throw new InvalidActorNameException("actor name " + name + " is not unique!")
     provider.actorOf(systemImpl, props, guardian, name, false)
   }
 
@@ -130,11 +157,13 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
-  def actorFor(path: ActorPath): Option[ActorRef] = actorFor(path.pathElements)
+  def actorOf(creator: UntypedActorFactory, name: String): ActorRef = actorOf(Props(() ⇒ creator.create()), name)
 
-  def actorFor(path: String): Option[ActorRef] = actorFor(ActorPath.split(path))
+  def actorFor(path: ActorPath) = provider.actorFor(path)
 
-  def actorFor(path: Iterable[String]): Option[ActorRef] = provider.actorFor(path)
+  def actorFor(path: String): ActorRef = provider.actorFor(path)
+
+  def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(path)
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
@@ -143,16 +172,17 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
+  _systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val rootPath: ActorPath,
-  val nodename: String,
-  val clustername: String) extends ActorRefProvider {
+  val deadLetters: ActorRef) extends ActorRefProvider {
 
-  def this(settings: ActorSystem.Settings, eventStream: EventStream, scheduler: Scheduler) {
-    this(settings, eventStream, scheduler, new RootActorPath(LocalOnly), "local", "local")
-  }
+  val rootPath: ActorPath = new RootActorPath(LocalAddress(_systemName))
+
+  // FIXME remove both
+  val nodename: String = "local"
+  val clustername: String = "local"
 
   val log = Logging(eventStream, "LocalActorRefProvider")
 
@@ -162,13 +192,9 @@ class LocalActorRefProvider(
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
-  def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
+  private def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
   private val tempNode = rootPath / "tmp"
   def tempPath = tempNode / tempName
-
-  // FIXME (actor path): this could become a cache for the new tree traversal actorFor
-  // currently still used for tmp actors (e.g. ask actor refs)
-  private val actors = new ConcurrentHashMap[String, AnyRef]
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
@@ -240,7 +266,7 @@ class LocalActorRefProvider(
   private var system: ActorSystemImpl = _
   def dispatcher: MessageDispatcher = system.dispatcher
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
-  lazy val rootGuardian: ActorRef = actorOf(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
+  lazy val rootGuardian: ActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
   lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
   lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
 
@@ -253,88 +279,58 @@ class LocalActorRefProvider(
     deathWatch.subscribe(rootGuardian, systemGuardian)
   }
 
-  // FIXME (actor path): should start at the new root guardian, and not use the tail (just to avoid the expected "system" name for now)
-  def actorFor(path: Iterable[String]): Option[ActorRef] = findInCache(ActorPath.join(path)) orElse findInTree(Some(guardian), path.tail)
+  def actorFor(path: String): ActorRef = path match {
+    case LocalActorPath(address, elems) if address == rootPath.address ⇒
+      findInTree(rootGuardian.asInstanceOf[LocalActorRef], elems)
+    case _ ⇒ deadLetters
+  }
+
+  def actorFor(path: ActorPath): ActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path.pathElements)
+
+  def actorFor(path: Iterable[String]): ActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path)
 
   @tailrec
-  private def findInTree(start: Option[ActorRef], path: Iterable[String]): Option[ActorRef] = {
+  private def findInTree(start: LocalActorRef, path: Iterable[String]): ActorRef = {
     if (path.isEmpty) start
-    else {
-      val child = start match {
-        case Some(local: LocalActorRef) ⇒ local.underlying.getChild(path.head)
-        case _                          ⇒ None
-      }
-      findInTree(child, path.tail)
+    else start.underlying.getChild(path.head) match {
+      case null                 ⇒ deadLetters
+      case child: LocalActorRef ⇒ findInTree(child, path.tail)
+      case _                    ⇒ deadLetters
     }
   }
 
-  private def findInCache(path: String): Option[ActorRef] = actors.get(path) match {
-    case null              ⇒ None
-    case actor: ActorRef   ⇒ Some(actor)
-    case future: Future[_] ⇒ Some(future.get.asInstanceOf[ActorRef])
-  }
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef = {
+    val path = supervisor.path / name
+    (if (systemService) None else deployer.lookupDeployment(path.toString)) match {
 
-  /**
-   * Returns true if the actor was in the provider's cache and evicted successfully, else false.
-   */
-  private[akka] def evict(path: String): Boolean = actors.remove(path) ne null
+      // create a local actor
+      case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
+        new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
 
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
-    actorOf(system, props, supervisor, supervisor.path / name, systemService)
+      // create a routed actor ref
+      case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
 
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
-    val name = path.name
-    val newFuture = Promise[ActorRef](5000)(dispatcher) // FIXME is this proper timeout?
-
-    actors.putIfAbsent(path.toString, newFuture) match {
-      case null ⇒
-        val actor: ActorRef = try {
-          (if (systemService) None else deployer.lookupDeployment(path.toString)) match { // see if the deployment already exists, if so use it, if not create actor
-
-            // create a local actor
-            case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
-              new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
-
-            // create a routed actor ref
-            case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
-
-              val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-                case RouterType.Direct     ⇒ () ⇒ new DirectRouter
-                case RouterType.Random     ⇒ () ⇒ new RandomRouter
-                case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
-                case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-                  if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, settings.ActorTimeout)
-                case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
-                case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
-                case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
-                case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
-              }
-
-              val connections: Iterable[ActorRef] = (1 to nrOfInstances.factor) map { i ⇒
-                val routedPath = path.parent / (path.name + ":" + i)
-                new LocalActorRef(system, props, supervisor, routedPath, systemService)
-              }
-
-              actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
-
-            case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
-          }
-        } catch {
-          case e: Exception ⇒
-            newFuture completeWithException e // so the other threads gets notified of error
-            //TODO FIXME should we remove the mapping in "actors" here?
-            throw e
+        val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
+          case RouterType.Direct     ⇒ () ⇒ new DirectRouter
+          case RouterType.Random     ⇒ () ⇒ new RandomRouter
+          case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
+          case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
+            if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, settings.ActorTimeout)
+          case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
+          case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
+          case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
+          case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
         }
 
-        newFuture completeWithResult actor
-        actors.replace(path.toString, newFuture, actor)
-        actor
-      case actor: ActorRef ⇒
-        actor
-      case future: Future[_] ⇒
-        future.get.asInstanceOf[ActorRef]
-    }
+        val connections: Iterable[ActorRef] = (1 to nrOfInstances.factor) map { i ⇒
+          val routedPath = path.parent / (path.name + ":" + i)
+          new LocalActorRef(system, props, supervisor, routedPath, systemService)
+        }
 
+        actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
+
+      case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
+    }
   }
 
   /**
@@ -356,7 +352,7 @@ class LocalActorRefProvider(
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = actorFor(ActorPath.split(actor.path))
+  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = Some(actorFor(actor.path))
   private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.address, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
@@ -367,8 +363,7 @@ class LocalActorRefProvider(
       case t if t.duration.length <= 0 ⇒
         new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
       case t ⇒
-        val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher) { def whenDone() = actors.remove(this) }
-        assert(actors.putIfAbsent(a.path.toString, a) eq null) //If this fails, we're in deep trouble
+        val a = new AskActorRef(tempPath, this, deathWatch, t, dispatcher)
         recipient.tell(message, a)
         a.result
     }

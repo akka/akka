@@ -120,7 +120,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           RoundRobin,
           NrOfInstances(3),
           RemoteScope(Seq(
-            RemoteAddress("wallace", 2552), RemoteAddress("gromit", 2552))))))
+            RemoteAddress(system.name, "wallace", 2552), RemoteAddress(system.name, "gromit", 2552))))))
     }
 
     "be able to parse 'akka.actor.deployment._' with recipe" in {
