@@ -384,6 +384,11 @@ trait FSM[S, D] extends ListenerManagement {
   protected[akka] def stateData = currentState.stateData
 
   /**
+   * Return next state data (available in onTransition handlers)
+   */
+  protected[akka] def nextStateData = nextState.stateData
+
+  /**
    * ****************************************************************
    *                PRIVATE IMPLEMENTATION DETAILS
    * ****************************************************************
@@ -393,6 +398,7 @@ trait FSM[S, D] extends ListenerManagement {
    * FSM State data and current timeout handling
    */
   private var currentState: State = _
+  private var nextState: State = _
   private var timeoutFuture: Option[ScheduledFuture[AnyRef]] = None
   private var generation: Long = 0L
 
@@ -519,6 +525,7 @@ trait FSM[S, D] extends ListenerManagement {
     } else {
       nextState.replies.reverse foreach (self reply _)
       if (currentState.stateName != nextState.stateName) {
+        this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
         notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
       }
