@@ -409,7 +409,12 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
   }
 }
 
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) extends Scheduler {
+/**
+ * Scheduled tasks (Runnable and functions) are executed with the supplied dispatcher.
+ * Note that dispatcher is by-name parameter, because dispatcher might not be initialized
+ * when the scheduler is created.
+ */
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler {
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
@@ -429,7 +434,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        system.dispatcher.dispatchTask(() ⇒ runnable.run())
+        dispatcher.dispatchTask(() ⇒ runnable.run())
       }
     }
 
@@ -443,7 +448,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(f: () ⇒ Unit): TimerTask =
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        system.dispatcher.dispatchTask(f)
+        dispatcher.dispatchTask(f)
       }
     }
 
@@ -455,7 +460,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
           receiver ! message
           timeout.getTimer.newTimeout(this, delay)
         } else {
-          system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
+          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
         }
       }
     }
@@ -464,7 +469,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createContinuousTask(f: () ⇒ Unit, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        system.dispatcher.dispatchTask(f)
+        dispatcher.dispatchTask(f)
         timeout.getTimer.newTimeout(this, delay)
       }
     }

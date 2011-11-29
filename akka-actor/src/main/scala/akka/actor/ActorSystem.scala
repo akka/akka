@@ -302,7 +302,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel), this)
+  val scheduler = createScheduler()
 
   val provider: ActorRefProvider = {
     val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
@@ -336,6 +336,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   }
 
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  // TODO why implicit val dispatcher?
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   //FIXME Set this to a Failure when things bubble to the top
@@ -376,8 +377,30 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
-    terminationFuture onComplete (_ ⇒ scheduler.stop())
+    terminationFuture onComplete (_ ⇒ stopScheduler())
     terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
+  }
+
+  protected def createScheduler(): Scheduler = {
+    val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
+    val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
+    // note that dispatcher is by-name parameter in DefaultScheduler constructor, 
+    // because dispatcher is not initialized when the scheduler is created
+    def safeDispatcher = {
+      if (dispatcher eq null) {
+        val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
+        log.error(exc, exc.getMessage)
+        throw exc
+      } else {
+        dispatcher
+      }
+    }
+    new DefaultScheduler(hwt, log, safeDispatcher)
+  }
+
+  protected def stopScheduler(): Unit = scheduler match {
+    case x: DefaultScheduler ⇒ x.stop()
+    case _                   ⇒
   }
 
   private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
