@@ -11,13 +11,15 @@ import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
 import akka.actor.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch.{ SystemMessage, Supervise, Promise, MessageDispatcher, Future, DefaultPromise, Dispatcher, Mailbox, Envelope }
-import akka.event.{ Logging, DeathWatch, ActorClassification, EventStream }
-import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter }
+import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter, BroadcastRouter }
 import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
 import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
+import akka.event._
+import akka.event.Logging.Error._
+import akka.event.Logging.Warning
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -41,6 +43,7 @@ trait ActorRefProvider {
 
   // FIXME: remove/replace?
   def nodename: String
+
   // FIXME: remove/replace?
   def clustername: String
 
@@ -192,8 +195,11 @@ class LocalActorRefProvider(
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
+
   private def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
+
   private val tempNode = rootPath / "tmp"
+
   def tempPath = tempNode / tempName
 
   /**
@@ -215,7 +221,9 @@ class LocalActorRefProvider(
 
     override def toString = name
 
-    override def stop() = stopped switchOn { terminationFuture.complete(causeOfTermination.toLeft(())) }
+    override def stop() = stopped switchOn {
+      terminationFuture.complete(causeOfTermination.toLeft(()))
+    }
 
     override def isTerminated = stopped.isOn
 
@@ -238,6 +246,7 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒ context.self.stop()
     }
   }
+
   private class SystemGuardian extends Actor {
     def receive = {
       case Terminated(_) ⇒
@@ -245,6 +254,7 @@ class LocalActorRefProvider(
         context.self.stop()
     }
   }
+
   private val guardianFaultHandlingStrategy = {
     import akka.actor.FaultHandlingStrategy._
     OneForOneStrategy {
@@ -256,7 +266,7 @@ class LocalActorRefProvider(
   private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
 
   /*
-   * The problem is that ActorRefs need a reference to the ActorSystem to 
+   * The problem is that ActorRefs need a reference to the ActorSystem to
    * provide their service. Hence they cannot be created while the
    * constructors of ActorSystem and ActorRefProvider are still running.
    * The solution is to split out that last part into an init() method,
@@ -264,7 +274,9 @@ class LocalActorRefProvider(
    */
   @volatile
   private var system: ActorSystemImpl = _
+
   def dispatcher: MessageDispatcher = system.dispatcher
+
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
   lazy val rootGuardian: ActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
   lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
@@ -309,11 +321,13 @@ class LocalActorRefProvider(
 
       // create a routed actor ref
       case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
-
+        implicit val dispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
+        implicit val timeout = system.settings.ActorTimeout
         val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
           case RouterType.Direct     ⇒ () ⇒ new DirectRouter
           case RouterType.Random     ⇒ () ⇒ new RandomRouter
           case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
+          case RouterType.Broadcast  ⇒ () ⇒ new BroadcastRouter
           case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
             if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, settings.ActorTimeout)
           case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
@@ -353,6 +367,7 @@ class LocalActorRefProvider(
   }
 
   private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = Some(actorFor(actor.path))
+
   private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.address, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
@@ -387,7 +402,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
   }
 }
 
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) extends Scheduler {
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
@@ -405,19 +420,37 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
     new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay))
 
   private def createSingleTask(runnable: Runnable): TimerTask =
-    new TimerTask() { def run(timeout: org.jboss.netty.akka.util.Timeout) { runnable.run() } }
+    new TimerTask() {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        // FIXME: consider executing runnable inside main dispatcher to prevent blocking of scheduler
+        runnable.run()
+      }
+    }
 
   private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { receiver ! message } }
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        receiver ! message
+      }
+    }
 
   private def createSingleTask(f: () ⇒ Unit): TimerTask =
-    new TimerTask { def run(timeout: org.jboss.netty.akka.util.Timeout) { f() } }
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        f()
+      }
+    }
 
   private def createContinuousTask(receiver: ActorRef, message: Any, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        receiver ! message
-        timeout.getTimer.newTimeout(this, delay)
+        // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
+        if (!receiver.isTerminated) {
+          receiver ! message
+          timeout.getTimer.newTimeout(this, delay)
+        } else {
+          system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
+        }
       }
     }
   }
@@ -434,9 +467,13 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer) extends Scheduler {
   private[akka] def stop() = hashedWheelTimer.stop()
 }
 
-class DefaultCancellable(timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
-  def cancel() { timeout.cancel() }
+class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
+  def cancel() {
+    timeout.cancel()
+  }
 
-  def isCancelled: Boolean = { timeout.isCancelled }
+  def isCancelled: Boolean = {
+    timeout.isCancelled
+  }
 }
 

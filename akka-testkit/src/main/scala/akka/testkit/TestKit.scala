@@ -81,7 +81,7 @@ class TestKit(_system: ActorSystem) {
   import TestActor.{ Message, RealMessage, NullMessage }
 
   implicit val system = _system
-  val testKitExtension = TestKitExtension(system)
+  val testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -128,7 +128,7 @@ class TestKit(_system: ActorSystem) {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) testKitExtension.settings.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = if (end == Duration.Undefined) testKitSettings.SingleExpectDefaultTimeout.dilated else end - now
 
   /**
    * Query queue status.
@@ -569,10 +569,8 @@ object TestKit {
    * Java API. Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    */
-  def dilated(duration: Duration, system: ActorSystem): Duration = {
-    duration * TestKitExtension(system).settings.TestTimeFactor
-  }
-
+  def dilated(duration: Duration, system: ActorSystem): Duration =
+    duration * TestKitExtension(system).TestTimeFactor
 }
 
 /**

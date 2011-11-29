@@ -8,12 +8,7 @@ import akka.actor._
 import akka.event._
 import akka.dispatch._
 import akka.util.duration._
-import java.net.InetAddress
-import com.eaio.uuid.UUID
-import akka.serialization.Serialization
-import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
@@ -24,11 +19,9 @@ import com.typesafe.config.ConfigFactory
 import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
+import java.util.concurrent.{ CountDownLatch, Executors, ConcurrentHashMap }
 import scala.annotation.tailrec
-import akka.serialization.SerializationExtension
+import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 
 object ActorSystem {
 
@@ -63,17 +56,18 @@ object ActorSystem {
 
     import scala.collection.JavaConverters._
     import config._
+
     val ConfigVersion = getString("akka.version")
 
     val ProviderClass = getString("akka.actor.provider")
 
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
-    // TODO This isn't used anywhere. Remove?
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
     val LogLevel = getString("akka.loglevel")
     val StdoutLogLevel = getString("akka.stdout-loglevel")
     val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
     val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
@@ -100,6 +94,10 @@ object ActorSystem {
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version +
         "] does not match the provided config version [" + ConfigVersion + "]")
+
+    override def toString: String = {
+      config.toString
+    }
 
   }
 
@@ -150,7 +148,7 @@ object ActorSystem {
  * configuration, e.g. dispatchers, deployments, remote capabilities and
  * addresses. It is also the entry point for creating or looking up actors.
  */
-abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
+abstract class ActorSystem extends ActorRefFactory {
   import ActorSystem._
 
   /**
@@ -163,6 +161,11 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
    * The core settings extracted from the supplied configuration.
    */
   def settings: Settings
+
+  /**
+   * Log the configuration.
+   */
+  def logConfiguration(): Unit
 
   /**
    * The logical node name where this actor system resides.
@@ -208,9 +211,6 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   // FIXME: do not publish this
   def deadLetterMailbox: Mailbox
 
-  // FIXME: TypedActor should be an extension
-  def typedActor: TypedActor
-
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
    * in the future. Not terribly precise but cheap.
@@ -251,36 +251,25 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   def stop()
 
   /**
-   * Register an [[akka.actor.Extension]] within this actor system. The supplied
-   * object is interrogated for the extension’s key with which the extension is
-   * accessible from anywhere you have a reference to this actor system in
-   * scope, e.g. within actors (see [[ActorSystem.extension]]).
-   *
-   * Extensions can be registered automatically by adding their fully-qualified
-   * class name to the `akka.extensions` configuration key.
+   * Registers the provided extension and creates its payload, if this extension isn't already registered
+   * This method has putIfAbsent-semantics, this method can potentially block, waiting for the initialization
+   * of the payload, if is in the process of registration from another Thread of execution
    */
-  def registerExtension[T <: AnyRef](ext: Extension[T]): Extension[T]
+  def registerExtension[T <: Extension](ext: ExtensionId[T]): T
 
   /**
-   * Obtain a reference to a registered extension by passing in the key which
-   * the extension object returned from its init method (typically a static
-   * field or Scala `object`):
-   *
-   * {{{
-   * class MyActor extends Actor {
-   *   val ext: MyExtension = context.app.extension(MyExtension.key)
-   * }
-   * }}}
-   *
-   * Throws IllegalArgumentException if the extension key is not found.
+   * Returns the payload that is associated with the provided extension
+   * throws an IllegalStateException if it is not registered.
+   * This method can potentially block, waiting for the initialization
+   * of the payload, if is in the process of registration from another Thread of execution
    */
-  def extension[T <: AnyRef](key: ExtensionKey[T]): T
+  def extension[T <: Extension](ext: ExtensionId[T]): T
 
   /**
-   * Query presence of a specific extension. Beware that this key needs to be
-   * “the same” as the one used for registration (it is using a HashMap).
+   * Returns whether the specified extension is already registered, this method can potentially block, waiting for the initialization
+   * of the payload, if is in the process of registration from another Thread of execution
    */
-  def hasExtension(key: ExtensionKey[_]): Boolean
+  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
 class ActorSystemImpl(val name: String, val applicationConfig: Config) extends ActorSystem {
@@ -288,6 +277,8 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   import ActorSystem._
 
   val settings = new Settings(applicationConfig, name)
+
+  def logConfiguration(): Unit = log.info(settings.toString)
 
   protected def systemImpl = this
 
@@ -323,7 +314,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel))
+  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel), this)
 
   val deadLetters = new DeadLetterActorRef(eventStream)
   val deadLetterMailbox = new Mailbox(null) {
@@ -358,11 +349,14 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     }
   }
 
-  val actorsJanitor = MinimalActorRef(provider.rootPath) {
+  /*
+   * these cannot be initialized before the provider is started because root
+   * Path may depend on the ability to register extensions for reading config
+   */
+  lazy val actorsJanitor = MinimalActorRef(provider.rootPath) {
     case Terminated(x) ⇒ actors.remove(x.path.name)
   }
-
-  val systemActorsJanitor = MinimalActorRef(provider.rootPath) {
+  lazy val systemActorsJanitor = MinimalActorRef(provider.rootPath) {
     case Terminated(x) ⇒ systemActors.remove(x.path.name)
   }
 
@@ -380,21 +374,16 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   private final val nextName = new AtomicLong
   override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
-  @volatile
-  private var _typedActor: TypedActor = _
-  def typedActor = _typedActor
-
   def /(actorName: String): ActorPath = guardian.path / actorName
 
   private lazy val _start: this.type = {
-    // TODO can we do something better than loading SerializationExtension from here?
-    _typedActor = new TypedActor(settings, SerializationExtension(this).serialization)
     provider.init(this)
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     eventStream.start(this)
     eventStream.startDefaultLoggers(this)
     loadExtensions()
+    if (LogConfigOnStart) logConfiguration()
     this
   }
 
@@ -410,65 +399,61 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
   }
 
-  private val extensions = new ConcurrentHashMap[ExtensionKey[_], AnyRef]
+  private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
 
   /**
-   * Attempts to initialize and register this extension if the key associated with it isn't already registered.
-   * The extension will only be initialized if it isn't already registered.
-   * Rethrows anything thrown when initializing the extension (doesn't register in that case)
-   * Returns the registered extension, might be another already registered instance.
+   * Returns any extension registered to the specified Extension or returns null if not registered
    */
   @tailrec
-  final def registerExtension[T <: AnyRef](ext: Extension[T]): Extension[T] = {
-    /**
-     * Returns any extension registered to the specified key or returns null if not registered
-     */
-    @tailrec
-    def findExtension[T <: AnyRef](key: ExtensionKey[T]): Option[T] = extensions.get(key) match {
-      case c: CountDownLatch ⇒ c.await(); findExtension(key) //Registration in process, await completion and retry
-      case e: Extension[_]   ⇒ Some(e.asInstanceOf[T]) //Profit!
-      case null              ⇒ None //Doesn't exist
-    }
+  private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
+    case c: CountDownLatch ⇒ c.await(); findExtension(ext) //Registration in process, await completion and retry
+    case other             ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+  }
 
-    findExtension(ext.key) match {
-      case Some(e: Extension[_]) ⇒ e.asInstanceOf[Extension[T]] //Profit!
-      case None ⇒ //Doesn't already exist, commence registration
+  @tailrec
+  final def registerExtension[T <: Extension](ext: ExtensionId[T]): T = {
+    findExtension(ext) match {
+      case null ⇒ //Doesn't already exist, commence registration
         val inProcessOfRegistration = new CountDownLatch(1)
-        extensions.putIfAbsent(ext.key, inProcessOfRegistration) match { // Signal that registration is in process
+        extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
           case null ⇒ try { // Signal was successfully sent
-            ext.init(this) //Initialize the new extension
-            extensions.replace(ext.key, inProcessOfRegistration, ext) //Replace our in process signal with the initialized extension
-            ext //Profit!
+            ext.createExtension(this) match { // Create and initialize the extension
+              case null ⇒ throw new IllegalStateException("Extension instance created as null for Extension: " + ext)
+              case instance ⇒
+                extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
+                instance //Profit!
+            }
           } catch {
             case t ⇒
-              extensions.remove(ext.key, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
+              extensions.remove(ext, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
               throw t //Escalate to caller
           } finally {
             inProcessOfRegistration.countDown //Always notify listeners of the inProcess signal
           }
-          case other ⇒ registerExtension(ext) //Someone else is in process of registering an extension for this key, retry
+          case other ⇒ registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry
         }
+      case existing ⇒ existing.asInstanceOf[T]
     }
   }
 
-  def extension[T <: AnyRef](key: ExtensionKey[T]): T = extensions.get(key) match {
-    case x: Extension[_] ⇒ x.asInstanceOf[T]
-    case _               ⇒ throw new IllegalArgumentException("trying to get non-registered extension " + key)
+  def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
+    case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension " + ext)
+    case some ⇒ some.asInstanceOf[T]
   }
 
-  def hasExtension(key: ExtensionKey[_]): Boolean = extensions.get(key) match {
-    case x: Extension[_] ⇒ true
-    case _               ⇒ false
-  }
+  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
       import ReflectiveAccess._
-      createInstance[Extension[_ <: AnyRef]](fqcn, noParams, noArgs) match {
-        case Left(ex)   ⇒ log.error(ex, "Exception trying to load extension " + fqcn)
-        case Right(ext) ⇒ if (ext.isInstanceOf[Extension[_]]) registerExtension(ext) else log.error("Class {} is not an Extension", fqcn)
+      getObjectFor[AnyRef](fqcn).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+        case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
+        case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
+        case Right(other)                  ⇒ log.error("'{}' is not an ExtensionIdProvider or ExtensionId, skipping...", fqcn)
+        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension '{}', skipping...", fqcn)
       }
+
     }
   }
 }

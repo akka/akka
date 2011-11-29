@@ -247,7 +247,7 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         val readA = in.readObject
 
@@ -275,7 +275,7 @@ class ActorRefSpec extends AkkaSpec {
       (intercept[java.lang.IllegalStateException] {
         in.readObject
       }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.system.withValue(system) { ... }"
+        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }"
     }
 
     "must throw exception on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
@@ -292,7 +292,7 @@ class ActorRefSpec extends AkkaSpec {
       out.flush
       out.close
 
-      Serialization.system.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         (intercept[java.lang.IllegalStateException] {
           in.readObject

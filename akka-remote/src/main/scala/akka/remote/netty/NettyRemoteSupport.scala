@@ -282,7 +282,7 @@ class ActiveRemoteClientHandler(
   val client: ActiveRemoteClient)
   extends SimpleChannelUpstreamHandler {
 
-  def runOnceNow(thunk: ⇒ Unit) = timer.newTimeout(new TimerTask() {
+  def runOnceNow(thunk: ⇒ Unit): Unit = timer.newTimeout(new TimerTask() {
     def run(timeout: Timeout) = try { thunk } finally { timeout.cancel() }
   }, 0, TimeUnit.MILLISECONDS)
 
@@ -358,8 +358,8 @@ class ActiveRemoteClientHandler(
 class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends RemoteSupport(_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
-  val serverSettings = RemoteExtension(system).settings.serverSettings
-  val clientSettings = RemoteExtension(system).settings.clientSettings
+  val serverSettings = RemoteExtension(system).serverSettings
+  val clientSettings = RemoteExtension(system).clientSettings
 
   private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock

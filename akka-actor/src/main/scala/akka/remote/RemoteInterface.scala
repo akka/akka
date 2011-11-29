@@ -12,11 +12,22 @@ import java.net.InetSocketAddress
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.InetAddress
+import java.net.UnknownHostException
 
 object RemoteAddress {
-  def apply(system: String, host: String, port: Int) = {
-    val ip = InetAddress.getByName(host)
+  def apply(system: String, host: String, port: Int): RemoteAddress = {
+    // TODO check whether we should not rather bail out early
+    val ip = try InetAddress.getByName(host) catch { case _: UnknownHostException ⇒ null }
     new RemoteAddress(system, host, ip, port)
+  }
+
+  val RE = """(?:(\w+)@)?(\w+):(\d+)""".r
+  object Int {
+    def unapply(s: String) = Some(Integer.parseInt(s))
+  }
+  def apply(stringRep: String, defaultSystem: String): RemoteAddress = stringRep match {
+    case RE(sys, host, Int(port)) ⇒ apply(if (sys != null) sys else defaultSystem, host, port)
+    case _                        ⇒ throw new IllegalArgumentException(stringRep + " is not a valid remote address [system@host:port]")
   }
 }
 

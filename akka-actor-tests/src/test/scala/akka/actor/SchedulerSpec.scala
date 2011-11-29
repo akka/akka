@@ -28,7 +28,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
       val tickActor = actorOf(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
-      // run every 50 millisec
+      // run every 50 milliseconds
       collectCancellable(system.scheduler.schedule(tickActor, Tick, 0 milliseconds, 50 milliseconds))
 
       // after max 1 second it should be executed at least the 3 times already
@@ -40,6 +40,16 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
 
       // after max 1 second it should be executed at least the 3 times already
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
+    }
+
+    "should stop continuous scheduling if the receiving actor has been terminated" in {
+      // run immediately and then every 100 milliseconds
+      collectCancellable(system.scheduler.schedule(testActor, "msg", 0 milliseconds, 100 milliseconds))
+
+      // stop the actor and, hence, the continuous messaging from happening
+      testActor ! PoisonPill
+
+      expectNoMsg(500 milliseconds)
     }
 
     "schedule once" in {

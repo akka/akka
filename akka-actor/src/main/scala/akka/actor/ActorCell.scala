@@ -16,7 +16,7 @@ import akka.util.{ Duration, Helpers }
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
  */
-trait ActorContext extends ActorRefFactory with TypedActorFactory {
+trait ActorContext extends ActorRefFactory {
 
   def self: ActorRef
 
@@ -80,8 +80,6 @@ private[akka] class ActorCell(
   def systemImpl = system
 
   protected final def guardian = self
-
-  protected def typedActor = system.typedActor
 
   final def provider = system.provider
 

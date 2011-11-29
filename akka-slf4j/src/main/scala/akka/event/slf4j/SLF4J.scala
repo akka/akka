@@ -5,7 +5,7 @@
 package akka.event.slf4j
 
 import org.slf4j.{ Logger ⇒ SLFLogger, LoggerFactory ⇒ SLFLoggerFactory }
-
+import org.slf4j.MDC
 import akka.event.Logging._
 import akka.actor._
 
@@ -27,30 +27,53 @@ object Logger {
 /**
  * SLF4J Event Handler.
  *
+ * The thread in which the logging was performed is captured in
+ * Mapped Diagnostic Context (MDC) with attribute name "sourceThread".
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Slf4jEventHandler extends Actor with SLF4JLogging {
 
+  val mdcThreadAttributeName = "sourceThread"
+
   def receive = {
+
     case event @ Error(cause, logSource, message) ⇒
-      Logger(logSource).error("[{}] [{}] [{}]",
-        Array[AnyRef](event.thread.getName, message.asInstanceOf[AnyRef], stackTraceFor(cause)))
+      withMdc(mdcThreadAttributeName, event.thread.getName) {
+        cause match {
+          case Error.NoCause ⇒ Logger(logSource).error(message.toString)
+          case _             ⇒ Logger(logSource).error(message.toString, cause)
+        }
+      }
 
     case event @ Warning(logSource, message) ⇒
-      Logger(logSource).warn("[{}] [{}]",
-        event.thread.getName, message.asInstanceOf[AnyRef])
+      withMdc(mdcThreadAttributeName, event.thread.getName) {
+        Logger(logSource).warn("{}", message.asInstanceOf[AnyRef])
+      }
 
     case event @ Info(logSource, message) ⇒
-      Logger(logSource).info("[{}] [{}]",
-        event.thread.getName, message.asInstanceOf[AnyRef])
+      withMdc(mdcThreadAttributeName, event.thread.getName) {
+        Logger(logSource).info("{}", message.asInstanceOf[AnyRef])
+      }
 
     case event @ Debug(logSource, message) ⇒
-      Logger(logSource).debug("[{}] [{}]",
-        event.thread.getName, message.asInstanceOf[AnyRef])
+      withMdc(mdcThreadAttributeName, event.thread.getName) {
+        Logger(logSource).debug("{}", message.asInstanceOf[AnyRef])
+      }
 
     case InitializeLogger(_) ⇒
       log.info("Slf4jEventHandler started")
       sender ! LoggerInitialized
+  }
+
+  @inline
+  final def withMdc(name: String, value: String)(logStatement: ⇒ Unit) {
+    MDC.put(name, value)
+    try {
+      logStatement
+    } finally {
+      MDC.remove(name)
+    }
   }
 
 }

@@ -1,11 +1,18 @@
+/**
+ *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka
 
 import sbt._
 import Keys._
+
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
+
+import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import ScalariformPlugin.{ format, formatPreferences, formatSourceDirectories }
+
 import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
@@ -26,7 +33,6 @@ object AkkaBuild extends Build {
       rstdocDirectory <<= baseDirectory / "akka-docs"
     ),
     aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, amqp, mailboxes, akkaSbtPlugin, samples, tutorials, docs)
-    //aggregate = Seq(cluster, mailboxes, camel, camelTyped)
   )
 
   lazy val actor = Project(
@@ -87,23 +93,6 @@ object AkkaBuild extends Build {
       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
     )
   ) configs (MultiJvm)
-
-  // lazy val cluster = Project(
-  //   id = "akka-cluster",
-  //   base = file("akka-cluster"),
-  //   dependencies = Seq(stm, actorTests % "test->test", testkit % "test"),
-  //   settings = defaultSettings ++ multiJvmSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.cluster,
-  //     extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-  //       (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-  //     },
-  //     scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-  //     jvmOptions in MultiJvm := {
-  //       if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-  //     },
-  //     test in Test <<= (test in Test) dependsOn (test in MultiJvm)
-  //   )
-  // ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -173,7 +162,7 @@ object AkkaBuild extends Build {
       testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
     )
   )
-  
+
   lazy val zookeeperMailbox = Project(
     id = "akka-zookeeper-mailbox",
     base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
@@ -195,23 +184,6 @@ object AkkaBuild extends Build {
       testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
     )
   )
-
-  // lazy val camel = Project(
-  //   id = "akka-camel",
-  //   base = file("akka-camel"),
-  //   dependencies = Seq(actor, slf4j, testkit % "test"),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.camel
-  //   )
-  // )
-
-  // can be merged back into akka-camel
-  // lazy val camelTyped = Project(
-  //   id = "akka-camel-typed",
-  //   base = file("akka-camel-typed"),
-  //   dependencies = Seq(camel % "compile;test->test", testkit % "test"),
-  //   settings = defaultSettings
-  // )
 
   // lazy val spring = Project(
   //   id = "akka-spring",
@@ -244,22 +216,7 @@ object AkkaBuild extends Build {
     base = file("akka-samples"),
     settings = parentSettings,
     aggregate = Seq(fsmSample)
-    // aggregate = Seq(fsmSample, camelSample)
   )
-
-  // lazy val antsSample = Project(
-  //   id = "akka-sample-ants",
-  //   base = file("akka-samples/akka-sample-ants"),
-  //   dependencies = Seq(stm),
-  //   settings = defaultSettings
-  // )
-
-  // lazy val chatSample = Project(
-  //   id = "akka-sample-chat",
-  //   base = file("akka-samples/akka-sample-chat"),
-  //   dependencies = Seq(cluster),
-  //   settings = defaultSettings
-  // )
 
   lazy val fsmSample = Project(
     id = "akka-sample-fsm",
@@ -267,29 +224,6 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-
-  // lazy val camelSample = Project(
-  //   id = "akka-sample-camel",
-  //   base = file("akka-samples/akka-sample-camel"),
-  //   dependencies = Seq(actor, camelTyped, testkit % "test"),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.sampleCamel
-  //   )
-  // )
-
-  // lazy val helloSample = Project(
-  //   id = "akka-sample-hello",
-  //   base = file("akka-samples/akka-sample-hello"),
-  //   dependencies = Seq(kernel),
-  //   settings = defaultSettings
-  // )
-
-  // lazy val remoteSample = Project(
-  //   id = "akka-sample-remote",
-  //   base = file("akka-samples/akka-sample-remote"),
-  //   dependencies = Seq(cluster),
-  //   settings = defaultSettings
-  // )
 
   lazy val tutorials = Project(
     id = "akka-tutorials",
@@ -333,12 +267,11 @@ object AkkaBuild extends Build {
     publishArtifact in Compile := false
   )
 
-  val testExcludes = SettingKey[Seq[String]]("test-excludes")
+  val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
+  val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
+  val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
-  def akkaTestExcludes: Seq[String] = {
-    val exclude = System.getProperty("akka.test.exclude", "")
-    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
-  }
+  val defaultExcludedTags = Seq("timing")
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
@@ -356,9 +289,37 @@ object AkkaBuild extends Build {
     // disable parallel tests
     parallelExecution in Test := false,
 
-    // for excluding tests in jenkins builds (-Dakka.test.exclude=TimingSpec)
-    testExcludes := akkaTestExcludes,
-    testOptions in Test <++= testExcludes map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+    // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
+    excludeTestNames := {
+      val exclude = System.getProperty("akka.test.names.exclude", "")
+      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+    },
+
+    // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
+    excludeTestTags := {
+      val exclude = System.getProperty("akka.test.tags.exclude", "")
+      if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
+    },
+
+    // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
+    includeTestTags := {
+      val include = System.getProperty("akka.test.tags.include", "")
+      if (include.isEmpty) Seq.empty else include.split(",").toSeq
+    },
+
+    // add filters for tests excluded by name
+    testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+
+    // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
+    testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
+      val tags = (excludes.toSet -- includes.toSet).toSeq
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+    },
+
+    // add arguments for tests included by tag
+    testOptions in Test <++= includeTestTags map { tags =>
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+    },
 
     // show full stack traces
     testOptions in Test += Tests.Argument("-oF")
@@ -424,7 +385,7 @@ object Dependencies {
   val amqp = Seq(rabbit, commonsIo, protobuf)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
-  
+
   val fileMailbox = Seq(Test.scalatest, Test.junit)
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
@@ -432,13 +393,10 @@ object Dependencies {
   val redisMailbox = Seq(redis, Test.junit)
 
   val mongoMailbox = Seq(mongoAsync, twttrUtilCore, Test.junit)
-  
+
   val zookeeperMailbox = Seq(zookeeper, Test.junit)
 
-//  val camel = Seq(camelCore, Test.junit, Test.scalatest, Test.logback)
-
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
-//  val spring = Seq(springBeans, springContext, camelSpring, Test.junit, Test.scalatest)
 
   val kernel = Seq(
     jettyUtil, jettyXml, jettyServlet, jacksonCore, staxApi
@@ -466,7 +424,7 @@ object Dependency {
     val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
     val Scalatest    = "1.6.1"
-    val Slf4j        = "1.6.0"
+    val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
     val Rabbit       = "2.3.1"

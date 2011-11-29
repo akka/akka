@@ -51,11 +51,10 @@ object Orderbook {
 
   val useDummyOrderbook = System.getProperty("benchmark.useDummyOrderbook", "false").toBoolean
 
-  def apply(symbol: String, standby: Boolean): Orderbook = standby match {
-    case false if !useDummyOrderbook ⇒ new Orderbook(symbol) with SimpleTradeObserver
-    case true if !useDummyOrderbook  ⇒ new Orderbook(symbol) with StandbyTradeObserver
-    case false if useDummyOrderbook  ⇒ new DummyOrderbook(symbol) with SimpleTradeObserver
-    case true if useDummyOrderbook   ⇒ new DummyOrderbook(symbol) with StandbyTradeObserver
+  def apply(symbol: String, standby: Boolean): Orderbook = (useDummyOrderbook, standby) match {
+    case (false, false) ⇒ new Orderbook(symbol) with NopTradeObserver
+    case (false, true)  ⇒ new Orderbook(symbol) with TotalTradeObserver
+    case (true, _)      ⇒ new DummyOrderbook(symbol) with NopTradeObserver
   }
 }
 

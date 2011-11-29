@@ -142,7 +142,7 @@ akka.dev.conf:
 ::
 
   akka {
-    event-handler-level = "DEBUG"
+    loglevel = "DEBUG"
   }
 
 The mode option works in the same way when using configuration files in ``AKKA_HOME/config/`` directory.
@@ -162,7 +162,7 @@ akka.dev.conf:
   include "akka.conf"
 
   akka {
-    event-handler-level = "DEBUG"
+    loglevel = "DEBUG"
   }
 
 .. _-Dakka.output.config.source:
