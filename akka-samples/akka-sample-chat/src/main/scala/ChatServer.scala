@@ -3,6 +3,7 @@
   */
 
 // REMOTING IS NOT PART OF MILESTONE 1 OF AKKA 2.0
+// TODO FIXME 2.0
 
 //
 //  package sample.chat
