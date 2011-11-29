@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, ActorSystemImpl, simpleName }
+import akka.actor._
 import akka.AkkaException
 import akka.actor.ActorSystem.Settings
 import akka.util.ReflectiveAccess
@@ -38,7 +38,6 @@ trait LoggingBus extends ActorEventBus {
   private val guard = new ReentrantGuard
   private var loggers = Seq.empty[ActorRef]
   private var _logLevel: LogLevel = _
-  private val loggerId = new AtomicInteger
 
   /**
    * Query currently set log level. See object Logging for more information.
@@ -144,7 +143,7 @@ trait LoggingBus extends ActorEventBus {
   }
 
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
-    val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
+    val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
     val response = try actor ? InitializeLogger(this) get catch {
@@ -224,6 +223,13 @@ object LogSource {
  * </code></pre>
  */
 object Logging {
+
+  object Extension extends ExtensionKey[Ext]
+
+  class Ext(system: ActorSystemImpl) extends Extension {
+    private val loggerId = new AtomicInteger
+    def id() = loggerId.incrementAndGet()
+  }
 
   /**
    * Marker trait for annotating LogLevel, which must be Int after erasure.

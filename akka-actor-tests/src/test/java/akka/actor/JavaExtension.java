@@ -31,6 +31,15 @@ public class JavaExtension {
           system = i;
       }
   }
+  
+  static class OtherExtension implements Extension {
+    static final ExtensionKey<OtherExtension> key = new ExtensionKey<OtherExtension>(OtherExtension.class) {};
+
+    public final ActorSystemImpl system;
+    public OtherExtension(ActorSystemImpl i) {
+      system = i;
+    }
+  }
 
   private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]",
       ConfigParseOptions.defaults());
@@ -41,6 +50,11 @@ public class JavaExtension {
   public void mustBeAccessible() {
     assertSame(system.extension(defaultInstance).system, system);
     assertSame(defaultInstance.apply(system).system, system);
+  }
+  
+  @Test
+  public void mustBeAdHoc() {
+    assertSame(OtherExtension.key.apply(system).system, system);
   }
 
 }
