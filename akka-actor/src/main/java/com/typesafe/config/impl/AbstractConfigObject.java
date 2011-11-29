@@ -61,19 +61,23 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
      * (just returns null if path not found). Does however resolve the path, if
      * resolver != null.
      */
-    protected ConfigValue peekPath(Path path, SubstitutionResolver resolver,
+    protected AbstractConfigValue peekPath(Path path, SubstitutionResolver resolver,
             int depth, ConfigResolveOptions options) {
         return peekPath(this, path, resolver, depth, options);
     }
 
-    private static ConfigValue peekPath(AbstractConfigObject self, Path path,
+    AbstractConfigValue peekPath(Path path) {
+        return peekPath(this, path, null, 0, null);
+    }
+
+    private static AbstractConfigValue peekPath(AbstractConfigObject self, Path path,
             SubstitutionResolver resolver, int depth,
             ConfigResolveOptions options) {
         String key = path.first();
         Path next = path.remainder();
 
         if (next == null) {
-            ConfigValue v = self.peek(key, resolver, depth, options);
+            AbstractConfigValue v = self.peek(key, resolver, depth, options);
             return v;
         } else {
             // it's important to ONLY resolve substitutions here, not
@@ -164,17 +168,12 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
         if (stack.isEmpty())
             throw new ConfigException.BugOrBroken(
                     "can't merge origins on empty list");
-        final String prefix = "merge of ";
-        StringBuilder sb = new StringBuilder();
+        List<ConfigOrigin> origins = new ArrayList<ConfigOrigin>();
         ConfigOrigin firstOrigin = null;
         int numMerged = 0;
         for (AbstractConfigValue v : stack) {
             if (firstOrigin == null)
                 firstOrigin = v.origin();
-
-            String desc = v.origin().description();
-            if (desc.startsWith(prefix))
-                desc = desc.substring(prefix.length());
 
             if (v instanceof AbstractConfigObject
                     && ((AbstractConfigObject) v).resolveStatus() == ResolveStatus.RESOLVED
@@ -183,22 +182,17 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
                 // config in the description, since they are
                 // likely to be "implementation details"
             } else {
-                sb.append(desc);
-                sb.append(",");
+                origins.add(v.origin());
                 numMerged += 1;
             }
         }
-        if (numMerged > 0) {
-            sb.setLength(sb.length() - 1); // chop comma
-            if (numMerged > 1) {
-                return new SimpleConfigOrigin(prefix + sb.toString());
-            } else {
-                return new SimpleConfigOrigin(sb.toString());
-            }
-        } else {
-            // the configs were all empty.
-            return firstOrigin;
+
+        if (numMerged == 0) {
+            // the configs were all empty, so just use the first one
+            origins.add(firstOrigin);
         }
+
+        return SimpleConfigOrigin.mergeOrigins(origins);
     }
 
     static ConfigOrigin mergeOrigins(AbstractConfigObject... stack) {
@@ -210,6 +204,8 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
         Map<String, AbstractConfigValue> changes = null;
         for (String k : keySet()) {
             AbstractConfigValue v = peek(k);
+            // "modified" may be null, which means remove the child;
+            // to do that we put null in the "changes" map.
             AbstractConfigValue modified = modifier.modifyChild(v);
             if (modified != v) {
                 if (changes == null)
@@ -223,7 +219,12 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
             Map<String, AbstractConfigValue> modified = new HashMap<String, AbstractConfigValue>();
             for (String k : keySet()) {
                 if (changes.containsKey(k)) {
-                    modified.put(k, changes.get(k));
+                    AbstractConfigValue newValue = changes.get(k);
+                    if (newValue != null) {
+                        modified.put(k, newValue);
+                    } else {
+                        // remove this child; don't put it in the new map.
+                    }
                 } else {
                     modified.put(k, peek(k));
                 }
@@ -271,20 +272,36 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(valueType().name());
-        sb.append("(");
-        for (String k : keySet()) {
-            sb.append(k);
-            sb.append("->");
-            sb.append(peek(k).toString());
-            sb.append(",");
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
+        if (isEmpty()) {
+            sb.append("{}");
+        } else {
+            sb.append("{");
+            if (formatted)
+                sb.append('\n');
+            for (String k : keySet()) {
+                AbstractConfigValue v = peek(k);
+                if (formatted) {
+                    indent(sb, indent + 1);
+                    sb.append("# ");
+                    sb.append(v.origin().description());
+                    sb.append("\n");
+                    indent(sb, indent + 1);
+                }
+                v.render(sb, indent + 1, k, formatted);
+                sb.append(",");
+                if (formatted)
+                    sb.append('\n');
+            }
+            // chop comma or newline
+            sb.setLength(sb.length() - 1);
+            if (formatted) {
+                sb.setLength(sb.length() - 1); // also chop comma
+                sb.append("\n"); // put a newline back
+                indent(sb, indent);
+            }
+            sb.append("}");
         }
-        if (!keySet().isEmpty())
-            sb.setLength(sb.length() - 1); // chop comma
-        sb.append(")");
-        return sb.toString();
     }
 
     private static boolean mapEquals(Map<String, ConfigValue> a,

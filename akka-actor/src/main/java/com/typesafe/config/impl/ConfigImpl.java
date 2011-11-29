@@ -19,7 +19,6 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
 import com.typesafe.config.ConfigParseOptions;
 import com.typesafe.config.ConfigParseable;
-import com.typesafe.config.ConfigRoot;
 import com.typesafe.config.ConfigSyntax;
 import com.typesafe.config.ConfigValue;
 
@@ -45,8 +44,7 @@ public class ConfigImpl {
                 obj = p.parse(p.options().setAllowMissing(
                         options.getAllowMissing()));
             } else {
-                obj = SimpleConfigObject.emptyMissing(new SimpleConfigOrigin(
-                        name));
+                obj = SimpleConfigObject.emptyMissing(SimpleConfigOrigin.newSimple(name));
             }
         } else {
             ConfigParseable confHandle = source.nameToParseable(name + ".conf");
@@ -56,13 +54,13 @@ public class ConfigImpl {
 
             if (!options.getAllowMissing() && confHandle == null
                     && jsonHandle == null && propsHandle == null) {
-                throw new ConfigException.IO(new SimpleConfigOrigin(name),
+                throw new ConfigException.IO(SimpleConfigOrigin.newSimple(name),
                         "No config files {.conf,.json,.properties} found");
             }
 
             ConfigSyntax syntax = options.getSyntax();
 
-            obj = SimpleConfigObject.empty(new SimpleConfigOrigin(name));
+            obj = SimpleConfigObject.empty(SimpleConfigOrigin.newSimple(name));
             if (confHandle != null
                     && (syntax == null || syntax == ConfigSyntax.CONF)) {
                 obj = confHandle.parse(confHandle.options()
@@ -89,39 +87,13 @@ public class ConfigImpl {
         return obj;
     }
 
-    private static String makeResourceBasename(Path path) {
-        StringBuilder sb = new StringBuilder("/");
-        String next = path.first();
-        Path remaining = path.remainder();
-        while (next != null) {
-            sb.append(next);
-            sb.append('-');
-
-            if (remaining == null)
-                break;
-
-            next = remaining.first();
-            remaining = remaining.remainder();
-        }
-        sb.setLength(sb.length() - 1); // chop extra hyphen
-        return sb.toString();
-    }
-
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static ConfigObject parseResourcesForPath(String expression,
-            final ConfigParseOptions baseOptions) {
-        Path path = Parser.parsePath(expression);
-        String basename = makeResourceBasename(path);
-        return parseResourceAnySyntax(ConfigImpl.class, basename, baseOptions);
-    }
-
-    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static ConfigObject parseResourceAnySyntax(final Class<?> klass,
+    public static ConfigObject parseResourcesAnySyntax(final Class<?> klass,
             String resourceBasename, final ConfigParseOptions baseOptions) {
         NameSource source = new NameSource() {
             @Override
             public ConfigParseable nameToParseable(String name) {
-                return Parseable.newResource(klass, name, baseOptions);
+                return Parseable.newResources(klass, name, baseOptions);
             }
         };
         return fromBasename(source, resourceBasename, baseOptions);
@@ -139,16 +111,9 @@ public class ConfigImpl {
         return fromBasename(source, basename.getPath(), baseOptions);
     }
 
-    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static ConfigRoot emptyRoot(String rootPath, String originDescription) {
-        String desc = originDescription != null ? originDescription : rootPath;
-        return emptyObject(desc).toConfig().asRoot(
-                Path.newPath(rootPath));
-    }
-
     static AbstractConfigObject emptyObject(String originDescription) {
-        ConfigOrigin origin = originDescription != null ? new SimpleConfigOrigin(
-                originDescription) : null;
+        ConfigOrigin origin = originDescription != null ? SimpleConfigOrigin
+                .newSimple(originDescription) : null;
         return emptyObject(origin);
     }
 
@@ -162,8 +127,8 @@ public class ConfigImpl {
     }
 
     // default origin for values created with fromAnyRef and no origin specified
-    final private static ConfigOrigin defaultValueOrigin = new SimpleConfigOrigin(
-            "hardcoded value");
+    final private static ConfigOrigin defaultValueOrigin = SimpleConfigOrigin
+            .newSimple("hardcoded value");
     final private static ConfigBoolean defaultTrueValue = new ConfigBoolean(
             defaultValueOrigin, true);
     final private static ConfigBoolean defaultFalseValue = new ConfigBoolean(
@@ -196,7 +161,7 @@ public class ConfigImpl {
         if (originDescription == null)
             return defaultValueOrigin;
         else
-            return new SimpleConfigOrigin(originDescription);
+            return SimpleConfigOrigin.newSimple(originDescription);
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
@@ -290,17 +255,6 @@ public class ConfigImpl {
         }
     }
 
-    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static ConfigRoot systemPropertiesRoot(String rootPath) {
-        Path path = Parser.parsePath(rootPath);
-        try {
-            return systemPropertiesAsConfigObject().toConfig().getConfig(rootPath)
-                    .asRoot(path);
-        } catch (ConfigException.Missing e) {
-            return emptyObject("system properties").toConfig().asRoot(path);
-        }
-    }
-
     private static class SimpleIncluder implements ConfigIncluder {
 
         private ConfigIncluder fallback;
@@ -346,29 +300,26 @@ public class ConfigImpl {
         }
     }
 
-    private static ConfigIncluder defaultIncluder = null;
-
-    synchronized static ConfigIncluder defaultIncluder() {
-        if (defaultIncluder == null) {
-            defaultIncluder = new SimpleIncluder(null);
-        }
-        return defaultIncluder;
+    private static class DefaultIncluderHolder {
+        static final ConfigIncluder defaultIncluder = new SimpleIncluder(null);
     }
 
-    private static AbstractConfigObject systemProperties = null;
-
-    synchronized static AbstractConfigObject systemPropertiesAsConfigObject() {
-        if (systemProperties == null) {
-            systemProperties = loadSystemProperties();
-        }
-        return systemProperties;
+    static ConfigIncluder defaultIncluder() {
+        return DefaultIncluderHolder.defaultIncluder;
     }
 
     private static AbstractConfigObject loadSystemProperties() {
-        return (AbstractConfigObject) Parseable.newProperties(
-                System.getProperties(),
-                ConfigParseOptions.defaults().setOriginDescription(
-                        "system properties")).parse();
+        return (AbstractConfigObject) Parseable.newProperties(System.getProperties(),
+                ConfigParseOptions.defaults().setOriginDescription("system properties")).parse();
+    }
+
+    private static class SystemPropertiesHolder {
+        // this isn't final due to the reloadSystemPropertiesConfig() hack below
+        static AbstractConfigObject systemProperties = loadSystemProperties();
+    }
+
+    static AbstractConfigObject systemPropertiesAsConfigObject() {
+        return SystemPropertiesHolder.systemProperties;
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
@@ -376,18 +327,10 @@ public class ConfigImpl {
         return systemPropertiesAsConfigObject().toConfig();
     }
 
-    // this is a hack to let us set system props in the test suite
-    synchronized static void dropSystemPropertiesConfig() {
-        systemProperties = null;
-    }
-
-    private static AbstractConfigObject envVariables = null;
-
-    synchronized static AbstractConfigObject envVariablesAsConfigObject() {
-        if (envVariables == null) {
-            envVariables = loadEnvVariables();
-        }
-        return envVariables;
+    // this is a hack to let us set system props in the test suite.
+    // obviously not thread-safe.
+    static void reloadSystemPropertiesConfig() {
+        SystemPropertiesHolder.systemProperties = loadSystemProperties();
     }
 
     private static AbstractConfigObject loadEnvVariables() {
@@ -395,15 +338,37 @@ public class ConfigImpl {
         Map<String, AbstractConfigValue> m = new HashMap<String, AbstractConfigValue>();
         for (Map.Entry<String, String> entry : env.entrySet()) {
             String key = entry.getKey();
-            m.put(key, new ConfigString(
-                    new SimpleConfigOrigin("env var " + key), entry.getValue()));
+            m.put(key,
+                    new ConfigString(SimpleConfigOrigin.newSimple("env var " + key), entry
+                            .getValue()));
         }
-        return new SimpleConfigObject(new SimpleConfigOrigin("env variables"),
+        return new SimpleConfigObject(SimpleConfigOrigin.newSimple("env variables"),
                 m, ResolveStatus.RESOLVED, false /* ignoresFallbacks */);
+    }
+
+    private static class EnvVariablesHolder {
+        static final AbstractConfigObject envVariables = loadEnvVariables();
+    }
+
+    static AbstractConfigObject envVariablesAsConfigObject() {
+        return EnvVariablesHolder.envVariables;
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
     public static Config envVariablesAsConfig() {
         return envVariablesAsConfigObject().toConfig();
+    }
+
+    private static class ReferenceHolder {
+        private static final Config unresolvedResources = Parseable
+                .newResources(ConfigImpl.class, "/reference.conf", ConfigParseOptions.defaults())
+                .parse().toConfig();
+        static final Config referenceConfig = systemPropertiesAsConfig().withFallback(
+                unresolvedResources).resolve();
+    }
+
+    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
+    public static Config defaultReference() {
+        return ReferenceHolder.referenceConfig;
     }
 }

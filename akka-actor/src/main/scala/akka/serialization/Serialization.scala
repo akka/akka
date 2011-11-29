@@ -7,8 +7,7 @@ package akka.serialization
 import akka.AkkaException
 import akka.util.ReflectiveAccess
 import scala.util.DynamicVariable
-import com.typesafe.config.{ ConfigRoot, ConfigParseOptions, ConfigFactory, Config }
-import com.typesafe.config.Config._
+import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.actor.{ Extension, ActorSystem, ActorSystemImpl }
 
@@ -19,11 +18,7 @@ object Serialization {
   // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
   val currentSystem = new DynamicVariable[ActorSystemImpl](null)
 
-  class Settings(cfg: Config) {
-    private def referenceConfig: Config =
-      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-serialization-reference.conf",
-        ConfigParseOptions.defaults.setAllowMissing(false))
-    val config: ConfigRoot = ConfigFactory.emptyRoot("akka-serialization").withFallback(cfg).withFallback(referenceConfig).resolve()
+  class Settings(val config: Config) {
 
     import scala.collection.JavaConverters._
     import config._
@@ -37,7 +32,7 @@ object Serialization {
       hasPath(configPath) match {
         case false ⇒ Map()
         case true ⇒
-          val serializationBindings: Map[String, Seq[String]] = getConfig(configPath).toObject.unwrapped.asScala.toMap.map {
+          val serializationBindings: Map[String, Seq[String]] = getConfig(configPath).toValue.unwrapped.asScala.toMap.map {
             case (k: String, v: java.util.Collection[_]) ⇒ (k -> v.asScala.toSeq.asInstanceOf[Seq[String]])
             case invalid                                 ⇒ throw new ConfigurationException("Invalid serialization-bindings [%s]".format(invalid))
           }
@@ -47,7 +42,7 @@ object Serialization {
     }
 
     private def toStringMap(mapConfig: Config): Map[String, String] =
-      mapConfig.toObject.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
+      mapConfig.toValue.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
   }
 }
 
@@ -58,7 +53,7 @@ object Serialization {
 class Serialization(val system: ActorSystemImpl) extends Extension {
   import Serialization._
 
-  val settings = new Settings(system.applicationConfig)
+  val settings = new Settings(system.settings.config)
 
   //TODO document me
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =

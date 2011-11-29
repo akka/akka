@@ -125,16 +125,22 @@ final class Tokens {
     // This is not a Value, because it requires special processing
     static private class Substitution extends Token {
         final private ConfigOrigin origin;
+        final private boolean optional;
         final private List<Token> value;
 
-        Substitution(ConfigOrigin origin, List<Token> expression) {
+        Substitution(ConfigOrigin origin, boolean optional, List<Token> expression) {
             super(TokenType.SUBSTITUTION);
             this.origin = origin;
+            this.optional = optional;
             this.value = expression;
         }
 
         ConfigOrigin origin() {
             return origin;
+        }
+
+        boolean optional() {
+            return optional;
         }
 
         List<Token> value() {
@@ -237,6 +243,15 @@ final class Tokens {
         }
     }
 
+    static boolean getSubstitutionOptional(Token token) {
+        if (token instanceof Substitution) {
+            return ((Substitution) token).optional();
+        } else {
+            throw new ConfigException.BugOrBroken("tried to get substitution optionality from "
+                    + token);
+        }
+    }
+
     final static Token START = new Token(TokenType.START);
     final static Token END = new Token(TokenType.END);
     final static Token COMMA = new Token(TokenType.COMMA);
@@ -255,8 +270,8 @@ final class Tokens {
         return new UnquotedText(origin, s);
     }
 
-    static Token newSubstitution(ConfigOrigin origin, List<Token> expression) {
-        return new Substitution(origin, expression);
+    static Token newSubstitution(ConfigOrigin origin, boolean optional, List<Token> expression) {
+        return new Substitution(origin, optional, expression);
     }
 
     static Token newValue(AbstractConfigValue value) {

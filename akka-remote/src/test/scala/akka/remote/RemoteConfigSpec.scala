@@ -19,7 +19,7 @@ class RemoteConfigSpec extends AkkaSpec {
 
       //akka.remote.server
       getInt("akka.remote.server.port") must equal(2552)
-      getInt("akka.remote.server.message-frame-size") must equal(1048576)
+      getBytes("akka.remote.server.message-frame-size") must equal(1048576L)
       getMilliseconds("akka.remote.server.connection-timeout") must equal(120 * 1000)
       getBoolean("akka.remote.server.require-cookie") must equal(false)
       getBoolean("akka.remote.server.untrusted-mode") must equal(false)

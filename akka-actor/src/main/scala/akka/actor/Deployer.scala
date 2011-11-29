@@ -88,7 +88,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     }
 
     import scala.collection.JavaConverters._
-    settings.config.getConfig("akka.actor.deployment").toObject.keySet.asScala
+    settings.config.getConfig("akka.actor.deployment").toValue.keySet.asScala
       .filterNot("default" ==)
       .map(path ⇒ pathSubstring(path))
       .toSet.toList // toSet to force uniqueness

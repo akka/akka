@@ -222,7 +222,7 @@ class Report(
     sb.append("Akka version: ").append(system.settings.ConfigVersion)
     sb.append("\n")
     sb.append("Akka config:")
-    for ((key, value) ← system.settings.config.toObject) {
+    for ((key, value) ← system.settings.config.toValue) {
       sb.append("\n  ").append(key).append("=").append(value)
     }
 

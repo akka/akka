@@ -10,11 +10,10 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 import akka.testkit.AkkaSpec
 
 @RunWith(classOf[JUnitRunner])
-class ConfigSpec extends AkkaSpec(ConfigFactory.parseResource(classOf[ConfigSpec], "/akka-stm-reference.conf", ConfigParseOptions.defaults)) {
+class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
   "The default configuration file (i.e. akka-stm-reference.conf)" should {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {

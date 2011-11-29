@@ -10,7 +10,6 @@ import org.scalatest.WordSpec
 import akka.event.Logging
 import akka.util.Duration
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 import scala.collection.JavaConverters._
 import java.util.Properties
 

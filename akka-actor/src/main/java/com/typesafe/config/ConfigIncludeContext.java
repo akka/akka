@@ -5,8 +5,9 @@ package com.typesafe.config;
 
 
 /**
- * A ConfigIncludeContext is passed to a ConfigIncluder. This interface is not
- * intended for apps to implement.
+ * Context provided to a {@link ConfigIncluder}; this interface is only useful
+ * inside a {@code ConfigIncluder} implementation, and is not intended for apps
+ * to implement.
  */
 public interface ConfigIncludeContext {
     /**
@@ -15,7 +16,7 @@ public interface ConfigIncludeContext {
      * null if it can't meaningfully create a relative name. The returned
      * parseable may not exist; this function is not required to do any IO, just
      * compute what the name would be.
-     * 
+     *
      * The passed-in filename has to be a complete name (with extension), not
      * just a basename. (Include statements in config files are allowed to give
      * just a basename.)
