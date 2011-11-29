@@ -8,7 +8,7 @@ import akka.actor.{ ActorSystem, Actor }
 case object Start
 
 object Main {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val system = ActorSystem()
     system.actorOf[HelloActor] ! Start
   }

@@ -19,8 +19,6 @@ Here is an example. First type 'sbt' to start SBT interactively, the run 'update
 
 > % sbt
 
-> > update
-
 > > project akka-sample-ants
 
 > > run

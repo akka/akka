@@ -127,7 +127,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
 object DiningHakkers {
   val system = ActorSystem()
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     run
   }
 

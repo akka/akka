@@ -16,8 +16,6 @@ import java.util.concurrent.CountDownLatch;
 
 public class Pi {
 
-    private static final ActorSystem system = ActorSystem.apply();
-
     public static void main(String[] args) throws Exception {
         Pi pi = new Pi();
         pi.calculate(4, 10000, 10000);
@@ -113,18 +111,17 @@ public class Pi {
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
                 {
-                    for (int i = 0; i < nrOfWorkers; i++) add(system.actorOf(Worker.class));
+                    for (int i = 0; i < nrOfWorkers; i++) add(context().actorOf(Worker.class));
                 }
             };
             RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            router = new RoutedActorRef(system, props, getSelf(), "pi");
+            router = new RoutedActorRef(system(), props, getSelf(), "pi");
         }
 
         // message handler
         public void onReceive(Object message) {
 
             if (message instanceof Calculate) {
-
                 // schedule work
                 for (int start = 0; start < nrOfMessages; start++) {
                     router.tell(new Work(start, nrOfElements), getSelf());
@@ -161,6 +158,7 @@ public class Pi {
     // ==================
     public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
             throws Exception {
+        final ActorSystem system = ActorSystem.create();
 
         // this latch is only plumbing to know when the calculation is completed
         final CountDownLatch latch = new CountDownLatch(1);

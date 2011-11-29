@@ -20,7 +20,7 @@ class WorkerSpec extends WordSpec with MustMatchers {
       val testActor = TestActorRef[Worker]
       val actor = testActor.underlyingActor
       actor.calculatePiFor(0, 0) must equal(0.0)
-      actor.calculatePiFor(1, 1) must equal(-1.3333333333333333)
+      actor.calculatePiFor(1, 1) must be(-1.3333333333333333 plusOrMinus 0.0000000001)
     }
   }
 }

@@ -9,8 +9,6 @@ import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
 
 object Pi extends App {
 
-  val system = ActorSystem()
-
   // Initiate the calculation
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
@@ -87,14 +85,11 @@ object Pi extends App {
     }
   }
 
-  object Master {
-    val impl = system.asInstanceOf[ActorSystemImpl]
-  }
-
   // ==================
   // ===== Run it =====
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
+    val system = ActorSystem()
 
     // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)
