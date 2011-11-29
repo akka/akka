@@ -51,6 +51,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   import Repositories._
+  lazy val stdlibModuleConfig      = ModuleConfiguration("org.scala-lang", sbt.DefaultMavenRepository)
   lazy val jettyModuleConfig       = ModuleConfiguration("org.eclipse.jetty", sbt.DefaultMavenRepository)
   lazy val guiceyFruitModuleConfig = ModuleConfiguration("org.guiceyfruit", GuiceyFruitRepo)
   lazy val servletModuleConfig     = ModuleConfiguration("org.apache.geronimo.specs", sbt.DefaultMavenRepository)

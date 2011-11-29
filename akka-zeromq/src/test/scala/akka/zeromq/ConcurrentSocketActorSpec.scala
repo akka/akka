@@ -15,6 +15,15 @@ import org.scalatest.matchers.MustMatchers
 class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit {
   val endpoint = "tcp://127.0.0.1:10000"
   "ConcurrentSocketActor" should {
+     val runTests = try {
+       ZeroMQ.newContext().term //Test for existence of 0MQ
+       true
+     } catch {
+       case e: UnsatisfiedLinkError if e.getMessage == "Unable to load library 'zmq': dlopen(libzmq.dylib, 9): image not found" => false
+     }
+
+    if (runTests) {
+
     "support pub-sub connections" in {
       val (publisherProbe, subscriberProbe) = (TestProbe(), TestProbe())
       var context: Option[Context] = None
@@ -33,18 +42,20 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         msgNumbers.length must be > 0 
         msgNumbers must equal(for (i <- msgNumbers.head to msgNumbers.last) yield i)
       } finally {
-        msgGenerator.foreach { msgGenerator => 
-          msgGenerator.stop
-          within(2 seconds) { 
-            awaitCond(msgGenerator.isShutdown) 
+        context.foreach { context =>
+          msgGenerator.foreach { msgGenerator => 
+            msgGenerator.stop
+            within(2 seconds) { 
+              awaitCond(msgGenerator.isShutdown) 
+            }
           }
+          subscriber.foreach(_.stop)
+          publisher.foreach(_.stop)
+          subscriberProbe.receiveWhile(1 seconds) { 
+            case msg => msg 
+          }.last must equal(Closed)
+          context.term
         }
-        subscriber.foreach(_.stop)
-        publisher.foreach(_.stop)
-        subscriberProbe.receiveWhile(1 seconds) { 
-          case msg => msg 
-        }.last must equal(Closed)
-        context.foreach(_.term)
       }
     }
     "support zero-length message frames" in {
@@ -56,13 +67,19 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         publisher = newPublisher(context.get, publisherProbe.ref)
         publisher ! ZMQMessage(Seq[Frame]())
       } finally {
-        publisher.foreach(_.stop)
-        publisherProbe.within(5 seconds) {
-          publisherProbe.expectMsg(Closed)
+        context.foreach { context =>
+          publisher.foreach(_.stop)
+          publisherProbe.within(5 seconds) {
+            publisherProbe.expectMsg(Closed)
+          }
+          context.term
         }
-        context.foreach(_.term)
       }
     }
+    } else {
+      "run all tests for 0MQ" ignore { }
+    }
+
     def newPublisher(context: Context, listener: ActorRef) = {
       val publisher = ZeroMQ.newSocket(SocketParameters(context, SocketType.Pub, Some(listener)))
       publisher ! Bind(endpoint)
