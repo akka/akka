@@ -14,7 +14,7 @@ import static org.junit.Assert.*;
 public class JavaExtension {
 
   static class Provider implements ExtensionIdProvider {
-    public ExtensionId lookup() { return defaultInstance; }
+    public ExtensionId<TestExtension> lookup() { return defaultInstance; }
   }
 
   public final static TestExtensionId defaultInstance = new TestExtensionId();

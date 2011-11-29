@@ -8,12 +8,7 @@ import akka.actor._
 import akka.event._
 import akka.dispatch._
 import akka.util.duration._
-import java.net.InetAddress
-import com.eaio.uuid.UUID
-import akka.serialization.Serialization
-import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
@@ -25,10 +20,8 @@ import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import scala.annotation.tailrec
-import akka.serialization.SerializationExtension
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 
 object ActorSystem {
@@ -156,7 +149,7 @@ object ActorSystem {
  * configuration, e.g. dispatchers, deployments, remote capabilities and
  * addresses. It is also the entry point for creating or looking up actors.
  */
-abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
+abstract class ActorSystem extends ActorRefFactory {
   import ActorSystem._
 
   /**
@@ -218,9 +211,6 @@ abstract class ActorSystem extends ActorRefFactory with TypedActorFactory {
   def deadLetters: ActorRef
   // FIXME: do not publish this
   def deadLetterMailbox: Mailbox
-
-  // FIXME: TypedActor should be an extension
-  def typedActor: TypedActor
 
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
@@ -349,15 +339,9 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   private final val nextName = new AtomicLong
   override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
-  @volatile
-  private var _typedActor: TypedActor = _
-  def typedActor = _typedActor
-
   def /(actorName: String): ActorPath = guardian.path / actorName
 
   private lazy val _start: this.type = {
-    // TODO can we do something better than loading SerializationExtension from here?
-    _typedActor = new TypedActor(settings, SerializationExtension(this))
     provider.init(this)
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
