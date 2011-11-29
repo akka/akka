@@ -5,7 +5,6 @@ package akka.actor
  */
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.japi.{ Option ⇒ JOption }
 import akka.util.Duration
 import akka.util.duration._
 import akka.dispatch.{ Dispatchers, Future, KeptPromise }
@@ -14,6 +13,9 @@ import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
 import akka.serialization.SerializationExtension
+import akka.actor.TypedActor.{ PostRestart, PreRestart, PostStop, PreStart }
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import akka.japi.{ Creator, Option ⇒ JOption }
 
 object TypedActorSpec {
 
@@ -135,6 +137,23 @@ object TypedActorSpec {
   class StackedImpl extends Stacked {
     override def stacked: String = "FOOBAR" //Uppercase
   }
+
+  trait LifeCycles {
+    def crash(): Unit
+  }
+
+  class LifeCyclesImpl(val latch: CountDownLatch) extends PreStart with PostStop with PreRestart with PostRestart with LifeCycles {
+
+    override def crash(): Unit = throw new IllegalStateException("Crash!")
+
+    override def preStart(): Unit = latch.countDown()
+
+    override def postStop(): Unit = for (i ← 1 to 3) latch.countDown()
+
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = for (i ← 1 to 5) latch.countDown()
+
+    override def postRestart(reason: Throwable): Unit = for (i ← 1 to 7) latch.countDown()
+  }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -148,18 +167,18 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     newFooBar(Props().withTimeout(Timeout(d)))
 
   def newFooBar(props: Props): Foo =
-    system.typedActorOf(classOf[Foo], classOf[Bar], props)
+    TypedActor(system).typedActorOf(classOf[Foo], classOf[Bar], props)
 
   def newStacked(props: Props = Props().withTimeout(Timeout(2000))): Stacked =
-    system.typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
+    TypedActor(system).typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
 
-  def mustStop(typedActor: AnyRef) = system.typedActor.stop(typedActor) must be(true)
+  def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) must be(true)
 
   "TypedActors" must {
 
     "be able to instantiate" in {
       val t = newFooBar
-      system.typedActor.isTypedActor(t) must be(true)
+      TypedActor(system).isTypedActor(t) must be(true)
       mustStop(t)
     }
 
@@ -169,7 +188,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "not stop non-started ones" in {
-      system.typedActor.stop(null) must be(false)
+      TypedActor(system).stop(null) must be(false)
     }
 
     "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
@@ -188,7 +207,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to call toString" in {
       val t = newFooBar
-      t.toString must be(system.typedActor.getActorRefFor(t).toString)
+      t.toString must be(TypedActor(system).getActorRefFor(t).toString)
       mustStop(t)
     }
 
@@ -201,7 +220,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to call hashCode" in {
       val t = newFooBar
-      t.hashCode must be(system.typedActor.getActorRefFor(t).hashCode)
+      t.hashCode must be(TypedActor(system).getActorRefFor(t).hashCode)
       mustStop(t)
     }
 
@@ -264,7 +283,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = actorOf(Props(context ⇒ {
-          case p: Props ⇒ context.sender ! context.typedActorOf(classOf[Foo], classOf[Bar], p)
+          case p: Props ⇒ context.sender ! TypedActor(context).typedActorOf(classOf[Foo], classOf[Bar], p)
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
         }))
@@ -296,7 +315,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "be able to support implementation only typed actors" in {
-      val t = system.typedActorOf[Foo, Bar](Props())
+      val t = TypedActor(system).typedActorOf[Foo, Bar](Props())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
@@ -306,7 +325,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t = system.typedActorOf[Stackable1 with Stackable2, StackedImpl]()
+      val t = TypedActor(system).typedActorOf[Stackable1 with Stackable2, StackedImpl]()
       t.stackable1 must be("foo")
       t.stackable2 must be("bar")
       mustStop(t)
@@ -333,17 +352,16 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to serialize and deserialize invocations" in {
       import java.io._
-      val serialization = SerializationExtension(system)
-      val m = TypedActor.MethodCall(serialization, classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
-      val baos = new ByteArrayOutputStream(8192 * 4)
-      val out = new ObjectOutputStream(baos)
-
-      out.writeObject(m)
-      out.close()
-
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-
       Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
+        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
+        val baos = new ByteArrayOutputStream(8192 * 4)
+        val out = new ObjectOutputStream(baos)
+
+        out.writeObject(m)
+        out.close()
+
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method must be(m.method)
@@ -353,17 +371,16 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     "be able to serialize and deserialize invocations' parameters" in {
       import java.io._
       val someFoo: Foo = new Bar
-      val serialization = SerializationExtension(system)
-      val m = TypedActor.MethodCall(serialization, classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
-      val baos = new ByteArrayOutputStream(8192 * 4)
-      val out = new ObjectOutputStream(baos)
-
-      out.writeObject(m)
-      out.close()
-
-      val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-
       Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
+        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
+        val baos = new ByteArrayOutputStream(8192 * 4)
+        val out = new ObjectOutputStream(baos)
+
+        out.writeObject(m)
+        out.close()
+
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method must be(m.method)
@@ -374,6 +391,15 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         mNew.parameters(2) must not be null
         mNew.parameters(2).asInstanceOf[Int] must be === 1
       }
+    }
+
+    "be able to override lifecycle callbacks" in {
+      val latch = new CountDownLatch(16)
+      val ta = TypedActor(system)
+      val t: LifeCycles = ta.typedActorOf(classOf[LifeCycles], new Creator[LifeCyclesImpl] { def create = new LifeCyclesImpl(latch) }, Props())
+      t.crash()
+      ta.poisonPill(t)
+      latch.await(10, TimeUnit.SECONDS) must be === true
     }
   }
 }

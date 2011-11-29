@@ -37,9 +37,13 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
   val mdcThreadAttributeName = "sourceThread"
 
   def receive = {
+
     case event @ Error(cause, logSource, message) ⇒
       withMdc(mdcThreadAttributeName, event.thread.getName) {
-        Logger(logSource).error(message.toString, cause)
+        cause match {
+          case Error.NoCause ⇒ Logger(logSource).error(message.toString)
+          case _             ⇒ Logger(logSource).error(message.toString, cause)
+        }
       }
 
     case event @ Warning(logSource, message) ⇒
@@ -62,7 +66,8 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
       sender ! LoggerInitialized
   }
 
-  def withMdc(name: String, value: String)(logStatement: ⇒ Unit) {
+  @inline
+  final def withMdc(name: String, value: String)(logStatement: ⇒ Unit) {
     MDC.put(name, value)
     try {
       logStatement

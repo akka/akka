@@ -282,7 +282,7 @@ class ActiveRemoteClientHandler(
   val client: ActiveRemoteClient)
   extends SimpleChannelUpstreamHandler {
 
-  def runOnceNow(thunk: ⇒ Unit) = timer.newTimeout(new TimerTask() {
+  def runOnceNow(thunk: ⇒ Unit): Unit = timer.newTimeout(new TimerTask() {
     def run(timeout: Timeout) = try { thunk } finally { timeout.cancel() }
   }, 0, TimeUnit.MILLISECONDS)
 
