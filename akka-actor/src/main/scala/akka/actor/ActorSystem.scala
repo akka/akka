@@ -235,7 +235,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Register a block of code to run after all actors in this actor system have
    * been stopped.
    */
-  def registerOnTermination(code: ⇒ Unit)
+  def registerOnTermination[T](code: ⇒ T)
 
   /**
    * Register a block of code to run after all actors in this actor system have
@@ -354,7 +354,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
 
   def start() = _start
 
-  def registerOnTermination(code: ⇒ Unit) { terminationFuture onComplete (_ ⇒ code) }
+  def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   // TODO shutdown all that other stuff, whatever that may be
