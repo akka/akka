@@ -245,7 +245,7 @@ trait BasicRouter extends Router {
       next match {
         case Some(connection) ⇒
           try {
-            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it?
+            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it??
           } catch {
             case e: Exception ⇒
               connectionManager.remove(connection)

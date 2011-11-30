@@ -111,12 +111,12 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   /**
    * Suspends the actor. It will not process messages while suspended.
    */
-  def suspend(): Unit //TODO FIXME REMOVE THIS
+  def suspend(): Unit //TODO FIXME REMOVE THIS, ticket #1415
 
   /**
    * Resumes a suspended actor.
    */
-  def resume(): Unit //TODO FIXME REMOVE THIS
+  def resume(): Unit //TODO FIXME REMOVE THIS, ticket #1415
 
   /**
    * Shuts down the actor its dispatcher and message queue.
@@ -135,7 +135,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def startsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
+  def startsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS, ticket #1416
 
   /**
    * Deregisters this actor from being a death monitor of the provided ActorRef
@@ -144,7 +144,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
+  def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS, ticket #1416
 
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
@@ -201,13 +201,13 @@ class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -237,7 +237,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  // FIXME TODO: remove this method
+  // FIXME TODO: remove this method. It is used in testkit.
   // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor
@@ -308,7 +308,6 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
   import akka.serialization.Serialization.currentSystem
 
   def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
-  def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
@@ -330,9 +329,11 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString
 
+  //FIXME REMOVE THIS, ticket #1416 
   def startsWatching(actorRef: ActorRef): ActorRef = actorRef
   def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
 
+  //FIXME REMOVE THIS, ticket #1415
   def suspend(): Unit = ()
   def resume(): Unit = ()
 

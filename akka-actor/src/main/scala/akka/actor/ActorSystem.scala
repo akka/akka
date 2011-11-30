@@ -209,8 +209,6 @@ abstract class ActorSystem extends ActorRefFactory {
    * effort basis and hence not strictly guaranteed.
    */
   def deadLetters: ActorRef
-  // FIXME: do not publish this
-  def deadLetterMailbox: Mailbox
 
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
@@ -328,7 +326,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  //FIXME Set this to a Failure when things bubble to the top
+  //FIXME Set this to a Failure when things bubble to the top. What does this mean?
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian

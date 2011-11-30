@@ -58,8 +58,7 @@ trait BootableActorLoaderService extends Bootable {
   abstract override def onUnload() = {
     super.onUnload()
 
-    // FIXME shutdown all actors
-    // system.registry.local.shutdownAll
+    system.stop()
   }
 }
 

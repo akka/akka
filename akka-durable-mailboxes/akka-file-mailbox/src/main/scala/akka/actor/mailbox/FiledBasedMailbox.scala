@@ -62,7 +62,8 @@ class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with 
     queue.remove
     true
   } catch {
-    case e ⇒ false //review why catch Throwable? And swallow potential Errors?
+    // FIXME catching all and continue isn't good for OOME, ticket #1418
+    case e ⇒ false
   }
 
 }

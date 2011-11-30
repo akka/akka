@@ -66,7 +66,7 @@ abstract class RemoteClient private[akka] (
    * Sends the message across the wire
    */
   def send(request: RemoteMessageProtocol) {
-    if (isRunning) { //TODO FIXME RACY
+    if (isRunning) { //FIXME RACY, ticket #1409
       log.debug("Sending message: " + new RemoteMessage(request, remoteSupport))
 
       try {
@@ -125,7 +125,7 @@ class ActiveRemoteClient private[akka] (
 
   import remoteSupport.clientSettings._
 
-  //FIXME rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
+  //TODO rewrite to a wrapper object (minimize volatile access and maximize encapsulation)
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
@@ -161,7 +161,7 @@ class ActiveRemoteClient private[akka] (
     def closeChannel(connection: ChannelFuture) = {
       val channel = connection.getChannel
       openChannels.remove(channel)
-      channel.close
+      channel.close()
     }
 
     def attemptReconnect(): Boolean = {
@@ -345,7 +345,7 @@ class ActiveRemoteClientHandler(
             client.remoteSupport.shutdownClientConnection(remoteAddress) // spawn in another thread
           }
         case e: Exception ⇒
-          event.getChannel.close //FIXME Is this the correct behavior?
+          event.getChannel.close() //FIXME Is this the correct behavior???
       }
 
     } else client.notifyListeners(RemoteClientError(new Exception("Unknown cause"), client.remoteSupport, client.remoteAddress))
@@ -648,7 +648,7 @@ class RemoteServerHandler(
             val inbound = RemoteAddress(origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
-          case CommandType.SHUTDOWN ⇒ //TODO FIXME Dispose passive connection here
+          case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410
           case _                    ⇒ //Unknown command
         }
       case _ ⇒ //ignore
@@ -659,7 +659,7 @@ class RemoteServerHandler(
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     remoteSupport.notifyListeners(RemoteServerError(event.getCause, remoteSupport))
-    event.getChannel.close
+    event.getChannel.close()
   }
 
   private def getClientAddress(c: Channel): Option[RemoteAddress] =
@@ -679,7 +679,7 @@ class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(na
       if (open.get) {
         super.add(channel)
       } else {
-        channel.close
+        channel.close()
         false
       }
     } finally {
@@ -690,7 +690,7 @@ class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(na
   override def close(): ChannelGroupFuture = {
     guard.writeLock().lock()
     try {
-      if (open.getAndSet(false)) super.close else throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
+      if (open.getAndSet(false)) super.close() else throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
     } finally {
       guard.writeLock().unlock()
     }

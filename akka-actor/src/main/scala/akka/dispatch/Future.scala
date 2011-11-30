@@ -163,6 +163,7 @@ object Future {
         try {
           Right(body)
         } catch {
+          // FIXME catching all and continue isn't good for OOME, ticket #1418
           case e ⇒ Left(e)
         }
       }
@@ -411,7 +412,9 @@ object Future {
               try {
                 next.apply()
               } catch {
-                case e ⇒ e.printStackTrace() //TODO FIXME strategy for handling exceptions in callbacks
+                case e ⇒
+                  // FIXME catching all and continue isn't good for OOME, ticket #1418
+                  dispatcher.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", "Failed to dispatch task, due to: " + e.getMessage))
               }
             }
           } finally { _taskStack set None }
@@ -984,7 +987,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
             def run() {
               if (!isCompleted) {
                 if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
-                else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) })
+                else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) }) // FIXME catching all and continue isn't good for OOME, ticket #1418
               }
             }
           }
@@ -994,6 +997,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
     } else this
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
+    // FIXME catching all and continue isn't good for OOME, ticket #1418
     try { func(this) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
   }
 
