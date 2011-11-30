@@ -125,7 +125,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
-    println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
+    println("%s has picked up %s and %s, and starts to eat", name, left.path.name, right.path.name)
     goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5 seconds)
   }
 

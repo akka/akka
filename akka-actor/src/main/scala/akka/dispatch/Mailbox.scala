@@ -196,7 +196,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
       }
     } catch {
       case e ⇒
-        actor.system.eventStream.publish(Error(e, actor.self.toString, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
+        actor.system.eventStream.publish(Error(e, actor.self.path.toString, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
   }

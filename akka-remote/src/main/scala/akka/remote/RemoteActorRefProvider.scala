@@ -247,13 +247,13 @@ class RemoteActorRefProvider(
             throw cause
 
           case None ⇒
-            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
+            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.path))
             log.error(error, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.address, e.toString)
+          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.path, e.toString)
           throw e
       }
     } else {

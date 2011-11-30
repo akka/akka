@@ -12,8 +12,14 @@ object ActorPath {
 /**
  * Actor path is a unique path to an actor that shows the creation path
  * up through the actor tree to the root actor.
+ *
+ * ActorPath defines a natural ordering (so that ActorRefs can be put into
+ * collections with this requirement); this ordering is intended to be as fast
+ * as possible, which owing to the bottom-up recursive nature of ActorPath
+ * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
+ * ChildActorPath in case the number of elements is different.
  */
-sealed trait ActorPath {
+sealed trait ActorPath extends Comparable[ActorPath] {
   /**
    * The Address under which this path can be reached; walks up the tree to
    * the RootActorPath.
@@ -67,6 +73,11 @@ final case class RootActorPath(address: Address, name: String = ActorPath.separa
   def pathElements: Iterable[String] = Iterable.empty
 
   override val toString = address + name
+
+  def compareTo(other: ActorPath) = other match {
+    case r: RootActorPath  ⇒ toString compareTo r.toString
+    case c: ChildActorPath ⇒ 1
+  }
 }
 
 final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
@@ -113,7 +124,8 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     @tailrec
     def rec(left: ActorPath, right: ActorPath): Boolean =
       if (left eq right) true
-      else if (left.isInstanceOf[RootActorPath] || right.isInstanceOf[RootActorPath]) left == right
+      else if (left.isInstanceOf[RootActorPath]) left equals right
+      else if (right.isInstanceOf[RootActorPath]) right equals left
       else left.name == right.name && rec(left.parent, right.parent)
 
     other match {
@@ -132,6 +144,21 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     }
 
     finalizeHash(rec(this, startHash(42), startMagicA, startMagicB))
+  }
+
+  def compareTo(other: ActorPath) = {
+    @tailrec
+    def rec(left: ActorPath, right: ActorPath): Int =
+      if (left eq right) 0
+      else if (left.isInstanceOf[RootActorPath]) left compareTo right
+      else if (right.isInstanceOf[RootActorPath]) -(right compareTo left)
+      else {
+        val x = left.name compareTo right.name
+        if (x == 0) rec(left.parent, right.parent)
+        else x
+      }
+
+    rec(this, other)
   }
 }
 

@@ -266,15 +266,15 @@ private[akka] class ActorCell(
     }
 
     def supervise(child: ActorRef): Unit = {
-      val dl = system.deadLetters
-      childrenRefs.get(child.name) match {
-        case None | Some(ChildRestartStats(`dl`, _, _)) ⇒
-          childrenRefs = childrenRefs.updated(child.name, ChildRestartStats(child))
+      childrenRefs.get(child.path.name) match {
+        case None ⇒
+          childrenRefs = childrenRefs.updated(child.path.name, ChildRestartStats(child))
           if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "now supervising " + child))
         case Some(ChildRestartStats(`child`, _, _)) ⇒
-          system.eventStream.publish(Warning(self.path.toString, "Already supervising " + child))
+          // this is the nominal case where we created the child and entered it in actorCreated() above
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "now supervising " + child))
         case Some(ChildRestartStats(c, _, _)) ⇒
-          system.eventStream.publish(Warning(self.path.toString, "Already supervising other child with same name '" + child.name + "', old: " + c + " new: " + child))
+          system.eventStream.publish(Warning(self.path.toString, "Already supervising other child with same name '" + child.path.name + "', old: " + c + " new: " + child))
       }
     }
 
@@ -392,14 +392,14 @@ private[akka] class ActorCell(
     }
   }
 
-  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.name) match {
+  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.path.name) match {
     case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenRefs.values)) throw cause
     case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.path.toString, "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
     case None                                ⇒ system.eventStream.publish(Warning(self.path.toString, "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
-    childrenRefs -= child.name
+    childrenRefs -= child.path.name
     props.faultHandler.handleChildTerminated(child, children)
     if (stopping && childrenRefs.isEmpty) doTerminate()
   }

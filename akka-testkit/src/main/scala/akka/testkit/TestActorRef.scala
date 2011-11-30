@@ -42,9 +42,12 @@ class TestActorRef[T <: Actor](
    */
   def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
-  override def toString = "TestActor[" + address + "]"
+  override def toString = "TestActor[" + path + "]"
 
-  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address
+  override def equals(other: Any) = other match {
+    case r: TestActorRef[_] ⇒ path == r.path
+    case _                  ⇒ false
+  }
 }
 
 object TestActorRef {

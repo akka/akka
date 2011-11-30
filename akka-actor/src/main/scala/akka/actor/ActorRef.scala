@@ -43,6 +43,8 @@ import akka.event.DeathWatch
  *   actor.stop()
  * </pre>
  *
+ * The natural ordering of ActorRef is defined in terms of its [[akka.actor.ActorPath]].
+ *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
@@ -50,24 +52,14 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
-   * Returns the name for this actor. Locally unique (across siblings).
-   */
-  def name: String
-
-  /**
    * Returns the path for this actor (from this actor up to the root actor).
    */
   def path: ActorPath
 
   /**
-   * Returns the absolute address for this actor in the form hostname:port/path/to/actor.
-   */
-  def address: String
-
-  /**
    * Comparison only takes address into account.
    */
-  def compareTo(other: ActorRef) = this.address compareTo other.address
+  def compareTo(other: ActorRef) = this.path compareTo other.path
 
   /**
    * Sends the specified message to the sender, i.e. fire-and-forget semantics.<p/>
@@ -146,11 +138,12 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
-  override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
+  // FIXME check if we should scramble the bits or whether they can stay the same
+  override def hashCode: Int = path.hashCode
 
-  override def equals(that: Any): Boolean = {
-    that.isInstanceOf[ActorRef] &&
-      that.asInstanceOf[ActorRef].address == address
+  override def equals(that: Any): Boolean = that match {
+    case other: ActorRef ⇒ path == other.path
+    case _               ⇒ false
   }
 
   override def toString = "Actor[%s]".format(path)
@@ -170,10 +163,6 @@ class LocalActorRef private[akka] (
   _receiveTimeout: Option[Long] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef {
-
-  def name = path.name
-
-  def address: String = path.toString
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -329,9 +318,6 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
  */
 trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
-  private[akka] val uuid: Uuid = newUuid()
-  def name: String = uuid.toString
-
   def startsWatching(actorRef: ActorRef): ActorRef = actorRef
   def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
 
@@ -354,7 +340,6 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 object MinimalActorRef {
   def apply(_path: ActorPath)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
     def path = _path
-    def address = path.toString
     override def !(message: Any)(implicit sender: ActorRef = null): Unit =
       if (receive.isDefinedAt(message)) receive(message)
   }
@@ -386,10 +371,6 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
     brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
   }
 
-  override val name: String = "dead-letter"
-
-  def address: String = path.toString
-
   override def isTerminated(): Boolean = true
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
@@ -410,10 +391,6 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
 class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
-
-  override def name = path.name
-
-  def address: String = path.toString
 
   {
     val callback: Future[Any] ⇒ Unit = { _ ⇒ deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }

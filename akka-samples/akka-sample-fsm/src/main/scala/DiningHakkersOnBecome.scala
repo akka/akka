@@ -75,7 +75,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
   //back to think about how he should obtain his chopsticks :-)
   def waiting_for(chopstickToWaitFor: ActorRef, otherChopstick: ActorRef): Receive = {
     case Taken(`chopstickToWaitFor`) ⇒
-      println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
+      println("%s has picked up %s and %s, and starts to eat", name, left.path.name, right.path.name)
       become(eating)
       system.scheduler.scheduleOnce(self, Think, 5 seconds)
 
