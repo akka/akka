@@ -21,7 +21,7 @@ import akka.util.ReflectiveAccess
  */
 
 /**
- * Market interface to signify an Akka Extension
+ * Marker interface to signify an Akka Extension
  */
 trait Extension
 
@@ -93,7 +93,7 @@ trait ExtensionIdProvider {
 abstract class ExtensionKey[T <: Extension](implicit m: ClassManifest[T]) extends ExtensionId[T] with ExtensionIdProvider {
   def this(clazz: Class[T]) = this()(ClassManifest.fromClass(clazz))
 
-  override def lookup() = this
+  override def lookup(): ExtensionId[T] = this
   def createExtension(system: ActorSystemImpl): T =
     ReflectiveAccess.createInstance[T](m.erasure, Array[Class[_]](classOf[ActorSystemImpl]), Array[AnyRef](system)) match {
       case Left(ex) ⇒ throw ex
