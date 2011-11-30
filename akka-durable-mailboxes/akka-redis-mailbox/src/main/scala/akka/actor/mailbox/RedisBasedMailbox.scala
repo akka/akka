@@ -18,7 +18,7 @@ class RedisBasedMailboxException(message: String) extends AkkaException(message)
  */
 class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  private val settings = RedisBasedMailboxExtension(owner.system).settings
+  private val settings = RedisBasedMailboxExtension(owner.system)
 
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling

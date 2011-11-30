@@ -106,7 +106,7 @@ public class Pi {
             this.latch = latch;
             Creator<Router> routerCreator = new Creator<Router>() {
                 public Router create() {
-                    return new RoundRobinRouter();
+                    return new RoundRobinRouter(dispatcher(), new akka.actor.Timeout(-1));
                 }
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {

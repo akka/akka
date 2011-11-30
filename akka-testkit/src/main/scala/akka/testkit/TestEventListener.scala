@@ -81,8 +81,7 @@ abstract class EventFilter(occurrences: Int) {
    */
   def intercept[T](code: ⇒ T)(implicit system: ActorSystem): T = {
     system.eventStream publish TestEvent.Mute(this)
-    val testKitExtension = TestKitExtension(system)
-    val leeway = testKitExtension.settings.TestEventFilterLeeway
+    val leeway = TestKitExtension(system).TestEventFilterLeeway
     try {
       val result = code
       if (!awaitDone(leeway))

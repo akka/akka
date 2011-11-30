@@ -176,8 +176,8 @@ class LocalActorRef private[akka] (
   def address: String = path.toString
 
   /*
-   * actorCell.start() publishes actorCell & this to the dispatcher, which 
-   * means that messages may be processed theoretically before the constructor 
+   * actorCell.start() publishes actorCell & this to the dispatcher, which
+   * means that messages may be processed theoretically before the constructor
    * ends. The JMM guarantees visibility for final fields only after the end
    * of the constructor, so publish the actorCell safely by making it a
    * @volatile var which is NOT TO BE WRITTEN TO. The alternative would be to
@@ -305,17 +305,17 @@ trait ScalaActorRef { ref: ActorRef ⇒
  */
 
 case class SerializedActorRef(hostname: String, port: Int, path: String) {
-  import akka.serialization.Serialization.system
+  import akka.serialization.Serialization.currentSystem
 
   def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.hostname, remoteAddress.port, path)
   def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
-  def readResolve(): AnyRef = {
-    if (system.value eq null) throw new IllegalStateException(
+  def readResolve(): AnyRef = currentSystem.value match {
+    case null ⇒ throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.system.withValue(system) { ... }")
-    system.value.provider.deserialize(this) match {
+        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+    case someSystem ⇒ someSystem.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
     }
@@ -354,7 +354,7 @@ case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
-    private def readResolve(): AnyRef = Serialization.system.value.deadLetters
+    private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters
   }
 
   val serialized = new SerializedDeadLetterActorRef
@@ -381,7 +381,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ eventStream.publish(d)
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }

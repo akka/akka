@@ -402,4 +402,79 @@ class RoutingSpec extends AkkaSpec {
       }
     })
   }
+
+  "broadcast router" must {
+
+    "be started when constructed" in {
+      val actor1 = actorOf[TestActor]
+
+      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(actor1)))
+      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
+      actor.isTerminated must be(false)
+    }
+
+    "broadcast message using !" in {
+      val doneLatch = new CountDownLatch(2)
+
+      val counter1 = new AtomicInteger
+      val connection1 = actorOf(new Actor {
+        def receive = {
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter1.addAndGet(msg)
+        }
+      })
+
+      val counter2 = new AtomicInteger
+      val connection2 = actorOf(new Actor {
+        def receive = {
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter2.addAndGet(msg)
+        }
+      })
+
+      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
+      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
+
+      actor ! 1
+      actor ! "end"
+
+      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+
+      counter1.get must be(1)
+      counter2.get must be(1)
+    }
+
+    "broadcast message using ?" in {
+      val doneLatch = new CountDownLatch(2)
+
+      val counter1 = new AtomicInteger
+      val connection1 = actorOf(new Actor {
+        def receive = {
+          case "end" ⇒ doneLatch.countDown()
+          case msg: Int ⇒
+            counter1.addAndGet(msg)
+            sender ! "ack"
+        }
+      })
+
+      val counter2 = new AtomicInteger
+      val connection2 = actorOf(new Actor {
+        def receive = {
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter2.addAndGet(msg)
+        }
+      })
+
+      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
+      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
+
+      actor ? 1
+      actor ! "end"
+
+      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+
+      counter1.get must be(1)
+      counter2.get must be(1)
+    }
+  }
 }

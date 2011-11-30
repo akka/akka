@@ -22,7 +22,7 @@ class ZooKeeperBasedMailboxException(message: String) extends AkkaException(mess
  */
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  private val settings = ZooKeeperBasedMailboxExtension(owner.system).settings
+  private val settings = ZooKeeperBasedMailboxExtension(owner.system)
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 

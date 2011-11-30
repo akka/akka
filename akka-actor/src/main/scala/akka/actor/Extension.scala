@@ -16,53 +16,51 @@ package akka.actor
  * The extension itself can be created in any way desired and has full access
  * to the ActorSystem implementation.
  *
- * Scala example:
- *
- * {{{
- * class MyExtension extends Extension[MyExtension] {
- *   def key = MyExtension
- *   def init(system: ActorSystemImpl) {
- *     ... // initialize here
- *   }
- * }
- * object MyExtension extends ExtensionKey[MyExtension]
- * }}}
- *
- * Java example:
- *
- * {{{
- * static class MyExtension implements Extension<MyExtension> {
- *   public static ExtensionKey<MyExtension> key = new ExtensionKey<MyExtension>() {};
- *
- *   public ExtensionKey<TestExtension> key() {
- *    return key;
- *   }
- *   public void init(ActorSystemImpl system) {
- *     ... // initialize here
- *   }
- * }
- * }}}
  */
-trait Extension[T <: AnyRef] {
+
+/**
+ * Market interface to signify an Akka Extension
+ */
+trait Extension
+
+/**
+ * Identifies an Extension
+ * Lookup of Extensions is done by object identity, so the Id must be the same wherever it's used,
+ * otherwise you'll get the same extension loaded multiple times.
+ */
+trait ExtensionId[T <: Extension] {
 
   /**
-   * This method is called by the ActorSystem upon registering this extension.
-   * The key returned is used for looking up extensions, hence it must be a
-   * suitable hash key and available to all clients of the extension. This is
-   * best achieved by storing it in a static field (Java) or as/in an object
-   * (Scala).
+   * Returns an instance of the extension identified by this ExtensionId instance.
    */
-  def key: ExtensionKey[T]
+  def apply(system: ActorSystem): T = system.registerExtension(this)
 
-  // FIXME ActorSystemImpl exposed to user API. We might well choose to introduce a new interface for this level of access, just so we can shuffle around the implementation
   /**
-   * This method is called by the ActorSystem when the extension is registered
-   * to trigger initialization of the extension.
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   * Java API
    */
-  def init(system: ActorSystemImpl): Unit
+  def get(system: ActorSystem): T = apply(system)
+
+  /**
+   * Is used by Akka to instantiate the Extension identified by this ExtensionId,
+   * internal use only.
+   */
+  def createExtension(system: ActorSystemImpl): T
 }
 
 /**
- * Marker trait identifying a registered [[akka.actor.Extension]].
+ * Java API for ExtensionId
  */
-trait ExtensionKey[T <: AnyRef]
+abstract class AbstractExtensionId[T <: Extension] extends ExtensionId[T]
+
+/**
+ * To be able to load an ExtensionId from the configuration,
+ * a class that implements ExtensionIdProvider must be specified.
+ * The lookup method should return the canonical reference to the extension.
+ */
+trait ExtensionIdProvider {
+  /**
+   * Returns the canonical ExtensionId for this Extension
+   */
+  def lookup(): ExtensionId[_ <: Extension]
+}

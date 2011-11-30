@@ -9,7 +9,6 @@ import akka.actor._
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
 import akka.util.{ ReflectiveAccess, Duration }
-import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
@@ -43,6 +42,11 @@ object RouterType {
   object ScatterGather extends RouterType
 
   /**
+   * A RouterType that broadcasts the messages to all connections.
+   */
+  object Broadcast extends RouterType
+
+  /**
    * A RouterType that selects the connection based on the least amount of cpu usage
    */
   object LeastCPU extends RouterType
@@ -67,9 +71,9 @@ object RouterType {
  * Contains the configuration to create local and clustered routed actor references.
  * Routed ActorRef configuration object, this is thread safe and fully sharable.
  */
-private[akka] case class RoutedProps(
-  routerFactory: () ⇒ Router = RoutedProps.defaultRouterFactory,
-  connectionManager: ConnectionManager = new LocalConnectionManager(List()),
+case class RoutedProps private[akka] (
+  routerFactory: () ⇒ Router,
+  connectionManager: ConnectionManager,
   timeout: Timeout = RoutedProps.defaultTimeout,
   localOnly: Boolean = RoutedProps.defaultLocalOnly) {
 
@@ -82,7 +86,6 @@ private[akka] case class RoutedProps(
 
 object RoutedProps {
   final val defaultTimeout = Timeout(Duration.MinusInf)
-  final val defaultRouterFactory = () ⇒ new RoundRobinRouter
   final val defaultLocalOnly = false
 }
 
@@ -265,11 +268,40 @@ trait BasicRouter extends Router {
 }
 
 /**
+ * A Router that uses broadcasts a message to all its connections.
+ */
+class BroadcastRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter with Serializable {
+  override def route(message: Any)(implicit sender: ActorRef) = {
+    connectionManager.connections.iterable foreach { connection ⇒
+      try {
+        connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
+      } catch {
+        case e: Exception ⇒
+          connectionManager.remove(connection)
+          throw e
+      }
+    }
+  }
+
+  //protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] =
+  override def route[T](message: Any, timeout: Timeout): Future[T] = {
+    import Future._
+    implicit val t = timeout
+    val futures = connectionManager.connections.iterable map { connection ⇒
+      connection.?(message, timeout).asInstanceOf[Future[T]]
+    }
+    Future.firstCompletedOf(futures)
+  }
+
+  protected def next: Option[ActorRef] = None
+}
+
+/**
  * A DirectRouter a Router that only has a single connected actorRef and forwards all request to that actorRef.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class DirectRouter extends BasicRouter {
+class DirectRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
 
   private val state = new AtomicReference[DirectRouterState]
 
@@ -311,7 +343,7 @@ class DirectRouter extends BasicRouter {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class RandomRouter extends BasicRouter {
+class RandomRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
   import java.security.SecureRandom
 
   private val state = new AtomicReference[RandomRouterState]
@@ -353,7 +385,7 @@ class RandomRouter extends BasicRouter {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] class RoundRobinRouter extends BasicRouter {
+class RoundRobinRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
 
   private val state = new AtomicReference[RoundRobinState]
 
@@ -444,7 +476,7 @@ trait ScatterGatherRouter extends BasicRouter with Serializable {
  * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
  * mode, the router would behave as {@link RoundRobinRouter}
  */
-class ScatterGatherFirstCompletedRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends RoundRobinRouter with ScatterGatherRouter {
+class ScatterGatherFirstCompletedRouter(implicit dispatcher: MessageDispatcher, timeout: Timeout) extends RoundRobinRouter with ScatterGatherRouter {
 
   protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Future.firstCompletedOf(results)
 }

@@ -8,8 +8,14 @@ class RemoteConfigSpec extends AkkaSpec {
   "ClusterSpec: A Deployer" must {
     "be able to parse 'akka.actor.cluster._' config elements" in {
 
-      val config = RemoteExtension(system).settings.config
+      val config = RemoteExtension(system).config
       import config._
+
+      //akka.remote
+      getString("akka.remote.layer") must equal("akka.cluster.netty.NettyRemoteSupport")
+      getString("akka.remote.secure-cookie") must equal("")
+      getBoolean("akka.remote.use-passive-connections") must equal(true)
+      // getMilliseconds("akka.remote.remote-daemon-ack-timeout") must equal(30 * 1000)
 
       //akka.remote.server
       getInt("akka.remote.server.port") must equal(2552)
@@ -28,27 +34,23 @@ class RemoteConfigSpec extends AkkaSpec {
 
       // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
       //akka.cluster
-      getString("akka.cluster.name") must equal("test-cluster")
-      getString("akka.cluster.zookeeper-server-addresses") must equal("localhost:2181")
-      getInt("akka.remote.server.port") must equal(2552)
-      getMilliseconds("akka.cluster.max-time-to-wait-until-connected") must equal(30 * 1000)
-      getMilliseconds("akka.cluster.session-timeout") must equal(60 * 1000)
-      getMilliseconds("akka.cluster.connection-timeout") must equal(60 * 1000)
-      getMilliseconds("akka.remote.remote-daemon-ack-timeout") must equal(30 * 1000)
-      getBoolean("akka.cluster.include-ref-node-in-replica-set") must equal(true)
-      getString("akka.remote.layer") must equal("akka.cluster.netty.NettyRemoteSupport")
-      getString("akka.remote.secure-cookie") must equal("")
-      getBoolean("akka.remote.use-passive-connections") must equal(true)
-      getString("akka.cluster.log-directory") must equal("_akka_cluster")
+      getString("akka.cluster.name") must equal("default-cluster")
+      getString("akka.cluster.nodename") must equal("")
+      getStringList("akka.cluster.seed-nodes") must equal(new java.util.ArrayList[String])
 
-      //akka.cluster.replication
-      getString("akka.cluster.replication.digest-type") must equal("MAC")
-      getString("akka.cluster.replication.password") must equal("secret")
-      getInt("akka.cluster.replication.ensemble-size") must equal(3)
-      getInt("akka.cluster.replication.quorum-size") must equal(2)
-      getInt("akka.cluster.replication.snapshot-frequency") must equal(1000)
-      getMilliseconds("akka.cluster.replication.timeout") must equal(30 * 1000)
+      //   getMilliseconds("akka.cluster.max-time-to-wait-until-connected") must equal(30 * 1000)
+      //   getMilliseconds("akka.cluster.session-timeout") must equal(60 * 1000)
+      //   getMilliseconds("akka.cluster.connection-timeout") must equal(60 * 1000)
+      //   getBoolean("akka.cluster.include-ref-node-in-replica-set") must equal(true)
+      //   getString("akka.cluster.log-directory") must equal("_akka_cluster")
 
+      //   //akka.cluster.replication
+      //   getString("akka.cluster.replication.digest-type") must equal("MAC")
+      //   getString("akka.cluster.replication.password") must equal("secret")
+      //   getInt("akka.cluster.replication.ensemble-size") must equal(3)
+      //   getInt("akka.cluster.replication.quorum-size") must equal(2)
+      //   getInt("akka.cluster.replication.snapshot-frequency") must equal(1000)
+      //   getMilliseconds("akka.cluster.replication.timeout") must equal(30 * 1000)
     }
   }
 }
