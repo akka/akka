@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>.
+ */
 package sample.fsm.buncher
 
 import akka.actor.ActorRefFactory
@@ -6,15 +9,15 @@ import akka.util.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
 
 /*
- * generic typed object buncher.
- *
- * To instantiate it, use the factory method like so:
- *   Buncher(100, 500)(x : List[AnyRef] => x foreach println)
- * which will yield a fully functional ActorRef.
- * The type of messages allowed is strongly typed to match the
- * supplied processing method; other messages are discarded (and
- * possibly logged).
- */
+* generic typed object buncher.
+*
+* To instantiate it, use the factory method like so:
+*   Buncher(100, 500)(x : List[AnyRef] => x foreach println)
+* which will yield a fully functional ActorRef.
+* The type of messages allowed is strongly typed to match the
+* supplied processing method; other messages are discarded (and
+* possibly logged).
+*/
 object GenericBuncher {
   trait State
   case object Idle extends State
