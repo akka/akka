@@ -9,17 +9,15 @@ import com.typesafe.config.ConfigFactory
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
-object ActorSystemSpec {
-  object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
-    def lookup = this
-    def createExtension(s: ActorSystemImpl) = new TestExtension(s)
-  }
-
-  class TestExtension(val system: ActorSystemImpl) extends Extension
+object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
+  def lookup = this
+  def createExtension(s: ActorSystemImpl) = new TestExtension(s)
 }
 
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.ActorSystemSpec$TestExtension$"]""") {
-  import ActorSystemSpec._
+// Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
+class TestExtension(val system: ActorSystemImpl) extends Extension
+
+class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") {
 
   "An ActorSystem" must {
 

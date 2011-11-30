@@ -8,11 +8,8 @@ import akka.testkit.AkkaSpec;
 
 public class UntypedTransactorExample {
   public static void main(String[] args) throws InterruptedException {
-    System.out.println();
-    System.out.println("Untyped transactor example");
-    System.out.println();
 
-        ActorSystem application = ActorSystem.create("UntypedTransactorExample", AkkaSpec.testConf());
+    ActorSystem application = ActorSystem.create("UntypedTransactorExample", AkkaSpec.testConf());
 
     ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCounter.class));
     ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCounter.class));
@@ -44,5 +41,7 @@ public class UntypedTransactorExample {
 
     counter1.stop();
     counter2.stop();
+
+    application.stop();
   }
 }

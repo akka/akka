@@ -194,41 +194,46 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
       val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
-        "akka.actor.debug.fsm" -> true).asJava)
-      new TestKit(ActorSystem("fsm event", config)) {
-        EventFilter.debug() intercept {
-          val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
-            startWith(1, null)
-            when(1) {
-              case Ev("go") ⇒
-                setTimer("t", Shutdown, 1.5 seconds, false)
-                goto(2)
+        "akka.actor.debug.fsm" -> true).asJava).withFallback(AkkaSpec.testConf)
+      val fsmEventSystem = ActorSystem("fsm event", config)
+      try {
+        new TestKit(fsmEventSystem) {
+          EventFilter.debug() intercept {
+            val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
+              startWith(1, null)
+              when(1) {
+                case Ev("go") ⇒
+                  setTimer("t", Shutdown, 1.5 seconds, false)
+                  goto(2)
+              }
+              when(2) {
+                case Ev("stop") ⇒
+                  cancelTimer("t")
+                  stop
+              }
+              onTermination {
+                case StopEvent(r, _, _) ⇒ testActor ! r
+              }
+            })
+            val name = fsm.toString
+            system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+            fsm ! "go"
+            expectMsgPF(1 second, hint = "processing Event(go,null)") {
+              case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
             }
-            when(2) {
-              case Ev("stop") ⇒
-                cancelTimer("t")
-                stop
+            expectMsg(1 second, Logging.Debug(name, "setting timer 't'/1500 milliseconds: Shutdown"))
+            expectMsg(1 second, Logging.Debug(name, "transition 1 -> 2"))
+            fsm ! "stop"
+            expectMsgPF(1 second, hint = "processing Event(stop,null)") {
+              case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
             }
-            onTermination {
-              case StopEvent(r, _, _) ⇒ testActor ! r
-            }
-          })
-          val name = fsm.toString
-          system.eventStream.subscribe(testActor, classOf[Logging.Debug])
-          fsm ! "go"
-          expectMsgPF(1 second, hint = "processing Event(go,null)") {
-            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
+            expectMsgAllOf(1 second, Logging.Debug(name, "canceling timer 't'"), Normal)
+            expectNoMsg(1 second)
+            system.eventStream.unsubscribe(testActor)
           }
-          expectMsg(1 second, Logging.Debug(name, "setting timer 't'/1500 milliseconds: Shutdown"))
-          expectMsg(1 second, Logging.Debug(name, "transition 1 -> 2"))
-          fsm ! "stop"
-          expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-            case Logging.Debug(`name`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
-          }
-          expectMsgAllOf(1 second, Logging.Debug(name, "canceling timer 't'"), Normal)
-          expectNoMsg(1 second)
-          system.eventStream.unsubscribe(testActor)
         }
+      } finally {
+        fsmEventSystem.stop()
       }
     }
 

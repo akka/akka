@@ -25,8 +25,7 @@ object AkkaSpec {
         stdout-loglevel = "WARNING"
         actor {
           default-dispatcher {
-            core-pool-size = 4
-            max-pool-size  = 32
+            core-pool-size-factor = 2
           }
         }
       }
@@ -53,7 +52,7 @@ abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleNam
   final override def afterAll {
     system.stop()
     try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ system.log.warning("failed to stop within 5 seconds")
+      case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
   }

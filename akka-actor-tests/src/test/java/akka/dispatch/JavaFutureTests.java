@@ -2,6 +2,9 @@ package akka.dispatch;
 
 import akka.actor.Timeout;
 import akka.actor.ActorSystem;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
@@ -14,15 +17,30 @@ import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
 import akka.japi.Option;
+import akka.testkit.AkkaSpec;
 
 public class JavaFutureTests {
 
-  private final ActorSystem system = ActorSystem.create();
-  private final Timeout t = system.settings().ActorTimeout();
-  private final FutureFactory ff = new FutureFactory(system.dispatcher(), t);
+  private static ActorSystem system;
+  private static FutureFactory ff;
+  private static Timeout t;
+
+  @BeforeClass
+  public static void beforeAll() {
+    system = ActorSystem.create("JavaFutureTests", AkkaSpec.testConf());
+    t = system.settings().ActorTimeout();
+    ff = new FutureFactory(system.dispatcher(), t);
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.stop();
+    system = null;
+  }
 
   @Test
   public void mustBeAbleToMapAFuture() {
+
     Future<String> f1 = ff.future(new Callable<String>() {
       public String call() {
         return "Hello";

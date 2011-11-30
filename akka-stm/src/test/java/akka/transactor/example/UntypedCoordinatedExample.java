@@ -9,11 +9,8 @@ import akka.transactor.Coordinated;
 
 public class UntypedCoordinatedExample {
   public static void main(String[] args) throws InterruptedException {
-    System.out.println();
-    System.out.println("Untyped transactor example");
-    System.out.println();
 
-        ActorSystem application = ActorSystem.create("UntypedCoordinatedExample", AkkaSpec.testConf());
+    ActorSystem application = ActorSystem.create("UntypedCoordinatedExample", AkkaSpec.testConf());
 
     ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
     ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCoordinatedCounter.class));
@@ -45,5 +42,7 @@ public class UntypedCoordinatedExample {
 
     counter1.stop();
     counter2.stop();
+
+    application.stop();
   }
 }
