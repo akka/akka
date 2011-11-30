@@ -139,6 +139,14 @@ trait ActorRefFactory {
    */
   protected def isDuplicate(name: String): Boolean
 
+  /**
+   * This method is called after successfully associating an ActorRef with a
+   * name; that name will have been found to be “no duplicate” by isDuplicate(),
+   * so this hook is used to implement a reservation scheme: isDuplicate
+   * reserves a name slot and actorCreated() fills it with the right ActorRef.
+   */
+  protected def actorCreated(name: String, actor: ActorRef): Unit
+
   def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
 
   def actorOf(props: Props, name: String): ActorRef = {
@@ -146,7 +154,9 @@ trait ActorRefFactory {
       throw new InvalidActorNameException("actor name must not be null, empty or start with $")
     if (isDuplicate(name))
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    provider.actorOf(systemImpl, props, guardian, name, false)
+    val a = provider.actorOf(systemImpl, props, guardian, name, false)
+    actorCreated(name, a)
+    a
   }
 
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))

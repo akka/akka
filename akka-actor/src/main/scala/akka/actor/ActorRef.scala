@@ -153,7 +153,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
       that.asInstanceOf[ActorRef].address == address
   }
 
-  override def toString = "Actor[%s]".format(address)
+  override def toString = "Actor[%s]".format(path)
 }
 
 /**

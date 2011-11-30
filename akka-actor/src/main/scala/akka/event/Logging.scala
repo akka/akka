@@ -169,11 +169,11 @@ object LogSource {
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
-    def genString(a: Actor) = a.self.toString
+    def genString(a: Actor) = a.self.path.toString
   }
 
   implicit val fromActorRef: LogSource[ActorRef] = new LogSource[ActorRef] {
-    def genString(a: ActorRef) = a.toString
+    def genString(a: ActorRef) = a.path.toString
   }
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior

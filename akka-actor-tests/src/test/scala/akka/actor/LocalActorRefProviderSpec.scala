@@ -18,6 +18,10 @@ class LocalActorRefProviderSpec extends AkkaSpec {
       a must be === b
     }
 
+  }
+
+  "An ActorRefFactory" must {
+
     "only create one instance of an actor with a specific address in a concurrent environment" in {
       val impl = system.asInstanceOf[ActorSystemImpl]
       val provider = impl.provider
@@ -36,5 +40,18 @@ class LocalActorRefProviderSpec extends AkkaSpec {
         set must be === Set(1, 2)
       }
     }
+
+    "only create one instance of an actor from within the same message invocation" in {
+      val supervisor = system.actorOf(new Actor {
+        def receive = {
+          case "" ⇒
+            val a, b = context.actorOf(Props.empty, "duplicate")
+        }
+      })
+      EventFilter[InvalidActorNameException](occurrences = 1) intercept {
+        supervisor ! ""
+      }
+    }
+
   }
 }

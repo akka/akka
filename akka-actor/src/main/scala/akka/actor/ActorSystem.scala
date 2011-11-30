@@ -274,6 +274,9 @@ abstract class ActorSystem extends ActorRefFactory {
 
 class ActorSystemImpl(val name: String, val applicationConfig: Config) extends ActorSystem {
 
+  if (!name.matches("""^\w+$"""))
+    throw new IllegalArgumentException("invalid ActorSystem name '" + name + "', must contain only word characters (i.e. [a-zA-Z_0-9])")
+
   import ActorSystem._
 
   val settings = new Settings(applicationConfig, name)
@@ -299,12 +302,9 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
     actors.putIfAbsent(name, deadLetters) ne null
   }
 
-  override def actorOf(props: Props, name: String): ActorRef = {
-    val actor = super.actorOf(props, name)
-    // this would have thrown an exception in case of a duplicate name
+  protected def actorCreated(name: String, actor: ActorRef): Unit = {
     actors.replace(name, actor)
     deathWatch.subscribe(actorsJanitor, actor)
-    actor
   }
 
   import settings._

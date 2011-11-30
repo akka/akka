@@ -39,10 +39,23 @@ object AkkaSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
+  def getCallerName: String = {
+    val s = Thread.currentThread.getStackTrace map (_.getClassName) drop 1 dropWhile (_ matches ".*AkkaSpec.?$")
+    s.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  }
+
 }
 
-abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf))
+abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
+
+  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName, config.withFallback(AkkaSpec.testConf)))
+
+  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
+
+  def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
+
+  def this() = this(ActorSystem(AkkaSpec.getCallerName, AkkaSpec.testConf))
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
@@ -61,14 +74,6 @@ abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleNam
   protected def atStartup() {}
 
   protected def atTermination() {}
-
-  def this(config: Config) = this(ActorSystem(getClass.getSimpleName, config.withFallback(AkkaSpec.testConf)))
-
-  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
-
-  def this(configMap: Map[String, _]) = {
-    this(AkkaSpec.mapToConfig(configMap))
-  }
 
   def actorOf(props: Props): ActorRef = system.actorOf(props)
 
