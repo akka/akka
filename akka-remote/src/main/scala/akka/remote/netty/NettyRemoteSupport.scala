@@ -517,6 +517,10 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
     try {
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
+        b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+          .setHostname(address.hostname)
+          .setPort(address.port)
+          .build)
         if (SecureCookie.nonEmpty)
           b.setCookie(SecureCookie.get)
         b.build
@@ -646,8 +650,8 @@ class RemoteServerHandler(
             val inbound = RemoteAddress(origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
-          case CommandType.SHUTDOWN ⇒ //TODO FIXME Dispose passive connection here
-          case _                    ⇒ //Unknown command
+          case CommandType.SHUTDOWN ⇒ //No need to do anything here
+          case _ ⇒ //Unknown command
         }
       case _ ⇒ //ignore
     }
