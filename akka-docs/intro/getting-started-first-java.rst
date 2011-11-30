@@ -168,7 +168,8 @@ It should now look something like this:
     <?xml version="1.0" encoding="UTF-8"?>
     <project xmlns="http://maven.apache.org/POM/4.0.0"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                http://maven.apache.org/xsd/maven-4.0.0.xsd">
         <modelVersion>4.0.0</modelVersion>
 
         <name>akka-tutorial-first-java</name>
@@ -214,23 +215,9 @@ Start writing the code
 
 Now it's about time to start hacking.
 
-We start by creating a ``Pi.java`` file and adding these import statements at the top of the file::
+We start by creating a ``Pi.java`` file and adding these import statements at the top of the file:
 
-    package akka.tutorial.first.java;
-
-    import static akka.actor.Actors.actorOf;
-    import static akka.actor.Actors.poisonPill;
-    import static java.util.Arrays.asList;
-
-    import akka.actor.ActorRef;
-    import akka.actor.UntypedActor;
-    import akka.actor.UntypedActorFactory;
-    import akka.routing.CyclicIterator;
-    import akka.routing.InfiniteIterator;
-    import akka.routing.Routing.Broadcast;
-    import akka.routing.UntypedLoadBalancer;
-
-    import java.util.concurrent.CountDownLatch;
+.. includecode:: code/tutorials/first/Pi.java#imports
 
 If you are using Maven in this tutorial then create the file in the ``src/main/java/akka/tutorial/first/java`` directory.
 
@@ -247,108 +234,30 @@ With this in mind, let's now create the messages that we want to have flowing in
 - ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing the work assignment
 - ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor containing the result from the worker's calculation
 
-Messages sent to actors should always be immutable to avoid sharing mutable state. So let's start by creating three messages as immutable POJOs. We also create a wrapper ``Pi`` class to hold our implementation::
+Messages sent to actors should always be immutable to avoid sharing mutable state. So let's start by creating three messages as immutable POJOs.
 
-    public class Pi {
-
-      static class Calculate {}
-
-      static class Work {
-        private final int start;
-        private final int nrOfElements;
-
-        public Work(int start, int nrOfElements) {
-          this.start = start;
-          this.nrOfElements = nrOfElements;
-        }
-
-        public int getStart() { return start; }
-        public int getNrOfElements() { return nrOfElements; }
-      }
-
-      static class Result {
-        private final double value;
-
-        public Result(double value) {
-          this.value = value;
-        }
-
-        public double getValue() { return value; }
-      }
-    }
+.. includecode:: code/tutorials/first/Pi.java#messages
 
 Creating the worker
 -------------------
 
-Now we can create the worker actor.  This is done by extending in the ``UntypedActor`` base class and defining the ``onReceive`` method. The ``onReceive`` method defines our message handler. We expect it to be able to handle the ``Work`` message so we need to add a handler for this message::
+Now we can create the worker actor.  This is done by extending in the ``UntypedActor`` base class and defining the ``onReceive`` method. The ``onReceive`` method defines our message handler. We expect it to be able to handle the ``Work`` message so we need to add a handler for this message:
 
-    static class Worker extends UntypedActor {
-
-      // message handler
-      public void onReceive(Object message) {
-        if (message instanceof Work) {
-          Work work = (Work) message;
-
-          // perform the work
-          double result = calculatePiFor(work.getStart(), work.getNrOfElements());
-
-          // reply with the result
-          getContext().reply(new Result(result));
-
-        } else throw new IllegalArgumentException("Unknown message [" + message + "]");
-      }
-    }
+.. includecode:: code/tutorials/first/Pi.java#worker
+   :exclude: calculatePiFor
 
 As you can see we have now created an ``UntypedActor`` with a ``onReceive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``getContext().reply(..)``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference for future use.
 
-The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method::
+The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method:
 
-    // define the work
-    private double calculatePiFor(int start, int nrOfElements) {
-      double acc = 0.0;
-      for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
-        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1);
-      }
-      return acc;
-    }
+.. includecode:: code/tutorials/first/Pi.java#calculatePiFor
 
 Creating the master
 -------------------
 
-The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers. Let's do that first::
+The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers. Let's do that first:
 
-    static class Master extends UntypedActor {
-      ...
-
-      static class PiRouter extends UntypedLoadBalancer {
-        private final InfiniteIterator<ActorRef> workers;
-
-        public PiRouter(ActorRef[] workers) {
-          this.workers = new CyclicIterator<ActorRef>(asList(workers));
-        }
-
-        public InfiniteIterator<ActorRef> seq() {
-          return workers;
-        }
-      }
-
-      public Master(...) {
-        ...
-
-        // create the workers
-        final ActorRef[] workers = new ActorRef[nrOfWorkers];
-        for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
-        }
-
-        // wrap them with a load-balancing router
-        ActorRef router = actorOf(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new PiRouter(workers);
-          }
-        });
-      }
-    }
+.. includecode:: code/tutorials/first/Pi.java#create-workers
 
 As you can see we are using the ``actorOf`` factory method to create actors, this method returns as an ``ActorRef`` which is a reference to our newly created actor.  This method is available in the ``Actors`` object but is usually imported::
 
@@ -371,68 +280,10 @@ Now we have a router that is representing all our workers in a single abstractio
 - ``nrOfMessages`` -- defining how many number chunks to send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
-Here is the master actor::
+Here is the master actor:
 
-    static class Master extends UntypedActor {
-      private final int nrOfMessages;
-      private final int nrOfElements;
-      private final CountDownLatch latch;
-
-      private double pi;
-      private int nrOfResults;
-      private long start;
-
-      private ActorRef router;
-
-      static class PiRouter extends UntypedLoadBalancer {
-        private final InfiniteIterator<ActorRef> workers;
-
-        public PiRouter(ActorRef[] workers) {
-          this.workers = new CyclicIterator<ActorRef>(asList(workers));
-        }
-
-        public InfiniteIterator<ActorRef> seq() {
-          return workers;
-        }
-      }
-
-      public Master(
-        int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
-        this.nrOfMessages = nrOfMessages;
-        this.nrOfElements = nrOfElements;
-        this.latch = latch;
-
-        // create the workers
-        final ActorRef[] workers = new ActorRef[nrOfWorkers];
-        for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
-        }
-
-        // wrap them with a load-balancing router
-        router = actorOf(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new PiRouter(workers);
-          }
-        });
-      }
-
-      // message handler
-      public void onReceive(Object message) { ... }
-
-      @Override
-      public void preStart() {
-        start = System.currentTimeMillis();
-      }
-
-      @Override
-      public void postStop() {
-        // tell the world that the calculation is complete
-         System.out.println(String.format(
-           "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
-           pi, (System.currentTimeMillis() - start)));
-        latch.countDown();
-      }
-    }
+.. includecode:: code/tutorials/first/Pi.java#master
+   :exclude: handle-messages
 
 A couple of things are worth explaining further.
 
@@ -449,263 +300,24 @@ The ``Calculate`` handler is sending out work to all the ``Worker`` actors and a
 
 The ``Result`` handler is simpler, here we get the value from the ``Result`` message and aggregate it to our ``pi`` member variable. We also keep track of how many results we have received back, and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and shuts down.
 
-Let's capture this in code::
+Let's capture this in code:
 
-    // message handler
-    public void onReceive(Object message) {
+.. includecode:: code/tutorials/first/Pi.java#master-receive
 
-      if (message instanceof Calculate) {
-        // schedule work
-        for (int start = 0; start < nrOfMessages; start++) {
-          router.tell(new Work(start, nrOfElements), getContext());
-        }
-
-        // send a PoisonPill to all workers telling them to shut down themselves
-        router.tell(new Broadcast(poisonPill()));
-
-        // send a PoisonPill to the router, telling him to shut himself down
-        router.tell(poisonPill());
-
-      } else if (message instanceof Result) {
-
-        // handle result from the worker
-        Result result = (Result) message;
-        pi += result.getValue();
-        nrOfResults += 1;
-        if (nrOfResults == nrOfMessages) getContext().stop();
-
-      } else throw new IllegalArgumentException("Unknown message [" + message + "]");
-    }
 
 Bootstrap the calculation
 -------------------------
 
-Now the only thing that is left to implement is the runner that should bootstrap and run the calculation for us. We do that by adding a ``main`` method to the enclosing ``Pi`` class in which we create a new instance of ``Pi`` and invoke method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish::
+Now the only thing that is left to implement is the runner that should bootstrap and run the calculation for us. We do that by adding a ``main`` method to the enclosing ``Pi`` class in which we create a new instance of ``Pi`` and invoke method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish:
 
-    public class Pi {
-
-      public static void main(String[] args) throws Exception {
-        Pi pi = new Pi();
-        pi.calculate(4, 10000, 10000);
-      }
-
-      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
-        throws Exception {
-
-        // this latch is only plumbing to know when the calculation is completed
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
-          }
-        });
-
-        // start the calculation
-        master.tell(new Calculate());
-
-        // wait for master to shut down
-        latch.await();
-      }
-    }
+.. includecode:: code/tutorials/first/Pi.java#app
+   :exclude: actors-and-messages
 
 That's it. Now we are done.
 
-Before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all::
+Before we package it up and run it, let's take a look at the full code now, with package declaration, imports and all:
 
-    package akka.tutorial.first.java;
-
-    import static akka.actor.Actors.actorOf;
-    import static akka.actor.Actors.poisonPill;
-    import static java.util.Arrays.asList;
-
-    import akka.actor.ActorRef;
-    import akka.actor.UntypedActor;
-    import akka.actor.UntypedActorFactory;
-    import akka.routing.CyclicIterator;
-    import akka.routing.InfiniteIterator;
-    import akka.routing.Routing.Broadcast;
-    import akka.routing.UntypedLoadBalancer;
-
-    import java.util.concurrent.CountDownLatch;
-
-    public class Pi {
-
-      public static void main(String[] args) throws Exception {
-        Pi pi = new Pi();
-        pi.calculate(4, 10000, 10000);
-      }
-
-      // ====================
-      // ===== Messages =====
-      // ====================
-      static class Calculate {}
-
-      static class Work {
-        private final int start;
-        private final int nrOfElements;
-
-        public Work(int start, int nrOfElements) {
-          this.start = start;
-          this.nrOfElements = nrOfElements;
-        }
-
-        public int getStart() { return start; }
-        public int getNrOfElements() { return nrOfElements; }
-      }
-
-      static class Result {
-        private final double value;
-
-        public Result(double value) {
-          this.value = value;
-        }
-
-        public double getValue() { return value; }
-      }
-
-      // ==================
-      // ===== Worker =====
-      // ==================
-      static class Worker extends UntypedActor {
-
-        // define the work
-        private double calculatePiFor(int start, int nrOfElements) {
-          double acc = 0.0;
-          for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
-            acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1);
-          }
-          return acc;
-        }
-
-        // message handler
-        public void onReceive(Object message) {
-          if (message instanceof Work) {
-            Work work = (Work) message;
-
-            // perform the work
-            double result = calculatePiFor(work.getStart(), work.getNrOfElements())
-
-            // reply with the result
-            getContext().reply(new Result(result));
-
-          } else throw new IllegalArgumentException("Unknown message [" + message + "]");
-        }
-      }
-
-      // ==================
-      // ===== Master =====
-      // ==================
-      static class Master extends UntypedActor {
-        private final int nrOfMessages;
-        private final int nrOfElements;
-        private final CountDownLatch latch;
-
-        private double pi;
-        private int nrOfResults;
-        private long start;
-
-        private ActorRef router;
-
-        static class PiRouter extends UntypedLoadBalancer {
-          private final InfiniteIterator<ActorRef> workers;
-
-          public PiRouter(ActorRef[] workers) {
-            this.workers = new CyclicIterator<ActorRef>(asList(workers));
-          }
-
-          public InfiniteIterator<ActorRef> seq() {
-            return workers;
-          }
-        }
-
-        public Master(
-          int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
-
-          this.nrOfMessages = nrOfMessages;
-          this.nrOfElements = nrOfElements;
-          this.latch = latch;
-
-          // create the workers
-          final ActorRef[] workers = new ActorRef[nrOfWorkers];
-          for (int i = 0; i < nrOfWorkers; i++) {
-            workers[i] = actorOf(Worker.class);
-          }
-
-          // wrap them with a load-balancing router
-          router = actorOf(new UntypedActorFactory() {
-            public UntypedActor create() {
-              return new PiRouter(workers);
-            }
-          });
-        }
-
-        // message handler
-        public void onReceive(Object message) {
-
-          if (message instanceof Calculate) {
-            // schedule work
-            for (int start = 0; start < nrOfMessages; start++) {
-              router.tell(new Work(start, nrOfElements), getContext());
-            }
-
-            // send a PoisonPill to all workers telling them to shut down themselves
-            router.tell(new Broadcast(poisonPill()));
-
-            // send a PoisonPill to the router, telling him to shut himself down
-            router.tell(poisonPill());
-
-          } else if (message instanceof Result) {
-
-            // handle result from the worker
-            Result result = (Result) message;
-            pi += result.getValue();
-            nrOfResults += 1;
-            if (nrOfResults == nrOfMessages) getContext().stop();
-
-          } else throw new IllegalArgumentException("Unknown message [" + message + "]");
-        }
-
-        @Override
-        public void preStart() {
-          start = System.currentTimeMillis();
-        }
-
-        @Override
-        public void postStop() {
-          // tell the world that the calculation is complete
-          System.out.println(String.format(
-            "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
-            pi, (System.currentTimeMillis() - start)));
-          latch.countDown();
-        }
-      }
-
-      // ==================
-      // ===== Run it =====
-      // ==================
-      public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
-        throws Exception {
-
-        // this latch is only plumbing to know when the calculation is completed
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
-          }
-        });
-
-        // start the calculation
-        master.tell(new Calculate());
-
-        // wait for master to shut down
-        latch.await();
-      }
-    }
-
+.. includecode:: code/tutorials/first/Pi.java
 
 Run it as a command line application
 ------------------------------------
@@ -734,7 +346,7 @@ we compiled ourselves::
     loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
-    Calculation time:   822 millis
+    Calculation time:   579 millis
 
 Yippee! It is working.
 
@@ -755,7 +367,7 @@ When this in done we can run our application directly inside Maven::
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
     Pi estimate:        3.1435501812459323
-    Calculation time:   939 millis
+    Calculation time:   592 millis
 
 Yippee! It is working.
 
