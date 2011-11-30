@@ -86,8 +86,8 @@ trait ConnectionManager {
  */
 class LocalConnectionManager(initialConnections: Iterable[ActorRef]) extends ConnectionManager {
 
-  def this(linkedList: java.util.LinkedList[ActorRef]) {
-    this(JavaConverters.iterableAsScalaIterableConverter(linkedList).asScala)
+  def this(iterable: java.lang.Iterable[ActorRef]) {
+    this(JavaConverters.iterableAsScalaIterableConverter(iterable).asScala)
   }
 
   case class State(version: Long, connections: Iterable[ActorRef]) extends VersionedIterable[ActorRef] {
