@@ -29,7 +29,22 @@ trait Extension
  * otherwise you'll get the same extension loaded multiple times.
  */
 trait ExtensionId[T <: Extension] {
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   */
   def apply(system: ActorSystem): T = system.registerExtension(this)
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   * Java API
+   */
+  def get(system: ActorSystem): T = apply(system)
+
+  /**
+   * Is used by Akka to instantiate the Extension identified by this ExtensionId,
+   * internal use only.
+   */
   def createExtension(system: ActorSystemImpl): T
 }
 

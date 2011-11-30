@@ -1,3 +1,4 @@
+*.vim
 *~
 *#
 src_managed
