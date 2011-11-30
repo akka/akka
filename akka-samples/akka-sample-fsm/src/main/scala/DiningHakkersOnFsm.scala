@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2010 Typesafe Inc. <http://www.typesafe.com>.
+ */
 package sample.fsm.dining.fsm
 
 import akka.actor.{ ActorRef, Actor, FSM, ActorSystem }
@@ -6,8 +9,8 @@ import akka.util.Duration
 import akka.util.duration._
 
 /*
- * Some messages for the chopstick
- */
+* Some messages for the chopstick
+*/
 sealed trait ChopstickMessage
 object Take extends ChopstickMessage
 object Put extends ChopstickMessage
@@ -27,9 +30,9 @@ case object Taken extends ChopstickState
 case class TakenBy(hakker: ActorRef)
 
 /*
- * A chopstick is an actor, it can be taken, and put back
- */
-class Chopstick(name: String) extends Actor with FSM[ChopstickState, TakenBy] {
+* A chopstick is an actor, it can be taken, and put back
+*/
+class Chopstick extends Actor with FSM[ChopstickState, TakenBy] {
 
   // A chopstick begins its existence as available and taken by no one
   startWith(Available, TakenBy(system.deadLetters))
@@ -77,8 +80,8 @@ case object Eating extends FSMHakkerState
 case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
 
 /*
- * A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
- */
+* A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)
+*/
 class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor with FSM[FSMHakkerState, TakenChopsticks] {
 
   //All hakkers start waiting
@@ -86,7 +89,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 
   when(Waiting) {
     case Event(Think, _) ⇒
-      println("%s starts to think", name)
+      println("%s starts to think".format(name))
       startThinking(5 seconds)
   }
 
@@ -125,7 +128,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   }
 
   private def startEating(left: ActorRef, right: ActorRef): State = {
-    println("%s has picked up %s and %s, and starts to eat", name, left.address, right.address)
+    println("%s has picked up %s and %s and starts to eat".format(name, left.name, right.name))
     goto(Eating) using TakenChopsticks(Some(left), Some(right)) forMax (5 seconds)
   }
 
@@ -144,7 +147,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   // then he puts down his chopsticks and starts to think
   when(Eating) {
     case Event(StateTimeout, _) ⇒
-      println("%s puts down his chopsticks and starts to think", name)
+      println("%s puts down his chopsticks and starts to think".format(name))
       left ! Put
       right ! Put
       startThinking(5 seconds)
@@ -159,15 +162,19 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
 }
 
 /*
- * Alright, here's our test-harness
- */
+* Alright, here's our test-harness
+*/
 object DiningHakkersOnFsm {
 
   val system = ActorSystem()
 
+  def main(args: Array[String]): Unit = {
+    run
+  }
+
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield system.actorOf(new Chopstick("Chopstick " + i))
+    val chopsticks = for (i ← 1 to 5) yield system.actorOf[Chopstick]("Chopstick " + i)
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
