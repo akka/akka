@@ -415,8 +415,6 @@ object Dependencies {
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
   //   Test.junit, Test.scalatest, Test.logback)
 
-  val sampleOsgi = Seq(osgi)
-
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit)
