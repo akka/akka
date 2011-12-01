@@ -651,7 +651,7 @@ class RemoteServerHandler(
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
           case CommandType.SHUTDOWN ⇒ //No need to do anything here
-          case _ ⇒ //Unknown command
+          case _                    ⇒ //Unknown command
         }
       case _ ⇒ //ignore
     }
