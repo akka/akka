@@ -194,7 +194,7 @@ case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availa
         setAsyncMode(true)
         setMaintainsParallelism(true)
 
-        override def execute(r: Runnable) {
+        override final def execute(r: Runnable) {
           r match {
             case fjmbox: FJMailbox ⇒
               //fjmbox.fjTask.reinitialize()
@@ -224,12 +224,12 @@ case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availa
 }
 
 trait FJMailbox { self: Mailbox ⇒
-  val fjTask = new ForkJoinTask[Unit] with Runnable {
-    var result: Unit = ()
-    def getRawResult() = result
-    def setRawResult(v: Unit) { result = v }
-    def exec() = { self.run(); true }
-    def run() { invoke() }
+  final val fjTask = new ForkJoinTask[Unit] with Runnable {
+    private[this] var result: Unit = ()
+    final def getRawResult() = result
+    final def setRawResult(v: Unit) { result = v }
+    final def exec() = { self.run(); true }
+    final def run() { invoke() }
   }
 }
 
