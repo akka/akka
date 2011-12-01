@@ -35,10 +35,11 @@ class ConsistencySpec extends AkkaSpec {
   import ConsistencySpec._
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
+      val noOfActors = 7
       val dispatcher = system
         .dispatcherFactory
         .newDispatcher("consistency-dispatcher", 1, UnboundedMailbox())
-        .withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(1000, true)
+        .withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(noOfActors, true)
         .setCorePoolSize(10)
         .setMaxPoolSize(10)
         .setKeepAliveTimeInMillis(1)
@@ -46,9 +47,9 @@ class ConsistencySpec extends AkkaSpec {
         .build
 
       val props = Props[ConsistencyCheckingActor].withDispatcher(dispatcher)
-      val actors = Vector.fill(3)(system.actorOf(props))
+      val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
-      for (i ← 0L until 1000000L) {
+      for (i ← 0L until 600000L) {
         actors.foreach(_.tell(i, testActor))
       }
 
