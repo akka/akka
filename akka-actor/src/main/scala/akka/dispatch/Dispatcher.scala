@@ -6,12 +6,9 @@ package akka.dispatch
 
 import akka.event.Logging.Warning
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ TimeUnit, ExecutorService, RejectedExecutionException, ConcurrentLinkedQueue }
-import akka.actor.{ ActorCell, ActorKilledException }
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.actor.Scheduler
+import akka.actor.ActorCell
 import akka.util.Duration
+import java.util.concurrent._
 
 /**
  * Default settings are:

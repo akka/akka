@@ -11,6 +11,9 @@ import akka.event.Logging.{ Warning, Error }
 import akka.actor.ActorSystem
 import java.util.concurrent._
 import akka.event.EventStream
+import concurrent.forkjoin.ForkJoinPool._
+import concurrent.forkjoin.{ ForkJoinTask, ForkJoinWorkerThread, ForkJoinPool }
+import concurrent.forkjoin.ForkJoinTask._
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -181,6 +184,52 @@ class MonitorableThread(runnable: Runnable, name: String)
     } finally {
       MonitorableThread.alive.decrementAndGet
     }
+  }
+}
+
+case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availableProcessors()) extends ExecutorServiceFactoryProvider {
+  final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ExecutorServiceFactory {
+    def createExecutorService: ExecutorService = {
+      new ForkJoinPool(targetParallelism) with ExecutorService {
+        setAsyncMode(true)
+        setMaintainsParallelism(true)
+
+        override def execute(r: Runnable) {
+          r match {
+            case fjmbox: FJMailbox ⇒
+              //fjmbox.fjTask.reinitialize()
+              Thread.currentThread match {
+                case fjwt: ForkJoinWorkerThread if fjwt.getPool eq this ⇒
+                  fjmbox.fjTask.fork() //We should do fjwt.pushTask(fjmbox.fjTask) but it's package protected
+                case _ ⇒ super.execute[Unit](fjmbox.fjTask)
+              }
+            case _ ⇒
+              super.execute(r)
+          }
+        }
+
+        import java.util.{ Collection ⇒ JCollection }
+
+        def invokeAny[T](callables: JCollection[_ <: Callable[T]]) =
+          throw new UnsupportedOperationException("invokeAny. NOT!")
+
+        def invokeAny[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
+          throw new UnsupportedOperationException("invokeAny. NOT!")
+
+        def invokeAll[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
+          throw new UnsupportedOperationException("invokeAny. NOT!")
+      }
+    }
+  }
+}
+
+trait FJMailbox { self: Mailbox ⇒
+  val fjTask = new ForkJoinTask[Unit] with Runnable {
+    var result: Unit = ()
+    def getRawResult() = result
+    def setRawResult(v: Unit) { result = v }
+    def exec() = { self.run(); true }
+    def run() { invoke() }
   }
 }
 
