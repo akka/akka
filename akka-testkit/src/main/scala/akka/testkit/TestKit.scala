@@ -108,7 +108,7 @@ trait TestKitLight {
   @deprecated("will be removed after 1.2, replaced by implicit testActor", "1.2")
   val senderOption = Some(testActor)
 
-  private var end: Duration = Duration.Inf
+  private var _end: Duration = Duration.Inf
 
   /**
    * if last assertion was expectNoMsg, disable timing failure upon within()
@@ -155,7 +155,7 @@ trait TestKitLight {
   /**
    * Obtain time remaining for execution of the innermost enclosing `within` block.
    */
-  def remaining: Duration = end - now
+  def remaining: Duration = _end - now
 
   /**
    * Block until the given condition evaluates to `true` or the timeout
@@ -201,16 +201,16 @@ trait TestKitLight {
   def within[T](min: Duration, max: Duration)(f: ⇒ T): T = {
     val _max = max.dilated
     val start = now
-    val rem = end - start
+    val rem = _end - start
     assert(rem >= min, "required min time " + min + " not possible, only " + format(min.unit, rem) + " left")
 
     lastWasNoMsg = false
 
     val max_diff = _max min rem
-    val prev_end = end
-    end = start + max_diff
+    val prev_end = _end
+    _end = start + max_diff
 
-    val ret = try f finally end = prev_end
+    val ret = try f finally _end = prev_end
 
     val diff = now - start
     assert(min <= diff, "block took " + format(min.unit, diff) + ", should at least have been " + min)
