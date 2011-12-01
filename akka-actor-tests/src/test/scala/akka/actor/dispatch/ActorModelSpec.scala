@@ -341,9 +341,11 @@ abstract class ActorModelSpec extends AkkaSpec {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         val stopLatch = new CountDownLatch(num)
         val waitTime = (30 seconds).dilated.toMillis
-        val boss = actorOf(Props(context ⇒ {
-          case "run"             ⇒ for (_ ← 1 to num) (context.self startsWatching context.actorOf(props)) ! cachedMessage
-          case Terminated(child) ⇒ stopLatch.countDown()
+        val boss = actorOf(Props(new Actor {
+          def receive = {
+            case "run"             ⇒ for (_ ← 1 to num) (watch(context.actorOf(props))) ! cachedMessage
+            case Terminated(child) ⇒ stopLatch.countDown()
+          }
         }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("boss")))
         boss ! "run"
         try {
