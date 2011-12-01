@@ -29,11 +29,7 @@ class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObjec
     val b = Map.newBuilder[String, Any]
     b += "_id" -> msg._id
     b += "ownerPath" -> msg.ownerPath
-
-    val sender = systemImpl.provider.serialize(msg.sender)
-    b += "senderPath" -> sender.path
-    b += "senderHostname" -> sender.hostname
-    b += "senderPort" -> sender.port
+    b += "senderPath" -> msg.sender.path
 
     /**
      * TODO - Figure out a way for custom serialization of the message instance
@@ -75,10 +71,7 @@ class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObjec
     val msg = MessageSerializer.deserialize(system, msgData)
     val ownerPath = doc.as[String]("ownerPath")
     val senderPath = doc.as[String]("senderPath")
-    val senderHostname = doc.as[String]("senderHostname")
-    val senderPort = doc.as[Int]("senderPort")
-    val sender = systemImpl.provider.deserialize(SerializedActorRef(senderHostname, senderPort, senderPath)).
-      getOrElse(system.deadLetters)
+    val sender = systemImpl.actorOf(senderPath)
 
     MongoDurableMessage(ownerPath, msg, sender)
   }

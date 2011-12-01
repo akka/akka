@@ -249,11 +249,8 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
   val provider = remote.system.asInstanceOf[ActorSystemImpl].provider
 
   lazy val sender: ActorRef =
-    if (input.hasSender)
-      provider.deserialize(
-        SerializedActorRef(input.getSender.getHost, input.getSender.getPort, input.getSender.getPath)).getOrElse(throw new IllegalStateException("OHNOES"))
-    else
-      remote.system.deadLetters
+    if (input.hasSender) provider.actorFor(input.getSender.getPath)
+    else remote.system.deadLetters
 
   lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath)
 
@@ -302,8 +299,7 @@ trait RemoteMarshallingOps {
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
-    val rep = system.asInstanceOf[ActorSystemImpl].provider.serialize(actor)
-    ActorRefProtocol.newBuilder.setHost(rep.hostname).setPort(rep.port).setPath(rep.path).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toString).build
   }
 
   def createRemoteMessageProtocolBuilder(

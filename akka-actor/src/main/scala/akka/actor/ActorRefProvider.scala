@@ -96,10 +96,6 @@ trait ActorRefProvider {
    */
   def actorFor(p: Iterable[String]): ActorRef
 
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef]
-
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef
-
   private[akka] def createDeathWatch(): DeathWatch
 
   /**
@@ -371,10 +367,6 @@ class LocalActorRefProvider(
     // else new RoutedActorRef(props, address)
     new RoutedActorRef(system, props, supervisor, name)
   }
-
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = Some(actorFor(actor.path))
-
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = new SerializedActorRef(rootPath.address, actor.path.toString)
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
 

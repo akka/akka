@@ -193,21 +193,6 @@ class RemoteActorRefProvider(
    */
   private[akka] def evict(path: ActorPath): Boolean = actors.remove(path) ne null
 
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = actor match {
-    case r: RemoteActorRef ⇒ new SerializedActorRef(r.remoteAddress, actor.path.toString)
-    case other             ⇒ local.serialize(actor)
-  }
-
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
-    val remoteAddress = RemoteAddress(systemName, actor.hostname, actor.port)
-    if (optimizeLocalScoped_? && remoteAddress == remote.remoteAddress) {
-      Some(local.actorFor(actor.path))
-    } else {
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", remote.remoteAddress, actor.path, remoteAddress)
-      Some(RemoteActorRef(remote.system.provider, remote.server, remoteAddress, rootPath / actor.path, None)) // FIXME I know, this is broken
-    }
-  }
-
   /**
    * Using (checking out) actor on a specific node.
    */
@@ -226,7 +211,7 @@ class RemoteActorRefProvider(
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 
-    val connectionFactory = () ⇒ deserialize(new SerializedActorRef(remoteAddress, remote.remoteDaemon.path.toString)).get
+    val connectionFactory = () ⇒ actorFor(RootActorPath(remoteAddress) / remote.remoteDaemon.path.pathElements)
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
@@ -311,7 +296,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = provider.serialize(this)
+  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 
   def startsWatching(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
 

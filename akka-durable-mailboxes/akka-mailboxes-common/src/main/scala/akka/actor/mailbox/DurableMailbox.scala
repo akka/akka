@@ -52,10 +52,7 @@ trait DurableMessageSerialization {
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
-    def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-      val serRef = owner.system.provider.serialize(ref)
-      ActorRefProtocol.newBuilder.setPath(serRef.path).setHost(serRef.hostname).setPort(serRef.port).build
-    }
+    def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
 
     val message = MessageSerializer.serialize(owner.system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
@@ -68,10 +65,7 @@ trait DurableMessageSerialization {
 
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = {
-      val serRef = SerializedActorRef(refProtocol.getHost, refProtocol.getPort, refProtocol.getPath)
-      owner.system.provider.deserialize(serRef).getOrElse(owner.system.deadLetters)
-    }
+    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = owner.system.actorFor(refProtocol.getPath)
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
     val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)

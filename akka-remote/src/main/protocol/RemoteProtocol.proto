@@ -66,9 +66,7 @@ enum ReplicationStrategyType {
  * on the original node.
  */
 message ActorRefProtocol {
-  required string host = 1;
-  required uint32 port = 2;
-  required string path = 3;
+  required string path = 1;
 }
 
 /**

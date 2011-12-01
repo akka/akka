@@ -246,7 +246,7 @@ class LocalActorRef private[akka] (
   protected[akka] override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = actorCell.provider.serialize(this)
+  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }
 
 /**
@@ -293,23 +293,15 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * Memento pattern for serializing ActorRefs transparently
  */
 // FIXME: remove and replace by ActorPath.toString
-case class SerializedActorRef(hostname: String, port: Int, path: String) {
+case class SerializedActorRef(path: String) {
   import akka.serialization.Serialization.currentSystem
-
-  // FIXME this is broken, but see above
-  def this(address: Address, path: String) = this(address.hostPort, 0, path)
-  def this(remoteAddress: RemoteAddress, path: String) = this(remoteAddress.host, remoteAddress.port, path)
-  def this(remoteAddress: InetSocketAddress, path: String) = this(remoteAddress.getAddress.getHostAddress, remoteAddress.getPort, path) //TODO FIXME REMOVE
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
     case null ⇒ throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
         " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
-    case someSystem ⇒ someSystem.provider.deserialize(this) match {
-      case Some(actor) ⇒ actor
-      case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
-    }
+    case someSystem ⇒ someSystem.actorFor(path)
   }
 }
 
@@ -419,5 +411,5 @@ class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: D
   override def stop(): Unit = if (!isTerminated) result.completeWithException(new ActorKilledException("Stopped"))
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = provider.serialize(this)
+  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }
