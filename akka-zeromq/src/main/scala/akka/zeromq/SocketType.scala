@@ -4,6 +4,7 @@
 package akka.zeromq
 
 import org.zeromq.{ZMQ => JZMQ}
+import org.zeromq.ZMQ
 
 object SocketType extends Enumeration {
   type SocketType = Value
@@ -11,4 +12,9 @@ object SocketType extends Enumeration {
   val Sub = Value(JZMQ.SUB)
   val Dealer = Value(JZMQ.DEALER)
   val Router = Value(JZMQ.ROUTER)
+  val Req = Value(JZMQ.REQ)
+  val Rep = Value(JZMQ.REP)
+  val Push = Value(JZMQ.PUSH)
+  val Pull = Value(JZMQ.PULL)
+  val Pair = Value(JZMQ.PAIR)
 }
