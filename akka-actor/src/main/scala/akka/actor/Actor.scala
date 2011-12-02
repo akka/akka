@@ -363,24 +363,24 @@ trait Actor {
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
+  final def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome() { context.unbecome() }
+  final def unbecome() { context.unbecome() }
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def watch(subject: ActorRef): ActorRef = self startsWatching subject
+  final def watch(subject: ActorRef): ActorRef = context startsWatching subject
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def unwatch(subject: ActorRef): ActorRef = self stopsWatching subject
+  final def unwatch(subject: ActorRef): ActorRef = context stopsWatching subject
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
@@ -395,6 +395,6 @@ trait Actor {
     }
   }
 
-  private val processingBehavior = receive //ProcessingBehavior is the original behavior
+  private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
 }
 

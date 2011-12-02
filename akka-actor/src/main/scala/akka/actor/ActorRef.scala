@@ -128,24 +128,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   def isTerminated: Boolean
 
-  /**
-   * Registers this actor to be a death monitor of the provided ActorRef
-   * This means that this actor will get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def startsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
-
-  /**
-   * Deregisters this actor from being a death monitor of the provided ActorRef
-   * This means that this actor will not get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
-
   override def hashCode: Int = HashCode.hash(HashCode.SEED, address)
 
   override def equals(that: Any): Boolean = {
@@ -214,24 +196,6 @@ class LocalActorRef private[akka] (
    * Shuts down the actor and its message queue
    */
   def stop(): Unit = actorCell.stop()
-
-  /**
-   * Registers this actor to be a death monitor of the provided ActorRef
-   * This means that this actor will get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def startsWatching(subject: ActorRef): ActorRef = actorCell.startsWatching(subject)
-
-  /**
-   * Deregisters this actor from being a death monitor of the provided ActorRef
-   * This means that this actor will not get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def stopsWatching(subject: ActorRef): ActorRef = actorCell.stopsWatching(subject)
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
@@ -329,9 +293,6 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef {
 
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString
-
-  def startsWatching(actorRef: ActorRef): ActorRef = actorRef
-  def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
 
   def suspend(): Unit = ()
   def resume(): Unit = ()
