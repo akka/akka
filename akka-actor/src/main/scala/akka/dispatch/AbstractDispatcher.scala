@@ -136,7 +136,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
       shutdownScheduleUpdater.get(this) match {
         case UNSCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(this, UNSCHEDULED, SCHEDULED)) {
-            scheduler.scheduleOnce(shutdownAction, Duration(shutdownTimeout.toMillis, TimeUnit.MILLISECONDS))
+            scheduler.scheduleOnce(shutdownAction, shutdownTimeout)
             ()
           } else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
@@ -211,7 +211,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            scheduler.scheduleOnce(this, Duration(shutdownTimeout.toMillis, TimeUnit.MILLISECONDS))
+            scheduler.scheduleOnce(this, shutdownTimeout)
           else run()
       }
     }

@@ -107,9 +107,10 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    ActorSystem().actorOf(new Mall(1000000, 4))
+    val system = ActorSystem().actorOf(new Mall(1000000, 4))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
+    system.stop()
   }
 
   def main(args: Array[String]): Unit = run

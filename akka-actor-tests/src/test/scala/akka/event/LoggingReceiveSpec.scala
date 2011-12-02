@@ -32,7 +32,7 @@ object LoggingReceiveSpec {
 class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
-  val config = ConfigFactory.parseMap(Map("akka.logLevel" -> "DEBUG").asJava)
+  val config = ConfigFactory.parseMap(Map("akka.logLevel" -> "DEBUG").asJava).withFallback(AkkaSpec.testConf)
   val appLogging = ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))
   val appAuto = ActorSystem("autoreceive", ConfigFactory.parseMap(Map("akka.actor.debug.autoreceive" -> true).asJava).withFallback(config))
   val appLifecycle = ActorSystem("lifecycle", ConfigFactory.parseMap(Map("akka.actor.debug.lifecycle" -> true).asJava).withFallback(config))

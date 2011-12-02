@@ -20,6 +20,7 @@ import akka.remote.LocalOnly
 import akka.event._
 import akka.event.Logging.Error._
 import akka.event.Logging.Warning
+import java.io.Closeable
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -414,7 +415,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
  * Note that dispatcher is by-name parameter, because dispatcher might not be initialized
  * when the scheduler is created.
  */
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
@@ -475,7 +476,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
     }
   }
 
-  private[akka] def stop() = hashedWheelTimer.stop()
+  def close() = hashedWheelTimer.stop()
 }
 
 class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {

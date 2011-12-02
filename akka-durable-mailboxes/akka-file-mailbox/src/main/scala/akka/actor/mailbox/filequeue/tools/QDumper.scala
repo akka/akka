@@ -148,5 +148,7 @@ object QDumper {
       println("Queue: " + filename)
       new QueueDumper(filename, system.log)()
     }
+
+    system.stop()
   }
 }

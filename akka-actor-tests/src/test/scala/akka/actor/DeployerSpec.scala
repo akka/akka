@@ -160,9 +160,9 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
                 nr-of-instances = boom
               }
             }
-            """, ConfigParseOptions.defaults)
+            """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
 
-        ActorSystem("invalid", invalidDeployerConf)
+        ActorSystem("invalid", invalidDeployerConf).stop()
       }
     }
 

@@ -19,7 +19,7 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
   }
 
   override def atTermination() {
-    zkServer.shutdown
+    zkServer.shutdown()
     super.atTermination()
   }
 }

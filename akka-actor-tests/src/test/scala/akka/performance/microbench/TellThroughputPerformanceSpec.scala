@@ -14,7 +14,7 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
   def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒
     new Dispatcher(system.dispatcherFactory.prerequisites, name, 5,
-      Duration.Zero, UnboundedMailbox(), config, 60 seconds), ThreadPoolConfig())
+      Duration.Zero, UnboundedMailbox(), config, 1 seconds), ThreadPoolConfig())
     .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
     .setCorePoolSize(maxClients)
     .build

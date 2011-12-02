@@ -1,6 +1,9 @@
 package akka.transactor.test;
 
 import static org.junit.Assert.*;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Before;
 
@@ -28,7 +31,19 @@ import scala.collection.Seq;
 import akka.testkit.AkkaSpec;
 
 public class UntypedTransactorTest {
-    ActorSystem application = ActorSystem.create("UntypedTransactorTest", AkkaSpec.testConf());
+
+  private static ActorSystem system;
+
+  @BeforeClass
+  public static void beforeAll() {
+    system = ActorSystem.create("UntypedTransactorTest", AkkaSpec.testConf());
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.stop();
+    system = null;
+  }
 
   List<ActorRef> counters;
   ActorRef failer;
@@ -42,14 +57,14 @@ public class UntypedTransactorTest {
     counters = new ArrayList<ActorRef>();
     for (int i = 1; i <= numCounters; i++) {
       final String name = "counter" + i;
-      ActorRef counter = application.actorOf(new Props().withCreator(new UntypedActorFactory() {
+      ActorRef counter = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
         public UntypedActor create() {
           return new UntypedCounter(name);
         }
       }));
       counters.add(counter);
     }
-    failer = application.actorOf(new Props().withCreator(UntypedFailer.class));
+    failer = system.actorOf(new Props().withCreator(UntypedFailer.class));
   }
 
   @Test
@@ -80,7 +95,7 @@ public class UntypedTransactorTest {
     EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
     EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
     Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
-    application.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
+    system.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
     CountDownLatch incrementLatch = new CountDownLatch(numCounters);
     List<ActorRef> actors = new ArrayList<ActorRef>(counters);
     actors.add(failer);
