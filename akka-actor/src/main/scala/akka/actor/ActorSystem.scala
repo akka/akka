@@ -347,7 +347,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // TODO why implicit val dispatcher?
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  //FIXME Set this to a Failure when things bubble to the top. What does this mean?
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian

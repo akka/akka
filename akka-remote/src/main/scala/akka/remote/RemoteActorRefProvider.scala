@@ -306,7 +306,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def resume(): Unit = ()
 
-  def stop() { //FIXME send the cause as well! (WDYM?)
+  def stop() {
     synchronized {
       if (running) {
         running = false

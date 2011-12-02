@@ -57,8 +57,6 @@ trait BootableActorLoaderService extends Bootable {
 
   abstract override def onUnload() = {
     super.onUnload()
-
-    system.stop()
   }
 }
 

@@ -27,10 +27,7 @@ class FutureTimeoutException(message: String, cause: Throwable = null) extends A
   def this(message: String) = this(message, null)
 }
 
-class FutureFactory(dispatcher: MessageDispatcher, timeout: Timeout) {
-
-  // TODO: remove me ASAP !!!
-  implicit val _dispatcher = dispatcher
+class FutureFactory()(implicit dispatcher: MessageDispatcher, timeout: Timeout) {
 
   /**
    * Java API, equivalent to Future.apply
