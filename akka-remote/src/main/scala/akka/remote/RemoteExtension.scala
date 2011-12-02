@@ -21,6 +21,7 @@ class RemoteExtensionSettings(val config: Config) extends Extension {
 
   import config._
 
+  val RemoteTransport = getString("akka.remote.transport")
   val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
   val ShouldCompressData = config.getBoolean("akka.remote.use-compression")

@@ -12,6 +12,7 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
       import config._
 
       //akka.remote
+      getString("akka.remote.transport") must equal("akka.cluster.netty.NettyRemoteSupport")
       getString("akka.remote.secure-cookie") must equal("")
       getBoolean("akka.remote.use-passive-connections") must equal(true)
       // getMilliseconds("akka.remote.remote-daemon-ack-timeout") must equal(30 * 1000)
