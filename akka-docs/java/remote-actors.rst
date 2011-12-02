@@ -178,10 +178,7 @@ The messages that it prevents are all that extends 'LifeCycleMessage':
 * case object ReceiveTimeout
 
 It also prevents the client from invoking any life-cycle and side-effecting methods, such as:
-* start
 * stop
-* startsWatching
-* stopsWatching
 * etc.
 
 Using secure cookie for remote client authentication

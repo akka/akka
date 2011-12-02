@@ -42,6 +42,24 @@ class TestActorRef[T <: Actor](
    */
   def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
 
+  /**
+   * Registers this actor to be a death monitor of the provided ActorRef
+   * This means that this actor will get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
+   */
+  def startsWatching(subject: ActorRef): ActorRef = underlying.startsWatching(subject)
+
+  /**
+   * Deregisters this actor from being a death monitor of the provided ActorRef
+   * This means that this actor will not get a Terminated()-message when the provided actor
+   * is permanently terminated.
+   *
+   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
+   */
+  def stopsWatching(subject: ActorRef): ActorRef = underlying.stopsWatching(subject)
+
   override def toString = "TestActor[" + address + "]"
 
   override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address

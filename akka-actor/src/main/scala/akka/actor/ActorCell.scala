@@ -47,6 +47,10 @@ trait ActorContext extends ActorRefFactory {
   def system: ActorSystem
 
   def parent: ActorRef
+
+  def startsWatching(subject: ActorRef): ActorRef
+
+  def stopsWatching(subject: ActorRef): ActorRef
 }
 
 private[akka] object ActorCell {
@@ -136,13 +140,13 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  final def startsWatching(subject: ActorRef): ActorRef = {
+  override final def startsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
-  final def stopsWatching(subject: ActorRef): ActorRef = {
+  override final def stopsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject

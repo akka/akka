@@ -155,7 +155,10 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
     "stop when sent a poison pill" in {
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
-        testActor startsWatching a
+        val forwarder = actorOf(Props(new Actor {
+          watch(a)
+          def receive = { case x ⇒ testActor forward x }
+        }))
         a.!(PoisonPill)(testActor)
         expectMsgPF(5 seconds) {
           case Terminated(`a`) ⇒ true

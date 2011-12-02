@@ -155,22 +155,17 @@ Creating a Dispatcher using PriorityGenerator:
   
    val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
        Props(new Actor {
+         self ! 'lowpriority
+         self ! 'lowpriority
+         self ! 'highpriority
+         self ! 'pigdog
+         self ! 'pigdog2
+         self ! 'pigdog3
+         self ! 'highpriority
          def receive = {
            case x => println(x)
          }
     }).withDispatcher(new Dispatcher("foo", 5, UnboundedPriorityMailbox(gen)))) // We create a new Priority dispatcher and seed it with the priority generator
-
-    a.dispatcher.suspend(a) // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
-
-     a ! 'lowpriority
-     a ! 'lowpriority
-     a ! 'highpriority
-     a ! 'pigdog
-     a ! 'pigdog2
-     a ! 'pigdog3
-     a ! 'highpriority
-
-     a.dispatcher.resume(a) // Resuming the actor so it will start treating its messages
 
 Prints:
 
