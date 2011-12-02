@@ -398,7 +398,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     case x: Closeable ⇒
       // Let dispatchers shutdown first.
       // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
-      x.scheduleOnce(() ⇒ { x.close(); dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
+      x.scheduleOnce(settings.DispatcherDefaultShutdown * 4) {
+        x.close()
+        dispatcher.shutdown()
+      }
     case _ ⇒
   }
 
