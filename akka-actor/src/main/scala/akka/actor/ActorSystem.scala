@@ -113,9 +113,7 @@ object ActorSystem {
       throw new ConfigurationException("Akka JAR version [" + Version +
         "] does not match the provided config version [" + ConfigVersion + "]")
 
-    override def toString: String = {
-      config.toString
-    }
+    override def toString: String = config.root.render
 
   }
 
