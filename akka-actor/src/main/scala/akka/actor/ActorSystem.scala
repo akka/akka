@@ -355,7 +355,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler,
-      classOf[ActorRef] -> deadLetters)
+      classOf[InternalActorRef] -> deadLetters)
     val types: Array[Class[_]] = arguments map (_._1) toArray
     val values: Array[AnyRef] = arguments map (_._2) toArray
 
@@ -382,8 +382,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
-  def guardian: ActorRef = provider.guardian
-  def systemGuardian: ActorRef = provider.systemGuardian
+  def guardian: InternalActorRef = provider.guardian
+  def systemGuardian: InternalActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
   def nodename: String = provider.nodename
   def clustername: String = provider.clustername

@@ -30,12 +30,12 @@ trait ActorRefProvider {
   /**
    * Reference to the supervisor used for all top-level user actors.
    */
-  def guardian: ActorRef
+  def guardian: InternalActorRef
 
   /**
    * Reference to the supervisor used for all top-level system actors.
    */
-  def systemGuardian: ActorRef
+  def systemGuardian: InternalActorRef
 
   /**
    * Reference to the death watch service.
@@ -74,26 +74,20 @@ trait ActorRefProvider {
    * in case of remote supervision). If systemService is true, deployment is
    * bypassed (local-only).
    */
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean = false): ActorRef
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean = false): InternalActorRef
 
   /**
-   * <<<<<<< HEAD
    * Create actor reference for a specified local or remote path. If no such
    * actor exists, it will be (equivalent to) a dead letter reference.
-   * =======
-   * Create an Actor with the given full path below the given supervisor.
-   *
-   * FIXME: Remove! this is dangerous!?
-   * >>>>>>> master
    */
-  def actorFor(path: ActorPath): ActorRef
+  def actorFor(path: ActorPath): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path, which will
    * be parsed using java.net.URI. If no such actor exists, it will be
    * (equivalent to) a dead letter reference.
    */
-  def actorFor(s: String): ActorRef
+  def actorFor(s: String): InternalActorRef
 
   /**
    * Create actor reference for the specified child path starting at the root
@@ -101,7 +95,7 @@ trait ActorRefProvider {
    * i.e. it cannot be used to obtain a reference to an actor which is not
    * physically or logically attached to this actor system.
    */
-  def actorFor(p: Iterable[String]): ActorRef
+  def actorFor(p: Iterable[String]): InternalActorRef
 
   private[akka] def createDeathWatch(): DeathWatch
 
@@ -131,7 +125,7 @@ trait ActorRefFactory {
   /**
    * Father of all children created by this interface.
    */
-  protected def guardian: ActorRef
+  protected def guardian: InternalActorRef
 
   protected def randomName(): String
 
@@ -175,7 +169,7 @@ trait ActorRefFactory {
 
   def actorOf(creator: UntypedActorFactory, name: String): ActorRef = actorOf(Props(() ⇒ creator.create()), name)
 
-  def actorFor(path: ActorPath) = provider.actorFor(path)
+  def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
 
   def actorFor(path: String): ActorRef = provider.actorFor(path)
 
@@ -192,7 +186,7 @@ class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val deadLetters: ActorRef) extends ActorRefProvider {
+  val deadLetters: InternalActorRef) extends ActorRefProvider {
 
   val rootPath: ActorPath = new RootActorPath(LocalAddress(_systemName))
 
@@ -219,7 +213,7 @@ class LocalActorRefProvider(
    * Top-level anchor for the supervision hierarchy of this actor system. Will
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
-  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = new MinimalActorRef {
+  private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: InternalActorRef = new MinimalActorRef {
     val stopped = new Switch(false)
 
     @volatile
@@ -242,7 +236,7 @@ class LocalActorRefProvider(
       case _               ⇒ log.error(this + " received unexpected message " + message)
     })
 
-    protected[akka] override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
+    override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
         case Supervise(child) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _                ⇒ log.error(this + " received unexpected system message " + message)
@@ -287,9 +281,9 @@ class LocalActorRefProvider(
   def dispatcher: MessageDispatcher = system.dispatcher
 
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
-  lazy val rootGuardian: ActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-  lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "user", true)
-  lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
+  lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
+  lazy val guardian: InternalActorRef = actorOf(system, guardianProps, rootGuardian, "user", true)
+  lazy val systemGuardian: InternalActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
 
   val deathWatch = createDeathWatch()
 
@@ -300,18 +294,18 @@ class LocalActorRefProvider(
     deathWatch.subscribe(rootGuardian, systemGuardian)
   }
 
-  def actorFor(path: String): ActorRef = path match {
+  def actorFor(path: String): InternalActorRef = path match {
     case LocalActorPath(address, elems) if address == rootPath.address ⇒
       findInTree(rootGuardian.asInstanceOf[LocalActorRef], elems)
     case _ ⇒ deadLetters
   }
 
-  def actorFor(path: ActorPath): ActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path.pathElements)
+  def actorFor(path: ActorPath): InternalActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path.pathElements)
 
-  def actorFor(path: Iterable[String]): ActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path)
+  def actorFor(path: Iterable[String]): InternalActorRef = findInTree(rootGuardian.asInstanceOf[LocalActorRef], path)
 
   @tailrec
-  private def findInTree(start: LocalActorRef, path: Iterable[String]): ActorRef = {
+  private def findInTree(start: LocalActorRef, path: Iterable[String]): InternalActorRef = {
     if (path.isEmpty) start
     else start.underlying.getChild(path.head) match {
       case null                 ⇒ deadLetters
@@ -320,7 +314,7 @@ class LocalActorRefProvider(
     }
   }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef = {
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef = {
     val path = supervisor.path / name
     (if (systemService) None else deployer.lookupDeployment(path.toString)) match {
 
@@ -359,7 +353,7 @@ class LocalActorRefProvider(
   /**
    * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
    */
-  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): InternalActorRef = {
     // FIXME: this needs to take supervision into account!
 
     //FIXME clustering should be implemented by cluster actor ref provider

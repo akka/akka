@@ -56,7 +56,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   private[remote] lazy val remoteDaemon =
     system.provider.actorOf(system,
       Props(new RemoteSystemDaemon(this)).withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
-      remoteDaemonSupervisor,
+      remoteDaemonSupervisor.asInstanceOf[InternalActorRef],
       remoteDaemonServiceName,
       systemService = true)
 
@@ -141,7 +141,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         message.getActorPath match {
           case RemoteActorPath(addr, elems) if addr == remoteAddress && elems.size > 0 ⇒
             val name = elems.last
-            system.actorFor(elems.dropRight(1)) match {
+            systemImpl.provider.actorFor(elems.dropRight(1)) match {
               case x if x eq system.deadLetters ⇒
                 log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
               case parent ⇒

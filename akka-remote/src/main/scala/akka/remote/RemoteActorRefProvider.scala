@@ -34,7 +34,7 @@ class RemoteActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  _deadLetters: ActorRef) extends ActorRefProvider {
+  _deadLetters: InternalActorRef) extends ActorRefProvider {
 
   val log = Logging(eventStream, "RemoteActorRefProvider")
 
@@ -79,7 +79,7 @@ class RemoteActorRefProvider(
   def dispatcher = local.dispatcher
   def defaultTimeout = settings.ActorTimeout
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef =
     if (systemService) local.actorOf(system, props, supervisor, name, systemService)
     else {
       val path = supervisor.path / name
@@ -87,7 +87,7 @@ class RemoteActorRefProvider(
 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
-          val actor: ActorRef = try {
+          val actor: InternalActorRef = try {
             deployer.lookupDeploymentFor(path.toString) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
@@ -166,8 +166,8 @@ class RemoteActorRefProvider(
           newFuture completeWithResult actor
           actors.replace(path.toString, newFuture, actor)
           actor
-        case actor: ActorRef   ⇒ actor
-        case future: Future[_] ⇒ future.get.asInstanceOf[ActorRef]
+        case actor: InternalActorRef ⇒ actor
+        case future: Future[_]       ⇒ future.get.asInstanceOf[InternalActorRef]
       }
     }
 
@@ -175,14 +175,14 @@ class RemoteActorRefProvider(
    * Copied from LocalActorRefProvider...
    */
   // FIXME: implement supervision, ticket #1408
-  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): InternalActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  def actorFor(path: ActorPath): ActorRef = local.actorFor(path)
-  def actorFor(path: String): ActorRef = local.actorFor(path)
-  def actorFor(path: Iterable[String]): ActorRef = local.actorFor(path)
+  def actorFor(path: ActorPath): InternalActorRef = local.actorFor(path)
+  def actorFor(path: String): InternalActorRef = local.actorFor(path)
+  def actorFor(path: Iterable[String]): InternalActorRef = local.actorFor(path)
 
   // TODO remove me
   val optimizeLocal = new AtomicBoolean(true)
@@ -265,7 +265,7 @@ private[akka] case class RemoteActorRef private[akka] (
   remoteAddress: RemoteAddress,
   path: ActorPath,
   loader: Option[ClassLoader])
-  extends ActorRef with ScalaActorRef with RefInternals {
+  extends InternalActorRef {
 
   @volatile
   private var running: Boolean = true
@@ -276,7 +276,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = !running
 
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
+  def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
@@ -298,5 +298,5 @@ private[akka] case class RemoteActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 
-  protected[akka] def restart(cause: Throwable): Unit = ()
+  def restart(cause: Throwable): Unit = ()
 }

@@ -73,9 +73,9 @@ private[akka] object ActorCell {
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 private[akka] class ActorCell(
   val system: ActorSystemImpl,
-  val self: ActorRef with ScalaActorRef,
+  val self: InternalActorRef,
   val props: Props,
-  val parent: ActorRef,
+  val parent: InternalActorRef,
   /*no member*/ _receiveTimeout: Option[Long],
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
 

@@ -48,7 +48,7 @@ import akka.event.DeathWatch
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
-  scalaRef: ScalaActorRef with RefInternals ⇒
+  scalaRef: InternalActorRef ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
@@ -122,6 +122,53 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 }
 
 /**
+ * This trait represents the Scala Actor API
+ * There are implicit conversions in ../actor/Implicits.scala
+ * from ActorRef -> ScalaActorRef and back
+ */
+trait ScalaActorRef { ref: ActorRef ⇒
+
+  /**
+   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
+   * <p/>
+   *
+   * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
+   * <p/>
+   *
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
+   * if invoked from within an Actor. If not then no sender is available.
+   * <pre>
+   *   actor ! message
+   * </pre>
+   * <p/>
+   */
+  def !(message: Any)(implicit sender: ActorRef = null): Unit
+
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   */
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any]
+
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
+   * implicit timeout
+   */
+  def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
+}
+
+/**
+ * Internal trait for assembling all the functionality needed internally on
+ * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
+ */
+private[akka] trait InternalActorRef extends ActorRef with ScalaActorRef {
+  def resume(): Unit
+  def suspend(): Unit
+  def restart(cause: Throwable): Unit
+  def sendSystemMessage(message: SystemMessage): Unit
+}
+
+/**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
@@ -129,12 +176,12 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 class LocalActorRef private[akka] (
   system: ActorSystemImpl,
   _props: Props,
-  _supervisor: ActorRef,
+  _supervisor: InternalActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
   _receiveTimeout: Option[Long] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends ActorRef with ScalaActorRef with RefInternals {
+  extends InternalActorRef {
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -191,60 +238,16 @@ class LocalActorRef private[akka] (
     instance
   }
 
-  protected[akka] def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
+  def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
 
-  protected[akka] override def restart(cause: Throwable): Unit = actorCell.restart(cause)
+  def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
-}
-
-/**
- * This trait represents the Scala Actor API
- * There are implicit conversions in ../actor/Implicits.scala
- * from ActorRef -> ScalaActorRef and back
- */
-trait ScalaActorRef { ref: ActorRef ⇒
-
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit
-
-  /**
-   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
-   * <p/>
-   *
-   * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
-   * <p/>
-   *
-   * This actor 'sender' reference is then available in the receiving actor in the 'sender' member variable,
-   * if invoked from within an Actor. If not then no sender is available.
-   * <pre>
-   *   actor ! message
-   * </pre>
-   * <p/>
-   */
-  def !(message: Any)(implicit sender: ActorRef = null): Unit
-
-  /**
-   * Sends a message asynchronously, returning a future which may eventually hold the reply.
-   */
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any]
-
-  /**
-   * Sends a message asynchronously, returning a future which may eventually hold the reply.
-   * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
-   * implicit timeout
-   */
-  def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
-}
-
-private[akka] trait RefInternals {
-  def resume(): Unit
-  def suspend(): Unit
-  protected[akka] def restart(cause: Throwable): Unit
 }
 
 /**
@@ -266,7 +269,7 @@ case class SerializedActorRef(path: String) {
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
+trait MinimalActorRef extends InternalActorRef {
 
   //FIXME REMOVE THIS, ticket #1416 
   //FIXME REMOVE THIS, ticket #1415
@@ -282,8 +285,8 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
 
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
-  protected[akka] def restart(cause: Throwable): Unit = ()
+  def sendSystemMessage(message: SystemMessage): Unit = ()
+  def restart(cause: Throwable): Unit = ()
 }
 
 object MinimalActorRef {
@@ -355,7 +358,7 @@ class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: D
     case other             ⇒ result.completeWithResult(other)
   }
 
-  protected[akka] override def sendSystemMessage(message: SystemMessage): Unit = message match {
+  override def sendSystemMessage(message: SystemMessage): Unit = message match {
     case _: Terminate ⇒ stop()
     case _            ⇒
   }
