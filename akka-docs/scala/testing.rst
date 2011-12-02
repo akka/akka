@@ -717,11 +717,12 @@ options:
   ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
   statement to be applied to an actor’s :meth:`receive` function::
 
-    def receive = Actor.loggable(this) { // `Actor` unnecessary with import Actor._
+    import akka.event.LoggingReceive
+    def receive = LoggingReceive(this) {
       case msg => ...
     } 
 
-  The first argument to :meth:`loggable` defines the source to be used in the
+  The first argument to :meth:`LoggingReceive` defines the source to be used in the
   logging events, which should be the current actor.
 
   If the abovementioned setting is not given in ``akka.conf``, this method will

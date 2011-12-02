@@ -66,7 +66,7 @@ public class ZooKeeperQueue<T extends Object> {
       return element.getData();
     } else {
       throw new UnsupportedOperationException("Non-blocking ZooKeeperQueue is not yet supported");
-      /* FIXME DOES NOT WORK
+      /* TODO DOES NOT WORK
       try {
         String headName = getSmallestElement(_zkClient.getChildren(_elementsPath));
         String headPath = getElementPath(headName);
