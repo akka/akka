@@ -152,7 +152,7 @@ final class Path {
     }
 
     private void appendToStringBuilder(StringBuilder sb) {
-        if (hasFunkyChars(first))
+        if (hasFunkyChars(first) || first.isEmpty())
             sb.append(ConfigUtil.renderJsonString(first));
         else
             sb.append(first);

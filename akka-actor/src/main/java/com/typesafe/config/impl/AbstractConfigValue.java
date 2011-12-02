@@ -162,8 +162,39 @@ abstract class AbstractConfigValue implements ConfigValue {
     }
 
     @Override
-    public String toString() {
-        return valueType().name() + "(" + unwrapped() + ")";
+    public final String toString() {
+        StringBuilder sb = new StringBuilder();
+        render(sb, 0, null /* atKey */, false /* formatted */);
+        return getClass().getSimpleName() + "(" + sb.toString() + ")";
+    }
+
+    protected static void indent(StringBuilder sb, int indent) {
+        int remaining = indent;
+        while (remaining > 0) {
+            sb.append("    ");
+            --remaining;
+        }
+    }
+
+    protected void render(StringBuilder sb, int indent, String atKey, boolean formatted) {
+        if (atKey != null) {
+            sb.append(ConfigUtil.renderJsonString(atKey));
+            sb.append(" : ");
+        }
+        render(sb, indent, formatted);
+    }
+
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
+        Object u = unwrapped();
+        sb.append(u.toString());
+    }
+
+
+    @Override
+    public final String render() {
+        StringBuilder sb = new StringBuilder();
+        render(sb, 0, null, true /* formatted */);
+        return sb.toString();
     }
 
     // toString() is a debugging-oriented string but this is defined

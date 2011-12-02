@@ -4,23 +4,16 @@
 package akka.actor.mailbox
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object MongoBasedMailboxExtension extends ExtensionId[MongoBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new MongoBasedMailboxSettings(system.applicationConfig)
+  def createExtension(system: ActorSystemImpl) = new MongoBasedMailboxSettings(system.settings.config)
 }
 
-class MongoBasedMailboxSettings(cfg: Config) extends Extension {
-  private def referenceConfig: Config =
-    ConfigFactory.parseResource(classOf[ActorSystem], "/akka-mongo-mailbox-reference.conf",
-      ConfigParseOptions.defaults.setAllowMissing(false))
-  val config: ConfigRoot = ConfigFactory.emptyRoot("akka-mongo-mailbox").withFallback(cfg).withFallback(referenceConfig).resolve()
+class MongoBasedMailboxSettings(val config: Config) extends Extension {
 
   import config._
 

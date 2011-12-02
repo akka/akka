@@ -4,21 +4,14 @@
 package akka.actor.mailbox
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import akka.actor._
 
 object RedisBasedMailboxExtension extends ExtensionId[RedisBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new RedisBasedMailboxSettings(system.applicationConfig)
+  def createExtension(system: ActorSystemImpl) = new RedisBasedMailboxSettings(system.settings.config)
 }
 
-class RedisBasedMailboxSettings(cfg: Config) extends Extension {
-  private def referenceConfig: Config =
-    ConfigFactory.parseResource(classOf[ActorSystem], "/akka-redis-mailbox-reference.conf",
-      ConfigParseOptions.defaults.setAllowMissing(false))
-  val config: ConfigRoot = ConfigFactory.emptyRoot("akka-redis-mailbox").withFallback(cfg).withFallback(referenceConfig).resolve()
+class RedisBasedMailboxSettings(val config: Config) extends Extension {
 
   import config._
 

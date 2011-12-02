@@ -11,7 +11,6 @@ import akka.actor.{ ActorSystem, ActorSystemImpl }
 import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import akka.actor.DeadLetterActorRef
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 
 object SerializeSpec {
 
@@ -32,7 +31,7 @@ object SerializeSpec {
         }
       }
     }
-  """, ConfigParseOptions.defaults)
+  """)
 
   @BeanInfo
   case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }

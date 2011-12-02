@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigParseOptions;
 
 import static org.junit.Assert.*;
 
@@ -26,14 +25,14 @@ public class JavaExtension {
   }
 
   static class TestExtension implements Extension {
-      public final ActorSystemImpl system;
-      public TestExtension(ActorSystemImpl i) {
-          system = i;
-      }
+    public final ActorSystemImpl system;
+
+    public TestExtension(ActorSystemImpl i) {
+      system = i;
+    }
   }
 
-  private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]",
-      ConfigParseOptions.defaults());
+  private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]");
 
   private ActorSystem system = ActorSystem.create("JavaExtension", c);
 
