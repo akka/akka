@@ -494,39 +494,3 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
     }
   }
 }
-
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FJDispatcherModelSpec extends ActorModelSpec {
-  import ActorModelSpec._
-
-  def newInterceptedDispatcher =
-    (new Dispatcher(system.dispatcherFactory.prerequisites, "foo", system.settings.DispatcherThroughput,
-      system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
-      new ForkJoinPoolConfig(), system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor).asInstanceOf[MessageDispatcherInterceptor]
-
-  def dispatcherType = "FJDispatcher"
-
-  "A " + dispatcherType must {
-    "process messages in parallel" in {
-      implicit val dispatcher = newInterceptedDispatcher
-      val aStart, aStop, bParallel = new CountDownLatch(1)
-      val a, b = newTestActor(dispatcher)
-
-      a ! Meet(aStart, aStop)
-      assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
-
-      b ! CountDown(bParallel)
-      assertCountDown(bParallel, 3.seconds.dilated.toMillis, "Should process other actors in parallel")
-
-      aStop.countDown()
-
-      a.stop
-      b.stop
-
-      while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
-
-      assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
-      assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
-    }
-  }
-}
