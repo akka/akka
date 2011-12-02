@@ -32,7 +32,7 @@ object Serialization {
       hasPath(configPath) match {
         case false ⇒ Map()
         case true ⇒
-          val serializationBindings: Map[String, Seq[String]] = getConfig(configPath).toValue.unwrapped.asScala.toMap.map {
+          val serializationBindings: Map[String, Seq[String]] = getConfig(configPath).root.unwrapped.asScala.toMap.map {
             case (k: String, v: java.util.Collection[_]) ⇒ (k -> v.asScala.toSeq.asInstanceOf[Seq[String]])
             case invalid                                 ⇒ throw new ConfigurationException("Invalid serialization-bindings [%s]".format(invalid))
           }
@@ -42,7 +42,7 @@ object Serialization {
     }
 
     private def toStringMap(mapConfig: Config): Map[String, String] =
-      mapConfig.toValue.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
+      mapConfig.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
   }
 }
 
