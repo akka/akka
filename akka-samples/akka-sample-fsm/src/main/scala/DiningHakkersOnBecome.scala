@@ -80,7 +80,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Taken(`chopstickToWaitFor`) ⇒
       println("%s has picked up %s and %s and starts to eat".format(name, left.name, right.name))
       become(eating)
-      system.scheduler.scheduleOnce(self, Think, 5 seconds)
+      system.scheduler.scheduleOnce(5 seconds, self, Think)
 
     case Busy(chopstick) ⇒
       become(thinking)
@@ -109,7 +109,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
       left ! Put(self)
       right ! Put(self)
       println("%s puts down his chopsticks and starts to think".format(name))
-      system.scheduler.scheduleOnce(self, Eat, 5 seconds)
+      system.scheduler.scheduleOnce(5 seconds, self, Eat)
   }
 
   //All hakkers start in a non-eating state
@@ -117,7 +117,7 @@ class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
     case Think ⇒
       println("%s starts to think".format(name))
       become(thinking)
-      system.scheduler.scheduleOnce(self, Eat, 5 seconds)
+      system.scheduler.scheduleOnce(5 seconds, self, Eat)
   }
 }
 

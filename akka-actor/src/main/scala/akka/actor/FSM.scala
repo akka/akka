@@ -34,9 +34,9 @@ object FSM {
 
     def schedule(actor: ActorRef, timeout: Duration) {
       if (repeat) {
-        ref = Some(system.scheduler.schedule(actor, this, timeout, timeout))
+        ref = Some(system.scheduler.schedule(timeout, timeout, actor, this))
       } else {
-        ref = Some(system.scheduler.scheduleOnce(actor, this, timeout))
+        ref = Some(system.scheduler.scheduleOnce(timeout, actor, this))
       }
     }
 
@@ -523,7 +523,7 @@ trait FSM[S, D] extends ListenerManagement {
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.finite_? && t.length >= 0) {
-          timeoutFuture = Some(system.scheduler.scheduleOnce(self, TimeoutMarker(generation), t))
+          timeoutFuture = Some(system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }
     }

@@ -404,7 +404,7 @@ private[akka] class ActorCell(
     if (recvtimeout._1 > 0 && dispatcher.mailboxIsEmpty(this)) {
       recvtimeout._2.cancel() //Cancel any ongoing future
       //Only reschedule if desired and there are currently no more messages to be processed
-      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(self, ReceiveTimeout, Duration(recvtimeout._1, TimeUnit.MILLISECONDS)))
+      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(Duration(recvtimeout._1, TimeUnit.MILLISECONDS), self, ReceiveTimeout))
     } else cancelReceiveTimeout()
 
   }

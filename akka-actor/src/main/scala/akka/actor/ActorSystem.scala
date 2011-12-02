@@ -59,18 +59,11 @@ object ActorSystem {
 
   class Settings(cfg: Config) {
 
-    // Verify that the Config is sane and has our reference config.
-    val config: Config =
-      try {
-        cfg.checkValid(ConfigFactory.defaultReference, "akka")
-        cfg
-      } catch {
-        case e: ConfigException ⇒
-          // try again with added defaultReference
-          val cfg2 = cfg.withFallback(ConfigFactory.defaultReference)
-          cfg2.checkValid(ConfigFactory.defaultReference, "akka")
-          cfg2
-      }
+    val config: Config = {
+      val config = cfg.withFallback(ConfigFactory.defaultReference)
+      config.checkValid(ConfigFactory.defaultReference, "akka")
+      config
+    }
 
     import scala.collection.JavaConverters._
     import config._
@@ -405,7 +398,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     case x: Closeable ⇒
       // Let dispatchers shutdown first.
       // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
-      x.scheduleOnce(() ⇒ { x.close(); dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
+      x.scheduleOnce(settings.DispatcherDefaultShutdown * 4) {
+        x.close()
+        dispatcher.shutdown()
+      }
     case _ ⇒
   }
 
