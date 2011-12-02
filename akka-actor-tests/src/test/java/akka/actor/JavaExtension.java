@@ -3,18 +3,23 @@
  */
 package akka.actor;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import akka.testkit.AkkaSpec;
 
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigParseOptions;
 
 import static org.junit.Assert.*;
 
 public class JavaExtension {
 
   static class Provider implements ExtensionIdProvider {
-    public ExtensionId<TestExtension> lookup() { return defaultInstance; }
+    public ExtensionId<TestExtension> lookup() {
+      return defaultInstance;
+    }
   }
 
   public final static TestExtensionId defaultInstance = new TestExtensionId();
@@ -26,10 +31,11 @@ public class JavaExtension {
   }
 
   static class TestExtension implements Extension {
-      public final ActorSystemImpl system;
-      public TestExtension(ActorSystemImpl i) {
-          system = i;
-      }
+    public final ActorSystemImpl system;
+
+    public TestExtension(ActorSystemImpl i) {
+      system = i;
+    }
   }
   
   static class OtherExtension implements Extension {
@@ -41,10 +47,20 @@ public class JavaExtension {
     }
   }
 
-  private Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]",
-      ConfigParseOptions.defaults());
+  private static ActorSystem system;
 
-  private ActorSystem system = ActorSystem.create("JavaExtension", c);
+  @BeforeClass
+  public static void beforeAll() {
+    Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]").withFallback(
+        AkkaSpec.testConf());
+    system = ActorSystem.create("JavaExtension", c);
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.stop();
+    system = null;
+  }
 
   @Test
   public void mustBeAccessible() {

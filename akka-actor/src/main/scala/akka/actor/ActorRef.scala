@@ -48,7 +48,7 @@ import akka.event.DeathWatch
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
-  scalaRef: ScalaActorRef ⇒
+  scalaRef: ScalaActorRef with RefInternals ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
@@ -101,16 +101,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
   /**
-   * Suspends the actor. It will not process messages while suspended.
-   */
-  def suspend(): Unit //TODO FIXME REMOVE THIS
-
-  /**
-   * Resumes a suspended actor.
-   */
-  def resume(): Unit //TODO FIXME REMOVE THIS
-
-  /**
    * Shuts down the actor its dispatcher and message queue.
    */
   def stop(): Unit
@@ -119,24 +109,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Is the actor shut down?
    */
   def isTerminated: Boolean
-
-  /**
-   * Registers this actor to be a death monitor of the provided ActorRef
-   * This means that this actor will get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def startsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
-
-  /**
-   * Deregisters this actor from being a death monitor of the provided ActorRef
-   * This means that this actor will not get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def stopsWatching(subject: ActorRef): ActorRef //TODO FIXME REMOVE THIS
 
   // FIXME check if we should scramble the bits or whether they can stay the same
   override def hashCode: Int = path.hashCode
@@ -162,7 +134,7 @@ class LocalActorRef private[akka] (
   val systemService: Boolean = false,
   _receiveTimeout: Option[Long] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends ActorRef with ScalaActorRef {
+  extends ActorRef with ScalaActorRef with RefInternals {
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -190,13 +162,13 @@ class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT
+  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -204,29 +176,11 @@ class LocalActorRef private[akka] (
    */
   def stop(): Unit = actorCell.stop()
 
-  /**
-   * Registers this actor to be a death monitor of the provided ActorRef
-   * This means that this actor will get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def startsWatching(subject: ActorRef): ActorRef = actorCell.startsWatching(subject)
-
-  /**
-   * Deregisters this actor from being a death monitor of the provided ActorRef
-   * This means that this actor will not get a Terminated()-message when the provided actor
-   * is permanently terminated.
-   *
-   * @return the same ActorRef that is provided to it, to allow for cleaner invocations
-   */
-  def stopsWatching(subject: ActorRef): ActorRef = actorCell.stopsWatching(subject)
-
   // ========= AKKA PROTECTED FUNCTIONS =========
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  // FIXME TODO: remove this method
+  // FIXME TODO: remove this method. It is used in testkit.
   // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
   protected[akka] def underlyingActorInstance: Actor = {
     var instance = actorCell.actor
@@ -285,7 +239,11 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * implicit timeout
    */
   def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
+}
 
+private[akka] trait RefInternals {
+  def resume(): Unit
+  def suspend(): Unit
   protected[akka] def restart(cause: Throwable): Unit
 }
 
@@ -308,11 +266,10 @@ case class SerializedActorRef(path: String) {
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends ActorRef with ScalaActorRef {
+trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
 
-  def startsWatching(actorRef: ActorRef): ActorRef = actorRef
-  def stopsWatching(actorRef: ActorRef): ActorRef = actorRef
-
+  //FIXME REMOVE THIS, ticket #1416 
+  //FIXME REMOVE THIS, ticket #1415
   def suspend(): Unit = ()
   def resume(): Unit = ()
 

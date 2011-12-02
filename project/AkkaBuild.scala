@@ -215,7 +215,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample)
+    aggregate = Seq(fsmSample, helloSample)
   )
 
   lazy val fsmSample = Project(
@@ -224,27 +224,36 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-
+  
+  lazy val helloSample = Project(
+    id = "akka-sample-hello",
+    base = file("akka-samples/akka-sample-hello"),
+    dependencies = Seq(actor),
+    settings = defaultSettings
+  )
+  
   lazy val tutorials = Project(
     id = "akka-tutorials",
     base = file("akka-tutorials"),
     settings = parentSettings,
-    aggregate = Seq(firstTutorial, secondTutorial)
+    aggregate = Seq(firstTutorial)
   )
 
   lazy val firstTutorial = Project(
     id = "akka-tutorial-first",
     base = file("akka-tutorials/akka-tutorial-first"),
-    dependencies = Seq(actor),
-    settings = defaultSettings
+    dependencies = Seq(actor, testkit),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.tutorials
+    )
   )
 
-  lazy val secondTutorial = Project(
-    id = "akka-tutorial-second",
-    base = file("akka-tutorials/akka-tutorial-second"),
-    dependencies = Seq(actor),
-    settings = defaultSettings
-  )
+  //  lazy val secondTutorial = Project(
+  //    id = "akka-tutorial-second",
+  //    base = file("akka-tutorials/akka-tutorial-second"),
+  //    dependencies = Seq(actor),
+  //    settings = defaultSettings
+  //  )
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -405,6 +414,8 @@ object Dependencies {
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
   //   Test.junit, Test.scalatest, Test.logback)
+
+  val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit)
 }

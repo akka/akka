@@ -80,7 +80,7 @@ trait LoggingBus extends ActorEventBus {
       loggers = Seq(StandardOutLogger)
       _logLevel = level
     }
-    publish(Info(simpleName(this), "StandardOutLogger started"))
+    publish(Debug(simpleName(this), "StandardOutLogger started"))
   }
 
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
@@ -113,7 +113,7 @@ trait LoggingBus extends ActorEventBus {
         loggers = myloggers
         _logLevel = level
       }
-      publish(Info(simpleName(this), "Default Loggers started"))
+      publish(Debug(simpleName(this), "Default Loggers started"))
       if (!(defaultLoggers contains StandardOutLoggerName)) {
         unsubscribe(StandardOutLogger)
       }
@@ -153,7 +153,7 @@ trait LoggingBus extends ActorEventBus {
     if (response != LoggerInitialized)
       throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
-    publish(Info(simpleName(this), "logger " + name + " started"))
+    publish(Debug(simpleName(this), "logger " + name + " started"))
     actor
   }
 

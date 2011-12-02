@@ -47,10 +47,9 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   val remoteDaemonServiceName = "akka-system-remote-daemon".intern
 
-  // FIXME configure computeGridDispatcher to what?
-  val computeGridDispatcher = dispatcherFactory.newDispatcher("akka:compute-grid").build
+  val computeGridDispatcher = dispatcherFactory.fromConfig("akka.remote.compute-grid-dispatcher")
 
-  // FIXME it is probably better to create another supervisor for handling the children created by handle_*
+  // FIXME it is probably better to create another supervisor for handling the children created by handle_*, ticket #1408
   private[remote] lazy val remoteDaemonSupervisor = system.actorOf(Props(
     OneForOneStrategy(List(classOf[Exception]), None, None)), "akka-system-remote-supervisor") // is infinite restart what we want?
 
@@ -71,19 +70,17 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   lazy val eventStream = new NetworkEventStream(system)
 
-  @volatile
-  private var _server: RemoteSupport = _
-  def server = _server
-
-  def start(): Unit = {
+  lazy val server: RemoteSupport = {
     val remote = new akka.remote.netty.NettyRemoteSupport(system, this)
-    remote.start() //TODO FIXME Any application loader here?
+    remote.start() //TODO Any application loader here?
 
     system.eventStream.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
     system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
-    _server = remote
+    remote
+  }
 
+  def start() {
     val daemonPath = remoteDaemon.path //Force init of daemon
     log.info("Starting remote server on [{}] and starting remoteDaemon with path [{}]", remoteAddress, daemonPath)
   }
@@ -160,9 +157,9 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
 
       sender ! Success(remoteAddress)
     } catch {
-      case error: Throwable ⇒ //FIXME doesn't seem sensible
-        sender ! Failure(error)
-        throw error
+      case exc: Exception ⇒
+        sender ! Failure(exc)
+        throw exc
     }
 
   }
@@ -195,7 +192,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
   def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
   def tempPath = remoteDaemon.path / tempName
 
-  // FIXME: handle real remote supervision
+  // FIXME: handle real remote supervision, ticket #1408
   def handle_fun0_unit(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(systemImpl,
       Props(
@@ -204,7 +201,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
   }
 
-  // FIXME: handle real remote supervision
+  // FIXME: handle real remote supervision, ticket #1408
   def handle_fun0_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(systemImpl,
       Props(
@@ -213,7 +210,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) forward payloadFor(message, classOf[Function0[Any]])
   }
 
-  // FIXME: handle real remote supervision
+  // FIXME: handle real remote supervision, ticket #1408
   def handle_fun1_arg_unit(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(systemImpl,
       Props(
@@ -222,7 +219,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         }).copy(dispatcher = computeGridDispatcher), remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
   }
 
-  // FIXME: handle real remote supervision
+  // FIXME: handle real remote supervision, ticket #1408
   def handle_fun1_arg_any(message: RemoteSystemDaemonMessageProtocol) {
     new LocalActorRef(systemImpl,
       Props(

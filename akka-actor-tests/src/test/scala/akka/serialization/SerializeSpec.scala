@@ -11,7 +11,6 @@ import akka.actor.{ ActorSystem, ActorSystemImpl }
 import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import akka.actor.DeadLetterActorRef
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 
 object SerializeSpec {
 
@@ -32,7 +31,7 @@ object SerializeSpec {
         }
       }
     }
-  """, ConfigParseOptions.defaults)
+  """)
 
   @BeanInfo
   case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
@@ -98,15 +97,19 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
     "serialize DeadLetterActorRef" in {
       val outbuf = new ByteArrayOutputStream()
       val out = new ObjectOutputStream(outbuf)
-      val a = ActorSystem()
-      out.writeObject(a.deadLetters)
-      out.flush()
-      out.close()
+      val a = ActorSystem("SerializeDeadLeterActorRef", AkkaSpec.testConf)
+      try {
+        out.writeObject(a.deadLetters)
+        out.flush()
+        out.close()
 
-      val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-      Serialization.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
-        val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
-        (deadLetters eq a.deadLetters) must be(true)
+        val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
+        Serialization.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
+          val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
+          (deadLetters eq a.deadLetters) must be(true)
+        }
+      } finally {
+        a.stop()
       }
     }
   }

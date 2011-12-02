@@ -22,8 +22,8 @@ import com.typesafe.config.ConfigValueType;
 final class ConfigSubstitution extends AbstractConfigValue implements
         Unmergeable {
 
-    // this is a list of String and Path where the Path
-    // have to be resolved to values, then if there's more
+    // this is a list of String and SubstitutionExpression where the
+    // SubstitutionExpression has to be resolved to values, then if there's more
     // than one piece everything is stringified and concatenated
     final private List<Object> pieces;
     // the length of any prefixes added with relativized()
@@ -40,19 +40,24 @@ final class ConfigSubstitution extends AbstractConfigValue implements
         this.pieces = pieces;
         this.prefixLength = prefixLength;
         this.ignoresFallbacks = ignoresFallbacks;
+        for (Object p : pieces) {
+            if (p instanceof Path)
+                throw new RuntimeException("broken here");
+        }
     }
 
     @Override
     public ConfigValueType valueType() {
         throw new ConfigException.NotResolved(
-                "tried to get value type on an unresolved substitution: "
+                "need to call resolve() on root config; tried to get value type on an unresolved substitution: "
                         + this);
     }
 
     @Override
     public Object unwrapped() {
         throw new ConfigException.NotResolved(
-                "tried to unwrap an unresolved substitution: " + this);
+                "need to call resolve() on root config; tried to unwrap an unresolved substitution: "
+                        + this);
     }
 
     @Override
@@ -124,28 +129,27 @@ final class ConfigSubstitution extends AbstractConfigValue implements
         return result;
     }
 
-    private ConfigValue resolve(SubstitutionResolver resolver, Path subst,
+    private ConfigValue resolve(SubstitutionResolver resolver, SubstitutionExpression subst,
             int depth, ConfigResolveOptions options) {
-        ConfigValue result = findInObject(resolver.root(), resolver, subst,
+        // First we look up the full path, which means relative to the
+        // included file if we were not a root file
+        ConfigValue result = findInObject(resolver.root(), resolver, subst.path(),
                 depth, options);
 
-        // when looking up system props and env variables,
-        // we don't want the prefix that was added when
-        // we were included in another file.
-        Path unprefixed = subst.subPath(prefixLength);
-
-        if (result == null && options.getUseSystemProperties()) {
-            result = findInObject(ConfigImpl.systemPropertiesAsConfigObject(), null,
-                    unprefixed, depth, options);
-        }
-
-        if (result == null && options.getUseSystemEnvironment()) {
-                result = findInObject(ConfigImpl.envVariablesAsConfigObject(), null,
-                    unprefixed, depth, options);
-        }
-
         if (result == null) {
-            result = new ConfigNull(origin());
+            // Then we want to check relative to the root file. We don't
+            // want the prefix we were included at to be used when looking up
+            // env variables either.
+            Path unprefixed = subst.path().subPath(prefixLength);
+
+            if (result == null && prefixLength > 0) {
+                result = findInObject(resolver.root(), resolver, unprefixed, depth, options);
+            }
+
+            if (result == null && options.getUseSystemEnvironment()) {
+                result = findInObject(ConfigImpl.envVariablesAsConfigObject(), null, unprefixed,
+                        depth, options);
+            }
         }
 
         return result;
@@ -160,28 +164,40 @@ final class ConfigSubstitution extends AbstractConfigValue implements
                 if (p instanceof String) {
                     sb.append((String) p);
                 } else {
-                    ConfigValue v = resolve(resolver, (Path) p, depth, options);
-                    switch (v.valueType()) {
-                    case NULL:
-                        // nothing; becomes empty string
-                        break;
-                    case LIST:
-                    case OBJECT:
-                        // cannot substitute lists and objects into strings
-                        throw new ConfigException.WrongType(v.origin(),
-                                ((Path) p).render(),
-                                "not a list or object", v.valueType().name());
-                    default:
-                        sb.append(((AbstractConfigValue) v).transformToString());
+                    SubstitutionExpression exp = (SubstitutionExpression) p;
+                    ConfigValue v = resolve(resolver, exp, depth, options);
+
+                    if (v == null) {
+                        if (exp.optional()) {
+                            // append nothing to StringBuilder
+                        } else {
+                            throw new ConfigException.UnresolvedSubstitution(origin(),
+                                    exp.toString());
+                        }
+                    } else {
+                        switch (v.valueType()) {
+                        case LIST:
+                        case OBJECT:
+                            // cannot substitute lists and objects into strings
+                            throw new ConfigException.WrongType(v.origin(), exp.path().render(),
+                                    "not a list or object", v.valueType().name());
+                        default:
+                            sb.append(((AbstractConfigValue) v).transformToString());
+                        }
                     }
                 }
             }
             return new ConfigString(origin(), sb.toString());
         } else {
-            if (!(pieces.get(0) instanceof Path))
+            if (!(pieces.get(0) instanceof SubstitutionExpression))
                 throw new ConfigException.BugOrBroken(
                         "ConfigSubstitution should never contain a single String piece");
-            return resolve(resolver, (Path) pieces.get(0), depth, options);
+            SubstitutionExpression exp = (SubstitutionExpression) pieces.get(0);
+            ConfigValue v = resolve(resolver, exp, depth, options);
+            if (v == null && !exp.optional()) {
+                throw new ConfigException.UnresolvedSubstitution(origin(), exp.toString());
+            }
+            return v;
         }
     }
 
@@ -210,8 +226,10 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     ConfigSubstitution relativized(Path prefix) {
         List<Object> newPieces = new ArrayList<Object>();
         for (Object p : pieces) {
-            if (p instanceof Path) {
-                newPieces.add(((Path) p).prepend(prefix));
+            if (p instanceof SubstitutionExpression) {
+                SubstitutionExpression exp = (SubstitutionExpression) p;
+
+                newPieces.add(exp.changePath(exp.path().prepend(prefix)));
             } else {
                 newPieces.add(p);
             }
@@ -243,16 +261,13 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("SUBST");
-        sb.append("(");
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
         for (Object p : pieces) {
-            sb.append(p.toString());
-            sb.append(",");
+            if (p instanceof SubstitutionExpression) {
+                sb.append(p.toString());
+            } else {
+                sb.append(ConfigUtil.renderJsonString((String) p));
+            }
         }
-        sb.setLength(sb.length() - 1); // chop comma
-        sb.append(")");
-        return sb.toString();
     }
 }

@@ -28,9 +28,6 @@ object Mailbox {
   // secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 4
 
-  // mailbox debugging helper using println (see below)
-  // FIXME TODO take this out before release
-  final val debug = false
 }
 
 /**
@@ -40,13 +37,13 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
   import Mailbox._
 
   @volatile
-  protected var _status: Status = _ //0 by default
+  protected var _statusDoNotCallMeDirectly: Status = _ //0 by default
 
   @volatile
-  protected var _systemQueue: SystemMessage = _ //null by default
+  protected var _systemQueueDoNotCallMeDirectly: SystemMessage = _ //null by default
 
   @inline
-  final def status: Mailbox.Status = _status
+  final def status: Mailbox.Status = Unsafe.instance.getIntVolatile(this, AbstractMailbox.mailboxStatusOffset)
 
   @inline
   final def shouldProcessMessage: Boolean = (status & 3) == Open
@@ -65,7 +62,8 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
     Unsafe.instance.compareAndSwapInt(this, AbstractMailbox.mailboxStatusOffset, oldStatus, newStatus)
 
   @inline
-  protected final def setStatus(newStatus: Status): Unit = _status = newStatus
+  protected final def setStatus(newStatus: Status): Unit =
+    Unsafe.instance.putIntVolatile(this, AbstractMailbox.mailboxStatusOffset, newStatus)
 
   /**
    * set new primary status Open. Caller does not need to worry about whether
@@ -130,7 +128,8 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
   /*
    * AtomicReferenceFieldUpdater for system queue
    */
-  protected final def systemQueueGet: SystemMessage = _systemQueue
+  protected final def systemQueueGet: SystemMessage =
+    Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage]
   protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
 
@@ -165,7 +164,6 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
           do {
-            if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
             processAllSystemMessages() //After we're done, process all system messages
 
@@ -188,7 +186,6 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
@@ -243,7 +240,6 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.next eq null)
-    if (Mailbox.debug) println(actor.self + " having enqueued " + message)
     val head = systemQueueGet
     /*
      * this write is safely published by the compareAndSet contained within

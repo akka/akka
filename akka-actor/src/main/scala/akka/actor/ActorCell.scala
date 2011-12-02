@@ -47,6 +47,10 @@ trait ActorContext extends ActorRefFactory {
   def system: ActorSystem
 
   def parent: ActorRef
+
+  def startsWatching(subject: ActorRef): ActorRef
+
+  def stopsWatching(subject: ActorRef): ActorRef
 }
 
 private[akka] object ActorCell {
@@ -148,13 +152,13 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  final def startsWatching(subject: ActorRef): ActorRef = {
+  override final def startsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
-  final def stopsWatching(subject: ActorRef): ActorRef = {
+  override final def stopsWatching(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject
@@ -207,6 +211,7 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "started (" + actor + ")"))
     } catch {
+      // FIXME catching all and continue isn't good for OOME, ticket #1418
       case e ⇒
         try {
           system.eventStream.publish(Error(e, self.path.toString, "error while creating actor"))
@@ -239,6 +244,7 @@ private[akka] class ActorCell(
 
       props.faultHandler.handleSupervisorRestarted(cause, self, children)
     } catch {
+      // FIXME catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ try {
         system.eventStream.publish(Error(e, self.path.toString, "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted
@@ -300,7 +306,7 @@ private[akka] class ActorCell(
     } catch {
       case e ⇒ //Should we really catch everything here?
         system.eventStream.publish(Error(e, self.path.toString, "error while processing " + message))
-        //TODO FIXME How should problems here be handled?
+        //TODO FIXME How should problems here be handled???
         throw e
     }
   }
@@ -311,7 +317,7 @@ private[akka] class ActorCell(
       currentMessage = messageHandle
       try {
         try {
-          cancelReceiveTimeout() // FIXME: leave this here?
+          cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
             case msg if stopping ⇒ // receiving Terminated in response to stopping children is too common to generate noise

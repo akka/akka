@@ -69,6 +69,7 @@ final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit,
     try {
       function()
     } catch {
+      // FIXME catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
     } finally {
       cleanup()
@@ -135,7 +136,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
       shutdownScheduleUpdater.get(this) match {
         case UNSCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(this, UNSCHEDULED, SCHEDULED)) {
-            scheduler.scheduleOnce(shutdownAction, Duration(shutdownTimeout.toMillis, TimeUnit.MILLISECONDS))
+            scheduler.scheduleOnce(shutdownAction, shutdownTimeout)
             ()
           } else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
@@ -210,7 +211,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            scheduler.scheduleOnce(this, Duration(shutdownTimeout.toMillis, TimeUnit.MILLISECONDS))
+            scheduler.scheduleOnce(this, shutdownTimeout)
           else run()
       }
     }

@@ -162,25 +162,6 @@ object Actor {
 
   type Receive = PartialFunction[Any, Unit]
 
-  /**
-   * This decorator adds invocation logging to a Receive function.
-   */
-  class LoggingReceive(source: AnyRef, r: Receive)(implicit system: ActorSystem) extends Receive {
-    def isDefinedAt(o: Any) = {
-      val handled = r.isDefinedAt(o)
-      system.eventStream.publish(Debug(LogSource.fromAnyRef(source), "received " + (if (handled) "handled" else "unhandled") + " message " + o))
-      handled
-    }
-    def apply(o: Any): Unit = r(o)
-  }
-
-  object LoggingReceive {
-    def apply(source: AnyRef, r: Receive)(implicit system: ActorSystem): Receive = r match {
-      case _: LoggingReceive ⇒ r
-      case _                 ⇒ new LoggingReceive(source, r)
-    }
-  }
-
   object emptyBehavior extends Receive {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("empty behavior apply()")
@@ -236,22 +217,6 @@ trait Actor {
    * The default timeout, based on the config setting 'akka.actor.timeout'
    */
   implicit def defaultTimeout = system.settings.ActorTimeout
-
-  /**
-   * Wrap a Receive partial function in a logging enclosure, which sends a
-   * debug message to the EventHandler each time before a message is matched.
-   * This includes messages which are not handled.
-   *
-   * <pre><code>
-   * def receive = loggable {
-   *   case x => ...
-   * }
-   * </code></pre>
-   *
-   * This method does NOT modify the given Receive unless
-   * akka.actor.debug.receive is set within akka.conf.
-   */
-  def loggable(self: AnyRef)(r: Receive): Receive = if (system.settings.AddLoggingReceive) LoggingReceive(self, r) else r //TODO FIXME Shouldn't this be in a Loggable-trait?
 
   /**
    * The 'self' field holds the ActorRef for this actor.
@@ -365,24 +330,24 @@ trait Actor {
    * Puts the behavior on top of the hotswap stack.
    * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
    */
-  def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
+  final def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
 
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
-  def unbecome() { context.unbecome() }
+  final def unbecome() { context.unbecome() }
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def watch(subject: ActorRef): ActorRef = self startsWatching subject
+  final def watch(subject: ActorRef): ActorRef = context startsWatching subject
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def unwatch(subject: ActorRef): ActorRef = self stopsWatching subject
+  final def unwatch(subject: ActorRef): ActorRef = context stopsWatching subject
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
@@ -397,6 +362,6 @@ trait Actor {
     }
   }
 
-  private val processingBehavior = receive //ProcessingBehavior is the original behavior
+  private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
 }
 

@@ -15,7 +15,12 @@ import akka.dispatch._
 import akka.actor.Scheduler
 import akka.event.EventStream
 import akka.util.Duration
+import akka.util.duration._
 import java.util.concurrent.TimeUnit
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import akka.actor.ActorSystemImpl
+import akka.actor.Extension
 
 /*
  * Locking rules:
@@ -34,7 +39,12 @@ import java.util.concurrent.TimeUnit
  * within one of its methods taking a closure argument.
  */
 
-private[testkit] object CallingThreadDispatcher {
+private[testkit] object CallingThreadDispatcherQueues extends ExtensionId[CallingThreadDispatcherQueues] with ExtensionIdProvider {
+  override def lookup = CallingThreadDispatcherQueues
+  override def createExtension(system: ActorSystemImpl): CallingThreadDispatcherQueues = new CallingThreadDispatcherQueues
+}
+
+private[testkit] class CallingThreadDispatcherQueues extends Extension {
 
   // PRIVATE DATA
 
@@ -127,7 +137,7 @@ class CallingThreadDispatcher(
   protected[akka] override def throughputDeadlineTime = Duration.Zero
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
-  protected[akka] override def shutdownTimeout = Duration(100L, TimeUnit.MILLISECONDS)
+  protected[akka] override def shutdownTimeout = 1 second
 
   override def suspend(actor: ActorCell) {
     getMailbox(actor) foreach (_.suspendSwitch.switchOn)
@@ -139,7 +149,7 @@ class CallingThreadDispatcher(
         val queue = mbox.queue
         val wasActive = queue.isActive
         val switched = mbox.suspendSwitch.switchOff {
-          gatherFromAllOtherQueues(mbox, queue)
+          CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(mbox, queue)
         }
         if (switched && !wasActive) {
           runQueue(mbox, queue)
@@ -214,7 +224,6 @@ class CallingThreadDispatcher(
       }
       if (handle ne null) {
         try {
-          if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
           true
         } catch {
@@ -268,7 +277,7 @@ class CallingThreadMailbox(_receiver: ActorCell) extends Mailbox(_receiver) with
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = {
       val queue = new NestingQueue
-      CallingThreadDispatcher.registerQueue(CallingThreadMailbox.this, queue)
+      CallingThreadDispatcherQueues(actor.system).registerQueue(CallingThreadMailbox.this, queue)
       queue
     }
   }

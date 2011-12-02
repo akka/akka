@@ -18,7 +18,6 @@ import com.typesafe.config.Config
 
 trait ActorDeployer {
   private[akka] def init(deployments: Seq[Deploy]): Unit
-  private[akka] def shutdown(): Unit //TODO Why should we have "shutdown", should be crash only?
   private[akka] def deploy(deployment: Deploy): Unit
   private[akka] def lookupDeploymentFor(path: String): Option[Deploy]
   def lookupDeployment(path: String): Option[Deploy] = path match {
@@ -48,8 +47,6 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
   def start(): Unit = instance.toString //Force evaluation
 
   private[akka] def init(deployments: Seq[Deploy]) = instance.init(deployments)
-
-  def shutdown(): Unit = instance.shutdown() //TODO FIXME Why should we have "shutdown", should be crash only?
 
   def deploy(deployment: Deploy): Unit = instance.deploy(deployment)
 
@@ -88,7 +85,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     }
 
     import scala.collection.JavaConverters._
-    settings.config.getConfig("akka.actor.deployment").toObject.keySet.asScala
+    settings.config.getConfig("akka.actor.deployment").root.keySet.asScala
       .filterNot("default" ==)
       .map(path ⇒ pathSubstring(path))
       .toSet.toList // toSet to force uniqueness

@@ -3,6 +3,8 @@ package akka.transactor.test;
 import static org.junit.Assert.*;
 
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Before;
 
@@ -31,7 +33,20 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 public class UntypedCoordinatedIncrementTest {
-    ActorSystem application = ActorSystem.create("UntypedCoordinatedIncrementTest", AkkaSpec.testConf());
+  ActorSystem application = ActorSystem.create("UntypedCoordinatedIncrementTest", AkkaSpec.testConf());
+
+  private static ActorSystem system;
+
+  @BeforeClass
+  public static void beforeAll() {
+    system = ActorSystem.create("UntypedTransactorTest", AkkaSpec.testConf());
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.stop();
+    system = null;
+  }
 
   List<ActorRef> counters;
   ActorRef failer;

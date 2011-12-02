@@ -20,6 +20,7 @@ import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import akka.event._
 import akka.event.Logging.Error._
 import akka.event.Logging.Warning
+import java.io.Closeable
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -41,10 +42,10 @@ trait ActorRefProvider {
    */
   def deathWatch: DeathWatch
 
-  // FIXME: remove/replace?
+  // FIXME: remove/replace???
   def nodename: String
 
-  // FIXME: remove/replace?
+  // FIXME: remove/replace???
   def clustername: String
 
   /**
@@ -76,8 +77,14 @@ trait ActorRefProvider {
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean = false): ActorRef
 
   /**
+   * <<<<<<< HEAD
    * Create actor reference for a specified local or remote path. If no such
    * actor exists, it will be (equivalent to) a dead letter reference.
+   * =======
+   * Create an Actor with the given full path below the given supervisor.
+   *
+   * FIXME: Remove! this is dangerous!?
+   * >>>>>>> master
    */
   def actorFor(path: ActorPath): ActorRef
 
@@ -400,7 +407,12 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
   }
 }
 
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) extends Scheduler {
+/**
+ * Scheduled tasks (Runnable and functions) are executed with the supplied dispatcher.
+ * Note that dispatcher is by-name parameter, because dispatcher might not be initialized
+ * when the scheduler is created.
+ */
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
@@ -420,8 +432,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        // FIXME: consider executing runnable inside main dispatcher to prevent blocking of scheduler
-        runnable.run()
+        dispatcher.dispatchTask(() ⇒ runnable.run())
       }
     }
 
@@ -435,7 +446,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createSingleTask(f: () ⇒ Unit): TimerTask =
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        f()
+        dispatcher.dispatchTask(f)
       }
     }
 
@@ -447,7 +458,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
           receiver ! message
           timeout.getTimer.newTimeout(this, delay)
         } else {
-          system.eventStream.publish(Warning(this.getClass.getSimpleName, "Could not reschedule message to be sent because receiving actor has been terminated."))
+          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
         }
       }
     }
@@ -456,13 +467,13 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, system: ActorSystem) 
   private def createContinuousTask(f: () ⇒ Unit, delay: Duration): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        f()
+        dispatcher.dispatchTask(f)
         timeout.getTimer.newTimeout(this, delay)
       }
     }
   }
 
-  private[akka] def stop() = hashedWheelTimer.stop()
+  def close() = hashedWheelTimer.stop()
 }
 
 class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {

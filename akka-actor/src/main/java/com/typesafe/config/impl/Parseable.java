@@ -17,6 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -39,6 +40,7 @@ import com.typesafe.config.ConfigValue;
 public abstract class Parseable implements ConfigParseable {
     private ConfigIncludeContext includeContext;
     private ConfigParseOptions initialOptions;
+    private ConfigOrigin initialOrigin;
 
     protected Parseable() {
 
@@ -54,9 +56,6 @@ public abstract class Parseable implements ConfigParseable {
         }
         ConfigParseOptions modified = baseOptions.setSyntax(syntax);
 
-        if (modified.getOriginDescription() == null)
-            modified = modified.setOriginDescription(originDescription());
-
         modified = modified.appendIncluder(ConfigImpl.defaultIncluder());
 
         return modified;
@@ -71,6 +70,11 @@ public abstract class Parseable implements ConfigParseable {
                 return Parseable.this.relativeTo(filename);
             }
         };
+
+        if (initialOptions.getOriginDescription() != null)
+            initialOrigin = SimpleConfigOrigin.newSimple(initialOptions.getOriginDescription());
+        else
+            initialOrigin = createOrigin();
     }
 
     // the general idea is that any work should be in here, not in the
@@ -108,39 +112,54 @@ public abstract class Parseable implements ConfigParseable {
         return forceParsedToObject(parseValue(baseOptions));
     }
 
-    AbstractConfigValue parseValue(ConfigParseOptions baseOptions) {
-        // note that we are NOT using our "options" and "origin" fields,
+    final AbstractConfigValue parseValue(ConfigParseOptions baseOptions) {
+        // note that we are NOT using our "initialOptions",
         // but using the ones from the passed-in options. The idea is that
         // callers can get our original options and then parse with different
         // ones if they want.
         ConfigParseOptions options = fixupOptions(baseOptions);
-        ConfigOrigin origin = new SimpleConfigOrigin(
-                options.getOriginDescription());
+
+        // passed-in options can override origin
+        ConfigOrigin origin;
+        if (options.getOriginDescription() != null)
+            origin = SimpleConfigOrigin.newSimple(options.getOriginDescription());
+        else
+            origin = initialOrigin;
         return parseValue(origin, options);
     }
 
-    protected AbstractConfigValue parseValue(ConfigOrigin origin,
+    final private AbstractConfigValue parseValue(ConfigOrigin origin,
             ConfigParseOptions finalOptions) {
         try {
-            Reader reader = reader();
-            try {
-                if (finalOptions.getSyntax() == ConfigSyntax.PROPERTIES) {
-                    return PropertiesParser.parse(reader, origin);
-                } else {
-                    Iterator<Token> tokens = Tokenizer.tokenize(origin, reader,
-                            finalOptions.getSyntax());
-                    return Parser.parse(tokens, origin, finalOptions,
-                            includeContext());
-                }
-            } finally {
-                reader.close();
-            }
+            return rawParseValue(origin, finalOptions);
         } catch (IOException e) {
             if (finalOptions.getAllowMissing()) {
                 return SimpleConfigObject.emptyMissing(origin);
             } else {
                 throw new ConfigException.IO(origin, e.getMessage(), e);
             }
+        }
+    }
+
+    // this is parseValue without post-processing the IOException or handling
+    // options.getAllowMissing()
+    protected AbstractConfigValue rawParseValue(ConfigOrigin origin, ConfigParseOptions finalOptions)
+            throws IOException {
+        Reader reader = reader();
+        try {
+            return rawParseValue(reader, origin, finalOptions);
+        } finally {
+            reader.close();
+        }
+    }
+
+    protected AbstractConfigValue rawParseValue(Reader reader, ConfigOrigin origin,
+            ConfigParseOptions finalOptions) throws IOException {
+        if (finalOptions.getSyntax() == ConfigSyntax.PROPERTIES) {
+            return PropertiesParser.parse(reader, origin);
+        } else {
+            Iterator<Token> tokens = Tokenizer.tokenize(origin, reader, finalOptions.getSyntax());
+            return Parser.parse(tokens, origin, finalOptions, includeContext());
         }
     }
 
@@ -152,12 +171,12 @@ public abstract class Parseable implements ConfigParseable {
         return parseValue(options());
     }
 
-    abstract String originDescription();
-
     @Override
-    public URL url() {
-        return null;
+    public final ConfigOrigin origin() {
+        return initialOrigin;
     }
+
+    protected abstract ConfigOrigin createOrigin();
 
     @Override
     public ConfigParseOptions options() {
@@ -228,32 +247,18 @@ public abstract class Parseable implements ConfigParseable {
         }
     }
 
-    private final static class ParseableInputStream extends Parseable {
-        final private InputStream input;
+    static File relativeTo(File file, String filename) {
+        File child = new File(filename);
 
-        ParseableInputStream(InputStream input, ConfigParseOptions options) {
-            this.input = input;
-            postConstruct(options);
-        }
+        if (child.isAbsolute())
+            return null;
 
-        @Override
-        protected Reader reader() {
-            return doNotClose(readerFromStream(input));
-        }
+        File parent = file.getParentFile();
 
-        @Override
-        String originDescription() {
-            return "InputStream";
-        }
-    }
-
-    /**
-     * note that we will never close this stream; you have to do it when parsing
-     * is complete.
-     */
-    public static Parseable newInputStream(InputStream input,
-            ConfigParseOptions options) {
-        return new ParseableInputStream(input, options);
+        if (parent == null)
+            return null;
+        else
+            return new File(parent, filename);
     }
 
     private final static class ParseableReader extends Parseable {
@@ -270,8 +275,8 @@ public abstract class Parseable implements ConfigParseable {
         }
 
         @Override
-        String originDescription() {
-            return "Reader";
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newSimple("Reader");
         }
     }
 
@@ -297,8 +302,8 @@ public abstract class Parseable implements ConfigParseable {
         }
 
         @Override
-        String originDescription() {
-            return "String";
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newSimple("String");
         }
     }
 
@@ -335,13 +340,8 @@ public abstract class Parseable implements ConfigParseable {
         }
 
         @Override
-        String originDescription() {
-            return input.toExternalForm();
-        }
-
-        @Override
-        public URL url() {
-            return input;
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newURL(input);
         }
 
         @Override
@@ -352,7 +352,13 @@ public abstract class Parseable implements ConfigParseable {
     }
 
     public static Parseable newURL(URL input, ConfigParseOptions options) {
-        return new ParseableURL(input, options);
+        // we want file: URLs and files to always behave the same, so switch
+        // to a file if it's a file: URL
+        if (input.getProtocol().equals("file")) {
+            return newFile(ConfigUtil.urlToFile(input), options);
+        } else {
+            return new ParseableURL(input, options);
+        }
     }
 
     private final static class ParseableFile extends Parseable {
@@ -376,28 +382,33 @@ public abstract class Parseable implements ConfigParseable {
 
         @Override
         ConfigParseable relativeTo(String filename) {
-            try {
-                URL url = relativeTo(input.toURI().toURL(), filename);
-                if (url == null)
-                    return null;
-                return newURL(url, options().setOriginDescription(null));
-            } catch (MalformedURLException e) {
+            File sibling;
+            if ((new File(filename)).isAbsolute()) {
+                sibling = new File(filename);
+            } else {
+                // this may return null
+                sibling = relativeTo(input, filename);
+            }
+            if (sibling == null)
                 return null;
+            if (sibling.exists()) {
+                return newFile(sibling, options().setOriginDescription(null));
+            } else {
+                // fall back to classpath; we treat the "filename" as absolute
+                // (don't add a package name in front),
+                // if it starts with "/" then remove the "/", for consistency
+                // with ParseableResources.relativeTo
+                String resource = filename;
+                if (filename.startsWith("/"))
+                    resource = filename.substring(1);
+                return newResources(this.getClass().getClassLoader(), resource, options()
+                        .setOriginDescription(null));
             }
         }
 
         @Override
-        String originDescription() {
-            return input.getPath();
-        }
-
-        @Override
-        public URL url() {
-            try {
-                return input.toURI().toURL();
-            } catch (MalformedURLException e) {
-                return null;
-            }
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newFile(input.getPath());
         }
 
         @Override
@@ -410,25 +421,61 @@ public abstract class Parseable implements ConfigParseable {
         return new ParseableFile(input, options);
     }
 
-    private final static class ParseableResource extends Parseable {
-        final private Class<?> klass;
+    private final static class ParseableResources extends Parseable {
+        final private ClassLoader loader;
         final private String resource;
 
-        ParseableResource(Class<?> klass, String resource,
+        ParseableResources(ClassLoader loader, String resource,
                 ConfigParseOptions options) {
-            this.klass = klass;
+            this.loader = loader;
             this.resource = resource;
             postConstruct(options);
         }
 
         @Override
         protected Reader reader() throws IOException {
-            InputStream stream = klass.getResourceAsStream(resource);
-            if (stream == null) {
-                throw new IOException("resource not found on classpath: "
-                        + resource);
+            throw new ConfigException.BugOrBroken(
+                    "reader() should not be called on resources");
+        }
+
+        @Override
+        protected AbstractConfigObject rawParseValue(ConfigOrigin origin,
+                ConfigParseOptions finalOptions) throws IOException {
+            Enumeration<URL> e = loader.getResources(resource);
+            if (!e.hasMoreElements()) {
+                throw new IOException("resource not found on classpath: " + resource);
             }
-            return readerFromStream(stream);
+            AbstractConfigObject merged = SimpleConfigObject.empty(origin);
+            while (e.hasMoreElements()) {
+                URL url = e.nextElement();
+
+                ConfigOrigin elementOrigin = ((SimpleConfigOrigin) origin).addURL(url);
+
+                AbstractConfigValue v;
+
+                // it's tempting to use ParseableURL here but it would be wrong
+                // because the wrong relativeTo() would be used for includes.
+                InputStream stream = url.openStream();
+                try {
+                    Reader reader = readerFromStream(stream);
+                    stream = null; // reader now owns it
+                    try {
+                        // parse in "raw" mode which will throw any IOException
+                        // from here.
+                        v = rawParseValue(reader, elementOrigin, finalOptions);
+                    } finally {
+                        reader.close();
+                    }
+                } finally {
+                    // stream is null if the reader owns it
+                    if (stream != null)
+                        stream.close();
+                }
+
+                merged = merged.withFallback(v);
+            }
+
+            return merged;
         }
 
         @Override
@@ -436,48 +483,86 @@ public abstract class Parseable implements ConfigParseable {
             return syntaxFromExtension(resource);
         }
 
-        @Override
-        ConfigParseable relativeTo(String filename) {
-            // not using File.isAbsolute because resource paths always use '/'
-            // (?)
-            if (filename.startsWith("/"))
+        static String parent(String resource) {
+            // the "resource" is not supposed to begin with a "/"
+            // because it's supposed to be the raw resource
+            // (ClassLoader#getResource), not the
+            // resource "syntax" (Class#getResource)
+            int i = resource.lastIndexOf('/');
+            if (i < 0) {
                 return null;
+            } else {
+                return resource.substring(0, i);
+            }
+        }
 
-            // here we want to build a new resource name and let
-            // the class loader have it, rather than getting the
-            // url with getResource() and relativizing to that url.
-            // This is needed in case the class loader is going to
-            // search a classpath.
-            File parent = new File(resource).getParentFile();
-            if (parent == null)
-                return newResource(klass, "/" + filename, options()
-                        .setOriginDescription(null));
-            else
-                return newResource(klass, new File(parent, filename).getPath(),
+        @Override
+        ConfigParseable relativeTo(String sibling) {
+            if (sibling.startsWith("/")) {
+                // if it starts with "/" then don't make it relative to
+                // the including resource
+                return newResources(loader, sibling.substring(1),
                         options().setOriginDescription(null));
+            } else {
+                // here we want to build a new resource name and let
+                // the class loader have it, rather than getting the
+                // url with getResource() and relativizing to that url.
+                // This is needed in case the class loader is going to
+                // search a classpath.
+                String parent = parent(resource);
+                if (parent == null)
+                    return newResources(loader, sibling, options().setOriginDescription(null));
+                else
+                    return newResources(loader, parent + "/" + sibling, options()
+                            .setOriginDescription(null));
+            }
         }
 
         @Override
-        String originDescription() {
-            return resource + " on classpath";
-        }
-
-        @Override
-        public URL url() {
-            return klass.getResource(resource);
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newResource(resource);
         }
 
         @Override
         public String toString() {
             return getClass().getSimpleName() + "(" + resource + ","
-                    + klass.getName()
-                    + ")";
+                    + loader.getClass().getSimpleName() + ")";
         }
     }
 
-    public static Parseable newResource(Class<?> klass, String resource,
+    public static Parseable newResources(Class<?> klass, String resource,
             ConfigParseOptions options) {
-        return new ParseableResource(klass, resource, options);
+        return newResources(klass.getClassLoader(), convertResourceName(klass, resource), options);
+    }
+
+    // this function is supposed to emulate the difference
+    // between Class.getResource and ClassLoader.getResource
+    // (unfortunately there doesn't seem to be public API for it).
+    // We're using it because the Class API is more limited,
+    // for example it lacks getResources(). So we want to be able to
+    // use ClassLoader directly.
+    private static String convertResourceName(Class<?> klass, String resource) {
+        if (resource.startsWith("/")) {
+            // "absolute" resource, chop the slash
+            return resource.substring(1);
+        } else {
+            String className = klass.getName();
+            int i = className.lastIndexOf('.');
+            if (i < 0) {
+                // no package
+                return resource;
+            } else {
+                // need to be relative to the package
+                String packageName = className.substring(0, i);
+                String packagePath = packageName.replace('.', '/');
+                return packagePath + "/" + resource;
+            }
+        }
+    }
+
+    public static Parseable newResources(ClassLoader loader, String resource,
+            ConfigParseOptions options) {
+        return new ParseableResources(loader, resource, options);
     }
 
     private final static class ParseableProperties extends Parseable {
@@ -495,7 +580,7 @@ public abstract class Parseable implements ConfigParseable {
         }
 
         @Override
-        protected AbstractConfigObject parseValue(ConfigOrigin origin,
+        protected AbstractConfigObject rawParseValue(ConfigOrigin origin,
                 ConfigParseOptions finalOptions) {
             return PropertiesParser.fromProperties(origin, props);
         }
@@ -506,13 +591,8 @@ public abstract class Parseable implements ConfigParseable {
         }
 
         @Override
-        String originDescription() {
-            return "properties";
-        }
-
-        @Override
-        public URL url() {
-            return null;
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newSimple("properties");
         }
 
         @Override

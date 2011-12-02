@@ -3,15 +3,19 @@
  */
 package com.typesafe.config;
 
+
 /**
  * All exceptions thrown by the library are subclasses of ConfigException.
  */
-public class ConfigException extends RuntimeException {
+public abstract class ConfigException extends RuntimeException {
     private static final long serialVersionUID = 1L;
+
+    final private ConfigOrigin origin;
 
     protected ConfigException(ConfigOrigin origin, String message,
             Throwable cause) {
         super(origin.description() + ": " + message, cause);
+        this.origin = origin;
     }
 
     protected ConfigException(ConfigOrigin origin, String message) {
@@ -20,10 +24,24 @@ public class ConfigException extends RuntimeException {
 
     protected ConfigException(String message, Throwable cause) {
         super(message, cause);
+        this.origin = null;
     }
 
     protected ConfigException(String message) {
         this(message, null);
+    }
+
+    /**
+     * Returns an "origin" (such as a filename and line number) for the
+     * exception, or null if none is available. If there's no sensible origin
+     * for a given exception, or the kind of exception doesn't meaningfully
+     * relate to a particular origin file, this returns null. Never assume this
+     * will return non-null, it can always return null.
+     *
+     * @return origin of the problem, or null if unknown/inapplicable
+     */
+    public ConfigOrigin origin() {
+        return origin;
     }
 
     /**
@@ -134,6 +152,11 @@ public class ConfigException extends RuntimeException {
         }
     }
 
+    /**
+     * Exception indicating that a path expression was invalid. Try putting
+     * double quotes around path elements that contain "special" characters.
+     *
+     */
     public static class BadPath extends ConfigException {
         private static final long serialVersionUID = 1L;
 
@@ -163,10 +186,11 @@ public class ConfigException extends RuntimeException {
     }
 
     /**
-     * Exception indicating that there's a bug in something or the runtime
-     * environment is broken. This exception should never be handled; instead,
-     * something should be fixed to keep the exception from occurring.
-     *
+     * Exception indicating that there's a bug in something (possibly the
+     * library itself) or the runtime environment is broken. This exception
+     * should never be handled; instead, something should be fixed to keep the
+     * exception from occurring. This exception can be thrown by any method in
+     * the library.
      */
     public static class BugOrBroken extends ConfigException {
         private static final long serialVersionUID = 1L;
@@ -213,11 +237,28 @@ public class ConfigException extends RuntimeException {
     }
 
     /**
+     * Exception indicating that a substitution did not resolve to anything.
+     * Thrown by {@link Config#resolve}.
+     */
+    public static class UnresolvedSubstitution extends Parse {
+        private static final long serialVersionUID = 1L;
+
+        public UnresolvedSubstitution(ConfigOrigin origin, String expression, Throwable cause) {
+            super(origin, "Could not resolve substitution to a value: " + expression, cause);
+        }
+
+        public UnresolvedSubstitution(ConfigOrigin origin, String expression) {
+            this(origin, expression, null);
+        }
+    }
+
+    /**
      * Exception indicating that you tried to use a function that requires
-     * substitutions to be resolved, but substitutions have not been resolved.
-     * This is always a bug in either application code or the library; it's
-     * wrong to write a handler for this exception because you should be able to
-     * fix the code to avoid it.
+     * substitutions to be resolved, but substitutions have not been resolved
+     * (that is, {@link Config#resolve} was not called). This is always a bug in
+     * either application code or the library; it's wrong to write a handler for
+     * this exception because you should be able to fix the code to avoid it by
+     * adding calls to {@link Config#resolve}.
      */
     public static class NotResolved extends BugOrBroken {
         private static final long serialVersionUID = 1L;
@@ -230,4 +271,92 @@ public class ConfigException extends RuntimeException {
             this(message, null);
         }
     }
+
+    /**
+     * Information about a problem that occurred in {@link Config#checkValid}. A
+     * {@link ConfigException.ValidationFailed} exception thrown from
+     * <code>checkValid()</code> includes a list of problems encountered.
+     */
+    public static class ValidationProblem {
+
+        final private String path;
+        final private ConfigOrigin origin;
+        final private String problem;
+
+        public ValidationProblem(String path, ConfigOrigin origin, String problem) {
+            this.path = path;
+            this.origin = origin;
+            this.problem = problem;
+        }
+
+        /** Returns the config setting causing the problem. */
+        public String path() {
+            return path;
+        }
+
+        /**
+         * Returns where the problem occurred (origin may include info on the
+         * file, line number, etc.).
+         */
+        public ConfigOrigin origin() {
+            return origin;
+        }
+
+        /** Returns a description of the problem. */
+        public String problem() {
+            return problem;
+        }
+    }
+
+    /**
+     * Exception indicating that {@link Config#checkValid} found validity
+     * problems. The problems are available via the {@link #problems()} method.
+     * The <code>getMessage()</code> of this exception is a potentially very
+     * long string listing all the problems found.
+     */
+    public static class ValidationFailed extends ConfigException {
+        private static final long serialVersionUID = 1L;
+
+        final private Iterable<ValidationProblem> problems;
+
+        public ValidationFailed(Iterable<ValidationProblem> problems) {
+            super(makeMessage(problems), null);
+            this.problems = problems;
+        }
+
+        public Iterable<ValidationProblem> problems() {
+            return problems;
+        }
+
+        private static String makeMessage(Iterable<ValidationProblem> problems) {
+            StringBuilder sb = new StringBuilder();
+            for (ValidationProblem p : problems) {
+                sb.append(p.origin().description());
+                sb.append(": ");
+                sb.append(p.path());
+                sb.append(": ");
+                sb.append(p.problem());
+                sb.append(", ");
+            }
+            sb.setLength(sb.length() - 2); // chop comma and space
+
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Exception that doesn't fall into any other category.
+     */
+    public static class Generic extends ConfigException {
+        private static final long serialVersionUID = 1L;
+
+        public Generic(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public Generic(String message) {
+            this(message, null);
+        }
+    }
+
 }

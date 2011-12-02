@@ -11,6 +11,10 @@ import java.util.concurrent.atomic._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
+  def startWatching(target: ActorRef) = actorOf(Props(new Actor {
+    watch(target)
+    def receive = { case x ⇒ testActor forward x }
+  }))
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
@@ -19,8 +23,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
-
-      testActor startsWatching terminal
+      startWatching(terminal)
 
       testActor ! "ping"
       expectMsg("ping")
@@ -32,11 +35,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
-      val monitor1, monitor2, monitor3 =
-        actorOf(Props(new Actor {
-          watch(terminal)
-          def receive = { case t: Terminated ⇒ testActor ! t }
-        }))
+      val monitor1, monitor2, monitor3 = startWatching(terminal)
 
       terminal ! PoisonPill
 
@@ -51,11 +50,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
-      val monitor1, monitor3 =
-        actorOf(Props(new Actor {
-          watch(terminal)
-          def receive = { case t: Terminated ⇒ testActor ! t }
-        }))
+      val monitor1, monitor3 = startWatching(terminal)
       val monitor2 = actorOf(Props(new Actor {
         watch(terminal)
         unwatch(terminal)
@@ -85,10 +80,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
         val terminal = (supervisor ? terminalProps).as[ActorRef].get
 
-        val monitor = actorOf(Props(new Actor {
-          watch(terminal)
-          def receive = { case t: Terminated ⇒ testActor ! t }
-        }))
+        val monitor = startWatching(terminal)
 
         terminal ! Kill
         terminal ! Kill
@@ -113,9 +105,13 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
             }
           }))
 
-        val failed, brother = (supervisor ? Props.empty).as[ActorRef].get
-        brother startsWatching failed
-        testActor startsWatching brother
+        val failed = (supervisor ? Props.empty).as[ActorRef].get
+        val brother = (supervisor ? Props(new Actor {
+          watch(failed)
+          def receive = Actor.emptyBehavior
+        })).as[ActorRef].get
+
+        startWatching(brother)
 
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {

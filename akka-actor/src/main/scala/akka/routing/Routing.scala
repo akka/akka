@@ -9,11 +9,11 @@ import akka.actor._
 import akka.config.ConfigurationException
 import akka.dispatch.{ Future, MessageDispatcher }
 import akka.util.{ ReflectiveAccess, Duration }
-import java.net.InetSocketAddress
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 import scala.annotation.tailrec
+import akka.japi.Creator
 
 sealed trait RouterType
 
@@ -76,6 +76,12 @@ case class RoutedProps private[akka] (
   connectionManager: ConnectionManager,
   timeout: Timeout = RoutedProps.defaultTimeout,
   localOnly: Boolean = RoutedProps.defaultLocalOnly) {
+
+  // Java API
+  def this(creator: Creator[Router], connectionManager: ConnectionManager, timeout: Timeout, localOnly: Boolean) {
+    this(() ⇒ creator.create(), connectionManager, timeout, localOnly)
+  }
+
 }
 
 object RoutedProps {
@@ -245,7 +251,7 @@ trait BasicRouter extends Router {
       next match {
         case Some(connection) ⇒
           try {
-            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it?
+            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it??
           } catch {
             case e: Exception ⇒
               connectionManager.remove(connection)

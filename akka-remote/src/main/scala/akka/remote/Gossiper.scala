@@ -15,6 +15,7 @@ import akka.config.ConfigurationException
 import akka.serialization.SerializationExtension
 
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit.SECONDS
 import java.security.SecureRandom
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
@@ -122,19 +123,15 @@ class Gossiper(remote: Remote) {
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
-  private val initalDelayForGossip = 5 seconds // FIXME make configurable
-  private val gossipFrequency = 1 seconds // FIXME make configurable
-  private val timeUnit = {
-    assert(gossipFrequency.unit == initalDelayForGossip.unit)
-    initalDelayForGossip.unit
-  }
+  private val initalDelayForGossip = remoteExtension.InitalDelayForGossip
+  private val gossipFrequency = remoteExtension.GossipFrequency
 
   private val state = new AtomicReference[State](State(currentGossip = newGossip()))
 
   {
     // start periodic gossip and cluster scrutinization - default is run them every second with 1/2 second in between
-    system.scheduler schedule (() ⇒ initateGossip(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
-    system.scheduler schedule (() ⇒ scrutinize(), Duration(initalDelayForGossip.toSeconds, timeUnit), Duration(gossipFrequency.toSeconds, timeUnit))
+    system.scheduler schedule (() ⇒ initateGossip(), Duration(initalDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))
+    system.scheduler schedule (() ⇒ scrutinize(), Duration(initalDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))
   }
 
   /**

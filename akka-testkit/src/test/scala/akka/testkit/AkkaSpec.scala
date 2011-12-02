@@ -13,26 +13,25 @@ import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 
 object TimingTest extends Tag("timing")
 
 object AkkaSpec {
-  val testConf =
-    ActorSystem.DefaultConfigurationLoader.defaultConfig.withFallback(
-      ConfigFactory.parseString("""
+  val testConf = {
+    val cfg = ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         actor {
           default-dispatcher {
-            core-pool-size = 4
-            max-pool-size  = 32
+            core-pool-size-factor = 2
           }
         }
       }
-      """, ConfigParseOptions.defaults))
+      """)
+    ConfigFactory.load(cfg)
+  }
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -51,7 +50,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName, config.withFallback(AkkaSpec.testConf)))
 
-  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
+  def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
@@ -66,7 +65,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   final override def afterAll {
     system.stop()
     try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ system.log.warning("failed to stop within 5 seconds")
+      case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
   }
@@ -92,12 +91,11 @@ abstract class AkkaSpec(_system: ActorSystem)
 class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {
-      import ActorSystem.DefaultConfigurationLoader.defaultConfig
       import scala.collection.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(defaultConfig))
+      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }

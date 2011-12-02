@@ -4,6 +4,22 @@
 package com.typesafe.config;
 
 
+/**
+ * A set of options related to parsing.
+ *
+ * <p>
+ * This object is immutable, so the "setters" return a new object.
+ *
+ * <p>
+ * Here is an example of creating a custom {@code ConfigParseOptions}:
+ *
+ * <pre>
+ *     ConfigParseOptions options = ConfigParseOptions.defaults()
+ *         .setSyntax(ConfigSyntax.JSON)
+ *         .setAllowMissing(false)
+ * </pre>
+ *
+ */
 public final class ConfigParseOptions {
     final ConfigSyntax syntax;
     final String originDescription;
@@ -24,10 +40,11 @@ public final class ConfigParseOptions {
 
     /**
      * Set the file format. If set to null, try to guess from any available
-     * filename extension; if guessing fails, assume ConfigSyntax.CONF.
-     *
+     * filename extension; if guessing fails, assume {@link ConfigSyntax#CONF}.
+     * 
      * @param syntax
-     * @return
+     *            a syntax or {@code null} for best guess
+     * @return options with the syntax set
      */
     public ConfigParseOptions setSyntax(ConfigSyntax syntax) {
         if (this.syntax == syntax)
@@ -45,10 +62,11 @@ public final class ConfigParseOptions {
      * Set a description for the thing being parsed. In most cases this will be
      * set up for you to something like the filename, but if you provide just an
      * input stream you might want to improve on it. Set to null to allow the
-     * library to come up with something automatically.
+     * library to come up with something automatically. This description is the
+     * basis for the {@link ConfigOrigin} of the parsed values.
      *
      * @param originDescription
-     * @return
+     * @return options with the origin description set
      */
     public ConfigParseOptions setOriginDescription(String originDescription) {
         if (this.originDescription == originDescription)
@@ -79,7 +97,7 @@ public final class ConfigParseOptions {
      * case.
      *
      * @param allowMissing
-     * @return
+     * @return options with the "allow missing" flag set
      */
     public ConfigParseOptions setAllowMissing(boolean allowMissing) {
         if (this.allowMissing == allowMissing)

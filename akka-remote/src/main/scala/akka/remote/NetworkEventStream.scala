@@ -45,7 +45,7 @@ object NetworkEventStream {
       case event: RemoteClientLifeCycleEvent ⇒
         listeners(event.remoteAddress) foreach (_ notify event)
 
-      case event: RemoteServerLifeCycleEvent ⇒ // FIXME handle RemoteServerLifeCycleEvent
+      case event: RemoteServerLifeCycleEvent ⇒ // FIXME handle RemoteServerLifeCycleEvent, ticket #1408 and #1190
 
       case Register(listener, connectionAddress) ⇒
         listeners(connectionAddress) += listener
@@ -62,7 +62,7 @@ class NetworkEventStream(system: ActorSystemImpl) {
 
   import NetworkEventStream._
 
-  // FIXME: check that this supervision is correct
+  // FIXME: check that this supervision is correct, ticket #1408
   private[akka] val sender =
     system.systemActorOf(Props[Channel].copy(dispatcher = system.dispatcherFactory.newPinnedDispatcher("NetworkEventStream")),
       "network-event-sender")
