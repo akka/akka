@@ -297,7 +297,7 @@ class DefaultClusterNode private[akka] (
         :: Nil)).start()
 
   lazy val remoteService: RemoteSupport = {
-    val remote = new akka.cluster.netty.NettyRemoteSupport
+    val remote = new akka.remote.netty.NettyRemoteSupport
     remote.start(hostname, port)
     remote.register(RemoteClusterDaemon.Address, remoteDaemon)
     remote.addListener(RemoteFailureDetector.sender)

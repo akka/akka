@@ -9,7 +9,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import akka.cluster.netty.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteSupport
 import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
 
 import java.util.concurrent.CountDownLatch
