@@ -139,17 +139,8 @@ class ConfigDelayedMergeObject extends AbstractConfigObject implements
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DELAYED_MERGE_OBJECT");
-        sb.append("(");
-        for (Object s : stack) {
-            sb.append(s.toString());
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1); // chop comma
-        sb.append(")");
-        return sb.toString();
+    protected void render(StringBuilder sb, int indent, String atKey, boolean formatted) {
+        ConfigDelayedMerge.render(stack, sb, indent, atKey, formatted);
     }
 
     private static ConfigException notResolved() {

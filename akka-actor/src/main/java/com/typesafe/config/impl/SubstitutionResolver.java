@@ -16,6 +16,8 @@ import com.typesafe.config.ConfigResolveOptions;
  */
 final class SubstitutionResolver {
     final private AbstractConfigObject root;
+    // note that we can resolve things to undefined (represented as Java null,
+    // rather than ConfigNull) so this map can have null values.
     final private Map<AbstractConfigValue, AbstractConfigValue> memos;
 
     SubstitutionResolver(AbstractConfigObject root) {
@@ -31,9 +33,11 @@ final class SubstitutionResolver {
         } else {
             AbstractConfigValue resolved = original.resolveSubstitutions(this,
                     depth, options);
-            if (resolved.resolveStatus() != ResolveStatus.RESOLVED)
-                throw new ConfigException.BugOrBroken(
-                        "resolveSubstitutions() did not give us a resolved object");
+            if (resolved != null) {
+                if (resolved.resolveStatus() != ResolveStatus.RESOLVED)
+                    throw new ConfigException.BugOrBroken(
+                            "resolveSubstitutions() did not give us a resolved object");
+            }
             memos.put(original, resolved);
             return resolved;
         }

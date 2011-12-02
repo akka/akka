@@ -13,9 +13,10 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+import com.typesafe.config.ConfigResolveOptions
+import com.typesafe.config.ConfigException
 import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
@@ -43,17 +44,32 @@ object ActorSystem {
   def create(name: String, config: Config): ActorSystem = apply(name, config)
   def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
 
+  /**
+   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   */
   def create(name: String): ActorSystem = apply(name)
-  def apply(name: String): ActorSystem = apply(name, DefaultConfigurationLoader.defaultConfig)
+  /**
+   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   */
+  def apply(name: String): ActorSystem = apply(name, ConfigFactory.load())
 
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
   class Settings(cfg: Config) {
-    private def referenceConfig: Config =
-      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf",
-        ConfigParseOptions.defaults.setAllowMissing(false))
-    val config: ConfigRoot = ConfigFactory.emptyRoot("akka-actor").withFallback(cfg).withFallback(referenceConfig).resolve()
+
+    // Verify that the Config is sane and has our reference config.
+    val config: Config =
+      try {
+        cfg.checkValid(ConfigFactory.defaultReference, "akka")
+        cfg
+      } catch {
+        case e: ConfigException ⇒
+          // try again with added defaultReference
+          val cfg2 = cfg.withFallback(ConfigFactory.defaultReference)
+          cfg2.checkValid(ConfigFactory.defaultReference, "akka")
+          cfg2
+      }
 
     import scala.collection.JavaConverters._
     import config._
@@ -102,9 +118,13 @@ object ActorSystem {
 
   }
 
-  object DefaultConfigurationLoader {
+  // TODO move to migration kit
+  object OldConfigurationLoader {
 
-    val defaultConfig: Config = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+    val defaultConfig: Config = {
+      val cfg = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+      cfg.withFallback(ConfigFactory.defaultReference).resolve(ConfigResolveOptions.defaults)
+    }
 
     // file extensions (.conf, .json, .properties), are handled by parseFileAnySyntax
     val defaultLocation: String = (systemMode orElse envMode).map("akka." + _).getOrElse("akka")
@@ -130,7 +150,7 @@ object ActorSystem {
 
     private def fromClasspath = try {
       Option(ConfigFactory.systemProperties.withFallback(
-        ConfigFactory.parseResourceAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
+        ConfigFactory.parseResourcesAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
     } catch { case _ ⇒ None }
 
     private def fromHome = try {
@@ -273,7 +293,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
-class ActorSystemImpl(val name: String, val applicationConfig: Config) extends ActorSystem {
+class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
 
   import ActorSystem._
 

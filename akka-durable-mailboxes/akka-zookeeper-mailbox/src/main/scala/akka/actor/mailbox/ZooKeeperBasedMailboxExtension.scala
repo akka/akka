@@ -4,22 +4,15 @@
 package akka.actor.mailbox
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object ZooKeeperBasedMailboxExtension extends ExtensionId[ZooKeeperBasedMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new ZooKeeperBasedMailboxSettings(system.applicationConfig)
+  def createExtension(system: ActorSystemImpl) = new ZooKeeperBasedMailboxSettings(system.settings.config)
 }
-class ZooKeeperBasedMailboxSettings(cfg: Config) extends Extension {
-  private def referenceConfig: Config =
-    ConfigFactory.parseResource(classOf[ActorSystem], "/akka-zookeeper-mailbox-reference.conf",
-      ConfigParseOptions.defaults.setAllowMissing(false))
-  val config: ConfigRoot = ConfigFactory.emptyRoot("akka-zookeeper-mailbox").withFallback(cfg).withFallback(referenceConfig).resolve()
+class ZooKeeperBasedMailboxSettings(val config: Config) extends Extension {
 
   import config._
 

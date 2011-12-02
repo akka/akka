@@ -4,8 +4,9 @@
 package com.typesafe.config;
 
 /**
- * Interface you have to implement to customize "include" statements in config
- * files.
+ * Implement this interface and provide an instance to
+ * {@link ConfigParseOptions#setIncluder ConfigParseOptions.setIncluder()} to
+ * customize handling of {@code include} statements in config files.
  */
 public interface ConfigIncluder {
     /**
@@ -29,7 +30,7 @@ public interface ConfigIncluder {
      * Parses another item to be included. The returned object typically would
      * not have substitutions resolved. You can throw a ConfigException here to
      * abort parsing, or return an empty object, but may not return null.
-     * 
+     *
      * @param context
      *            some info about the include context
      * @param what

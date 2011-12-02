@@ -6,13 +6,12 @@ package akka.config
 
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 import scala.collection.JavaConverters._
 import akka.util.duration._
 import akka.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfigSpec extends AkkaSpec(ConfigFactory.parseResource(classOf[ConfigSpec], "/akka-actor-reference.conf", ConfigParseOptions.defaults)) {
+class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
   "The default configuration file (i.e. akka-actor-reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {

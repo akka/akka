@@ -110,7 +110,8 @@ final class Parser {
                 Token t = nextToken();
                 while (true) {
                     if (Tokens.isNewline(t)) {
-                        lineNumber = Tokens.getLineNumber(t);
+                        // newline number is the line just ended, so add one
+                        lineNumber = Tokens.getLineNumber(t) + 1;
                         sawSeparatorOrNewline = true;
                         // we want to continue to also eat
                         // a comma if there is one.
@@ -155,7 +156,7 @@ final class Parser {
                 return;
             }
 
-            // this will be a list of String and Path
+            // this will be a list of String and SubstitutionExpression
             List<Object> minimized = new ArrayList<Object>();
 
             // we have multiple value tokens or one unquoted text token;
@@ -187,7 +188,9 @@ final class Parser {
                             .getSubstitutionPathExpression(valueToken);
                     Path path = parsePathExpression(expression.iterator(),
                             Tokens.getSubstitutionOrigin(valueToken));
-                    minimized.add(path);
+                    boolean optional = Tokens.getSubstitutionOptional(valueToken);
+
+                    minimized.add(new SubstitutionExpression(path, optional));
                 } else {
                     throw new ConfigException.BugOrBroken(
                             "should not be trying to consolidate token: "
@@ -219,8 +222,7 @@ final class Parser {
         }
 
         private ConfigOrigin lineOrigin() {
-            return new SimpleConfigOrigin(baseOrigin.description() + ": line "
-                    + lineNumber);
+            return ((SimpleConfigOrigin) baseOrigin).setLineNumber(lineNumber);
         }
 
         private ConfigException parseError(String message) {
@@ -681,7 +683,7 @@ final class Parser {
         return pb.result();
     }
 
-    static ConfigOrigin apiOrigin = new SimpleConfigOrigin("path parameter");
+    static ConfigOrigin apiOrigin = SimpleConfigOrigin.newSimple("path parameter");
 
     static Path parsePath(String path) {
         Path speculated = speculativeFastParsePath(path);

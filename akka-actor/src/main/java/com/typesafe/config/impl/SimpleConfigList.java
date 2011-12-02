@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigOrigin;
 import com.typesafe.config.ConfigResolveOptions;
@@ -68,8 +67,9 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
             }
 
             // once the new list is created, all elements
-            // have to go in it.
-            if (changed != null) {
+            // have to go in it. if modifyChild returned
+            // null, we drop that element.
+            if (changed != null && modified != null) {
                 changed.add(modified);
             }
 
@@ -77,9 +77,6 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
         }
 
         if (changed != null) {
-            if (changed.size() != value.size())
-                throw new ConfigException.BugOrBroken(
-                        "substituted list's size doesn't match");
             return new SimpleConfigList(origin(), changed, newResolveStatus);
         } else {
             return this;
@@ -135,18 +132,34 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(valueType().name());
-        sb.append("(");
-        for (ConfigValue e : value) {
-            sb.append(e.toString());
-            sb.append(",");
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
+        if (value.isEmpty()) {
+            sb.append("[]");
+        } else {
+            sb.append("[");
+            if (formatted)
+                sb.append('\n');
+            for (AbstractConfigValue v : value) {
+                if (formatted) {
+                    indent(sb, indent + 1);
+                    sb.append("# ");
+                    sb.append(v.origin().description());
+                    sb.append("\n");
+                    indent(sb, indent + 1);
+                }
+                v.render(sb, indent + 1, formatted);
+                sb.append(",");
+                if (formatted)
+                    sb.append('\n');
+            }
+            sb.setLength(sb.length() - 1); // chop or newline
+            if (formatted) {
+                sb.setLength(sb.length() - 1); // also chop comma
+                sb.append('\n');
+                indent(sb, indent);
+            }
+            sb.append("]");
         }
-        if (!value.isEmpty())
-            sb.setLength(sb.length() - 1); // chop comma
-        sb.append(")");
-        return sb.toString();
     }
 
     @Override
@@ -160,7 +173,7 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     }
 
     @Override
-    public ConfigValue get(int index) {
+    public AbstractConfigValue get(int index) {
         return value.get(index);
     }
 

@@ -9,7 +9,6 @@ import akka.dispatch._
 import akka.testkit.AkkaSpec
 import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec {
@@ -41,7 +40,7 @@ class DispatchersSpec extends AkkaSpec {
           throughput = 17
         }
       }
-      """, ConfigParseOptions.defaults)
+      """)
 
   lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
     validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t).asJava).withFallback(defaultDispatcherConfig)))).toMap
