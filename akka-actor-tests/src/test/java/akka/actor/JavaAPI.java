@@ -2,21 +2,36 @@ package akka.actor;
 
 import akka.actor.ActorSystem;
 import akka.japi.Creator;
+import akka.testkit.AkkaSpec;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class JavaAPI {
 
-  private ActorSystem system = ActorSystem.create();
+  private static ActorSystem system;
+
+  @BeforeClass
+  public static void beforeAll() {
+    system = ActorSystem.create("JavaAPI", AkkaSpec.testConf());
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    system.stop();
+    system = null;
+  }
 
   @Test
-  void mustBeAbleToCreateActorRefFromClass() {
+  public void mustBeAbleToCreateActorRefFromClass() {
     ActorRef ref = system.actorOf(JavaAPITestActor.class);
     assertNotNull(ref);
   }
 
   @Test
-  void mustBeAbleToCreateActorRefFromFactory() {
+  public void mustBeAbleToCreateActorRefFromFactory() {
     ActorRef ref = system.actorOf(new Props().withCreator(new Creator<Actor>() {
       public Actor create() {
         return new JavaAPITestActor();
@@ -26,7 +41,7 @@ public class JavaAPI {
   }
 
   @Test
-  void mustAcceptSingleArgTell() {
+  public void mustAcceptSingleArgTell() {
     ActorRef ref = system.actorOf(JavaAPITestActor.class);
     ref.tell("hallo");
     ref.tell("hallo", ref);

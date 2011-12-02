@@ -7,7 +7,8 @@ import org.junit.Test;
 
 public class JavaDuration {
 
-  @Test void testCreation() {
+  @Test
+  public void testCreation() {
     final Duration fivesec = Duration.create(5, "seconds");
     final Duration threemillis = Duration.parse("3 millis");
     final Duration diff = fivesec.minus(threemillis);

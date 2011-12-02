@@ -92,7 +92,7 @@ class TestKit(_system: ActorSystem) {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = {
+  lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     impl.systemActorOf(Props(new TestActor(queue))
       .copy(dispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites)),

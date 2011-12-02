@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
+import java.io.Closeable
 
 object ActorSystem {
 
@@ -378,8 +379,11 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
+    try terminationFuture.await(10 seconds) catch {
+      case _: FutureTimeoutException ⇒ log.warning("Failed to stop [{}] within 10 seconds", name)
+    }
+    // Dispatchers shutdown themselves, but requires the scheduler
     terminationFuture onComplete (_ ⇒ stopScheduler())
-    terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
   }
 
   protected def createScheduler(): Scheduler = {
@@ -400,8 +404,11 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   protected def stopScheduler(): Unit = scheduler match {
-    case x: DefaultScheduler ⇒ x.stop()
-    case _                   ⇒
+    case x: Closeable ⇒
+      // Let dispatchers shutdown first.
+      // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
+      x.scheduleOnce(() ⇒ { x.close(); dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
+    case _ ⇒
   }
 
   private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]

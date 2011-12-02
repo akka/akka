@@ -5,15 +5,20 @@ package akka.tutorial.first.scala
 
 import org.junit.runner.RunWith
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpec
 import akka.testkit.TestActorRef
 import akka.tutorial.first.scala.Pi.Worker
 import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class WorkerSpec extends WordSpec with MustMatchers {
+class WorkerSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  implicit def system = ActorSystem()
+  implicit val system = ActorSystem()
+
+  override def afterAll {
+    system.stop()
+  }
 
   "Worker" must {
     "calculate pi correctly" in {

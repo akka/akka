@@ -1,5 +1,8 @@
 package akka.stm.example;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 import akka.actor.ActorSystem;
 import akka.stm.*;
 import akka.actor.*;
@@ -7,11 +10,8 @@ import akka.testkit.AkkaSpec;
 
 public class RetryExample {
   public static void main(String[] args) {
-    System.out.println();
-    System.out.println("Retry example");
-    System.out.println();
 
-        ActorSystem application = ActorSystem.create("RetryExample", AkkaSpec.testConf());
+    ActorSystem application = ActorSystem.create("RetryExample", AkkaSpec.testConf());
 
     final Ref<Double> account1 = new Ref<Double>(100.0);
     final Ref<Double> account2 = new Ref<Double>(100.0);
@@ -47,5 +47,7 @@ public class RetryExample {
     // Account 2: 600.0
 
     transferer.stop();
+
+    application.stop();
   }
 }
