@@ -28,6 +28,10 @@ depending on the configuration of the actor system:
   actors within the same JVM. In order to be recognizable also when sent to 
   other network nodes, these references include protocol and remote addressing 
   information.
+- There is a subtype of local actor references which is used for routers (i.e.  
+  actors mixing in the :class:`Router` trait). Its logical structure is the 
+  same as for the aforementioned local references, but sending a message to 
+  them dispatches to one of their children directly instead.
 - Remote actor references represent actors which are reachable using remote 
   communication, i.e. sending messages to them will serialize the messages 
   transparently and send them to the other JVM.
@@ -246,15 +250,19 @@ Special Paths used by Akka
 At the root of the path hierarchy resides the root guardian above which all 
 other actors are found. The next level consists of the following:
 
-- ``"/app"`` is the guardian actor for all user-created top-level actors; 
+- ``"/user"`` is the guardian actor for all user-created top-level actors; 
   actors created using :meth:`ActorSystem.actorOf` are found at the next level.
-- ``"/sys"`` is the guardian actor for all system-created top-level actors, 
+- ``"/system"`` is the guardian actor for all system-created top-level actors, 
   e.g. logging listeners or actors automatically deployed by configuration at 
   the start of the actor system.
-- ``"/nil"`` is the dead letter actor, which is where all messages sent to 
+- ``"/null"`` is the dead letter actor, which is where all messages sent to 
   stopped or non-existing actors are re-routed.
-- ``"/tmp"`` is the guardian for all short-lived system-created actors, e.g.  
+- ``"/temp"`` is the guardian for all short-lived system-created actors, e.g.  
   those which are used in the implementation of :meth:`ActorRef.ask`.
 - ``"/remote"`` is an artificial path below which all actors reside whose 
   supervisors are remote actor references
+- ``"/service"`` is an artificial path below which actors can be presented by 
+  means of configuration, i.e. deployed at system start-up or just-in-time 
+  (triggered by look-up) or “mounting” other actors by path—local or remote—to 
+  give them logical names.
 

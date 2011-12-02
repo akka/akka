@@ -14,59 +14,59 @@ import com.typesafe.config.ConfigParseOptions
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
       akka.actor.deployment {
-        /app/service1 {
+        /user/service1 {
         }
-        /app/service2 {
+        /user/service2 {
           router = round-robin
           nr-of-instances = 3
           remote {
             nodes = ["wallace:2552", "gromit:2552"]
           }
         }
-        /app/service3 {
+        /user/service3 {
           create-as {
             class = "akka.actor.DeployerSpec$RecipeActor"
           }
         }
-        /app/service-auto {
+        /user/service-auto {
           router = round-robin
           nr-of-instances = auto
         }
-        /app/service-direct {
+        /user/service-direct {
           router = direct
         }
-        /app/service-direct2 {
+        /user/service-direct2 {
           router = direct
           # nr-of-instances ignored when router = direct
           nr-of-instances = 2
         }
-        /app/service-round-robin {
+        /user/service-round-robin {
           router = round-robin
         }
-        /app/service-random {
+        /user/service-random {
           router = random
         }
-        /app/service-scatter-gather {
+        /user/service-scatter-gather {
           router = scatter-gather
         }
-        /app/service-least-cpu {
+        /user/service-least-cpu {
           router = least-cpu
         }
-        /app/service-least-ram {
+        /user/service-least-ram {
           router = least-ram
         }
-        /app/service-least-messages {
+        /user/service-least-messages {
           router = least-messages
         }
-        /app/service-custom {
+        /user/service-custom {
           router = org.my.Custom
         }
-        /app/service-cluster1 {
+        /user/service-cluster1 {
           cluster {
             preferred-nodes = ["node:wallace", "node:gromit"]
           }
         }
-        /app/service-cluster2 {
+        /user/service-cluster2 {
           cluster {
             preferred-nodes = ["node:wallace", "node:gromit"]
             replication {
@@ -89,7 +89,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
   "A Deployer" must {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
-      val service = "/app/service1"
+      val service = "/user/service1"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)
 
@@ -103,13 +103,13 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "use None deployment for undefined service" in {
-      val service = "/app/undefined"
+      val service = "/user/undefined"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be(None)
     }
 
     "be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
-      val service = "/app/service2"
+      val service = "/user/service2"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)
 
@@ -124,7 +124,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with recipe" in {
-      val service = "/app/service3"
+      val service = "/user/service3"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)
 
@@ -138,7 +138,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with number-of-instances=auto" in {
-      val service = "/app/service-auto"
+      val service = "/user/service-auto"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)
 
@@ -155,7 +155,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       intercept[akka.config.ConfigurationException] {
         val invalidDeployerConf = ConfigFactory.parseString("""
             akka.actor.deployment {
-              /app/service-invalid-number-of-instances {
+              /user/service-invalid-number-of-instances {
                 router = round-robin
                 nr-of-instances = boom
               }
@@ -167,38 +167,38 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with direct router" in {
-      assertRouting(Direct, "/app/service-direct")
+      assertRouting(Direct, "/user/service-direct")
     }
 
     "ignore nr-of-instances with direct router" in {
-      assertRouting(Direct, "/app/service-direct2")
+      assertRouting(Direct, "/user/service-direct2")
     }
 
     "be able to parse 'akka.actor.deployment._' with round-robin router" in {
-      assertRouting(RoundRobin, "/app/service-round-robin")
+      assertRouting(RoundRobin, "/user/service-round-robin")
     }
 
     "be able to parse 'akka.actor.deployment._' with random router" in {
-      assertRouting(Random, "/app/service-random")
+      assertRouting(Random, "/user/service-random")
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting(ScatterGather, "/app/service-scatter-gather")
+      assertRouting(ScatterGather, "/user/service-scatter-gather")
     }
 
     "be able to parse 'akka.actor.deployment._' with least-cpu router" in {
-      assertRouting(LeastCPU, "/app/service-least-cpu")
+      assertRouting(LeastCPU, "/user/service-least-cpu")
     }
 
     "be able to parse 'akka.actor.deployment._' with least-ram router" in {
-      assertRouting(LeastRAM, "/app/service-least-ram")
+      assertRouting(LeastRAM, "/user/service-least-ram")
     }
 
     "be able to parse 'akka.actor.deployment._' with least-messages router" in {
-      assertRouting(LeastMessages, "/app/service-least-messages")
+      assertRouting(LeastMessages, "/user/service-least-messages")
     }
     "be able to parse 'akka.actor.deployment._' with custom router" in {
-      assertRouting(CustomRouter("org.my.Custom"), "/app/service-custom")
+      assertRouting(CustomRouter("org.my.Custom"), "/user/service-custom")
     }
 
     def assertRouting(expected: Routing, service: String) {
@@ -216,7 +216,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster nodes" in {
-      val service = "/app/service-cluster1"
+      val service = "/user/service-cluster1"
       val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)
@@ -230,7 +230,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster replication" in {
-      val service = "/app/service-cluster2"
+      val service = "/user/service-cluster2"
       val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
       deployment must be('defined)

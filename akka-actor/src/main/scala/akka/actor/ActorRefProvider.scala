@@ -204,7 +204,7 @@ class LocalActorRefProvider(
 
   private def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
 
-  private val tempNode = rootPath / "tmp"
+  private val tempNode = rootPath / "temp"
 
   def tempPath = tempNode / tempName
 
@@ -281,8 +281,8 @@ class LocalActorRefProvider(
 
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
   lazy val rootGuardian: ActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true)
-  lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "app", true)
-  lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "sys", true)
+  lazy val guardian: ActorRef = actorOf(system, guardianProps, rootGuardian, "user", true)
+  lazy val systemGuardian: ActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
 
   val deathWatch = createDeathWatch()
 

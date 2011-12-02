@@ -359,7 +359,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   }
 
   private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
-    _path = rootPath / "nul"
+    _path = rootPath / "null"
     brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
   }
 
