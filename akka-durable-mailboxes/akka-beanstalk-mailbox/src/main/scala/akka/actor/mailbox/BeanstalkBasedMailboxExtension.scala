@@ -4,23 +4,16 @@
 package akka.actor.mailbox
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object BeanstalkBasedMailboxExtension extends ExtensionId[BeanstalkMailboxSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new BeanstalkMailboxSettings(system.applicationConfig)
+  def createExtension(system: ActorSystemImpl) = new BeanstalkMailboxSettings(system.settings.config)
 }
 
-class BeanstalkMailboxSettings(cfg: Config) extends Extension {
-  private def referenceConfig: Config =
-    ConfigFactory.parseResource(classOf[ActorSystem], "/akka-beanstalk-mailbox-reference.conf",
-      ConfigParseOptions.defaults.setAllowMissing(false))
-  val config: ConfigRoot = ConfigFactory.emptyRoot("akka-beanstalk-mailbox").withFallback(cfg).withFallback(referenceConfig).resolve()
+class BeanstalkMailboxSettings(val config: Config) extends Extension {
 
   import config._
 

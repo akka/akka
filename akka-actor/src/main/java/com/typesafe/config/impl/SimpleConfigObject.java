@@ -112,8 +112,8 @@ final class SimpleConfigObject extends AbstractConfigObject {
     }
 
     final private static String EMPTY_NAME = "empty config";
-    final private static SimpleConfigObject emptyInstance = empty(new SimpleConfigOrigin(
-            EMPTY_NAME));
+    final private static SimpleConfigObject emptyInstance = empty(SimpleConfigOrigin
+            .newSimple(EMPTY_NAME));
 
     final static SimpleConfigObject empty() {
         return emptyInstance;
@@ -128,7 +128,7 @@ final class SimpleConfigObject extends AbstractConfigObject {
     }
 
     final static SimpleConfigObject emptyMissing(ConfigOrigin baseOrigin) {
-        return new SimpleConfigObject(new SimpleConfigOrigin(
+        return new SimpleConfigObject(SimpleConfigOrigin.newSimple(
                 baseOrigin.description() + " (not found)"),
                 Collections.<String, AbstractConfigValue> emptyMap());
     }

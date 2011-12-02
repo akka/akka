@@ -16,6 +16,8 @@ configuration files that you see below. You can specify your own configuration f
 property in the reference config. You only have to define the properties that differ from the default 
 configuration.
 
+FIXME: These default locations has changed
+
 The location of the config file to use can be specified in various ways:
 
 * Define the ``-Dakka.config=...`` system property parameter with a file path to configuration file.
@@ -44,47 +46,42 @@ Each Akka module has a reference configuration file with the default values.
 
 *akka-actor:*
 
-.. literalinclude:: ../../akka-actor/src/main/resources/akka-actor-reference.conf
+.. literalinclude:: ../../akka-actor/src/main/resources/reference.conf
    :language: none
 
 *akka-remote:*
 
-.. literalinclude:: ../../akka-remote/src/main/resources/akka-remote-reference.conf
+.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
    :language: none
    
-*akka-serialization:*
-
-.. literalinclude:: ../../akka-actor/src/main/resources/akka-serialization-reference.conf
-   :language: none
-
 *akka-testkit:*
 
-.. literalinclude:: ../../akka-testkit/src/main/resources/akka-testkit-reference.conf
+.. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
 *akka-beanstalk-mailbox:*
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/akka-beanstalk-mailbox-reference.conf
+.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/reference.conf
    :language: none
 
 *akka-file-mailbox:*
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/akka-file-mailbox-reference.conf
+.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
    :language: none
 
 *akka-mongo-mailbox:*
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/akka-mongo-mailbox-reference.conf
+.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
    :language: none
 
 *akka-redis-mailbox:*
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/akka-redis-mailbox-reference.conf
+.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/reference.conf
    :language: none
 
 *akka-zookeeper-mailbox:*
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/akka-zookeeper-mailbox-reference.conf
+.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
    :language: none
 
 A custom ``akka.conf`` might look like this::
@@ -121,7 +118,6 @@ A custom ``akka.conf`` might look like this::
     }
   }
 
-.. _-Dakka.mode:
 
 Config file format
 ------------------
@@ -129,8 +125,12 @@ Config file format
 The configuration file syntax is described in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
 specification. Note that it supports three formats; conf, json, and properties. 
 
+.. _-Dakka.mode:
+
 Specifying files for different modes
 ------------------------------------
+
+FIXME: mode doesn't exist, or will it?
 
 You can use different configuration files for different purposes by specifying a mode option, either as
 ``-Dakka.mode=...`` system property or as ``AKKA_MODE=...`` environment variable. For example using DEBUG log level
@@ -152,6 +152,8 @@ The mode option is not used when specifying the configuration file with ``-Dakka
 Including files
 ---------------
 
+FIXME: The include syntax has changed
+
 Sometimes it can be useful to include another configuration file, for example if you have one ``akka.conf`` with all
 environment independent settings and then override some settings for specific modes.
 
@@ -165,14 +167,14 @@ akka.dev.conf:
     loglevel = "DEBUG"
   }
 
-.. _-Dakka.output.config.source:
+.. _-Dakka.logConfigOnStart:
 
-Showing Configuration Source
-----------------------------
+Logging of Configuration
+------------------------
 
-If the system property ``akka.output.config.source`` is set to anything but
-null, then the source from which Akka reads its configuration is printed to the
-console during application startup.
+If the system or config property ``akka.logConfigOnStart`` is set to ``on``, then the 
+complete configuration at INFO level when the actor system is started. This is useful 
+when you are uncertain of what configuration is used.
 
 Summary of System Properties
 ----------------------------
@@ -180,4 +182,3 @@ Summary of System Properties
 * :ref:`akka.home <-Dakka.home>` (``AKKA_HOME``): where Akka searches for configuration
 * :ref:`akka.config <-Dakka.config>`: explicit configuration file location
 * :ref:`akka.mode <-Dakka.mode>` (``AKKA_MODE``): modify configuration file name for multiple profiles
-* :ref:`akka.output.config.source <-Dakka.output.config.source>`: whether to print configuration source to console

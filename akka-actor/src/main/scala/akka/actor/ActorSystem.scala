@@ -13,9 +13,10 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.io.File
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigParseOptions
+import com.typesafe.config.ConfigResolveOptions
+import com.typesafe.config.ConfigException
 import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
@@ -43,17 +44,32 @@ object ActorSystem {
   def create(name: String, config: Config): ActorSystem = apply(name, config)
   def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
 
+  /**
+   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   */
   def create(name: String): ActorSystem = apply(name)
-  def apply(name: String): ActorSystem = apply(name, DefaultConfigurationLoader.defaultConfig)
+  /**
+   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   */
+  def apply(name: String): ActorSystem = apply(name, ConfigFactory.load())
 
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
   class Settings(cfg: Config) {
-    private def referenceConfig: Config =
-      ConfigFactory.parseResource(classOf[ActorSystem], "/akka-actor-reference.conf",
-        ConfigParseOptions.defaults.setAllowMissing(false))
-    val config: ConfigRoot = ConfigFactory.emptyRoot("akka-actor").withFallback(cfg).withFallback(referenceConfig).resolve()
+
+    // Verify that the Config is sane and has our reference config.
+    val config: Config =
+      try {
+        cfg.checkValid(ConfigFactory.defaultReference, "akka")
+        cfg
+      } catch {
+        case e: ConfigException ⇒
+          // try again with added defaultReference
+          val cfg2 = cfg.withFallback(ConfigFactory.defaultReference)
+          cfg2.checkValid(ConfigFactory.defaultReference, "akka")
+          cfg2
+      }
 
     import scala.collection.JavaConverters._
     import config._
@@ -102,9 +118,13 @@ object ActorSystem {
 
   }
 
-  object DefaultConfigurationLoader {
+  // TODO move to migration kit
+  object OldConfigurationLoader {
 
-    val defaultConfig: Config = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+    val defaultConfig: Config = {
+      val cfg = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
+      cfg.withFallback(ConfigFactory.defaultReference).resolve(ConfigResolveOptions.defaults)
+    }
 
     // file extensions (.conf, .json, .properties), are handled by parseFileAnySyntax
     val defaultLocation: String = (systemMode orElse envMode).map("akka." + _).getOrElse("akka")
@@ -130,7 +150,7 @@ object ActorSystem {
 
     private def fromClasspath = try {
       Option(ConfigFactory.systemProperties.withFallback(
-        ConfigFactory.parseResourceAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
+        ConfigFactory.parseResourcesAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
     } catch { case _ ⇒ None }
 
     private def fromHome = try {
@@ -233,7 +253,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Register a block of code to run after all actors in this actor system have
    * been stopped.
    */
-  def registerOnTermination(code: ⇒ Unit)
+  def registerOnTermination[T](code: ⇒ T)
 
   /**
    * Register a block of code to run after all actors in this actor system have
@@ -271,7 +291,7 @@ abstract class ActorSystem extends ActorRefFactory {
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
-class ActorSystemImpl(val name: String, val applicationConfig: Config) extends ActorSystem {
+class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
 
   import ActorSystem._
 
@@ -290,7 +310,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   eventStream.startStdoutLogger(settings)
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
-  val scheduler = new DefaultScheduler(new HashedWheelTimer(log, Executors.defaultThreadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel), this)
+  val scheduler = createScheduler()
 
   val provider: ActorRefProvider = {
     val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
@@ -324,6 +344,7 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
   }
 
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  // TODO why implicit val dispatcher?
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   //FIXME Set this to a Failure when things bubble to the top. What does this mean?
@@ -352,14 +373,36 @@ class ActorSystemImpl(val name: String, val applicationConfig: Config) extends A
 
   def start() = _start
 
-  def registerOnTermination(code: ⇒ Unit) { terminationFuture onComplete (_ ⇒ code) }
+  def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
-    terminationFuture onComplete (_ ⇒ scheduler.stop())
+    terminationFuture onComplete (_ ⇒ stopScheduler())
     terminationFuture onComplete (_ ⇒ dispatcher.shutdown())
+  }
+
+  protected def createScheduler(): Scheduler = {
+    val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
+    val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
+    // note that dispatcher is by-name parameter in DefaultScheduler constructor, 
+    // because dispatcher is not initialized when the scheduler is created
+    def safeDispatcher = {
+      if (dispatcher eq null) {
+        val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
+        log.error(exc, exc.getMessage)
+        throw exc
+      } else {
+        dispatcher
+      }
+    }
+    new DefaultScheduler(hwt, log, safeDispatcher)
+  }
+
+  protected def stopScheduler(): Unit = scheduler match {
+    case x: DefaultScheduler ⇒ x.stop()
+    case _                   ⇒
   }
 
   private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]

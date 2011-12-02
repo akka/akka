@@ -7,7 +7,6 @@ import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 
@@ -19,7 +18,7 @@ object EventStreamSpec {
         loglevel = INFO
         event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
       }
-      """.format(Logging.StandardOutLoggerName), ConfigParseOptions.defaults)
+      """.format(Logging.StandardOutLoggerName))
 
   case class M(i: Int)
 

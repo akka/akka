@@ -13,14 +13,12 @@ import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 
 object TimingTest extends Tag("timing")
 
 object AkkaSpec {
-  val testConf =
-    ActorSystem.DefaultConfigurationLoader.defaultConfig.withFallback(
-      ConfigFactory.parseString("""
+  val testConf = {
+    val cfg = ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
@@ -32,7 +30,9 @@ object AkkaSpec {
           }
         }
       }
-      """, ConfigParseOptions.defaults))
+      """)
+    ConfigFactory.load(cfg)
+  }
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -64,7 +64,7 @@ abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleNam
 
   def this(config: Config) = this(ActorSystem(getClass.getSimpleName, config.withFallback(AkkaSpec.testConf)))
 
-  def this(s: String) = this(ConfigFactory.parseString(s, ConfigParseOptions.defaults))
+  def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = {
     this(AkkaSpec.mapToConfig(configMap))
@@ -87,12 +87,11 @@ abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleNam
 class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
     "terminate all actors" in {
-      import ActorSystem.DefaultConfigurationLoader.defaultConfig
       import scala.collection.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(defaultConfig))
+      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }

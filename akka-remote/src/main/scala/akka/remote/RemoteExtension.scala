@@ -4,9 +4,6 @@
 package akka.remote
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigRoot
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
@@ -17,14 +14,10 @@ import scala.collection.JavaConverters._
 
 object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.applicationConfig)
+  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.settings.config)
 }
 
-class RemoteExtensionSettings(cfg: Config) extends Extension {
-  private def referenceConfig: Config =
-    ConfigFactory.parseResource(classOf[ActorSystem], "/akka-remote-reference.conf",
-      ConfigParseOptions.defaults.setAllowMissing(false))
-  val config: ConfigRoot = ConfigFactory.emptyRoot("akka-remote").withFallback(cfg).withFallback(referenceConfig).resolve()
+class RemoteExtensionSettings(val config: Config) extends Extension {
 
   import config._
 
@@ -57,12 +50,12 @@ class RemoteExtensionSettings(cfg: Config) extends Extension {
     val ReconnectionTimeWindow = Duration(config.getMilliseconds("akka.remote.client.reconnection-time-window"), MILLISECONDS)
     val ReadTimeout = Duration(config.getMilliseconds("akka.remote.client.read-timeout"), MILLISECONDS)
     val ReconnectDelay = Duration(config.getMilliseconds("akka.remote.client.reconnect-delay"), MILLISECONDS)
-    val MessageFrameSize = config.getInt("akka.remote.client.message-frame-size")
+    val MessageFrameSize = config.getBytes("akka.remote.client.message-frame-size").toInt
   }
 
   class RemoteServerSettings {
     import scala.collection.JavaConverters._
-    val MessageFrameSize = config.getInt("akka.remote.server.message-frame-size")
+    val MessageFrameSize = config.getBytes("akka.remote.server.message-frame-size").toInt
     val SecureCookie: Option[String] = config.getString("akka.remote.secure-cookie") match {
       case ""     ⇒ None
       case cookie ⇒ Some(cookie)

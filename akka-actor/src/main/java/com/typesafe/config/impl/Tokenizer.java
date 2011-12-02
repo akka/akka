@@ -219,8 +219,7 @@ final class Tokenizer {
 
         private static ConfigOrigin lineOrigin(ConfigOrigin baseOrigin,
                 int lineNumber) {
-            return new SimpleConfigOrigin(baseOrigin.description() + ": line "
-                    + lineNumber);
+            return ((SimpleConfigOrigin) baseOrigin).setLineNumber(lineNumber);
         }
 
         // chars JSON allows a number to start with
@@ -228,7 +227,7 @@ final class Tokenizer {
         // chars JSON allows to be part of a number
         static final String numberChars = "0123456789eE+-.";
         // chars that stop an unquoted string
-        static final String notInUnquotedText = "$\"{}[]:=,\\+#";
+        static final String notInUnquotedText = "$\"{}[]:=,+#`^?!@*&\\";
 
         // The rules here are intended to maximize convenience while
         // avoiding confusion with real valid JSON. Basically anything
@@ -404,6 +403,14 @@ final class Tokenizer {
                 throw parseError("'$' not followed by {");
             }
 
+            boolean optional = false;
+            c = nextCharSkippingComments();
+            if (c == '?') {
+                optional = true;
+            } else {
+                putBack(c);
+            }
+
             WhitespaceSaver saver = new WhitespaceSaver();
             List<Token> expression = new ArrayList<Token>();
 
@@ -428,7 +435,7 @@ final class Tokenizer {
                 }
             } while (true);
 
-            return Tokens.newSubstitution(origin, expression);
+            return Tokens.newSubstitution(origin, optional, expression);
         }
 
         private Token pullNextToken(WhitespaceSaver saver) {
