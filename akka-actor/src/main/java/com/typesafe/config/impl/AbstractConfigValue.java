@@ -16,7 +16,7 @@ import com.typesafe.config.ConfigValue;
  * improperly-factored and non-modular code. Please don't add parent().
  *
  */
-abstract class AbstractConfigValue implements ConfigValue {
+abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
 
     final private ConfigOrigin origin;
 
@@ -72,7 +72,7 @@ abstract class AbstractConfigValue implements ConfigValue {
     }
 
     @Override
-    public AbstractConfigValue toValue() {
+    public AbstractConfigValue toFallbackValue() {
         return this;
     }
 
@@ -110,7 +110,7 @@ abstract class AbstractConfigValue implements ConfigValue {
         if (ignoresFallbacks()) {
             return this;
         } else {
-            ConfigValue other = mergeable.toValue();
+            ConfigValue other = ((MergeableValue) mergeable).toFallbackValue();
 
             if (other instanceof Unmergeable) {
                 return mergedWithTheUnmergeable((Unmergeable) other);

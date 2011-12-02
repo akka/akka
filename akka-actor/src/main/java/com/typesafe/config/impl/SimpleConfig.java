@@ -27,9 +27,9 @@ import com.typesafe.config.ConfigValueType;
  * key-value pairs would be all the tree's leaf values, in a big flat list with
  * their full paths.
  */
-class SimpleConfig implements Config {
+final class SimpleConfig implements Config, MergeableValue {
 
-    AbstractConfigObject object;
+    final private AbstractConfigObject object;
 
     SimpleConfig(AbstractConfigObject object) {
         this.object = object;
@@ -327,7 +327,7 @@ class SimpleConfig implements Config {
     }
 
     @Override
-    public List<Long> getMemorySizeInBytesList(String path) {
+    public List<Long> getBytesList(String path) {
         List<Long> l = new ArrayList<Long>();
         List<? extends ConfigValue> list = getList(path);
         for (ConfigValue v : list) {
@@ -378,7 +378,7 @@ class SimpleConfig implements Config {
     }
 
     @Override
-    public AbstractConfigObject toValue() {
+    public AbstractConfigObject toFallbackValue() {
         return object;
     }
 

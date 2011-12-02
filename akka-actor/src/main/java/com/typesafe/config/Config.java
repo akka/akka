@@ -87,9 +87,6 @@ public interface Config extends ConfigMergeable {
     @Override
     Config withFallback(ConfigMergeable other);
 
-    @Override
-    ConfigObject toValue();
-
     /**
      * Returns a replacement config with all substitutions (the
      * <code>${foo.bar}</code> syntax, see <a
@@ -163,11 +160,11 @@ public interface Config extends ConfigMergeable {
      * with your module. It's best to allow the modules owning those paths to
      * validate them. Also, if every module validates only its own stuff, there
      * isn't as much redundant work being done.
-     * 
+     *
      * <p>
      * If no paths are specified in <code>checkValid()</code>'s parameter list,
      * validation is for the entire config.
-     * 
+     *
      * <p>
      * If you specify paths that are not in the reference config, those paths
      * are ignored. (There's nothing to validate.)
@@ -465,7 +462,7 @@ public interface Config extends ConfigMergeable {
 
     List<? extends Object> getAnyRefList(String path);
 
-    List<Long> getMemorySizeInBytesList(String path);
+    List<Long> getBytesList(String path);
 
     List<Long> getMillisecondsList(String path);
 

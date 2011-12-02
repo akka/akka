@@ -7,7 +7,7 @@ package com.typesafe.config;
 /**
  * All exceptions thrown by the library are subclasses of ConfigException.
  */
-public class ConfigException extends RuntimeException {
+public abstract class ConfigException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     final private ConfigOrigin origin;
@@ -152,6 +152,11 @@ public class ConfigException extends RuntimeException {
         }
     }
 
+    /**
+     * Exception indicating that a path expression was invalid. Try putting
+     * double quotes around path elements that contain "special" characters.
+     *
+     */
     public static class BadPath extends ConfigException {
         private static final long serialVersionUID = 1L;
 
@@ -267,6 +272,11 @@ public class ConfigException extends RuntimeException {
         }
     }
 
+    /**
+     * Information about a problem that occurred in {@link Config#checkValid}. A
+     * {@link ConfigException.ValidationFailed} exception thrown from
+     * <code>checkValid()</code> includes a list of problems encountered.
+     */
     public static class ValidationProblem {
 
         final private String path;
@@ -279,19 +289,31 @@ public class ConfigException extends RuntimeException {
             this.problem = problem;
         }
 
+        /** Returns the config setting causing the problem. */
         public String path() {
             return path;
         }
 
+        /**
+         * Returns where the problem occurred (origin may include info on the
+         * file, line number, etc.).
+         */
         public ConfigOrigin origin() {
             return origin;
         }
 
+        /** Returns a description of the problem. */
         public String problem() {
             return problem;
         }
     }
 
+    /**
+     * Exception indicating that {@link Config#checkValid} found validity
+     * problems. The problems are available via the {@link #problems()} method.
+     * The <code>getMessage()</code> of this exception is a potentially very
+     * long string listing all the problems found.
+     */
     public static class ValidationFailed extends ConfigException {
         private static final long serialVersionUID = 1L;
 
@@ -321,4 +343,20 @@ public class ConfigException extends RuntimeException {
             return sb.toString();
         }
     }
+
+    /**
+     * Exception that doesn't fall into any other category.
+     */
+    public static class Generic extends ConfigException {
+        private static final long serialVersionUID = 1L;
+
+        public Generic(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public Generic(String message) {
+            this(message, null);
+        }
+    }
+
 }

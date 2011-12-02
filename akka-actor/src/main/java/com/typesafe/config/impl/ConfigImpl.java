@@ -305,7 +305,11 @@ public class ConfigImpl {
     }
 
     static ConfigIncluder defaultIncluder() {
-        return DefaultIncluderHolder.defaultIncluder;
+        try {
+            return DefaultIncluderHolder.defaultIncluder;
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigUtil.extractInitializerError(e);
+        }
     }
 
     private static AbstractConfigObject loadSystemProperties() {
@@ -319,7 +323,11 @@ public class ConfigImpl {
     }
 
     static AbstractConfigObject systemPropertiesAsConfigObject() {
-        return SystemPropertiesHolder.systemProperties;
+        try {
+            return SystemPropertiesHolder.systemProperties;
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigUtil.extractInitializerError(e);
+        }
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
@@ -351,7 +359,11 @@ public class ConfigImpl {
     }
 
     static AbstractConfigObject envVariablesAsConfigObject() {
-        return EnvVariablesHolder.envVariables;
+        try {
+            return EnvVariablesHolder.envVariables;
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigUtil.extractInitializerError(e);
+        }
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
@@ -369,6 +381,10 @@ public class ConfigImpl {
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
     public static Config defaultReference() {
-        return ReferenceHolder.referenceConfig;
+        try {
+            return ReferenceHolder.referenceConfig;
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigUtil.extractInitializerError(e);
+        }
     }
 }

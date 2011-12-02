@@ -18,15 +18,6 @@ package com.typesafe.config;
  */
 public interface ConfigMergeable {
     /**
-     * Converts this instance to a {@link ConfigValue}. If called on a
-     * {@code ConfigValue} it returns {@code this}, if called on a
-     * {@link Config} it's equivalent to {@link Config#root()}.
-     *
-     * @return this instance as a {@code ConfigValue}
-     */
-    ConfigValue toValue();
-
-    /**
      * Returns a new value computed by merging this value with another, with
      * keys in this value "winning" over the other one. Only
      * {@link ConfigObject} and {@link Config} instances do anything in this

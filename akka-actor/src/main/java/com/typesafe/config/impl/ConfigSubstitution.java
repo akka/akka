@@ -131,22 +131,25 @@ final class ConfigSubstitution extends AbstractConfigValue implements
 
     private ConfigValue resolve(SubstitutionResolver resolver, SubstitutionExpression subst,
             int depth, ConfigResolveOptions options) {
+        // First we look up the full path, which means relative to the
+        // included file if we were not a root file
         ConfigValue result = findInObject(resolver.root(), resolver, subst.path(),
                 depth, options);
 
-        // when looking up system props and env variables,
-        // we don't want the prefix that was added when
-        // we were included in another file.
-        Path unprefixed = subst.path().subPath(prefixLength);
+        if (result == null) {
+            // Then we want to check relative to the root file. We don't
+            // want the prefix we were included at to be used when looking up
+            // env variables either.
+            Path unprefixed = subst.path().subPath(prefixLength);
 
-        if (result == null && options.getUseSystemProperties()) {
-            result = findInObject(ConfigImpl.systemPropertiesAsConfigObject(), null,
-                    unprefixed, depth, options);
-        }
+            if (result == null && prefixLength > 0) {
+                result = findInObject(resolver.root(), resolver, unprefixed, depth, options);
+            }
 
-        if (result == null && options.getUseSystemEnvironment()) {
-                result = findInObject(ConfigImpl.envVariablesAsConfigObject(), null,
-                    unprefixed, depth, options);
+            if (result == null && options.getUseSystemEnvironment()) {
+                result = findInObject(ConfigImpl.envVariablesAsConfigObject(), null, unprefixed,
+                        depth, options);
+            }
         }
 
         return result;
