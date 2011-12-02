@@ -86,7 +86,7 @@ class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, path, systemService)
     else {
       val name = path.name
-      val newFuture = Promise[ActorRef](5000)(dispatcher) // FIXME is this proper timeout?
+      val newFuture = Promise[ActorRef](system.settings.ActorTimeout)(dispatcher)
 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
@@ -100,7 +100,7 @@ class RemoteActorRefProvider(
 
                 if (isReplicaNode) {
                   // we are on one of the replica node for this remote actor
-                  local.actorOf(system, props, supervisor, name, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create
+                  local.actorOf(system, props, supervisor, name, true) //FIXME systemService = true here to bypass Deploy, should be fixed when create-or-get is replaced by get-or-create (is this fixed now?)
                 } else {
 
                   implicit val dispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
@@ -177,7 +177,7 @@ class RemoteActorRefProvider(
   /**
    * Copied from LocalActorRefProvider...
    */
-  // FIXME: implement supervision
+  // FIXME: implement supervision, ticket #1408
   def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
     new RoutedActorRef(system, props, supervisor, name)
@@ -266,7 +266,7 @@ class RemoteActorRefProvider(
     }
   }
 
-  private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch
+  private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch, ticket ##1190
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
 
@@ -306,7 +306,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def resume(): Unit = ()
 
-  def stop() { //FIXME send the cause as well!
+  def stop() {
     synchronized {
       if (running) {
         running = false

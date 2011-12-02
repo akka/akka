@@ -59,7 +59,7 @@ class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) 
     queue.clear
     true
   } catch {
-    case e ⇒ false
+    case e: Exception ⇒ false
   }
 
   override def cleanUp() {

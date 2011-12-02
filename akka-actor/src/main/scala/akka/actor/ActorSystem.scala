@@ -229,8 +229,6 @@ abstract class ActorSystem extends ActorRefFactory {
    * effort basis and hence not strictly guaranteed.
    */
   def deadLetters: ActorRef
-  // FIXME: do not publish this
-  def deadLetterMailbox: Mailbox
 
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
@@ -349,7 +347,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // TODO why implicit val dispatcher?
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
-  //FIXME Set this to a Failure when things bubble to the top
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def guardian: ActorRef = provider.guardian
   def systemGuardian: ActorRef = provider.systemGuardian

@@ -69,6 +69,7 @@ final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit,
     try {
       function()
     } catch {
+      // FIXME catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
     } finally {
       cleanup()

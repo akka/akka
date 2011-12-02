@@ -36,10 +36,10 @@ trait ActorRefProvider {
 
   def deathWatch: DeathWatch
 
-  // FIXME: remove/replace?
+  // FIXME: remove/replace???
   def nodename: String
 
-  // FIXME: remove/replace?
+  // FIXME: remove/replace???
   def clustername: String
 
   /**
@@ -64,7 +64,7 @@ trait ActorRefProvider {
   /**
    * Create an Actor with the given full path below the given supervisor.
    *
-   * FIXME: Remove! this is dangerous!
+   * FIXME: Remove! this is dangerous!?
    */
   private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef
 
@@ -296,7 +296,7 @@ class LocalActorRefProvider(
 
   private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef = {
     val name = path.name
-    val newFuture = Promise[ActorRef](5000)(dispatcher) // FIXME is this proper timeout?
+    val newFuture = Promise[ActorRef](system.settings.ActorTimeout)(dispatcher)
 
     actors.putIfAbsent(path.toString, newFuture) match {
       case null ⇒

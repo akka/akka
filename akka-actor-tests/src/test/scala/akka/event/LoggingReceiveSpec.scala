@@ -1,17 +1,26 @@
 /**
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.actor
+package akka.event
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.event.Logging
 import akka.util.Duration
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import java.util.Properties
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.HotSwap
+import akka.actor.UnhandledMessageException
+import akka.actor.PoisonPill
+import akka.actor.ActorSystemImpl
+import akka.actor.Props
+import akka.actor.OneForOneStrategy
+import akka.actor.ActorKilledException
+import akka.actor.Kill
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -57,7 +66,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val r: Actor.Receive = {
           case null ⇒
         }
-        val log = Actor.LoggingReceive("funky", r)
+        val log = LoggingReceive("funky")(r)
         log.isDefinedAt("hallo")
         expectMsg(1 second, Logging.Debug("funky", "received unhandled message hallo"))
       }
@@ -69,7 +78,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         val actor = TestActorRef(new Actor {
-          def receive = loggable(this) {
+          def receive = LoggingReceive(this) {
             case x ⇒
               sender ! "x"
           }
@@ -99,7 +108,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
       new TestKit(appLogging) with ImplicitSender {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
-          def receive = loggable(this)(loggable(this) {
+          def receive = LoggingReceive(this)(LoggingReceive(this) {
             case _ ⇒ sender ! "x"
           })
         })

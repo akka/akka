@@ -10,7 +10,6 @@ import java.net.InetAddress
 import akka.config.ConfigurationException
 import com.eaio.uuid.UUID
 import akka.actor._
-
 import scala.collection.JavaConverters._
 
 object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
@@ -22,19 +21,19 @@ class RemoteExtensionSettings(val config: Config) extends Extension {
 
   import config._
 
-  val RemoteTransport = getString("akka.remote.layer")
   val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
   val ShouldCompressData = config.getBoolean("akka.remote.use-compression")
   val RemoteSystemDaemonAckTimeout = Duration(config.getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
+  val InitalDelayForGossip = Duration(config.getMilliseconds("akka.remote.gossip.initialDelay"), MILLISECONDS)
+  val GossipFrequency = Duration(config.getMilliseconds("akka.remote.gossip.frequency"), MILLISECONDS)
 
   // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
   val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_))
 
-  // FIXME remove nodename from config - should only be passed as command line arg or read from properties file etc.
   val NodeName: String = config.getString("akka.cluster.nodename") match {
-    case ""    ⇒ new UUID().toString
+    case ""    ⇒ throw new ConfigurationException("akka.cluster.nodename configuration property must be defined")
     case value ⇒ value
   }
 
