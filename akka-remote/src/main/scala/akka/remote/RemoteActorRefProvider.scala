@@ -296,7 +296,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = !running
 
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = unsupported
+  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
@@ -318,11 +318,5 @@ private[akka] case class RemoteActorRef private[akka] (
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = provider.serialize(this)
 
-  def startsWatching(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
-
-  def stopsWatching(actorRef: ActorRef): ActorRef = unsupported //FIXME Implement
-
   protected[akka] def restart(cause: Throwable): Unit = ()
-
-  private def unsupported = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 }
