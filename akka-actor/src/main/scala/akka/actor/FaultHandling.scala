@@ -122,12 +122,12 @@ abstract class FaultHandlingStrategy {
 
   def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
-      children.foreach(_.suspend())
+      children.foreach(_.asInstanceOf[RefInternals].suspend())
   }
 
   def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
     if (children.nonEmpty)
-      children.foreach(_.restart(cause))
+      children.foreach(_.asInstanceOf[RefInternals].restart(cause))
   }
 
   /**
@@ -136,7 +136,7 @@ abstract class FaultHandlingStrategy {
   def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
     action match {
-      case Resume   ⇒ child.resume(); true
+      case Resume   ⇒ child.asInstanceOf[RefInternals].resume(); true
       case Restart  ⇒ processFailure(true, child, cause, stats, children); true
       case Stop     ⇒ processFailure(false, child, cause, stats, children); true
       case Escalate ⇒ false
@@ -194,7 +194,7 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
   def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (children.nonEmpty) {
       if (restart && children.forall(_.requestRestartPermission(retriesWindow)))
-        children.foreach(_.child.restart(cause))
+        children.foreach(_.child.asInstanceOf[RefInternals].restart(cause))
       else
         children.foreach(_.child.stop())
     }
@@ -247,7 +247,7 @@ case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
 
   def processFailure(restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (restart && stats.requestRestartPermission(retriesWindow))
-      child.restart(cause)
+      child.asInstanceOf[RefInternals].restart(cause)
     else
       child.stop() //TODO optimization to drop child here already?
   }

@@ -155,6 +155,15 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
   public class Main {
       // A simple Actor that just prints the messages it processes
       public static class MyActor extends UntypedActor {
+      public MyActor() {
+        self.tell("lowpriority");
+          getSelf().tell("lowpriority");
+          getSelf().tell("highpriority");
+          getSelf().tell("pigdog");
+          getSelf().tell("pigdog2");
+          getSelf().tell("pigdog3");
+          getSelf().tell("highpriority");
+      }
       public void onReceive(Object message) throws Exception {
         System.out.println(message);
       }
@@ -170,19 +179,9 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
           }
         };
         // We create an instance of the actor that will print out the messages it processes
-      ActorRef ref = Actors.actorOf(MyActor.class);
-      // We create a new Priority dispatcher and seed it with the priority generator
-      ref.setDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen)));
+        // We create a new Priority dispatcher and seed it with the priority generator
+      ActorRef ref = Actors.actorOf((new Props()).withCreator(MyActor.class).withDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen))));
 
-      ref.getDispatcher().suspend(ref); // Suspending the actor so it doesn't start to treat the messages before we have enqueued all of them :-)
-          ref.tell("lowpriority");
-          ref.tell("lowpriority");
-          ref.tell("highpriority");
-          ref.tell("pigdog");
-          ref.tell("pigdog2");
-          ref.tell("pigdog3");
-          ref.tell("highpriority");
-      ref.getDispatcher().resume(ref); // Resuming the actor so it will start treating its messages
     }
   }
 

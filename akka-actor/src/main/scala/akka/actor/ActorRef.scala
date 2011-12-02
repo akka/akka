@@ -46,7 +46,7 @@ import akka.event.DeathWatch
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
-  scalaRef: ScalaActorRef ⇒
+  scalaRef: ScalaActorRef with RefInternals ⇒
   // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
@@ -109,16 +109,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
   /**
-   * Suspends the actor. It will not process messages while suspended.
-   */
-  def suspend(): Unit //TODO FIXME REMOVE THIS
-
-  /**
-   * Resumes a suspended actor.
-   */
-  def resume(): Unit //TODO FIXME REMOVE THIS
-
-  /**
    * Shuts down the actor its dispatcher and message queue.
    */
   def stop(): Unit
@@ -151,7 +141,7 @@ class LocalActorRef private[akka] (
   val systemService: Boolean = false,
   _receiveTimeout: Option[Long] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends ActorRef with ScalaActorRef {
+  extends ActorRef with ScalaActorRef with RefInternals {
 
   def name = path.name
 
@@ -260,7 +250,11 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * implicit timeout
    */
   def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
+}
 
+private[akka] trait RefInternals {
+  def resume(): Unit
+  def suspend(): Unit
   protected[akka] def restart(cause: Throwable): Unit
 }
 
@@ -289,7 +283,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends ActorRef with ScalaActorRef {
+trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
 
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString

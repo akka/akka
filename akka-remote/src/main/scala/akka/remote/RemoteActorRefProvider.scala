@@ -285,7 +285,7 @@ private[akka] case class RemoteActorRef private[akka] (
   remoteAddress: RemoteAddress,
   path: ActorPath,
   loader: Option[ClassLoader])
-  extends ActorRef with ScalaActorRef {
+  extends ActorRef with ScalaActorRef with RefInternals {
 
   @volatile
   private var running: Boolean = true
