@@ -15,6 +15,7 @@ import akka.dispatch._
 import akka.actor.Scheduler
 import akka.event.EventStream
 import akka.util.Duration
+import akka.util.duration._
 import java.util.concurrent.TimeUnit
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
@@ -136,7 +137,7 @@ class CallingThreadDispatcher(
   protected[akka] override def throughputDeadlineTime = Duration.Zero
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
-  protected[akka] override def shutdownTimeout = Duration(1000L, TimeUnit.MILLISECONDS)
+  protected[akka] override def shutdownTimeout = 1 second
 
   override def suspend(actor: ActorCell) {
     getMailbox(actor) foreach (_.suspendSwitch.switchOn)

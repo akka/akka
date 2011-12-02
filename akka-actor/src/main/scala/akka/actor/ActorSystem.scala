@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
+import java.io.Closeable
 
 object ActorSystem {
 
@@ -403,10 +404,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   protected def stopScheduler(): Unit = scheduler match {
-    case x: DefaultScheduler ⇒
+    case x: Closeable ⇒
       // Let dispatchers shutdown first.
       // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
-      x.scheduleOnce(() ⇒ { x.stop; dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
+      x.scheduleOnce(() ⇒ { x.close(); dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
     case _ ⇒
   }
 
