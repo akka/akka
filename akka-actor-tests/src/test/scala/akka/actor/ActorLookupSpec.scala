@@ -4,6 +4,7 @@
 package akka.actor
 
 import akka.testkit._
+import akka.util.duration._
 
 object ActorLookupSpec {
 
@@ -210,7 +211,6 @@ class ActorLookupSpec extends AkkaSpec {
       (c2 ? LookupPath(a.path)).get must be === a
       (c2 ? LookupString(a.path.toString)).get must be === a
       (c2 ? LookupString(a.path.pathElements.mkString("/", "/", ""))).get must be === a
-      println("start")
       (c2 ? LookupString("../../" + a.path.pathElements.mkString("/"))).get must be === a
       (c2 ? LookupString(a.path.toString + "/")).get must be === a
       (c2 ? LookupString(a.path.pathElements.mkString("/", "/", "") + "/")).get must be === a
@@ -222,6 +222,36 @@ class ActorLookupSpec extends AkkaSpec {
       f.isCompleted must be === true
       f.get must be === 42
       (c2 ? LookupPath(a.path)).get must be === system.deadLetters
+    }
+
+  }
+
+  "An ActorSelection" must {
+
+    "send messages directly" in {
+      ActorSelection(c1, "") ! GetSender(testActor)
+      expectMsg(system.deadLetters)
+      lastSender must be === c1
+    }
+
+    "send messages with correct sender" in {
+      implicit val sender = c1
+      ActorSelection(c21, "../../*") ! GetSender(testActor)
+      val actors = receiveWhile(messages = 2) {
+        case `c1` ⇒ lastSender
+      }
+      actors must be === Seq(c1, c2)
+      expectNoMsg(1 second)
+    }
+    
+    "drop messages which cannot be delivered" in {
+      implicit val sender = c2
+      ActorSelection(c21, "../../*/c21") ! GetSender(testActor)
+      val actors = receiveWhile(messages = 2) {
+        case `c2` ⇒ lastSender
+      }
+      actors must be === Seq(c21)
+      expectNoMsg(1 second)
     }
 
   }

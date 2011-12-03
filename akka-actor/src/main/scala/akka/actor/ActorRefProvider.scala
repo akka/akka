@@ -120,7 +120,7 @@ trait ActorRefProvider {
 }
 
 /**
- * Interface implemented by ActorSystem and AkkaContext, the only two places from which you can get fresh actors
+ * Interface implemented by ActorSystem and AkkaContext, the only two places from which you can get fresh actors.
  */
 trait ActorRefFactory {
 
@@ -154,8 +154,22 @@ trait ActorRefFactory {
    */
   protected def actorCreated(name: String, actor: ActorRef): Unit
 
+  /**
+   * Create new actor as child of this context and give it an automatically
+   * generated name (currently similar to base64-encoded integer count,
+   * reversed and with “$” prepended, may change in the future).
+   *
+   * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   */
   def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
 
+  /**
+   * Create new actor as child of this context with the given name, which must
+   * not be null, empty or start with “$”. If the given name is already in use,
+   * and `InvalidActorNameException` is thrown.
+   *
+   * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   */
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.startsWith("$"))
       throw new InvalidActorNameException("actor name must not be null, empty or start with $")
@@ -166,27 +180,138 @@ trait ActorRefFactory {
     a
   }
 
+  /**
+   * Create new actor of the given type as child of this context and give it an automatically
+   * generated name (currently similar to base64-encoded integer count,
+   * reversed and with “$” prepended, may change in the future). The type must have
+   * a no-arg constructor which will be invoked using reflection.
+   */
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
+  /**
+   * Create new actor of the given type as child of this context with the given name, which must
+   * not be null, empty or start with “$”. If the given name is already in use,
+   * and `InvalidActorNameException` is thrown. The type must have
+   * a no-arg constructor which will be invoked using reflection.
+   */
   def actorOf[T <: Actor](name: String)(implicit m: Manifest[T]): ActorRef =
     actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), name)
 
+  /**
+   * Create new actor of the given class as child of this context and give it an automatically
+   * generated name (currently similar to base64-encoded integer count,
+   * reversed and with “$” prepended, may change in the future). The class must have
+   * a no-arg constructor which will be invoked using reflection.
+   */
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
+  /**
+   * Create new actor as child of this context and give it an automatically
+   * generated name (currently similar to base64-encoded integer count,
+   * reversed and with “$” prepended, may change in the future). Use this
+   * method to pass constructor arguments to the [[akka.actor.Actor]] while using
+   * only default [[akka.actor.Props]]; otherwise refer to `actorOf(Props)`.
+   */
   def actorOf(factory: ⇒ Actor): ActorRef = actorOf(Props(() ⇒ factory))
 
+  /**
+   * ''Java API'': Create new actor as child of this context and give it an
+   * automatically generated name (currently similar to base64-encoded integer
+   * count, reversed and with “$” prepended, may change in the future).
+   *
+   * Identical to `actorOf(Props(() => creator.create()))`.
+   */
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
+  /**
+   * ''Java API'': Create new actor as child of this context with the given name, which must
+   * not be null, empty or start with “$”. If the given name is already in use,
+   * and `InvalidActorNameException` is thrown.
+   *
+   * Identical to `actorOf(Props(() => creator.create()), name)`.
+   */
   def actorOf(creator: UntypedActorFactory, name: String): ActorRef = actorOf(Props(() ⇒ creator.create()), name)
 
+  /**
+   * Look-up an actor by path; if it does not exist, returns a reference to
+   * the dead-letter mailbox of the [[akka.actor.ActorSystem]]. If the path
+   * point to an actor which is not local, no attempt is made during this
+   * call to verify that the actor it represents does exist or is alive; use
+   * `watch(ref)` to be notified of the target’s termination, which is also
+   * signaled if the queried path cannot be resolved.
+   */
   def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
 
+  /**
+   * Look-up an actor by path represented as string.
+   *
+   * Absolute URIs like `akka://appname/user/actorA` are looked up as described
+   * for look-ups by `actorOf(ActorPath)`.
+   *
+   * Relative URIs like `/service/actorA/childB` are looked up relative to the
+   * root path of the [[akka.actor.ActorSystem]] containing this factory and as
+   * described for look-ups by `actorOf(Iterable[String])`.
+   *
+   * Relative URIs like `myChild/grandChild` or `../myBrother` are looked up
+   * relative to the current context as described for look-ups by
+   * `actorOf(Iterable[String])`
+   */
   def actorFor(path: String): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
+   * Look-up an actor by applying the given path elements, starting from the
+   * current context, where `".."` signifies the parent of an actor.
+   *
+   * Example:
+   * {{{
+   * class MyActor extends Actor {
+   *   def receive = {
+   *     case msg =>
+   *       ...
+   *       val target = context.actorFor(Seq("..", "myBrother", "myNephew"))
+   *       ...
+   *   }
+   * }
+   * }}}
+   *
    * For maximum performance use a collection with efficient head & tail operations.
    */
   def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
+
+  /**
+   * Look-up an actor by applying the given path elements, starting from the
+   * current context, where `".."` signifies the parent of an actor.
+   *
+   * Example:
+   * {{{
+   * public class MyActor extends UntypedActor {
+   *   public void onReceive(Object msg) throws Exception {
+   *     ...
+   *     final List<String> path = new ArrayList<String>();
+   *     path.add("..");
+   *     path.add("myBrother");
+   *     path.add("myNephew");
+   *     final ActorRef target = context().actorFor(path);
+   *     ...
+   *   }
+   * }
+   * }}}
+   *
+   * For maximum performance use a collection with efficient head & tail operations.
+   */
+  def actorFor(path: java.util.List[String]): ActorRef = {
+    import scala.collection.JavaConverters._
+    provider.actorFor(lookupRoot, path.asScala)
+  }
+
+  /**
+   * Construct an [[akka.actor.ActorSelection]] from the given path, which is
+   * parsed for wildcards (these are replaced by regular expressions
+   * internally). No attempt is made to verify the existence of any part of
+   * the supplied path, it is recommended to send a message and gather the
+   * replies in order to resolve the matching set of actors.
+   */
+  def actorSelection(path: String): ActorSelection = ActorSelection(lookupRoot, path)
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)

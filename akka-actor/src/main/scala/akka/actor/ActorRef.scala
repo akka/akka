@@ -162,7 +162,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  */
-private[akka] trait InternalActorRef extends ActorRef with ScalaActorRef {
+private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef {
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit

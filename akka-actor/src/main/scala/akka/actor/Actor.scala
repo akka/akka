@@ -15,15 +15,13 @@ import akka.event.Logging.Debug
 import akka.event.LogSource
 import akka.experimental
 import akka.AkkaException
-
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-
 import com.eaio.uuid.UUID
-
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.TimeUnit
 import java.util.{ Collection ⇒ JCollection }
+import java.util.regex.Pattern
 
 /**
  * Marker trait to show which Messages are automatically handled by Akka
@@ -64,6 +62,16 @@ case object Kill extends AutoReceivedMessage with PossiblyHarmful
 case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
 
 case object ReceiveTimeout extends PossiblyHarmful
+
+/**
+ * ActorRefFactory.actorSelection returns a special ref which sends these
+ * nested path descriptions whenever using ! on them, the idea being that the
+ * message is delivered by active routing of the various actors involved.
+ */
+sealed trait SelectionPath extends AutoReceivedMessage
+case class SelectChildName(name: String, next: Any) extends SelectionPath
+case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
+case class SelectParent(next: Any) extends SelectionPath
 
 // Exceptions for Actors
 class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)

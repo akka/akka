@@ -381,6 +381,9 @@ private[akka] class ActorCell(
       case ChildTerminated           ⇒ handleChildTerminated(sender)
       case Kill                      ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                ⇒ self.stop()
+      case SelectParent(m)           ⇒ parent.tell(m, msg.sender)
+      case SelectChildName(name, m)  ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
+      case SelectChildPattern(p, m)  ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
 
