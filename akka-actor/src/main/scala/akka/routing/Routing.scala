@@ -177,12 +177,9 @@ abstract private[akka] class AbstractRoutedActorRef(val system: ActorSystem, val
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
  * on (or more) of these actors.
  */
-private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: ActorRef, name: String) extends AbstractRoutedActorRef(system, routedProps) {
+private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: InternalActorRef, name: String) extends AbstractRoutedActorRef(system, routedProps) {
 
   val path = supervisor.path / name
-
-  // FIXME (actor path): address normally has host and port, what about routed actor ref?
-  def address = "routed:/" + path.toString
 
   @volatile
   private var running: Boolean = true
@@ -194,6 +191,7 @@ private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedP
       if (running) {
         running = false
         router.route(Routing.Broadcast(PoisonPill))(this)
+        supervisor.sendSystemMessage(akka.dispatch.ChildTerminated(this))
       }
     }
   }
