@@ -14,6 +14,7 @@ import akka.remote.RemoteAddress
 import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
+import scala.annotation.tailrec
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -166,6 +167,20 @@ private[akka] trait InternalActorRef extends ActorRef with ScalaActorRef {
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def sendSystemMessage(message: SystemMessage): Unit
+  def getParent: InternalActorRef
+  /**
+   * Obtain ActorRef by possibly traversing the actor tree or looking it up at
+   * some provider-specific location. This method shall return the end result,
+   * i.e. not only the next step in the look-up; this will typically involve
+   * recursive invocation. A path element of ".." signifies the parent, a
+   * trailing "" element must be disregarded. If the requested path does not
+   * exist, return Nobody.
+   */
+  def getChild(name: Iterable[String]): InternalActorRef
+}
+
+private[akka] case object Nobody extends MinimalActorRef {
+  val path = new RootActorPath(new LocalAddress("all-systems"), "/Nobody")
 }
 
 /**
@@ -223,6 +238,40 @@ class LocalActorRef private[akka] (
    */
   def stop(): Unit = actorCell.stop()
 
+  def getParent: InternalActorRef = actorCell.parent
+
+  /**
+   * Method for looking up a single child beneath this actor. Override in order
+   * to inject “synthetic” actor paths like “/temp”.
+   */
+  protected def getSingleChild(name: String): InternalActorRef = {
+    val children = actorCell.childrenRefs
+    if (children contains name) children(name).child.asInstanceOf[InternalActorRef]
+    else Nobody
+  }
+
+  def getChild(names: Iterable[String]): InternalActorRef = {
+    /*
+     * The idea is to recursively descend as far as possible with LocalActor
+     * Refs and hand over to that “foreign” child when we encounter it.
+     */
+    @tailrec
+    def rec(ref: InternalActorRef, name: Iterable[String]): InternalActorRef = ref match {
+      case l: LocalActorRef ⇒
+        val n = name.head
+        val rest = name.tail
+        val next = n match {
+          case ".." ⇒ l.getParent
+          case ""   ⇒ l
+          case _    ⇒ l.getSingleChild(n)
+        }
+        if (next == Nobody || rest.isEmpty) next else rec(next, rest)
+      case _ ⇒
+        ref.getChild(name)
+    }
+    rec(this, names)
+  }
+
   // ========= AKKA PROTECTED FUNCTIONS =========
 
   protected[akka] def underlying: ActorCell = actorCell
@@ -270,6 +319,11 @@ case class SerializedActorRef(path: String) {
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
 trait MinimalActorRef extends InternalActorRef {
+
+  def getParent: InternalActorRef = Nobody
+  def getChild(name: Iterable[String]): InternalActorRef =
+    if (name.size == 1 && name.head.isEmpty) this
+    else Nobody
 
   //FIXME REMOVE THIS, ticket #1416 
   //FIXME REMOVE THIS, ticket #1415
@@ -341,7 +395,13 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
-class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
+class AskActorRef(
+  val path: ActorPath,
+  override val getParent: InternalActorRef,
+  deathWatch: DeathWatch,
+  timeout: Timeout,
+  val dispatcher: MessageDispatcher) extends MinimalActorRef {
+
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
   {

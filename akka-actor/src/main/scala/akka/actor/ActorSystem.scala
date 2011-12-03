@@ -202,6 +202,11 @@ abstract class ActorSystem extends ActorRefFactory {
   def /(name: String): ActorPath
 
   /**
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   */
+  def /(name: Iterable[String]): ActorPath
+
+  /**
    * Start-up time in milliseconds since the epoch.
    */
   val startTime = System.currentTimeMillis
@@ -382,6 +387,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
+  def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: InternalActorRef = provider.guardian
   def systemGuardian: InternalActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
@@ -392,6 +398,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
   def /(actorName: String): ActorPath = guardian.path / actorName
+  def /(path: Iterable[String]): ActorPath = guardian.path / path
 
   private lazy val _start: this.type = {
     provider.init(this)

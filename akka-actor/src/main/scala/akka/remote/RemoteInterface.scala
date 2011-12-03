@@ -46,7 +46,7 @@ object RemoteActorPath {
       if (uri.getHost == null) return None
       if (uri.getPort == -1) return None
       if (uri.getPath == null) return None
-      Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), uri.getPath.split("/").drop(1))
+      Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), ActorPath.split(uri.getPath).drop(1))
     } catch {
       case _: URISyntaxException ⇒ None
     }

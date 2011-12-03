@@ -7,6 +7,18 @@ import scala.annotation.tailrec
 object ActorPath {
   // this cannot really be changed due to usage of standard URI syntax
   final val separator = "/"
+  final val sepLen = separator.length
+
+  def split(s: String): List[String] = {
+    @tailrec
+    def rec(pos: Int, acc: List[String]): List[String] = {
+      val from = s.lastIndexOf(separator, pos - 1)
+      val sub = s.substring(from + sepLen, pos)
+      val l = sub :: acc
+      if (from == -1) l else rec(from, l)
+    }
+    rec(s.length, Nil)
+  }
 }
 
 /**
@@ -70,7 +82,7 @@ final case class RootActorPath(address: Address, name: String = ActorPath.separa
 
   def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def pathElements: Iterable[String] = Iterable.empty
+  val pathElements: Iterable[String] = List("")
 
   override val toString = address + name
 

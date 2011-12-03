@@ -141,7 +141,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
         message.getActorPath match {
           case RemoteActorPath(addr, elems) if addr == remoteAddress && elems.size > 0 ⇒
             val name = elems.last
-            systemImpl.provider.actorFor(elems.dropRight(1)) match {
+            systemImpl.provider.actorFor(systemImpl.lookupRoot, elems.dropRight(1)) match {
               case x if x eq system.deadLetters ⇒
                 log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
               case parent ⇒
@@ -246,7 +246,7 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
   val provider = remote.system.asInstanceOf[ActorSystemImpl].provider
 
   lazy val sender: ActorRef =
-    if (input.hasSender) provider.actorFor(input.getSender.getPath)
+    if (input.hasSender) provider.actorFor(provider.rootGuardian, input.getSender.getPath)
     else remote.system.deadLetters
 
   lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath)

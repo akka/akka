@@ -22,6 +22,16 @@ case class LocalAddress(systemName: String) extends Address {
   def hostPort = systemName
 }
 
+object RelativeActorPath {
+  def unapply(addr: String): Option[Iterable[String]] = {
+    try {
+      val uri = new URI(addr)
+      if (uri.isAbsolute) None
+      else Some(ActorPath.split(uri.getPath))
+    }
+  }
+}
+
 object LocalActorPath {
   def unapply(addr: String): Option[(LocalAddress, Iterable[String])] = {
     try {
@@ -30,7 +40,7 @@ object LocalActorPath {
       if (uri.getUserInfo != null) return None
       if (uri.getHost == null) return None
       if (uri.getPath == null) return None
-      Some(LocalAddress(uri.getHost), uri.getPath.split("/").drop(1))
+      Some(LocalAddress(uri.getHost), ActorPath.split(uri.getPath).drop(1))
     } catch {
       case _: URISyntaxException ⇒ None
     }

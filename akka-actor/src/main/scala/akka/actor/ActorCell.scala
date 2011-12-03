@@ -85,6 +85,8 @@ private[akka] class ActorCell(
 
   protected final def guardian = self
 
+  protected final def lookupRoot = self
+
   final def provider = system.provider
 
   override def receiveTimeout: Option[Long] = if (receiveTimeoutData._1 > 0) Some(receiveTimeoutData._1) else None
@@ -97,6 +99,8 @@ private[akka] class ActorCell(
   var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get, emptyCancellable) else emptyReceiveTimeoutData
 
+  // this is accessed without further synchronization during actorFor look-ups
+  @volatile
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   protected def isDuplicate(name: String): Boolean = {

@@ -39,6 +39,7 @@ class RemoteActorRefProvider(
   val log = Logging(eventStream, "RemoteActorRefProvider")
 
   def deathWatch = local.deathWatch
+  def rootGuardian = local.rootGuardian
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
   def nodename = remoteExtension.NodeName
@@ -181,8 +182,8 @@ class RemoteActorRefProvider(
   }
 
   def actorFor(path: ActorPath): InternalActorRef = local.actorFor(path)
-  def actorFor(path: String): InternalActorRef = local.actorFor(path)
-  def actorFor(path: Iterable[String]): InternalActorRef = local.actorFor(path)
+  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = local.actorFor(ref, path)
+  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
   // TODO remove me
   val optimizeLocal = new AtomicBoolean(true)
@@ -267,12 +268,12 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends InternalActorRef {
 
+  // FIXME
+  def getParent = Nobody
+  def getChild(name: Iterable[String]) = Nobody
+
   @volatile
   private var running: Boolean = true
-
-  def name = path.name
-
-  def address = remoteAddress + path.toString
 
   def isTerminated: Boolean = !running
 
