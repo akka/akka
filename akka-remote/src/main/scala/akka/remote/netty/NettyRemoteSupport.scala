@@ -647,7 +647,7 @@ class RemoteServerHandler(
         instruction.getCommandType match {
           case CommandType.CONNECT if UsePassiveConnections ⇒
             val origin = instruction.getOrigin
-            // FIXME need to include system-name in remote protocol
+            // FIXME RK need to include system-name in remote protocol
             val inbound = RemoteAddress("BORKED", origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
@@ -667,7 +667,7 @@ class RemoteServerHandler(
 
   private def getClientAddress(c: Channel): Option[RemoteAddress] =
     c.getRemoteAddress match {
-      case inet: InetSocketAddress ⇒ Some(RemoteAddress("BORKED", inet.getHostName, inet.getPort)) // FIXME Broken!
+      case inet: InetSocketAddress ⇒ Some(RemoteAddress("BORKED", inet.getHostName, inet.getPort)) // FIXME RK Broken!
       case _                       ⇒ None
     }
 }

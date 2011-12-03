@@ -111,7 +111,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    */
   def isTerminated: Boolean
 
-  // FIXME check if we should scramble the bits or whether they can stay the same
+  // FIXME RK check if we should scramble the bits or whether they can stay the same
   override def hashCode: Int = path.hashCode
 
   override def equals(that: Any): Boolean = that match {
@@ -302,7 +302,6 @@ class LocalActorRef private[akka] (
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-// FIXME: remove and replace by ActorPath.toString
 case class SerializedActorRef(path: String) {
   import akka.serialization.Serialization.currentSystem
 

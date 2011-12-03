@@ -268,7 +268,7 @@ private[akka] case class RemoteActorRef private[akka] (
   loader: Option[ClassLoader])
   extends InternalActorRef {
 
-  // FIXME
+  // FIXME RK
   def getParent = Nobody
   def getChild(name: Iterable[String]) = Nobody
 

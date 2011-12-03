@@ -29,7 +29,7 @@ object Mailbox {
   final val Scheduled = 4
 
   // mailbox debugging helper using println (see below)
-  // FIXME TODO take this out before release (but please leave in until M2!)
+  // FIXME RK take this out before release (but please leave in until M2!)
   final val debug = false
 }
 

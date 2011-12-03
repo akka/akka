@@ -146,6 +146,7 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     }
   }
 
+  // TODO RK investigate Phil’s hash from scala.collection.mutable.HashTable.improve
   override def hashCode: Int = {
     import scala.util.MurmurHash._
 
