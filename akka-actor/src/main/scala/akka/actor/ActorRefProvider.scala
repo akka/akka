@@ -578,21 +578,24 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
  * when the scheduler is created.
  */
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
+  import org.jboss.netty.akka.util.{ Timeout ⇒ HWTimeout }
+
+  private def exec(task: TimerTask, delay: Duration): HWTimeout = hashedWheelTimer.newTimeout(task, delay)
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(receiver, message, delay), initialDelay))
+    new DefaultCancellable(exec(createContinuousTask(receiver, message, delay), initialDelay))
 
   def schedule(f: () ⇒ Unit, initialDelay: Duration, delay: Duration): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(f, delay), initialDelay))
+    new DefaultCancellable(exec(createContinuousTask(f, delay), initialDelay))
 
   def scheduleOnce(runnable: Runnable, delay: Duration): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay))
+    new DefaultCancellable(exec(createSingleTask(runnable), delay))
 
   def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(receiver, message), delay))
+    new DefaultCancellable(exec(createSingleTask(receiver, message), delay))
 
   def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay))
+    new DefaultCancellable(exec(createSingleTask(f), delay))
 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
@@ -621,7 +624,9 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
         // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
         if (!receiver.isTerminated) {
           receiver ! message
-          timeout.getTimer.newTimeout(this, delay)
+          try timeout.getTimer.newTimeout(this, delay) catch {
+            case _: IllegalStateException ⇒ // stop recurring if timer is stopped
+          }
         } else {
           log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
         }
@@ -633,12 +638,24 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
         dispatcher.dispatchTask(f)
-        timeout.getTimer.newTimeout(this, delay)
+        try timeout.getTimer.newTimeout(this, delay) catch {
+          case _: IllegalStateException ⇒ // stop recurring if timer is stopped
+        }
       }
     }
   }
 
-  def close() = hashedWheelTimer.stop()
+  private def execDirectly(t: HWTimeout): Unit = {
+    try t.getTask.run(t) catch {
+      case e: InterruptedException ⇒ throw e
+      case e: Exception            ⇒ log.error(e, "exception while executing timer task")
+    }
+  }
+
+  def close() = {
+    import scala.collection.JavaConverters._
+    hashedWheelTimer.stop().asScala foreach (t ⇒ execDirectly(t))
+  }
 }
 
 class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {

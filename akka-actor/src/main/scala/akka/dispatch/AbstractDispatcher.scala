@@ -212,7 +212,9 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            scheduler.scheduleOnce(this, shutdownTimeout)
+            try scheduler.scheduleOnce(this, shutdownTimeout) catch {
+              case _: IllegalStateException ⇒ shutdown()
+            }
           else run()
       }
     }

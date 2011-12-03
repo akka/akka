@@ -406,6 +406,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     eventStream.start(this)
     eventStream.startDefaultLoggers(this)
+    registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
@@ -416,16 +417,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
-  // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
-    try terminationFuture.await(10 seconds) catch {
-      case _: FutureTimeoutException ⇒ log.warning("Failed to stop [{}] within 10 seconds", name)
-    }
-    // Dispatchers shutdown themselves, but requires the scheduler
-    terminationFuture onComplete (_ ⇒ stopScheduler())
   }
 
+  /**
+   * Create the scheduler service. This one needs one special behavior: if
+   * Closeable, it MUST execute all outstanding tasks upon .close() in order
+   * to properly shutdown all dispatchers.
+   */
   protected def createScheduler(): Scheduler = {
     val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
     val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
@@ -443,12 +443,14 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     new DefaultScheduler(hwt, log, safeDispatcher)
   }
 
+  /*
+   * This is called after the last actor has signaled its termination, i.e. 
+   * after the last dispatcher has had its chance to schedule its shutdown 
+   * action.
+   */
   protected def stopScheduler(): Unit = scheduler match {
-    case x: Closeable ⇒
-      // Let dispatchers shutdown first.
-      // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
-      x.scheduleOnce(() ⇒ { x.close(); dispatcher.shutdown() }, settings.DispatcherDefaultShutdown * 4)
-    case _ ⇒
+    case x: Closeable ⇒ x.close()
+    case _            ⇒
   }
 
   private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]
