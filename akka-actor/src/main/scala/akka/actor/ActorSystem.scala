@@ -307,27 +307,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   protected def systemImpl = this
 
-  private val systemActors = new ConcurrentHashMap[String, ActorRef]
+  implicit def timeout = settings.ActorTimeout
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
-    if (systemActors.putIfAbsent(name, deadLetters) eq null) {
-      val actor = provider.actorOf(this, props, systemGuardian, name, true)
-      systemActors.replace(name, actor)
-      deathWatch.subscribe(systemActorsJanitor, actor)
-      actor
-    } else throw new InvalidActorNameException("system actor name " + name + " is not unique!")
-  }
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef =
+    (systemGuardian ? CreateChild(props, name)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
 
-  private val actors = new ConcurrentHashMap[String, ActorRef]
-
-  protected def isDuplicate(name: String): Boolean = {
-    actors.putIfAbsent(name, deadLetters) ne null
-  }
-
-  protected def actorCreated(name: String, actor: ActorRef): Unit = {
-    actors.replace(name, actor)
-    deathWatch.subscribe(actorsJanitor, actor)
-  }
+  def actorOf(props: Props, name: String): ActorRef =
+    (guardian ? CreateChild(props, name)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
 
   import settings._
 
@@ -369,17 +361,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
       case Left(e)                            ⇒ throw e
       case Right(p)                           ⇒ p
     }
-  }
-
-  /*
-   * these cannot be initialized before the provider is started because root
-   * Path may depend on the ability to register extensions for reading config
-   */
-  lazy val actorsJanitor = MinimalActorRef(provider.rootPath) {
-    case Terminated(x) ⇒ actors.remove(x.path.name)
-  }
-  lazy val systemActorsJanitor = MinimalActorRef(provider.rootPath) {
-    case Terminated(x) ⇒ systemActors.remove(x.path.name)
   }
 
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))

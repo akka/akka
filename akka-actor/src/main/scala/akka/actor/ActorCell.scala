@@ -103,16 +103,14 @@ private[akka] class ActorCell(
   @volatile
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
-  protected def isDuplicate(name: String): Boolean = {
-    if (childrenRefs contains name) true
-    else {
-      childrenRefs = childrenRefs.updated(name, ChildRestartStats(system.deadLetters))
-      false
-    }
-  }
-
-  protected def actorCreated(name: String, actor: ActorRef): Unit = {
-    childrenRefs = childrenRefs.updated(name, childrenRefs(name).copy(child = actor))
+  def actorOf(props: Props, name: String): ActorRef = {
+    if (name == null || name == "" || name.startsWith("$"))
+      throw new InvalidActorNameException("actor name must not be null, empty or start with $")
+    if (childrenRefs contains name)
+      throw new InvalidActorNameException("actor name " + name + " is not unique!")
+    val actor = provider.actorOf(systemImpl, props, guardian, name, false)
+    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
+    actor
   }
 
   var currentMessage: Envelope = null

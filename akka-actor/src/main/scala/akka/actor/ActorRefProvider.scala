@@ -140,21 +140,6 @@ trait ActorRefFactory {
   protected def randomName(): String
 
   /**
-   * Child names must be unique within the context of one parent; implement
-   * this method to have the default implementation of actorOf perform the
-   * check (and throw an exception if necessary).
-   */
-  protected def isDuplicate(name: String): Boolean
-
-  /**
-   * This method is called after successfully associating an ActorRef with a
-   * name; that name will have been found to be “no duplicate” by isDuplicate(),
-   * so this hook is used to implement a reservation scheme: isDuplicate
-   * reserves a name slot and actorCreated() fills it with the right ActorRef.
-   */
-  protected def actorCreated(name: String, actor: ActorRef): Unit
-
-  /**
    * Create new actor as child of this context and give it an automatically
    * generated name (currently similar to base64-encoded integer count,
    * reversed and with “$” prepended, may change in the future).
@@ -170,15 +155,7 @@ trait ActorRefFactory {
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
    */
-  def actorOf(props: Props, name: String): ActorRef = {
-    if (name == null || name == "" || name.startsWith("$"))
-      throw new InvalidActorNameException("actor name must not be null, empty or start with $")
-    if (isDuplicate(name))
-      throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    val a = provider.actorOf(systemImpl, props, guardian, name, false)
-    actorCreated(name, a)
-    a
-  }
+  def actorOf(props: Props, name: String): ActorRef
 
   /**
    * Create new actor of the given type as child of this context and give it an automatically
@@ -316,6 +293,8 @@ trait ActorRefFactory {
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
 
+private[akka] case class CreateChild(props: Props, name: String)
+
 /**
  * Local ActorRef provider.
  */
@@ -384,7 +363,8 @@ class LocalActorRefProvider(
 
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_) ⇒ context.self.stop()
+      case Terminated(_)            ⇒ context.self.stop()
+      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
     }
   }
 
@@ -393,6 +373,7 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
         context.self.stop()
+      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
     }
   }
 
@@ -508,7 +489,7 @@ class LocalActorRefProvider(
           new LocalActorRef(system, props, supervisor, routedPath, systemService)
         }
 
-        actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.toString)
+        actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.name)
 
       case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
     }
