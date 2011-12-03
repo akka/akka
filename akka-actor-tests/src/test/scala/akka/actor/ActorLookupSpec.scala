@@ -243,7 +243,7 @@ class ActorLookupSpec extends AkkaSpec {
       actors must be === Seq(c1, c2)
       expectNoMsg(1 second)
     }
-    
+
     "drop messages which cannot be delivered" in {
       implicit val sender = c2
       ActorSelection(c21, "../../*/c21") ! GetSender(testActor)

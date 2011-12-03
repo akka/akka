@@ -10,8 +10,8 @@ import scala.annotation.tailrec
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
 import akka.actor.Timeout.intToTimeout
 import akka.config.ConfigurationException
-import akka.dispatch.{ SystemMessage, Supervise, Promise, MessageDispatcher, Future, DefaultPromise, Dispatcher, Mailbox, Envelope }
-import akka.routing.{ ScatterGatherFirstCompletedRouter, Routing, RouterType, Router, RoutedProps, RoutedActorRef, RoundRobinRouter, RandomRouter, LocalConnectionManager, DirectRouter, BroadcastRouter }
+import akka.dispatch._
+import akka.routing._
 import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
@@ -369,15 +369,15 @@ class LocalActorRefProvider(
     override def isTerminated = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
-      case Failed(ex)      ⇒ causeOfTermination = Some(ex); sender.stop()
-      case ChildTerminated ⇒ stop()
-      case _               ⇒ log.error(this + " received unexpected message " + message)
+      case Failed(ex) ⇒ causeOfTermination = Some(ex); sender.stop()
+      case _          ⇒ log.error(this + " received unexpected message " + message)
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(child) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case _                ⇒ log.error(this + " received unexpected system message " + message)
+        case Supervise(child)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case ChildTerminated(child) ⇒ stop()
+        case _                      ⇒ log.error(this + " received unexpected system message " + message)
       }
     }
   }

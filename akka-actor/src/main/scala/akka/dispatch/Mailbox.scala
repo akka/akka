@@ -28,6 +28,9 @@ object Mailbox {
   // secondary status: Scheduled bit may be added to Open/Suspended
   final val Scheduled = 4
 
+  // mailbox debugging helper using println (see below)
+  // FIXME TODO take this out before release (but please leave in until M2!)
+  final val debug = false
 }
 
 /**
@@ -164,6 +167,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
           var processedMessages = 0
           val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
           do {
+            if (debug) println(actor.self + " processing message " + nextMessage)
             actor invoke nextMessage
             processAllSystemMessages() //After we're done, process all system messages
 
@@ -186,6 +190,7 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
     var nextMessage = systemDrain()
     try {
       while (nextMessage ne null) {
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
@@ -240,6 +245,7 @@ trait DefaultSystemMessageQueue { self: Mailbox ⇒
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.next eq null)
+    if (Mailbox.debug) println(actor.self + " having enqueued " + message)
     val head = systemQueueGet
     /*
      * this write is safely published by the compareAndSet contained within

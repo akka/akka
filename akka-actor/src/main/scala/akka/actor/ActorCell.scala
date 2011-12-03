@@ -269,6 +269,8 @@ private[akka] class ActorCell(
       val c = children
       if (c.isEmpty) doTerminate()
       else {
+        // do not process normal messages while waiting for all children to terminate
+        dispatcher suspend this
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "stopping"))
         for (child ← c) child.stop()
         stopping = true
@@ -290,8 +292,9 @@ private[akka] class ActorCell(
 
     try {
       if (stopping) message match {
-        case Terminate() ⇒ terminate() // to allow retry
-        case _           ⇒
+        case Terminate()            ⇒ terminate() // to allow retry
+        case ChildTerminated(child) ⇒ handleChildTerminated(child)
+        case _                      ⇒
       }
       else message match {
         case Create()        ⇒ create()
@@ -302,10 +305,11 @@ private[akka] class ActorCell(
         case Unlink(subject) ⇒
           system.deathWatch.unsubscribe(self, subject)
           if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "stopped monitoring " + subject))
-        case Suspend()        ⇒ suspend()
-        case Resume()         ⇒ resume()
-        case Terminate()      ⇒ terminate()
-        case Supervise(child) ⇒ supervise(child)
+        case Suspend()              ⇒ suspend()
+        case Resume()               ⇒ resume()
+        case Terminate()            ⇒ terminate()
+        case Supervise(child)       ⇒ supervise(child)
+        case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
       case e ⇒ //Should we really catch everything here?
@@ -324,9 +328,7 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg if stopping ⇒ // receiving Terminated in response to stopping children is too common to generate noise
-              if (!msg.isInstanceOf[Terminated]) system.deadLetterMailbox.enqueue(self, messageHandle)
-            case msg ⇒ actor(msg)
+            case msg                      ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
@@ -370,15 +372,10 @@ private[akka] class ActorCell(
   def autoReceiveMessage(msg: Envelope) {
     if (system.settings.DebugAutoReceive) system.eventStream.publish(Debug(self.path.toString, "received AutoReceiveMessage " + msg))
 
-    if (stopping) msg.message match {
-      case ChildTerminated ⇒ handleChildTerminated(sender)
-      case _               ⇒ system.deadLetterMailbox.enqueue(self, msg)
-    }
-    else msg.message match {
+    msg.message match {
       case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
       case RevertHotSwap             ⇒ unbecome()
       case Failed(cause)             ⇒ handleFailure(sender, cause)
-      case ChildTerminated           ⇒ handleChildTerminated(sender)
       case Kill                      ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                ⇒ self.stop()
       case SelectParent(m)           ⇒ parent.tell(m, msg.sender)
@@ -395,7 +392,7 @@ private[akka] class ActorCell(
       if (a ne null) a.postStop()
     } finally {
       try {
-        parent.tell(ChildTerminated, self)
+        parent.sendSystemMessage(ChildTerminated(self))
         system.deathWatch.publish(Terminated(self))
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "stopped"))
       } finally {

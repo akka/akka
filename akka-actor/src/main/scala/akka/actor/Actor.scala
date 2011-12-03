@@ -51,8 +51,6 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
 
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case object ChildTerminated extends AutoReceivedMessage with PossiblyHarmful
-
 case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
 case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
