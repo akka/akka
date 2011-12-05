@@ -61,7 +61,7 @@ sealed trait ActorPath extends Comparable[ActorPath] {
   /**
    * Sequence of names for this path. Performance implication: has to allocate a list.
    */
-  def pathElements: Iterable[String]
+  def elements: Iterable[String]
 
   /**
    * Walk up the tree to obtain and return the RootActorPath.
@@ -82,7 +82,7 @@ final case class RootActorPath(address: Address, name: String = ActorPath.separa
 
   def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  val pathElements: Iterable[String] = List("")
+  val elements: Iterable[String] = List("")
 
   override val toString = address + name
 
@@ -98,7 +98,7 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
 
   def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def pathElements: Iterable[String] = {
+  def elements: Iterable[String] = {
     @tailrec
     def rec(p: ActorPath, acc: List[String]): Iterable[String] = p match {
       case r: RootActorPath ⇒ acc

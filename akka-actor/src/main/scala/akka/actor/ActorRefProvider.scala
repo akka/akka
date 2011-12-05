@@ -451,7 +451,7 @@ class LocalActorRefProvider(
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
-    if (path.root == rootPath) actorFor(rootGuardian, path.pathElements)
+    if (path.root == rootPath) actorFor(rootGuardian, path.elements)
     else deadLetters
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =

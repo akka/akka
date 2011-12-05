@@ -61,21 +61,21 @@ class ActorLookupSpec extends AkkaSpec {
     }
 
     "find actors by looking up their root-anchored relative path" in {
-      system.actorFor(c1.path.pathElements.mkString("/", "/", "")) must be === c1
-      system.actorFor(c2.path.pathElements.mkString("/", "/", "")) must be === c2
-      system.actorFor(c21.path.pathElements.mkString("/", "/", "")) must be === c21
+      system.actorFor(c1.path.elements.mkString("/", "/", "")) must be === c1
+      system.actorFor(c2.path.elements.mkString("/", "/", "")) must be === c2
+      system.actorFor(c21.path.elements.mkString("/", "/", "")) must be === c21
     }
 
     "find actors by looking up their relative path" in {
-      system.actorFor(c1.path.pathElements.mkString("/")) must be === c1
-      system.actorFor(c2.path.pathElements.mkString("/")) must be === c2
-      system.actorFor(c21.path.pathElements.mkString("/")) must be === c21
+      system.actorFor(c1.path.elements.mkString("/")) must be === c1
+      system.actorFor(c2.path.elements.mkString("/")) must be === c2
+      system.actorFor(c21.path.elements.mkString("/")) must be === c21
     }
 
     "find actors by looking up their path elements" in {
-      system.actorFor(c1.path.pathElements) must be === c1
-      system.actorFor(c2.path.pathElements) must be === c2
-      system.actorFor(c21.path.pathElements) must be === c21
+      system.actorFor(c1.path.elements) must be === c1
+      system.actorFor(c2.path.elements) must be === c2
+      system.actorFor(c21.path.elements) must be === c21
     }
 
     "find system-generated actors" in {
@@ -109,10 +109,10 @@ class ActorLookupSpec extends AkkaSpec {
     "find temporary actors" in {
       val f = c1 ? GetSender(testActor)
       val a = expectMsgType[ActorRef]
-      a.path.pathElements.head must be === "temp"
+      a.path.elements.head must be === "temp"
       system.actorFor(a.path) must be === a
       system.actorFor(a.path.toString) must be === a
-      system.actorFor(a.path.pathElements) must be === a
+      system.actorFor(a.path.elements) must be === a
       system.actorFor(a.path.toString + "/") must be === a
       system.actorFor(a.path.toString + "/hallo") must be === system.deadLetters
       f.isCompleted must be === false
@@ -151,8 +151,8 @@ class ActorLookupSpec extends AkkaSpec {
 
     "find actors by looking up their root-anchored relative path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        (looker ? LookupString(pathOf.path.pathElements.mkString("/", "/", ""))).get must be === result
-        (looker ? LookupString(pathOf.path.pathElements.mkString("/", "/", "/"))).get must be === result
+        (looker ? LookupString(pathOf.path.elements.mkString("/", "/", ""))).get must be === result
+        (looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/"))).get must be === result
       }
       for {
         looker ← all
@@ -170,7 +170,7 @@ class ActorLookupSpec extends AkkaSpec {
       for {
         looker ← Seq(c1, c2)
         target ← all
-      } check(looker, target, Seq("..") ++ target.path.pathElements.drop(1): _*)
+      } check(looker, target, Seq("..") ++ target.path.elements.drop(1): _*)
       check(c21, user, "..", "..")
       check(c21, root, "..", "..", "..")
       check(c21, root, "..", "..", "..", "..")
@@ -182,8 +182,8 @@ class ActorLookupSpec extends AkkaSpec {
           (looker ? LookupPath(target.path)).get must be === target
           (looker ? LookupString(target.path.toString)).get must be === target
           (looker ? LookupString(target.path.toString + "/")).get must be === target
-          (looker ? LookupString(target.path.pathElements.mkString("/", "/", ""))).get must be === target
-          if (target != root) (looker ? LookupString(target.path.pathElements.mkString("/", "/", "/"))).get must be === target
+          (looker ? LookupString(target.path.elements.mkString("/", "/", ""))).get must be === target
+          if (target != root) (looker ? LookupString(target.path.elements.mkString("/", "/", "/"))).get must be === target
         }
       }
       for (target ← Seq(root, syst, user, system.deadLetters)) check(target)
@@ -207,16 +207,16 @@ class ActorLookupSpec extends AkkaSpec {
     "find temporary actors" in {
       val f = c1 ? GetSender(testActor)
       val a = expectMsgType[ActorRef]
-      a.path.pathElements.head must be === "temp"
+      a.path.elements.head must be === "temp"
       (c2 ? LookupPath(a.path)).get must be === a
       (c2 ? LookupString(a.path.toString)).get must be === a
-      (c2 ? LookupString(a.path.pathElements.mkString("/", "/", ""))).get must be === a
-      (c2 ? LookupString("../../" + a.path.pathElements.mkString("/"))).get must be === a
+      (c2 ? LookupString(a.path.elements.mkString("/", "/", ""))).get must be === a
+      (c2 ? LookupString("../../" + a.path.elements.mkString("/"))).get must be === a
       (c2 ? LookupString(a.path.toString + "/")).get must be === a
-      (c2 ? LookupString(a.path.pathElements.mkString("/", "/", "") + "/")).get must be === a
-      (c2 ? LookupString("../../" + a.path.pathElements.mkString("/") + "/")).get must be === a
-      (c2 ? LookupElems(Seq("..", "..") ++ a.path.pathElements)).get must be === a
-      (c2 ? LookupElems(Seq("..", "..") ++ a.path.pathElements :+ "")).get must be === a
+      (c2 ? LookupString(a.path.elements.mkString("/", "/", "") + "/")).get must be === a
+      (c2 ? LookupString("../../" + a.path.elements.mkString("/") + "/")).get must be === a
+      (c2 ? LookupElems(Seq("..", "..") ++ a.path.elements)).get must be === a
+      (c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ "")).get must be === a
       f.isCompleted must be === false
       a ! 42
       f.isCompleted must be === true

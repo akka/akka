@@ -212,7 +212,7 @@ class RemoteActorRefProvider(
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 
-    val connectionFactory = () ⇒ actorFor(RootActorPath(remoteAddress) / remote.remoteDaemon.path.pathElements)
+    val connectionFactory = () ⇒ actorFor(RootActorPath(remoteAddress) / remote.remoteDaemon.path.elements)
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
