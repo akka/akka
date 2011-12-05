@@ -60,7 +60,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   /**
    * Comparison only takes address into account.
    */
-  def compareTo(other: ActorRef) = this.path compareTo other.path
+  final def compareTo(other: ActorRef) = this.path compareTo other.path
 
   /**
    * Sends the specified message to the sender, i.e. fire-and-forget semantics.<p/>
@@ -112,9 +112,9 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   def isTerminated: Boolean
 
   // FIXME RK check if we should scramble the bits or whether they can stay the same
-  override def hashCode: Int = path.hashCode
+  final override def hashCode: Int = path.hashCode
 
-  override def equals(that: Any): Boolean = that match {
+  final override def equals(that: Any): Boolean = that match {
     case other: ActorRef ⇒ path == other.path
     case _               ⇒ false
   }
@@ -161,6 +161,8 @@ trait ScalaActorRef { ref: ActorRef ⇒
 /**
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
+ *
+ * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
 private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef {
   def resume(): Unit
@@ -412,7 +414,7 @@ class AskActorRef(
     result onTimeout callback
   }
 
-  protected def whenDone(): Unit = {}
+  protected def whenDone(): Unit = ()
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case Status.Success(r) ⇒ result.completeWithResult(r)

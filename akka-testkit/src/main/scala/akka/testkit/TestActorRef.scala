@@ -62,10 +62,6 @@ class TestActorRef[T <: Actor](
 
   override def toString = "TestActor[" + path + "]"
 
-  override def equals(other: Any) = other match {
-    case r: TestActorRef[_] ⇒ path == r.path
-    case _                  ⇒ false
-  }
 }
 
 object TestActorRef {

@@ -102,7 +102,7 @@ private[akka] class ActorCell(
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   def actorOf(props: Props, name: String): ActorRef = {
-    if (name == null || name == "" || name.startsWith("$"))
+    if (name == null || name == "" || name.charAt(0) == '$')
       throw new InvalidActorNameException("actor name must not be null, empty or start with $")
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")

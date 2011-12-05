@@ -5,15 +5,11 @@ package akka.actor
 import scala.annotation.tailrec
 
 object ActorPath {
-  // this cannot really be changed due to usage of standard URI syntax
-  final val separator = "/"
-  final val sepLen = separator.length
-
   def split(s: String): List[String] = {
     @tailrec
     def rec(pos: Int, acc: List[String]): List[String] = {
-      val from = s.lastIndexOf(separator, pos - 1)
-      val sub = s.substring(from + sepLen, pos)
+      val from = s.lastIndexOf('/', pos - 1)
+      val sub = s.substring(from + 1, pos)
       val l = sub :: acc
       if (from == -1) l else rec(from, l)
     }
@@ -74,7 +70,7 @@ sealed trait ActorPath extends Comparable[ActorPath] {
  * Root of the hierarchy of ActorPaths. There is exactly root per ActorSystem
  * and node (for remote-enabled or clustered systems).
  */
-final case class RootActorPath(address: Address, name: String = ActorPath.separator) extends ActorPath {
+final case class RootActorPath(address: Address, name: String = "/") extends ActorPath {
 
   def parent: ActorPath = this
 
@@ -124,12 +120,11 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
    */
   override def toString = {
     @tailrec
-    def rec(p: ActorPath, s: String): String = p match {
-      case r: RootActorPath ⇒ r + s
-      case _ if s.isEmpty   ⇒ rec(p.parent, name)
-      case _                ⇒ rec(p.parent, p.name + ActorPath.separator + s)
+    def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
+      case r: RootActorPath ⇒ s.insert(0, r.toString)
+      case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
     }
-    rec(this, "")
+    rec(parent, new StringBuilder(32).append(name)).toString
   }
 
   override def equals(other: Any): Boolean = {

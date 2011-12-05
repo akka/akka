@@ -69,7 +69,7 @@ trait ActorRefProvider {
    * and then—when the ActorSystem is constructed—the second phase during
    * which actors may be created (e.g. the guardians).
    */
-  def init(system: ActorSystemImpl)
+  def init(system: ActorSystemImpl): Unit
 
   private[akka] def deployer: Deployer
 
@@ -293,6 +293,9 @@ trait ActorRefFactory {
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
 
+/**
+ * Internal Akka use only, used in implementation of system.actorOf.
+ */
 private[akka] case class CreateChild(props: Props, name: String)
 
 /**
@@ -324,7 +327,7 @@ class LocalActorRefProvider(
 
   private val tempNode = rootPath / "temp"
 
-  def tempPath() = tempNode / tempName
+  def tempPath() = tempNode / tempName()
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
@@ -348,8 +351,8 @@ class LocalActorRefProvider(
     override def isTerminated = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
-      case Failed(ex) ⇒ causeOfTermination = Some(ex); sender.stop()
-      case _          ⇒ log.error(this + " received unexpected message " + message)
+      case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.stop()
+      case _                            ⇒ log.error(this + " received unexpected message " + message)
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
@@ -422,12 +425,12 @@ class LocalActorRefProvider(
     def path = tempNode
     override def getParent = rootGuardian
     override def getChild(name: Iterable[String]): InternalActorRef = {
-      val c = children.get(name.head)
-      if (c == null) Nobody
-      else {
-        val t = name.tail
-        if (t.isEmpty) c
-        else c.getChild(t)
+      children.get(name.head) match {
+        case null ⇒ Nobody
+        case some ⇒
+          val t = name.tail
+          if (t.isEmpty) some
+          else some.getChild(t)
       }
     }
   }
@@ -563,22 +566,22 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
   import org.jboss.netty.akka.util.{ Timeout ⇒ HWTimeout }
 
-  private def exec(task: TimerTask, delay: Duration): HWTimeout = hashedWheelTimer.newTimeout(task, delay)
+  private def schedule(task: TimerTask, delay: Duration): HWTimeout = hashedWheelTimer.newTimeout(task, delay)
 
   def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, delay: Duration): Cancellable =
-    new DefaultCancellable(exec(createContinuousTask(receiver, message, delay), initialDelay))
+    new DefaultCancellable(schedule(createContinuousTask(receiver, message, delay), initialDelay))
 
   def schedule(f: () ⇒ Unit, initialDelay: Duration, delay: Duration): Cancellable =
-    new DefaultCancellable(exec(createContinuousTask(f, delay), initialDelay))
+    new DefaultCancellable(schedule(createContinuousTask(f, delay), initialDelay))
 
   def scheduleOnce(runnable: Runnable, delay: Duration): Cancellable =
-    new DefaultCancellable(exec(createSingleTask(runnable), delay))
+    new DefaultCancellable(schedule(createSingleTask(runnable), delay))
 
   def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable =
-    new DefaultCancellable(exec(createSingleTask(receiver, message), delay))
+    new DefaultCancellable(schedule(createSingleTask(receiver, message), delay))
 
   def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable =
-    new DefaultCancellable(exec(createSingleTask(f), delay))
+    new DefaultCancellable(schedule(createSingleTask(f), delay))
 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
@@ -637,7 +640,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
 
   def close() = {
     import scala.collection.JavaConverters._
-    hashedWheelTimer.stop().asScala foreach (t ⇒ execDirectly(t))
+    hashedWheelTimer.stop().asScala foreach execDirectly
   }
 }
 

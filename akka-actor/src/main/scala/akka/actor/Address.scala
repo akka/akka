@@ -36,11 +36,8 @@ object LocalActorPath {
   def unapply(addr: String): Option[(LocalAddress, Iterable[String])] = {
     try {
       val uri = new URI(addr)
-      if (uri.getScheme != "akka") return None
-      if (uri.getUserInfo != null) return None
-      if (uri.getHost == null) return None
-      if (uri.getPath == null) return None
-      Some(LocalAddress(uri.getHost), ActorPath.split(uri.getPath).drop(1))
+      if (uri.getScheme != "akka" || uri.getUserInfo != null || uri.getHost == null || uri.getPath == null) None
+      else Some(LocalAddress(uri.getHost), ActorPath.split(uri.getPath).drop(1))
     } catch {
       case _: URISyntaxException ⇒ None
     }

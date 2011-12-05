@@ -41,12 +41,8 @@ object RemoteActorPath {
   def unapply(addr: String): Option[(RemoteAddress, Iterable[String])] = {
     try {
       val uri = new URI(addr)
-      if (uri.getScheme != "akka") return None
-      if (uri.getUserInfo == null) return None
-      if (uri.getHost == null) return None
-      if (uri.getPort == -1) return None
-      if (uri.getPath == null) return None
-      Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), ActorPath.split(uri.getPath).drop(1))
+      if (uri.getScheme != "akka" || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1 || uri.getPath == null) None
+      else Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), ActorPath.split(uri.getPath).drop(1))
     } catch {
       case _: URISyntaxException ⇒ None
     }
