@@ -365,6 +365,7 @@ class LocalActorRefProvider(
     def receive = {
       case Terminated(_)            ⇒ context.self.stop()
       case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -374,6 +375,7 @@ class LocalActorRefProvider(
         eventStream.stopDefaultLoggers()
         context.self.stop()
       case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 

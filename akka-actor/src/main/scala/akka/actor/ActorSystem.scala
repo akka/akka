@@ -385,7 +385,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     provider.init(this)
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-    eventStream.start(this)
     eventStream.startDefaultLoggers(this)
     registerOnTermination(stopScheduler())
     loadExtensions()

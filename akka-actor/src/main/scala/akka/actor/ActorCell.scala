@@ -168,14 +168,6 @@ private[akka] class ActorCell(
 
   final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
 
-  final def getChild(name: String): ActorRef =
-    if (isTerminated) null
-    else {
-      val c = childrenRefs
-      if (c contains name) c(name).child
-      else null
-    }
-
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
 

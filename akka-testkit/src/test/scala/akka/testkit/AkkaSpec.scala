@@ -13,6 +13,7 @@ import akka.util.duration._
 import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import akka.actor.PoisonPill
 
 object TimingTest extends Tag("timing")
 
@@ -89,7 +90,9 @@ abstract class AkkaSpec(_system: ActorSystem)
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AkkaSpecSpec extends WordSpec with MustMatchers {
+
   "An AkkaSpec" must {
+
     "terminate all actors" in {
       import scala.collection.JavaConverters._
       val conf = Map(
@@ -103,6 +106,22 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       system.stop()
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
+
+    "must stop correctly when sending PoisonPill to rootGuardian" in {
+      import scala.collection.JavaConverters._
+      val conf = Map(
+        "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
+        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
+      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val spec = new AkkaSpec(system) {}
+      val latch = new TestLatch(1)(system)
+      system.registerOnTermination(latch.countDown())
+
+      system.actorFor("/") ! PoisonPill
+
+      latch.await(2 seconds)
+    }
+
   }
 }
 
