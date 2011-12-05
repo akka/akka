@@ -224,9 +224,9 @@ object LogSource {
  */
 object Logging {
 
-  object Extension extends ExtensionKey[Ext]
+  object Extension extends ExtensionKey[LogExt]
 
-  class Ext(system: ActorSystemImpl) extends Extension {
+  class LogExt(system: ActorSystemImpl) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
   }

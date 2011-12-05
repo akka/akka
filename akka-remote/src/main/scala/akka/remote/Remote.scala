@@ -139,7 +139,7 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
           }
 
         message.getActorPath match {
-          case RemoteActorPath(addr, elems) if addr == remoteAddress && elems.size > 0 ⇒
+          case RemoteActorPath(`remoteAddress`, elems) if elems.size > 0 ⇒
             val name = elems.last
             systemImpl.provider.actorFor(systemImpl.lookupRoot, elems.dropRight(1)) match {
               case x if x eq system.deadLetters ⇒

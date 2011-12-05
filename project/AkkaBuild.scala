@@ -81,6 +81,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(stm, actorTests % "test->test", testkit % "test->test"),
+    // FIXME re-enable ASAP
     settings = defaultSettings /*++ multiJvmSettings*/ ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
