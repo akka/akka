@@ -99,8 +99,6 @@ private[akka] class ActorCell(
   var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get, emptyCancellable) else emptyReceiveTimeoutData
 
-  // this is accessed without further synchronization during actorFor look-ups
-  @volatile
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   def actorOf(props: Props, name: String): ActorRef = {
