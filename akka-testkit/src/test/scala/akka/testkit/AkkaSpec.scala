@@ -17,8 +17,7 @@ import com.typesafe.config.ConfigFactory
 object TimingTest extends Tag("timing")
 
 object AkkaSpec {
-  val testConf = {
-    val cfg = ConfigFactory.parseString("""
+  val testConf: Config = ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
@@ -30,8 +29,6 @@ object AkkaSpec {
         }
       }
       """)
-    ConfigFactory.load(cfg)
-  }
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -61,7 +58,7 @@ abstract class AkkaSpec(_system: ActorSystem = ActorSystem(getClass.getSimpleNam
 
   protected def atTermination() {}
 
-  def this(config: Config) = this(ActorSystem(getClass.getSimpleName, config.withFallback(AkkaSpec.testConf)))
+  def this(config: Config) = this(ActorSystem(getClass.getSimpleName, ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
