@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 
 //#imports
 
-class ConfigDocSpec extends WordSpec {
+class ConfigDocSpec extends WordSpec with MustMatchers {
 
   "programmatically configure ActorSystem" in {
     //#custom-config
@@ -21,7 +21,9 @@ class ConfigDocSpec extends WordSpec {
         }
       }
       """)
-    val system = ActorSystem("MySystem", ConfigFactory.systemProperties.withFallback(customConf))
+    // ConfigFactory.load sandwiches customConfig between default reference
+    // config and default overrides, and then resolves it.
+    val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
     //#custom-config
 
     system.stop()

@@ -5,8 +5,6 @@ Configuration
 
    .. contents:: :local:
 
-.. _-Dakka.config:
-.. _-Dakka.home:
 
 Specifying the configuration file
 ---------------------------------
@@ -16,23 +14,36 @@ configuration files that you see below. You can specify your own configuration f
 property in the reference config. You only have to define the properties that differ from the default 
 configuration.
 
-FIXME: These default locations has changed
+By default the ``ConfigFactory.load`` method is used, which will load all ``application.conf`` (and 
+``application.json`` and ``application.properties``) from the root of the classpath, if they exists.
+It uses ``ConfigFactory.defaultOverrides``, i.e. system properties, before falling back to 
+application and reference configuration.
 
-The location of the config file to use can be specified in various ways:
+Note that *all* ``application.{conf,json,properties}`` classpath resources, from all directories and
+jar files, are loaded and merged. Therefore it is a good practice to define separate sub-trees in the 
+configuration for each actor system, and grab the specific configuration when instantiating the ActorSystem.
 
-* Define the ``-Dakka.config=...`` system property parameter with a file path to configuration file.
+::
+  
+  myapp1 {  
+    akka.logLevel = WARNING
+  }
+  myapp2 {  
+    akka.logLevel = ERROR
+  }
 
-* Put an ``akka.conf`` file in the root of the classpath.
+.. code-block:: scala
 
-* Define the ``AKKA_HOME`` environment variable pointing to the root of the Akka
-  distribution. The config is taken from the ``AKKA_HOME/config/akka.conf``. You
-  can also point to the AKKA_HOME by specifying the ``-Dakka.home=...`` system
-  property parameter.
+  val app1 = ActorSystem("MyApp1", ConfigFactory.load.getConfig("myapp1"))
+  val app2 = ActorSystem("MyApp2", ConfigFactory.load.getConfig("myapp2"))
 
-If several of these ways to specify the config file are used at the same time the precedence is the order as given above,
-i.e. you can always redefine the location with the ``-Dakka.config=...`` system property.
+If the system properties ``config.resource``, ``config.file``, or ``config.url`` are set, then the
+classpath resource, file, or URL specified in those properties will be used rather than the default
+``application.{conf,json,properties}`` classpath resources. Note that classpath resource names start
+with ``/``. ``-Dconfig.resource=/dev.conf`` will load the ``dev.conf`` from the root of the classpath.
 
-You may also specify the configuration programmatically when instantiating the ``ActorSystem``.
+You may also specify and parse the configuration programmatically in other ways when instantiating 
+the ``ActorSystem``.
 
 .. includecode:: code/ConfigDocSpec.scala
    :include: imports,custom-config
@@ -84,7 +95,7 @@ Each Akka module has a reference configuration file with the default values.
 .. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
    :language: none
 
-A custom ``akka.conf`` might look like this::
+A custom ``application.conf`` might look like this::
 
   # In this file you can override any option defined in the reference files.
   # Copy in parts of the reference files and modify as you please.
@@ -125,47 +136,28 @@ Config file format
 The configuration file syntax is described in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
 specification. Note that it supports three formats; conf, json, and properties. 
 
-.. _-Dakka.mode:
-
-Specifying files for different modes
-------------------------------------
-
-FIXME: mode doesn't exist, or will it?
-
-You can use different configuration files for different purposes by specifying a mode option, either as
-``-Dakka.mode=...`` system property or as ``AKKA_MODE=...`` environment variable. For example using DEBUG log level
-when in development mode. Run with ``-Dakka.mode=dev`` and place the following ``akka.dev.conf`` in the root of
-the classpath.
-
-akka.dev.conf:
-
-::
-
-  akka {
-    loglevel = "DEBUG"
-  }
-
-The mode option works in the same way when using configuration files in ``AKKA_HOME/config/`` directory.
-
-The mode option is not used when specifying the configuration file with ``-Dakka.config=...`` system property.
 
 Including files
 ---------------
 
-FIXME: The include syntax has changed
+Sometimes it can be useful to include another configuration file, for example if you have one ``application.conf`` with all
+environment independent settings and then override some settings for specific environments.
 
-Sometimes it can be useful to include another configuration file, for example if you have one ``akka.conf`` with all
-environment independent settings and then override some settings for specific modes.
+Specifying system property with ``-Dconfig.resource=/dev.conf`` will load the ``dev.conf`` file, which includes the ``application.conf``  
 
-akka.dev.conf:
+dev.conf:
 
 ::
 
-  include "akka.conf"
+  include "application"
 
   akka {
     loglevel = "DEBUG"
   }
+
+More advanced include and substitution mechanisms are explained in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+specification.
+
 
 .. _-Dakka.logConfigOnStart:
 
@@ -175,10 +167,3 @@ Logging of Configuration
 If the system or config property ``akka.logConfigOnStart`` is set to ``on``, then the 
 complete configuration at INFO level when the actor system is started. This is useful 
 when you are uncertain of what configuration is used.
-
-Summary of System Properties
-----------------------------
-
-* :ref:`akka.home <-Dakka.home>` (``AKKA_HOME``): where Akka searches for configuration
-* :ref:`akka.config <-Dakka.config>`: explicit configuration file location
-* :ref:`akka.mode <-Dakka.mode>` (``AKKA_MODE``): modify configuration file name for multiple profiles
