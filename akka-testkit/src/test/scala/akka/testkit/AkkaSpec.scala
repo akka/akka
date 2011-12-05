@@ -127,13 +127,13 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
       var locker = Seq.empty[DeadLetter]
       implicit val timeout = system.settings.ActorTimeout
-      implicit val davieJones = (system.actorFor("/") ? CreateChild(Props(new Actor {
+      implicit val davyJones = (system.actorFor("/") ? CreateChild(Props(new Actor {
         def receive = {
           case m: DeadLetter ⇒ locker :+= m
         }
-      }), "davieJones")).as[ActorRef].get
+      }), "davyJones")).as[ActorRef].get
 
-      system.eventStream.subscribe(davieJones, classOf[DeadLetter])
+      system.eventStream.subscribe(davyJones, classOf[DeadLetter])
 
       val probe = new TestProbe(system)
       probe.ref ! 42
@@ -144,7 +144,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       latch.await(2 seconds)
 
       // this will typically also contain log messages which were sent after the logger shutdown
-      locker must contain(DeadLetter(42, davieJones, probe.ref))
+      locker must contain(DeadLetter(42, davyJones, probe.ref))
     }
 
   }
