@@ -20,29 +20,29 @@ trait Scheduler {
    * E.g. if you would like a message to be sent immediately and thereafter every 500ms you would set
    * delay = Duration.Zero and frequency = Duration(500, TimeUnit.MILLISECONDS)
    */
-  def schedule(receiver: ActorRef, message: Any, initialDelay: Duration, frequency: Duration): Cancellable
+  def schedule(initialDelay: Duration, frequency: Duration, receiver: ActorRef, message: Any): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and a frequency.
    * E.g. if you would like the function to be run after 2 seconds and thereafter every 100ms you would set
    * delay = Duration(2, TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
    */
-  def schedule(f: () ⇒ Unit, initialDelay: Duration, frequency: Duration): Cancellable
+  def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that has to pass before the runnable is executed.
    */
-  def scheduleOnce(runnable: Runnable, delay: Duration): Cancellable
+  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has to pass before the message is sent.
    */
-  def scheduleOnce(receiver: ActorRef, message: Any, delay: Duration): Cancellable
+  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable
 
   /**
    * Schedules a function to be run once with a delay, i.e. a time period that has to pass before the function is run.
    */
-  def scheduleOnce(f: () ⇒ Unit, delay: Duration): Cancellable
+  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable
 }
 
 trait Cancellable {

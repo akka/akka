@@ -71,13 +71,24 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   lazy val eventStream = new NetworkEventStream(system)
 
   lazy val server: RemoteSupport = {
-    val remote = new akka.remote.netty.NettyRemoteSupport(system, this)
-    remote.start() //TODO Any application loader here?
+    val arguments = Seq(
+      classOf[ActorSystem] -> system,
+      classOf[Remote] -> this)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
 
-    system.eventStream.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
-    system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
+    ReflectiveAccess.createInstance[RemoteSupport](remoteExtension.RemoteTransport, types, values) match {
+      case Left(problem) ⇒
+        log.error(problem, "Could not load remote transport layer")
+        throw problem
+      case Right(remote) ⇒
+        remote.start(None) //TODO Any application loader here?
 
-    remote
+        system.eventStream.subscribe(eventStream.sender, classOf[RemoteLifeCycleEvent])
+        system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
+
+        remote
+    }
   }
 
   def start() {

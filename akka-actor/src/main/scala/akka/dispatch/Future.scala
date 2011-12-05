@@ -14,7 +14,7 @@ import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 import scala.util.continuations._
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
-import java.util.concurrent.TimeUnit.{ NANOSECONDS ⇒ NANOS, MILLISECONDS ⇒ MILLIS }
+import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 
@@ -853,7 +853,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   @tailrec
   private def awaitUnsafe(waitTimeNanos: Long): Boolean = {
     if (value.isEmpty && waitTimeNanos > 0) {
-      val ms = NANOS.toMillis(waitTimeNanos)
+      val ms = NANOSECONDS.toMillis(waitTimeNanos)
       val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
       val start = currentTimeInNanos
       try { synchronized { if (value.isEmpty) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
@@ -877,7 +877,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
       else Long.MaxValue //If both are infinite, use Long.MaxValue
 
     if (awaitUnsafe(waitNanos)) this
-    else throw new FutureTimeoutException("Futures timed out after [" + NANOS.toMillis(waitNanos) + "] milliseconds")
+    else throw new FutureTimeoutException("Futures timed out after [" + NANOSECONDS.toMillis(waitNanos) + "] milliseconds")
   }
 
   def await = await(timeout.duration)
@@ -957,7 +957,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
             def run() {
               if (!isCompleted) {
                 if (!isExpired)
-                  try dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
+                  try dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS), this)
                   catch {
                     case _: IllegalStateException ⇒ func(DefaultPromise.this)
                   }
@@ -965,7 +965,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
               }
             }
           }
-          val timeoutFuture = dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
+          val timeoutFuture = dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeft(), NANOSECONDS), runnable)
           onComplete(_ ⇒ timeoutFuture.cancel())
           false
         } else true
@@ -990,7 +990,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
                 val done =
                   if (!isExpired)
                     try {
-                      dispatcher.prerequisites.scheduler.scheduleOnce(this, Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS))
+                      dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS), this)
                       true
                     } catch {
                       case _: IllegalStateException ⇒ false
@@ -1001,7 +1001,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
               }
             }
           }
-          dispatcher.prerequisites.scheduler.scheduleOnce(runnable, Duration(timeLeft(), TimeUnit.NANOSECONDS))
+          dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeft(), NANOSECONDS), runnable)
           promise
       }
     } else this
@@ -1012,7 +1012,7 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
   }
 
   @inline
-  private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis) //TODO Switch to math.abs(System.nanoTime)?
+  private def currentTimeInNanos: Long = MILLISECONDS.toNanos(System.currentTimeMillis) //TODO Switch to math.abs(System.nanoTime)?
   //TODO: the danger of Math.abs is that it could break the ordering of time. So I would not recommend an abs.
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)

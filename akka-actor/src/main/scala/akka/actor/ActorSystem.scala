@@ -58,18 +58,11 @@ object ActorSystem {
 
   class Settings(cfg: Config, val name: String) {
 
-    // Verify that the Config is sane and has our reference config.
-    val config: Config =
-      try {
-        cfg.checkValid(ConfigFactory.defaultReference, "akka")
-        cfg
-      } catch {
-        case e: ConfigException ⇒
-          // try again with added defaultReference
-          val cfg2 = cfg.withFallback(ConfigFactory.defaultReference)
-          cfg2.checkValid(ConfigFactory.defaultReference, "akka")
-          cfg2
-      }
+    val config: Config = {
+      val config = cfg.withFallback(ConfigFactory.defaultReference)
+      config.checkValid(ConfigFactory.defaultReference, "akka")
+      config
+    }
 
     import scala.collection.JavaConverters._
     import config._

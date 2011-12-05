@@ -21,8 +21,7 @@ import akka.actor.DeadLetter
 object TimingTest extends Tag("timing")
 
 object AkkaSpec {
-  val testConf = {
-    val cfg = ConfigFactory.parseString("""
+  val testConf: Config = ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
@@ -34,8 +33,6 @@ object AkkaSpec {
         }
       }
       """)
-    ConfigFactory.load(cfg)
-  }
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -123,28 +120,41 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
     }
 
     "must enqueue unread messages from testActor to deadLetters" in {
-      val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
+      val system, otherSystem = ActorSystem("AkkaSpec3", AkkaSpec.testConf)
 
-      var locker = Seq.empty[DeadLetter]
-      implicit val timeout = system.settings.ActorTimeout
-      implicit val davyJones = (system.actorFor("/") ? CreateChild(Props(new Actor {
-        def receive = {
-          case m: DeadLetter ⇒ locker :+= m
+      try {
+        var locker = Seq.empty[DeadLetter]
+        implicit val timeout = system.settings.ActorTimeout
+        implicit val davyJones = otherSystem.actorOf(Props(new Actor {
+          def receive = {
+            case m: DeadLetter ⇒ locker :+= m
+          }
+        }), "davyJones")
+
+        system.eventStream.subscribe(davyJones, classOf[DeadLetter])
+
+        val probe = new TestProbe(system)
+        probe.ref ! 42
+        /*
+       * this will ensure that the message is actually received, otherwise it
+       * may happen that the system.stop() suspends the testActor before it had 
+       * a chance to put the message into its private queue
+       */
+        probe.receiveWhile(1 second) {
+          case null ⇒
         }
-      }), "davyJones")).as[ActorRef].get
 
-      system.eventStream.subscribe(davyJones, classOf[DeadLetter])
+        val latch = new TestLatch(1)(system)
+        system.registerOnTermination(latch.countDown())
+        system.stop()
+        latch.await(2 seconds)
 
-      val probe = new TestProbe(system)
-      probe.ref ! 42
-
-      val latch = new TestLatch(1)(system)
-      system.registerOnTermination(latch.countDown())
-      system.stop()
-      latch.await(2 seconds)
-
-      // this will typically also contain log messages which were sent after the logger shutdown
-      locker must contain(DeadLetter(42, davyJones, probe.ref))
+        // this will typically also contain log messages which were sent after the logger shutdown
+        locker must contain(DeadLetter(42, davyJones, probe.ref))
+      } finally {
+        system.stop()
+        otherSystem.stop()
+      }
     }
 
   }
