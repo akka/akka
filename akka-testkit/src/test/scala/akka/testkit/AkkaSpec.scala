@@ -14,6 +14,9 @@ import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
+import java.util.concurrent.LinkedBlockingQueue
+import akka.actor.CreateChild
+import akka.actor.DeadLetter
 
 object TimingTest extends Tag("timing")
 
@@ -94,11 +97,12 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
   "An AkkaSpec" must {
 
     "terminate all actors" in {
+      // verbose config just for demonstration purposes, please leave in in case of debugging
       import scala.collection.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
@@ -108,11 +112,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
     }
 
     "must stop correctly when sending PoisonPill to rootGuardian" in {
-      import scala.collection.JavaConverters._
-      val conf = Map(
-        "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
-        "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("test", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
       val spec = new AkkaSpec(system) {}
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
@@ -120,6 +120,31 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       system.actorFor("/") ! PoisonPill
 
       latch.await(2 seconds)
+    }
+
+    "must enqueue unread messages from testActor to deadLetters" in {
+      val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
+
+      var locker = Seq.empty[DeadLetter]
+      implicit val timeout = system.settings.ActorTimeout
+      implicit val davieJones = (system.actorFor("/") ? CreateChild(Props(new Actor {
+        def receive = {
+          case m: DeadLetter ⇒ locker :+= m
+        }
+      }), "davieJones")).as[ActorRef].get
+
+      system.eventStream.subscribe(davieJones, classOf[DeadLetter])
+
+      val probe = new TestProbe(system)
+      probe.ref ! 42
+
+      val latch = new TestLatch(1)(system)
+      system.registerOnTermination(latch.countDown())
+      system.stop()
+      latch.await(2 seconds)
+
+      // this will typically also contain log messages which were sent after the logger shutdown
+      locker must contain(DeadLetter(42, davieJones, probe.ref))
     }
 
   }
