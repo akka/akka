@@ -271,7 +271,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
   def readResolve(): AnyRef = currentSystem.value match {
     case null ⇒ throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒ someSystem.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
@@ -287,7 +287,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString
 
-  //FIXME REMOVE THIS, ticket #1416 
+  //FIXME REMOVE THIS, ticket #1416
   //FIXME REMOVE THIS, ticket #1415
   def suspend(): Unit = ()
   def resume(): Unit = ()
@@ -299,7 +299,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
+    throw new UnsupportedOperationException("Not supported for [%s]".format(getClass.getName))
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
   protected[akka] def restart(cause: Throwable): Unit = ()
@@ -380,7 +380,7 @@ abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deat
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
+    new KeptPromise[Any](Left(new UnsupportedOperationException("'ask/?'' is not supported for [%s]".format(getClass.getName))))(dispatcher)
 
   override def isTerminated = result.isCompleted || result.isExpired
 
