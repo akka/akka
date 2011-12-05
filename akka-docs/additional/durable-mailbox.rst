@@ -214,8 +214,3 @@ server. This is done in the ``akka.actor.mailbox.beanstalk`` section in the
       }
     }
 
-
-.. |more| image:: more.png
-          :align: middle
-          :alt: More info
-
