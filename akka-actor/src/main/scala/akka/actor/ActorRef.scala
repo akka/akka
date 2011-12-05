@@ -139,7 +139,7 @@ class LocalActorRef private[akka] (
   _supervisor: ActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  _receiveTimeout: Option[Long] = None,
+  _receiveTimeout: Option[Duration] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends ActorRef with ScalaActorRef with RefInternals {
 
@@ -216,7 +216,7 @@ class LocalActorRef private[akka] (
 
 /**
  * This trait represents the Scala Actor API
- * There are implicit conversions in ../actor/Implicits.scala
+ * There are implicit conversions in [[akka.actor]] package object
  * from ActorRef -> ScalaActorRef and back
  */
 trait ScalaActorRef { ref: ActorRef ⇒

@@ -11,9 +11,10 @@ import akka.testkit.EventFilter
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import org.multiverse.api.latches.StandardLatch
 import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RestartStrategySpec extends AkkaSpec {
+class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
   override def atStartup {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
@@ -206,7 +207,7 @@ class RestartStrategySpec extends AkkaSpec {
 
       val boss = actorOf(Props(new Actor {
         def receive = {
-          case p: Props      ⇒ sender ! watch(context.actorOf(p))
+          case p: Props      ⇒ sender ! context.startsWatching(context.actorOf(p))
           case t: Terminated ⇒ maxNoOfRestartsLatch.open
         }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))

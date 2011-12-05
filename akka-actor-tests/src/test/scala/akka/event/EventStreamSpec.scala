@@ -25,7 +25,7 @@ object EventStreamSpec {
   case class SetTarget(ref: ActorRef)
 
   class MyLog extends Actor {
-    var dst: ActorRef = system.deadLetters
+    var dst: ActorRef = context.system.deadLetters
     def receive = {
       case Logging.InitializeLogger(bus) ⇒ bus.subscribe(context.self, classOf[SetTarget]); sender ! Logging.LoggerInitialized
       case SetTarget(ref)                ⇒ dst = ref; dst ! "OK"

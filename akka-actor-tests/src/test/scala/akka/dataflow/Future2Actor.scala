@@ -8,8 +8,9 @@ import akka.dispatch.Future
 import akka.actor.future2actor
 import akka.util.duration._
 import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
-class Future2ActorSpec extends AkkaSpec {
+class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
 
   "The Future2Actor bridge" must {
 

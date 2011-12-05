@@ -8,8 +8,10 @@ import akka.dispatch._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
+import akka.japi.Procedure
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -20,14 +22,30 @@ trait ActorContext extends ActorRefFactory {
 
   def self: ActorRef
 
-  def receiveTimeout: Option[Long]
+  /**
+   * Gets the current receive timeout
+   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
+   */
+  def receiveTimeout: Option[Duration]
 
-  def receiveTimeout_=(timeout: Option[Long]): Unit
+  /**
+   * Defines the default timeout for an initial receive invocation.
+   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   */
+  def receiveTimeout_=(timeout: Option[Duration]): Unit
 
-  def become(behavior: Actor.Receive, discardOld: Boolean): Unit
+  /**
+   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Puts the behavior on top of the hotswap stack.
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   */
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
   def hotswap: Stack[PartialFunction[Any, Unit]]
 
+  /**
+   * Reverts the Actor behavior to the previous one in the hotswap stack.
+   */
   def unbecome(): Unit
 
   def currentMessage: Envelope
@@ -38,6 +56,9 @@ trait ActorContext extends ActorRefFactory {
 
   def children: Iterable[ActorRef]
 
+  /**
+   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
+   */
   def dispatcher: MessageDispatcher
 
   def handleFailure(child: ActorRef, cause: Throwable): Unit
@@ -48,9 +69,51 @@ trait ActorContext extends ActorRefFactory {
 
   def parent: ActorRef
 
+  /**
+   * Registers this actor as a Monitor for the provided ActorRef
+   * @return the provided ActorRef
+   */
   def startsWatching(subject: ActorRef): ActorRef
 
+  /**
+   * Unregisters this actor as Monitor for the provided ActorRef
+   * @return the provided ActorRef
+   */
   def stopsWatching(subject: ActorRef): ActorRef
+}
+
+trait JavaActorContext extends ActorContext {
+  /**
+   * Returns an unmodifiable Java Collection containing the linked actors,
+   * please note that the backing map is thread-safe but not immutable
+   */
+  def getChildren(): java.lang.Iterable[ActorRef]
+
+  /**
+   * Gets the current receive timeout
+   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
+   */
+  def getReceiveTimeout: Option[Duration]
+
+  /**
+   * Defines the default timeout for an initial receive invocation.
+   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   */
+  def setReceiveTimeout(timeout: Duration): Unit
+
+  /**
+   * Changes the Actor's behavior to become the new 'Procedure' handler.
+   * Puts the behavior on top of the hotswap stack.
+   */
+  def become(behavior: Procedure[Any]): Unit
+
+  /**
+   * Changes the Actor's behavior to become the new 'Procedure' handler.
+   * Puts the behavior on top of the hotswap stack.
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   */
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit
+
 }
 
 private[akka] object ActorCell {
@@ -76,8 +139,8 @@ private[akka] class ActorCell(
   val self: ActorRef with ScalaActorRef,
   val props: Props,
   val parent: ActorRef,
-  /*no member*/ _receiveTimeout: Option[Long],
-  var hotswap: Stack[PartialFunction[Any, Unit]]) extends ActorContext {
+  /*no member*/ _receiveTimeout: Option[Duration],
+  var hotswap: Stack[PartialFunction[Any, Unit]]) extends JavaActorContext {
 
   import ActorCell._
 
@@ -87,15 +150,28 @@ private[akka] class ActorCell(
 
   final def provider = system.provider
 
-  override def receiveTimeout: Option[Long] = if (receiveTimeoutData._1 > 0) Some(receiveTimeoutData._1) else None
+  override def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
 
-  override def receiveTimeout_=(timeout: Option[Long]): Unit = {
-    val timeoutMs = if (timeout.isDefined && timeout.get > 0) timeout.get else -1
+  override def receiveTimeout_=(timeout: Option[Duration]): Unit = {
+    val timeoutMs = if (timeout.isDefined && timeout.get.toMillis > 0) timeout.get.toMillis else -1
     receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
   }
 
+  /**
+   * In milliseconds
+   */
   var receiveTimeoutData: (Long, Cancellable) =
-    if (_receiveTimeout.isDefined) (_receiveTimeout.get, emptyCancellable) else emptyReceiveTimeoutData
+    if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
+
+  /**
+   * JavaActorContext impl
+   */
+  def getReceiveTimeout: Option[Duration] = receiveTimeout
+
+  /**
+   * JavaActorContext impl
+   */
+  def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
 
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
@@ -119,6 +195,11 @@ private[akka] class ActorCell(
 
   @inline
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
+
+  /**
+   * JavaActorContext impl
+   */
+  def getDispatcher(): MessageDispatcher = dispatcher
 
   final def isTerminated: Boolean = mailbox.isClosed
 
@@ -153,6 +234,14 @@ private[akka] class ActorCell(
   }
 
   final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
+
+  /**
+   * Impl JavaActorContext
+   */
+  def getChildren(): java.lang.Iterable[ActorRef] = {
+    import scala.collection.JavaConverters.asJavaIterableConverter
+    asJavaIterableConverter(children).asJava
+  }
 
   final def getChild(name: String): Option[ActorRef] =
     if (isTerminated) None else childrenRefs.get(name).map(_.child)
@@ -339,6 +428,19 @@ private[akka] class ActorCell(
   def become(behavior: Actor.Receive, discardOld: Boolean = true) {
     if (discardOld) unbecome()
     hotswap = hotswap.push(behavior)
+  }
+
+  /**
+   * JavaActorContext impl
+   */
+  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
+
+  /*
+   * JavaActorContext impl
+   */
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit = {
+    def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
+    become(newReceive, discardOld)
   }
 
   def unbecome() {

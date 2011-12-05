@@ -25,7 +25,7 @@ object ActorPoolSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TypedActorPoolSpec extends AkkaSpec {
+class TypedActorPoolSpec extends AkkaSpec with DefaultTimeout {
   import ActorPoolSpec._
   "Actor Pool (2)" must {
     "support typed actors" in {
@@ -55,7 +55,7 @@ class TypedActorPoolSpec extends AkkaSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorPoolSpec extends AkkaSpec {
+class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
   import ActorPoolSpec._
 
   "Actor Pool" must {

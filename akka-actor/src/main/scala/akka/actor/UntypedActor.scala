@@ -58,6 +58,8 @@ abstract class UntypedActor extends Actor {
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
 
+  def getContext(): JavaActorContext = context.asInstanceOf[JavaActorContext]
+
   /**
    * Returns the 'self' reference.
    */
@@ -68,43 +70,6 @@ abstract class UntypedActor extends Actor {
    * Is defined if the message was sent from another Actor, else None.
    */
   def getSender(): ActorRef = sender
-
-  /**
-   * Gets the current receive timeout
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
-   */
-  def getReceiveTimeout: Option[Long] = receiveTimeout
-
-  /**
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   */
-  def setReceiveTimeout(timeout: Long): Unit = receiveTimeout = Some(timeout)
-
-  /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def getChildren(): java.lang.Iterable[ActorRef] = {
-    import scala.collection.JavaConverters.asJavaIterableConverter
-    asJavaIterableConverter(context.children).asJava
-  }
-
-  /**
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
-   */
-  def getDispatcher(): MessageDispatcher = dispatcher
-
-  /**
-   * Java API for become
-   */
-  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
-
-  /*
-   * Java API for become with optional discardOld
-   */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
-    super.become({ case msg ⇒ behavior.apply(msg) }, discardOld)
 
   /**
    * User overridable callback.

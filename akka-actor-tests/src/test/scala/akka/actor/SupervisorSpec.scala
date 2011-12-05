@@ -50,7 +50,7 @@ object SupervisorSpec {
   }
 
   class Master(sendTo: ActorRef) extends Actor {
-    val temp = watch(context.actorOf(Props(new PingPongActor(sendTo))))
+    val temp = context.startsWatching(context.actorOf(Props(new PingPongActor(sendTo))))
 
     var s: ActorRef = _
 
@@ -63,7 +63,7 @@ object SupervisorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender {
+class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
 
   import SupervisorSpec._
 

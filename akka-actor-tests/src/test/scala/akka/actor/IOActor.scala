@@ -17,6 +17,9 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
 
+    implicit val timeout = context.system.settings.ActorTimeout
+    implicit val dispatcher = context.dispatcher
+
     override def preStart = {
       listen(ioManager, host, port)
       started.open()
@@ -62,6 +65,9 @@ object IOActorSpec {
 
   // Basic Redis-style protocol
   class KVStore(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
+
+    implicit val timeout = context.system.settings.ActorTimeout
+    implicit val dispatcher = context.dispatcher
 
     var kvs: Map[String, ByteString] = Map.empty
 
@@ -117,6 +123,9 @@ object IOActorSpec {
 
   class KVClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
+    implicit val timeout = context.system.settings.ActorTimeout
+    implicit val dispatcher = context.dispatcher
+
     var socket: SocketHandle = _
 
     override def preStart {
@@ -171,7 +180,7 @@ object IOActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class IOActorSpec extends AkkaSpec with BeforeAndAfterEach {
+class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
   import IOActorSpec._
 
   "an IO Actor" must {

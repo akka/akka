@@ -7,6 +7,7 @@ import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.actor.{ Props, Actor }
 import akka.util.Duration
 import akka.util.duration._
+import akka.testkit.DefaultTimeout
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -27,7 +28,7 @@ object DispatcherActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DispatcherActorSpec extends AkkaSpec {
+class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
   import DispatcherActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS

@@ -3,9 +3,10 @@ package akka.dispatch
 import akka.actor.{ Props, LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 import akka.util.Duration
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class PriorityDispatcherSpec extends AkkaSpec {
+class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
 
   "A PriorityDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {

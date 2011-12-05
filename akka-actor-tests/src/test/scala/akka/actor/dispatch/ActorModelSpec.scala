@@ -53,7 +53,7 @@ object ActorModelSpec {
   class DispatcherActor extends Actor {
     private val busy = new Switch(false)
 
-    def interceptor = dispatcher.asInstanceOf[MessageDispatcherInterceptor]
+    def interceptor = context.dispatcher.asInstanceOf[MessageDispatcherInterceptor]
 
     def ack {
       if (!busy.switchOn()) {
@@ -223,7 +223,7 @@ object ActorModelSpec {
   }
 }
 
-abstract class ActorModelSpec extends AkkaSpec {
+abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
 
   import ActorModelSpec._
 
@@ -343,7 +343,7 @@ abstract class ActorModelSpec extends AkkaSpec {
         val waitTime = (30 seconds).dilated.toMillis
         val boss = actorOf(Props(new Actor {
           def receive = {
-            case "run"             ⇒ for (_ ← 1 to num) (watch(context.actorOf(props))) ! cachedMessage
+            case "run"             ⇒ for (_ ← 1 to num) (context.startsWatching(context.actorOf(props))) ! cachedMessage
             case Terminated(child) ⇒ stopLatch.countDown()
           }
         }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("boss")))

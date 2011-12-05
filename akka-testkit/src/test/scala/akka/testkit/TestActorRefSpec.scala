@@ -37,6 +37,7 @@ object TestActorRefSpec {
   }
 
   class ReplyActor extends TActor {
+    implicit val system = context.system
     var replyTo: ActorRef = null
 
     def receiveT = {
@@ -87,7 +88,7 @@ object TestActorRefSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
+class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
 
   import TestActorRefSpec._
 
@@ -156,7 +157,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
         val forwarder = actorOf(Props(new Actor {
-          watch(a)
+          context.startsWatching(a)
           def receive = { case x ⇒ testActor forward x }
         }))
         a.!(PoisonPill)(testActor)
@@ -216,7 +217,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.underlyingActor.receiveTimeout must be(None)
+      a.underlyingActor.context.receiveTimeout must be(None)
     }
 
     "set CallingThreadDispatcher" in {

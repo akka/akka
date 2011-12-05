@@ -11,9 +11,10 @@ import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorTreeSpec extends AkkaSpec with ImplicitSender {
+class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {
 
   "In a 3 levels deep supervisor tree (linked in the constructor) we" must {
 

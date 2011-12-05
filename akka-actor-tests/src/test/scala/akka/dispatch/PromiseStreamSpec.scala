@@ -5,9 +5,10 @@ import akka.util.cps._
 import akka.actor.Timeout
 import akka.util.duration._
 import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class PromiseStreamSpec extends AkkaSpec {
+class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
 
   "A PromiseStream" must {
 

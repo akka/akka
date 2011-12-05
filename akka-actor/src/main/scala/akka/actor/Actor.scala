@@ -149,11 +149,10 @@ object Timeout {
   implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
-  implicit def defaultTimeout(implicit system: ActorSystem) = system.settings.ActorTimeout
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(system.eventStream, context.self)
+  val log = akka.event.Logging(context.system.eventStream, context.self)
 }
 
 object Actor {
@@ -190,6 +189,7 @@ trait Actor {
 
   /**
    * Stores the context for this actor, including self, sender, and hotswap.
+   * It is implicit to support operations such as `forward`.
    */
   @transient
   protected[akka] implicit val context: ActorContext = {
@@ -211,13 +211,6 @@ trait Actor {
     c
   }
 
-  implicit def system = context.system
-
-  /**
-   * The default timeout, based on the config setting 'akka.actor.timeout'
-   */
-  implicit def defaultTimeout = system.settings.ActorTimeout
-
   /**
    * The 'self' field holds the ActorRef for this actor.
    * <p/>
@@ -230,33 +223,10 @@ trait Actor {
 
   /**
    * The reference sender Actor of the last received message.
-   * Is defined if the message was sent from another Actor, else None.
+   * Is defined if the message was sent from another Actor,
+   * else `deadLetters` in [[akka.actor.ActorSystem]].
    */
   final def sender: ActorRef = context.sender
-
-  /**
-   * Gets the current receive timeout
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
-   */
-  def receiveTimeout: Option[Long] = context.receiveTimeout
-
-  /**
-   * User overridable callback/setting.
-   * <p/>
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   */
-  def receiveTimeout_=(timeout: Option[Long]) = context.receiveTimeout = timeout
-
-  /**
-   * Same as ActorContext.children
-   */
-  def children: Iterable[ActorRef] = context.children
-
-  /**
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
-   */
-  def dispatcher: MessageDispatcher = context.dispatcher
 
   /**
    * User overridable callback/setting.
@@ -324,30 +294,6 @@ trait Actor {
       case _                ⇒ throw new UnhandledMessageException(message, self)
     }
   }
-
-  /**
-   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
-   * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
-   */
-  final def become(behavior: Receive, discardOld: Boolean = true) { context.become(behavior, discardOld) }
-
-  /**
-   * Reverts the Actor behavior to the previous one in the hotswap stack.
-   */
-  final def unbecome() { context.unbecome() }
-
-  /**
-   * Registers this actor as a Monitor for the provided ActorRef
-   * @return the provided ActorRef
-   */
-  final def watch(subject: ActorRef): ActorRef = context startsWatching subject
-
-  /**
-   * Unregisters this actor as Monitor for the provided ActorRef
-   * @return the provided ActorRef
-   */
-  final def unwatch(subject: ActorRef): ActorRef = context stopsWatching subject
 
   // =========================================
   // ==== INTERNAL IMPLEMENTATION DETAILS ====

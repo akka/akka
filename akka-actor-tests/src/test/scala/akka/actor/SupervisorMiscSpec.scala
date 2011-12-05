@@ -7,9 +7,10 @@ import akka.testkit.{ filterEvents, EventFilter }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorMiscSpec extends AkkaSpec {
+class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
 
   "A Supervisor" must {
 

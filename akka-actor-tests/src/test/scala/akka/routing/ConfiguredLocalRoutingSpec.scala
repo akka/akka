@@ -7,9 +7,10 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit.AkkaSpec
 import akka.actor.DeploymentConfig._
 import akka.routing.Routing.Broadcast
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfiguredLocalRoutingSpec extends AkkaSpec {
+class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout {
 
   val deployer = system.asInstanceOf[ActorSystemImpl].provider.deployer
 

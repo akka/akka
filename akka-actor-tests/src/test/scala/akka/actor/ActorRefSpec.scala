@@ -37,6 +37,7 @@ object ActorRefSpec {
   }
 
   class WorkerActor() extends Actor {
+    implicit val system = context.system
     def receive = {
       case "work" ⇒ {
         work
@@ -111,7 +112,7 @@ object ActorRefSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorRefSpec extends AkkaSpec {
+class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   import akka.actor.ActorRefSpec._
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {

@@ -2,13 +2,14 @@ package akka.remote.new_remote_actor
 
 import akka.actor.Actor
 import akka.remote._
+import akka.testkit.DefaultTimeout
 
 object NewRemoteActorMultiJvmSpec {
   val NrOfNodes = 2
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! system.nodename
+      case "identify" ⇒ sender ! context.system.nodename
     }
   }
 }
@@ -32,7 +33,7 @@ class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   }
 }
 
-class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
+class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
 
   import NewRemoteActorMultiJvmSpec._
 

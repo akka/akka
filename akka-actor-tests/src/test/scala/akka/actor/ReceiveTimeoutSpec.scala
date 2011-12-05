@@ -18,7 +18,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = actorOf(new Actor {
-        receiveTimeout = Some(500L)
+        context.receiveTimeout = Some(500 milliseconds)
 
         protected def receive = {
           case ReceiveTimeout ⇒ timeoutLatch.open
@@ -33,7 +33,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = actorOf(new Actor {
-        receiveTimeout = Some(500L)
+        context.receiveTimeout = Some(500 milliseconds)
 
         protected def receive = {
           case ReceiveTimeout ⇒ timeoutLatch.open
@@ -57,7 +57,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       case object Tick
 
       val timeoutActor = actorOf(new Actor {
-        receiveTimeout = Some(500L)
+        context.receiveTimeout = Some(500 milliseconds)
 
         protected def receive = {
           case Tick           ⇒ ()
@@ -77,14 +77,14 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       case object Tick
 
       val timeoutActor = actorOf(new Actor {
-        receiveTimeout = Some(500L)
+        context.receiveTimeout = Some(500 milliseconds)
 
         protected def receive = {
           case Tick ⇒ ()
           case ReceiveTimeout ⇒
             count.incrementAndGet
             timeoutLatch.open
-            receiveTimeout = None
+            context.receiveTimeout = None
         }
       })
 
@@ -109,7 +109,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
     }
 
     "have ReceiveTimeout eq to Actors ReceiveTimeout" in {
-      akka.actor.Actors.receiveTimeout() must be theSameInstanceAs (ReceiveTimeout)
+      akka.actor.Actors.receiveTimeout must be theSameInstanceAs (ReceiveTimeout)
     }
   }
 }

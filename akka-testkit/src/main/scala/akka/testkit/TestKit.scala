@@ -613,3 +613,7 @@ object TestProbe {
 trait ImplicitSender { this: TestKit ⇒
   implicit def self = testActor
 }
+
+trait DefaultTimeout { this: TestKit ⇒
+  implicit val timeout = system.settings.ActorTimeout
+}

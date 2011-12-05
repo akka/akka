@@ -13,7 +13,7 @@ import akka.event.Logging
 
 //#my-actor
 class MyActor extends Actor {
-  val log = Logging(system, this)
+  val log = Logging(context.system, this)
   def receive = {
     case "test" ⇒ log.info("received test")
     case _      ⇒ log.info("received unknown message")

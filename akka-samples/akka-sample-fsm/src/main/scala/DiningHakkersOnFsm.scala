@@ -33,6 +33,7 @@ case class TakenBy(hakker: ActorRef)
 * A chopstick is an actor, it can be taken, and put back
 */
 class Chopstick extends Actor with FSM[ChopstickState, TakenBy] {
+  import context._
 
   // A chopstick begins its existence as available and taken by no one
   startWith(Available, TakenBy(system.deadLetters))

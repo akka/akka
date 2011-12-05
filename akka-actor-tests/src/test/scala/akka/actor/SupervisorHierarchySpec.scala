@@ -22,7 +22,7 @@ object SupervisorHierarchySpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorHierarchySpec extends AkkaSpec {
+class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
   import SupervisorHierarchySpec._
 
   "A Supervisor Hierarchy" must {
@@ -52,7 +52,7 @@ class SupervisorHierarchySpec extends AkkaSpec {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
       val boss = actorOf(Props(new Actor {
-        val crasher = watch(context.actorOf(Props(new CountDownActor(countDownMessages))))
+        val crasher = context.startsWatching(context.actorOf(Props(new CountDownActor(countDownMessages))))
 
         protected def receive = {
           case "killCrasher" ⇒ crasher ! Kill
