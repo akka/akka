@@ -76,6 +76,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @version $Rev: 2297 $, $Date: 2010-06-07 10:50:02 +0900 (Mon, 07 Jun 2010) $
  *
  * The original implementation has been slightly altered to fit the specific requirements of Akka.
+ * 
+ * Specifically: it is required to throw an IllegalStateException if a job 
+ * cannot be queued. If no such exception is thrown, the job must be executed
+ * (or returned upon stop()).
  */
 public class HashedWheelTimer implements Timer {
     private final Worker worker = new Worker();
