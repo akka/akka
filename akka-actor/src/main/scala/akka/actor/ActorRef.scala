@@ -952,8 +952,9 @@ class LocalActorRef private[akka] (
   }
 
   private def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
-
-    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) { //Immortal
+    val denied = if (_status == ActorRefInternals.SHUTDOWN) {
+      true
+    } else if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) { //Immortal
       false
     } else if (withinTimeRange.isEmpty) { // restrict number of restarts
       val retries = maxNrOfRetriesCount + 1

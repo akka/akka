@@ -170,13 +170,16 @@ class ExecutorBasedEventDrivenDispatcher(
   override val toString = simpleName(this) + "[" + name + "]"
 
   def suspend(actorRef: ActorRef) {
-    getMailbox(actorRef).suspended.tryLock
+    val mbox = getMailbox(actorRef)
+    if (mbox ne null) mbox.suspended.tryLock
   }
 
   def resume(actorRef: ActorRef) {
     val mbox = getMailbox(actorRef)
-    mbox.suspended.tryUnlock
-    reRegisterForExecution(mbox)
+    if (mbox ne null) {
+      mbox.suspended.tryUnlock
+      reRegisterForExecution(mbox)
+    }
   }
 }
 
