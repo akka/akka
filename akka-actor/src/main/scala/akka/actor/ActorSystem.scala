@@ -315,6 +315,14 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
+  def actorOf(props: Props): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
+    (guardian ? CreateRandomNameChild(props)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
+  }
+
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
@@ -368,9 +376,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def deathWatch: DeathWatch = provider.deathWatch
   def nodename: String = provider.nodename
   def clustername: String = provider.clustername
-
-  private final val nextName = new AtomicLong
-  override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path

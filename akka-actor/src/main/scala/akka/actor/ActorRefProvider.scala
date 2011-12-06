@@ -137,8 +137,6 @@ trait ActorRefFactory {
 
   protected def lookupRoot: InternalActorRef
 
-  protected def randomName(): String
-
   /**
    * Create new actor as child of this context and give it an automatically
    * generated name (currently similar to base64-encoded integer count,
@@ -146,7 +144,7 @@ trait ActorRefFactory {
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
    */
-  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
+  def actorOf(props: Props): ActorRef
 
   /**
    * Create new actor as child of this context with the given name, which must
@@ -299,6 +297,11 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
 private[akka] case class CreateChild(props: Props, name: String)
 
 /**
+ * Internal Akka use only, used in implementation of system.actorOf.
+ */
+private[akka] case class CreateRandomNameChild(props: Props)
+
+/**
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
@@ -366,9 +369,10 @@ class LocalActorRefProvider(
 
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_)            ⇒ context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)                ⇒ context.self.stop()
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -377,8 +381,9 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
         context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 

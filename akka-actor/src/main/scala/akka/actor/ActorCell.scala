@@ -101,14 +101,20 @@ private[akka] class ActorCell(
 
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
+  private def _actorOf(props: Props, name: String): ActorRef = {
+    val actor = provider.actorOf(systemImpl, props, guardian, name, false)
+    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
+    actor
+  }
+
+  def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
+
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.charAt(0) == '$')
       throw new InvalidActorNameException("actor name must not be null, empty or start with $")
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    val actor = provider.actorOf(systemImpl, props, guardian, name, false)
-    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
-    actor
+    _actorOf(props, name)
   }
 
   var currentMessage: Envelope = null
@@ -123,7 +129,7 @@ private[akka] class ActorCell(
   var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
-  override protected def randomName(): String = {
+  protected def randomName(): String = {
     val n = nextNameSequence + 1
     nextNameSequence = n
     Helpers.base64(n)
