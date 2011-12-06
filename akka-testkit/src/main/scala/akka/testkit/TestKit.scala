@@ -39,6 +39,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
       val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender))
   }
+
+  override def postStop() = {
+    import scala.collection.JavaConverters._
+    queue.asScala foreach { m ⇒ system.deadLetters ! DeadLetter(m.msg, m.sender, self) }
+  }
 }
 
 /**

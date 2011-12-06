@@ -278,14 +278,14 @@ class ActorRefSpec extends AkkaSpec {
         " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'"
     }
 
-    "must throw exception on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
+    "must return deadLetters on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
       import java.io._
 
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      val addr = system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
-      val serialized = SerializedActorRef(addr.hostname, addr.port, "/this/path/does/not/exist")
+      val addr = system.asInstanceOf[ActorSystemImpl].provider.rootPath.address
+      val serialized = SerializedActorRef(addr + "/non-existing")
 
       out.writeObject(serialized)
 
@@ -294,9 +294,7 @@ class ActorRefSpec extends AkkaSpec {
 
       Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        (intercept[java.lang.IllegalStateException] {
-          in.readObject
-        }).getMessage must be === "Could not deserialize ActorRef"
+        in.readObject must be === system.deadLetters
       }
     }
 

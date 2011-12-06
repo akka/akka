@@ -152,6 +152,15 @@ object EventFilter {
       message ne null)(occurrences)
 
   /**
+   * Create a filter for Error events which do not have a cause set (i.e. use
+   * implicitly supplied Logging.Error.NoCause). See apply() for more details.
+   */
+  def error(message: String = null, source: String = null, start: String = "", pattern: String = null, occurrences: Int = Int.MaxValue): EventFilter =
+    ErrorFilter(Logging.Error.NoCause.getClass, Option(source),
+      if (message ne null) Left(message) else Option(pattern) map (new Regex(_)) toRight start,
+      message ne null)(occurrences)
+
+  /**
    * Create a filter for Warning events. Give up to one of <code>start</code> and <code>pattern</code>:
    *
    * {{{
@@ -447,12 +456,12 @@ class TestEventListener extends Logging.DefaultLogger {
     case event: LogEvent ⇒ if (!filter(event)) print(event)
     case DeadLetter(msg: SystemMessage, _, rcp) ⇒
       if (!msg.isInstanceOf[Terminate]) {
-        val event = Warning(rcp.toString, "received dead system message: " + msg)
+        val event = Warning(rcp.path.toString, "received dead system message: " + msg)
         if (!filter(event)) print(event)
       }
     case DeadLetter(msg, snd, rcp) ⇒
       if (!msg.isInstanceOf[Terminated]) {
-        val event = Warning(rcp.toString, "received dead letter from " + snd + ": " + msg)
+        val event = Warning(rcp.path.toString, "received dead letter from " + snd + ": " + msg)
         if (!filter(event)) print(event)
       }
   }

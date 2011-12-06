@@ -179,7 +179,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
         }
         if (port == 0) raiseRemoteNodeParsingError()
 
-        RemoteAddress(new InetSocketAddress(hostname, port))
+        RemoteAddress(settings.name, hostname, port)
       }
 
       RemoteScope(remoteAddresses)

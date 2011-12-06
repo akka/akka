@@ -164,8 +164,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           case Ev("go") ⇒ goto(2)
         }
       })
-      val name = fsm.toString
-      filterException[Logging.EventHandlerException] {
+      val name = fsm.path.toString
+      EventFilter.error("Next state 2 does not exist", occurrences = 1) intercept {
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
@@ -194,11 +194,11 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
       val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
-        "akka.actor.debug.fsm" -> true).asJava).withFallback(AkkaSpec.testConf)
-      val fsmEventSystem = ActorSystem("fsm event", config)
+        "akka.actor.debug.fsm" -> true).asJava).withFallback(system.settings.config)
+      val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {
         new TestKit(fsmEventSystem) {
-          EventFilter.debug() intercept {
+          EventFilter.debug(occurrences = 5) intercept {
             val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
               startWith(1, null)
               when(1) {
@@ -215,7 +215,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
                 case StopEvent(r, _, _) ⇒ testActor ! r
               }
             })
-            val name = fsm.toString
+            val name = fsm.path.toString
             system.eventStream.subscribe(testActor, classOf[Logging.Debug])
             fsm ! "go"
             expectMsgPF(1 second, hint = "processing Event(go,null)") {

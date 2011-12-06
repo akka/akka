@@ -139,7 +139,7 @@ class ActiveRemoteClient private[akka] (
 
   def currentChannel = connection.getChannel
 
-  private val senderRemoteAddress = remoteSupport.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+  private val senderRemoteAddress = remoteSupport.remote.remoteAddress
 
   /**
    * Connect to remote server.
@@ -150,7 +150,7 @@ class ActiveRemoteClient private[akka] (
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SecureCookie.nonEmpty) handshake.setCookie(SecureCookie.get)
       handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-        .setHostname(senderRemoteAddress.hostname)
+        .setHostname(senderRemoteAddress.host)
         .setPort(senderRemoteAddress.port)
         .build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
@@ -164,7 +164,7 @@ class ActiveRemoteClient private[akka] (
 
     def attemptReconnect(): Boolean = {
       log.debug("Remote client reconnecting to [{}]", remoteAddress)
-      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.hostname, remoteAddress.port))
+      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip, remoteAddress.port))
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
@@ -186,7 +186,7 @@ class ActiveRemoteClient private[akka] (
 
       log.debug("Starting remote client connection to [{}]", remoteAddress)
 
-      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.hostname, remoteAddress.port))
+      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip, remoteAddress.port))
 
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
@@ -349,7 +349,7 @@ class ActiveRemoteClientHandler(
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) with RemoteMarshallingOps {
+class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends RemoteSupport(_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
   val serverSettings = RemoteExtension(system).serverSettings
@@ -456,7 +456,7 @@ class NettyRemoteSupport(_system: ActorSystem) extends RemoteSupport(_system) wi
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+    case None         ⇒ "Non-running NettyRemoteServer@" + remote.remoteAddress
   }
 
   private val _isRunning = new Switch(false)
@@ -491,7 +491,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   val log = Logging(remoteSupport.system, "NettyRemoteServer")
   import remoteSupport.serverSettings._
 
-  val address = remoteSupport.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+  val address = remoteSupport.remote.remoteAddress
 
   val name = "NettyRemoteServer@" + address
 
@@ -510,7 +510,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", ConnectionTimeout.toMillis)
 
-  openChannels.add(bootstrap.bind(new InetSocketAddress(address.hostname, address.port)))
+  openChannels.add(bootstrap.bind(new InetSocketAddress(address.ip, address.port)))
   remoteSupport.notifyListeners(RemoteServerStarted(remoteSupport))
 
   def shutdown() {
@@ -518,7 +518,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-          .setHostname(address.hostname)
+          .setHostname(address.host)
           .setPort(address.port)
           .build)
         if (SecureCookie.nonEmpty)
@@ -647,7 +647,8 @@ class RemoteServerHandler(
         instruction.getCommandType match {
           case CommandType.CONNECT if UsePassiveConnections ⇒
             val origin = instruction.getOrigin
-            val inbound = RemoteAddress(origin.getHostname, origin.getPort)
+            // FIXME RK need to include system-name in remote protocol
+            val inbound = RemoteAddress("BORKED", origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
           case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410
@@ -666,7 +667,7 @@ class RemoteServerHandler(
 
   private def getClientAddress(c: Channel): Option[RemoteAddress] =
     c.getRemoteAddress match {
-      case inet: InetSocketAddress ⇒ Some(RemoteAddress(inet))
+      case inet: InetSocketAddress ⇒ Some(RemoteAddress("BORKED", inet.getHostName, inet.getPort)) // FIXME RK Broken!
       case _                       ⇒ None
     }
 }

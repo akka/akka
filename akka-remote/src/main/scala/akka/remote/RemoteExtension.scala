@@ -14,10 +14,10 @@ import scala.collection.JavaConverters._
 
 object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.settings.config)
+  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.settings.config, system.name)
 }
 
-class RemoteExtensionSettings(val config: Config) extends Extension {
+class RemoteExtensionSettings(val config: Config, val systemName: String) extends Extension {
 
   import config._
 
@@ -31,7 +31,7 @@ class RemoteExtensionSettings(val config: Config) extends Extension {
 
   // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
-  val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_))
+  val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_, systemName))
 
   val NodeName: String = config.getString("akka.cluster.nodename") match {
     case ""    ⇒ throw new ConfigurationException("akka.cluster.nodename configuration property must be defined")

@@ -224,6 +224,7 @@ class CallingThreadDispatcher(
       }
       if (handle ne null) {
         try {
+          if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
           true
         } catch {
