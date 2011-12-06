@@ -71,6 +71,7 @@ object ActorSystem {
 
     val ProviderClass = getString("akka.actor.provider")
 
+    val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
@@ -300,19 +301,21 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   protected def systemImpl = this
 
-  implicit def timeout = settings.ActorTimeout
-
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef =
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
     (systemGuardian ? CreateChild(props, name)).get match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
+  }
 
-  def actorOf(props: Props, name: String): ActorRef =
+  def actorOf(props: Props, name: String): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
     (guardian ? CreateChild(props, name)).get match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
+  }
 
   import settings._
 
@@ -398,7 +401,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
    * Create the scheduler service. This one needs one special behavior: if
    * Closeable, it MUST execute all outstanding tasks upon .close() in order
    * to properly shutdown all dispatchers.
-   * 
+   *
    * Furthermore, this timer service MUST throw IllegalStateException if it
    * cannot schedule a task. Once scheduled, the task MUST be executed. If
    * executed upon close(), the task may execute before its timeout.
