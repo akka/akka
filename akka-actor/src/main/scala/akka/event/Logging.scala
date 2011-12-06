@@ -3,7 +3,7 @@
  */
 package akka.event
 
-import akka.actor.{ Actor, ActorPath, ActorRef, MinimalActorRef, LocalActorRef, Props, ActorSystem, ActorSystemImpl, simpleName }
+import akka.actor._
 import akka.AkkaException
 import akka.actor.ActorSystem.Settings
 import akka.util.ReflectiveAccess
@@ -38,7 +38,6 @@ trait LoggingBus extends ActorEventBus {
   private val guard = new ReentrantGuard
   private var loggers = Seq.empty[ActorRef]
   private var _logLevel: LogLevel = _
-  private val loggerId = new AtomicInteger
 
   /**
    * Query currently set log level. See object Logging for more information.
@@ -144,7 +143,7 @@ trait LoggingBus extends ActorEventBus {
   }
 
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
-    val name = "log" + loggerId.incrementAndGet + "-" + simpleName(clazz)
+    val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
     val response = try actor ? InitializeLogger(this) get catch {
@@ -170,11 +169,11 @@ object LogSource {
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
-    def genString(a: Actor) = a.self.toString
+    def genString(a: Actor) = a.self.path.toString
   }
 
   implicit val fromActorRef: LogSource[ActorRef] = new LogSource[ActorRef] {
-    def genString(a: ActorRef) = a.toString
+    def genString(a: ActorRef) = a.path.toString
   }
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
@@ -224,6 +223,13 @@ object LogSource {
  * </code></pre>
  */
 object Logging {
+
+  object Extension extends ExtensionKey[LogExt]
+
+  class LogExt(system: ActorSystemImpl) extends Extension {
+    private val loggerId = new AtomicInteger
+    def id() = loggerId.incrementAndGet()
+  }
 
   /**
    * Marker trait for annotating LogLevel, which must be Int after erasure.
@@ -398,12 +404,6 @@ object Logging {
         event.thread.getName,
         event.logSource,
         event.message))
-
-    def instanceName(instance: AnyRef): String = instance match {
-      case null        ⇒ "NULL"
-      case a: ActorRef ⇒ a.address
-      case _           ⇒ simpleName(instance)
-    }
   }
 
   /**
@@ -414,9 +414,7 @@ object Logging {
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
-    override val name: String = "standard-out-logger"
-    val path: ActorPath = null // pathless
-    val address: String = name
+    val path: ActorPath = new RootActorPath(LocalAddress("all-systems"), "/StandardOutLogger")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }

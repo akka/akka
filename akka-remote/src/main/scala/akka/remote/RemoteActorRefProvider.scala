@@ -30,18 +30,20 @@ import akka.serialization.SerializationExtension
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider(
+  val systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  val scheduler: Scheduler) extends ActorRefProvider {
+  val scheduler: Scheduler,
+  _deadLetters: InternalActorRef) extends ActorRefProvider {
 
   val log = Logging(eventStream, "RemoteActorRefProvider")
 
   def deathWatch = local.deathWatch
+  def rootGuardian = local.rootGuardian
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
-  def nodename = local.nodename
-  def clustername = local.clustername
-  def tempName = local.tempName
+  def nodename = remoteExtension.NodeName
+  def clustername = remoteExtension.ClusterName
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
 
@@ -57,11 +59,10 @@ class RemoteActorRefProvider(
   private lazy val remoteExtension = RemoteExtension(system)
   private lazy val serialization = SerializationExtension(system)
   lazy val rootPath: ActorPath = {
-    val remoteAddress = RemoteAddress(remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
+    val remoteAddress = RemoteAddress(system.name, remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
     new RootActorPath(remoteAddress)
   }
-  private lazy val local = new LocalActorRefProvider(settings, eventStream, scheduler, rootPath,
-    remoteExtension.NodeName, remoteExtension.ClusterName)
+  private lazy val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters)
   private[akka] lazy val remote = new Remote(system, nodename)
   private lazy val remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
 
@@ -79,22 +80,19 @@ class RemoteActorRefProvider(
   def dispatcher = local.dispatcher
   def defaultTimeout = settings.ActorTimeout
 
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, name: String, systemService: Boolean): ActorRef =
-    actorOf(system, props, supervisor, supervisor.path / name, systemService)
-
-  private[akka] def actorOf(system: ActorSystemImpl, props: Props, supervisor: ActorRef, path: ActorPath, systemService: Boolean): ActorRef =
-    if (systemService) local.actorOf(system, props, supervisor, path, systemService)
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef =
+    if (systemService) local.actorOf(system, props, supervisor, name, systemService)
     else {
-      val name = path.name
+      val path = supervisor.path / name
       val newFuture = Promise[ActorRef](system.settings.ActorTimeout)(dispatcher)
 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
-          val actor: ActorRef = try {
+          val actor: InternalActorRef = try {
             deployer.lookupDeploymentFor(path.toString) match {
               case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
-                def isReplicaNode: Boolean = remoteAddresses exists { _ == rootPath.remoteAddress }
+                def isReplicaNode: Boolean = remoteAddresses exists { _ == remote.remoteAddress }
 
                 //system.eventHandler.debug(this, "%s: Deploy Remote Actor with address [%s] connected to [%s]: isReplica(%s)".format(system.defaultAddress, address, remoteAddresses.mkString, isReplicaNode))
 
@@ -145,7 +143,7 @@ class RemoteActorRefProvider(
                   }
 
                   val connections = (Map.empty[RemoteAddress, ActorRef] /: remoteAddresses) { (conns, a) ⇒
-                    val remoteAddress = RemoteAddress(a.hostname, a.port)
+                    val remoteAddress = RemoteAddress(system.name, a.host, a.port)
                     conns + (remoteAddress -> RemoteActorRef(remote.system.provider, remote.server, remoteAddress, path, None))
                   }
 
@@ -169,8 +167,8 @@ class RemoteActorRefProvider(
           newFuture completeWithResult actor
           actors.replace(path.toString, newFuture, actor)
           actor
-        case actor: ActorRef   ⇒ actor
-        case future: Future[_] ⇒ future.get.asInstanceOf[ActorRef]
+        case actor: InternalActorRef ⇒ actor
+        case future: Future[_]       ⇒ future.get.asInstanceOf[InternalActorRef]
       }
     }
 
@@ -178,16 +176,14 @@ class RemoteActorRefProvider(
    * Copied from LocalActorRefProvider...
    */
   // FIXME: implement supervision, ticket #1408
-  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: ActorRef, name: String): ActorRef = {
+  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: InternalActorRef, name: String): InternalActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  def actorFor(path: Iterable[String]): Option[ActorRef] = actors.get(ActorPath.join(path)) match {
-    case null              ⇒ local.actorFor(path)
-    case actor: ActorRef   ⇒ Some(actor)
-    case future: Future[_] ⇒ Some(future.get.asInstanceOf[ActorRef])
-  }
+  def actorFor(path: ActorPath): InternalActorRef = local.actorFor(path)
+  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = local.actorFor(ref, path)
+  def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
   // TODO remove me
   val optimizeLocal = new AtomicBoolean(true)
@@ -196,22 +192,7 @@ class RemoteActorRefProvider(
   /**
    * Returns true if the actor was in the provider's cache and evicted successfully, else false.
    */
-  private[akka] def evict(path: String): Boolean = actors.remove(path) ne null
-
-  private[akka] def serialize(actor: ActorRef): SerializedActorRef = actor match {
-    case r: RemoteActorRef ⇒ new SerializedActorRef(r.remoteAddress, actor.path.toString)
-    case other             ⇒ local.serialize(actor)
-  }
-
-  private[akka] def deserialize(actor: SerializedActorRef): Option[ActorRef] = {
-    val remoteAddress = RemoteAddress(actor.hostname, actor.port)
-    if (optimizeLocalScoped_? && remoteAddress == rootPath.remoteAddress) {
-      local.actorFor(ActorPath.split(actor.path))
-    } else {
-      log.debug("{}: Creating RemoteActorRef with address [{}] connected to [{}]", rootPath.remoteAddress, actor.path, remoteAddress)
-      Some(RemoteActorRef(remote.system.provider, remote.server, remoteAddress, rootPath / ActorPath.split(actor.path), None)) //Should it be None here
-    }
-  }
+  private[akka] def evict(path: ActorPath): Boolean = actors.remove(path) ne null
 
   /**
    * Using (checking out) actor on a specific node.
@@ -231,7 +212,7 @@ class RemoteActorRefProvider(
       .setPayload(ByteString.copyFrom(actorFactoryBytes))
       .build()
 
-    val connectionFactory = () ⇒ deserialize(new SerializedActorRef(remoteAddress, remote.remoteDaemon.path.toString)).get
+    val connectionFactory = () ⇒ actorFor(RootActorPath(remoteAddress) / remote.remoteDaemon.path.elements)
 
     // try to get the connection for the remote address, if not already there then create it
     val connection = remoteDaemonConnectionManager.putIfAbsent(remoteAddress, connectionFactory)
@@ -252,13 +233,13 @@ class RemoteActorRefProvider(
             throw cause
 
           case None ⇒
-            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.address))
+            val error = new RemoteException("Remote system command to [%s] timed out".format(connection.path))
             log.error(error, error.toString)
             throw error
         }
       } catch {
         case e: Exception ⇒
-          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.address, e.toString)
+          log.error(e, "Could not send remote system command to [{}] due to: {}", connection.path, e.toString)
           throw e
       }
     } else {
@@ -285,18 +266,18 @@ private[akka] case class RemoteActorRef private[akka] (
   remoteAddress: RemoteAddress,
   path: ActorPath,
   loader: Option[ClassLoader])
-  extends ActorRef with ScalaActorRef with RefInternals {
+  extends InternalActorRef {
+
+  // FIXME RK
+  def getParent = Nobody
+  def getChild(name: Iterable[String]) = Nobody
 
   @volatile
   private var running: Boolean = true
 
-  def name = path.name
-
-  def address = remoteAddress + path.toString
-
   def isTerminated: Boolean = !running
 
-  protected[akka] def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
+  def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
 
@@ -316,7 +297,7 @@ private[akka] case class RemoteActorRef private[akka] (
   }
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = provider.serialize(this)
+  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 
-  protected[akka] def restart(cause: Throwable): Unit = ()
+  def restart(cause: Throwable): Unit = ()
 }

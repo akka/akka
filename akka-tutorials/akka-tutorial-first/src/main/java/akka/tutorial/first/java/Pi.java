@@ -6,6 +6,7 @@ package akka.tutorial.first.java;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.InternalActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.japi.Creator;
@@ -115,7 +116,8 @@ public class Pi {
                 }
             };
             RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            router = new RoutedActorRef(system(), props, getSelf(), "pi");
+            // FIXME REALLY this NEEDS to use getContext()!
+            router = new RoutedActorRef(system(), props, (InternalActorRef) getSelf(), "pi");
         }
 
         // message handler

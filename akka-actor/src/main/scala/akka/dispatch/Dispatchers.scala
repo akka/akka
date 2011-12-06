@@ -76,7 +76,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newPinnedDispatcher(actor: LocalActorRef) = actor match {
     case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", MailboxType, settings.DispatcherDefaultShutdown)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, MailboxType, settings.DispatcherDefaultShutdown)
+    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.path.toString, MailboxType, settings.DispatcherDefaultShutdown)
   }
 
   /**
@@ -87,7 +87,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
     case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", mailboxType, settings.DispatcherDefaultShutdown)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.address, mailboxType, settings.DispatcherDefaultShutdown)
+    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.path.toString, mailboxType, settings.DispatcherDefaultShutdown)
   }
 
   /**

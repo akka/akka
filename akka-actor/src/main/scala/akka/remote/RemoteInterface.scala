@@ -6,42 +6,48 @@ package akka.remote
 
 import akka.actor._
 import akka.AkkaException
-
 import scala.reflect.BeanProperty
 import java.io.{ PrintWriter, PrintStream }
-
 import java.net.InetSocketAddress
+import java.net.URI
+import java.net.URISyntaxException
+import java.net.InetAddress
+import java.net.UnknownHostException
 
 object RemoteAddress {
-  def apply(host: String, port: Int): RemoteAddress = apply(new InetSocketAddress(host, port))
-
-  def apply(inetAddress: InetSocketAddress): RemoteAddress = inetAddress match {
-    case null ⇒ null
-    case inet ⇒
-      val host = inet.getAddress match {
-        case null  ⇒ inet.getHostName //Fall back to given name
-        case other ⇒ other.getHostAddress
-      }
-      val portNo = inet.getPort
-      RemoteAddress(portNo, host)
+  def apply(system: String, host: String, port: Int): RemoteAddress = {
+    // TODO check whether we should not rather bail out early
+    val ip = try InetAddress.getByName(host) catch { case _: UnknownHostException ⇒ null }
+    new RemoteAddress(system, host, ip, port)
   }
 
-  def apply(address: String): RemoteAddress = {
-    val index = address.indexOf(":")
-    if (index < 1) throw new IllegalArgumentException(
-      "Remote address must be a string on the format [\"hostname:port\"], was [" + address + "]")
-    val hostname = address.substring(0, index)
-    val port = address.substring(index + 1, address.length).toInt
-    apply(new InetSocketAddress(hostname, port)) // want the fallback in this method
+  val RE = """(?:(\w+)@)?(\w+):(\d+)""".r
+  object Int {
+    def unapply(s: String) = Some(Integer.parseInt(s))
+  }
+  def apply(stringRep: String, defaultSystem: String): RemoteAddress = stringRep match {
+    case RE(sys, host, Int(port)) ⇒ apply(if (sys != null) sys else defaultSystem, host, port)
+    case _                        ⇒ throw new IllegalArgumentException(stringRep + " is not a valid remote address [system@host:port]")
   }
 }
 
-case class RemoteAddress private[remote] (port: Int, hostname: String) {
+case class RemoteAddress(system: String, host: String, ip: InetAddress, port: Int) extends Address {
+  def protocol = "akka"
   @transient
-  override lazy val toString = "" + hostname + ":" + port
+  lazy val hostPort = system + "@" + host + ":" + port
 }
 
-object LocalOnly extends RemoteAddress(0, "local")
+object RemoteActorPath {
+  def unapply(addr: String): Option[(RemoteAddress, Iterable[String])] = {
+    try {
+      val uri = new URI(addr)
+      if (uri.getScheme != "akka" || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1 || uri.getPath == null) None
+      else Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), ActorPath.split(uri.getPath).drop(1))
+    } catch {
+      case _: URISyntaxException ⇒ None
+    }
+  }
+}
 
 class RemoteException(message: String) extends AkkaException(message)
 

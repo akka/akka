@@ -6,7 +6,7 @@ import akka.testkit.AkkaSpec
 class AccrualFailureDetectorSpec extends AkkaSpec {
 
   "An AccrualFailureDetector" must {
-    val conn = RemoteAddress(new InetSocketAddress("localhost", 2552))
+    val conn = RemoteAddress("tester", "localhost", 2552)
 
     "mark node as available after a series of successful heartbeats" in {
       val fd = new AccrualFailureDetector

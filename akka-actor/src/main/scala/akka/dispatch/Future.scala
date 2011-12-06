@@ -956,7 +956,11 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), NANOSECONDS), this)
+                if (!isExpired)
+                  try dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS), this)
+                  catch {
+                    case _: IllegalStateException ⇒ func(DefaultPromise.this)
+                  }
                 else func(DefaultPromise.this)
               }
             }
@@ -983,8 +987,17 @@ class DefaultPromise[T](val timeout: Timeout)(implicit val dispatcher: MessageDi
           val runnable = new Runnable {
             def run() {
               if (!isCompleted) {
-                if (!isExpired) dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), NANOSECONDS), this)
-                else promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) }) // FIXME catching all and continue isn't good for OOME, ticket #1418
+                val done =
+                  if (!isExpired)
+                    try {
+                      dispatcher.prerequisites.scheduler.scheduleOnce(Duration(timeLeftNoinline(), TimeUnit.NANOSECONDS), this)
+                      true
+                    } catch {
+                      case _: IllegalStateException ⇒ false
+                    }
+                  else false
+                if (!done)
+                  promise complete (try { Right(fallback) } catch { case e ⇒ Left(e) }) // FIXME catching all and continue isn't good for OOME, ticket #1418
               }
             }
           }

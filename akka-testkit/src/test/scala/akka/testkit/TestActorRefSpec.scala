@@ -173,8 +173,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach {
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
-          val impl = system.asInstanceOf[ActorSystemImpl]
-          val ref = new TestActorRef(impl, impl.dispatcherFactory.prerequisites, Props(new TActor {
+          val ref = TestActorRef(Props(new TActor {
             def receiveT = { case _ ⇒ }
             override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
             override def postRestart(reason: Throwable) { counter -= 1 }
