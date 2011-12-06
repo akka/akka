@@ -15,6 +15,31 @@ import akka.util.{ Duration, Helpers }
  * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
+ * 
+ * There are several possibilities for creating actors (see [[akka.actor.Props]]
+ * for details on `props`):
+ * 
+ * {{{
+ * // Java or Scala
+ * context.actorOf(props, "name")
+ * context.actorOf(props)
+ * 
+ * // Scala
+ * context.actorOf[MyActor]("name")
+ * context.actorOf[MyActor]
+ * context.actorOf(new MyActor(...))
+ * 
+ * // Java
+ * context.actorOf(classOf[MyActor]);
+ * context.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * });
+ * context.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * }, "name");
+ * }}}
+ * 
+ * Where no name is given explicitly, one will be automatically generated.
  */
 trait ActorContext extends ActorRefFactory {
 
