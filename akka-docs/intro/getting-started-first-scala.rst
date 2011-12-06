@@ -134,19 +134,19 @@ the Scala distribution. If you prefer to use SBT to build and run the sample
 then you can skip this section and jump to the next one.
 
 Scala can be downloaded from http://www.scala-lang.org/downloads. Browse there
-and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip``
+and download the Scala 2.9.1 release. If you pick the ``tgz`` or ``zip``
 distribution then just unzip it where you want it installed. If you pick the
 IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0/bin`` (if that is the
+You also need to make sure that the ``scala-2.9.1/bin`` (if that is the
 directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0/bin
+    $ export PATH=$PATH:scala-2.9.1/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
 the tutorial and put it in the root of the Akka distribution in the ``tutorial``
@@ -429,7 +429,7 @@ compiled ourselves::
     loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
-    Calculation time:   858 millis
+    Calculation time:   568 millis
 
 Yippee! It is working.
 
@@ -453,7 +453,7 @@ When this in done we can run our application directly inside SBT::
     > run
     ...
     Pi estimate:        3.1435501812459323
-    Calculation time:   942 millis
+    Calculation time:   562 millis
 
 Yippee! It is working.
 

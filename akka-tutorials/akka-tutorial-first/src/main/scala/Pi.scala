@@ -5,7 +5,7 @@ package akka.tutorial.first.scala
 
 import java.util.concurrent.CountDownLatch
 import akka.routing.{ RoutedActorRef, LocalConnectionManager, RoundRobinRouter, RoutedProps }
-import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
+import akka.actor.{ Actor, ActorSystem }
 
 object Pi extends App {
 
