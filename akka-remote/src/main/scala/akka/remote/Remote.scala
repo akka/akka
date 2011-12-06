@@ -38,7 +38,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   private[remote] val remoteExtension = RemoteExtension(system)
   private[remote] val serialization = SerializationExtension(system)
   private[remote] val remoteAddress = {
-    RemoteAddress(remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
+    RemoteAddress(system.name, remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
   }
 
   val failureDetector = new AccrualFailureDetector(system)
@@ -56,7 +56,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   private[remote] lazy val remoteDaemon =
     system.provider.actorOf(system,
       Props(new RemoteSystemDaemon(this)).withDispatcher(dispatcherFactory.newPinnedDispatcher(remoteDaemonServiceName)),
-      remoteDaemonSupervisor,
+      remoteDaemonSupervisor.asInstanceOf[InternalActorRef],
       remoteDaemonServiceName,
       systemService = true)
 
@@ -71,8 +71,13 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
   lazy val eventStream = new NetworkEventStream(system)
 
   lazy val server: RemoteSupport = {
-    //new akka.remote.netty.NettyRemoteSupport(system)
-    ReflectiveAccess.createInstance[RemoteSupport](remoteExtension.RemoteTransport, Array[Class[_]](classOf[ActorSystem]), Array[AnyRef](system)) match {
+    val arguments = Seq(
+      classOf[ActorSystem] -> system,
+      classOf[Remote] -> this)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
+
+    ReflectiveAccess.createInstance[RemoteSupport](remoteExtension.RemoteTransport, types, values) match {
       case Left(problem) ⇒
         log.error(problem, "Could not load remote transport layer")
         throw problem
@@ -86,10 +91,9 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
     }
   }
 
-  def start(): Unit = {
-    val serverAddress = server.system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress //Force init of server
-    val daemonAddress = remoteDaemon.address //Force init of daemon
-    log.info("Starting remote server on [{}] and starting remoteDaemon with address [{}]", serverAddress, daemonAddress)
+  def start() {
+    val daemonPath = remoteDaemon.path //Force init of daemon
+    log.info("Starting remote server on [{}] and starting remoteDaemon with path [{}]", remoteAddress, daemonPath)
   }
 }
 
@@ -145,13 +149,17 @@ class RemoteSystemDaemon(remote: Remote) extends Actor {
             case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
           }
 
-        val actorPath = ActorPath(systemImpl, message.getActorPath)
-        val parent = system.actorFor(actorPath.parent)
-
-        if (parent.isDefined) {
-          systemImpl.provider.actorOf(systemImpl, Props(creator = actorFactory), parent.get, actorPath.name)
-        } else {
-          log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
+        message.getActorPath match {
+          case RemoteActorPath(`remoteAddress`, elems) if elems.size > 0 ⇒
+            val name = elems.last
+            systemImpl.provider.actorFor(systemImpl.lookupRoot, elems.dropRight(1)) match {
+              case x if x eq system.deadLetters ⇒
+                log.error("Parent actor does not exist, ignoring remote system daemon command [{}]", message)
+              case parent ⇒
+                systemImpl.provider.actorOf(systemImpl, Props(creator = actorFactory), parent, name)
+            }
+          case _ ⇒
+            log.error("remote path does not match path from message [{}]", message)
         }
 
       } else {
@@ -249,13 +257,10 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
   val provider = remote.system.asInstanceOf[ActorSystemImpl].provider
 
   lazy val sender: ActorRef =
-    if (input.hasSender)
-      provider.deserialize(
-        SerializedActorRef(input.getSender.getHost, input.getSender.getPort, input.getSender.getPath)).getOrElse(throw new IllegalStateException("OHNOES"))
-    else
-      remote.system.deadLetters
+    if (input.hasSender) provider.actorFor(provider.rootGuardian, input.getSender.getPath)
+    else remote.system.deadLetters
 
-  lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath).getOrElse(remote.system.deadLetters)
+  lazy val recipient: ActorRef = remote.system.actorFor(input.getRecipient.getPath)
 
   lazy val payload: Either[Throwable, AnyRef] =
     if (input.hasException) Left(parseException())
@@ -302,8 +307,7 @@ trait RemoteMarshallingOps {
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
-    val rep = system.asInstanceOf[ActorSystemImpl].provider.serialize(actor)
-    ActorRefProtocol.newBuilder.setHost(rep.hostname).setPort(rep.port).setPath(rep.path).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toString).build
   }
 
   def createRemoteMessageProtocolBuilder(

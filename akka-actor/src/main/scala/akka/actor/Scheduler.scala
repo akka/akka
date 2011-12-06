@@ -14,6 +14,15 @@ package akka.actor
 
 import akka.util.Duration
 
+  /**
+   * An Akka scheduler service. This one needs one special behavior: if
+   * Closeable, it MUST execute all outstanding tasks upon .close() in order
+   * to properly shutdown all dispatchers.
+   * 
+   * Furthermore, this timer service MUST throw IllegalStateException if it
+   * cannot schedule a task. Once scheduled, the task MUST be executed. If
+   * executed upon close(), the task may execute before its timeout.
+   */
 trait Scheduler {
   /**
    * Schedules a message to be sent repeatedly with an initial delay and frequency.

@@ -6,6 +6,7 @@ package akka.tutorial.first.scala
 import java.util.concurrent.CountDownLatch
 import akka.routing.{ RoutedActorRef, LocalConnectionManager, RoundRobinRouter, RoutedProps }
 import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
+import akka.actor.InternalActorRef
 
 object Pi extends App {
 
@@ -55,8 +56,9 @@ object Pi extends App {
     val workers = Vector.fill(nrOfWorkers)(system.actorOf[Worker])
 
     // wrap them with a load-balancing router
+    // FIXME REALLY this needs to use context to create the child!
     val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(workers))
-    val router = new RoutedActorRef(system, props, self, "pi")
+    val router = new RoutedActorRef(system, props, self.asInstanceOf[InternalActorRef], "pi")
 
     // message handler
     def receive = {

@@ -397,7 +397,9 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val latch = new CountDownLatch(16)
       val ta = TypedActor(system)
       val t: LifeCycles = ta.typedActorOf(classOf[LifeCycles], new Creator[LifeCyclesImpl] { def create = new LifeCyclesImpl(latch) }, Props())
-      t.crash()
+      EventFilter[IllegalStateException]("Crash!", occurrences = 1) intercept {
+        t.crash()
+      }
       ta.poisonPill(t)
       latch.await(10, TimeUnit.SECONDS) must be === true
     }
