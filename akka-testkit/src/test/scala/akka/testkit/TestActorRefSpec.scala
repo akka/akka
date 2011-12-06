@@ -157,7 +157,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
         val forwarder = actorOf(Props(new Actor {
-          context.startsWatching(a)
+          context.watch(a)
           def receive = { case x ⇒ testActor forward x }
         }))
         a.!(PoisonPill)(testActor)

@@ -52,7 +52,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
       val boss = actorOf(Props(new Actor {
-        val crasher = context.startsWatching(context.actorOf(Props(new CountDownActor(countDownMessages))))
+        val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages))))
 
         protected def receive = {
           case "killCrasher" ⇒ crasher ! Kill

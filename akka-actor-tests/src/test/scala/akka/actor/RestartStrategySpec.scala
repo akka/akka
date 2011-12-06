@@ -207,7 +207,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val boss = actorOf(Props(new Actor {
         def receive = {
-          case p: Props      ⇒ sender ! context.startsWatching(context.actorOf(p))
+          case p: Props      ⇒ sender ! context.watch(context.actorOf(p))
           case t: Terminated ⇒ maxNoOfRestartsLatch.open
         }
       }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, Some(1000))))

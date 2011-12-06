@@ -343,7 +343,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         val waitTime = (30 seconds).dilated.toMillis
         val boss = actorOf(Props(new Actor {
           def receive = {
-            case "run"             ⇒ for (_ ← 1 to num) (context.startsWatching(context.actorOf(props))) ! cachedMessage
+            case "run"             ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage
             case Terminated(child) ⇒ stopLatch.countDown()
           }
         }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("boss")))

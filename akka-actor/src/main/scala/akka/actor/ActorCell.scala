@@ -73,13 +73,13 @@ trait ActorContext extends ActorRefFactory {
    * Registers this actor as a Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def startsWatching(subject: ActorRef): ActorRef
+  def watch(subject: ActorRef): ActorRef
 
   /**
    * Unregisters this actor as Monitor for the provided ActorRef
    * @return the provided ActorRef
    */
-  def stopsWatching(subject: ActorRef): ActorRef
+  def unwatch(subject: ActorRef): ActorRef
 }
 
 trait JavaActorContext extends ActorContext {
@@ -221,13 +221,13 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  override final def startsWatching(subject: ActorRef): ActorRef = {
+  override final def watch(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Link(subject))
     subject
   }
 
-  override final def stopsWatching(subject: ActorRef): ActorRef = {
+  override final def unwatch(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Unlink(subject))
     subject

@@ -50,7 +50,7 @@ object SupervisorSpec {
   }
 
   class Master(sendTo: ActorRef) extends Actor {
-    val temp = context.startsWatching(context.actorOf(Props(new PingPongActor(sendTo))))
+    val temp = context.watch(context.actorOf(Props(new PingPongActor(sendTo))))
 
     var s: ActorRef = _
 

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic._
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
   def startWatching(target: ActorRef) = actorOf(Props(new Actor {
-    context.startsWatching(target)
+    context.watch(target)
     def receive = { case x ⇒ testActor forward x }
   }))
 
@@ -52,8 +52,8 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
       val monitor1, monitor3 = startWatching(terminal)
       val monitor2 = actorOf(Props(new Actor {
-        context.startsWatching(terminal)
-        context.stopsWatching(terminal)
+        context.watch(terminal)
+        context.unwatch(terminal)
         def receive = {
           case "ping"        ⇒ sender ! "pong"
           case t: Terminated ⇒ testActor ! t
@@ -62,7 +62,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       monitor2 ! "ping"
 
-      expectMsg("pong") //Needs to be here since startsWatching and stopsWatching are asynchronous
+      expectMsg("pong") //Needs to be here since watch and unwatch are asynchronous
 
       terminal ! PoisonPill
 
@@ -107,7 +107,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
         val failed = (supervisor ? Props.empty).as[ActorRef].get
         val brother = (supervisor ? Props(new Actor {
-          context.startsWatching(failed)
+          context.watch(failed)
           def receive = Actor.emptyBehavior
         })).as[ActorRef].get
 
