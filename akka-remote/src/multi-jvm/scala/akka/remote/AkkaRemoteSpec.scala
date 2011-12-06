@@ -26,7 +26,9 @@ object AkkaRemoteSpec {
   }
 }
 
-abstract class AkkaRemoteSpec extends AkkaSpec(AkkaRemoteSpec.testConf) with MultiJvmSync {
+abstract class AkkaRemoteSpec(config: Config)
+  extends AkkaSpec(config.withFallback(AkkaRemoteSpec.testConf))
+  with MultiJvmSync {
 
   /**
    * Helper function for accessing the underlying remoting.
