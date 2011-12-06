@@ -22,7 +22,7 @@ object LoggingBus {
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
- * levels for the initial logging (StandardOutLogger) and the loggers&level
+ * levels for the initial logging (StandardOutLogger) and the loggers & level
  * for after-init logging, possibly keeping the StandardOutLogger enabled if
  * it is part of the configured loggers. All configured loggers are treated as
  * system services and managed by this trait, i.e. subscribed/unsubscribed in

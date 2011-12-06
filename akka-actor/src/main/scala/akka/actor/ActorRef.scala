@@ -162,7 +162,8 @@ class LocalActorRef private[akka] (
 
   /**
    * Is the actor terminated?
-   * If this method returns true, it will never return false again, but if it returns false, you cannot be sure if it's alive still (race condition)
+   * If this method returns true, it will never return false again, but if it
+   * returns false, you cannot be sure if it's alive still (race condition)
    */
   override def isTerminated: Boolean = actorCell.isTerminated
 
@@ -271,7 +272,7 @@ case class SerializedActorRef(hostname: String, port: Int, path: String) {
   def readResolve(): AnyRef = currentSystem.value match {
     case null ⇒ throw new IllegalStateException(
       "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒ someSystem.provider.deserialize(this) match {
       case Some(actor) ⇒ actor
       case None        ⇒ throw new IllegalStateException("Could not deserialize ActorRef")
@@ -287,7 +288,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
   private[akka] val uuid: Uuid = newUuid()
   def name: String = uuid.toString
 
-  //FIXME REMOVE THIS, ticket #1416 
+  //FIXME REMOVE THIS, ticket #1416
   //FIXME REMOVE THIS, ticket #1415
   def suspend(): Unit = ()
   def resume(): Unit = ()
@@ -299,7 +300,7 @@ trait MinimalActorRef extends ActorRef with ScalaActorRef with RefInternals {
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    throw new UnsupportedOperationException("Not supported for %s".format(getClass.getName))
+    throw new UnsupportedOperationException("Not supported for [%s]".format(getClass.getName))
 
   protected[akka] def sendSystemMessage(message: SystemMessage): Unit = ()
   protected[akka] def restart(cause: Throwable): Unit = ()
@@ -328,7 +329,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
     _path = rootPath / "nul"
-    brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef, promises are always broken.")))(dispatcher)
+    brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef - promises are always broken")))(dispatcher)
   }
 
   override val name: String = "dead-letter"
@@ -353,7 +354,12 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
-abstract class AskActorRef(val path: ActorPath, provider: ActorRefProvider, deathWatch: DeathWatch, timeout: Timeout, val dispatcher: MessageDispatcher) extends MinimalActorRef {
+abstract class AskActorRef(
+  val path: ActorPath,
+  provider: ActorRefProvider,
+  deathWatch: DeathWatch,
+  timeout: Timeout,
+  val dispatcher: MessageDispatcher) extends MinimalActorRef {
   final val result = new DefaultPromise[Any](timeout)(dispatcher)
 
   override def name = path.name

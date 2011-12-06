@@ -30,17 +30,17 @@ object ActorSystem {
 
   val Version = "2.0-SNAPSHOT"
 
-  val envHome = System.getenv("AKKA_HOME") match {
+  val EnvHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
     case value           ⇒ Some(value)
   }
 
-  val systemHome = System.getProperty("akka.home") match {
+  val SystemHome = System.getProperty("akka.home") match {
     case null | "" ⇒ None
     case value     ⇒ Some(value)
   }
 
-  val GlobalHome = systemHome orElse envHome
+  val GlobalHome = SystemHome orElse EnvHome
 
   def create(name: String, config: Config): ActorSystem = apply(name, config)
   def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
@@ -49,6 +49,7 @@ object ActorSystem {
    * Uses the standard default Config from ConfigFactory.load(), since none is provided.
    */
   def create(name: String): ActorSystem = apply(name)
+
   /**
    * Uses the standard default Config from ConfigFactory.load(), since none is provided.
    */
@@ -107,7 +108,6 @@ object ActorSystem {
         "] does not match the provided config version [" + ConfigVersion + "]")
 
     override def toString: String = config.root.render
-
   }
 
   // TODO move to migration kit
@@ -151,9 +151,7 @@ object ActorSystem {
     } catch { case _ ⇒ None }
 
     private def emptyConfig = ConfigFactory.systemProperties
-
   }
-
 }
 
 /**
@@ -380,7 +378,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   protected def createScheduler(): Scheduler = {
     val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
     val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
-    // note that dispatcher is by-name parameter in DefaultScheduler constructor, 
+    // note that dispatcher is by-name parameter in DefaultScheduler constructor,
     // because dispatcher is not initialized when the scheduler is created
     def safeDispatcher = {
       if (dispatcher eq null) {
