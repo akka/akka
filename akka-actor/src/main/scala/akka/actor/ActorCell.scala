@@ -417,7 +417,7 @@ private[akka] class ActorCell(
     }
   }
 
-  final def clearActorFields(): Unit = setActorFields(context = null, self = null)
+  final def clearActorFields(): Unit = setActorFields(context = null, self = system.deadLetters)
 
   final def setActorFields(context: ActorContext, self: ActorRef) {
     @tailrec
