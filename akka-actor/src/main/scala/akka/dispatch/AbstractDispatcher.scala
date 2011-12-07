@@ -168,34 +168,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     val mailBox = actor.mailbox
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
     actor.mailbox = deadLetterMailbox
-    cleanUpMailboxFor(actor, mailBox)
     mailBox.cleanUp()
-  }
-
-  /**
-   * Overridable callback to clean up the mailbox for a given actor,
-   * called when an actor is unregistered.
-   */
-  protected def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
-
-    if (mailBox.hasSystemMessages) {
-      var message = mailBox.systemDrain()
-      while (message ne null) {
-        // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        deadLetterMailbox.systemEnqueue(actor.self, message)
-        message = next
-      }
-    }
-
-    if (mailBox.hasMessages) {
-      var envelope = mailBox.dequeue
-      while (envelope ne null) {
-        deadLetterMailbox.enqueue(actor.self, envelope)
-        envelope = mailBox.dequeue
-      }
-    }
   }
 
   private val shutdownAction = new Runnable {

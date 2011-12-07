@@ -209,8 +209,29 @@ abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMes
   /**
    * Overridable callback to clean up the mailbox,
    * called when an actor is unregistered.
+   * By default it dequeues all system messages + messages and ships them to the owning actors' systems' DeadLetterMailbox
    */
-  protected[dispatch] def cleanUp() {}
+  protected[dispatch] def cleanUp() {
+    val dlq = actor.systemImpl.deadLetterMailbox
+    if (hasSystemMessages) {
+      var message = systemDrain()
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlq.systemEnqueue(actor.self, message)
+        message = next
+      }
+    }
+
+    if (hasMessages) {
+      var envelope = dequeue
+      while (envelope ne null) {
+        dlq.enqueue(actor.self, envelope)
+        envelope = dequeue
+      }
+    }
+  }
 }
 
 trait MessageQueue {
