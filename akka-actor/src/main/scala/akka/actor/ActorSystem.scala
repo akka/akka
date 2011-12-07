@@ -158,20 +158,20 @@ object ActorSystem {
  * An actor system is a hierarchical group of actors which share common
  * configuration, e.g. dispatchers, deployments, remote capabilities and
  * addresses. It is also the entry point for creating or looking up actors.
- * 
+ *
  * There are several possibilities for creating actors (see [[akka.actor.Props]]
  * for details on `props`):
- * 
+ *
  * {{{
  * // Java or Scala
  * system.actorOf(props, "name")
  * system.actorOf(props)
- * 
+ *
  * // Scala
  * system.actorOf[MyActor]("name")
  * system.actorOf[MyActor]
  * system.actorOf(new MyActor(...))
- * 
+ *
  * // Java
  * system.actorOf(classOf[MyActor]);
  * system.actorOf(new Creator<MyActor>() {
@@ -181,7 +181,7 @@ object ActorSystem {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}
- * 
+ *
  * Where no name is given explicitly, one will be automatically generated.
  */
 abstract class ActorSystem extends ActorRefFactory {

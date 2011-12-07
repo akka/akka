@@ -237,10 +237,10 @@ class ActorLookupSpec extends AkkaSpec {
     "send messages with correct sender" in {
       implicit val sender = c1
       ActorSelection(c21, "../../*") ! GetSender(testActor)
-      val actors = receiveWhile(messages = 2) {
+      val actors = Set() ++ receiveWhile(messages = 2) {
         case `c1` ⇒ lastSender
       }
-      actors must be === Seq(c1, c2)
+      actors must be === Set(c1, c2)
       expectNoMsg(1 second)
     }
 
