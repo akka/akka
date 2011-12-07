@@ -201,6 +201,10 @@ trait Actor {
   /**
    * Stores the context for this actor, including self, sender, and hotswap.
    * It is implicit to support operations such as `forward`.
+   *
+   * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
+   * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
+   * context.
    */
   @transient
   protected[akka] implicit val context: ActorContext = {
