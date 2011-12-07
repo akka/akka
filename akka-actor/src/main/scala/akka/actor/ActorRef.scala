@@ -9,8 +9,6 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
-import java.net.InetSocketAddress
-import akka.remote.RemoteAddress
 import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
@@ -50,7 +48,6 @@ import scala.annotation.tailrec
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
-  // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
    * Returns the path for this actor (from this actor up to the root actor).
@@ -190,7 +187,7 @@ private[akka] case object Nobody extends MinimalActorRef {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class LocalActorRef private[akka] (
+private[akka] class LocalActorRef private[akka] (
   system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,

@@ -7,7 +7,6 @@ package akka.actor
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import DeploymentConfig._
-import akka.remote.RemoteAddress
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 
@@ -108,21 +107,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment must be(None)
     }
 
-    "be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
-      val service = "/user/service2"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
-      deployment must be('defined)
-
-      deployment must be(Some(
-        Deploy(
-          service,
-          None,
-          RoundRobin,
-          NrOfInstances(3),
-          RemoteScope(Seq(
-            RemoteAddress(system.name, "wallace", 2552), RemoteAddress(system.name, "gromit", 2552))))))
-    }
-
     "be able to parse 'akka.actor.deployment._' with recipe" in {
       val service = "/user/service3"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
@@ -215,7 +199,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     }
 
-    "be able to parse 'akka.actor.deployment._' with specified cluster nodes" in {
+    "be able to parse 'akka.actor.deployment._' with specified cluster nodes" ignore {
       val service = "/user/service-cluster1"
       val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
@@ -229,7 +213,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       }
     }
 
-    "be able to parse 'akka.actor.deployment._' with specified cluster replication" in {
+    "be able to parse 'akka.actor.deployment._' with specified cluster replication" ignore {
       val service = "/user/service-cluster2"
       val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)

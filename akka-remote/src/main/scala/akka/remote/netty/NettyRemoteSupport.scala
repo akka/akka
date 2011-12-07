@@ -367,9 +367,10 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
   protected[akka] def send(
     message: Any,
     senderOption: Option[ActorRef],
-    recipientAddress: RemoteAddress,
-    recipient: ActorRef,
+    recipient: RemoteActorRef,
     loader: Option[ClassLoader]): Unit = {
+
+    val recipientAddress = recipient.path.address.asInstanceOf[RemoteAddress]
 
     clientsLock.readLock.lock
     try {

@@ -62,19 +62,22 @@ class RemoteActorRefProvider(
     val remoteAddress = RemoteAddress(system.name, remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
     new RootActorPath(remoteAddress)
   }
-  private lazy val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters)
-  private[akka] lazy val remote = new Remote(system, nodename)
+  private lazy val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters, rootPath)
+  private[akka] lazy val remote = {
+    val r = new Remote(system, nodename)
+    terminationFuture.onComplete(_ ⇒ r.server.shutdown())
+    r
+  }
   private lazy val remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
 
   def init(_system: ActorSystemImpl) {
     system = _system
     local.init(_system)
-    terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
   private[akka] def terminationFuture = local.terminationFuture
 
-  private[akka] def deployer: Deployer = local.deployer
+  private[akka] def deployer: Deployer = new RemoteDeployer(settings, eventStream, nodename)
 
   def dispatcher = local.dispatcher
   def defaultTimeout = settings.ActorTimeout
@@ -89,7 +92,7 @@ class RemoteActorRefProvider(
         case null ⇒
           val actor: InternalActorRef = try {
             deployer.lookupDeploymentFor(path.toString) match {
-              case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.RemoteScope(remoteAddresses))) ⇒
+              case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, RemoteDeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
                 def isReplicaNode: Boolean = remoteAddresses exists { _ == remote.remoteAddress }
 
@@ -142,8 +145,7 @@ class RemoteActorRefProvider(
                   }
 
                   val connections = (Map.empty[RemoteAddress, ActorRef] /: remoteAddresses) { (conns, a) ⇒
-                    val remoteAddress = RemoteAddress(system.name, a.host, a.port)
-                    conns + (remoteAddress -> RemoteActorRef(remote.system.provider, remote.server, remoteAddress, path, None))
+                    conns + (a -> new RemoteActorRef(this, remote.server, path, None)) // FIXME RK correct path must be put in here
                   }
 
                   val connectionManager = new RemoteConnectionManager(system, remote, connections)
@@ -180,8 +182,19 @@ class RemoteActorRefProvider(
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  def actorFor(path: ActorPath): InternalActorRef = local.actorFor(path)
-  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = local.actorFor(ref, path)
+  def actorFor(path: ActorPath): InternalActorRef = path.root match {
+    case `rootPath`                         ⇒ actorFor(rootGuardian, path.elements)
+    case RootActorPath(_: RemoteAddress, _) ⇒ new RemoteActorRef(this, remote.server, path, None)
+    case _                                  ⇒ local.actorFor(path)
+  }
+
+  def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
+    case RemoteActorPath(address, elems) ⇒
+      if (address == rootPath.address) actorFor(rootGuardian, elems)
+      else new RemoteActorRef(this, remote.server, new RootActorPath(address) / elems, None)
+    case _ ⇒ local.actorFor(ref, path)
+  }
+
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
   // TODO remove me
@@ -257,11 +270,10 @@ class RemoteActorRefProvider(
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-private[akka] case class RemoteActorRef private[akka] (
+private[akka] class RemoteActorRef private[akka] (
   provider: ActorRefProvider,
   remote: RemoteSupport,
-  remoteAddress: RemoteAddress,
-  path: ActorPath,
+  val path: ActorPath,
   loader: Option[ClassLoader])
   extends InternalActorRef {
 
@@ -276,7 +288,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), remoteAddress, this, loader)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = provider.ask(message, this, timeout)
 
@@ -288,7 +300,7 @@ private[akka] case class RemoteActorRef private[akka] (
     synchronized {
       if (running) {
         running = false
-        remote.send(new Terminate(), None, remoteAddress, this, loader)
+        remote.send(new Terminate(), None, this, loader)
       }
     }
   }

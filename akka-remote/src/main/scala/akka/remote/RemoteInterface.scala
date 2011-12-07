@@ -175,8 +175,7 @@ abstract class RemoteSupport(val system: ActorSystem) {
 
   protected[akka] def send(message: Any,
                            senderOption: Option[ActorRef],
-                           remoteAddress: RemoteAddress,
-                           recipient: ActorRef,
+                           recipient: RemoteActorRef,
                            loader: Option[ClassLoader]): Unit
 
   protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = system.eventStream.publish(message)

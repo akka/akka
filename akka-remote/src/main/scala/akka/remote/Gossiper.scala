@@ -161,7 +161,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ RemoteActorRef(remote.system.provider, remote.server, gossipingNode, remote.remoteDaemon.path, None)
+          val connectionFactory = () ⇒ new RemoteActorRef(remote.system.provider, remote.server, RootActorPath(gossipingNode) / remote.remoteDaemon.path.elements, None)
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }

@@ -9,8 +9,6 @@ import akka.actor._
 import scala.annotation.tailrec
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
-import java.net.InetSocketAddress
-import akka.remote.RemoteAddress
 import collection.JavaConverters
 
 /**
@@ -69,16 +67,6 @@ trait ConnectionManager {
    * @param ref the dead
    */
   def remove(deadRef: ActorRef)
-
-  /**
-   * Creates a new connection (ActorRef) if it didn't exist. Atomically.
-   */
-  def putIfAbsent(address: RemoteAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef
-
-  /**
-   * Fails over connections from one address to another.
-   */
-  def failOver(from: RemoteAddress, to: RemoteAddress)
 }
 
 /**
@@ -124,11 +112,5 @@ class LocalConnectionManager(initialConnections: Iterable[ActorRef]) extends Con
       //if we are not able to update the state, we just try again.
       if (!state.compareAndSet(oldState, newState)) remove(ref)
     }
-  }
-
-  def failOver(from: RemoteAddress, to: RemoteAddress) {} // do nothing here
-
-  def putIfAbsent(address: RemoteAddress, newConnectionFactory: () ⇒ ActorRef): ActorRef = {
-    throw new UnsupportedOperationException("Not supported")
   }
 }

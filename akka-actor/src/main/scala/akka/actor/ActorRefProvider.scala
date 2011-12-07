@@ -13,9 +13,7 @@ import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
-import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
-import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import akka.event._
 import akka.event.Logging.Error._
@@ -342,9 +340,15 @@ class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val deadLetters: InternalActorRef) extends ActorRefProvider {
+  val deadLetters: InternalActorRef,
+  val rootPath: ActorPath) extends ActorRefProvider {
 
-  val rootPath: ActorPath = new RootActorPath(LocalAddress(_systemName))
+  def this(_systemName: String,
+           settings: ActorSystem.Settings,
+           eventStream: EventStream,
+           scheduler: Scheduler,
+           deadLetters: InternalActorRef) =
+    this(_systemName, settings, eventStream, scheduler, deadLetters, new RootActorPath(LocalAddress(_systemName)))
 
   // FIXME remove both
   val nodename: String = "local"
