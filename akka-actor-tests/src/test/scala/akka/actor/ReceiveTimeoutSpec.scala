@@ -44,7 +44,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       val swappedLatch = TestLatch()
 
-      timeoutActor ! HotSwap(self ⇒ {
+      timeoutActor ! HotSwap(context ⇒ {
         case ReceiveTimeout ⇒ swappedLatch.open
       })
 

@@ -30,14 +30,14 @@ sealed trait AutoReceivedMessage extends Serializable
 
 trait PossiblyHarmful
 
-case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage {
+case class HotSwap(code: ActorContext ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage {
 
   /**
    * Java API
    */
-  def this(code: akka.japi.Function[ActorRef, Procedure[Any]], discardOld: Boolean) = {
-    this((self: ActorRef) ⇒ {
-      val behavior = code(self)
+  def this(code: akka.japi.Function[ActorContext, Procedure[Any]], discardOld: Boolean) = {
+    this((context: ActorContext) ⇒ {
+      val behavior = code(context)
       val result: Actor.Receive = { case msg ⇒ behavior(msg) }
       result
     }, discardOld)
@@ -46,7 +46,7 @@ case class HotSwap(code: ActorRef ⇒ Actor.Receive, discardOld: Boolean = true)
   /**
    *  Java API with default non-stacking behavior
    */
-  def this(code: akka.japi.Function[ActorRef, Procedure[Any]]) = this(code, true)
+  def this(code: akka.japi.Function[ActorContext, Procedure[Any]]) = this(code, true)
 }
 
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful

@@ -18,7 +18,7 @@ class HotSwapSpec extends AkkaSpec {
       val a = system.actorOf(new Actor {
         def receive = { case _ ⇒ _log += "default" }
       })
-      a ! HotSwap(self ⇒ {
+      a ! HotSwap(context ⇒ {
         case _ ⇒
           _log += "swapped"
           barrier.await
@@ -75,7 +75,7 @@ class HotSwapSpec extends AkkaSpec {
 
       barrier.reset
       _log = ""
-      a ! HotSwap(self ⇒ {
+      a ! HotSwap(context ⇒ {
         case "swapped" ⇒
           _log += "swapped"
           barrier.await
