@@ -161,7 +161,7 @@ class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
 
   def createEvents(numberOfEvents: Int) = (0 until numberOfEvents)
 
-  def createSubscriber(pipeTo: ActorRef) = actorOf(Props(new TestActorWrapperActor(pipeTo)))
+  def createSubscriber(pipeTo: ActorRef) = system.actorOf(Props(new TestActorWrapperActor(pipeTo)))
 
   def classifierFor(event: BusType#Event) = event.toString
 

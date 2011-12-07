@@ -112,9 +112,9 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       import latches._
 
       // lock that locked after being open for 1 sec
-      val lock = actorOf(new Lock("33221", 1 second, latches))
+      val lock = system.actorOf(new Lock("33221", 1 second, latches))
 
-      val transitionTester = actorOf(new Actor {
+      val transitionTester = system.actorOf(new Actor {
         def receive = {
           case Transition(_, _, _)     ⇒ transitionCallBackLatch.open
           case CurrentState(_, Locked) ⇒ initialStateLatch.open
@@ -143,7 +143,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       val answerLatch = TestLatch()
       object Hello
       object Bye
-      val tester = actorOf(new Actor {
+      val tester = system.actorOf(new Actor {
         protected def receive = {
           case Hello   ⇒ lock ! "hello"
           case "world" ⇒ answerLatch.open
@@ -185,7 +185,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           case x ⇒ testActor ! x
         }
       }
-      val ref = actorOf(fsm)
+      val ref = system.actorOf(fsm)
       started.await
       ref.stop()
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))

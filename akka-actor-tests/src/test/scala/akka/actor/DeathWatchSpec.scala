@@ -11,7 +11,7 @@ import java.util.concurrent.atomic._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
-  def startWatching(target: ActorRef) = actorOf(Props(new Actor {
+  def startWatching(target: ActorRef) = system.actorOf(Props(new Actor {
     context.watch(target)
     def receive = { case x ⇒ testActor forward x }
   }))
@@ -22,7 +22,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
       startWatching(terminal)
 
       testActor ! "ping"
@@ -34,7 +34,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
       val monitor1, monitor2, monitor3 = startWatching(terminal)
 
       terminal ! PoisonPill
@@ -49,9 +49,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
-      val terminal = actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
       val monitor1, monitor3 = startWatching(terminal)
-      val monitor2 = actorOf(Props(new Actor {
+      val monitor2 = system.actorOf(Props(new Actor {
         context.watch(terminal)
         context.unwatch(terminal)
         def receive = {
@@ -76,7 +76,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
-        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
+        val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
         val terminal = (supervisor ? terminalProps).as[ActorRef].get
 
@@ -97,7 +97,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "fail a monitor which does not handle Terminated()" in {
       filterEvents(EventFilter[ActorKilledException](), EventFilter[DeathPactException]()) {
         case class FF(fail: Failed)
-        val supervisor = actorOf(Props[Supervisor]
+        val supervisor = system.actorOf(Props[Supervisor]
           .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {
             override def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
               testActor.tell(FF(Failed(cause)), child)

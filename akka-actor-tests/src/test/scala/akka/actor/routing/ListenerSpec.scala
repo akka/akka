@@ -16,13 +16,13 @@ class ListenerSpec extends AkkaSpec {
       val barLatch = TestLatch(2)
       val barCount = new AtomicInteger(0)
 
-      val broadcast = actorOf(new Actor with Listeners {
+      val broadcast = system.actorOf(new Actor with Listeners {
         def receive = listenerManagement orElse {
           case "foo" ⇒ gossip("bar")
         }
       })
 
-      def newListener = actorOf(new Actor {
+      def newListener = system.actorOf(new Actor {
         def receive = {
           case "bar" ⇒
             barCount.incrementAndGet

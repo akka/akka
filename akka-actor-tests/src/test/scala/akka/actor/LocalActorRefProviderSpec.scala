@@ -13,7 +13,7 @@ class LocalActorRefProviderSpec extends AkkaSpec {
   "An LocalActorRefProvider" must {
 
     "find actor refs using actorFor" in {
-      val a = actorOf(Props(ctx ⇒ { case _ ⇒ }))
+      val a = system.actorOf(Props(ctx ⇒ { case _ ⇒ }))
       val b = system.actorFor(a.path)
       a must be === b
     }

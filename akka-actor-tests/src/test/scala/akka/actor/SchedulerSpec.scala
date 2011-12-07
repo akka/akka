@@ -26,7 +26,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
     "schedule more than once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = actorOf(new Actor {
+      val tickActor = system.actorOf(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
       // run every 50 milliseconds
@@ -56,7 +56,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
     "schedule once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = actorOf(new Actor {
+      val tickActor = system.actorOf(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
       })
 
@@ -81,7 +81,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       object Ping
       val ticks = new CountDownLatch(1)
 
-      val actor = actorOf(new Actor {
+      val actor = system.actorOf(new Actor {
         def receive = { case Ping ⇒ ticks.countDown() }
       })
 
@@ -104,7 +104,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val restartLatch = new StandardLatch
       val pingLatch = new CountDownLatch(6)
 
-      val supervisor = actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+      val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
       val props = Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()
@@ -131,7 +131,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       case class Msg(ts: Long)
 
-      val actor = actorOf(new Actor {
+      val actor = system.actorOf(new Actor {
         def receive = {
           case Msg(ts) ⇒
             val now = System.nanoTime
@@ -154,7 +154,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       case object Msg
 
-      val actor = actorOf(new Actor {
+      val actor = system.actorOf(new Actor {
         def receive = {
           case Msg ⇒ ticks.countDown()
         }

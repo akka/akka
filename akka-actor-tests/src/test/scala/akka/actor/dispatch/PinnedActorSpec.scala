@@ -27,14 +27,14 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeo
 
     "support tell" in {
       var oneWay = new CountDownLatch(1)
-      val actor = actorOf(Props(self ⇒ { case "OneWay" ⇒ oneWay.countDown() }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
+      val actor = system.actorOf(Props(self ⇒ { case "OneWay" ⇒ oneWay.countDown() }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
       val result = actor ! "OneWay"
       assert(oneWay.await(1, TimeUnit.SECONDS))
       actor.stop()
     }
 
     "support ask/reply" in {
-      val actor = actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
+      val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
       actor.stop()

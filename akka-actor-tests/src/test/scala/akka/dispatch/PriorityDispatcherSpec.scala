@@ -27,7 +27,7 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
   def testOrdering(mboxType: MailboxType) {
     val dispatcher = system.dispatcherFactory.newDispatcher("Test", 1, Duration.Zero, mboxType).build
 
-    val actor = actorOf(Props(new Actor {
+    val actor = system.actorOf(Props(new Actor {
       var acc: List[Int] = Nil
 
       def receive = {

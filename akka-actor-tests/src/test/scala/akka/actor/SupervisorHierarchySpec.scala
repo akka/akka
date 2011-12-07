@@ -30,7 +30,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
     "restart manager and workers in AllForOne" in {
       val countDown = new CountDownLatch(4)
 
-      val boss = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
+      val boss = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
 
       val managerProps = Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None))
       val manager = (boss ? managerProps).as[ActorRef].get
@@ -51,7 +51,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
     "send notification to supervisor when permanent failure" in {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
-      val boss = actorOf(Props(new Actor {
+      val boss = system.actorOf(Props(new Actor {
         val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages))))
 
         protected def receive = {

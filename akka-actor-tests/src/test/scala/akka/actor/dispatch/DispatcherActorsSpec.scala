@@ -33,8 +33,8 @@ class DispatcherActorsSpec extends AkkaSpec {
     "not block fast actors by slow actors" in {
       val sFinished = new CountDownLatch(50)
       val fFinished = new CountDownLatch(10)
-      val s = actorOf(new SlowActor(sFinished))
-      val f = actorOf(new FastActor(fFinished))
+      val s = system.actorOf(new SlowActor(sFinished))
+      val f = system.actorOf(new FastActor(fFinished))
 
       // send a lot of stuff to s
       for (i ← 1 to 50) {

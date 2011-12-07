@@ -35,7 +35,7 @@ class ForwardActorSpec extends AkkaSpec {
     "forward actor reference when invoking forward on bang" in {
       val latch = new TestLatch(1)
 
-      val replyTo = actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
+      val replyTo = system.actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
 
       val chain = createForwardingChain(system)
 

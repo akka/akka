@@ -15,7 +15,7 @@ class HotSwapSpec extends AkkaSpec {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = system.actorOf(new Actor {
         def receive = { case _ ⇒ _log += "default" }
       })
       a ! HotSwap(self ⇒ {
@@ -32,7 +32,7 @@ class HotSwapSpec extends AkkaSpec {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = system.actorOf(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"
@@ -61,7 +61,7 @@ class HotSwapSpec extends AkkaSpec {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = system.actorOf(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"
@@ -107,7 +107,7 @@ class HotSwapSpec extends AkkaSpec {
       val barrier = TestBarrier(2)
       @volatile
       var _log = ""
-      val a = actorOf(new Actor {
+      val a = system.actorOf(new Actor {
         def receive = {
           case "init" ⇒
             _log += "init"
