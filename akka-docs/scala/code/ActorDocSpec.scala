@@ -168,7 +168,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#creating-props
     import akka.actor.Props
     val dispatcher = system.dispatcherFactory.fromConfig("my-dispatcher")
-    val myActor = system.actorOf(Props().withDispatcher(dispatcher), name = "myactor")
+    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
     //#creating-props
 
     myActor.stop()
