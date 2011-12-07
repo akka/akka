@@ -463,19 +463,22 @@ internally scaled by a factor taken from ``akka.conf``,
 Resolving Conflicts with Implicit ActorRef
 ------------------------------------------
 
-The :class:`TestKit` trait contains an implicit value of type :class:`ActorRef`
-to enable the magic reply handling. This value is named ``self`` so that e.g.
-anonymous actors may be declared within a test class without having to care
-about the ambiguous implicit issues which would otherwise arise. If you find
-yourself in a situation where the implicit you need comes from a different
-trait than :class:`TestKit` and is not named ``self``, then use
-:class:`TestKitLight`, which differs only in not having any implicit members.
-You would then need to make an implicit available in locally confined scopes
-which need it, e.g. different test cases. If this cannot be done, you will need
-to resort to explicitly specifying the sender reference::
+If you want the sender of messages inside your TestKit-based tests to be the `testActor```
+simply mix in `ÌmplicitSender`` into your test.
 
-  val actor = actorOf[MyWorker]
-  actor.!(msg)(testActor)
+.. code-block:: scala
+
+  class SomeSpec extends WordSpec with MustMatchers with TestKit with ImplicitSender {
+    "A Worker" must {
+      "send timely replies" in {
+        val worker = actorOf(...)
+        within (500 millis) {
+          worker ! "some work" // testActor is the "sender" for this message
+          expectMsg("some result")
+        }
+      }
+    }
+  }
 
 Using Multiple Probe Actors
 ---------------------------
