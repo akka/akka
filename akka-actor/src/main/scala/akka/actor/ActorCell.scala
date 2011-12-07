@@ -364,6 +364,7 @@ private[akka] final class ActorCell(
         }
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
+      hotswap = Props.noHotSwap // Reset the behavior
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "restarted"))
 
@@ -534,6 +535,7 @@ private[akka] final class ActorCell(
       } finally {
         currentMessage = null
         clearActorFields()
+        hotswap = Props.noHotSwap
       }
     }
   }
