@@ -72,7 +72,6 @@ class RemoteActorRefProvider(
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
-  private[akka] def theOneWhoWalksTheBubblesOfSpaceTime: ActorRef = local.theOneWhoWalksTheBubblesOfSpaceTime
   private[akka] def terminationFuture = local.terminationFuture
 
   private[akka] def deployer: Deployer = local.deployer
@@ -250,8 +249,6 @@ class RemoteActorRefProvider(
   private[akka] def createDeathWatch(): DeathWatch = local.createDeathWatch() //FIXME Implement Remote DeathWatch, ticket ##1190
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
-
-  private[akka] def tempPath = local.tempPath
 }
 
 /**
