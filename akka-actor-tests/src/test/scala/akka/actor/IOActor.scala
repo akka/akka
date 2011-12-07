@@ -17,8 +17,8 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
 
+    import context.dispatcher
     implicit val timeout = context.system.settings.ActorTimeout
-    implicit val dispatcher = context.dispatcher
 
     override def preStart = {
       listen(ioManager, host, port)
@@ -66,8 +66,8 @@ object IOActorSpec {
   // Basic Redis-style protocol
   class KVStore(host: String, port: Int, ioManager: ActorRef, started: TestLatch) extends Actor {
 
+    import context.dispatcher
     implicit val timeout = context.system.settings.ActorTimeout
-    implicit val dispatcher = context.dispatcher
 
     var kvs: Map[String, ByteString] = Map.empty
 
@@ -123,8 +123,8 @@ object IOActorSpec {
 
   class KVClient(host: String, port: Int, ioManager: ActorRef) extends Actor with IO {
 
+    import context.dispatcher
     implicit val timeout = context.system.settings.ActorTimeout
-    implicit val dispatcher = context.dispatcher
 
     var socket: SocketHandle = _
 

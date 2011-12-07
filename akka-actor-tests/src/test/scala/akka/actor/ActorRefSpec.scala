@@ -37,7 +37,7 @@ object ActorRefSpec {
   }
 
   class WorkerActor() extends Actor {
-    implicit val system = context.system
+    import context.system
     def receive = {
       case "work" ⇒ {
         work

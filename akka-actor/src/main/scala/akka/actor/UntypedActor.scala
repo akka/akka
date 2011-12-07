@@ -41,7 +41,8 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *    }
  *
  *    public static void main(String[] args) {
- *      ActorRef actor = Actors.actorOf(SampleUntypedActor.class);
+ *      ActorSystem system = ActorSystem.create("Sample");
+ *      ActorRef actor = system.actorOf(SampleUntypedActor.class);
  *      actor.tell("SendToSelf");
  *      actor.stop();
  *    }
@@ -58,7 +59,7 @@ abstract class UntypedActor extends Actor {
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
 
-  def getContext(): JavaActorContext = context.asInstanceOf[JavaActorContext]
+  def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
    * Returns the 'self' reference.

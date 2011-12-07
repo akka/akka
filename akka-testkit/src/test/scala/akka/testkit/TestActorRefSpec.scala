@@ -37,7 +37,7 @@ object TestActorRefSpec {
   }
 
   class ReplyActor extends TActor {
-    implicit val system = context.system
+    import context.system
     var replyTo: ActorRef = null
 
     def receiveT = {

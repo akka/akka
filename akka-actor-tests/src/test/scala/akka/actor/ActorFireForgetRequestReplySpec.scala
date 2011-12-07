@@ -21,7 +21,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class CrashingActor extends Actor {
-    implicit val system = context.system
+    import context.system
     def receive = {
       case "Die" ⇒
         state.finished.await
@@ -30,7 +30,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class SenderActor(replyActor: ActorRef) extends Actor {
-    implicit val system = context.system
+    import context.system
     def receive = {
       case "Init" ⇒
         replyActor ! "Send"

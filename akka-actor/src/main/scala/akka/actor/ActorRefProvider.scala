@@ -120,7 +120,7 @@ trait ActorRefProvider {
 }
 
 /**
- * Interface implemented by ActorSystem and AkkaContext, the only two places 
+ * Interface implemented by ActorSystem and AkkaContext, the only two places
  * from which you can get fresh actors.
  */
 trait ActorRefFactory {

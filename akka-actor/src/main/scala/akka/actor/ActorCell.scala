@@ -17,20 +17,20 @@ import akka.japi.Procedure
  * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
- * 
+ *
  * There are several possibilities for creating actors (see [[akka.actor.Props]]
  * for details on `props`):
- * 
+ *
  * {{{
  * // Java or Scala
  * context.actorOf(props, "name")
  * context.actorOf(props)
- * 
+ *
  * // Scala
  * context.actorOf[MyActor]("name")
  * context.actorOf[MyActor]
  * context.actorOf(new MyActor(...))
- * 
+ *
  * // Java
  * context.actorOf(classOf[MyActor]);
  * context.actorOf(new Creator<MyActor>() {
@@ -40,7 +40,7 @@ import akka.japi.Procedure
  *   public MyActor create() { ... }
  * }, "name");
  * }}}
- * 
+ *
  * Where no name is given explicitly, one will be automatically generated.
  */
 trait ActorContext extends ActorRefFactory {
@@ -56,6 +56,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Defines the default timeout for an initial receive invocation.
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   * 1 millisecond is the minimum supported timeout.
    */
   def receiveTimeout_=(timeout: Option[Duration]): Unit
 
@@ -82,15 +83,20 @@ trait ActorContext extends ActorRefFactory {
   def children: Iterable[ActorRef]
 
   /**
-   * Returns the dispatcher (MessageDispatcher) that is used for this Actor
+   * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
+   * Importing this member will place a implicit MessageDispatcher in scope.
    */
-  def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   def handleFailure(child: ActorRef, cause: Throwable): Unit
 
   def handleChildTerminated(child: ActorRef): Unit
 
-  def system: ActorSystem
+  /**
+   * The system that the actor belongs to.
+   * Importing this member will place a implicit MessageDispatcher in scope.
+   */
+  implicit def system: ActorSystem
 
   def parent: ActorRef
 
@@ -107,7 +113,7 @@ trait ActorContext extends ActorRefFactory {
   def unwatch(subject: ActorRef): ActorRef
 }
 
-trait JavaActorContext extends ActorContext {
+trait UntypedActorContext extends ActorContext {
   /**
    * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
@@ -123,6 +129,7 @@ trait JavaActorContext extends ActorContext {
   /**
    * Defines the default timeout for an initial receive invocation.
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
+   * 1 millisecond is the minimum supported timeout.
    */
   def setReceiveTimeout(timeout: Duration): Unit
 
@@ -159,13 +166,13 @@ private[akka] object ActorCell {
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
-private[akka] class ActorCell(
+private[akka] final class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
   val parent: InternalActorRef,
   /*no member*/ _receiveTimeout: Option[Duration],
-  var hotswap: Stack[PartialFunction[Any, Unit]]) extends JavaActorContext {
+  var hotswap: Stack[PartialFunction[Any, Unit]]) extends UntypedActorContext {
 
   import ActorCell._
 
@@ -180,7 +187,15 @@ private[akka] class ActorCell(
   override def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
 
   override def receiveTimeout_=(timeout: Option[Duration]): Unit = {
-    val timeoutMs = if (timeout.isDefined && timeout.get.toMillis > 0) timeout.get.toMillis else -1
+    val timeoutMs = timeout match {
+      case None ⇒ -1L
+      case Some(duration) ⇒
+        val ms = duration.toMillis
+        if (ms <= 0) -1L
+        // 1 millisecond is minimum supported
+        else if (ms < 1) 1L
+        else ms
+    }
     receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
   }
 
@@ -191,12 +206,12 @@ private[akka] class ActorCell(
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
   /**
-   * JavaActorContext impl
+   * UntypedActorContext impl
    */
   def getReceiveTimeout: Option[Duration] = receiveTimeout
 
   /**
-   * JavaActorContext impl
+   * UntypedActorContext impl
    */
   def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
 
@@ -240,7 +255,7 @@ private[akka] class ActorCell(
   final def dispatcher: MessageDispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
 
   /**
-   * JavaActorContext impl
+   * UntypedActorContext impl
    */
   def getDispatcher(): MessageDispatcher = dispatcher
 
@@ -279,7 +294,7 @@ private[akka] class ActorCell(
   final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
 
   /**
-   * Impl JavaActorContext
+   * Impl UntypedActorContext
    */
   def getChildren(): java.lang.Iterable[ActorRef] = {
     import scala.collection.JavaConverters.asJavaIterableConverter
@@ -473,12 +488,12 @@ private[akka] class ActorCell(
   }
 
   /**
-   * JavaActorContext impl
+   * UntypedActorContext impl
    */
   def become(behavior: Procedure[Any]): Unit = become(behavior, false)
 
   /*
-   * JavaActorContext impl
+   * UntypedActorContext impl
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit = {
     def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
