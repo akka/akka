@@ -310,17 +310,14 @@ abstract class MessageDispatcherConfigurator() {
                           settings: Settings,
                           createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
-    import scala.math.{ min, max }
 
     //Apply the following options to the config if they are present in the config
 
     ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
-      .setCorePoolSize(min(max(ThreadPoolConfig.scaledPoolSize(config getDouble "core-pool-size-factor"),
-        config getInt "core-pool-size-min"), config getInt "core-pool-size-max"))
-      .setMaxPoolSize(min(max(ThreadPoolConfig.scaledPoolSize(config getDouble "max-pool-size-factor"),
-        config getInt "max-pool-size-min"), config getInt "max-pool-size-max"))
+      .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
+      .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
       .configure(
         conf_?(Some(config getInt "task-queue-size") flatMap {
           case size if size > 0 ⇒

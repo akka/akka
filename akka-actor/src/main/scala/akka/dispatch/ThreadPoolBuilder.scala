@@ -25,9 +25,10 @@ object ThreadPoolConfig {
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
 
-  def fixedPoolSize(size: Int): Int = size
-  def scaledPoolSize(multiplier: Double): Int =
-    (Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt
+  def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int = {
+    import scala.math.{ min, max }
+    min(max((Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt, floor), ceiling)
+  }
 
   def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory =
     () ⇒ new ArrayBlockingQueue[Runnable](capacity, fair)
@@ -122,11 +123,11 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def setMaxPoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(maxPoolSize = size))
 
-  def setCorePoolSizeFromFactor(multiplier: Double): ThreadPoolConfigDispatcherBuilder =
-    setCorePoolSize(scaledPoolSize(multiplier))
+  def setCorePoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigDispatcherBuilder =
+    setCorePoolSize(scaledPoolSize(min, multiplier, max))
 
-  def setMaxPoolSizeFromFactor(multiplier: Double): ThreadPoolConfigDispatcherBuilder =
-    setMaxPoolSize(scaledPoolSize(multiplier))
+  def setMaxPoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigDispatcherBuilder =
+    setMaxPoolSize(scaledPoolSize(min, multiplier, max))
 
   def setKeepAliveTimeInMillis(time: Long): ThreadPoolConfigDispatcherBuilder =
     setKeepAliveTime(Duration(time, TimeUnit.MILLISECONDS))
