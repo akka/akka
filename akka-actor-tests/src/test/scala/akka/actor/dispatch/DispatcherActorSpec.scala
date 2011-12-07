@@ -36,14 +36,14 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
-      val actor = actorOf(Props[OneWayTestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
+      val actor = system.actorOf(Props[OneWayTestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
       val result = actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       actor.stop()
     }
 
     "support ask/reply" in {
-      val actor = actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
+      val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
       val result = (actor ? "Hello").as[String]
       assert("World" === result.get)
       actor.stop()
@@ -58,10 +58,10 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
       val works = new AtomicBoolean(true)
       val latch = new CountDownLatch(100)
       val start = new CountDownLatch(1)
-      val fastOne = actorOf(
+      val fastOne = system.actorOf(
         Props(context ⇒ { case "sabotage" ⇒ works.set(false) }).withDispatcher(throughputDispatcher))
 
-      val slowOne = actorOf(
+      val slowOne = system.actorOf(
         Props(context ⇒ {
           case "hogexecutor" ⇒ context.sender ! "OK"; start.await
           case "ping"        ⇒ if (works.get) latch.countDown()
@@ -88,12 +88,12 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
       val start = new CountDownLatch(1)
       val ready = new CountDownLatch(1)
 
-      val fastOne = actorOf(
+      val fastOne = system.actorOf(
         Props(context ⇒ {
           case "ping" ⇒ if (works.get) latch.countDown(); context.self.stop()
         }).withDispatcher(throughputDispatcher))
 
-      val slowOne = actorOf(
+      val slowOne = system.actorOf(
         Props(context ⇒ {
           case "hogexecutor" ⇒ ready.countDown(); start.await
           case "ping"        ⇒ works.set(false); context.self.stop()

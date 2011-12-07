@@ -13,7 +13,7 @@ import akka.util.Duration
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
-  "The default configuration file (i.e. akka-actor-reference.conf)" must {
+  "The default configuration file (i.e. reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
 
       val settings = system.settings

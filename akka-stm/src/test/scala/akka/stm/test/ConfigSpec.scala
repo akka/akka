@@ -15,7 +15,7 @@ import akka.testkit.AkkaSpec
 @RunWith(classOf[JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
-  "The default configuration file (i.e. akka-stm-reference.conf)" should {
+  "The default configuration file (i.e. reference.conf)" should {
     "contain all configuration properties for akka-stm that are used in code with their correct defaults" in {
       val config = system.settings.config
       import config._

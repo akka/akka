@@ -27,7 +27,7 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeou
             }
             override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.path }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
-          val headActor = actorOf(p)
+          val headActor = system.actorOf(p)
           val middleActor = (headActor ? p).as[ActorRef].get
           val lastActor = (middleActor ? p).as[ActorRef].get
 

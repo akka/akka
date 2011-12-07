@@ -25,7 +25,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "creating actor with AkkaSpec.actorOf" in {
     //#creating-actorOf
-    val myActor = actorOf[MyActor]
+    val myActor = system.actorOf[MyActor]
     //#creating-actorOf
 
     // testing the actor
@@ -57,7 +57,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = actorOf(new MyActor("..."))
+    val myActor = system.actorOf(new MyActor("..."))
     //#creating-constructor
 
     myActor.stop()

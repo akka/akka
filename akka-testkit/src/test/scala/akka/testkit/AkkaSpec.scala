@@ -75,16 +75,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   protected def atTermination() {}
 
-  def actorOf(props: Props): ActorRef = system.actorOf(props)
-
-  def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
-
-  def actorOf[T <: Actor: Manifest]: ActorRef = actorOf(manifest[T].erasure.asInstanceOf[Class[_ <: Actor]])
-
-  def actorOf[T <: Actor](factory: ⇒ T): ActorRef = actorOf(Props(factory))
-
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher) {
-    actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
   }
 }
 

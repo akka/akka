@@ -64,9 +64,9 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       val latch = TestLatch(2)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = system.actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with SmallestMailboxSelector {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 count.incrementAndGet
@@ -82,7 +82,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
         }).withFaultHandler(faultHandler))
 
       val successes = TestLatch(2)
-      val successCounter = actorOf(new Actor {
+      val successCounter = system.actorOf(new Actor {
         def receive = {
           case "success" ⇒ successes.countDown()
         }
@@ -103,7 +103,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "pass ticket #705" in {
-      val pool = actorOf(
+      val pool = system.actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicFilter {
           def lowerBound = 2
           def upperBound = 20
@@ -114,7 +114,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
           def selectionCount = 1
           def receive = _route
           def pressureThreshold = 1
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case req: String ⇒ {
                 (10 millis).dilated.sleep
@@ -140,9 +140,9 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = system.actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with ActiveActorsPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 (n millis).dilated.sleep
@@ -204,9 +204,9 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       var latch = TestLatch(3)
       val count = new AtomicInteger(0)
 
-      val pool = actorOf(
+      val pool = system.actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 (n millis).dilated.sleep
@@ -257,10 +257,10 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       val latch1 = TestLatch(2)
       val delegates = new java.util.concurrent.ConcurrentHashMap[String, String]
 
-      val pool1 = actorOf(
+      val pool1 = system.actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
 
-          def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
+          def instance(p: Props): ActorRef = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.path.toString, "")
@@ -286,9 +286,9 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       val latch2 = TestLatch(2)
       delegates.clear()
 
-      val pool2 = actorOf(
+      val pool2 = system.actorOf(
         Props(new Actor with DefaultActorPool with FixedCapacityStrategy with RoundRobinSelector with BasicNoBackoffFilter {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
                 delegates put (self.path.toString, "")
@@ -315,9 +315,9 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
     "backoff" in {
       val latch = TestLatch(10)
 
-      val pool = actorOf(
+      val pool = system.actorOf(
         Props(new Actor with DefaultActorPool with BoundedCapacityStrategy with MailboxPressureCapacitor with SmallestMailboxSelector with Filter with RunningMeanBackoff with BasicRampup {
-          def instance(p: Props) = actorOf(p.withCreator(new Actor {
+          def instance(p: Props) = system.actorOf(p.withCreator(new Actor {
             def receive = {
               case n: Int ⇒
                 (n millis).dilated.sleep

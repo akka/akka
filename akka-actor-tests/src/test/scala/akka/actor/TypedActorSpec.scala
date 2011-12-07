@@ -285,7 +285,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
-        val boss = actorOf(Props(context ⇒ {
+        val boss = system.actorOf(Props(context ⇒ {
           case p: Props ⇒ context.sender ! TypedActor(context).typedActorOf(classOf[Foo], classOf[Bar], p)
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume

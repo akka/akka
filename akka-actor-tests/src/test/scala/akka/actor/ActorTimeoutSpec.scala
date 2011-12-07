@@ -12,7 +12,7 @@ import akka.testkit.DefaultTimeout
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeout {
 
-  def actorWithTimeout(t: Timeout): ActorRef = actorOf(Props(creator = () ⇒ new Actor {
+  def actorWithTimeout(t: Timeout): ActorRef = system.actorOf(Props(creator = () ⇒ new Actor {
     def receive = {
       case x ⇒
     }

@@ -509,7 +509,7 @@ private[akka] final class ActorCell(
     if (system.settings.DebugAutoReceive) system.eventStream.publish(Debug(self.path.toString, "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case HotSwap(code, discardOld) ⇒ become(code(self), discardOld)
+      case HotSwap(code, discardOld) ⇒ become(code(this), discardOld)
       case RevertHotSwap             ⇒ unbecome()
       case Failed(cause)             ⇒ handleFailure(sender, cause)
       case Kill                      ⇒ throw new ActorKilledException("Kill")

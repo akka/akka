@@ -135,6 +135,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   "An ActorRef" must {
 
     "not allow Actors to be created outside of an actorOf" in {
+      import system.actorOf
       intercept[akka.actor.ActorInitializationException] {
         new Actor { def receive = { case _ ⇒ } }
       }
@@ -236,7 +237,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "be serializable using Java Serialization on local node" in {
-      val a = actorOf[InnerActor]
+      val a = system.actorOf[InnerActor]
 
       import java.io._
 
@@ -259,7 +260,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "throw an exception on deserialize if no system in scope" in {
-      val a = actorOf[InnerActor]
+      val a = system.actorOf[InnerActor]
 
       import java.io._
 
@@ -300,8 +301,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "support nested actorOfs" in {
-      val a = actorOf(new Actor {
-        val nested = actorOf(new Actor { def receive = { case _ ⇒ } })
+      val a = system.actorOf(new Actor {
+        val nested = system.actorOf(new Actor { def receive = { case _ ⇒ } })
         def receive = { case _ ⇒ sender ! nested }
       })
 
@@ -312,7 +313,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "support advanced nested actorOfs" in {
-      val a = actorOf(Props(new OuterActor(actorOf(Props(new InnerActor)))))
+      val a = system.actorOf(Props(new OuterActor(system.actorOf(Props(new InnerActor)))))
       val inner = (a ? "innerself").as[Any].get
 
       (a ? a).as[ActorRef].get must be(a)
@@ -324,8 +325,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "support reply via sender" in {
       val latch = new TestLatch(4)
-      val serverRef = actorOf(Props[ReplyActor])
-      val clientRef = actorOf(Props(new SenderActor(serverRef, latch)))
+      val serverRef = system.actorOf(Props[ReplyActor])
+      val clientRef = system.actorOf(Props(new SenderActor(serverRef, latch)))
 
       clientRef ! "complex"
       clientRef ! "simple"
@@ -349,7 +350,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "stop when sent a poison pill" in {
       val timeout = Timeout(20000)
-      val ref = actorOf(Props(new Actor {
+      val ref = system.actorOf(Props(new Actor {
         def receive = {
           case 5    ⇒ sender.tell("five")
           case null ⇒ sender.tell("null")
@@ -370,7 +371,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       filterException[ActorKilledException] {
         val latch = new CountDownLatch(2)
 
-        val boss = actorOf(Props(new Actor {
+        val boss = system.actorOf(Props(new Actor {
 
           val ref = context.actorOf(
             Props(new Actor {

@@ -18,7 +18,7 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
       filterEvents(EventFilter[Exception]("Kill")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val supervisor = actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
+        val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
 
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
