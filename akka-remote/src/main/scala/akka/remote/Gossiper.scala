@@ -119,7 +119,7 @@ class Gossiper(remote: Remote) {
     else seeds
   }
 
-  private val address = system.asInstanceOf[ActorSystemImpl].provider.rootPath.remoteAddress
+  private val address = remote.remoteAddress
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
@@ -253,12 +253,12 @@ class Gossiper(remote: Remote) {
           log.error(cause, cause.toString)
 
         case None ⇒
-          val error = new RemoteException("Gossip to [%s] timed out".format(connection.address))
+          val error = new RemoteException("Gossip to [%s] timed out".format(connection.path))
           log.error(error, error.toString)
       }
     } catch {
       case e: Exception ⇒
-        log.error(e, "Could not gossip to [{}] due to: {}", connection.address, e.toString)
+        log.error(e, "Could not gossip to [{}] due to: {}", connection.path, e.toString)
     }
 
     seeds exists (peer == _)

@@ -20,8 +20,7 @@ import com.typesafe.config.ConfigException
 import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
+import java.util.concurrent.{ CountDownLatch, Executors, ConcurrentHashMap }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
@@ -57,7 +56,7 @@ object ActorSystem {
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
-  class Settings(cfg: Config) {
+  class Settings(cfg: Config, val name: String) {
 
     val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference)
@@ -72,6 +71,7 @@ object ActorSystem {
 
     val ProviderClass = getString("akka.actor.provider")
 
+    val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
@@ -196,6 +196,11 @@ abstract class ActorSystem extends ActorRefFactory {
   def /(name: String): ActorPath
 
   /**
+   * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
+   */
+  def /(name: Iterable[String]): ActorPath
+
+  /**
    * Start-up time in milliseconds since the epoch.
    */
   val startTime = System.currentTimeMillis
@@ -285,15 +290,32 @@ abstract class ActorSystem extends ActorRefFactory {
 
 class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
 
+  if (!name.matches("""^\w+$"""))
+    throw new IllegalArgumentException("invalid ActorSystem name '" + name + "', must contain only word characters (i.e. [a-zA-Z_0-9])")
+
   import ActorSystem._
 
-  val settings = new Settings(applicationConfig)
+  val settings = new Settings(applicationConfig, name)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
   protected def systemImpl = this
 
-  private[akka] def systemActorOf(props: Props, address: String): ActorRef = provider.actorOf(this, props, systemGuardian, address, true)
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
+    (systemGuardian ? CreateChild(props, name)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
+  }
+
+  def actorOf(props: Props, name: String): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
+    (guardian ? CreateChild(props, name)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
+  }
 
   import settings._
 
@@ -303,25 +325,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
 
   val scheduler = createScheduler()
-
-  val provider: ActorRefProvider = {
-    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-    val arguments = Seq(
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler)
-    val types: Array[Class[_]] = arguments map (_._1) toArray
-    val values: Array[AnyRef] = arguments map (_._2) toArray
-
-    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
-      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
-      case Left(e)                            ⇒ throw e
-      case Right(p)                           ⇒ p
-    }
-  }
 
   val deadLetters = new DeadLetterActorRef(eventStream)
   val deadLetterMailbox = new Mailbox(null) {
@@ -335,12 +338,34 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     override def numberOfMessages = 0
   }
 
+  val provider: ActorRefProvider = {
+    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
+      case Left(e)  ⇒ throw e
+      case Right(b) ⇒ b
+    }
+    val arguments = Seq(
+      classOf[String] -> name,
+      classOf[Settings] -> settings,
+      classOf[EventStream] -> eventStream,
+      classOf[Scheduler] -> scheduler,
+      classOf[InternalActorRef] -> deadLetters)
+    val types: Array[Class[_]] = arguments map (_._1) toArray
+    val values: Array[AnyRef] = arguments map (_._2) toArray
+
+    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
+      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
+      case Left(e)                            ⇒ throw e
+      case Right(p)                           ⇒ p
+    }
+  }
+
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
   val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
-  def guardian: ActorRef = provider.guardian
-  def systemGuardian: ActorRef = provider.systemGuardian
+  def lookupRoot: InternalActorRef = provider.rootGuardian
+  def guardian: InternalActorRef = provider.guardian
+  def systemGuardian: InternalActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
   def nodename: String = provider.nodename
   def clustername: String = provider.clustername
@@ -349,13 +374,14 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
 
   def /(actorName: String): ActorPath = guardian.path / actorName
+  def /(path: Iterable[String]): ActorPath = guardian.path / path
 
   private lazy val _start: this.type = {
     provider.init(this)
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-    eventStream.start(this)
     eventStream.startDefaultLoggers(this)
+    registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
@@ -366,16 +392,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
-  // TODO shutdown all that other stuff, whatever that may be
   def stop() {
     guardian.stop()
-    try terminationFuture.await(10 seconds) catch {
-      case _: FutureTimeoutException ⇒ log.warning("Failed to stop [{}] within 10 seconds", name)
-    }
-    // Dispatchers shutdown themselves, but requires the scheduler
-    terminationFuture onComplete (_ ⇒ stopScheduler())
   }
 
+  /**
+   * Create the scheduler service. This one needs one special behavior: if
+   * Closeable, it MUST execute all outstanding tasks upon .close() in order
+   * to properly shutdown all dispatchers.
+   *
+   * Furthermore, this timer service MUST throw IllegalStateException if it
+   * cannot schedule a task. Once scheduled, the task MUST be executed. If
+   * executed upon close(), the task may execute before its timeout.
+   */
   protected def createScheduler(): Scheduler = {
     val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
     val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
@@ -393,15 +422,14 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     new DefaultScheduler(hwt, log, safeDispatcher)
   }
 
+  /*
+   * This is called after the last actor has signaled its termination, i.e. 
+   * after the last dispatcher has had its chance to schedule its shutdown 
+   * action.
+   */
   protected def stopScheduler(): Unit = scheduler match {
-    case x: Closeable ⇒
-      // Let dispatchers shutdown first.
-      // Dispatchers schedule shutdown and may also reschedule, therefore wait 4 times the shutdown delay.
-      x.scheduleOnce(settings.DispatcherDefaultShutdown * 4) {
-        x.close()
-        dispatcher.shutdown()
-      }
-    case _ ⇒
+    case x: Closeable ⇒ x.close()
+    case _            ⇒
   }
 
   private val extensions = new ConcurrentIdentityHashMap[ExtensionId[_], AnyRef]

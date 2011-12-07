@@ -61,6 +61,7 @@ case class Suspend() extends SystemMessage // sent to self from ActorCell.suspen
 case class Resume() extends SystemMessage // sent to self from ActorCell.resume
 case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
 case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
 
@@ -211,7 +212,9 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            scheduler.scheduleOnce(shutdownTimeout, this)
+            try scheduler.scheduleOnce(shutdownTimeout, this) catch {
+              case _: IllegalStateException ⇒ shutdown()
+            }
           else run()
       }
     }

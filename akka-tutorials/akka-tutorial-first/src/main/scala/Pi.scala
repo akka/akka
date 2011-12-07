@@ -6,6 +6,7 @@ package akka.tutorial.first.scala
 import java.util.concurrent.CountDownLatch
 import akka.routing.{ RoutedActorRef, LocalConnectionManager, RoundRobinRouter, RoutedProps }
 import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
+import akka.actor.InternalActorRef
 
 object Pi extends App {
 
@@ -59,7 +60,7 @@ object Pi extends App {
     implicit val timout = context.system.settings.ActorTimeout
     implicit val dispatcher = context.dispatcher
     val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(workers))
-    val router = new RoutedActorRef(context.system, props, self, "pi")
+    val router = new RoutedActorRef(context.system, props, self.asInstanceOf[InternalActorRef], "pi")
 
     // message handler
     def receive = {

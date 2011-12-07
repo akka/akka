@@ -263,7 +263,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
           def instance(p: Props): ActorRef = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.address, "")
+                delegates put (self.path.toString, "")
                 latch1.countDown()
             }
           }))
@@ -291,7 +291,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
           def instance(p: Props) = actorOf(p.withCreator(new Actor {
             def receive = {
               case _ ⇒
-                delegates put (self.address, "")
+                delegates put (self.path.toString, "")
                 latch2.countDown()
             }
           }))

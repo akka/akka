@@ -1,68 +1,38 @@
 /**
  *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package akka.actor
-
-import akka.remote.RemoteAddress
+import scala.annotation.tailrec
 
 object ActorPath {
-  final val separator = "/"
-
-  val pattern = """(/[0-9a-zA-Z\-\_\$\.]+)+""".r.pattern
-
-  /**
-   * Create an actor path from a string.
-   */
-  def apply(system: ActorSystem, path: String): ActorPath =
-    apply(system, split(path))
-
-  /**
-   * Create an actor path from an iterable.
-   */
-  def apply(system: ActorSystem, path: Iterable[String]): ActorPath =
-    path.foldLeft(system.asInstanceOf[ActorSystemImpl].provider.rootPath)(_ / _)
-
-  /**
-   * Split a string path into an iterable.
-   */
-  def split(path: String): Iterable[String] =
-    if (path.startsWith(separator))
-      path.substring(1).split(separator)
-    else
-      path.split(separator)
-
-  /**
-   * Join an iterable path into a string.
-   */
-  def join(path: Iterable[String]): String =
-    path.mkString(separator, separator, "")
-
-  /**
-   * Is this string representation of a path valid?
-   */
-  def valid(path: String): Boolean =
-    pattern.matcher(path).matches
-
-  /**
-   * Validate a path. Moved here from Address.validate.
-   * Throws an IllegalArgumentException if the path is invalid.
-   */
-  def validate(path: String): Unit = {
-    if (!valid(path))
-      throw new IllegalArgumentException("Path [" + path + "] is not valid. Needs to follow this pattern: " + pattern)
+  def split(s: String): List[String] = {
+    @tailrec
+    def rec(pos: Int, acc: List[String]): List[String] = {
+      val from = s.lastIndexOf('/', pos - 1)
+      val sub = s.substring(from + 1, pos)
+      val l = sub :: acc
+      if (from == -1) l else rec(from, l)
+    }
+    rec(s.length, Nil)
   }
 }
 
 /**
  * Actor path is a unique path to an actor that shows the creation path
  * up through the actor tree to the root actor.
+ *
+ * ActorPath defines a natural ordering (so that ActorRefs can be put into
+ * collections with this requirement); this ordering is intended to be as fast
+ * as possible, which owing to the bottom-up recursive nature of ActorPath
+ * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
+ * ChildActorPath in case the number of elements is different.
  */
-trait ActorPath {
+sealed trait ActorPath extends Comparable[ActorPath] {
   /**
-   * The RemoteAddress for this path.
+   * The Address under which this path can be reached; walks up the tree to
+   * the RootActorPath.
    */
-  def remoteAddress: RemoteAddress
+  def address: Address
 
   /**
    * The name of the actor that this path refers to.
@@ -85,48 +55,118 @@ trait ActorPath {
   def /(child: Iterable[String]): ActorPath = (this /: child)(_ / _)
 
   /**
-   * String representation of this path. Different from toString for root path.
+   * Sequence of names for this path. Performance implication: has to allocate a list.
    */
-  def string: String
+  def elements: Iterable[String]
 
   /**
-   * Sequence of names for this path.
+   * Walk up the tree to obtain and return the RootActorPath.
    */
-  def path: Iterable[String]
+  def root: RootActorPath
 
-  /**
-   * Is this the root path?
-   */
-  def isRoot: Boolean
 }
 
-class RootActorPath(val remoteAddress: RemoteAddress) extends ActorPath {
-
-  def name: String = "/"
+/**
+ * Root of the hierarchy of ActorPaths. There is exactly root per ActorSystem
+ * and node (for remote-enabled or clustered systems).
+ */
+final case class RootActorPath(address: Address, name: String = "/") extends ActorPath {
 
   def parent: ActorPath = this
 
-  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
+  def root: RootActorPath = this
 
-  def string: String = ""
+  def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def path: Iterable[String] = Iterable.empty
+  val elements: Iterable[String] = List("")
 
-  def isRoot: Boolean = true
+  override val toString = address + name
 
-  override def toString = ActorPath.separator
+  def compareTo(other: ActorPath) = other match {
+    case r: RootActorPath  ⇒ toString compareTo r.toString
+    case c: ChildActorPath ⇒ 1
+  }
 }
 
-class ChildActorPath(val remoteAddress: RemoteAddress, val parent: ActorPath, val name: String) extends ActorPath {
+final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
 
-  def /(child: String): ActorPath = new ChildActorPath(remoteAddress, this, child)
+  def address: Address = root.address
 
-  def string: String = parent.string + ActorPath.separator + name
+  def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def path: Iterable[String] = parent.path ++ Iterable(name)
+  def elements: Iterable[String] = {
+    @tailrec
+    def rec(p: ActorPath, acc: List[String]): Iterable[String] = p match {
+      case r: RootActorPath ⇒ acc
+      case _                ⇒ rec(p.parent, p.name :: acc)
+    }
+    rec(this, Nil)
+  }
 
-  def isRoot: Boolean = false
+  def root = {
+    @tailrec
+    def rec(p: ActorPath): RootActorPath = p match {
+      case r: RootActorPath ⇒ r
+      case _                ⇒ rec(p.parent)
+    }
+    rec(this)
+  }
 
-  override def toString = string
+  // TODO research whether this should be cached somehow (might be fast enough, but creates GC pressure)
+  /*
+   * idea: add one field which holds the total length (because that is known) 
+   * so that only one String needs to be allocated before traversal; this is
+   * cheaper than any cache
+   */
+  override def toString = {
+    @tailrec
+    def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
+      case r: RootActorPath ⇒ s.insert(0, r.toString)
+      case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
+    }
+    rec(parent, new StringBuilder(32).append(name)).toString
+  }
+
+  override def equals(other: Any): Boolean = {
+    @tailrec
+    def rec(left: ActorPath, right: ActorPath): Boolean =
+      if (left eq right) true
+      else if (left.isInstanceOf[RootActorPath]) left equals right
+      else if (right.isInstanceOf[RootActorPath]) right equals left
+      else left.name == right.name && rec(left.parent, right.parent)
+
+    other match {
+      case p: ActorPath ⇒ rec(this, p)
+      case _            ⇒ false
+    }
+  }
+
+  // TODO RK investigate Phil’s hash from scala.collection.mutable.HashTable.improve
+  override def hashCode: Int = {
+    import scala.util.MurmurHash._
+
+    @tailrec
+    def rec(p: ActorPath, h: Int, c: Int, k: Int): Int = p match {
+      case r: RootActorPath ⇒ extendHash(h, r.##, c, k)
+      case _                ⇒ rec(p.parent, extendHash(h, stringHash(name), c, k), nextMagicA(c), nextMagicB(k))
+    }
+
+    finalizeHash(rec(this, startHash(42), startMagicA, startMagicB))
+  }
+
+  def compareTo(other: ActorPath) = {
+    @tailrec
+    def rec(left: ActorPath, right: ActorPath): Int =
+      if (left eq right) 0
+      else if (left.isInstanceOf[RootActorPath]) left compareTo right
+      else if (right.isInstanceOf[RootActorPath]) -(right compareTo left)
+      else {
+        val x = left.name compareTo right.name
+        if (x == 0) rec(left.parent, right.parent)
+        else x
+      }
+
+    rec(this, other)
+  }
 }
 

@@ -25,7 +25,7 @@ class TestActorRef[T <: Actor](
   _system: ActorSystemImpl,
   _prerequisites: DispatcherPrerequisites,
   _props: Props,
-  _supervisor: ActorRef,
+  _supervisor: InternalActorRef,
   name: String)
   extends LocalActorRef(_system, _props.withDispatcher(new CallingThreadDispatcher(_prerequisites)), _supervisor, _supervisor.path / name, false) {
   /**
@@ -60,9 +60,8 @@ class TestActorRef[T <: Actor](
    */
   def unwatch(subject: ActorRef): ActorRef = underlying.unwatch(subject)
 
-  override def toString = "TestActor[" + address + "]"
+  override def toString = "TestActor[" + path + "]"
 
-  override def equals(other: Any) = other.isInstanceOf[TestActorRef[_]] && other.asInstanceOf[TestActorRef[_]].address == address
 }
 
 object TestActorRef {
@@ -83,7 +82,7 @@ object TestActorRef {
     apply[T](props, system.asInstanceOf[ActorSystemImpl].guardian, name)
 
   def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] =
-    new TestActorRef(system.asInstanceOf[ActorSystemImpl], system.dispatcherFactory.prerequisites, props, supervisor, name)
+    new TestActorRef(system.asInstanceOf[ActorSystemImpl], system.dispatcherFactory.prerequisites, props, supervisor.asInstanceOf[InternalActorRef], name)
 
   def apply[T <: Actor](implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
