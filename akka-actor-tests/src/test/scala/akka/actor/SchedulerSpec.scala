@@ -6,9 +6,10 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
+class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
   private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
 
   def collectCancellable(c: Cancellable): Cancellable = {
@@ -96,6 +97,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach {
      * ticket #307
      */
     "pick up schedule after actor restart" in {
+
       object Ping
       object Crash
 

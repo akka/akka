@@ -21,6 +21,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class CrashingActor extends Actor {
+    import context.system
     def receive = {
       case "Die" ⇒
         state.finished.await
@@ -29,6 +30,7 @@ object ActorFireForgetRequestReplySpec {
   }
 
   class SenderActor(replyActor: ActorRef) extends Actor {
+    import context.system
     def receive = {
       case "Init" ⇒
         replyActor ! "Send"
@@ -51,7 +53,7 @@ object ActorFireForgetRequestReplySpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach {
+class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
   import ActorFireForgetRequestReplySpec._
 
   override def beforeEach() = {

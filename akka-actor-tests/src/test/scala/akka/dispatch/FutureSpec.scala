@@ -14,6 +14,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import java.lang.ArithmeticException
+import akka.testkit.DefaultTimeout
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -39,7 +40,7 @@ object FutureSpec {
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll {
+class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
   import FutureSpec._
 
   "A Promise" when {

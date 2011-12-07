@@ -391,8 +391,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
-  // TODO why implicit val dispatcher?
-  implicit val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+  val dispatcher = dispatcherFactory.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian

@@ -189,7 +189,7 @@ trait FSM[S, D] extends ListenerManagement {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val log = Logging(system, context.self)
+  val log = Logging(context.system, context.self)
 
   /**
    * ****************************************
@@ -279,7 +279,7 @@ trait FSM[S, D] extends ListenerManagement {
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat, timerGen.next)
+    val timer = Timer(name, msg, repeat, timerGen.next)(context.system)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -523,7 +523,7 @@ trait FSM[S, D] extends ListenerManagement {
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.finite_? && t.length >= 0) {
-          timeoutFuture = Some(system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
+          timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }
     }
@@ -566,7 +566,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
   def logDepth: Int = 0
 
-  private val debugEvent = system.settings.FsmDebugEvent
+  private val debugEvent = context.system.settings.FsmDebugEvent
 
   private val events = new Array[Event](logDepth)
   private val states = new Array[AnyRef](logDepth)

@@ -4,12 +4,13 @@ import akka.actor.Actor
 import akka.remote._
 import akka.routing._
 import akka.routing.Routing.Broadcast
+import akka.testkit.DefaultTimeout
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! system.nodename
+      case "hit" ⇒ sender ! context.system.nodename
       case "end" ⇒ self.stop()
     }
   }
@@ -60,7 +61,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec {
+class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with DefaultTimeout {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a RoundRobin router" must {

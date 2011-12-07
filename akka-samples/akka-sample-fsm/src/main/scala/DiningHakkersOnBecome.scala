@@ -25,6 +25,8 @@ object Think extends DiningHakkerMessage
 */
 class Chopstick extends Actor {
 
+  import context._
+
   //When a Chopstick is taken by a hakker
   //It will refuse to be taken by other hakkers
   //But the owning hakker can put it back
@@ -50,6 +52,8 @@ class Chopstick extends Actor {
 * A hakker is an awesome dude or dudett who either thinks about hacking or has to eat ;-)
 */
 class Hakker(name: String, left: ActorRef, right: ActorRef) extends Actor {
+
+  import context._
 
   //When a hakker is thinking it can become hungry
   //and try to pick up its chopsticks and eat

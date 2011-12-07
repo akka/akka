@@ -20,7 +20,7 @@ object RoutingSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec {
+class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 

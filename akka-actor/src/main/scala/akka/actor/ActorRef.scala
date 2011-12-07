@@ -196,7 +196,7 @@ class LocalActorRef private[akka] (
   _supervisor: InternalActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  _receiveTimeout: Option[Long] = None,
+  _receiveTimeout: Option[Duration] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
   extends InternalActorRef {
 

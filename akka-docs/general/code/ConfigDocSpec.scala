@@ -15,7 +15,7 @@ class ConfigDocSpec extends WordSpec with MustMatchers {
     //#custom-config
     val customConf = ConfigFactory.parseString("""
       akka.actor.deployment {
-        /app/my-service {
+        /user/my-service {
           router = round-robin
           nr-of-instances = 3
         }

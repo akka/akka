@@ -53,12 +53,14 @@ object Pi extends App {
     var start: Long = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(system.actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(context.actorOf[Worker])
 
     // wrap them with a load-balancing router
-    // FIXME REALLY this needs to use context to create the child!
+    // FIXME routers are intended to be used like this
+    implicit val timout = context.system.settings.ActorTimeout
+    implicit val dispatcher = context.dispatcher
     val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(workers))
-    val router = new RoutedActorRef(system, props, self.asInstanceOf[InternalActorRef], "pi")
+    val router = new RoutedActorRef(context.system, props, self.asInstanceOf[InternalActorRef], "pi")
 
     // message handler
     def receive = {

@@ -9,12 +9,13 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.remote.netty.NettyRemoteSupport
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 import akka.dispatch.Future
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
 
-trait NetworkFailureSpec { self: AkkaSpec ⇒
+trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
   import Actor._
   import akka.util.Duration
 
