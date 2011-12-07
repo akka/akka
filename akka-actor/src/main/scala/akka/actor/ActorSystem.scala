@@ -29,17 +29,17 @@ object ActorSystem {
 
   val Version = "2.0-SNAPSHOT"
 
-  val envHome = System.getenv("AKKA_HOME") match {
+  val EnvHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
     case value           ⇒ Some(value)
   }
 
-  val systemHome = System.getProperty("akka.home") match {
+  val SystemHome = System.getProperty("akka.home") match {
     case null | "" ⇒ None
     case value     ⇒ Some(value)
   }
 
-  val GlobalHome = systemHome orElse envHome
+  val GlobalHome = SystemHome orElse EnvHome
 
   def create(name: String, config: Config): ActorSystem = apply(name, config)
   def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
@@ -48,6 +48,7 @@ object ActorSystem {
    * Uses the standard default Config from ConfigFactory.load(), since none is provided.
    */
   def create(name: String): ActorSystem = apply(name)
+
   /**
    * Uses the standard default Config from ConfigFactory.load(), since none is provided.
    */
@@ -107,7 +108,6 @@ object ActorSystem {
         "] does not match the provided config version [" + ConfigVersion + "]")
 
     override def toString: String = config.root.render
-
   }
 
   // TODO move to migration kit
@@ -151,15 +151,38 @@ object ActorSystem {
     } catch { case _ ⇒ None }
 
     private def emptyConfig = ConfigFactory.systemProperties
-
   }
-
 }
 
 /**
  * An actor system is a hierarchical group of actors which share common
  * configuration, e.g. dispatchers, deployments, remote capabilities and
  * addresses. It is also the entry point for creating or looking up actors.
+ * 
+ * There are several possibilities for creating actors (see [[akka.actor.Props]]
+ * for details on `props`):
+ * 
+ * {{{
+ * // Java or Scala
+ * system.actorOf(props, "name")
+ * system.actorOf(props)
+ * 
+ * // Scala
+ * system.actorOf[MyActor]("name")
+ * system.actorOf[MyActor]
+ * system.actorOf(new MyActor(...))
+ * 
+ * // Java
+ * system.actorOf(classOf[MyActor]);
+ * system.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * });
+ * system.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * }, "name");
+ * }}}
+ * 
+ * Where no name is given explicitly, one will be automatically generated.
  */
 abstract class ActorSystem extends ActorRefFactory {
   import ActorSystem._
@@ -317,6 +340,14 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
+  def actorOf(props: Props): ActorRef = {
+    implicit val timeout = settings.CreationTimeout
+    (guardian ? CreateRandomNameChild(props)).get match {
+      case ref: ActorRef ⇒ ref
+      case ex: Exception ⇒ throw ex
+    }
+  }
+
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
@@ -370,9 +401,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def nodename: String = provider.nodename
   def clustername: String = provider.clustername
 
-  private final val nextName = new AtomicLong
-  override protected def randomName(): String = Helpers.base64(nextName.incrementAndGet())
-
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
@@ -408,7 +436,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   protected def createScheduler(): Scheduler = {
     val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
     val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
-    // note that dispatcher is by-name parameter in DefaultScheduler constructor, 
+    // note that dispatcher is by-name parameter in DefaultScheduler constructor,
     // because dispatcher is not initialized when the scheduler is created
     def safeDispatcher = {
       if (dispatcher eq null) {

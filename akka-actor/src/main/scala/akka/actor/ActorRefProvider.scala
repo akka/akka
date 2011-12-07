@@ -120,7 +120,8 @@ trait ActorRefProvider {
 }
 
 /**
- * Interface implemented by ActorSystem and AkkaContext, the only two places from which you can get fresh actors.
+ * Interface implemented by ActorSystem and AkkaContext, the only two places 
+ * from which you can get fresh actors.
  */
 trait ActorRefFactory {
 
@@ -137,16 +138,18 @@ trait ActorRefFactory {
 
   protected def lookupRoot: InternalActorRef
 
-  protected def randomName(): String
-
   /**
    * Create new actor as child of this context and give it an automatically
    * generated name (currently similar to base64-encoded integer count,
    * reversed and with “$” prepended, may change in the future).
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
-  def actorOf(props: Props): ActorRef = provider.actorOf(systemImpl, props, guardian, randomName(), false)
+  def actorOf(props: Props): ActorRef
 
   /**
    * Create new actor as child of this context with the given name, which must
@@ -154,6 +157,10 @@ trait ActorRefFactory {
    * and `InvalidActorNameException` is thrown.
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf(props: Props, name: String): ActorRef
 
@@ -162,6 +169,10 @@ trait ActorRefFactory {
    * generated name (currently similar to base64-encoded integer count,
    * reversed and with “$” prepended, may change in the future). The type must have
    * a no-arg constructor which will be invoked using reflection.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf[T <: Actor](implicit m: Manifest[T]): ActorRef = actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]))
 
@@ -170,6 +181,10 @@ trait ActorRefFactory {
    * not be null, empty or start with “$”. If the given name is already in use,
    * and `InvalidActorNameException` is thrown. The type must have
    * a no-arg constructor which will be invoked using reflection.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf[T <: Actor](name: String)(implicit m: Manifest[T]): ActorRef =
     actorOf(Props(m.erasure.asInstanceOf[Class[_ <: Actor]]), name)
@@ -179,6 +194,10 @@ trait ActorRefFactory {
    * generated name (currently similar to base64-encoded integer count,
    * reversed and with “$” prepended, may change in the future). The class must have
    * a no-arg constructor which will be invoked using reflection.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf[T <: Actor](clazz: Class[T]): ActorRef = actorOf(Props(clazz))
 
@@ -188,6 +207,10 @@ trait ActorRefFactory {
    * reversed and with “$” prepended, may change in the future). Use this
    * method to pass constructor arguments to the [[akka.actor.Actor]] while using
    * only default [[akka.actor.Props]]; otherwise refer to `actorOf(Props)`.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf(factory: ⇒ Actor): ActorRef = actorOf(Props(() ⇒ factory))
 
@@ -197,6 +220,10 @@ trait ActorRefFactory {
    * count, reversed and with “$” prepended, may change in the future).
    *
    * Identical to `actorOf(Props(() => creator.create()))`.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf(creator: UntypedActorFactory): ActorRef = actorOf(Props(() ⇒ creator.create()))
 
@@ -206,6 +233,10 @@ trait ActorRefFactory {
    * and `InvalidActorNameException` is thrown.
    *
    * Identical to `actorOf(Props(() => creator.create()), name)`.
+   *
+   * When invoked on ActorSystem, this method sends a message to the guardian
+   * actor and blocks waiting for a reply, see `akka.actor.creation-timeout` in
+   * the `reference.conf`.
    */
   def actorOf(creator: UntypedActorFactory, name: String): ActorRef = actorOf(Props(() ⇒ creator.create()), name)
 
@@ -299,6 +330,11 @@ class ActorRefProviderException(message: String) extends AkkaException(message)
 private[akka] case class CreateChild(props: Props, name: String)
 
 /**
+ * Internal Akka use only, used in implementation of system.actorOf.
+ */
+private[akka] case class CreateRandomNameChild(props: Props)
+
+/**
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
@@ -366,9 +402,10 @@ class LocalActorRefProvider(
 
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_)            ⇒ context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)                ⇒ context.self.stop()
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -377,8 +414,9 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
         context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case m                        ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 

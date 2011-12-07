@@ -86,7 +86,8 @@ class ActorKilledException private[akka] (message: String, cause: Throwable)
 case class InvalidActorNameException(message: String) extends AkkaException(message)
 
 case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) with NoStackTrace {
+  extends AkkaException(message, cause)
+  with NoStackTrace {
   def this(msg: String) = this(null, msg, null);
 }
 
@@ -102,11 +103,13 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
 }
 
 case class DeathPactException private[akka] (dead: ActorRef)
-  extends AkkaException("monitored actor " + dead + " terminated")
+  extends AkkaException("Monitored actor [" + dead + "] terminated")
   with NoStackTrace
 
 // must not pass InterruptedException to other threads
-case class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
+case class ActorInterruptedException private[akka] (cause: Throwable)
+  extends AkkaException(cause.getMessage, cause)
+  with NoStackTrace
 
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
@@ -117,7 +120,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exc
 
   // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
   override def getMessage =
-    if (ref ne null) "Actor %s does not handle [%s]".format(ref, msg)
+    if (ref ne null) "Actor [%s] does not handle [%s]".format(ref, msg)
     else "Actor does not handle [%s]".format(msg)
 
   override def fillInStackTrace() = this //Don't waste cycles generating stack trace
@@ -169,7 +172,7 @@ object Actor {
 
   object emptyBehavior extends Receive {
     def isDefinedAt(x: Any) = false
-    def apply(x: Any) = throw new UnsupportedOperationException("empty behavior apply()")
+    def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
 }
 

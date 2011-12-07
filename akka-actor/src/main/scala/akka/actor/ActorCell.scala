@@ -17,6 +17,31 @@ import akka.japi.Procedure
  * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
  * TODO: everything here for current compatibility - could be limited more
+ * 
+ * There are several possibilities for creating actors (see [[akka.actor.Props]]
+ * for details on `props`):
+ * 
+ * {{{
+ * // Java or Scala
+ * context.actorOf(props, "name")
+ * context.actorOf(props)
+ * 
+ * // Scala
+ * context.actorOf[MyActor]("name")
+ * context.actorOf[MyActor]
+ * context.actorOf(new MyActor(...))
+ * 
+ * // Java
+ * context.actorOf(classOf[MyActor]);
+ * context.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * });
+ * context.actorOf(new Creator<MyActor>() {
+ *   public MyActor create() { ... }
+ * }, "name");
+ * }}}
+ * 
+ * Where no name is given explicitly, one will be automatically generated.
  */
 trait ActorContext extends ActorRefFactory {
 
@@ -177,14 +202,20 @@ private[akka] class ActorCell(
 
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
+  private def _actorOf(props: Props, name: String): ActorRef = {
+    val actor = provider.actorOf(systemImpl, props, guardian, name, false)
+    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
+    actor
+  }
+
+  def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
+
   def actorOf(props: Props, name: String): ActorRef = {
     if (name == null || name == "" || name.charAt(0) == '$')
       throw new InvalidActorNameException("actor name must not be null, empty or start with $")
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    val actor = provider.actorOf(systemImpl, props, guardian, name, false)
-    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
-    actor
+    _actorOf(props, name)
   }
 
   var currentMessage: Envelope = null
@@ -199,7 +230,7 @@ private[akka] class ActorCell(
   var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
-  override protected def randomName(): String = {
+  protected def randomName(): String = {
     val n = nextNameSequence + 1
     nextNameSequence = n
     Helpers.base64(n)

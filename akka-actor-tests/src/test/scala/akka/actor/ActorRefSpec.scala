@@ -276,7 +276,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       (intercept[java.lang.IllegalStateException] {
         in.readObject
       }).getMessage must be === "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }"
+        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'"
     }
 
     "must return deadLetters on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
