@@ -178,7 +178,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * trailing "" element must be disregarded. If the requested path does not
    * exist, return Nobody.
    */
-  def getChild(name: Iterable[String]): InternalActorRef
+  def getChild(name: Iterator[String]): InternalActorRef
 }
 
 private[akka] case object Nobody extends MinimalActorRef {
@@ -256,26 +256,27 @@ class LocalActorRef private[akka] (
     }
   }
 
-  def getChild(names: Iterable[String]): InternalActorRef = {
+  def getChild(names: Iterator[String]): InternalActorRef = {
     /*
      * The idea is to recursively descend as far as possible with LocalActor
      * Refs and hand over to that “foreign” child when we encounter it.
      */
     @tailrec
-    def rec(ref: InternalActorRef, name: Iterable[String]): InternalActorRef = ref match {
-      case l: LocalActorRef ⇒
-        val n = name.head
-        val rest = name.tail
-        val next = n match {
-          case ".." ⇒ l.getParent
-          case ""   ⇒ l
-          case _    ⇒ l.getSingleChild(n)
-        }
-        if (next == Nobody || rest.isEmpty) next else rec(next, rest)
-      case _ ⇒
-        ref.getChild(name)
-    }
-    rec(this, names)
+    def rec(ref: InternalActorRef, name: Iterator[String]): InternalActorRef =
+      ref match {
+        case l: LocalActorRef ⇒
+          val n = name.next()
+          val next = n match {
+            case ".." ⇒ l.getParent
+            case ""   ⇒ l
+            case _    ⇒ l.getSingleChild(n)
+          }
+          if (next == Nobody || name.isEmpty) next else rec(next, name)
+        case _ ⇒
+          ref.getChild(name)
+      }
+    if (names.isEmpty) this
+    else rec(this, names)
   }
 
   // ========= AKKA PROTECTED FUNCTIONS =========
@@ -326,9 +327,11 @@ case class SerializedActorRef(path: String) {
 trait MinimalActorRef extends InternalActorRef {
 
   def getParent: InternalActorRef = Nobody
-  def getChild(name: Iterable[String]): InternalActorRef =
-    if (name.size == 1 && name.head.isEmpty) this
+  def getChild(names: Iterator[String]): InternalActorRef = {
+    val dropped = names.dropWhile(_.isEmpty)
+    if (dropped.isEmpty) this
     else Nobody
+  }
 
   //FIXME REMOVE THIS, ticket #1416
   //FIXME REMOVE THIS, ticket #1415

@@ -270,7 +270,7 @@ private[akka] case class RemoteActorRef private[akka] (
 
   // FIXME RK
   def getParent = Nobody
-  def getChild(name: Iterable[String]) = Nobody
+  def getChild(name: Iterator[String]) = Nobody
 
   @volatile
   private var running: Boolean = true
