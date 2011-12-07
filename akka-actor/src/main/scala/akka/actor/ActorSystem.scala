@@ -219,9 +219,22 @@ abstract class ActorSystem extends ActorRefFactory {
   def /(name: String): ActorPath
 
   /**
+   * ''Java API'': Create a new child actor path.
+   */
+  def child(child: String): ActorPath = /(child)
+
+  /**
    * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
    */
   def /(name: Iterable[String]): ActorPath
+
+  /**
+   * ''Java API'': Recursively create a descendant’s path by appending all child names.
+   */
+  def descendant(names: java.lang.Iterable[String]): ActorPath = {
+    import scala.collection.JavaConverters._
+    /(names.asScala)
+  }
 
   /**
    * Start-up time in milliseconds since the epoch.

@@ -51,7 +51,11 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(system / "c1") must be === c1
       system.actorFor(system / "c2") must be === c2
       system.actorFor(system / "c2" / "c21") must be === c21
+      system.actorFor(system child "c2" child "c21") must be === c21 // test Java API
       system.actorFor(system / Seq("c2", "c21")) must be === c21
+
+      import scala.collection.JavaConverters._
+      system.actorFor(system descendant Seq("c2", "c21").asJava) // test Java API
     }
 
     "find actors by looking up their string representation" in {
@@ -75,7 +79,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "find actors by looking up their path elements" in {
       system.actorFor(c1.path.elements) must be === c1
       system.actorFor(c2.path.elements) must be === c2
-      system.actorFor(c21.path.elements) must be === c21
+      system.actorFor(c21.path.getElements) must be === c21 // test Java API
     }
 
     "find system-generated actors" in {
@@ -190,6 +194,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "return deadLetters for non-existing paths" in {
+      import scala.collection.JavaConverters._
+
       def checkOne(looker: ActorRef, query: Query) {
         (looker ? query).get must be === system.deadLetters
       }
@@ -198,6 +204,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
           LookupString(""),
           LookupString("akka://all-systems/Nobody"),
           LookupPath(system / "hallo"),
+          LookupPath(looker.path child "hallo"), // test Java API
+          LookupPath(looker.path descendant Seq("a", "b").asJava), // test Java API
           LookupElems(Seq()),
           LookupElems(Seq("a"))) foreach (checkOne(looker, _))
       }

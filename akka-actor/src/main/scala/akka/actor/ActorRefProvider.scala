@@ -287,7 +287,7 @@ trait ActorRefFactory {
   def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
 
   /**
-   * Look-up an actor by applying the given path elements, starting from the
+   * ''Java API'': Look-up an actor by applying the given path elements, starting from the
    * current context, where `".."` signifies the parent of an actor.
    *
    * Example:
@@ -307,7 +307,7 @@ trait ActorRefFactory {
    *
    * For maximum performance use a collection with efficient head & tail operations.
    */
-  def actorFor(path: java.util.List[String]): ActorRef = {
+  def actorFor(path: java.lang.Iterable[String]): ActorRef = {
     import scala.collection.JavaConverters._
     provider.actorFor(lookupRoot, path.asScala)
   }
@@ -462,13 +462,17 @@ class LocalActorRefProvider(
     val children = new ConcurrentHashMap[String, AskActorRef]
     def path = tempNode
     override def getParent = rootGuardian
-    override def getChild(name: Iterable[String]): InternalActorRef = {
-      children.get(name.head) match {
-        case null ⇒ Nobody
-        case some ⇒
-          val t = name.tail
-          if (t.isEmpty) some
-          else some.getChild(t)
+    override def getChild(name: Iterator[String]): InternalActorRef = {
+      if (name.isEmpty) this
+      else {
+        val n = name.next()
+        if (n.isEmpty) this
+        else children.get(n) match {
+          case null ⇒ Nobody
+          case some ⇒
+            if (name.isEmpty) some
+            else some.getChild(name)
+        }
       }
     }
   }
@@ -497,7 +501,7 @@ class LocalActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) deadLetters
-    else ref.getChild(path) match {
+    else ref.getChild(path.iterator) match {
       case Nobody ⇒ deadLetters
       case x      ⇒ x
     }

@@ -50,14 +50,35 @@ sealed trait ActorPath extends Comparable[ActorPath] {
   def /(child: String): ActorPath
 
   /**
+   * ''Java API'': Create a new child actor path.
+   */
+  def child(child: String): ActorPath = /(child)
+
+  /**
    * Recursively create a descendant’s path by appending all child names.
    */
   def /(child: Iterable[String]): ActorPath = (this /: child)(_ / _)
 
   /**
-   * Sequence of names for this path. Performance implication: has to allocate a list.
+   * ''Java API'': Recursively create a descendant’s path by appending all child names.
+   */
+  def descendant(names: java.lang.Iterable[String]): ActorPath = {
+    import scala.collection.JavaConverters._
+    /(names.asScala)
+  }
+
+  /**
+   * Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
   def elements: Iterable[String]
+
+  /**
+   * ''Java API'': Sequence of names for this path from root to this. Performance implication: has to allocate a list.
+   */
+  def getElements: java.lang.Iterable[String] = {
+    import scala.collection.JavaConverters._
+    elements.asJava
+  }
 
   /**
    * Walk up the tree to obtain and return the RootActorPath.
