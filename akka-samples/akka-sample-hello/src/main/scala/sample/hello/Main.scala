@@ -15,12 +15,12 @@ object Main {
 }
 
 class HelloActor extends Actor {
-  val worldActor = system.actorOf[WorldActor]
+  val worldActor = context.actorOf[WorldActor]
   def receive = {
     case Start ⇒ worldActor ! "Hello"
     case s: String ⇒
       println("Received message: %s".format(s))
-      system.stop()
+      context.system.stop()
   }
 }
 

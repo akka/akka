@@ -107,17 +107,17 @@ public class Pi {
             this.latch = latch;
             Creator<Router> routerCreator = new Creator<Router>() {
                 public Router create() {
-                    return new RoundRobinRouter(dispatcher(), new akka.actor.Timeout(-1));
+                    return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
                 }
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
                 {
-                    for (int i = 0; i < nrOfWorkers; i++) add(context().actorOf(Worker.class));
+                    for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(Worker.class));
                 }
             };
+			// FIXME routers are intended to be used like this
             RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            // FIXME REALLY this NEEDS to use getContext()!
-            router = new RoutedActorRef(system(), props, (InternalActorRef) getSelf(), "pi");
+            router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
         }
 
         // message handler

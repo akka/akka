@@ -10,7 +10,7 @@ object DirectRoutedRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! system.nodename
+      case "identify" ⇒ sender ! context.system.nodename
     }
   }
 }
@@ -33,7 +33,7 @@ class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   }
 }
 
-class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
+class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
 
   import DirectRoutedRemoteActorMultiJvmSpec._
 

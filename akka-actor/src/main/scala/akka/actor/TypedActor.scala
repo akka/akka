@@ -293,11 +293,6 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   implicit def dispatcher = system.dispatcher
 
   /**
-   * Returns the default timeout (for a TypedActor) when inside a method call in a TypedActor.
-   */
-  implicit def timeout = system.settings.ActorTimeout
-
-  /**
    * Implementation of TypedActor as an Actor
    */
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
@@ -326,7 +321,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def receive = {
       case m: MethodCall ⇒
         TypedActor.selfReference set proxyVar.get
-        TypedActor.currentSystem set system
+        TypedActor.currentSystem set context.system
         try {
           if (m.isOneWay) m(me)
           else {

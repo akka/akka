@@ -9,9 +9,10 @@ import org.scalatest.BeforeAndAfterAll
 import akka.testkit.{ TestKit, filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.DefaultTimeout
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender {
+class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender with DefaultTimeout {
   import Ticket669Spec._
 
   // TODO: does this really make sense?

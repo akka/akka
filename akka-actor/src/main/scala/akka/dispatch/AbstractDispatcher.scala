@@ -62,8 +62,8 @@ case class Resume() extends SystemMessage // sent to self from ActorCell.resume
 case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
 case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
-case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.startsWatching
-case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.stopsWatching
+case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
+case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
 
 final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
   def run() {

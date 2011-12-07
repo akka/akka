@@ -18,7 +18,7 @@ object PinnedActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach {
+class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
   import PinnedActorSpec._
 
   private val unit = TimeUnit.MILLISECONDS

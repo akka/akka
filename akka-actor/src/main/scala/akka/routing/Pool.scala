@@ -120,7 +120,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
     val requestedCapacity = capacity(_delegates)
     val newDelegates = requestedCapacity match {
       case qty if qty > 0 ⇒
-        _delegates ++ Vector.fill(requestedCapacity)(watch(instance(defaultProps)))
+        _delegates ++ Vector.fill(requestedCapacity)(context.watch(instance(defaultProps)))
 
       case qty if qty < 0 ⇒
         _delegates.splitAt(_delegates.length + requestedCapacity) match {

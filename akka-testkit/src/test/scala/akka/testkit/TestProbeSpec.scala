@@ -8,7 +8,7 @@ import akka.dispatch.Future
 import akka.util.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TestProbeSpec extends AkkaSpec {
+class TestProbeSpec extends AkkaSpec with DefaultTimeout {
 
   "A TestProbe" must {
 

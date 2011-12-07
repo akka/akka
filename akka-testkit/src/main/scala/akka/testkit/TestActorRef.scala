@@ -49,7 +49,7 @@ class TestActorRef[T <: Actor](
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def startsWatching(subject: ActorRef): ActorRef = underlying.startsWatching(subject)
+  def watch(subject: ActorRef): ActorRef = underlying.watch(subject)
 
   /**
    * Deregisters this actor from being a death monitor of the provided ActorRef
@@ -58,7 +58,7 @@ class TestActorRef[T <: Actor](
    *
    * @return the same ActorRef that is provided to it, to allow for cleaner invocations
    */
-  def stopsWatching(subject: ActorRef): ActorRef = underlying.stopsWatching(subject)
+  def unwatch(subject: ActorRef): ActorRef = underlying.unwatch(subject)
 
   override def toString = "TestActor[" + path + "]"
 

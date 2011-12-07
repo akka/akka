@@ -16,6 +16,7 @@ import akka.serialization.SerializationExtension
 import akka.actor.TypedActor.{ PostRestart, PreRestart, PostStop, PreStart }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.testkit.DefaultTimeout
 
 object TypedActorSpec {
 
@@ -80,7 +81,7 @@ object TypedActorSpec {
 
   class Bar extends Foo with Serializable {
 
-    import TypedActor.{ dispatcher, timeout }
+    import TypedActor.dispatcher
 
     def pigdog = "Pigdog"
 
@@ -96,8 +97,10 @@ object TypedActorSpec {
       new KeptPromise(Right(pigdog + numbered))
     }
 
-    def futureComposePigdogFrom(foo: Foo): Future[String] =
+    def futureComposePigdogFrom(foo: Foo): Future[String] = {
+      implicit val timeout = TypedActor.system.settings.ActorTimeout
       foo.futurePigdog(500).map(_.toUpperCase)
+    }
 
     def optionPigdog(): Option[String] = Some(pigdog)
 
@@ -157,7 +160,7 @@ object TypedActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
   import TypedActorSpec._
 

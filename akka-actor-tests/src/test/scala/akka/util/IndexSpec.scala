@@ -7,8 +7,9 @@ import org.scalatest.matchers.MustMatchers
 import akka.dispatch.Future
 import akka.testkit.AkkaSpec
 import scala.util.Random
+import akka.testkit.DefaultTimeout
 
-class IndexSpec extends AkkaSpec with MustMatchers {
+class IndexSpec extends AkkaSpec with MustMatchers with DefaultTimeout {
 
   private def emptyIndex = new Index[String, Int](100, _ compareTo _)
 

@@ -31,7 +31,7 @@ object ActorLookupSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorLookupSpec extends AkkaSpec {
+class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
   import ActorLookupSpec._
 
   val c1 = system.actorOf(p, "c1")

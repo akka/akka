@@ -37,7 +37,7 @@ class HotSwapSpec extends AkkaSpec {
           case "init" ⇒
             _log += "init"
             barrier.await
-          case "swap" ⇒ become({
+          case "swap" ⇒ context.become({
             case _ ⇒
               _log += "swapped"
               barrier.await
@@ -113,12 +113,12 @@ class HotSwapSpec extends AkkaSpec {
             _log += "init"
             barrier.await
           case "swap" ⇒
-            become({
+            context.become({
               case "swapped" ⇒
                 _log += "swapped"
                 barrier.await
               case "revert" ⇒
-                unbecome()
+                context.unbecome()
             })
             barrier.await
         }
