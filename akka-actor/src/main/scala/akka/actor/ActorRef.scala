@@ -928,7 +928,7 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
     faultHandler match {
-      case AllForOneStrategy(trapExit, maxRetries, within) if reason == null && dead.isShutdown => //Stopped
+      case AllForOneStrategy(_, _, _) if reason == null => //Stopped
         if (_linkedActors.remove(dead.uuid) ne null) {
           val i = _linkedActors.values.iterator
           while (i.hasNext) {
@@ -940,7 +940,7 @@ class LocalActorRef private[akka] (
       case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
         restartLinkedActors(reason, maxRetries, within)
 
-      case OneForOneStrategy(trapExit, maxRetries, within) if reason == null && dead.isShutdown => //Stopped
+      case OneForOneStrategy(_, _, _) if reason == null => //Stopped
         _linkedActors.remove(dead.uuid)
 
       case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
