@@ -14,7 +14,6 @@ Scala API
    agents
    stm
    transactors
-   remote-actors
    fault-tolerance
    dispatchers
    routing
