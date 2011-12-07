@@ -8,7 +8,6 @@ import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistic
 import org.junit.runner.RunWith
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
@@ -30,10 +29,6 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
 
   var stat: DescriptiveStatistics = _
   val random: Random = new Random(0)
-
-  def clientDelayMicros = {
-    System.getProperty("benchmark.clientDelayMicros", "250").toInt
-  }
 
   override def beforeEach() {
     super.beforeEach()
@@ -98,12 +93,12 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
       val start = System.nanoTime
       val clients = (for (i ← 0 until numberOfClients) yield {
         val receiver = receivers(i % receivers.size)
-        val props = Props(new Client(receiver, orders, latch, ordersPerClient, clientDelayMicros)).withDispatcher(clientDispatcher)
+        val props = Props(new Client(receiver, orders, latch, ordersPerClient, clientDelay.toMicros.toInt)).withDispatcher(clientDispatcher)
         system.actorOf(props)
       })
 
       clients.foreach(_ ! "run")
-      val ok = latch.await((5000000L + (clientDelayMicros + 500) * totalNumberOfOrders) * timeDilation, TimeUnit.MICROSECONDS)
+      val ok = latch.await(maxRunDuration.toMillis, TimeUnit.MILLISECONDS)
       val durationNs = (System.nanoTime - start)
 
       if (!warmup) {
@@ -113,7 +108,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
         }
         logMeasurement(numberOfClients, durationNs, stat)
       }
-      clients.foreach(_ ! PoisonPill)
+      clients.foreach(_.stop())
     }
   }
 

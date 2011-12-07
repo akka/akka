@@ -7,7 +7,6 @@ import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.junit.runner.RunWith
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import java.util.Random
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics
@@ -23,9 +22,6 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
     .build
 
   val repeat = 200L * repeatFactor
-  def clientDelayMicros = {
-    System.getProperty("benchmark.clientDelayMicros", "250").toInt
-  }
 
   var stat: DescriptiveStatistics = _
 
@@ -67,19 +63,19 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
           val w3 = system.actorOf(new Waypoint(w4))
           val w2 = system.actorOf(new Waypoint(w3))
           val w1 = system.actorOf(new Waypoint(w2))
-          Props(new Client(w1, latch, repeatsPerClient, clientDelayMicros, stat)).withDispatcher(clientDispatcher)
+          Props(new Client(w1, latch, repeatsPerClient, clientDelay.toMicros.intValue, stat)).withDispatcher(clientDispatcher)
         }).toList.map(system.actorOf(_))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
-        val ok = latch.await((5000000 + 500 * repeat) * timeDilation, TimeUnit.MICROSECONDS)
+        val ok = latch.await(maxRunDuration.toMillis, TimeUnit.MILLISECONDS)
         val durationNs = (System.nanoTime - start)
 
         if (!warmup) {
           ok must be(true)
           logMeasurement(numberOfClients, durationNs, stat)
         }
-        clients.foreach(_ ! PoisonPill)
+        clients.foreach(_.stop())
 
       }
     }

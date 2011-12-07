@@ -1,4 +1,5 @@
 package akka.performance.trading.domain
+import akka.performance.workbench.BenchmarkConfig
 
 abstract class Orderbook(val symbol: String) {
   var bidSide: List[Bid] = Nil
@@ -49,7 +50,7 @@ abstract class Orderbook(val symbol: String) {
 
 object Orderbook {
 
-  val useDummyOrderbook = System.getProperty("benchmark.useDummyOrderbook", "false").toBoolean
+  val useDummyOrderbook = BenchmarkConfig.config.getBoolean("benchmark.useDummyOrderbook")
 
   def apply(symbol: String, standby: Boolean): Orderbook = (useDummyOrderbook, standby) match {
     case (false, false) ⇒ new Orderbook(symbol) with NopTradeObserver

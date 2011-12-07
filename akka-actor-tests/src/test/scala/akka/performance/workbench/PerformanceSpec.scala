@@ -1,33 +1,25 @@
 package akka.performance.workbench
 
 import scala.collection.immutable.TreeMap
-
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.scalatest.BeforeAndAfterEach
-
 import akka.actor.simpleName
 import akka.testkit.AkkaSpec
 import akka.actor.ActorSystem
+import akka.util.Duration
+import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit
 
-trait PerformanceSpec extends AkkaSpec with BeforeAndAfterEach {
+abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends AkkaSpec(cfg) with BeforeAndAfterEach {
 
-  def isBenchmark() = System.getProperty("benchmark") == "true"
-
-  def minClients() = System.getProperty("benchmark.minClients", "1").toInt;
-
-  def maxClients() = {
-    val default = if (isBenchmark) "48" else "4"
-    System.getProperty("benchmark.maxClients", default).toInt;
-  }
-
-  def repeatFactor() = {
-    val defaultRepeatFactor = if (isBenchmark) "150" else "2"
-    System.getProperty("benchmark.repeatFactor", defaultRepeatFactor).toInt
-  }
-
-  def timeDilation() = {
-    System.getProperty("benchmark.timeDilation", "1").toLong
-  }
+  def config = system.settings.config
+  def isLongRunningBenchmark() = config.getBoolean("benchmark.longRunning")
+  def minClients() = config.getInt("benchmark.minClients")
+  def maxClients() = config.getInt("benchmark.maxClients")
+  def repeatFactor() = config.getInt("benchmark.repeatFactor")
+  def timeDilation() = config.getLong("benchmark.timeDilation")
+  def maxRunDuration() = Duration(config.getMilliseconds("benchmark.maxRunDuration"), TimeUnit.MILLISECONDS)
+  def clientDelay = Duration(config.getNanoseconds("benchmark.clientDelay"), TimeUnit.NANOSECONDS)
 
   val resultRepository = BenchResultRepository()
   lazy val report = new Report(system, resultRepository, compareResultWith)
