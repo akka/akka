@@ -522,11 +522,13 @@ private[akka] final class ActorCell(
   }
 
   private def doTerminate() {
-    dispatcher.detach(this)
-
     try {
-      val a = actor
-      if (a ne null) a.postStop()
+      try {
+        val a = actor
+        if (a ne null) a.postStop()
+      } finally {
+        dispatcher.detach(this)
+      }
     } finally {
       try {
         parent.sendSystemMessage(ChildTerminated(self))
