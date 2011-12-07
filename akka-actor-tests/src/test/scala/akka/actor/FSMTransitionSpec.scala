@@ -29,6 +29,19 @@ object FSMTransitionSpec {
     override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
   }
 
+  class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {
+    startWith(0, 0)
+    when(0) {
+      case Ev("tick") ⇒ goto(1) using (1)
+    }
+    when(1) {
+      case Ev(_) ⇒ stay
+    }
+    onTransition {
+      case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
+    }
+  }
+
   class Forwarder(target: ActorRef) extends Actor {
     def receive = { case x ⇒ target ! x }
   }
@@ -70,6 +83,18 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         expectNoMsg
       }
     }
+  }
+
+  "A FSM" must {
+
+    "make previous and next state data available in onTransition" in {
+      val fsm = system.actorOf(new OtherFSM(testActor))
+      within(300 millis) {
+        fsm ! "tick"
+        expectMsg((0, 1))
+      }
+    }
+
   }
 
 }
