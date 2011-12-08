@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
+import java.io.{ NotSerializableException, ObjectOutputStream }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -602,4 +603,7 @@ private[akka] final class ActorCell(
       lookupAndSetField(a.getClass, a, "self", self)
     }
   }
+
+  final protected def writeObject(o: ObjectOutputStream): Unit =
+    throw new NotSerializableException("ActorCell/ActorContext is not serializable!")
 }

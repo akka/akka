@@ -206,7 +206,6 @@ trait Actor {
    * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
    * context.
    */
-  @transient
   protected[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
 
