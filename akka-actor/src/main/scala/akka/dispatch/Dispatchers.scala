@@ -173,12 +173,11 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       new BalancingDispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType,
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
   /**
-   * Utility function that tries to load the specified dispatcher config from the akka.conf
+   * Creates a new dispatcher as specified in configuration
    * or if not defined it uses the supplied dispatcher.
-   * Uses default values from default-dispatcher, i.e. all options doesn't need to be defined
-   * in config.
+   * Uses default values from default-dispatcher, i.e. all options doesn't need to be defined.
    */
-  def fromConfig(key: String, default: ⇒ MessageDispatcher = defaultGlobalDispatcher, cfg: Config = settings.config): MessageDispatcher = {
+  def newFromConfig(key: String, default: ⇒ MessageDispatcher, cfg: Config): MessageDispatcher = {
     import scala.collection.JavaConverters._
     def simpleName = key.substring(key.lastIndexOf('.') + 1)
     cfg.hasPath(key) match {
@@ -189,6 +188,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         from(confWithName).getOrElse(default)
     }
   }
+
+  /**
+   * Creates a new dispatcher as specified in configuration, or if not defined it uses
+   * the default dispatcher.
+   * Uses default configuration values from default-dispatcher, i.e. all options doesn't
+   * need to be defined.
+   */
+  def newFromConfig(key: String): MessageDispatcher = newFromConfig(key, defaultGlobalDispatcher, settings.config)
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below.

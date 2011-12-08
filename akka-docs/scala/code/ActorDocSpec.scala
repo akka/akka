@@ -24,7 +24,7 @@ class MyActor extends Actor {
 }
 //#my-actor
 
-case class DoIt(msg: Message)
+case class DoIt(msg: ImmutableMessage)
 case class Message(s: String)
 
 //#context-actorOf
@@ -41,7 +41,7 @@ class FirstActor extends Actor {
             sender ! replyMsg
             self.stop()
         }
-        def doSomeDangerousWork(msg: Message): String = { "done" }
+        def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
       }) ! m
 
     case replyMsg: String ⇒ sender ! replyMsg
@@ -52,9 +52,29 @@ class FirstActor extends Actor {
 //#system-actorOf
 object Main extends App {
   val system = ActorSystem("MySystem")
-  val myActor = system.actorOf[FirstActor]
+  val myActor = system.actorOf[MyActor]
   //#system-actorOf
 }
+
+class ReplyException extends Actor {
+  def receive = {
+    case _ ⇒
+      //#reply-exception
+      try {
+        val result = operation()
+        sender ! result
+      } catch {
+        case e: Exception ⇒
+          sender ! akka.actor.Status.Failure(e)
+          throw e
+      }
+    //#reply-exception
+  }
+
+  def operation(): String = { "Hi" }
+
+}
+
 //#swapper
 case object Swap
 class Swapper extends Actor {
@@ -167,7 +187,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating actor with Props" in {
     //#creating-props
     import akka.actor.Props
-    val dispatcher = system.dispatcherFactory.fromConfig("my-dispatcher")
+    val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher")
     val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
     //#creating-props
 
@@ -230,6 +250,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       }
     }
     //#hot-swap-actor
+
+    val actor = system.actorOf(new HotSwapActor)
+
   }
 
 }

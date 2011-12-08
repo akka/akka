@@ -50,8 +50,8 @@ be able to handle unknown messages then you need to have a default case as in
 the example above. Otherwise an ``UnhandledMessageException`` will be
 thrown and the actor is restarted when an unknown message is received.
 
-Creating Actors
----------------
+Creating Actors with default constructor
+----------------------------------------
 
 .. includecode:: code/ActorDocSpec.scala
    :include: imports2,system-actorOf
@@ -73,6 +73,15 @@ a top level actor, that is supervised by the system (internal guardian actor).
 .. includecode:: code/ActorDocSpec.scala#context-actorOf
 
 Actors are automatically started asynchronously when created.
+When you create the ``Actor`` then it will automatically call the ``preStart`` 
+callback method on the ``Actor`` trait. This is an excellent place to
+add initialization code for the actor.
+
+.. code-block:: scala
+
+  override def preStart() = {
+    ... // initialization code
+  }
 
 Creating Actors with non-default constructor
 --------------------------------------------
@@ -110,6 +119,7 @@ When spawning actors for specific sub-tasks from within an actor, it may be conv
   introduce synchronization bugs and race conditions because the other actor’s
   code will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time.
+  See also: :ref:`jmm-shared-state`
 
 
 Actor API
@@ -127,7 +137,7 @@ In addition, it offers:
 * :obj:`sender` reference sender Actor of the last received message, typically used as described in :ref:`Actor.Reply`
 * :obj:`context` exposes contextual information for the actor and the current message, such as:
 
-  * factory method to create child actors (:meth:`actorOf`)
+  * factory methods to create child actors (:meth:`actorOf`)
   * system that the actor belongs to
   * parent supervisor
   * supervised children
@@ -242,8 +252,8 @@ Messages are sent to an Actor through one of the following methods.
 
 Message ordering is guaranteed on a per-sender basis.
 
-Fire-forget
------------
+Tell: Fire-forget
+-----------------
 
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
@@ -260,11 +270,11 @@ to reply to the original sender, by using ``sender ! replyMsg``.
 If invoked from an instance that is **not** an Actor the sender will be 
 :obj:`deadLetters` actor reference by default.
 
-Send-And-Receive-Future
------------------------
+Ask: Send-And-Receive-Future
+----------------------------
 
 Using ``?`` will send a message to the receiving Actor asynchronously and
-will return a :class:`Future`:
+will immediately return a :class:`Future`:
 
 .. code-block:: scala
 
@@ -277,15 +287,7 @@ To complete the future with an exception you need send a Failure message to the 
 This is not done automatically when an actor throws an exception while processing a 
 message. 
 
-.. code-block:: scala
-
-  try {
-    operation()
-  } catch {
-    case e: Exception => 
-      sender ! akka.actor.Status.Failure(e)
-      throw e
-  }
+.. includecode:: code/ActorDocSpec.scala#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 which is taken from one of the following locations in order of precedence:
@@ -304,18 +306,19 @@ which is taken from one of the following locations in order of precedence:
 See :ref:`futures-scala` for more information on how to await or query a
 future.
 
+The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be 
+used to register a callback to get a notification when the Future completes. 
+Gives you a way to avoid blocking.
+
 .. warning::
 
-  When using future callbacks, such as ``onComplete``, ``onResult``, and ``onTimeout``,
-  inside actors you need to carefully avoid closing over the containing actor’s
-  reference, i.e. do not call methods or access mutable state on the enclosing actor 
-  from within the callback. This would break the actor encapsulation and may
-  introduce synchronization bugs and race conditions because the callback
-  will be scheduled concurrently to the enclosing actor. Unfortunately
+  When using future callbacks, inside actors you need to carefully avoid closing over
+  the containing actor’s reference, i.e. do not call methods or access mutable state 
+  on the enclosing actor from within the callback. This would break the actor 
+  encapsulation and may introduce synchronization bugs and race conditions because 
+  the callback   will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time.
-
-Send-And-Receive-Eventually
----------------------------
+  See also: :ref:`jmm-shared-state`
 
 The future returned from the ``?`` method can conveniently be passed around or
 chained with further processing steps, but sometimes you just need the value,
@@ -344,7 +347,7 @@ routers, load-balancers, replicators etc.
 
 .. code-block:: scala
 
-  actor.forward(message)
+  myActor.forward(message)
 
 
 Receive messages
@@ -375,7 +378,7 @@ Reply to messages
 
 If you want to have a handle for replying to a message, you can use
 ``sender``, which gives you an ActorRef. You can reply by sending to
-that ActorRef with ``sender ! Message``. You can also store the ActorRef
+that ActorRef with ``sender ! replyMsg``. You can also store the ActorRef
 for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
@@ -383,8 +386,8 @@ defaults to a 'dead-letter' actor ref.
 .. code-block:: scala
 
   case request =>
-      val result = process(request)
-      sender ! result       // will have dead-letter actor as default
+    val result = process(request)
+    sender ! result       // will have dead-letter actor as default
 
 Initial receive timeout
 =======================
@@ -395,26 +398,6 @@ received within a certain time. To receive this timeout you have to set the
 object.
 
 .. includecode:: code/ActorDocSpec.scala#receive-timeout
-
-Starting actors
-===============
-
-Actors are created & started by invoking the ``actorOf`` method.
-
-.. code-block:: scala
-
-  val actor = actorOf[MyActor]
-  actor
-
-When you create the ``Actor`` then it will automatically call the ``def
-preStart`` callback method on the ``Actor`` trait. This is an excellent place to
-add initialization code for the actor.
-
-.. code-block:: scala
-
-  override def preStart() = {
-    ... // initialization code
-  }
 
 
 Stopping actors
@@ -442,17 +425,20 @@ take place. The ``Actor`` can use this callback to implement shutdown behavior.
     ... // clean up resources
   }
 
+All Actors are stopped when the ``ActorSystem`` is stopped.
+Supervised actors are stopped when the supervisor is stopped, i.e. children are stopped
+when parent is stopped.
+
 
 PoisonPill
-==========
+----------
 
 You can also send an actor the ``akka.actor.PoisonPill`` message, which will
 stop the actor when the message is processed. ``PoisonPill`` is enqueued as
 ordinary messages and will be handled after messages that were already queued
 in the mailbox.
 
-If the sender is a ``Future`` (e.g. the message is sent with ``?``), the
-``Future`` will be completed with an
+If the ``PoisonPill`` was sent with ``?``, the ``Future`` will be completed with an
 ``akka.actor.ActorKilledException("PoisonPill")``.
 
 
@@ -465,7 +451,7 @@ Upgrade
 -------
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
-runtime: Invoke the ``become`` method from within the Actor.
+runtime: Invoke the ``context.become`` method from within the Actor.
 
 Become takes a ``PartialFunction[Any, Unit]`` that implements
 the new message handler. The hotswapped code is kept in a Stack which can be
@@ -499,7 +485,7 @@ Downgrade
 ---------
 
 Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well, all you need to do is to: Invoke the ``unbecome`` method from within the Actor.
+well, all you need to do is to: Invoke the ``context.unbecome`` method from within the Actor.
 
 This will pop the Stack and replace the Actor's implementation with the
 ``PartialFunction[Any, Unit]`` that is at the top of the Stack.
@@ -509,7 +495,7 @@ Here's how you use the ``unbecome`` method:
 .. code-block:: scala
 
   def receive = {
-    case "revert" => unbecome()
+    case "revert" => context.unbecome()
   }
 
 

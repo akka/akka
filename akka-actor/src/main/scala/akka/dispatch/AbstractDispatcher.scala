@@ -262,7 +262,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 }
 
 /**
- * Trait to be used for hooking in new dispatchers into Dispatchers.fromConfig
+ * Trait to be used for hooking in new dispatchers into Dispatchers.from(cfg: Config)
  */
 abstract class MessageDispatcherConfigurator() {
   /**
