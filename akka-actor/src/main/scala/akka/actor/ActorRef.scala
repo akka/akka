@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
+import java.util.concurrent.ConcurrentHashMap
+import akka.event.LoggingAdapter
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -398,6 +400,41 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+}
+
+class VirtualPathContainer(val path: ActorPath, override val getParent: InternalActorRef, val log: LoggingAdapter) extends MinimalActorRef {
+
+  private val children = new ConcurrentHashMap[String, InternalActorRef]
+
+  def addChild(name: String, ref: InternalActorRef): Unit = {
+    children.put(name, ref) match {
+      case null ⇒ // okay
+      case old  ⇒ log.warning("{} replacing child {} ({} -> {})", path, name, old, ref)
+    }
+  }
+
+  def removeChild(name: String): Unit = {
+    children.remove(name) match {
+      case null ⇒ log.warning("{} trying to remove non-child {}", path, name)
+      case _    ⇒ //okay
+    }
+  }
+
+  def getChild(name: String): InternalActorRef = children.get(name)
+
+  override def getChild(name: Iterator[String]): InternalActorRef = {
+    if (name.isEmpty) this
+    else {
+      val n = name.next()
+      if (n.isEmpty) this
+      else children.get(n) match {
+        case null ⇒ Nobody
+        case some ⇒
+          if (name.isEmpty) some
+          else some.getChild(name)
+      }
+    }
+  }
 }
 
 class AskActorRef(

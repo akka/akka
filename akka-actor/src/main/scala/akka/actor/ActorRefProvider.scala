@@ -448,12 +448,19 @@ class LocalActorRefProvider(
 
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
 
+  @volatile
+  private var extraNames: Map[String, InternalActorRef] = Map()
+
   lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+    object Extra {
+      def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
+    }
     override def getParent: InternalActorRef = this
     override def getSingleChild(name: String): InternalActorRef = {
       name match {
-        case "temp" ⇒ tempContainer
-        case _      ⇒ super.getSingleChild(name)
+        case "temp"   ⇒ tempContainer
+        case Extra(e) ⇒ e
+        case _        ⇒ super.getSingleChild(name)
       }
     }
   }
@@ -462,24 +469,7 @@ class LocalActorRefProvider(
 
   lazy val systemGuardian: InternalActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
 
-  lazy val tempContainer = new MinimalActorRef {
-    val children = new ConcurrentHashMap[String, AskActorRef]
-    def path = tempNode
-    override def getParent = rootGuardian
-    override def getChild(name: Iterator[String]): InternalActorRef = {
-      if (name.isEmpty) this
-      else {
-        val n = name.next()
-        if (n.isEmpty) this
-        else children.get(n) match {
-          case null ⇒ Nobody
-          case some ⇒
-            if (name.isEmpty) some
-            else some.getChild(name)
-        }
-      }
-    }
-  }
+  lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
   val deathWatch = createDeathWatch()
 
@@ -490,6 +480,8 @@ class LocalActorRefProvider(
     deathWatch.subscribe(rootGuardian, systemGuardian)
     eventStream.startDefaultLoggers(_system)
   }
+
+  def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
@@ -578,10 +570,10 @@ class LocalActorRefProvider(
         val name = path.name
         val a = new AskActorRef(path, tempContainer, deathWatch, t, dispatcher) {
           override def whenDone() {
-            tempContainer.children.remove(name)
+            tempContainer.removeChild(name)
           }
         }
-        tempContainer.children.put(name, a)
+        tempContainer.addChild(name, a)
         recipient.tell(message, a)
         a.result
     }

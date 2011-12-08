@@ -117,6 +117,7 @@ message RemoteSystemDaemonMessageProtocol {
   optional string actorPath = 2;
   optional bytes payload = 3;
   optional UuidProtocol replicateActorFromUuid = 4;
+  optional string supervisor = 5;
 }
 
 /**

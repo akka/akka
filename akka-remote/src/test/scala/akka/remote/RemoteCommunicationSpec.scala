@@ -7,6 +7,10 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 
+object RemoteCommunicationSpec {
+  val echo = Props(ctx ⇒ { case x ⇒ ctx.sender ! x })
+}
+
 class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -16,8 +20,15 @@ akka {
     hostname = localhost
     port = 12345
   }
+  actor.deployment {
+    /user/blub {
+      remote.nodes = ["remote_sys@localhost:12346"]
+    }
+  }
 }
 """) with ImplicitSender {
+
+  import RemoteCommunicationSpec._
 
   val conf = ConfigFactory.parseString("akka.remote.server.port=12346").withFallback(system.settings.config)
   val other = ActorSystem("remote_sys", conf)
@@ -65,6 +76,13 @@ akka {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
         system.actorFor("akka://remote_sys@localhost:12346/does/not/exist") ! "buh"
       }(other)
+    }
+
+    "create children on remote node" in {
+      val r = system.actorOf(echo, "blub")
+      r.path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r ! 42
+      expectMsg(42)
     }
 
   }

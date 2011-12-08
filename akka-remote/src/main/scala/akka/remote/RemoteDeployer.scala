@@ -44,17 +44,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings, _eventStream: EventStream,
         "Config option [" + deploymentKey +
           ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + remoteNodes.mkString(", ") + "]")
 
-      val remoteAddresses = remoteNodes map { node ⇒
-        val tokenizer = new java.util.StringTokenizer(node, ":")
-        val hostname = tokenizer.nextElement.toString
-        if ((hostname eq null) || (hostname == "")) raiseRemoteNodeParsingError()
-        val port = try tokenizer.nextElement.toString.toInt catch {
-          case e: Exception ⇒ raiseRemoteNodeParsingError()
-        }
-        if (port == 0) raiseRemoteNodeParsingError()
-
-        RemoteAddress(settings.name, hostname, port)
-      }
+      val remoteAddresses = remoteNodes map (RemoteAddress(_, settings.name))
 
       RemoteScope(remoteAddresses)
     }

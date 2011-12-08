@@ -5265,6 +5265,10 @@ public final class RemoteProtocol {
     boolean hasReplicateActorFromUuid();
     akka.remote.RemoteProtocol.UuidProtocol getReplicateActorFromUuid();
     akka.remote.RemoteProtocol.UuidProtocolOrBuilder getReplicateActorFromUuidOrBuilder();
+    
+    // optional string supervisor = 5;
+    boolean hasSupervisor();
+    String getSupervisor();
   }
   public static final class RemoteSystemDaemonMessageProtocol extends
       com.google.protobuf.GeneratedMessage
@@ -5360,11 +5364,44 @@ public final class RemoteProtocol {
       return replicateActorFromUuid_;
     }
     
+    // optional string supervisor = 5;
+    public static final int SUPERVISOR_FIELD_NUMBER = 5;
+    private java.lang.Object supervisor_;
+    public boolean hasSupervisor() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    public String getSupervisor() {
+      java.lang.Object ref = supervisor_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          supervisor_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getSupervisorBytes() {
+      java.lang.Object ref = supervisor_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        supervisor_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
     private void initFields() {
       messageType_ = akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType.STOP;
       actorPath_ = "";
       payload_ = com.google.protobuf.ByteString.EMPTY;
       replicateActorFromUuid_ = akka.remote.RemoteProtocol.UuidProtocol.getDefaultInstance();
+      supervisor_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -5400,6 +5437,9 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeMessage(4, replicateActorFromUuid_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(5, getSupervisorBytes());
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -5424,6 +5464,10 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(4, replicateActorFromUuid_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, getSupervisorBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5562,6 +5606,8 @@ public final class RemoteProtocol {
           replicateActorFromUuidBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
+        supervisor_ = "";
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -5620,6 +5666,10 @@ public final class RemoteProtocol {
         } else {
           result.replicateActorFromUuid_ = replicateActorFromUuidBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.supervisor_ = supervisor_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5647,6 +5697,9 @@ public final class RemoteProtocol {
         }
         if (other.hasReplicateActorFromUuid()) {
           mergeReplicateActorFromUuid(other.getReplicateActorFromUuid());
+        }
+        if (other.hasSupervisor()) {
+          setSupervisor(other.getSupervisor());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -5717,6 +5770,11 @@ public final class RemoteProtocol {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setReplicateActorFromUuid(subBuilder.buildPartial());
+              break;
+            }
+            case 42: {
+              bitField0_ |= 0x00000010;
+              supervisor_ = input.readBytes();
               break;
             }
           }
@@ -5897,6 +5955,42 @@ public final class RemoteProtocol {
           replicateActorFromUuid_ = null;
         }
         return replicateActorFromUuidBuilder_;
+      }
+      
+      // optional string supervisor = 5;
+      private java.lang.Object supervisor_ = "";
+      public boolean hasSupervisor() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public String getSupervisor() {
+        java.lang.Object ref = supervisor_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          supervisor_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setSupervisor(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        supervisor_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearSupervisor() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        supervisor_ = getDefaultInstance().getSupervisor();
+        onChanged();
+        return this;
+      }
+      void setSupervisor(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000010;
+        supervisor_ = value;
+        onChanged();
       }
       
       // @@protoc_insertion_point(builder_scope:RemoteSystemDaemonMessageProtocol)
@@ -6655,27 +6749,27 @@ public final class RemoteProtocol {
       "\t\022\r\n\005value\030\002 \002(\014\"A\n\017AddressProtocol\022\016\n\006s" +
       "ystem\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 " +
       "\002(\r\"7\n\021ExceptionProtocol\022\021\n\tclassname\030\001 " +
-      "\002(\t\022\017\n\007message\030\002 \002(\t\"\253\001\n!RemoteSystemDae" +
+      "\002(\t\022\017\n\007message\030\002 \002(\t\"\277\001\n!RemoteSystemDae" +
       "monMessageProtocol\0223\n\013messageType\030\001 \002(\0162",
       "\036.RemoteSystemDaemonMessageType\022\021\n\tactor" +
       "Path\030\002 \001(\t\022\017\n\007payload\030\003 \001(\014\022-\n\026replicate" +
-      "ActorFromUuid\030\004 \001(\0132\r.UuidProtocol\"y\n\035Du" +
-      "rableMailboxMessageProtocol\022$\n\trecipient" +
-      "\030\001 \002(\0132\021.ActorRefProtocol\022!\n\006sender\030\002 \001(" +
-      "\0132\021.ActorRefProtocol\022\017\n\007message\030\003 \002(\014*(\n" +
-      "\013CommandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002*" +
-      "K\n\026ReplicationStorageType\022\r\n\tTRANSIENT\020\001" +
-      "\022\023\n\017TRANSACTION_LOG\020\002\022\r\n\tDATA_GRID\020\003*>\n\027" +
-      "ReplicationStrategyType\022\021\n\rWRITE_THROUGH",
-      "\020\001\022\020\n\014WRITE_BEHIND\020\002*\241\002\n\035RemoteSystemDae" +
-      "monMessageType\022\010\n\004STOP\020\001\022\007\n\003USE\020\002\022\013\n\007REL" +
-      "EASE\020\003\022\022\n\016MAKE_AVAILABLE\020\004\022\024\n\020MAKE_UNAVA" +
-      "ILABLE\020\005\022\016\n\nDISCONNECT\020\006\022\r\n\tRECONNECT\020\007\022" +
-      "\n\n\006RESIGN\020\010\022\n\n\006GOSSIP\020\t\022\031\n\025FAIL_OVER_CON" +
-      "NECTIONS\020\024\022\026\n\022FUNCTION_FUN0_UNIT\020\025\022\025\n\021FU" +
-      "NCTION_FUN0_ANY\020\026\022\032\n\026FUNCTION_FUN1_ARG_U" +
-      "NIT\020\027\022\031\n\025FUNCTION_FUN1_ARG_ANY\020\030B\017\n\013akka" +
-      ".remoteH\001"
+      "ActorFromUuid\030\004 \001(\0132\r.UuidProtocol\022\022\n\nsu" +
+      "pervisor\030\005 \001(\t\"y\n\035DurableMailboxMessageP" +
+      "rotocol\022$\n\trecipient\030\001 \002(\0132\021.ActorRefPro" +
+      "tocol\022!\n\006sender\030\002 \001(\0132\021.ActorRefProtocol" +
+      "\022\017\n\007message\030\003 \002(\014*(\n\013CommandType\022\013\n\007CONN" +
+      "ECT\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026ReplicationStorag" +
+      "eType\022\r\n\tTRANSIENT\020\001\022\023\n\017TRANSACTION_LOG\020" +
+      "\002\022\r\n\tDATA_GRID\020\003*>\n\027ReplicationStrategyT",
+      "ype\022\021\n\rWRITE_THROUGH\020\001\022\020\n\014WRITE_BEHIND\020\002" +
+      "*\241\002\n\035RemoteSystemDaemonMessageType\022\010\n\004ST" +
+      "OP\020\001\022\007\n\003USE\020\002\022\013\n\007RELEASE\020\003\022\022\n\016MAKE_AVAIL" +
+      "ABLE\020\004\022\024\n\020MAKE_UNAVAILABLE\020\005\022\016\n\nDISCONNE" +
+      "CT\020\006\022\r\n\tRECONNECT\020\007\022\n\n\006RESIGN\020\010\022\n\n\006GOSSI" +
+      "P\020\t\022\031\n\025FAIL_OVER_CONNECTIONS\020\024\022\026\n\022FUNCTI" +
+      "ON_FUN0_UNIT\020\025\022\025\n\021FUNCTION_FUN0_ANY\020\026\022\032\n" +
+      "\026FUNCTION_FUN1_ARG_UNIT\020\027\022\031\n\025FUNCTION_FU" +
+      "N1_ARG_ANY\020\030B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6759,7 +6853,7 @@ public final class RemoteProtocol {
           internal_static_RemoteSystemDaemonMessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteSystemDaemonMessageProtocol_descriptor,
-              new java.lang.String[] { "MessageType", "ActorPath", "Payload", "ReplicateActorFromUuid", },
+              new java.lang.String[] { "MessageType", "ActorPath", "Payload", "ReplicateActorFromUuid", "Supervisor", },
               akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.class,
               akka.remote.RemoteProtocol.RemoteSystemDaemonMessageProtocol.Builder.class);
           internal_static_DurableMailboxMessageProtocol_descriptor =
