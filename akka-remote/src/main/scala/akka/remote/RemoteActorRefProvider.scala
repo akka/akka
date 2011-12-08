@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.Promise
 import java.net.InetAddress
 import akka.serialization.SerializationExtension
+import akka.actor.Props._
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -106,35 +107,28 @@ class RemoteActorRefProvider(
 
                   // we are on the single "reference" node uses the remote actors on the replica nodes
                   val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-                    case RouterType.Direct ⇒
-                      if (remoteAddresses.size != 1) throw new ConfigurationException(
-                        "Actor [%s] configured with Direct router must have exactly 1 remote node configured. Found [%s]"
-                          .format(name, remoteAddresses.mkString(", ")))
-                      () ⇒ new DirectRouter
-
-                    case RouterType.Broadcast ⇒
-                      if (remoteAddresses.size != 1) throw new ConfigurationException(
-                        "Actor [%s] configured with Broadcast router must have exactly 1 remote node configured. Found [%s]"
-                          .format(name, remoteAddresses.mkString(", ")))
-                      () ⇒ new BroadcastRouter
-
-                    case RouterType.Random ⇒
-                      if (remoteAddresses.size < 1) throw new ConfigurationException(
-                        "Actor [%s] configured with Random router must have at least 1 remote node configured. Found [%s]"
-                          .format(name, remoteAddresses.mkString(", ")))
-                      () ⇒ new RandomRouter
-
+                    // TODO (HE) : uncomment
+                    //                    case RouterType.Broadcast ⇒
+                    //                      if (remoteAddresses.size != 1) throw new ConfigurationException(
+                    //                        "Actor [%s] configured with Broadcast router must have exactly 1 remote node configured. Found [%s]"
+                    //                          .format(name, remoteAddresses.mkString(", ")))
+                    //                      () ⇒ new BroadcastRouter
+                    //
+                    //                    case RouterType.Random ⇒
+                    //                      if (remoteAddresses.size < 1) throw new ConfigurationException(
+                    //                        "Actor [%s] configured with Random router must have at least 1 remote node configured. Found [%s]"
+                    //                          .format(name, remoteAddresses.mkString(", ")))
+                    //                      () ⇒ new RandomRouter
                     case RouterType.RoundRobin ⇒
                       if (remoteAddresses.size < 1) throw new ConfigurationException(
                         "Actor [%s] configured with RoundRobin router must have at least 1 remote node configured. Found [%s]"
                           .format(name, remoteAddresses.mkString(", ")))
                       () ⇒ new RoundRobinRouter
-
-                    case RouterType.ScatterGather ⇒
-                      if (remoteAddresses.size < 1) throw new ConfigurationException(
-                        "Actor [%s] configured with ScatterGather router must have at least 1 remote node configured. Found [%s]"
-                          .format(name, remoteAddresses.mkString(", ")))
-                      () ⇒ new ScatterGatherFirstCompletedRouter()(dispatcher, defaultTimeout)
+                    //                    case RouterType.ScatterGather ⇒
+                    //                      if (remoteAddresses.size < 1) throw new ConfigurationException(
+                    //                        "Actor [%s] configured with ScatterGather router must have at least 1 remote node configured. Found [%s]"
+                    //                          .format(name, remoteAddresses.mkString(", ")))
+                    //                      () ⇒ new ScatterGatherFirstCompletedRouter()(dispatcher, defaultTimeout)
 
                     case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
                     case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
@@ -148,10 +142,11 @@ class RemoteActorRefProvider(
                   }
 
                   val connectionManager = new RemoteConnectionManager(system, remote, connections)
-
                   connections.keys foreach { useActorOnNode(system, _, path.toString, props.creator) }
 
-                  actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), supervisor, name)
+                  // TODO (HE) : FIX - no hard coded RoundRobin please...
+                  actorOf(system, Props().withRouting(RoundRobinRouter(targets = connections.values)), supervisor, name)
+                  //actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = connectionManager), supervisor, name)
                 }
 
               case deploy ⇒ local.actorOf(system, props, supervisor, name, systemService)
@@ -176,10 +171,13 @@ class RemoteActorRefProvider(
    * Copied from LocalActorRefProvider...
    */
   // FIXME: implement supervision, ticket #1408
+  // TODO (HE) : Is this needed anymore?
+  /*
   def actorOf(system: ActorSystem, props: RoutedProps, supervisor: InternalActorRef, name: String): InternalActorRef = {
     if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
     new RoutedActorRef(system, props, supervisor, name)
   }
+  */
 
   def actorFor(path: ActorPath): InternalActorRef = local.actorFor(path)
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = local.actorFor(ref, path)

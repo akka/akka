@@ -4,9 +4,8 @@
 
 package akka.actor
 
-import akka.util.Duration
-import akka.routing.RouterType
 import akka.remote.RemoteAddress
+import akka.routing.RouterType
 
 object DeploymentConfig {
 
@@ -16,7 +15,7 @@ object DeploymentConfig {
   case class Deploy(
     path: String,
     recipe: Option[ActorRecipe],
-    routing: Routing = Direct,
+    routing: Routing = NoRouting,
     nrOfInstances: NrOfInstances = ZeroNrOfInstances,
     scope: Scope = LocalScope)
 
@@ -32,7 +31,7 @@ object DeploymentConfig {
   case class CustomRouter(routerClassName: String) extends Routing
 
   // For Java API
-  case class Direct() extends Routing
+  case class NoRouting() extends Routing
   case class RoundRobin() extends Routing
   case class Random() extends Routing
   case class ScatterGather() extends Routing
@@ -41,7 +40,7 @@ object DeploymentConfig {
   case class LeastMessages() extends Routing
 
   // For Scala API
-  case object Direct extends Routing
+  case object NoRouting extends Routing
   case object RoundRobin extends Routing
   case object Random extends Routing
   case object ScatterGather extends Routing
@@ -159,7 +158,7 @@ object DeploymentConfig {
   }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
-    case _: Direct | Direct               ⇒ RouterType.Direct
+    case _: NoRouting | NoRouting         ⇒ RouterType.NoRouting
     case _: RoundRobin | RoundRobin       ⇒ RouterType.RoundRobin
     case _: Random | Random               ⇒ RouterType.Random
     case _: ScatterGather | ScatterGather ⇒ RouterType.ScatterGather

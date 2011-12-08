@@ -97,7 +97,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         Deploy(
           service,
           None,
-          Direct,
+          NoRouting,
           NrOfInstances(1),
           LocalScope)))
     }
@@ -132,7 +132,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         Deploy(
           service,
           Some(ActorRecipe(classOf[DeployerSpec.RecipeActor])),
-          Direct,
+          NoRouting,
           NrOfInstances(1),
           LocalScope)))
     }
@@ -167,11 +167,11 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with direct router" in {
-      assertRouting(Direct, "/user/service-direct")
+      assertRouting(NoRouting, "/user/service-direct")
     }
 
     "ignore nr-of-instances with direct router" in {
-      assertRouting(Direct, "/user/service-direct2")
+      assertRouting(NoRouting, "/user/service-direct2")
     }
 
     "be able to parse 'akka.actor.deployment._' with round-robin router" in {

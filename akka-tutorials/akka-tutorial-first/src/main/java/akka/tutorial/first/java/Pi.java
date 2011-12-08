@@ -107,7 +107,9 @@ public class Pi {
             this.latch = latch;
             Creator<Router> routerCreator = new Creator<Router>() {
                 public Router create() {
-                    return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
+                    // TODO (HE) : implement
+                    //return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
+                    return null;
                 }
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
@@ -115,9 +117,11 @@ public class Pi {
                     for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(Worker.class));
                 }
             };
+
 			// FIXME routers are intended to be used like this
-            RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
+            // TODO (HE): implement
+            //RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
+            //router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
         }
 
         // message handler

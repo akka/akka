@@ -8,6 +8,7 @@ import akka.dispatch._
 import akka.japi.Creator
 import akka.util._
 import collection.immutable.Stack
+import akka.routing.{ NoRouting, RouterConfig, RoutedProps }
 
 /**
  * ActorRef configuration object, this is threadsafe and fully sharable
@@ -27,6 +28,9 @@ object Props {
     case _: Exception                    ⇒ Restart
     case _                               ⇒ Escalate
   }
+
+  final val defaultRoutedProps: RouterConfig = NoRouting
+
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
 
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
@@ -80,7 +84,8 @@ object Props {
 case class Props(creator: () ⇒ Actor = Props.defaultCreator,
                  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
-                 faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler) {
+                 faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
+                 routerConfig: RouterConfig = Props.defaultRoutedProps) {
   /**
    * No-args constructor that sets all the default values
    * Java API
@@ -89,7 +94,8 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
     creator = Props.defaultCreator,
     dispatcher = Props.defaultDispatcher,
     timeout = Props.defaultTimeout,
-    faultHandler = Props.defaultFaultHandler)
+    faultHandler = Props.defaultFaultHandler,
+    routerConfig = Props.defaultRoutedProps)
 
   /**
    * Returns a new Props with the specified creator set
@@ -127,4 +133,9 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    */
   def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
+  /**
+   * Returns a new Props with the specified router config set
+   * Java API
+   */
+  def withRouting(r: RouterConfig) = copy(routerConfig = r)
 }

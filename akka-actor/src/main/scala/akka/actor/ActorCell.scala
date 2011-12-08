@@ -48,6 +48,11 @@ trait ActorContext extends ActorRefFactory {
   def self: ActorRef
 
   /**
+   * Retrieve the Props which were used to create this actor.
+   */
+  def props: Props
+
+  /**
    * Gets the current receive timeout
    * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
    */

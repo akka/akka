@@ -21,6 +21,7 @@ import akka.event._
 import akka.event.Logging.Error._
 import akka.event.Logging.Warning
 import java.io.Closeable
+import com.typesafe.config.Config
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -278,7 +279,7 @@ trait ActorRefFactory {
    *       ...
    *       val target = context.actorFor(Seq("..", "myBrother", "myNephew"))
    *       ...
-   *   }
+   * }
    * }
    * }}}
    *
@@ -301,7 +302,7 @@ trait ActorRefFactory {
    *     path.add("myNephew");
    *     final ActorRef target = context().actorFor(path);
    *     ...
-   *   }
+   * }
    * }
    * }}}
    *
@@ -402,10 +403,14 @@ class LocalActorRefProvider(
 
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_)                ⇒ context.self.stop()
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_) ⇒ context.self.stop()
+      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch {
+        case e: Exception ⇒ e
+      })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch {
+        case e: Exception ⇒ e
+      })
+      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -414,9 +419,13 @@ class LocalActorRefProvider(
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
         context.self.stop()
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch {
+        case e: Exception ⇒ e
+      })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch {
+        case e: Exception ⇒ e
+      })
+      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -446,6 +455,7 @@ class LocalActorRefProvider(
 
   lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
     override def getParent: InternalActorRef = this
+
     override def getSingleChild(name: String): InternalActorRef = {
       name match {
         case "temp" ⇒ tempContainer
@@ -460,8 +470,11 @@ class LocalActorRefProvider(
 
   lazy val tempContainer = new MinimalActorRef {
     val children = new ConcurrentHashMap[String, AskActorRef]
+
     def path = tempNode
+
     override def getParent = rootGuardian
+
     override def getChild(name: Iterator[String]): InternalActorRef = {
       if (name.isEmpty) this
       else {
@@ -508,57 +521,17 @@ class LocalActorRefProvider(
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef = {
     val path = supervisor.path / name
-    (if (systemService) None else deployer.lookupDeployment(path.toString)) match {
 
-      // create a local actor
-      case None | Some(DeploymentConfig.Deploy(_, _, DeploymentConfig.Direct, _, DeploymentConfig.LocalScope)) ⇒
-        new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
-
-      // create a routed actor ref
-      case deploy @ Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, DeploymentConfig.LocalScope)) ⇒
-        implicit val dispatcher = if (props.dispatcher == Props.defaultDispatcher) system.dispatcher else props.dispatcher
-        implicit val timeout = system.settings.ActorTimeout
-        val routerFactory: () ⇒ Router = DeploymentConfig.routerTypeFor(routerType) match {
-          case RouterType.Direct     ⇒ () ⇒ new DirectRouter
-          case RouterType.Random     ⇒ () ⇒ new RandomRouter
-          case RouterType.RoundRobin ⇒ () ⇒ new RoundRobinRouter
-          case RouterType.Broadcast  ⇒ () ⇒ new BroadcastRouter
-          case RouterType.ScatterGather ⇒ () ⇒ new ScatterGatherFirstCompletedRouter()(
-            if (props.dispatcher == Props.defaultDispatcher) dispatcher else props.dispatcher, settings.ActorTimeout)
-          case RouterType.LeastCPU          ⇒ sys.error("Router LeastCPU not supported yet")
-          case RouterType.LeastRAM          ⇒ sys.error("Router LeastRAM not supported yet")
-          case RouterType.LeastMessages     ⇒ sys.error("Router LeastMessages not supported yet")
-          case RouterType.Custom(implClass) ⇒ () ⇒ Routing.createCustomRouter(implClass)
-        }
-
-        val connections: Iterable[ActorRef] = (1 to nrOfInstances.factor) map { i ⇒
-          val routedPath = path.parent / (path.name + ":" + i)
-          new LocalActorRef(system, props, supervisor, routedPath, systemService)
-        }
-
-        actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.name)
-
-      case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
+    props.routerConfig match {
+      case NoRouting   ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
+      case routedActor ⇒ new RoutedActorRef(system, props.withRouting(adaptFromDeploy(routedActor, path)), supervisor, path)
     }
   }
 
-  /**
-   * Creates (or fetches) a routed actor reference, configured by the 'props: RoutedProps' configuration.
-   */
-  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: InternalActorRef, name: String): InternalActorRef = {
-    // FIXME: this needs to take supervision into account!
-
-    //FIXME clustering should be implemented by cluster actor ref provider
-    //TODO Implement support for configuring by deployment ID etc
-    //TODO If address matches an already created actor (Ahead-of-time deployed) return that actor
-    //TODO If address exists in config, it will override the specified Props (should we attempt to merge?)
-    //TODO If the actor deployed uses a different config, then ignore or throw exception?
-    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
-    // val clusteringEnabled = ReflectiveAccess.ClusterModule.isEnabled
-    // val localOnly = props.localOnly
-    // if (clusteringEnabled && !props.localOnly) ReflectiveAccess.ClusterModule.newClusteredActorRef(props)
-    // else new RoutedActorRef(props, address)
-    new RoutedActorRef(system, props, supervisor, name)
+  private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
+    val lookupPath = p.elements.mkString("/", "/", "")
+    val deploy = deployer.instance.lookupDeployment(lookupPath)
+    r.adaptFromDeploy(deploy)
   }
 
   private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
@@ -610,6 +583,7 @@ class LocalDeathWatch extends DeathWatch with ActorClassification {
  * returned from stop().
  */
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
+
   import org.jboss.netty.akka.util.{ Timeout ⇒ HWTimeout }
 
   def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable =

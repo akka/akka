@@ -213,6 +213,8 @@ class LocalActorRef private[akka] (
   private var actorCell = new ActorCell(system, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
 
+  protected def actorContext: ActorContext = actorCell
+
   /**
    * Is the actor terminated?
    * If this method returns true, it will never return false again, but if it
