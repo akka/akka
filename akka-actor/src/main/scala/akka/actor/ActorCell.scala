@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
+import java.io.{ NotSerializableException, ObjectOutputStream }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -111,6 +112,9 @@ trait ActorContext extends ActorRefFactory {
    * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef
+
+  final protected def writeObject(o: ObjectOutputStream): Unit =
+    throw new NotSerializableException("ActorContext is not serializable!")
 }
 
 trait UntypedActorContext extends ActorContext {

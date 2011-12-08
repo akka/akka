@@ -7,10 +7,9 @@ package akka.serialization
 import akka.serialization.Serialization._
 import scala.reflect._
 import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ActorSystemImpl }
-import java.io.{ ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
-import akka.actor.DeadLetterActorRef
 import com.typesafe.config.ConfigFactory
+import akka.actor._
+import java.io._
 
 object SerializeSpec {
 
@@ -92,6 +91,22 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         case Left(exception) ⇒ fail(exception)
         case Right(p)        ⇒ assert(p === r)
       }
+    }
+
+    "not serialize ActorCell" in {
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case o: ObjectOutputStream ⇒
+            try {
+              o.writeObject(this)
+            } catch {
+              case _: NotSerializableException ⇒ testActor ! "pass"
+            }
+        }
+      }))
+      a ! new ObjectOutputStream(new ByteArrayOutputStream())
+      expectMsg("pass")
+      a.stop()
     }
 
     "serialize DeadLetterActorRef" in {
