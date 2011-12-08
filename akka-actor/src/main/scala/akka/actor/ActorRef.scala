@@ -865,7 +865,7 @@ class LocalActorRef private[akka] (
         case _                         ⇒ None
       }
       Actor.remote.send[Any](
-        message, sender, chFuture, homeAddress.get, timeout, true, this, None, ActorType.ScalaActor, None)
+        message, sender, chFuture, homeAddress.get, timeout, chFuture.isEmpty, this, None, ActorType.ScalaActor, None)
     } else {
       dispatcher dispatchMessage new MessageInvocation(this, message, channel)
     }
