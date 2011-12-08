@@ -106,7 +106,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
       expectMsg("pass")
-      a.stop
+      a.stop()
     }
 
     "serialize DeadLetterActorRef" in {

@@ -112,6 +112,9 @@ trait ActorContext extends ActorRefFactory {
    * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef
+
+  final protected def writeObject(o: ObjectOutputStream): Unit =
+    throw new NotSerializableException("ActorContext is not serializable!")
 }
 
 trait UntypedActorContext extends ActorContext {
@@ -603,7 +606,4 @@ private[akka] final class ActorCell(
       lookupAndSetField(a.getClass, a, "self", self)
     }
   }
-
-  final protected def writeObject(o: ObjectOutputStream): Unit =
-    throw new NotSerializableException("ActorCell/ActorContext is not serializable!")
 }
