@@ -70,31 +70,32 @@ Since Akka runs on the JVM there are still some rules to be followed.
 
 .. code-block:: scala
 
-   class MyActor extends Actor {
-   	 var state = ...
+    class MyActor extends Actor {
+     var state = ...
      def receive = {
-     	case _ =>
-     	  //Wrongs
+        case _ =>
+          //Wrongs
 
         // Very bad, shared mutable state,
         // will break your application in weird ways
-     	  Future { state = NewState }
-        
+          Future { state = NewState }
+          anotherActor ? message onResult { r => state = r }
+
         // Very bad, "sender" changes for every message,
         // shared mutable state bug
-     	  Future { expensiveCalculation(sender) }
+          Future { expensiveCalculation(sender) }
 
-     	  //Rights
+          //Rights
 
         // Completely safe, "self" is OK to close over
         // and it's an ActorRef, which is thread-safe
-     	  Future { expensiveCalculation() } onComplete { f => self ! f.value.get }
-     	  
+          Future { expensiveCalculation() } onComplete { f => self ! f.value.get }
+
         // Completely safe, we close over a fixed value
         // and it's an ActorRef, which is thread-safe
-     	  val currentSender = sender
-     	  Future { expensiveCalculation(currentSender) }
+          val currentSender = sender
+          Future { expensiveCalculation(currentSender) }
      }
-   }
+    }
 
 * Messages **should** be immutable, this is to avoid the shared mutable state trap.
