@@ -474,9 +474,7 @@ Upgrade
 -------
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
-runtime.
-
-* Invoke the ``become`` method from within the Actor.
+runtime: Invoke the ``become`` method from within the Actor.
 
 Become takes a ``PartialFunction[Any, Unit]`` that implements
 the new message handler. The hotswapped code is kept in a Stack which can be
@@ -548,9 +546,7 @@ Downgrade
 ---------
 
 Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well.
-
-* Invoke the ``unbecome`` method from within the Actor.
+well, all you need to do is to: Invoke the ``unbecome`` method from within the Actor.
 
 This will pop the Stack and replace the Actor's implementation with the
 ``PartialFunction[Any, Unit]`` that is at the top of the Stack.
