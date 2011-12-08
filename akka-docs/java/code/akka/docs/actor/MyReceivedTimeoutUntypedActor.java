@@ -13,7 +13,7 @@ public class MyReceivedTimeoutUntypedActor extends UntypedActor {
     getContext().setReceiveTimeout(Duration.parse("30 seconds"));
   }
 
-  public void onReceive(Object message) throws Exception {
+  public void onReceive(Object message) {
     if (message.equals("Hello")) {
       getSender().tell("Hello world");
     } else if (message == Actors.receiveTimeout()) {

@@ -22,7 +22,7 @@ public class UntypedActorSwapper {
   public static class Swapper extends UntypedActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
-    public void onReceive(Object message) throws Exception {
+    public void onReceive(Object message) {
       if (message == SWAP) {
         log.info("Hi");
         getContext().become(new Procedure<Object>() {
