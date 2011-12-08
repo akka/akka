@@ -21,8 +21,6 @@ class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -36,8 +34,6 @@ class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -51,8 +47,6 @@ class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -66,9 +60,6 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with DefaultTi
   val nodes = NrOfNodes
   "A new remote actor configured with a Random router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
-
-      barrier("setup")
-      remote.start()
 
       barrier("start")
       val actor = system.actorOf[SomeActor]("service-hello")

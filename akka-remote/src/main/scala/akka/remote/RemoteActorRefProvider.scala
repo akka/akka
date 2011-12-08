@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.Promise
 import java.net.InetAddress
 import akka.serialization.SerializationExtension
+import akka.serialization.Serialization
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -38,41 +39,31 @@ class RemoteActorRefProvider(
 
   val log = Logging(eventStream, "RemoteActorRefProvider")
 
+  val remoteSettings = new RemoteSettings(settings.config, systemName)
+
   def deathWatch = local.deathWatch
   def rootGuardian = local.rootGuardian
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
-  def nodename = remoteExtension.NodeName
-  def clustername = remoteExtension.ClusterName
+  def nodename = remoteSettings.NodeName
+  def clustername = remoteSettings.ClusterName
 
   private val actors = new ConcurrentHashMap[String, AnyRef]
 
-  /*
-   * The problem is that ActorRefs need a reference to the ActorSystem to
-   * provide their service. Hence they cannot be created while the
-   * constructors of ActorSystem and ActorRefProvider are still running.
-   * The solution is to split out that last part into an init() method,
-   * but it also requires these references to be @volatile and lazy.
-   */
-  @volatile
-  private var system: ActorSystemImpl = _
-  private lazy val remoteExtension = RemoteExtension(system)
-  private lazy val serialization = SerializationExtension(system)
-  lazy val rootPath: ActorPath = {
-    val remoteAddress = RemoteAddress(system.name, remoteExtension.serverSettings.Hostname, remoteExtension.serverSettings.Port)
-    new RootActorPath(remoteAddress)
-  }
-  private lazy val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters, rootPath)
-  private[akka] lazy val remote = {
-    val r = new Remote(system, nodename)
-    terminationFuture.onComplete(_ ⇒ r.server.shutdown())
-    r
-  }
-  private lazy val remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
+  val rootPath: ActorPath = RootActorPath(RemoteAddress(systemName, remoteSettings.serverSettings.Hostname, remoteSettings.serverSettings.Port))
+  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters, rootPath)
+  private var serialization: Serialization = _
+  private var remoteDaemonConnectionManager: RemoteConnectionManager = _
 
-  def init(_system: ActorSystemImpl) {
-    system = _system
-    local.init(_system)
+  private var _remote: Remote = _
+  def remote = _remote
+
+  def init(system: ActorSystemImpl) {
+    local.init(system)
+    serialization = SerializationExtension(system)
+    _remote = new Remote(system, nodename, remoteSettings)
+    remoteDaemonConnectionManager = new RemoteConnectionManager(system, remote)
+    terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
   private[akka] def terminationFuture = local.terminationFuture
@@ -215,7 +206,7 @@ class RemoteActorRefProvider(
     val actorFactoryBytes =
       serialization.serialize(actorFactory) match {
         case Left(error)  ⇒ throw error
-        case Right(bytes) ⇒ if (remoteExtension.ShouldCompressData) LZF.compress(bytes) else bytes
+        case Right(bytes) ⇒ if (remoteSettings.ShouldCompressData) LZF.compress(bytes) else bytes
       }
 
     val command = RemoteSystemDaemonMessageProtocol.newBuilder
@@ -235,7 +226,7 @@ class RemoteActorRefProvider(
   private def sendCommandToRemoteNode(connection: ActorRef, command: RemoteSystemDaemonMessageProtocol, withACK: Boolean) {
     if (withACK) {
       try {
-        val f = connection ? (command, remoteExtension.RemoteSystemDaemonAckTimeout)
+        val f = connection ? (command, remoteSettings.RemoteSystemDaemonAckTimeout)
         (try f.await.value catch { case _: FutureTimeoutException ⇒ None }) match {
           case Some(Right(receiver)) ⇒
             log.debug("Remote system command sent to [{}] successfully received", receiver)
@@ -286,27 +277,20 @@ private[akka] class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = !running
 
-  def sendSystemMessage(message: SystemMessage): Unit = throw new UnsupportedOperationException("Not supported for RemoteActorRef")
+  def sendSystemMessage(message: SystemMessage): Unit = remote.send(message, None, this, loader)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = provider.ask(message, this, timeout)
 
-  def suspend(): Unit = ()
+  def suspend(): Unit = sendSystemMessage(Suspend())
 
-  def resume(): Unit = ()
+  def resume(): Unit = sendSystemMessage(Resume())
 
-  def stop() {
-    synchronized {
-      if (running) {
-        running = false
-        remote.send(new Terminate(), None, this, loader)
-      }
-    }
-  }
+  def stop(): Unit = sendSystemMessage(Terminate())
+
+  def restart(cause: Throwable): Unit = sendSystemMessage(Recreate(cause))
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
-
-  def restart(cause: Throwable): Unit = ()
 }

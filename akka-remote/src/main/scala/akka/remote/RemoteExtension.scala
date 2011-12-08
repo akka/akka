@@ -12,12 +12,7 @@ import com.eaio.uuid.UUID
 import akka.actor._
 import scala.collection.JavaConverters._
 
-object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
-  def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.settings.config, system.name)
-}
-
-class RemoteExtensionSettings(val config: Config, val systemName: String) extends Extension {
+class RemoteSettings(val config: Config, val systemName: String) extends Extension {
 
   import config._
 

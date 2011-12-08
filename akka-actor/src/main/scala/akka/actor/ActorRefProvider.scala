@@ -488,6 +488,7 @@ class LocalActorRefProvider(
     // chain death watchers so that killing guardian stops the application
     deathWatch.subscribe(systemGuardian, guardian)
     deathWatch.subscribe(rootGuardian, systemGuardian)
+    eventStream.startDefaultLoggers(_system)
   }
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
