@@ -1252,7 +1252,7 @@ private[akka] case class RemoteActorRef private[akka] (
       case f: ActorCompletableFuture ⇒ Some(f)
       case _                         ⇒ None
     }
-    Actor.remote.send[Any](message, chSender, chFuture, homeAddress.get, timeout, true, this, None, actorType, loader)
+    Actor.remote.send[Any](message, chSender, chFuture, homeAddress.get, timeout, chFuture.isEmpty, this, None, actorType, loader)
   }
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(
