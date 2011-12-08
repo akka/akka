@@ -5,14 +5,11 @@
 package akka
 
 import sbt._
-import Keys._
-
+import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
-
-import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
-import ScalariformPlugin.{ format, formatPreferences, formatSourceDirectories }
-
+import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
@@ -225,14 +222,14 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-  
+
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-  
+
   lazy val tutorials = Project(
     id = "akka-tutorials",
     base = file("akka-tutorials"),
@@ -263,7 +260,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      formatSourceDirectories in Test <<= unmanagedSourceDirectories in Test
+      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
     )
   )
 
@@ -335,9 +332,9 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oF")
   )
 
-  lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
-    formatPreferences in Compile := formattingPreferences,
-    formatPreferences in Test    := formattingPreferences
+  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
+    ScalariformKeys.preferences in Compile := formattingPreferences,
+    ScalariformKeys.preferences in Test    := formattingPreferences
   )
 
   def formattingPreferences = {
@@ -348,9 +345,9 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.formatSettings) ++ Seq(
-    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (format in MultiJvm),
-    formatPreferences in MultiJvm := formattingPreferences
+  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences
   )
 
   // reStructuredText docs
