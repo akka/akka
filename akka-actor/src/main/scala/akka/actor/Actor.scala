@@ -248,14 +248,17 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor'.
+   * Is called when an Actor is started.
+   * Actors are automatically started asynchronously when created.
+   * Empty default implementation.
    */
   def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop()' is invoked.
+   * Is called asynchronously after 'actor.stop()' is invoked.
+   * Empty default implementation.
    */
   def postStop() {}
 
