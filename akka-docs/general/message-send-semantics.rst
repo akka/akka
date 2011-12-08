@@ -35,7 +35,7 @@ in Erlang and requires the user to model his application around. You can
 read more about this approach in the `Erlang documentation`_ (section
 10.9 and 10.10), Akka follows it closely.
 
-Bottom line; you as a developer knows what guarantees you need in your
+Bottom line: you as a developer know what guarantees you need in your
 application and can solve it fastest and most reliable by explicit ``ACK`` and
 ``RETRY`` (if you really need it, most often you don't). Using Akka's Durable
 Mailboxes could help with this.
@@ -49,7 +49,7 @@ At-most-once
 Actual transports may provide stronger semantics,
 but at-most-once is the semantics you should expect.
 The alternatives would be once-and-only-once, which is extremely costly, 
-or atleast-once which essentially requires idempotency of message processing,
+or at-least-once which essentially requires idempotency of message processing,
 which is a user-level concern.
 
 Ordering is preserved on a per-sender basis
