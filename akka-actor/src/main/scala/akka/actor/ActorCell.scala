@@ -510,14 +510,12 @@ private[akka] final class ActorCell(
     if (system.settings.DebugAutoReceive) system.eventStream.publish(Debug(self.path.toString, "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case HotSwap(code, discardOld) ⇒ become(code(this), discardOld)
-      case RevertHotSwap             ⇒ unbecome()
-      case Failed(cause)             ⇒ handleFailure(sender, cause)
-      case Kill                      ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill                ⇒ self.stop()
-      case SelectParent(m)           ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m)  ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
-      case SelectChildPattern(p, m)  ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      case Failed(cause)            ⇒ handleFailure(sender, cause)
+      case Kill                     ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill               ⇒ self.stop()
+      case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
+      case SelectChildName(name, m) ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
+      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
 

@@ -29,29 +29,6 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       timeoutActor.stop()
     }
 
-    "get timeout when swapped" in {
-      val timeoutLatch = TestLatch()
-
-      val timeoutActor = system.actorOf(new Actor {
-        context.receiveTimeout = Some(500 milliseconds)
-
-        protected def receive = {
-          case ReceiveTimeout ⇒ timeoutLatch.open
-        }
-      })
-
-      timeoutLatch.await
-
-      val swappedLatch = TestLatch()
-
-      timeoutActor ! HotSwap(context ⇒ {
-        case ReceiveTimeout ⇒ swappedLatch.open
-      })
-
-      swappedLatch.await
-      timeoutActor.stop()
-    }
-
     "reschedule timeout after regular receive" in {
       val timeoutLatch = TestLatch()
       case object Tick

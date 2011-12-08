@@ -13,7 +13,6 @@ import scala.collection.JavaConverters._
 import java.util.Properties
 import akka.actor.Actor
 import akka.actor.ActorSystem
-import akka.actor.HotSwap
 import akka.actor.UnhandledMessageException
 import akka.actor.PoisonPill
 import akka.actor.ActorSystemImpl
@@ -77,22 +76,27 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         ignoreMute(this)
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
+
+        val r: Actor.Receive = {
+          case null ⇒
+        }
+
         val actor = TestActorRef(new Actor {
-          def receive = LoggingReceive(this) {
-            case x ⇒
-              sender ! "x"
+          def switch: Actor.Receive = { case "becomenull" ⇒ context.become(r, false) }
+          def receive = switch orElse LoggingReceive(this) {
+            case x ⇒ sender ! "x"
           }
         })
+
         val name = actor.path.toString
         actor ! "buh"
         within(1 second) {
           expectMsg(Logging.Debug(name, "received handled message buh"))
           expectMsg("x")
         }
-        val r: Actor.Receive = {
-          case null ⇒
-        }
-        actor ! HotSwap(_ ⇒ r, false)
+
+        actor ! "becomenull"
+
         EventFilter[UnhandledMessageException](pattern = "does not handle", occurrences = 1) intercept {
           within(500 millis) {
             actor ! "bah"

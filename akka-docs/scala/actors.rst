@@ -414,10 +414,6 @@ object.
         throw new RuntimeException("received timeout")
   }
 
-This mechanism also work for hotswapped receive functions. Every time a
-``HotSwap`` is sent, the receive timeout is reset and rescheduled.
-
-
 Starting actors
 ===============
 
@@ -471,19 +467,18 @@ If the sender is a ``Future`` (e.g. the message is sent with ``?``), the
 
 .. _Actor.HotSwap:
 
-HotSwap
-=======
+Become/Unbecome
+===============
 
 Upgrade
 -------
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
-runtime. There are two ways you can do that:
+runtime.
 
-* Send a ``HotSwap`` message to the Actor.
 * Invoke the ``become`` method from within the Actor.
 
-Both of these takes a ``ActorRef => PartialFunction[Any, Unit]`` that implements
+Become takes a ``PartialFunction[Any, Unit]`` that implements
 the new message handler. The hotswapped code is kept in a Stack which can be
 pushed and popped.
 
@@ -491,15 +486,7 @@ pushed and popped.
 
   Please note that the actor will revert to its original behavior when restarted by its Supervisor.
 
-To hotswap the Actor body using the ``HotSwap`` message:
-
-.. code-block:: scala
-
-  actor ! HotSwap( context => {
-    case message => context reply "hotswapped body"
-  })
-
-To hotswap the Actor using ``become``:
+To hotswap the Actor behavior using ``become``:
 
 .. code-block:: scala
 
@@ -561,21 +548,14 @@ Downgrade
 ---------
 
 Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well. There are two ways you can do that:
+well.
 
-* Send the Actor a ``RevertHotswap`` message
 * Invoke the ``unbecome`` method from within the Actor.
 
-Both of these will pop the Stack and replace the Actor's implementation with the
+This will pop the Stack and replace the Actor's implementation with the
 ``PartialFunction[Any, Unit]`` that is at the top of the Stack.
 
-Revert the Actor body using the ``RevertHotSwap`` message:
-
-.. code-block:: scala
-
-  actor ! RevertHotSwap
-
-Revert the Actor body using the ``unbecome`` method:
+Here's how you use the ``unbecome`` method:
 
 .. code-block:: scala
 
