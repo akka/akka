@@ -155,10 +155,10 @@ class RemoteActorRefProvider(
    * Copied from LocalActorRefProvider...
    */
   // FIXME: implement supervision, ticket #1408
-  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: InternalActorRef, name: String): InternalActorRef = {
-    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
-    new RoutedActorRef(system, props, supervisor, name)
-  }
+  //  def actorOf(system: ActorSystem, props: RoutedProps, supervisor: InternalActorRef, name: String): InternalActorRef = {
+  //    if (props.connectionManager.isEmpty) throw new ConfigurationException("RoutedProps used for creating actor [" + name + "] has zero connections configured; can't create a router")
+  //    new RoutedActorRef(system, props, supervisor, name)
+  //  }
 
   def actorFor(path: ActorPath): InternalActorRef = path.root match {
     case `rootPath`                         ⇒ actorFor(rootGuardian, path.elements)

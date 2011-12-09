@@ -41,9 +41,10 @@ class FileBenchResultRepository extends BenchResultRepository {
   private val statsByName = MutableMap[String, Seq[Stats]]()
   private val baselineStats = MutableMap[Key, Stats]()
   private val historicalStats = MutableMap[Key, Seq[Stats]]()
-  private val serDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/ser"
+  private def resultDir = BenchmarkConfig.config.getString("benchmark.resultDir")
+  private val serDir = resultDir + "/ser"
   private def serDirExists: Boolean = new File(serDir).exists
-  private val htmlDir = System.getProperty("benchmark.resultDir", "target/benchmark") + "/html"
+  private val htmlDir = resultDir + "/html"
   private def htmlDirExists: Boolean = new File(htmlDir).exists
   protected val maxHistorical = 7
 

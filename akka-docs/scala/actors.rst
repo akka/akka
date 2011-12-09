@@ -487,6 +487,10 @@ Both of these takes a ``ActorRef => PartialFunction[Any, Unit]`` that implements
 the new message handler. The hotswapped code is kept in a Stack which can be
 pushed and popped.
 
+.. warning::
+
+  Please note that the actor will revert to its original behavior when restarted by its Supervisor.
+
 To hotswap the Actor body using the ``HotSwap`` message:
 
 .. code-block:: scala

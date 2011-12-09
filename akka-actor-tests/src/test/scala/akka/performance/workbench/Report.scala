@@ -12,7 +12,7 @@ class Report(
   resultRepository: BenchResultRepository,
   compareResultWith: Option[String] = None) {
 
-  private def doLog = System.getProperty("benchmark.logResult", "true").toBoolean
+  private def doLog = system.settings.config.getBoolean("benchmark.logResult")
   val log = Logging(system, "Report")
 
   val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -189,12 +189,8 @@ class Report(
 
     val sb = new StringBuilder
 
-    sb.append("Benchmark properties:")
-    import scala.collection.JavaConversions._
-    val propNames: Seq[String] = System.getProperties.propertyNames.toSeq.map(_.toString)
-    for (name ← propNames if name.startsWith("benchmark")) {
-      sb.append("\n  ").append(name).append("=").append(System.getProperty(name))
-    }
+    sb.append("Benchmark properties:\n")
+    sb.append(system.settings.config.getConfig("benchmark").root.render)
     sb.append("\n")
 
     sb.append("Operating system: ").append(os.getName).append(", ").append(os.getArch).append(", ").append(os.getVersion)
@@ -215,16 +211,15 @@ class Report(
       append(")").append(" MB")
     sb.append("\n")
 
-    val args = runtime.getInputArguments.filterNot(_.contains("classpath")).mkString("\n  ")
+    import scala.collection.JavaConverters._
+    val args = runtime.getInputArguments.asScala.filterNot(_.contains("classpath")).mkString("\n  ")
     sb.append("Args:\n  ").append(args)
     sb.append("\n")
 
     sb.append("Akka version: ").append(system.settings.ConfigVersion)
     sb.append("\n")
-    sb.append("Akka config:")
-    for ((key, value) ← system.settings.config.root) {
-      sb.append("\n  ").append(key).append("=").append(value)
-    }
+    sb.append("Akka config:\n")
+    sb.append(system.settings.toString)
 
     sb.toString
   }

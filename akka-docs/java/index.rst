@@ -13,7 +13,6 @@ Java API
    dataflow
    stm
    transactors
-   remote-actors
    fault-tolerance
    dispatchers
    routing

@@ -48,6 +48,11 @@ trait ActorContext extends ActorRefFactory {
   def self: ActorRef
 
   /**
+   * Retrieve the Props which were used to create this actor.
+   */
+  def props: Props
+
+  /**
    * Gets the current receive timeout
    * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
    */
@@ -364,6 +369,7 @@ private[akka] final class ActorCell(
         }
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
+      hotswap = Props.noHotSwap // Reset the behavior
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "restarted"))
 
@@ -534,6 +540,7 @@ private[akka] final class ActorCell(
       } finally {
         currentMessage = null
         clearActorFields()
+        hotswap = Props.noHotSwap
       }
     }
   }

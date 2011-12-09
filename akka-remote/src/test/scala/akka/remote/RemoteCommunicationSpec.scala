@@ -111,7 +111,7 @@ akka {
       expectMsg("postStop")
     }
 
-    "look-up actors across node boundaries" in {
+    "look-up actors across node boundaries" ignore {
       val l = system.actorOf(Props(new Actor {
         def receive = {
           case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)

@@ -109,7 +109,6 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     // akka.actor.deployment.<path>.router
     // --------------------------------
     val router: Routing = deploymentWithFallback.getString("router") match {
-      case "direct"         ⇒ Direct
       case "round-robin"    ⇒ RoundRobin
       case "random"         ⇒ Random
       case "scatter-gather" ⇒ ScatterGather
@@ -123,7 +122,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     // akka.actor.deployment.<path>.nr-of-instances
     // --------------------------------
     val nrOfInstances = {
-      if (router == Direct) OneNrOfInstances
+      if (router == NoRouting) OneNrOfInstances
       else {
         def invalidNrOfInstances(wasValue: Any) = new ConfigurationException(
           "Config option [" + deploymentKey +

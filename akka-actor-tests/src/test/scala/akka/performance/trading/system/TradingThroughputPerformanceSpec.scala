@@ -8,7 +8,6 @@ import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistic
 import org.junit.runner.RunWith
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.performance.trading.domain.Ask
 import akka.performance.trading.domain.Bid
@@ -96,7 +95,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
       })
 
       clients.foreach(_ ! "run")
-      val ok = latch.await((5000000L + 500 * totalNumberOfOrders) * timeDilation, TimeUnit.MICROSECONDS)
+      val ok = latch.await(maxRunDuration.toMillis, TimeUnit.MILLISECONDS)
       val durationNs = (System.nanoTime - start)
 
       if (!warmup) {
@@ -106,7 +105,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
         }
         logMeasurement(numberOfClients, durationNs, totalNumberOfOrders)
       }
-      clients.foreach(_ ! PoisonPill)
+      clients.foreach(_.stop())
     }
   }
 

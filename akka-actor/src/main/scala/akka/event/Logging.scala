@@ -129,7 +129,7 @@ trait LoggingBus extends ActorEventBus {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
-      publish(Info(simpleName(this), "shutting down: StandardOutLogger started"))
+      publish(Debug(simpleName(this), "shutting down: StandardOutLogger started"))
     }
     for {
       logger ← loggers
@@ -139,7 +139,7 @@ trait LoggingBus extends ActorEventBus {
       unsubscribe(logger)
       logger.stop()
     }
-    publish(Info(simpleName(this), "all default loggers stopped"))
+    publish(Debug(simpleName(this), "all default loggers stopped"))
   }
 
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
