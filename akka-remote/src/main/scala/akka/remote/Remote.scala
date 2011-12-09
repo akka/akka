@@ -47,7 +47,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   val remoteDaemonServiceName = "akka-system-remote-daemon".intern
 
-  val computeGridDispatcher = dispatcherFactory.fromConfig("akka.remote.compute-grid-dispatcher")
+  val computeGridDispatcher = dispatcherFactory.newFromConfig("akka.remote.compute-grid-dispatcher")
 
   // FIXME it is probably better to create another supervisor for handling the children created by handle_*, ticket #1408
   private[remote] lazy val remoteDaemonSupervisor = system.actorOf(Props(

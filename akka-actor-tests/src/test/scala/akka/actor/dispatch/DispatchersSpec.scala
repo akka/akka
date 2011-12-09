@@ -58,13 +58,13 @@ class DispatchersSpec extends AkkaSpec {
       dispatcher.map(_.throughput) must be(Some(17))
     }
 
-    "use defined properties when fromConfig" in {
-      val dispatcher = fromConfig("myapp.mydispatcher", cfg = dispatcherConf)
+    "use defined properties when newFromConfig" in {
+      val dispatcher = newFromConfig("myapp.mydispatcher", defaultGlobalDispatcher, dispatcherConf)
       dispatcher.throughput must be(17)
     }
 
-    "use specific name when fromConfig" in {
-      val dispatcher = fromConfig("myapp.mydispatcher", cfg = dispatcherConf)
+    "use specific name when newFromConfig" in {
+      val dispatcher = newFromConfig("myapp.mydispatcher", defaultGlobalDispatcher, dispatcherConf)
       dispatcher.name must be("mydispatcher")
     }
 
