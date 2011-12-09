@@ -20,7 +20,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -33,7 +33,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -46,7 +46,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" in {
+    "___" ignore {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -59,7 +59,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with De
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a ScatterGather router" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" ignore {
 
       barrier("start")
       val actor = system.actorOf[SomeActor]("service-hello")
