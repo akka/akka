@@ -4,9 +4,6 @@
 
 package akka.util
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object Convert {
 
   def intToBytes(value: Int): Array[Byte] = {

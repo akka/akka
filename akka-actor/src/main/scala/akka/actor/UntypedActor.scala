@@ -48,8 +48,6 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *    }
  *  }
  * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class UntypedActor extends Actor {
 
@@ -123,7 +121,5 @@ abstract class UntypedActor extends Actor {
 
 /**
  * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait UntypedActorFactory extends Creator[Actor]

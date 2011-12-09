@@ -144,9 +144,6 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def configure(fs: Option[Function[ThreadPoolConfigDispatcherBuilder, ThreadPoolConfigDispatcherBuilder]]*): ThreadPoolConfigDispatcherBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) extends ThreadFactory {
   protected val counter = new AtomicLong
 
@@ -157,9 +154,6 @@ class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) 
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object MonitorableThread {
   val DEFAULT_NAME = "MonitorableThread".intern
 
@@ -168,9 +162,6 @@ object MonitorableThread {
   val alive = new AtomicInteger
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class MonitorableThread(runnable: Runnable, name: String)
   extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {
 

@@ -53,8 +53,6 @@ case class DefaultDispatcherPrerequisites(
  *     .build();
  * </pre>
  * <p/>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
 
@@ -199,7 +197,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   /*
    * Creates of obtains a dispatcher from a ConfigMap according to the format below.
-   * Uses default values from default-dispatcher. 
+   * Uses default values from default-dispatcher.
    *
    * my-dispatcher {
    *   type = "Dispatcher"         # Must be one of the following

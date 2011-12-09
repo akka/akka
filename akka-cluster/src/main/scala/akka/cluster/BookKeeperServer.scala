@@ -21,9 +21,6 @@ entry number it will use MAX_INTEGER). Once all the entries have been processed,
 new one for its use.
 */
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object BookKeeperServer {
   val port = 3181
   val zkServers = "localhost:2181"

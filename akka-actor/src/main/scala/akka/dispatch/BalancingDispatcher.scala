@@ -28,8 +28,6 @@ import akka.util.Duration
  *
  * @see akka.dispatch.BalancingDispatcher
  * @see akka.dispatch.Dispatchers
- *
- * @author Viktor Klang
  */
 class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,

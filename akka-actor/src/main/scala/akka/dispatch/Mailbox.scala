@@ -33,9 +33,6 @@ object Mailbox {
   final val debug = false
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 abstract class Mailbox(val actor: ActorCell) extends MessageQueue with SystemMessageQueue with Runnable {
   import Mailbox._
 

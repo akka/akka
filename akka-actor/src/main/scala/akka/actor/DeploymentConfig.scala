@@ -215,8 +215,6 @@ object DeploymentConfig {
  * Module holding the programmatic deployment configuration classes.
  * Defines the deployment specification.
  * Most values have defaults and can be left out.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DeploymentConfig(val nodename: String) {
 

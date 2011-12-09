@@ -30,8 +30,6 @@ trait ActorDeployer {
 
 /**
  * Deployer maps actor paths to actor deployments.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
 
@@ -267,8 +265,6 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
 
 /**
  * Simple local deployer, only for internal use.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalDeployer extends ActorDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]

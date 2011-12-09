@@ -33,9 +33,6 @@ class DurableMailboxException private[akka] (message: String, cause: Throwable) 
   def this(message: String) = this(message, null)
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
@@ -76,9 +73,6 @@ trait DurableMessageSerialization {
 
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 abstract class DurableMailboxType(mailboxFQN: String) extends MailboxType {
   val constructorSignature = Array[Class[_]](classOf[ActorCell])
 
@@ -117,8 +111,6 @@ case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(
  * Configurator for the DurableMailbox
  * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "zookeeper", "mongodb", "file",
  * or a full class name of the Mailbox implementation.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DurableMailboxConfigurator {
   // TODO PN #896: when and how is this class supposed to be used? Can we remove it?

@@ -84,8 +84,6 @@ object ChangeListener {
 
 /**
  * Node address holds the node name and the cluster name and can be used as a hash lookup key for a Node instance.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class NodeAddress(val clusterName: String, val nodeName: String) {
   if ((clusterName eq null) || clusterName == "") throw new NullPointerException("Cluster name must not be null or empty string")
@@ -183,8 +181,6 @@ trait NodeMetricsManager {
 
 /**
  * Interface for cluster node.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait ClusterNode {
   import ChangeListener._

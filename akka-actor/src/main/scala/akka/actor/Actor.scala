@@ -167,8 +167,6 @@ object Actor {
  *
  * <p/>
  * The Actor's own ActorRef is available in the 'self' member variable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
 

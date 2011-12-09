@@ -45,8 +45,6 @@ import scala.annotation.tailrec
  * </pre>
  *
  * The natural ordering of ActorRef is defined in terms of its [[akka.actor.ActorPath]].
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
@@ -214,8 +212,6 @@ private[akka] case object Nobody extends MinimalActorRef {
 
 /**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalActorRef private[akka] (
   system: ActorSystemImpl,

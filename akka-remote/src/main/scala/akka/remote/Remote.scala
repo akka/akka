@@ -25,8 +25,6 @@ import akka.serialization.SerializationExtension
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Remote(val system: ActorSystemImpl, val nodename: String) {
 
@@ -101,8 +99,6 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
  * Internal system "daemon" actor for remote internal communication.
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteSystemDaemon(remote: Remote) extends Actor {
 

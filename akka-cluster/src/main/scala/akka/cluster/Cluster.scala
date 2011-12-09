@@ -57,8 +57,6 @@ import com.google.protobuf.ByteString
 
 /**
  * JMX MBean for the cluster service.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait ClusterNodeMBean {
 
@@ -140,8 +138,6 @@ trait ClusterNodeMBean {
 
 /**
  * Module for the Cluster. Also holds global state such as configuration data etc.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object Cluster {
   val EMPTY_STRING = "".intern
@@ -257,8 +253,6 @@ object Cluster {
  *
  *   /clusterName/'actor-address-to-uuids'/actorAddress/actorUuid
  * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DefaultClusterNode private[akka] (
   val nodeAddress: NodeAddress,
@@ -1601,9 +1595,6 @@ class DefaultClusterNode private[akka] (
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class MembershipChildListener(self: ClusterNode) extends IZkChildListener with ErrorHandler {
   def handleChildChange(parentPath: String, currentChilds: JList[String]) {
     withErrorHandler {
@@ -1643,9 +1634,6 @@ class MembershipChildListener(self: ClusterNode) extends IZkChildListener with E
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class StateListener(self: ClusterNode) extends IZkStateListener {
   def handleStateChanged(state: KeeperState) {
     state match {
@@ -1671,9 +1659,6 @@ class StateListener(self: ClusterNode) extends IZkStateListener {
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 trait ErrorHandler {
   def withErrorHandler[T](body: ⇒ T) = {
     try {
@@ -1686,9 +1671,6 @@ trait ErrorHandler {
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object RemoteClusterDaemon {
   val Address = "akka-cluster-daemon".intern
 
@@ -1700,8 +1682,6 @@ object RemoteClusterDaemon {
  * Internal "daemon" actor for cluster internal communication.
  *
  * It acts as the brain of the cluster that responds to cluster events (messages) and undertakes action.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteClusterDaemon(cluster: ClusterNode) extends Actor {
 

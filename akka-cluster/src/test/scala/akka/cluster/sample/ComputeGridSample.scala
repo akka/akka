@@ -7,9 +7,6 @@ package akka.cluster.sample
 import akka.cluster._
 import akka.dispatch.Futures
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object ComputeGridSample {
   //sample.cluster.ComputeGridSample.fun2
 

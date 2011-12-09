@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,

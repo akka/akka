@@ -26,8 +26,6 @@ trait VersionedIterable[A] {
 
 /**
  * Manages connections (ActorRefs) for a router.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait ConnectionManager {
   /**

@@ -17,9 +17,6 @@ import akka.event.EventStream
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
 }
@@ -86,9 +83,6 @@ object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem) = system.dispatcher
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable {
 
   import MessageDispatcher._

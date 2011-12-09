@@ -12,8 +12,6 @@ import akka.actor.ActorSystemImpl
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
  * Also provides API for sender listener management.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object NetworkEventStream {
 
