@@ -75,18 +75,26 @@ class RemoteActorRefProvider(
     else {
       val path = supervisor.path / name
 
-      val deployment = deployer.lookupDeploymentFor(path.elements.mkString("/", "/", ""))
-
       @scala.annotation.tailrec
       def lookupRemotes(p: Iterable[String]): Option[DeploymentConfig.Deploy] = {
         p.headOption match {
           case None           ⇒ None
           case Some("remote") ⇒ lookupRemotes(p.drop(2))
-          case Some(_)        ⇒ deployer.lookupDeploymentFor(p.mkString("/", "/", ""))
+          case Some("user")   ⇒ deployer.lookupDeploymentFor(p.drop(1).mkString("/", "/", ""))
+          case Some(_)        ⇒ None
         }
       }
 
-      deployment orElse (if (path.elements.head == "remote") lookupRemotes(path.elements) else None) match {
+      val elems = path.elements
+      val deployment = (elems.head match {
+        case "user" ⇒ deployer.lookupDeploymentFor(elems.drop(1).mkString("/", "/", ""))
+        case _      ⇒ None
+      }) orElse (elems.head match {
+        case "remote" ⇒ lookupRemotes(elems)
+        case _        ⇒ None
+      })
+
+      deployment match {
         case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, RemoteDeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
           // FIXME RK deployer shall only concern itself with placement of actors on remote nodes
