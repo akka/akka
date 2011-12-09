@@ -382,15 +382,10 @@ Run it from Eclipse
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
 
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
-    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
-
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
 
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
-
-You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where ``akka.conf`` is:
+You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where :ref:`configuration` is:
 
 .. image:: ../images/run-config.png
 

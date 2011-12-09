@@ -19,7 +19,7 @@ Default dispatcher
 ------------------
 
 For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created. The default dispatcher used is "GlobalDispatcher" which also is retrievable in ``akka.dispatch.Dispatchers.globalDispatcher``.
-The Dispatcher specified in the akka.conf as "default-dispatcher" is  as ``Dispatchers.defaultGlobalDispatcher``.
+The Dispatcher specified in the :ref:`configuration` as "default-dispatcher" is  as ``Dispatchers.defaultGlobalDispatcher``.
 
 The "GlobalDispatcher" is not configurable but will use default parameters given by Akka itself.
 
@@ -124,16 +124,13 @@ Here is an example:
      ...
   }
 
-This 'Dispatcher' allows you to define the 'throughput' it should have. This defines the number of messages for a specific Actor the dispatcher should process in one single sweep.
-Setting this to a higher number will increase throughput but lower fairness, and vice versa. If you don't specify it explicitly then it uses the default value defined in the 'akka.conf' configuration file:
-
-.. code-block:: xml
-
-  actor {
-    throughput = 5
-  }
-
-If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
+The standard :class:`Dispatcher` allows you to define the ``throughput`` it
+should have, as shown above. This defines the number of messages for a specific
+Actor the dispatcher should process in one single sweep; in other words, the
+dispatcher will bunch up to ``throughput`` message invocations together when
+having elected an actor to run.  Setting this to a higher number will increase
+throughput but lower fairness, and vice versa. If you don't specify it explicitly 
+then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the :ref:`scaladoc` or look at the code for all the options available.
 

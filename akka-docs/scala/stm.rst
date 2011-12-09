@@ -271,23 +271,7 @@ The following settings are possible on a TransactionFactory:
 - ``propagation`` - For controlling how nested transactions behave.
 - ``traceLevel`` - Transaction trace level.
 
-You can also specify the default values for some of these options in ``akka.conf``. Here they are with their default values:
-
-::
-
-  stm {
-    fair             = on     # Should global transactions be fair or non-fair (non fair yield better performance)
-    max-retries      = 1000
-    timeout          = 5      # Default timeout for blocking transactions and transaction set (in unit defined by
-                              #     the time-unit property)
-    write-skew       = true
-    blocking-allowed = false
-    interruptible    = false
-    speculative      = true
-    quick-release    = true
-    propagation      = "requires"
-    trace-level      = "none"
-  }
+You can also specify the default values for some of these options in the :ref:`configuration`.
 
 You can also determine at which level a transaction factory is shared or not shared, which affects the way in which the STM can optimise transactions.
 

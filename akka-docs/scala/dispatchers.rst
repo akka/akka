@@ -120,17 +120,8 @@ should have, as shown above. This defines the number of messages for a specific
 Actor the dispatcher should process in one single sweep; in other words, the
 dispatcher will bunch up to ``throughput`` message invocations together when
 having elected an actor to run.  Setting this to a higher number will increase
-throughput but lower fairness, and vice versa. If you don't specify it
-explicitly then it uses the default value defined in the 'akka.conf'
-configuration file:
-
-.. code-block:: ruby
-
-  actor {
-    throughput = 5
-  }
-
-If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
+throughput but lower fairness, and vice versa. If you don't specify it explicitly 
+then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
 

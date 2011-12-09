@@ -74,8 +74,7 @@ storage.
 Read more about that in the :ref:`dispatchers-scala` documentation.
 
 You can also configure and tune the file-based durable mailbox. This is done in
-the ``akka.actor.mailbox.file-based`` section in the ``akka.conf`` configuration
-file.
+the ``akka.actor.mailbox.file-based`` section in the :ref:`configuration`.
 
 .. code-block:: none
 
@@ -125,8 +124,7 @@ or for a thread-based durable dispatcher::
       RedisDurableMailboxStorage)
 
 You also need to configure the IP and port for the Redis server. This is done in
-the ``akka.actor.mailbox.redis`` section in the ``akka.conf`` configuration
-file.
+the ``akka.actor.mailbox.redis`` section in the :ref:`configuration`.
 
 .. code-block:: none
 
@@ -169,8 +167,7 @@ or for a thread-based durable dispatcher::
       ZooKeeperDurableMailboxStorage)
 
 You also need to configure ZooKeeper server addresses, timeouts, etc. This is
-done in the ``akka.actor.mailbox.zookeeper`` section in the ``akka.conf``
-configuration file.
+done in the ``akka.actor.mailbox.zookeeper`` section in the :ref:`configuration`.
 
 .. code-block:: none
 
@@ -208,7 +205,7 @@ or for a thread-based durable dispatcher. ::
 
 You also need to configure the IP, and port, and so on, for the Beanstalk
 server. This is done in the ``akka.actor.mailbox.beanstalk`` section in the
-``akka.conf`` configuration file.
+:ref:`configuration`.
 
 .. code-block:: none
 
@@ -238,8 +235,7 @@ features cohesive to a fast, reliable & durable queueing mechanism which the Akk
 Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver (often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``) and as such are purely callback based with a Netty network layer.  This makes them extremely fast & lightweight versus building on other MongoDB implementations such as `mongo-java-driver <http://github.com/mongodb/mongo-java-driver>`_ and `Casbah <http://github.com/mongodb/casbah>`_.
 
 You will need to configure the URI for the MongoDB server, using the URI Format specified in the `MongoDB Documentation <http://www.mongodb.org/display/DOCS/Connections>`_. This is done in
-the ``akka.actor.mailbox.mongodb`` section in the ``akka.conf`` configuration
-file.
+the ``akka.actor.mailbox.mongodb`` section in the :ref:`configuration`.
 
 .. code-block:: none
 

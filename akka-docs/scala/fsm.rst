@@ -498,7 +498,7 @@ and in the following.
 Event Tracing
 -------------
 
-The setting ``akka.actor.debug.fsm`` in ``akka.conf`` enables logging of an
+The setting ``akka.actor.debug.fsm`` in `:ref:`configuration` enables logging of an
 event trace by :class:`LoggingFSM` instances::
 
   class MyFSM extends Actor with LoggingFSM[X, Z] {

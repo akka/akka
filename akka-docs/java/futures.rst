@@ -42,7 +42,7 @@ A common use case within Akka is to have some computation performed concurrently
                               return "Hello" + "World!";
                             }
                           });
-  String result = f.get(); //Blocks until timeout, default timeout is set in akka.conf, otherwise 5 seconds
+  String result = f.get(); //Blocks until timeout, default timeout is set in :ref:`configuration`, otherwise 5 seconds
 
 In the above code the block passed to ``future`` will be executed by the default ``Dispatcher``, with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld"). Unlike a ``Future`` that is returned from an ``UntypedActor``, this ``Future`` is properly typed, and we also avoid the overhead of managing an ``UntypedActor``.
 

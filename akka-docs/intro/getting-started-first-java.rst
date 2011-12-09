@@ -729,17 +729,11 @@ we compiled ourselves::
     $ java \
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:tutorial \
         akka.tutorial.java.first.Pi
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
-    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   822 millis
 
 Yippee! It is working.
-
-If you have not defined the ``AKKA_HOME`` environment variable then Akka can't
-find the ``akka.conf`` configuration file and will print out a ``Can’t load
-akka.conf`` warning. This is ok since it will then just use the defaults.
 
 
 Run it inside Maven
@@ -757,8 +751,6 @@ When this in done we can run our application directly inside Maven::
     Calculation time:   939 millis
 
 Yippee! It is working.
-
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
 
 Conclusion
 ----------

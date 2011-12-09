@@ -1522,7 +1522,7 @@ CamelService configuration
 For publishing consumer actors and typed actor methods
 (:ref:`camel-publishing`), applications must start a CamelService. When starting
 Akka in :ref:`microkernel` mode then a CamelService can be started automatically
-when camel is added to the enabled-modules list in akka.conf, for example:
+when camel is added to the enabled-modules list in :ref:`configuration`, for example:
 
 .. code-block:: none
 
@@ -1535,7 +1535,7 @@ when camel is added to the enabled-modules list in akka.conf, for example:
 Applications that do not use the Akka Kernel, such as standalone applications
 for example, need to start a CamelService manually, as explained in the
 following subsections.When starting a CamelService manually, settings in
-akka.conf are ignored.
+:ref:`configuration` are ignored.
 
 
 Standalone applications
@@ -1771,7 +1771,7 @@ CamelService can be omitted, as discussed in the previous section. Since these
 classes are loaded and instantiated before the CamelService is started (by
 Akka), applications can make modifications to a CamelContext here as well (and
 even provide their own CamelContext). Assuming there's a boot class
-sample.camel.Boot configured in akka.conf.
+sample.camel.Boot configured in :ref:`configuration`.
 
 .. code-block:: none
 
@@ -2439,8 +2439,7 @@ Examples
 
 For all features described so far, there's running sample code in
 `akka-sample-camel`_. The examples in `sample.camel.Boot`_ are started during
-Kernel startup because this class has been added to the boot configuration in
-akka-reference.conf.
+Kernel startup because this class has been added to the boot :ref:`configuration`.
 
 .. _akka-sample-camel: http://github.com/jboner/akka/tree/master/akka-samples/akka-sample-camel/
 .. _sample.camel.Boot: http://github.com/jboner/akka/blob/master/akka-samples/akka-sample-camel/src/main/scala/sample/camel/Boot.scala
@@ -2454,8 +2453,7 @@ akka-reference.conf.
    }
 
 If you don't want to have these examples started during Kernel startup, delete
-it from akka-reference.conf (or from akka.conf if you have a custom boot
-configuration). Other examples are standalone applications (i.e. classes with a
+it from the :ref:`configuration`. Other examples are standalone applications (i.e. classes with a
 main method) that can be started from `sbt`_.
 
 .. _sbt: http://code.google.com/p/simple-build-tool/

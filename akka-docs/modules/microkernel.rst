@@ -11,10 +11,9 @@ Run the microkernel
 
 To start the kernel use the scripts in the ``bin`` directory.
 
-All services are configured in the ``config/akka.conf`` configuration file. See
-the Akka documentation on Configuration for more details. Services you want to
-be started up automatically should be listed in the list of ``boot`` classes in
-the configuration.
+All services are configured in the :ref:`configuration` file in the ``config`` directory.
+Services you want to be started up automatically should be listed in the list of ``boot`` classes in
+the :ref:`configuration`.
 
 Put your application in the ``deploy`` directory.
 
