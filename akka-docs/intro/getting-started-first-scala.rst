@@ -114,7 +114,6 @@ core distribution has seven modules:
 - ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
 - ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
 - ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
 
