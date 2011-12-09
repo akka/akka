@@ -6,6 +6,7 @@
 {% extends "basic/layout.html" %}
 {% set script_files = script_files + ['_static/theme_extras.js'] %}
 {% set css_files = css_files + ['_static/print.css'] %}
+{% set is_snapshot = version.endswith("-SNAPSHOT") %}
 
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
@@ -37,7 +38,11 @@
         {%- endif -%}
        <h1 class="heading"><a href="{{ pathto('index') }}"><span>{{ shorttitle|e }}</span></a></h1>
        <h2 class="heading"><a href="{{ pathto('index') }}"><span>Version {{ version|e }}</span></a></h2>
+       {%- if is_snapshot -%}
        <h2 class="rightheading"><span><a href="http://akka.io/docs/akka/snapshot/Akka.pdf">PDF</a></span></h2>
+       {%- else -%}
+       <h2 class="rightheading"><span><a href="http://akka.io/docs/akka/{{ version|e }}/Akka.pdf">PDF</a></span></h2>
+       {%- endif -%}
         {%- endblock %}
       </div>
       <div class="topnav">
