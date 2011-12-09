@@ -95,10 +95,10 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
   }
 
   /**
-   * Parse deployment in supplied deployment Config, using the 
-   * defaultDeployment Config as fallback. 
-   * The path is the actor path and used for error reporting.  
-   * 
+   * Parse deployment in supplied deployment Config, using the
+   * defaultDeployment Config as fallback.
+   * The path is the actor path and used for error reporting.
+   *
    */
   private def parseDeploymentConfig(deployment: Config, defaultDeployment: Config, path: String): Deploy = {
     import scala.collection.JavaConverters._
