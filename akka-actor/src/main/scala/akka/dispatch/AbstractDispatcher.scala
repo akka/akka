@@ -137,7 +137,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
       shutdownScheduleUpdater.get(this) match {
         case UNSCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(this, UNSCHEDULED, SCHEDULED)) {
-            scheduler.scheduleOnce(shutdownTimeout, shutdownAction)
+            scheduleShutdownAction()
             ()
           } else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
@@ -146,6 +146,13 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
         case RESCHEDULED ⇒ ()
       }
     case _ ⇒ ()
+  }
+
+  private def scheduleShutdownAction(): Unit = {
+    // IllegalStateException is thrown if scheduler has been shutdown
+    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction) catch {
+      case _: IllegalStateException ⇒ shutdown()
+    }
   }
 
   private final val taskCleanup: () ⇒ Unit =
@@ -185,9 +192,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
           }
         case RESCHEDULED ⇒
           if (shutdownScheduleUpdater.compareAndSet(MessageDispatcher.this, RESCHEDULED, SCHEDULED))
-            try scheduler.scheduleOnce(shutdownTimeout, this) catch {
-              case _: IllegalStateException ⇒ shutdown()
-            }
+            scheduleShutdownAction()
           else run()
       }
     }
@@ -279,9 +284,10 @@ abstract class MessageDispatcherConfigurator() {
     }
   }
 
-  def configureThreadPool(config: Config,
-                          settings: Settings,
-                          createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+  def configureThreadPool(
+    config: Config,
+    settings: Settings,
+    createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
