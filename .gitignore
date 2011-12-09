@@ -16,6 +16,7 @@ reports
 dist
 target
 deploy/*.jar
+.history
 data
 out
 logs
