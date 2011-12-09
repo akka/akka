@@ -8,7 +8,25 @@ import akka.actor._
 import com.typesafe.config._
 
 object RemoteCommunicationSpec {
-  val echo = Props(ctx ⇒ { case x ⇒ ctx.sender ! x })
+  class Echo extends Actor {
+    var target: ActorRef = context.system.deadLetters
+
+    def receive = {
+      case (p: Props, n: String) ⇒ context.actorOf[Echo]("grandchild")
+      case ex: Exception         ⇒ throw ex
+      case s: String             ⇒ sender ! context.actorFor(s)
+      case x                     ⇒ target = sender; sender ! x
+    }
+
+    override def preStart() {}
+    override def preRestart(cause: Throwable, msg: Option[Any]) {
+      target ! "preRestart"
+    }
+    override def postRestart(cause: Throwable) {}
+    override def postStop() {
+      target ! "postStop"
+    }
+  }
 }
 
 class RemoteCommunicationSpec extends AkkaSpec("""
@@ -21,9 +39,9 @@ akka {
     port = 12345
   }
   actor.deployment {
-    /user/blub {
-      remote.nodes = ["remote_sys@localhost:12346"]
-    }
+    /user/blub.remote.nodes = ["remote_sys@localhost:12346"]
+    /user/looker/child.remote.nodes = ["remote_sys@localhost:12346"]
+    /user/looker/child/grandchild.remote.nodes = ["RemoteCommunicationSpec@localhost:12345"]
   }
 }
 """) with ImplicitSender {
@@ -78,11 +96,39 @@ akka {
       }(other)
     }
 
-    "create children on remote node" in {
-      val r = system.actorOf(echo, "blub")
+    "create and supervise children on remote node" in {
+      val r = system.actorOf[Echo]("blub")
       r.path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
       r ! 42
       expectMsg(42)
+      EventFilter[Exception]("crash", occurrences = 1).intercept {
+        r ! new Exception("crash")
+      }(other)
+      expectMsg("preRestart")
+      r ! 42
+      expectMsg(42)
+      r.stop()
+      expectMsg("postStop")
+    }
+
+    "look-up actors across node boundaries" in {
+      val l = system.actorOf(Props(new Actor {
+        def receive = {
+          case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
+          case s: String             ⇒ sender ! context.actorFor(s)
+        }
+      }), "looker")
+      l ! (Props[Echo], "child")
+      val r = expectMsgType[ActorRef]
+      r ! (Props[Echo], "grandchild")
+      val myref = system.actorFor(system / "looker" / "child" / "grandchild")
+      myref.isInstanceOf[RemoteActorRef] must be(true)
+      myref ! 43
+      expectMsg(43)
+      val remref = lastSender
+      remref.isInstanceOf[LocalActorRef] must be(true)
+      (l ? "child/..").as[ActorRef].get must be theSameInstanceAs l
+      (system.actorFor(system / "looker" / "child") ? "..").as[ActorRef].get must be theSameInstanceAs l
     }
 
   }

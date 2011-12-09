@@ -254,6 +254,8 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
 
   def provider = remote.system.asInstanceOf[ActorSystemImpl].provider
 
+  def originalReceiver = input.getRecipient.getPath
+
   lazy val sender: ActorRef =
     if (input.hasSender) provider.actorFor(provider.rootGuardian, input.getSender.getPath)
     else remote.system.deadLetters
@@ -331,6 +333,12 @@ trait RemoteMarshallingOps {
           case _: AutoReceivedMessage if (useUntrustedMode) ⇒
             throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
           case m ⇒ l.!(m)(remoteMessage.sender)
+        }
+      case r: RemoteActorRef ⇒
+        remoteMessage.originalReceiver match {
+          case RemoteActorPath(address, _) if address == remote.remoteDaemon.path.address ⇒
+            r.!(remoteMessage.payload)(remoteMessage.sender)
+          case r ⇒ log.error("dropping message {} for non-local recipient {}", remoteMessage.payload, r)
         }
       case r ⇒ log.error("dropping message {} for non-local recipient {}", remoteMessage.payload, r)
     }
