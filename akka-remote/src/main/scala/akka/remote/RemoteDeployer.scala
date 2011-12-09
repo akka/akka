@@ -11,46 +11,28 @@ import akka.config.ConfigurationException
 
 object RemoteDeploymentConfig {
 
-  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends DeploymentConfig.Scope
+  case class RemoteScope(node: RemoteAddress) extends DeploymentConfig.Scope
 
 }
 
-class RemoteDeployer(_settings: ActorSystem.Settings, _eventStream: EventStream, _nodename: String)
-  extends Deployer(_settings, _eventStream, _nodename) {
+class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings) {
 
   import RemoteDeploymentConfig._
 
-  override protected def lookupInConfig(path: String, configuration: Config = settings.config): Deploy = {
+  override protected def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._
     import akka.util.ReflectiveAccess._
 
-    val defaultDeploymentConfig = configuration.getConfig("akka.actor.deployment.default")
+    val deployment = config.withFallback(default)
 
-    // --------------------------------
-    // akka.actor.deployment.<path>
-    // --------------------------------
-    val deploymentKey = "akka.actor.deployment." + path
-    val deployment = configuration.getConfig(deploymentKey)
+    val transform: Deploy ⇒ Deploy =
+      if (deployment.hasPath("remote")) deployment.getString("remote") match {
+        case RemoteAddressExtractor(r) ⇒ (d ⇒ d.copy(scope = RemoteScope(r)))
+        case _                         ⇒ identity
+      }
+      else identity
 
-    val deploymentWithFallback = deployment.withFallback(defaultDeploymentConfig)
-
-    val remoteNodes = deploymentWithFallback.getStringList("remote.nodes").asScala.toSeq
-
-    // --------------------------------
-    // akka.actor.deployment.<path>.remote
-    // --------------------------------
-    def parseRemote: Scope = {
-      def raiseRemoteNodeParsingError() = throw new ConfigurationException(
-        "Config option [" + deploymentKey +
-          ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + remoteNodes.mkString(", ") + "]")
-
-      val remoteAddresses = remoteNodes map (RemoteAddress(_, settings.name))
-
-      RemoteScope(remoteAddresses)
-    }
-
-    val local = super.lookupInConfig(path, configuration)
-    if (remoteNodes.isEmpty) local else local.copy(scope = parseRemote)
+    super.parseConfig(path, config) map transform
   }
 
 }

@@ -89,7 +89,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/user/service1"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
       deployment must be(Some(
@@ -103,13 +103,13 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "use None deployment for undefined service" in {
       val service = "/user/undefined"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be(None)
     }
 
     "be able to parse 'akka.actor.deployment._' with recipe" in {
       val service = "/user/service3"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
       deployment must be(Some(
@@ -123,7 +123,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with number-of-instances=auto" in {
       val service = "/user/service-auto"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
       deployment must be(Some(
@@ -186,7 +186,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     def assertRouting(expected: Routing, service: String) {
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
       deployment must be(Some(
@@ -197,34 +197,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           NrOfInstances(1),
           LocalScope)))
 
-    }
-
-    "be able to parse 'akka.actor.deployment._' with specified cluster nodes" ignore {
-      val service = "/user/service-cluster1"
-      val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
-      deployment must be('defined)
-
-      deployment.get.scope match {
-        case deploymentConfig.ClusterScope(remoteNodes, replication) ⇒
-          remoteNodes must be(Seq(Node("wallace"), Node("gromit")))
-          replication must be(Transient)
-        case other ⇒ fail("Unexpected: " + other)
-      }
-    }
-
-    "be able to parse 'akka.actor.deployment._' with specified cluster replication" ignore {
-      val service = "/user/service-cluster2"
-      val deploymentConfig = system.asInstanceOf[ActorSystemImpl].provider.deployer.deploymentConfig
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
-      deployment must be('defined)
-
-      deployment.get.scope match {
-        case deploymentConfig.ClusterScope(remoteNodes, Replication(storage, strategy)) ⇒
-          storage must be(TransactionLog)
-          strategy must be(WriteBehind)
-        case other ⇒ fail("Unexpected: " + other)
-      }
     }
 
   }

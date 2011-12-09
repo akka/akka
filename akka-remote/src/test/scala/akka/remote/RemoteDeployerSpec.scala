@@ -14,65 +14,10 @@ object RemoteDeployerSpec {
       akka.actor.provider = "akka.remote.RemoteActorRefProvider"
       akka.cluster.nodename = Whatever
       akka.actor.deployment {
-        /user/service1 {
-        }
         /user/service2 {
           router = round-robin
           nr-of-instances = 3
-          remote {
-            nodes = ["wallace:2552", "gromit:2552"]
-          }
-        }
-        /user/service3 {
-          create-as {
-            class = "akka.actor.DeployerSpec$RecipeActor"
-          }
-        }
-        /user/service-auto {
-          router = round-robin
-          nr-of-instances = auto
-        }
-        /user/service-direct {
-          router = direct
-        }
-        /user/service-direct2 {
-          router = direct
-          # nr-of-instances ignored when router = direct
-          nr-of-instances = 2
-        }
-        /user/service-round-robin {
-          router = round-robin
-        }
-        /user/service-random {
-          router = random
-        }
-        /user/service-scatter-gather {
-          router = scatter-gather
-        }
-        /user/service-least-cpu {
-          router = least-cpu
-        }
-        /user/service-least-ram {
-          router = least-ram
-        }
-        /user/service-least-messages {
-          router = least-messages
-        }
-        /user/service-custom {
-          router = org.my.Custom
-        }
-        /user/service-cluster1 {
-          cluster {
-            preferred-nodes = ["node:wallace", "node:gromit"]
-          }
-        }
-        /user/service-cluster2 {
-          cluster {
-            preferred-nodes = ["node:wallace", "node:gromit"]
-            replication {
-              strategy = write-behind
-            }
-          }
+          remote = "sys@wallace:2552"
         }
       }
       """, ConfigParseOptions.defaults)
@@ -90,7 +35,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
       val service = "/user/service2"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookupDeployment(service)
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
       deployment must be(Some(
@@ -99,8 +44,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
           None,
           RoundRobin,
           NrOfInstances(3),
-          RemoteScope(Seq(
-            RemoteAddress(system.name, "wallace", 2552), RemoteAddress(system.name, "gromit", 2552))))))
+          RemoteScope(RemoteAddress("sys", "wallace", 2552)))))
     }
 
   }
