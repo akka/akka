@@ -260,11 +260,11 @@ class RemoteMessage(input: RemoteMessageProtocol, remote: RemoteSupport, classLo
     if (input.hasSender) provider.actorFor(provider.rootGuardian, input.getSender.getPath)
     else remote.system.deadLetters
 
-  lazy val recipient: InternalActorRef = provider.actorFor(provider.rootGuardian, input.getRecipient.getPath)
+  lazy val recipient: InternalActorRef = provider.actorFor(provider.rootGuardian, originalReceiver)
 
   lazy val payload: AnyRef = MessageSerializer.deserialize(remote.system, input.getMessage, classLoader)
 
-  override def toString = "RemoteMessage: " + payload + " to " + recipient + " from " + sender
+  override def toString = "RemoteMessage: " + payload + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
 }
 
 trait RemoteMarshallingOps {

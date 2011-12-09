@@ -75,7 +75,18 @@ class RemoteActorRefProvider(
     else {
       val path = supervisor.path / name
 
-      deployer.lookupDeploymentFor(path.elements.mkString("/", "/", "")) match {
+      val deployment = deployer.lookupDeploymentFor(path.elements.mkString("/", "/", ""))
+
+      @scala.annotation.tailrec
+      def lookupRemotes(p: Iterable[String]): Option[DeploymentConfig.Deploy] = {
+        p.headOption match {
+          case None           ⇒ None
+          case Some("remote") ⇒ lookupRemotes(p.drop(2))
+          case Some(_)        ⇒ deployer.lookupDeploymentFor(p.mkString("/", "/", ""))
+        }
+      }
+
+      deployment orElse (if (path.elements.head == "remote") lookupRemotes(path.elements) else None) match {
         case Some(DeploymentConfig.Deploy(_, _, routerType, nrOfInstances, RemoteDeploymentConfig.RemoteScope(remoteAddresses))) ⇒
 
           // FIXME RK deployer shall only concern itself with placement of actors on remote nodes
@@ -249,7 +260,12 @@ private[akka] class RemoteActorRef private[akka] (
   extends InternalActorRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
-    new RemoteActorRef(provider, remote, path / name.toStream, Nobody, loader)
+    val s = name.toStream
+    s.headOption match {
+      case None       ⇒ this
+      case Some("..") ⇒ getParent getChild name
+      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody, loader)
+    }
   }
 
   @volatile

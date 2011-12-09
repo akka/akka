@@ -12,7 +12,7 @@ object RemoteCommunicationSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case (p: Props, n: String) ⇒ context.actorOf[Echo]("grandchild")
+      case (p: Props, n: String) ⇒ sender ! context.actorOf[Echo](n)
       case ex: Exception         ⇒ throw ex
       case s: String             ⇒ sender ! context.actorFor(s)
       case x                     ⇒ target = sender; sender ! x
@@ -33,7 +33,6 @@ class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
   cluster.nodename = Nonsense
-  loglevel = DEBUG
   remote.server {
     hostname = localhost
     port = 12345
@@ -50,9 +49,6 @@ akka {
 
   val conf = ConfigFactory.parseString("akka.remote.server.port=12346").withFallback(system.settings.config)
   val other = ActorSystem("remote_sys", conf)
-
-  system.eventStream.subscribe(system.actorFor("/system/log1-TestEventListener"), classOf[RemoteLifeCycleEvent])
-  other.eventStream.subscribe(other.actorFor("/system/log1-TestEventListener"), classOf[RemoteLifeCycleEvent])
 
   val remote = other.actorOf(Props(new Actor {
     def receive = {
@@ -111,7 +107,7 @@ akka {
       expectMsg("postStop")
     }
 
-    "look-up actors across node boundaries" ignore {
+    "look-up actors across node boundaries" in {
       val l = system.actorOf(Props(new Actor {
         def receive = {
           case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
@@ -121,12 +117,13 @@ akka {
       l ! (Props[Echo], "child")
       val r = expectMsgType[ActorRef]
       r ! (Props[Echo], "grandchild")
+      val remref = expectMsgType[ActorRef]
+      remref.isInstanceOf[LocalActorRef] must be(true)
       val myref = system.actorFor(system / "looker" / "child" / "grandchild")
       myref.isInstanceOf[RemoteActorRef] must be(true)
       myref ! 43
       expectMsg(43)
-      val remref = lastSender
-      remref.isInstanceOf[LocalActorRef] must be(true)
+      lastSender must be theSameInstanceAs remref
       (l ? "child/..").as[ActorRef].get must be theSameInstanceAs l
       (system.actorFor(system / "looker" / "child") ? "..").as[ActorRef].get must be theSameInstanceAs l
     }
