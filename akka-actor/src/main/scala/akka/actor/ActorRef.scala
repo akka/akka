@@ -82,17 +82,25 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
   /**
-   * Akka Java API. <p/>
+   * Akka Java API.
+   *
    * Sends a message asynchronously returns a future holding the eventual reply message.
-   * <p/>
+   *
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use 'tell' together with the sender
    * parameter to implement non-blocking request/response message exchanges.
-   * <p/>
+   *
    * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
    * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
    * in the target actor to send a reply message to the original sender, and thereby completing the Future,
    * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
    */
   def ask(message: AnyRef, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
 
@@ -154,11 +162,18 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use '!' together with implicit or explicit
    * sender parameter to implement non-blocking request/response message exchanges.
-   * <p/>
+   *
    * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
    * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
    * in the target actor to send a reply message to the original sender, and thereby completing the Future,
    * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
    */
   def ?(message: Any)(implicit timeout: Timeout): Future[Any]
 

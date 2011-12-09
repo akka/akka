@@ -316,7 +316,7 @@ Gives you a way to avoid blocking.
   the containing actor’s reference, i.e. do not call methods or access mutable state 
   on the enclosing actor from within the callback. This would break the actor 
   encapsulation and may introduce synchronization bugs and race conditions because 
-  the callback   will be scheduled concurrently to the enclosing actor. Unfortunately
+  the callback will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time.
   See also: :ref:`jmm-shared-state`
 
