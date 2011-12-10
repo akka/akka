@@ -38,6 +38,12 @@ case class Timer(duration: Duration, throwExceptionOnTimeout: Boolean = false) {
   }
 }
 
+case class Deadline(d: Duration)
+object Deadline {
+  def now = Duration(System.nanoTime, NANOSECONDS)
+  implicit def toGo(d: Deadline): Duration = d.d - now
+}
+
 object Duration {
   def apply(length: Long, unit: TimeUnit): Duration = new FiniteDuration(length, unit)
   def apply(length: Double, unit: TimeUnit): Duration = fromNanos(unit.toNanos(1) * length)
@@ -129,10 +135,7 @@ object Duration {
     override def *(factor: Double): Duration = throw new IllegalArgumentException("cannot multiply Undefined duration")
     override def /(factor: Double): Duration = throw new IllegalArgumentException("cannot divide Undefined duration")
     override def /(other: Duration): Double = throw new IllegalArgumentException("cannot divide Undefined duration")
-    def >(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
-    def >=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
-    def <(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
-    def <=(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
+    def compare(other: Duration) = throw new IllegalArgumentException("cannot compare Undefined duration")
     def unary_- : Duration = throw new IllegalArgumentException("cannot negate Undefined duration")
   }
 
@@ -183,10 +186,7 @@ object Duration {
    */
   val Inf: Duration = new Duration with Infinite {
     override def toString = "Duration.Inf"
-    def >(other: Duration) = true
-    def >=(other: Duration) = true
-    def <(other: Duration) = false
-    def <=(other: Duration) = false
+    def compare(other: Duration) = 1
     def unary_- : Duration = MinusInf
   }
 
@@ -196,10 +196,7 @@ object Duration {
    */
   val MinusInf: Duration = new Duration with Infinite {
     override def toString = "Duration.MinusInf"
-    def >(other: Duration) = false
-    def >=(other: Duration) = false
-    def <(other: Duration) = true
-    def <=(other: Duration) = true
+    def compare(other: Duration) = -1
     def unary_- : Duration = Inf
   }
 
@@ -255,7 +252,7 @@ object Duration {
  * val d3 = d2 + 1.millisecond
  * </pre>
  */
-abstract class Duration extends Serializable {
+abstract class Duration extends Serializable with Ordered[Duration] {
   def length: Long
   def unit: TimeUnit
   def toNanos: Long
@@ -267,10 +264,6 @@ abstract class Duration extends Serializable {
   def toDays: Long
   def toUnit(unit: TimeUnit): Double
   def printHMS: String
-  def <(other: Duration): Boolean
-  def <=(other: Duration): Boolean
-  def >(other: Duration): Boolean
-  def >=(other: Duration): Boolean
   def +(other: Duration): Duration
   def -(other: Duration): Duration
   def *(factor: Double): Duration
@@ -281,6 +274,7 @@ abstract class Duration extends Serializable {
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
   def sleep(): Unit = Thread.sleep(toMillis)
+  def fromNow: Deadline = Deadline(Deadline.now + this)
 
   // Java API
   def lt(other: Duration) = this < other
@@ -329,37 +323,12 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
 
   def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000. % 60)
 
-  def <(other: Duration) = {
+  def compare(other: Duration) =
     if (other.finite_?) {
-      toNanos < other.asInstanceOf[FiniteDuration].toNanos
-    } else {
-      other > this
-    }
-  }
-
-  def <=(other: Duration) = {
-    if (other.finite_?) {
-      toNanos <= other.asInstanceOf[FiniteDuration].toNanos
-    } else {
-      other >= this
-    }
-  }
-
-  def >(other: Duration) = {
-    if (other.finite_?) {
-      toNanos > other.asInstanceOf[FiniteDuration].toNanos
-    } else {
-      other < this
-    }
-  }
-
-  def >=(other: Duration) = {
-    if (other.finite_?) {
-      toNanos >= other.asInstanceOf[FiniteDuration].toNanos
-    } else {
-      other <= this
-    }
-  }
+      val me = toNanos
+      val o = other.toNanos
+      if (me > o) 1 else if (me < o) -1 else 0
+    } else -other.compare(this)
 
   def +(other: Duration) = {
     if (!other.finite_?) {
@@ -397,6 +366,8 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
 }
 
 class DurationInt(n: Int) {
+  import duration.Classifier
+
   def nanoseconds = Duration(n, NANOSECONDS)
   def nanos = Duration(n, NANOSECONDS)
   def nanosecond = Duration(n, NANOSECONDS)
@@ -423,9 +394,38 @@ class DurationInt(n: Int) {
 
   def days = Duration(n, DAYS)
   def day = Duration(n, DAYS)
+
+  def nanoseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nanos[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nanosecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nano[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+
+  def microseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def micros[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def microsecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def micro[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+
+  def milliseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def millis[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def millisecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def milli[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+
+  def seconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, SECONDS))
+  def second[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, SECONDS))
+
+  def minutes[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MINUTES))
+  def minute[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MINUTES))
+
+  def hours[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, HOURS))
+  def hour[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, HOURS))
+
+  def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, DAYS))
+  def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, DAYS))
 }
 
 class DurationLong(n: Long) {
+  import duration.Classifier
+
   def nanoseconds = Duration(n, NANOSECONDS)
   def nanos = Duration(n, NANOSECONDS)
   def nanosecond = Duration(n, NANOSECONDS)
@@ -452,9 +452,38 @@ class DurationLong(n: Long) {
 
   def days = Duration(n, DAYS)
   def day = Duration(n, DAYS)
+
+  def nanoseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nanos[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nanosecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+  def nano[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, NANOSECONDS))
+
+  def microseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def micros[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def microsecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+  def micro[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MICROSECONDS))
+
+  def milliseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def millis[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def millisecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+  def milli[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MILLISECONDS))
+
+  def seconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, SECONDS))
+  def second[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, SECONDS))
+
+  def minutes[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MINUTES))
+  def minute[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, MINUTES))
+
+  def hours[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, HOURS))
+  def hour[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, HOURS))
+
+  def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, DAYS))
+  def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(n, DAYS))
 }
 
 class DurationDouble(d: Double) {
+  import duration.Classifier
+
   def nanoseconds = Duration(d, NANOSECONDS)
   def nanos = Duration(d, NANOSECONDS)
   def nanosecond = Duration(d, NANOSECONDS)
@@ -481,5 +510,32 @@ class DurationDouble(d: Double) {
 
   def days = Duration(d, DAYS)
   def day = Duration(d, DAYS)
+
+  def nanoseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, NANOSECONDS))
+  def nanos[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, NANOSECONDS))
+  def nanosecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, NANOSECONDS))
+  def nano[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, NANOSECONDS))
+
+  def microseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MICROSECONDS))
+  def micros[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MICROSECONDS))
+  def microsecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MICROSECONDS))
+  def micro[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MICROSECONDS))
+
+  def milliseconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MILLISECONDS))
+  def millis[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MILLISECONDS))
+  def millisecond[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MILLISECONDS))
+  def milli[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MILLISECONDS))
+
+  def seconds[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, SECONDS))
+  def second[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, SECONDS))
+
+  def minutes[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MINUTES))
+  def minute[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, MINUTES))
+
+  def hours[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, HOURS))
+  def hour[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, HOURS))
+
+  def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, DAYS))
+  def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, DAYS))
 }
 

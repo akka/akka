@@ -40,6 +40,16 @@ class DurationSpec extends WordSpec with MustMatchers {
       (minf + minf) must be(minf)
     }
 
+    "support fromNow" in {
+      val dead = 2.seconds.fromNow
+      val dead2 = 2 seconds fromNow
+      (dead: Duration) must be > 1.second
+      (dead2: Duration) must be > 1.second
+      1.second.sleep
+      (dead: Duration) must be < 1.second
+      (dead2: Duration) must be < 1.second
+    }
+
   }
 
 }
