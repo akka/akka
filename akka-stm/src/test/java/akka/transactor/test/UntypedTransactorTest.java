@@ -2,6 +2,8 @@ package akka.transactor.test;
 
 import static org.junit.Assert.*;
 
+import akka.dispatch.Block;
+import akka.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,8 +80,8 @@ public class UntypedTransactorTest {
     }
     for (ActorRef counter : counters) {
       Future future = counter.ask("GetCount", askTimeout);
-      future.await();
-      if (future.isCompleted()) {
+      Block.on(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+        if (future.isCompleted()) {
         Option resultOption = future.result();
         if (resultOption.isDefined()) {
           Object result = resultOption.get();
@@ -107,7 +109,7 @@ public class UntypedTransactorTest {
     }
     for (ActorRef counter : counters) {
       Future future = counter.ask("GetCount", askTimeout);
-      future.await();
+      Block.on(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
       if (future.isCompleted()) {
         Option resultOption = future.result();
         if (resultOption.isDefined()) {

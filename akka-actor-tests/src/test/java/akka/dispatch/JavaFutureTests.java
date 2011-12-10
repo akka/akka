@@ -22,14 +22,14 @@ import akka.testkit.AkkaSpec;
 public class JavaFutureTests {
 
   private static ActorSystem system;
-  private static FutureFactory ff;
+  private volatile static FutureFactory ff;
   private static Timeout t;
 
   @BeforeClass
   public static void beforeAll() {
     system = ActorSystem.create("JavaFutureTests", AkkaSpec.testConf());
     t = system.settings().ActorTimeout();
-    ff = new FutureFactory(system.dispatcher(), t);
+    ff = new FutureFactory(system.dispatcher());
   }
 
   @AfterClass
@@ -51,7 +51,7 @@ public class JavaFutureTests {
       public String apply(String s) {
         return s + " World";
       }
-    }, t);
+    });
 
     assertEquals("Hello World", f2.get());
   }
@@ -59,8 +59,7 @@ public class JavaFutureTests {
   @Test
   public void mustBeAbleToExecuteAnOnResultCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     Future<String> f = cf;
     f.onResult(new Procedure<String>() {
       public void apply(String result) {
@@ -77,8 +76,7 @@ public class JavaFutureTests {
   @Test
   public void mustBeAbleToExecuteAnOnExceptionCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     Future<String> f = cf;
     f.onException(new Procedure<Throwable>() {
       public void apply(Throwable t) {
@@ -94,26 +92,9 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void mustBeAbleToExecuteAnOnTimeoutCallback() throws Throwable {
-    final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
-    Future<String> f = cf;
-    f.onTimeout(new Procedure<Future<String>>() {
-      public void apply(Future<String> future) {
-        latch.countDown();
-      }
-    });
-
-    assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertTrue(f.value().isEmpty());
-  }
-
-  @Test
   public void mustBeAbleToExecuteAnOnCompleteCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     Future<String> f = cf;
     f.onComplete(new Procedure<Future<String>>() {
       public void apply(akka.dispatch.Future<String> future) {
@@ -129,8 +110,7 @@ public class JavaFutureTests {
   @Test
   public void mustBeAbleToForeachAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     Future<String> f = cf;
     f.foreach(new Procedure<String>() {
       public void apply(String future) {
@@ -146,19 +126,17 @@ public class JavaFutureTests {
   @Test
   public void mustBeAbleToFlatMapAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     cf.completeWithResult("1000");
     Future<String> f = cf;
     Future<Integer> r = f.flatMap(new Function<String, Future<Integer>>() {
       public Future<Integer> apply(String r) {
         latch.countDown();
-        Promise<Integer> cf = new akka.dispatch.DefaultPromise<Integer>(1000, TimeUnit.MILLISECONDS, system
-            .dispatcherFactory().defaultGlobalDispatcher());
+        Promise<Integer> cf = ff.<Integer>promise();
         cf.completeWithResult(Integer.parseInt(r));
         return cf;
       }
-    }, t);
+    });
 
     assertEquals(f.get(), "1000");
     assertEquals(r.get().intValue(), 1000);
@@ -168,15 +146,14 @@ public class JavaFutureTests {
   @Test
   public void mustBeAbleToFilterAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
-    Promise<String> cf = new akka.dispatch.DefaultPromise<String>(1000, TimeUnit.MILLISECONDS, system
-        .dispatcherFactory().defaultGlobalDispatcher());
+    Promise<String> cf = ff.<String>promise();
     Future<String> f = cf;
     Future<String> r = f.filter(new Function<String, Boolean>() {
       public Boolean apply(String r) {
         latch.countDown();
         return r.equals("foo");
       }
-    }, t);
+    });
 
     cf.completeWithResult("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -199,7 +176,7 @@ public class JavaFutureTests {
       }));
     }
 
-    Future<Iterable<String>> futureList = ff.sequence(listFutures, t);
+    Future<Iterable<String>> futureList = ff.sequence(listFutures);
 
     assertEquals(futureList.get(), listExpected);
   }
@@ -219,7 +196,7 @@ public class JavaFutureTests {
       }));
     }
 
-    Future<String> result = ff.fold("", 15000, listFutures, new Function2<String, String, String>() {
+    Future<String> result = ff.fold("", listFutures, new Function2<String, String, String>() {
       public String apply(String r, String t) {
         return r + t;
       }
@@ -242,7 +219,7 @@ public class JavaFutureTests {
       }));
     }
 
-    Future<String> result = ff.reduce(listFutures, 15000, new Function2<String, String, String>() {
+    Future<String> result = ff.reduce(listFutures, new Function2<String, String, String>() {
       public String apply(String r, String t) {
         return r + t;
       }
@@ -261,7 +238,7 @@ public class JavaFutureTests {
       listStrings.add("test");
     }
 
-    Future<Iterable<String>> result = ff.traverse(listStrings, t, new Function<String, Future<String>>() {
+    Future<Iterable<String>> result = ff.traverse(listStrings, new Function<String, Future<String>>() {
       public Future<String> apply(final String r) {
         return ff.future(new Callable<String>() {
           public String call() {
@@ -290,7 +267,7 @@ public class JavaFutureTests {
       public Boolean apply(Integer i) {
         return i == 5;
       }
-    }, t);
+    });
 
     final Integer got = f.get().get();
     assertEquals(expect, got);

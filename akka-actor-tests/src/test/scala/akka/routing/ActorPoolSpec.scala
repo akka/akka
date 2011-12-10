@@ -1,11 +1,11 @@
 package akka.routing
 
-import akka.dispatch.{ KeptPromise, Future }
 import akka.actor._
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.AkkaSpec
+import akka.dispatch.{ Block, KeptPromise, Future }
 
 object ActorPoolSpec {
 
@@ -125,8 +125,8 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
         }).withFaultHandler(faultHandler))
 
       try {
-        (for (count ← 1 to 500) yield pool.?("Test", 20000)) foreach {
-          _.await.resultOrException.get must be("Response")
+        (for (count ← 1 to 500) yield pool.?("Test", 20 seconds)) foreach {
+          Block.on(_, 20 seconds).resultOrException.get must be("Response")
         }
       } finally {
         pool.stop()

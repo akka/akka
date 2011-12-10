@@ -11,10 +11,10 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
 import java.net.InetSocketAddress
 import akka.remote.RemoteAddress
-import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
+import java.util.concurrent.{ TimeoutException, TimeUnit }
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -407,18 +407,9 @@ class AskActorRef(
   val path: ActorPath,
   override val getParent: InternalActorRef,
   deathWatch: DeathWatch,
-  timeout: Timeout,
   val dispatcher: MessageDispatcher) extends MinimalActorRef {
 
-  final val result = new DefaultPromise[Any](timeout)(dispatcher)
-
-  {
-    val callback: Future[Any] ⇒ Unit = { _ ⇒ deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
-    result onComplete callback
-    result onTimeout callback
-  }
-
-  protected def whenDone(): Unit = ()
+  final val result = Promise[Any]()(dispatcher)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case Status.Success(r) ⇒ result.completeWithResult(r)
@@ -434,7 +425,7 @@ class AskActorRef(
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
     new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
 
-  override def isTerminated = result.isCompleted || result.isExpired
+  override def isTerminated = result.isCompleted
 
   override def stop(): Unit = if (!isTerminated) result.completeWithException(new ActorKilledException("Stopped"))
 

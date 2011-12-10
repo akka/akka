@@ -73,7 +73,7 @@ class LocalMetricsMultiJvmNode1 extends MasterClusterTestNode {
     }
 
     "allow to track JVM state and bind handles through MetricsAlterationMonitors" in {
-      val monitorReponse = new DefaultPromise[String]
+      val monitorReponse = Promise[String]()
 
       node.metricsManager.addMonitor(new LocalMetricsAlterationMonitor {
 

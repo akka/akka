@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
 import akka.serialization.SerializationExtension
+import java.util.concurrent.TimeoutException
 
 trait TypedActorFactory {
 
@@ -409,7 +410,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor.?(m, timeout)
-            (try { f.await.value } catch { case _: FutureTimeoutException ⇒ None }) match {
+            (try { Block.on(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex

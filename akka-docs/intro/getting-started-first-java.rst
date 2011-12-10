@@ -360,7 +360,7 @@ One thing to note is that we used two different versions of the ``actorOf`` meth
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
+- Created & Started -- ``actorOf(MyActor.class)`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.

@@ -8,10 +8,10 @@ import com.mongodb.async._
 import com.mongodb.async.futures.RequestFutures
 import org.bson.collection._
 import akka.actor.ActorCell
-import akka.dispatch.Envelope
 import akka.event.Logging
-import akka.dispatch.DefaultPromise
 import akka.actor.ActorRef
+import akka.dispatch.{ Block, Promise, Envelope, DefaultPromise }
+import java.util.concurrent.TimeoutException
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -43,15 +43,14 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
-    val result = new DefaultPromise[Boolean](settings.WriteTimeout)(dispatcher)
+    val result = Promise[Boolean]()(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
         case Right((oid, wr)) ⇒ result.completeWithResult(true)
         case Left(t)          ⇒ result.completeWithException(t)
       }
     })
-
-    result.as[Boolean].orNull
+    Block.on(result, settings.WriteTimeout)
   }
 
   def dequeue(): Envelope = withErrorHandling {
@@ -62,7 +61,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
-    val envelopePromise = new DefaultPromise[Envelope](settings.ReadTimeout)(dispatcher)
+    val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
         case Some(msg) ⇒ {
@@ -71,18 +70,16 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
           log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
         }
         case None ⇒
-          {
-            log.info("No matching document found. Not an error, just an empty queue.")
-            envelopePromise.completeWithResult(null)
-          }
+          log.info("No matching document found. Not an error, just an empty queue.")
+          envelopePromise.completeWithResult(null)
           ()
       }
     }
-    envelopePromise.as[Envelope].orNull
+    try { Block.on(envelopePromise, settings.ReadTimeout).resultOrException.orNull } catch { case _: TimeoutException ⇒ null }
   }
 
   def numberOfMessages: Int = {
-    val count = new DefaultPromise[Int](settings.ReadTimeout)(dispatcher)
+    val count = Promise[Int]()(dispatcher)
     mongo.count()(count.completeWithResult)
     count.as[Int].getOrElse(-1)
   }

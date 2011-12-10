@@ -11,9 +11,9 @@ import akka.testkit._
 import akka.util.duration._
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
-import akka.dispatch.{ DefaultPromise, Promise, Future }
 import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import akka.dispatch.{ Block, DefaultPromise, Promise, Future }
 
 object ActorRefSpec {
 
@@ -126,9 +126,9 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   }
 
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
-    val result = new DefaultPromise[Actor](10 * 60 * 1000)
+    val result = Promise[Actor]()
     val r = f(result)
-    result.get
+    Block.on(result, 1 minute).resultOrException
     r
   }
 

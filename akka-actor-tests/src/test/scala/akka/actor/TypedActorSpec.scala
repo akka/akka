@@ -7,7 +7,6 @@ package akka.actor
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Duration
 import akka.util.duration._
-import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
@@ -17,6 +16,7 @@ import akka.actor.TypedActor.{ PostRestart, PreRestart, PostStop, PreStart }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
+import akka.dispatch.{ Block, Dispatchers, Future, KeptPromise }
 
 object TypedActorSpec {
 
@@ -296,7 +296,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         t.failingPigdog()
         t.read() must be(1) //Make sure state is not reset after failure
 
-        t.failingFuturePigdog.await.exception.get.getMessage must be("expected")
+        Block.on(t.failingFuturePigdog, 2 seconds).exception.get.getMessage must be("expected")
         t.read() must be(1) //Make sure state is not reset after failure
 
         (intercept[IllegalStateException] { t.failingJOptionPigdog }).getMessage must be("expected")

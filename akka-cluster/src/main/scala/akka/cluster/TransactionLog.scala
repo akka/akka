@@ -202,7 +202,7 @@ class TransactionLog private (
       EventHandler.debug(this, "Reading entries [%s -> %s] for log [%s]".format(from, to, logId))
 
       if (isAsync) {
-        val future = new DefaultPromise[Vector[Array[Byte]]](timeout)
+        val future = Promise[Vector[Array[Byte]]]()
         ledger.asyncReadEntries(
           from, to,
           new AsyncCallback.ReadCallback {
@@ -464,7 +464,7 @@ object TransactionLog {
         }
       }
 
-      val future = new DefaultPromise[LedgerHandle](timeout)
+      val future = Promise[LedgerHandle]()
       if (isAsync) {
         bookieClient.asyncCreateLedger(
           ensembleSize, quorumSize, digestType, password,
@@ -526,7 +526,7 @@ object TransactionLog {
 
     val ledger = try {
       if (isAsync) {
-        val future = new DefaultPromise[LedgerHandle](timeout)
+        val future = Promise[LedgerHandle]()
         bookieClient.asyncOpenLedger(
           logId, digestType, password,
           new AsyncCallback.OpenCallback {

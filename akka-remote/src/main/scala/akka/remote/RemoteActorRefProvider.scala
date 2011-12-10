@@ -19,10 +19,10 @@ import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import com.google.protobuf.ByteString
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.event.EventStream
-import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.Promise
 import java.net.InetAddress
 import akka.serialization.SerializationExtension
+import java.util.concurrent.{ TimeoutException, ConcurrentHashMap }
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -84,7 +84,7 @@ class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, name, systemService)
     else {
       val path = supervisor.path / name
-      val newFuture = Promise[ActorRef](system.settings.ActorTimeout)(dispatcher)
+      val newFuture = Promise[ActorRef]()(dispatcher)
 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
         case null ⇒
@@ -168,7 +168,7 @@ class RemoteActorRefProvider(
           actors.replace(path.toString, newFuture, actor)
           actor
         case actor: InternalActorRef ⇒ actor
-        case future: Future[_]       ⇒ future.get.asInstanceOf[InternalActorRef]
+        case future: Future[_]       ⇒ Block.on(future, system.settings.ActorTimeout.duration).resultOrException.get.asInstanceOf[InternalActorRef]
       }
     }
 
@@ -224,7 +224,7 @@ class RemoteActorRefProvider(
     if (withACK) {
       try {
         val f = connection ? (command, remoteExtension.RemoteSystemDaemonAckTimeout)
-        (try f.await.value catch { case _: FutureTimeoutException ⇒ None }) match {
+        (try Block.on(f, remoteExtension.RemoteSystemDaemonAckTimeout).value catch { case _: TimeoutException ⇒ None }) match {
           case Some(Right(receiver)) ⇒
             log.debug("Remote system command sent to [{}] successfully received", receiver)
 

@@ -8,9 +8,9 @@ import org.scalatest.BeforeAndAfterEach
 
 import akka.util.ByteString
 import akka.util.cps._
-import akka.dispatch.Future
 import scala.util.continuations._
 import akka.testkit._
+import akka.dispatch.{ Block, Future }
 
 object IOActorSpec {
   import IO._
@@ -239,9 +239,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val f1 = client1 ? (('set, "hello", ByteString("World")))
       val f2 = client1 ? (('set, "test", ByteString("No one will read me")))
       val f3 = client1 ? (('get, "hello"))
-      f2.await
+      Block.on(f2, timeout.duration)
       val f4 = client2 ? (('set, "test", ByteString("I'm a test!")))
-      f4.await
+      Block.on(f4, timeout.duration)
       val f5 = client1 ? (('get, "test"))
       val f6 = client2 ? 'getall
       f1.get must equal("OK")

@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.actor._
 import akka.stm._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.dispatch.{ PinnedDispatcher, UnboundedMailbox, DefaultPromise, Dispatchers, Future }
+import akka.dispatch._
 
 /**
  * Used internally to send functions.
@@ -123,7 +123,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   def alter(f: T ⇒ T)(timeout: Timeout): Future[T] = {
     def dispatch = updater.?(Update(f), timeout).asInstanceOf[Future[T]]
     if (Stm.activeTransaction) {
-      val result = new DefaultPromise[T](timeout)(system.dispatcher)
+      val result = Promise[T]()(system.dispatcher)
       get //Join xa
       deferred { result completeWith dispatch } //Attach deferred-block to current transaction
       result
@@ -134,7 +134,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
    * Dispatch a new value for the internal state. Behaves the same
    * as sending a function (x => newValue).
    */
-  def send(newValue: T): Unit = send(x ⇒ newValue)
+  def send(newValue: T): Unit = send(_ ⇒ newValue)
 
   /**
    * Dispatch a new value for the internal state. Behaves the same
@@ -166,7 +166,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
    * still be executed in order.
    */
   def alterOff(f: T ⇒ T)(timeout: Timeout): Future[T] = {
-    val result = new DefaultPromise[T](timeout)(system.dispatcher)
+    val result = Promise[T]()(system.dispatcher)
     send((value: T) ⇒ {
       suspend()
       val pinnedDispatcher = new PinnedDispatcher(system.dispatcherFactory.prerequisites, null, "agent-alter-off", UnboundedMailbox(), system.settings.ActorTimeout.duration)
@@ -186,7 +186,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Gets this agent's value after all currently queued updates have completed.
    */
-  def await(implicit timeout: Timeout): T = future.await.result.get
+  def await(implicit timeout: Timeout): T = Block.on(future, timeout.duration).result.get
 
   /**
    * Map this agent to a new agent, applying the function to the internal state.

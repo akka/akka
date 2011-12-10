@@ -7,16 +7,15 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
-import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
-import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
-import java.util.concurrent.LinkedBlockingQueue
 import akka.actor.CreateChild
 import akka.actor.DeadLetter
+import java.util.concurrent.TimeoutException
+import akka.dispatch.{ Block, MessageDispatcher }
 
 object TimingTest extends Tag("timing")
 
@@ -65,8 +64,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     system.stop()
-    try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+    try Block.on(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
+      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
   }

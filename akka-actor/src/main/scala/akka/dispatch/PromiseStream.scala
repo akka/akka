@@ -185,9 +185,9 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
         if (eo.nonEmpty) {
           if (_elemOut.compareAndSet(eo, eo.tail)) new KeptPromise(Right(eo.head))
           else dequeue()
-        } else dequeue(Promise[A](timeout))
+        } else dequeue(Promise[A])
       }
-    } else dequeue(Promise[A](timeout))
+    } else dequeue(Promise[A])
 
   @tailrec
   final def dequeue(promise: Promise[A]): Future[A] = _state.get match {

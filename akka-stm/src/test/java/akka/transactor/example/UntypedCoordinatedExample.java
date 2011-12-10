@@ -3,9 +3,13 @@ package akka.transactor.example;
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.dispatch.Block;
 import akka.dispatch.Future;
 import akka.testkit.AkkaSpec;
 import akka.transactor.Coordinated;
+
+import akka.util.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedExample {
   public static void main(String[] args) throws InterruptedException {
@@ -20,11 +24,12 @@ public class UntypedCoordinatedExample {
     Thread.sleep(3000);
 
     long timeout = 5000;
+    Duration d = Duration.create(timeout, TimeUnit.MILLISECONDS);
 
     Future future1 = counter1.ask("GetCount", timeout);
     Future future2 = counter2.ask("GetCount", timeout);
 
-    future1.await();
+    Block.on(future1, d);
     if (future1.isCompleted()) {
       if (future1.result().isDefined()) {
         int result = (Integer) future1.result().get();
@@ -32,7 +37,7 @@ public class UntypedCoordinatedExample {
       }
     }
 
-    future2.await();
+    Block.on(future2, d);
     if (future2.isCompleted()) {
       if (future2.result().isDefined()) {
         int result = (Integer) future2.result().get();

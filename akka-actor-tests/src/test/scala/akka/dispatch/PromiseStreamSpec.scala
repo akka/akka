@@ -40,40 +40,6 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       assert(c.get === 3)
     }
 
-    "timeout" in {
-      val a, c = Promise[Int]()
-      val b = Promise[Int](0)
-      val q = PromiseStream[Int](1000)
-      flow {
-        a << q()
-        b << q()
-        c << q()
-      }
-      Thread.sleep(10)
-      flow {
-        q << (1, 2)
-        q << 3
-      }
-      assert(a.get === 1)
-      intercept[FutureTimeoutException] { b.get }
-      assert(c.get === 3)
-    }
-
-    "timeout again" in {
-      val q = PromiseStream[Int](500)
-      val a = q.dequeue()
-      val b = q.dequeue()
-      q += 1
-      Thread.sleep(500)
-      q += (2, 3)
-      val c = q.dequeue()
-      val d = q.dequeue()
-      assert(a.get === 1)
-      intercept[FutureTimeoutException] { b.get }
-      assert(c.get === 2)
-      assert(d.get === 3)
-    }
-
     "pend again" in {
       val a, b, c, d = Promise[Int]()
       val q1, q2 = PromiseStream[Int]()
