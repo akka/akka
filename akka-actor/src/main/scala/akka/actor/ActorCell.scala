@@ -171,7 +171,7 @@ private[akka] object ActorCell {
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
-private[akka] final class ActorCell(
+private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
@@ -181,7 +181,7 @@ private[akka] final class ActorCell(
 
   import ActorCell._
 
-  def systemImpl = system
+  final def systemImpl = system
 
   protected final def guardian = self
 
@@ -189,9 +189,9 @@ private[akka] final class ActorCell(
 
   final def provider = system.provider
 
-  override def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
+  override final def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
 
-  override def receiveTimeout_=(timeout: Option[Duration]): Unit = {
+  override final def receiveTimeout_=(timeout: Option[Duration]): Unit = {
     val timeoutMs = timeout match {
       case None ⇒ -1L
       case Some(duration) ⇒
@@ -207,20 +207,20 @@ private[akka] final class ActorCell(
   /**
    * In milliseconds
    */
-  var receiveTimeoutData: (Long, Cancellable) =
+  final var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
   /**
    * UntypedActorContext impl
    */
-  def getReceiveTimeout: Option[Duration] = receiveTimeout
+  final def getReceiveTimeout: Option[Duration] = receiveTimeout
 
   /**
    * UntypedActorContext impl
    */
-  def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
+  final def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
 
-  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
+  final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
     val actor = provider.actorOf(systemImpl, props, guardian, name, false)
@@ -238,19 +238,19 @@ private[akka] final class ActorCell(
     _actorOf(props, name)
   }
 
-  var currentMessage: Envelope = null
+  final var currentMessage: Envelope = null
 
-  var actor: Actor = _
+  final var actor: Actor = _
 
-  var stopping = false
+  final var stopping = false
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
-  var nextNameSequence: Long = 0
+  final var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
-  protected def randomName(): String = {
+  final protected def randomName(): String = {
     val n = nextNameSequence + 1
     nextNameSequence = n
     Helpers.base64(n)
@@ -262,7 +262,7 @@ private[akka] final class ActorCell(
   /**
    * UntypedActorContext impl
    */
-  def getDispatcher(): MessageDispatcher = dispatcher
+  final def getDispatcher(): MessageDispatcher = dispatcher
 
   final def isTerminated: Boolean = mailbox.isClosed
 
@@ -282,7 +282,7 @@ private[akka] final class ActorCell(
   final def resume(): Unit = dispatcher.systemDispatch(this, Resume())
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  private[akka] def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
+  final def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
   override final def watch(subject: ActorRef): ActorRef = {
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -301,7 +301,7 @@ private[akka] final class ActorCell(
   /**
    * Impl UntypedActorContext
    */
-  def getChildren(): java.lang.Iterable[ActorRef] = {
+  final def getChildren(): java.lang.Iterable[ActorRef] = {
     import scala.collection.JavaConverters.asJavaIterableConverter
     asJavaIterableConverter(children).asJava
   }

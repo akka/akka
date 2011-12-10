@@ -5,13 +5,14 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.ReflectiveAccess
+import akka.util.{ ReflectiveAccess, Duration }
 import com.eaio.uuid.UUID
 import akka.actor.Props._
 import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventStream
-import akka.dispatch.{ DefaultDispatcherPrerequisites, DispatcherPrerequisites, Mailbox }
+import akka.dispatch.{ DefaultDispatcherPrerequisites, DispatcherPrerequisites, Mailbox, Envelope }
+import scala.collection.immutable.Stack
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -27,20 +28,51 @@ class TestActorRef[T <: Actor](
   _props: Props,
   _supervisor: InternalActorRef,
   name: String)
-  extends LocalActorRef(_system, _props.withDispatcher(new CallingThreadDispatcher(_prerequisites)), _supervisor, _supervisor.path / name, false) {
+  extends LocalActorRef(
+    _system,
+    _props.withDispatcher(new CallingThreadDispatcher(_prerequisites)),
+    _supervisor,
+    _supervisor.path / name,
+    false) {
+
+  private case object InternalGetActor extends AutoReceivedMessage
+
+  override def newActorCell(
+    system: ActorSystemImpl,
+    ref: InternalActorRef,
+    props: Props,
+    supervisor: InternalActorRef,
+    receiveTimeout: Option[Duration],
+    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap) {
+      override def autoReceiveMessage(msg: Envelope) {
+        msg.message match {
+          case InternalGetActor ⇒ sender ! actor
+          case _                ⇒ super.autoReceiveMessage(msg)
+        }
+      }
+    }
+
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use
-   * become/unbecome and their message counterparts.
+   * become/unbecome.
    */
-  def apply(o: Any) { underlyingActorInstance.apply(o) }
+  def apply(o: Any) { underlyingActor.apply(o) }
 
   /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the
    * constructor. Beware that this reference is discarded by the ActorRef upon restarting the actor (should this
    * reference be linked to a supervisor). The old Actor may of course still be used in post-mortem assertions.
    */
-  def underlyingActor: T = underlyingActorInstance.asInstanceOf[T]
+  def underlyingActor: T = {
+    // volatile mailbox read to bring in actor field
+    if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated")
+    underlying.actor.asInstanceOf[T] match {
+      case null ⇒ ?(InternalGetActor)(underlying.system.settings.ActorTimeout).get.asInstanceOf[T]
+      case ref  ⇒ ref
+    }
+  }
 
   /**
    * Registers this actor to be a death monitor of the provided ActorRef

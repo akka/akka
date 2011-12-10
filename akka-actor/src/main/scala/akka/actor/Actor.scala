@@ -25,7 +25,7 @@ import java.util.regex.Pattern
 /**
  * Marker trait to show which Messages are automatically handled by Akka
  */
-sealed trait AutoReceivedMessage extends Serializable
+trait AutoReceivedMessage extends Serializable
 
 trait PossiblyHarmful
 

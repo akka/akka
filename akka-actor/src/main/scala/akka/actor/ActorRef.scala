@@ -190,7 +190,7 @@ private[akka] case object Nobody extends MinimalActorRef {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class LocalActorRef private[akka] (
-  system: ActorSystemImpl,
+  _system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,
   val path: ActorPath,
@@ -209,8 +209,17 @@ private[akka] class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = new ActorCell(system, this, _props, _supervisor, _receiveTimeout, _hotswap)
+  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
+
+  protected def newActorCell(
+    system: ActorSystemImpl,
+    ref: InternalActorRef,
+    props: Props,
+    supervisor: InternalActorRef,
+    receiveTimeout: Option[Duration],
+    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap)
 
   protected def actorContext: ActorContext = actorCell
 
@@ -228,13 +237,11 @@ private[akka] class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -283,17 +290,6 @@ private[akka] class LocalActorRef private[akka] (
   // ========= AKKA PROTECTED FUNCTIONS =========
 
   protected[akka] def underlying: ActorCell = actorCell
-
-  // FIXME TODO: remove this method. It is used in testkit.
-  // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
-  protected[akka] def underlyingActorInstance: Actor = {
-    var instance = actorCell.actor
-    while ((instance eq null) && !actorCell.isTerminated) {
-      try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
-      instance = actorCell.actor
-    }
-    instance
-  }
 
   def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
 
