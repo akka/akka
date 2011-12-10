@@ -23,10 +23,6 @@ class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
 
   "___" must {
     "___" in {
-      barrier("setup")
-
-      remote.start()
-
       barrier("start")
       barrier("done")
     }
@@ -41,14 +37,10 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTi
 
   "A new remote actor configured with a Direct router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
-      barrier("setup")
-
-      remote.start()
-
       barrier("start")
 
       val actor = system.actorOf[SomeActor]("service-hello")
-      //actor.isInstanceOf[RoutedActorRef] must be(true)
+      actor.isInstanceOf[RemoteActorRef] must be(true)
 
       val result = (actor ? "identify").get
       result must equal("node1")

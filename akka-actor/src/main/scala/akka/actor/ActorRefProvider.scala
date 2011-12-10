@@ -13,9 +13,7 @@ import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
-import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }
-import akka.remote.RemoteAddress
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import akka.event._
 import akka.event.Logging.Error._
@@ -72,9 +70,9 @@ trait ActorRefProvider {
    */
   def init(system: ActorSystemImpl): Unit
 
-  private[akka] def deployer: Deployer
+  def deployer: Deployer
 
-  private[akka] def scheduler: Scheduler
+  def scheduler: Scheduler
 
   /**
    * Actor factory with create-only semantics: will create an actor as
@@ -106,18 +104,16 @@ trait ActorRefProvider {
    */
   def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
 
-  private[akka] def createDeathWatch(): DeathWatch
-
   /**
    * Create AskActorRef to hook up message send to recipient with Future receiver.
    */
-  private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
+  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
-  private[akka] def terminationFuture: Future[Unit]
+  def terminationFuture: Future[Unit]
 }
 
 /**
@@ -343,17 +339,28 @@ class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val deadLetters: InternalActorRef) extends ActorRefProvider {
+  val deadLetters: InternalActorRef,
+  val rootPath: ActorPath,
+  val deployer: Deployer) extends ActorRefProvider {
 
-  val rootPath: ActorPath = new RootActorPath(LocalAddress(_systemName))
+  def this(_systemName: String,
+           settings: ActorSystem.Settings,
+           eventStream: EventStream,
+           scheduler: Scheduler,
+           deadLetters: InternalActorRef) =
+    this(_systemName,
+      settings,
+      eventStream,
+      scheduler,
+      deadLetters,
+      new RootActorPath(LocalAddress(_systemName)),
+      new Deployer(settings))
 
   // FIXME remove both
   val nodename: String = "local"
   val clustername: String = "local"
 
   val log = Logging(eventStream, "LocalActorRefProvider")
-
-  private[akka] val deployer: Deployer = new Deployer(settings, eventStream, nodename)
 
   /*
    * generate name for temporary actor refs
@@ -453,13 +460,20 @@ class LocalActorRefProvider(
 
   lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
 
+  @volatile
+  private var extraNames: Map[String, InternalActorRef] = Map()
+
   lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+    object Extra {
+      def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
+    }
     override def getParent: InternalActorRef = this
 
     override def getSingleChild(name: String): InternalActorRef = {
       name match {
-        case "temp" ⇒ tempContainer
-        case _      ⇒ super.getSingleChild(name)
+        case "temp"   ⇒ tempContainer
+        case Extra(e) ⇒ e
+        case _        ⇒ super.getSingleChild(name)
       }
     }
   }
@@ -468,36 +482,19 @@ class LocalActorRefProvider(
 
   lazy val systemGuardian: InternalActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
 
-  lazy val tempContainer = new MinimalActorRef {
-    val children = new ConcurrentHashMap[String, AskActorRef]
+  lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
-    def path = tempNode
-
-    override def getParent = rootGuardian
-
-    override def getChild(name: Iterator[String]): InternalActorRef = {
-      if (name.isEmpty) this
-      else {
-        val n = name.next()
-        if (n.isEmpty) this
-        else children.get(n) match {
-          case null ⇒ Nobody
-          case some ⇒
-            if (name.isEmpty) some
-            else some.getChild(name)
-        }
-      }
-    }
-  }
-
-  val deathWatch = createDeathWatch()
+  val deathWatch = new LocalDeathWatch
 
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
     deathWatch.subscribe(systemGuardian, guardian)
     deathWatch.subscribe(rootGuardian, systemGuardian)
+    eventStream.startDefaultLoggers(_system)
   }
+
+  def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
@@ -531,14 +528,12 @@ class LocalActorRefProvider(
   private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
     val lookupPath = p.elements.mkString("/", "/", "")
     println("**** LOOKUP PATH : " + lookupPath)
-    val deploy = deployer.instance.lookupDeployment(lookupPath)
+    val deploy = deployer.lookup(lookupPath)
     println("**** " + deploy)
     r.adaptFromDeploy(deploy)
   }
 
-  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
-
-  private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
+  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
     import akka.dispatch.DefaultPromise
     (if (within == null) settings.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒
@@ -548,10 +543,10 @@ class LocalActorRefProvider(
         val name = path.name
         val a = new AskActorRef(path, tempContainer, deathWatch, t, dispatcher) {
           override def whenDone() {
-            tempContainer.children.remove(name)
+            tempContainer.removeChild(name)
           }
         }
-        tempContainer.children.put(name, a)
+        tempContainer.addChild(name, a)
         recipient.tell(message, a)
         a.result
     }

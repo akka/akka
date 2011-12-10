@@ -60,7 +60,7 @@ abstract class RemoteClient private[akka] (
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
-    send(remoteSupport.createRemoteMessageProtocolBuilder(Left(recipient), Right(message), senderOption).build)
+    send(remoteSupport.createRemoteMessageProtocolBuilder(recipient, message, senderOption).build)
   } else {
     val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", remoteSupport, remoteAddress)
     remoteSupport.notifyListeners(RemoteClientError(exception, remoteSupport, remoteAddress))
@@ -150,6 +150,7 @@ class ActiveRemoteClient private[akka] (
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SecureCookie.nonEmpty) handshake.setCookie(SecureCookie.get)
       handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+        .setSystem(senderRemoteAddress.system)
         .setHostname(senderRemoteAddress.host)
         .setPort(senderRemoteAddress.port)
         .build)
@@ -352,8 +353,8 @@ class ActiveRemoteClientHandler(
 class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends RemoteSupport(_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
-  val serverSettings = RemoteExtension(system).serverSettings
-  val clientSettings = RemoteExtension(system).clientSettings
+  val serverSettings = remote.remoteSettings.serverSettings
+  val clientSettings = remote.remoteSettings.clientSettings
 
   val timer: HashedWheelTimer = new HashedWheelTimer
 
@@ -367,9 +368,10 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
   protected[akka] def send(
     message: Any,
     senderOption: Option[ActorRef],
-    recipientAddress: RemoteAddress,
-    recipient: ActorRef,
+    recipient: RemoteActorRef,
     loader: Option[ClassLoader]): Unit = {
+
+    val recipientAddress = recipient.path.address.asInstanceOf[RemoteAddress]
 
     clientsLock.readLock.lock
     try {
@@ -463,11 +465,13 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
 
   def isRunning = _isRunning.isOn
 
-  def start(loader: Option[ClassLoader] = None): Unit = _isRunning switchOn {
-    try {
-      currentServer.set(Some(new NettyRemoteServer(this, loader)))
-    } catch {
-      case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
+  def start(loader: Option[ClassLoader] = None): Unit = {
+    _isRunning switchOn {
+      try {
+        currentServer.set(Some(new NettyRemoteServer(this, loader)))
+      } catch {
+        case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
+      }
     }
   }
 
@@ -518,6 +522,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+          .setSystem(address.system)
           .setHostname(address.host)
           .setPort(address.port)
           .build)
@@ -647,8 +652,7 @@ class RemoteServerHandler(
         instruction.getCommandType match {
           case CommandType.CONNECT if UsePassiveConnections ⇒
             val origin = instruction.getOrigin
-            // FIXME RK need to include system-name in remote protocol
-            val inbound = RemoteAddress("BORKED", origin.getHostname, origin.getPort)
+            val inbound = RemoteAddress(origin.getSystem, origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
           case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410

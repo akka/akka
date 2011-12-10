@@ -53,6 +53,7 @@ object SystemMessage {
  * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
  */
 sealed trait SystemMessage extends PossiblyHarmful {
+  @transient
   var next: SystemMessage = _
 }
 case class Create() extends SystemMessage // send to self from Dispatcher.register

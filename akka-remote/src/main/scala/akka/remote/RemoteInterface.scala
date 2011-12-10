@@ -29,6 +29,19 @@ object RemoteAddress {
     case RE(sys, host, Int(port)) ⇒ apply(if (sys != null) sys else defaultSystem, host, port)
     case _                        ⇒ throw new IllegalArgumentException(stringRep + " is not a valid remote address [system@host:port]")
   }
+
+}
+
+object RemoteAddressExtractor {
+  def unapply(s: String): Option[RemoteAddress] = {
+    try {
+      val uri = new URI("akka://" + s)
+      if (uri.getScheme != "akka" || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1) None
+      else Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort))
+    } catch {
+      case _: URISyntaxException ⇒ None
+    }
+  }
 }
 
 case class RemoteAddress(system: String, host: String, ip: InetAddress, port: Int) extends Address {
@@ -175,8 +188,7 @@ abstract class RemoteSupport(val system: ActorSystem) {
 
   protected[akka] def send(message: Any,
                            senderOption: Option[ActorRef],
-                           remoteAddress: RemoteAddress,
-                           recipient: ActorRef,
+                           recipient: RemoteActorRef,
                            loader: Option[ClassLoader]): Unit
 
   protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = system.eventStream.publish(message)

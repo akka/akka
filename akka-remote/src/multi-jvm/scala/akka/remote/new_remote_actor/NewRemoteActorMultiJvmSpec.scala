@@ -22,10 +22,6 @@ class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
 
   "___" must {
     "___" in {
-      barrier("setup")
-
-      remote.start()
-
       barrier("start")
 
       barrier("done")
@@ -41,10 +37,6 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
 
   "A new remote actor" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
-      barrier("setup")
-
-      remote.start()
-
       barrier("start")
 
       val actor = system.actorOf[SomeActor]("service-hello")

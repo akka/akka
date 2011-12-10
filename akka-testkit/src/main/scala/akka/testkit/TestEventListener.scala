@@ -464,6 +464,7 @@ class TestEventListener extends Logging.DefaultLogger {
         val event = Warning(rcp.path.toString, "received dead letter from " + snd + ": " + msg)
         if (!filter(event)) print(event)
       }
+    case m ⇒ print(Debug(context.system.name, m))
   }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })

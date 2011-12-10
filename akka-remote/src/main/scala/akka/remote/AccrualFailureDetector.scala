@@ -25,12 +25,6 @@ import akka.actor.ActorSystem
  */
 class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000) {
 
-  def this(system: ActorSystem) {
-    this(
-      RemoteExtension(system).FailureDetectorThreshold,
-      RemoteExtension(system).FailureDetectorMaxSampleSize)
-  }
-
   private final val PhiFactor = 1.0 / math.log(10.0)
 
   private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)

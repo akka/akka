@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.remote.RemoteAddress
+import akka.util.Duration
 import akka.routing.RouterType
 
 object DeploymentConfig {
@@ -51,15 +51,13 @@ object DeploymentConfig {
   // --------------------------------
   // --- Scope
   // --------------------------------
-  sealed trait Scope
+  trait Scope
 
   // For Java API
   case class LocalScope() extends Scope
 
   // For Scala API
   case object LocalScope extends Scope
-
-  case class RemoteScope(nodes: Iterable[RemoteAddress]) extends Scope
 
   // --------------------------------
   // --- Home

@@ -8,7 +8,7 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
   "RemoteExtension" must {
     "be able to parse remote and cluster config elements" in {
 
-      val config = RemoteExtension(system).config
+      val config = system.settings.config
       import config._
 
       //akka.remote

@@ -21,8 +21,7 @@ message AkkaRemoteProtocol {
  */
 message RemoteMessageProtocol {
   required ActorRefProtocol recipient = 1;
-  optional MessageProtocol message = 2;
-  optional ExceptionProtocol exception = 3;
+  required MessageProtocol message = 2;
   optional ActorRefProtocol sender = 4;
   repeated MetadataEntryProtocol metadata = 5;
 }
@@ -97,8 +96,9 @@ message MetadataEntryProtocol {
  * Defines a remote address.
  */
 message AddressProtocol {
-  required string hostname = 1;
-  required uint32 port = 2;
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
 }
 
 /**
@@ -117,6 +117,7 @@ message RemoteSystemDaemonMessageProtocol {
   optional string actorPath = 2;
   optional bytes payload = 3;
   optional UuidProtocol replicateActorFromUuid = 4;
+  optional string supervisor = 5;
 }
 
 /**
