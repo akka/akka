@@ -80,7 +80,7 @@ trait ActorRefProvider {
    * in case of remote supervision). If systemService is true, deployment is
    * bypassed (local-only).
    */
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean = false): InternalActorRef
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -408,31 +408,33 @@ class LocalActorRefProvider(
     }
   }
 
+  /*
+   * Guardians can be asked by ActorSystem to create children, i.e. top-level 
+   * actors. Therefore these need to answer to these requests, forwarding any
+   * exceptions which might have occurred.
+   */
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_) ⇒ context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch {
-        case e: Exception ⇒ e
-      })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch {
-        case e: Exception ⇒ e
-      })
-      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)                ⇒ context.self.stop()
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
+  /*
+   * Guardians can be asked by ActorSystem to create children, i.e. top-level 
+   * actors. Therefore these need to answer to these requests, forwarding any
+   * exceptions which might have occurred.
+   */
   private class SystemGuardian extends Actor {
     def receive = {
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
         context.self.stop()
-      case CreateChild(child, name) ⇒ sender ! (try context.actorOf(child, name) catch {
-        case e: Exception ⇒ e
-      })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch {
-        case e: Exception ⇒ e
-      })
-      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
 
@@ -463,24 +465,36 @@ class LocalActorRefProvider(
   @volatile
   private var extraNames: Map[String, InternalActorRef] = Map()
 
-  lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
-    object Extra {
-      def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
-    }
-    override def getParent: InternalActorRef = this
+  /**
+   * Higher-level providers (or extensions) might want to register new synthetic
+   * top-level paths for doing special stuff. This is the way to do just that.
+   * Just be careful to complete all this before ActorSystem.start() finishes,
+   * or before you start your own auto-spawned actors.
+   */
+  def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
-    override def getSingleChild(name: String): InternalActorRef = {
-      name match {
-        case "temp"   ⇒ tempContainer
-        case Extra(e) ⇒ e
-        case _        ⇒ super.getSingleChild(name)
+  lazy val rootGuardian: InternalActorRef =
+    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+      object Extra {
+        def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
+      }
+
+      override def getParent: InternalActorRef = this
+
+      override def getSingleChild(name: String): InternalActorRef = {
+        name match {
+          case "temp"   ⇒ tempContainer
+          case Extra(e) ⇒ e
+          case _        ⇒ super.getSingleChild(name)
+        }
       }
     }
-  }
 
-  lazy val guardian: InternalActorRef = actorOf(system, guardianProps, rootGuardian, "user", true)
+  lazy val guardian: InternalActorRef =
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true)
 
-  lazy val systemGuardian: InternalActorRef = actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, "system", true)
+  lazy val systemGuardian: InternalActorRef =
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true)
 
   lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
@@ -493,8 +507,6 @@ class LocalActorRefProvider(
     deathWatch.subscribe(rootGuardian, systemGuardian)
     eventStream.startDefaultLoggers(_system)
   }
-
-  def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
@@ -516,9 +528,7 @@ class LocalActorRefProvider(
       case x      ⇒ x
     }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef = {
-    val path = supervisor.path / name
-
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef = {
     props.routerConfig match {
       case NoRouting   ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case routedActor ⇒ new RoutedActorRef(system, props.withRouting(adaptFromDeploy(routedActor, path)), supervisor, path)

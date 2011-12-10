@@ -56,8 +56,10 @@ class RemoteActorRefProvider(
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters, rootPath, deployer)
 
+  @volatile
   private var serialization: Serialization = _
 
+  @volatile
   private var _remote: Remote = _
   def remote = _remote
 
@@ -69,10 +71,34 @@ class RemoteActorRefProvider(
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, name: String, systemService: Boolean): InternalActorRef =
-    if (systemService) local.actorOf(system, props, supervisor, name, systemService)
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef =
+    if (systemService) local.actorOf(system, props, supervisor, path, systemService)
     else {
-      val path = supervisor.path / name
+
+      /*
+       * This needs to deal with “mangled” paths, which are created by remote
+       * deployment, also in this method. The scheme is the following:
+       * 
+       * Whenever a remote deployment is found, create a path on that remote 
+       * address below “remote”, including the current system’s identification
+       * as “sys@host:port” (typically; it will use whatever the remote
+       * transport uses). This means that on a path up an actor tree each node
+       * change introduces one layer or “remote/sys@host:port/” within the URI.
+       * 
+       * Example:
+       * 
+       * akka://sys@home:1234/remote/sys@remote:6667/remote/sys@other:3333/user/a/b/c
+       * 
+       * means that the logical parent originates from “sys@other:3333” with 
+       * one child (may be “a” or “b”) being deployed on “sys@remote:6667” and 
+       * finally either “b” or “c” being created on “sys@home:1234”, where 
+       * this whole thing actually resides. Thus, the logical path is 
+       * “/user/a/b/c” and the physical path contains all remote placement 
+       * information.
+       * 
+       * Deployments are always looked up using the logical path, which is the
+       * purpose of the lookupRemotes internal method.
+       */
 
       @scala.annotation.tailrec
       def lookupRemotes(p: Iterable[String]): Option[DeploymentConfig.Deploy] = {
@@ -94,14 +120,14 @@ class RemoteActorRefProvider(
       deployment match {
         case Some(DeploymentConfig.Deploy(_, _, _, _, RemoteDeploymentConfig.RemoteScope(address))) ⇒
 
-          if (address == rootPath.address) local.actorOf(system, props, supervisor, name)
+          if (address == rootPath.address) local.actorOf(system, props, supervisor, path, false)
           else {
             val rpath = RootActorPath(address) / "remote" / rootPath.address.hostPort / path.elements
             useActorOnNode(rpath, props.creator, supervisor)
             new RemoteActorRef(this, remote.server, rpath, supervisor, None)
           }
 
-        case _ ⇒ local.actorOf(system, props, supervisor, name, systemService)
+        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService)
       }
     }
 

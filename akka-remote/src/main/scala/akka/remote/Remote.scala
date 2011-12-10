@@ -162,7 +162,7 @@ class RemoteSystemDaemon(remote: Remote, _path: ActorPath, _parent: InternalActo
           val subpath = elems.drop(1)
           val path = remote.remoteDaemon.path / subpath
           val supervisor = remote.system.actorFor(message.getSupervisor).asInstanceOf[InternalActorRef]
-          val actor = new LocalActorRef(remote.system, Props(creator = actorFactory), supervisor, path, true)
+          val actor = remote.system.provider.actorOf(remote.system, Props(creator = actorFactory), supervisor, path, true)
           addChild(subpath.mkString("/"), actor)
           remote.system.deathWatch.subscribe(this, actor)
         case _ ⇒
