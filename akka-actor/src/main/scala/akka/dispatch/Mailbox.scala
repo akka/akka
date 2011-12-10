@@ -29,7 +29,7 @@ object Mailbox {
   final val Scheduled = 4
 
   // mailbox debugging helper using println (see below)
-  // FIXME RK take this out before release (but please leave in until M2!)
+  // since this is a compile-time constant, scalac will elide code behind if (Mailbox.debug) (RK checked with 2.9.1)
   final val debug = false
 }
 

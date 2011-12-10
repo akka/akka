@@ -383,10 +383,7 @@ class LocalActorRefProvider(
     @volatile
     var causeOfTermination: Option[Throwable] = None
 
-    // FIXME (actor path): move the root path to the new root guardian
     val path = rootPath / "bubble-walker"
-
-    val address = path.toString
 
     override def stop() = stopped switchOn {
       terminationFuture.complete(causeOfTermination.toLeft(()))

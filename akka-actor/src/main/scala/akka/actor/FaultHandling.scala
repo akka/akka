@@ -45,11 +45,17 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
 }
 
 object FaultHandlingStrategy {
-  sealed trait Action //TODO FIXME What is the Java API for using this?
+  sealed trait Action
   case object Resume extends Action
   case object Restart extends Action
   case object Stop extends Action
   case object Escalate extends Action
+  
+  // Java API
+  def resume = Resume
+  def restart = Restart
+  def stop = Stop
+  def escalate = Escalate
 
   type Decider = PartialFunction[Throwable, Action]
   type JDecider = akka.japi.Function[Throwable, Action]
