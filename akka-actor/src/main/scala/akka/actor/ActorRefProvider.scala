@@ -530,7 +530,9 @@ class LocalActorRefProvider(
 
   private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
     val lookupPath = p.elements.mkString("/", "/", "")
+    println("**** LOOKUP PATH : " + lookupPath)
     val deploy = deployer.instance.lookupDeployment(lookupPath)
+    println("**** " + deploy)
     r.adaptFromDeploy(deploy)
   }
 

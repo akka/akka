@@ -85,6 +85,9 @@ class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, name, systemService)
     else {
       val path = supervisor.path / name
+      
+      println("*** PATH : " + path.toString)
+      
       val newFuture = Promise[ActorRef](system.settings.ActorTimeout)(dispatcher)
 
       actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future

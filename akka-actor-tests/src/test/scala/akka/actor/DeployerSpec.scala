@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
 import DeploymentConfig._
 import akka.remote.RemoteAddress
 import com.typesafe.config.ConfigFactory

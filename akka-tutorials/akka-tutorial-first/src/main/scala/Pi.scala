@@ -107,7 +107,7 @@ object Pi extends App {
   // ===== Run it =====
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-    val system = ActorSystem("x", ConfigFactory.parseString("akka.actor.debug.lifecycle=true\nakka.loglevel=DEBUG"))
+    val system = ActorSystem()
 
     // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)
