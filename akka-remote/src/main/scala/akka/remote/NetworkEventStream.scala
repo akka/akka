@@ -19,10 +19,10 @@ object NetworkEventStream {
 
   private sealed trait NetworkEventStreamEvent
 
-  private case class Register(listener: Listener, connectionAddress: RemoteAddress)
+  private case class Register(listener: Listener, connectionAddress: ParsedTransportAddress)
     extends NetworkEventStreamEvent
 
-  private case class Unregister(listener: Listener, connectionAddress: RemoteAddress)
+  private case class Unregister(listener: Listener, connectionAddress: ParsedTransportAddress)
     extends NetworkEventStreamEvent
 
   /**
@@ -37,8 +37,8 @@ object NetworkEventStream {
    */
   private class Channel extends Actor {
 
-    val listeners = new mutable.HashMap[RemoteAddress, mutable.Set[Listener]]() {
-      override def default(k: RemoteAddress) = mutable.Set.empty[Listener]
+    val listeners = new mutable.HashMap[ParsedTransportAddress, mutable.Set[Listener]]() {
+      override def default(k: ParsedTransportAddress) = mutable.Set.empty[Listener]
     }
 
     def receive = {
@@ -70,12 +70,12 @@ class NetworkEventStream(system: ActorSystemImpl) {
   /**
    * Registers a network event stream listener (asyncronously).
    */
-  def register(listener: Listener, connectionAddress: RemoteAddress) =
+  def register(listener: Listener, connectionAddress: ParsedTransportAddress) =
     sender ! Register(listener, connectionAddress)
 
   /**
    * Unregisters a network event stream listener (asyncronously) .
    */
-  def unregister(listener: Listener, connectionAddress: RemoteAddress) =
+  def unregister(listener: Listener, connectionAddress: ParsedTransportAddress) =
     sender ! Unregister(listener, connectionAddress)
 }

@@ -13,49 +13,111 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.net.InetAddress
 import java.net.UnknownHostException
+import java.net.UnknownServiceException
 
-object RemoteAddress {
-  def apply(system: String, host: String, port: Int): RemoteAddress = {
-    // TODO check whether we should not rather bail out early
-    val ip = try InetAddress.getByName(host) catch { case _: UnknownHostException ⇒ null }
-    new RemoteAddress(system, host, ip, port)
-  }
+/**
+ * Interface for remote transports to encode their addresses. The three parts
+ * are named according to the URI spec (precisely java.net.URI) which is used
+ * for parsing. That means that the address’ parts must conform to what an
+ * URI expects, but otherwise each transport may assign a different meaning
+ * to these parts.
+ */
+trait RemoteTransportAddress {
+  def protocol: String
+  def host: String
+  def port: Int
+}
 
-  val RE = """(?:(\w+)@)?(\w+):(\d+)""".r
-  object Int {
-    def unapply(s: String) = Some(Integer.parseInt(s))
-  }
-  def apply(stringRep: String, defaultSystem: String): RemoteAddress = stringRep match {
-    case RE(sys, host, Int(port)) ⇒ apply(if (sys != null) sys else defaultSystem, host, port)
-    case _                        ⇒ throw new IllegalArgumentException(stringRep + " is not a valid remote address [system@host:port]")
-  }
+trait ParsedTransportAddress extends RemoteTransportAddress
 
+case class RemoteNettyAddress(host: String, ip: Option[InetAddress], port: Int) extends ParsedTransportAddress {
+  def protocol = "akka"
+}
+
+object RemoteNettyAddress {
+  def apply(host: String, port: Int): RemoteNettyAddress = {
+    // FIXME this may BLOCK for extended periods of time!
+    val ip = try Some(InetAddress.getByName(host)) catch { case _: UnknownHostException ⇒ None }
+    new RemoteNettyAddress(host, ip, port)
+  }
+  def apply(s: String): RemoteNettyAddress = {
+    val RE = """([^:]+):(\d+)""".r
+    s match {
+      case RE(h, p) ⇒ apply(h, Integer.parseInt(p))
+      case _        ⇒ throw new IllegalArgumentException("cannot parse " + s + " as <host:port>")
+    }
+  }
+}
+
+case class UnparsedTransportAddress(protocol: String, host: String, port: Int) extends RemoteTransportAddress {
+  def parse(transports: TransportsMap): RemoteTransportAddress =
+    transports.get(protocol)
+      .map(_(host, port))
+      .toRight("protocol " + protocol + " not known")
+      .joinRight.fold(UnparseableTransportAddress(protocol, host, port, _), identity)
+}
+
+case class UnparseableTransportAddress(protocol: String, host: String, port: Int, error: String) extends RemoteTransportAddress
+
+case class RemoteSystemAddress[+T <: ParsedTransportAddress](system: String, transport: T) extends Address {
+  def protocol = transport.protocol
+  @transient
+  lazy val hostPort = system + "@" + transport.host + ":" + transport.port
+}
+
+case class UnparsedSystemAddress[+T <: RemoteTransportAddress](system: Option[String], transport: T) {
+  def parse(transports: TransportsMap): Either[UnparsedSystemAddress[UnparseableTransportAddress], RemoteSystemAddress[ParsedTransportAddress]] =
+    system match {
+      case Some(sys) ⇒
+        transport match {
+          case x: ParsedTransportAddress ⇒ Right(RemoteSystemAddress(sys, x))
+          case y: UnparsedTransportAddress ⇒
+            y.parse(transports) match {
+              case x: ParsedTransportAddress      ⇒ Right(RemoteSystemAddress(sys, x))
+              case y: UnparseableTransportAddress ⇒ Left(UnparsedSystemAddress(system, y))
+              case z                              ⇒ Left(UnparsedSystemAddress(system, UnparseableTransportAddress(z.protocol, z.host, z.port, "cannot parse " + z)))
+            }
+          case z ⇒ Left(UnparsedSystemAddress(system, UnparseableTransportAddress(z.protocol, z.host, z.port, "cannot parse " + z)))
+        }
+      case None ⇒ Left(UnparsedSystemAddress(None, UnparseableTransportAddress(transport.protocol, transport.host, transport.port, "no system name specified")))
+    }
 }
 
 object RemoteAddressExtractor {
-  def unapply(s: String): Option[RemoteAddress] = {
+  def unapply(s: String): Option[UnparsedSystemAddress[UnparsedTransportAddress]] = {
     try {
-      val uri = new URI("akka://" + s)
-      if (uri.getScheme != "akka" || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1) None
-      else Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort))
+      val uri = new URI(s)
+      if (uri.getScheme == null || uri.getHost == null || uri.getPort == -1) None
+      else Some(UnparsedSystemAddress(Option(uri.getUserInfo), UnparsedTransportAddress(uri.getScheme, uri.getHost, uri.getPort)))
     } catch {
       case _: URISyntaxException ⇒ None
     }
   }
 }
 
-case class RemoteAddress(system: String, host: String, ip: InetAddress, port: Int) extends Address {
-  def protocol = "akka"
-  @transient
-  lazy val hostPort = system + "@" + host + ":" + port
-}
-
 object RemoteActorPath {
-  def unapply(addr: String): Option[(RemoteAddress, Iterable[String])] = {
+  def unapply(addr: String): Option[(UnparsedSystemAddress[UnparsedTransportAddress], Iterable[String])] = {
     try {
       val uri = new URI(addr)
-      if (uri.getScheme != "akka" || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1 || uri.getPath == null) None
-      else Some(RemoteAddress(uri.getUserInfo, uri.getHost, uri.getPort), ActorPath.split(uri.getPath).drop(1))
+      if (uri.getScheme == null || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1 || uri.getPath == null) None
+      else Some(UnparsedSystemAddress(Some(uri.getUserInfo), UnparsedTransportAddress(uri.getScheme, uri.getHost, uri.getPort)),
+        ActorPath.split(uri.getPath).drop(1))
+    } catch {
+      case _: URISyntaxException ⇒ None
+    }
+  }
+}
+
+object ParsedActorPath {
+  def unapply(addr: String)(implicit transports: TransportsMap): Option[(RemoteSystemAddress[ParsedTransportAddress], Iterable[String])] = {
+    try {
+      val uri = new URI(addr)
+      if (uri.getScheme == null || uri.getUserInfo == null || uri.getHost == null || uri.getPort == -1 || uri.getPath == null) None
+      else
+        UnparsedSystemAddress(Some(uri.getUserInfo), UnparsedTransportAddress(uri.getScheme, uri.getHost, uri.getPort)).parse(transports) match {
+          case Left(_)  ⇒ None
+          case Right(x) ⇒ Some(x, ActorPath.split(uri.getPath).drop(1))
+        }
     } catch {
       case _: URISyntaxException ⇒ None
     }
@@ -77,70 +139,70 @@ sealed trait RemoteLifeCycleEvent
  * Life-cycle events for RemoteClient.
  */
 trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
-  def remoteAddress: RemoteAddress
+  def remoteAddress: ParsedTransportAddress
 }
 
-case class RemoteClientError(
+case class RemoteClientError[T <: ParsedTransportAddress](
   @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
-case class RemoteClientDisconnected(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientDisconnected[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
-case class RemoteClientConnected(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientConnected[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
-case class RemoteClientStarted(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientStarted[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
-case class RemoteClientShutdown(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+case class RemoteClientShutdown[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
-case class RemoteClientWriteFailed(
+case class RemoteClientWriteFailed[T <: ParsedTransportAddress](
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty remoteAddress: RemoteAddress) extends RemoteClientLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
 
 /**
  *  Life-cycle events for RemoteServer.
  */
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
 
-case class RemoteServerStarted(
-  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
-case class RemoteServerShutdown(
-  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
-case class RemoteServerError(
+case class RemoteServerStarted[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerShutdown[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerError[T <: ParsedTransportAddress](
   @BeanProperty val cause: Throwable,
-  @BeanProperty remote: RemoteSupport) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientConnected(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientDisconnected(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
-case class RemoteServerClientClosed(
-  @BeanProperty remote: RemoteSupport,
-  @BeanProperty val clientAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
-case class RemoteServerWriteFailed(
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientConnected[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientDisconnected[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerClientClosed[T <: ParsedTransportAddress](
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+case class RemoteServerWriteFailed[T <: ParsedTransportAddress](
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty server: RemoteSupport,
-  @BeanProperty remoteAddress: Option[RemoteAddress]) extends RemoteServerLifeCycleEvent
+  @BeanProperty server: RemoteSupport[T],
+  @BeanProperty remoteAddress: Option[T]) extends RemoteServerLifeCycleEvent
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
-class RemoteClientException private[akka] (
+class RemoteClientException[T <: ParsedTransportAddress] private[akka] (
   message: String,
-  @BeanProperty val client: RemoteSupport,
-  val remoteAddress: RemoteAddress, cause: Throwable = null) extends AkkaException(message, cause)
+  @BeanProperty val client: RemoteSupport[T],
+  val remoteAddress: T, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
  * Thrown when the remote server actor dispatching fails for some reason.
@@ -158,7 +220,7 @@ case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorExcept
   override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
 }
 
-abstract class RemoteSupport(val system: ActorSystem) {
+abstract class RemoteSupport[-T <: ParsedTransportAddress](val system: ActorSystemImpl) {
   /**
    * Shuts down the remoting
    */
@@ -177,12 +239,12 @@ abstract class RemoteSupport(val system: ActorSystem) {
   /**
    * Shuts down a specific client connected to the supplied remote address returns true if successful
    */
-  def shutdownClientConnection(address: RemoteAddress): Boolean
+  def shutdownClientConnection(address: T): Boolean
 
   /**
    * Restarts a specific client connected to the supplied remote address, but only if the client is not shut down
    */
-  def restartClientConnection(address: RemoteAddress): Boolean
+  def restartClientConnection(address: T): Boolean
 
   /** Methods that needs to be implemented by a transport **/
 

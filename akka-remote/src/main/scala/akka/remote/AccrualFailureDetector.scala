@@ -35,9 +35,9 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    */
   private case class State(
     version: Long = 0L,
-    failureStats: Map[RemoteAddress, FailureStats] = Map.empty[RemoteAddress, FailureStats],
-    intervalHistory: Map[RemoteAddress, Vector[Long]] = Map.empty[RemoteAddress, Vector[Long]],
-    timestamps: Map[RemoteAddress, Long] = Map.empty[RemoteAddress, Long])
+    failureStats: Map[ParsedTransportAddress, FailureStats] = Map.empty[ParsedTransportAddress, FailureStats],
+    intervalHistory: Map[ParsedTransportAddress, Vector[Long]] = Map.empty[ParsedTransportAddress, Vector[Long]],
+    timestamps: Map[ParsedTransportAddress, Long] = Map.empty[ParsedTransportAddress, Long])
 
   private val state = new AtomicReference[State](State())
 
@@ -45,13 +45,13 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Returns true if the connection is considered to be up and healthy
    * and returns false otherwise.
    */
-  def isAvailable(connection: RemoteAddress): Boolean = phi(connection) < threshold
+  def isAvailable(connection: ParsedTransportAddress): Boolean = phi(connection) < threshold
 
   /**
    * Records a heartbeat for a connection.
    */
   @tailrec
-  final def heartbeat(connection: RemoteAddress) {
+  final def heartbeat(connection: ParsedTransportAddress) {
     val oldState = state.get
 
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -132,7 +132,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
    * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
    */
-  def phi(connection: RemoteAddress): Double = {
+  def phi(connection: ParsedTransportAddress): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
     if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
@@ -147,7 +147,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Removes the heartbeat management for a connection.
    */
   @tailrec
-  final def remove(connection: RemoteAddress) {
+  final def remove(connection: ParsedTransportAddress) {
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {

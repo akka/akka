@@ -38,9 +38,9 @@ akka {
     port = 12345
   }
   actor.deployment {
-    /blub.remote = "remote_sys@localhost:12346"
-    /looker/child.remote = "remote_sys@localhost:12346"
-    /looker/child/grandchild.remote = "RemoteCommunicationSpec@localhost:12345"
+    /blub.remote = "akka://remote_sys@localhost:12346"
+    /looker/child.remote = "akka://remote_sys@localhost:12346"
+    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
 """) with ImplicitSender {

@@ -24,6 +24,7 @@ import akka.dispatch.Promise
 import java.net.InetAddress
 import akka.serialization.SerializationExtension
 import akka.serialization.Serialization
+import akka.config.ConfigurationException
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -52,21 +53,16 @@ class RemoteActorRefProvider(
 
   val deployer = new RemoteDeployer(settings)
 
-  val rootPath: ActorPath = RootActorPath(RemoteAddress(systemName, remoteSettings.serverSettings.Hostname, remoteSettings.serverSettings.Port))
+  val remote = new Remote(settings, remoteSettings)
+  implicit val transports = remote.transports
+
+  val rootPath: ActorPath = RootActorPath(remote.remoteAddress)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, _deadLetters, rootPath, deployer)
 
-  @volatile
-  private var serialization: Serialization = _
-
-  @volatile
-  private var _remote: Remote = _
-  def remote = _remote
-
   def init(system: ActorSystemImpl) {
     local.init(system)
-    serialization = SerializationExtension(system)
-    _remote = new Remote(system, nodename, remoteSettings)
+    remote.init(system)
     local.registerExtraNames(Map(("remote", remote.remoteDaemon)))
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
@@ -119,12 +115,15 @@ class RemoteActorRefProvider(
 
       deployment match {
         case Some(DeploymentConfig.Deploy(_, _, _, _, RemoteDeploymentConfig.RemoteScope(address))) ⇒
-
           if (address == rootPath.address) local.actorOf(system, props, supervisor, path, false)
-          else {
-            val rpath = RootActorPath(address) / "remote" / rootPath.address.hostPort / path.elements
-            useActorOnNode(rpath, props.creator, supervisor)
-            new RemoteActorRef(this, remote.server, rpath, supervisor, None)
+          else address.parse(remote.transports) match {
+            case Left(x) ⇒
+              // FIXME RK this should be done within the deployer, i.e. the whole parsing business
+              throw new ConfigurationException("cannot parse remote address: " + x)
+            case Right(addr) ⇒
+              val rpath = RootActorPath(addr) / "remote" / rootPath.address.hostPort / path.elements
+              useActorOnNode(rpath, props.creator, supervisor)
+              new RemoteActorRef(this, remote.server, rpath, supervisor, None)
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService)
@@ -132,13 +131,13 @@ class RemoteActorRefProvider(
     }
 
   def actorFor(path: ActorPath): InternalActorRef = path.root match {
-    case `rootPath`                         ⇒ actorFor(rootGuardian, path.elements)
-    case RootActorPath(_: RemoteAddress, _) ⇒ new RemoteActorRef(this, remote.server, path, Nobody, None)
-    case _                                  ⇒ local.actorFor(path)
+    case `rootPath` ⇒ actorFor(rootGuardian, path.elements)
+    case RootActorPath(_: RemoteSystemAddress[_], _) ⇒ new RemoteActorRef(this, remote.server, path, Nobody, None)
+    case _ ⇒ local.actorFor(path)
   }
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
-    case RemoteActorPath(address, elems) ⇒
+    case ParsedActorPath(address, elems) ⇒
       if (address == rootPath.address) actorFor(rootGuardian, elems)
       else new RemoteActorRef(this, remote.server, new RootActorPath(address) / elems, Nobody, None)
     case _ ⇒ local.actorFor(ref, path)
@@ -155,7 +154,7 @@ class RemoteActorRefProvider(
     log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, path)
 
     val actorFactoryBytes =
-      serialization.serialize(actorFactory) match {
+      remote.serialization.serialize(actorFactory) match {
         case Left(error)  ⇒ throw error
         case Right(bytes) ⇒ if (remoteSettings.ShouldCompressData) LZF.compress(bytes) else bytes
       }
@@ -180,7 +179,7 @@ class RemoteActorRefProvider(
  */
 private[akka] class RemoteActorRef private[akka] (
   provider: ActorRefProvider,
-  remote: RemoteSupport,
+  remote: RemoteSupport[ParsedTransportAddress],
   val path: ActorPath,
   val getParent: InternalActorRef,
   loader: Option[ClassLoader])

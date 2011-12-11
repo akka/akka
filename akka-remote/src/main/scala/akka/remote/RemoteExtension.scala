@@ -26,7 +26,9 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
 
   // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
-  val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_, systemName))
+  val SeedNodes = Set.empty[RemoteNettyAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
+    case RemoteAddressExtractor(addr) ⇒ addr.transport
+  }
 
   val NodeName: String = config.getString("akka.cluster.nodename") match {
     case ""    ⇒ throw new ConfigurationException("akka.cluster.nodename configuration property must be defined")
@@ -73,5 +75,8 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
     val ConnectionTimeout = Duration(config.getMilliseconds("akka.remote.server.connection-timeout"), MILLISECONDS)
 
     val Backlog = config.getInt("akka.remote.server.backlog")
+
+    // TODO handle the system name right and move this to config file syntax
+    val URI = "akka://sys@" + Hostname + ":" + Port
   }
 }

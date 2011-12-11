@@ -11,7 +11,7 @@ import akka.config.ConfigurationException
 
 object RemoteDeploymentConfig {
 
-  case class RemoteScope(node: RemoteAddress) extends DeploymentConfig.Scope
+  case class RemoteScope(node: UnparsedSystemAddress[UnparsedTransportAddress]) extends DeploymentConfig.Scope
 
 }
 
@@ -28,7 +28,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
     val transform: Deploy ⇒ Deploy =
       if (deployment.hasPath("remote")) deployment.getString("remote") match {
         case RemoteAddressExtractor(r) ⇒ (d ⇒ d.copy(scope = RemoteScope(r)))
-        case _                         ⇒ identity
+        case x                         ⇒ identity
       }
       else identity
 

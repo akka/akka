@@ -17,7 +17,7 @@ object RemoteDeployerSpec {
         /user/service2 {
           router = round-robin
           nr-of-instances = 3
-          remote = "sys@wallace:2552"
+          remote = "akka://sys@wallace:2552"
         }
       }
       """, ConfigParseOptions.defaults)
@@ -44,7 +44,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
           None,
           RoundRobin,
           NrOfInstances(3),
-          RemoteScope(RemoteAddress("sys", "wallace", 2552)))))
+          RemoteScope(UnparsedSystemAddress(Some("sys"), UnparsedTransportAddress("akka", "wallace", 2552))))))
     }
 
   }
