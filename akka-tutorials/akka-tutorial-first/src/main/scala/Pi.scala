@@ -6,12 +6,12 @@ package akka.tutorial.first.scala
 import java.util.concurrent.CountDownLatch
 import akka.actor._
 import akka.routing._
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ ConfigFactory, Config }
 
 object Pi extends App {
 
   // Initiate the calculation
-  calculate(nrOfWorkers = 4, nrOfElements = 10, nrOfMessages = 10)
+  calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
   // ====================
   // ===== Messages =====
@@ -39,7 +39,6 @@ object Pi extends App {
 
     def receive = {
       case Work(start, nrOfElements) ⇒
-        println("*** RECEIVED MESSAGE IN: " + self.path)
         sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
     }
   }
@@ -55,26 +54,11 @@ object Pi extends App {
     var start: Long = _
 
     // create the workers
+    val workers = Vector.fill(nrOfWorkers)(context.actorOf[Worker])
 
-    var workers = Vector.empty[ActorRef]
-    for (i ← 1 to 2) {
-      workers = context.actorOf[Worker] +: workers
-    }
-
-    // TODO (HE) : use this way of creating actors
-    //val workers = Vector.fill(nrOfWorkers)(context.actorOf[Worker])
-
-    /*
-    // wrap them with a load-balancing router
-    // FIXME routers are intended to be used like this
-    implicit val timout = context.system.settings.ActorTimeout
-    implicit val dispatcher = context.dispatcher
-    val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(workers))
-    val router = new RoutedActorRef(context.system, props, self.asInstanceOf[InternalActorRef], "pi")
-    */
-
-    //val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 5)), "pi")
-    val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 3, targets = Seq(workers.head, workers.tail.head))), "pi")
+    // create a round robin router for the workers
+    val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 5)), "pi")
+    //val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 3, targets = Seq(workers.head, workers.tail.head))), "pi")
 
     // message handler
     def receive = {
@@ -107,7 +91,7 @@ object Pi extends App {
   // ===== Run it =====
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-    val system = ActorSystem()
+    val system = ActorSystem("PiSystem", ConfigFactory.load("akka.conf"))
 
     // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)

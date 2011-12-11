@@ -520,17 +520,14 @@ class LocalActorRefProvider(
     val path = supervisor.path / name
 
     props.routerConfig match {
-      case NoRouting   ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
+      case NoRouter    ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case routedActor ⇒ new RoutedActorRef(system, props.withRouting(adaptFromDeploy(routedActor, path)), supervisor, path)
     }
   }
 
   private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
     val lookupPath = p.elements.mkString("/", "/", "")
-    println("**** LOOKUP PATH : " + lookupPath)
-    val deploy = deployer.lookup(lookupPath)
-    println("**** " + deploy)
-    r.adaptFromDeploy(deploy)
+    r.adaptFromDeploy(deployer.lookup(lookupPath))
   }
 
   def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {

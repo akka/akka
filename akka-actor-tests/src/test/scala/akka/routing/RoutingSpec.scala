@@ -1,7 +1,5 @@
 package akka.routing
 
-import akka.routing._
-import akka.config.ConfigurationException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import collection.mutable.LinkedList
@@ -17,6 +15,7 @@ object RoutingSpec {
         println("Hello")
     }
   }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -26,30 +25,25 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
   import akka.routing.RoutingSpec._
 
-  // TODO (HE) : Update test with new routing functionality
-  /*
-  "direct router" must {
+  "no router" must {
     "be started when constructed" in {
-      val actor1 = system.actorOf[TestActor]
-
-      val props = RoutedProps(routerFactory = () ⇒ new DirectRouter, connectionManager = new LocalConnectionManager(List(actor1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isTerminated must be(false)
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(NoRouter))
+      routedActor.isTerminated must be(false)
     }
 
     "send message to connection" in {
       val doneLatch = new CountDownLatch(1)
 
       val counter = new AtomicInteger(0)
-      val connection1 = system.actorOf(new Actor {
+
+      class Actor1 extends Actor {
         def receive = {
           case "end" ⇒ doneLatch.countDown()
           case _     ⇒ counter.incrementAndGet
         }
-      })
+      }
 
-      val props = RoutedProps(routerFactory = () ⇒ new DirectRouter, connectionManager = new LocalConnectionManager(List(connection1)))
-      val routedActor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val routedActor = system.actorOf(Props(new Actor1).withRouting(NoRouter))
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -57,38 +51,12 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
       counter.get must be(1)
     }
-
-    "deliver a broadcast message" in {
-      val doneLatch = new CountDownLatch(1)
-
-      val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
-        def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter1.addAndGet(msg)
-        }
-      })
-
-      val props = RoutedProps(routerFactory = () ⇒ new DirectRouter, connectionManager = new LocalConnectionManager(List(connection1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-
-      actor ! Broadcast(1)
-      actor ! "end"
-
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
-
-      counter1.get must be(1)
-    }
   }
 
   "round robin router" must {
-
     "be started when constructed" in {
-      val actor1 = system.actorOf[TestActor]
-
-      val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(List(actor1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isTerminated must be(false)
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(nrOfInstances = 1)))
+      routedActor.isTerminated must be(false)
     }
 
     //In this test a bunch of actors are created and each actor has its own counter.
@@ -101,32 +69,30 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       val doneLatch = new CountDownLatch(connectionCount)
 
       //lets create some connections.
-      var connections = new LinkedList[ActorRef]
+      var actors = new LinkedList[ActorRef]
       var counters = new LinkedList[AtomicInteger]
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
-        val connection = system.actorOf(new Actor {
+        val actor = system.actorOf(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
           }
         })
-        connections = connections :+ connection
+        actors = actors :+ actor
       }
 
-      //create the routed actor.
-      val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(connections))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(targets = actors)))
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          actor ! (k + 1)
+          routedActor ! (k + 1)
         }
       }
 
-      actor ! Broadcast("end")
+      routedActor ! Broadcast("end")
       //now wait some and do validations.
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
 
@@ -140,7 +106,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
+      val actor1 = system.actorOf(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -148,18 +114,17 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = system.actorOf(new Actor {
+      val actor2 = system.actorOf(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
       })
 
-      val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(targets = List(actor1, actor2))))
 
-      actor ! Broadcast(1)
-      actor ! Broadcast("end")
+      routedActor ! Broadcast(1)
+      routedActor ! Broadcast("end")
 
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
 
@@ -167,6 +132,8 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       counter2.get must be(1)
     }
 
+    // TODO (HE) : Is this still a valid test case?
+    /*
     "fail to deliver a broadcast message using the ?" in {
       val doneLatch = new CountDownLatch(1)
 
@@ -178,33 +145,32 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val props = RoutedProps(routerFactory = () ⇒ new RoundRobinRouter, connectionManager = new LocalConnectionManager(List(connection1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(targets = List(connection1))))
 
-      intercept[RoutingException] { actor ? Broadcast(1) }
+      intercept[RoutingException] {
+        routedActor ? Broadcast(1)
+      }
 
-      actor ! "end"
+      routedActor ! "end"
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
       counter1.get must be(0)
     }
+    */
+
   }
 
   "random router" must {
 
     "be started when constructed" in {
-
-      val actor1 = system.actorOf[TestActor]
-
-      val props = RoutedProps(routerFactory = () ⇒ new RandomRouter, connectionManager = new LocalConnectionManager(List(actor1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-      actor.isTerminated must be(false)
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RandomRouter(nrOfInstances = 1)))
+      routedActor.isTerminated must be(false)
     }
 
     "deliver a broadcast message" in {
       val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
+      val actor1 = system.actorOf(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
@@ -212,18 +178,17 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       })
 
       val counter2 = new AtomicInteger
-      val connection2 = system.actorOf(new Actor {
+      val actor2 = system.actorOf(new Actor {
         def receive = {
           case "end"    ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
       })
 
-      val props = RoutedProps(routerFactory = () ⇒ new RandomRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(RandomRouter(targets = List(actor1, actor2))))
 
-      actor ! Broadcast(1)
-      actor ! Broadcast("end")
+      routedActor ! Broadcast(1)
+      routedActor ! Broadcast("end")
 
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
 
@@ -231,49 +196,118 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       counter2.get must be(1)
     }
 
-    "fail to deliver a broadcast message using the ?" in {
-      val doneLatch = new CountDownLatch(1)
+    // TODO (HE) : Is this still a valid test case?
+    /*
+  "fail to deliver a broadcast message using the ?" in {
+    val doneLatch = new CountDownLatch(1)
+
+    val counter1 = new AtomicInteger
+    val connection1 = system.actorOf(new Actor {
+      def receive = {
+        case "end" ⇒ doneLatch.countDown()
+        case _     ⇒ counter1.incrementAndGet()
+      }
+    })
+
+    val props = RoutedProps(routerFactory = () ⇒ new RandomRouter, connectionManager = new LocalConnectionManager(List(connection1)))
+    val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+
+    try {
+      actor ? Broadcast(1)
+      fail()
+    } catch {
+      case e: RoutingException ⇒
+    }
+
+    actor ! "end"
+    doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+    counter1.get must be(0)
+  }
+  */
+  }
+
+  "broadcast router" must {
+    "be started when constructed" in {
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(nrOfInstances = 1)))
+      routedActor.isTerminated must be(false)
+    }
+
+    "broadcast message using !" in {
+      val doneLatch = new CountDownLatch(2)
 
       val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
+      val actor1 = system.actorOf(new Actor {
         def receive = {
-          case "end" ⇒ doneLatch.countDown()
-          case _     ⇒ counter1.incrementAndGet()
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter1.addAndGet(msg)
         }
       })
 
-      val props = RoutedProps(routerFactory = () ⇒ new RandomRouter, connectionManager = new LocalConnectionManager(List(connection1)))
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
+      val counter2 = new AtomicInteger
+      val actor2 = system.actorOf(new Actor {
+        def receive = {
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter2.addAndGet(msg)
+        }
+      })
 
-      try {
-        actor ? Broadcast(1)
-        fail()
-      } catch {
-        case e: RoutingException ⇒
-      }
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(targets = List(actor1, actor2))))
+      routedActor ! 1
+      routedActor ! "end"
 
-      actor ! "end"
       doneLatch.await(5, TimeUnit.SECONDS) must be(true)
-      counter1.get must be(0)
+
+      counter1.get must be(1)
+      counter2.get must be(1)
+    }
+
+    "broadcast message using ?" in {
+      val doneLatch = new CountDownLatch(2)
+
+      val counter1 = new AtomicInteger
+      val actor1 = system.actorOf(new Actor {
+        def receive = {
+          case "end" ⇒ doneLatch.countDown()
+          case msg: Int ⇒
+            counter1.addAndGet(msg)
+            sender ! "ack"
+        }
+      })
+
+      val counter2 = new AtomicInteger
+      val actor2 = system.actorOf(new Actor {
+        def receive = {
+          case "end"    ⇒ doneLatch.countDown()
+          case msg: Int ⇒ counter2.addAndGet(msg)
+        }
+      })
+
+      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(targets = List(actor1, actor2))))
+      routedActor ? 1
+      routedActor ! "end"
+
+      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+
+      counter1.get must be(1)
+      counter2.get must be(1)
     }
   }
 
-  "Scatter-gather router" must {
+  // TODO (HE) : add tests below
+  /*
 
-    "return response, even if one of the connections has stopped" in {
+"Scatter-gather router" must {
 
-      val shutdownLatch = new TestLatch(1)
+  "return response, even if one of the actors has stopped" in {
+    val shutdownLatch = new TestLatch(1)
+    val actor1 = newActor(1, Some(shutdownLatch))
+    val actor2 = newActor(2, Some(shutdownLatch))
+    val routedActor = system.actorOf(Props(new TestActor).withRouting(ScatterGatherFirstCompletedRouter(targets = List(actor1, actor2))))
 
-      val props = RoutedProps(routerFactory = () ⇒ new ScatterGatherFirstCompletedRouter, connectionManager = new LocalConnectionManager(List(newActor(0, Some(shutdownLatch)), newActor(1, Some(shutdownLatch)))))
-
-      val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
-
-      actor ! Broadcast(Stop(Some(0)))
-
-      shutdownLatch.await
-
-      (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
-    }
+    routedActor ! Broadcast(Stop(Some(1)))
+    shutdownLatch.await
+    (routedActor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
+  }
 
     "throw an exception, if all the connections have stopped" in {
 
@@ -330,7 +364,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
         val connection = system.actorOf(new Actor {
           def receive = {
-            case "end"    ⇒ doneLatch.countDown()
+            case "end" ⇒ doneLatch.countDown()
             case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
           }
         })
@@ -363,7 +397,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       val counter1 = new AtomicInteger
       val connection1 = system.actorOf(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter1.addAndGet(msg)
         }
       })
@@ -371,7 +405,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       val counter2 = new AtomicInteger
       val connection2 = system.actorOf(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
+          case "end" ⇒ doneLatch.countDown()
           case msg: Int ⇒ counter2.addAndGet(msg)
         }
       })
@@ -389,95 +423,31 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       counter2.get must be(1)
     }
 
-    case class Stop(id: Option[Int] = None)
 
-    def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = system.actorOf(new Actor {
-      def receive = {
-        case Stop(None)                     ⇒ self.stop()
-        case Stop(Some(_id)) if (_id == id) ⇒ self.stop()
-        case _id: Int if (_id == id)        ⇒
-        case _                              ⇒ Thread sleep 100 * id; sender.tell(id)
+  case class Stop(id: Option[Int] = None)
+
+  def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = system.actorOf(new Actor {
+    def receive = {
+      case Stop(None) ⇒
+        println(">>>> STOPPING  : " + id)
+        self.stop()
+      case Stop(Some(_id)) if (_id == id) ⇒
+        println(">>>> STOPPING >: " + id)
+        self.stop()
+      case _id: Int if (_id == id) ⇒
+        println("-----> ID MATCH - do nothing")
+      case x ⇒ {
+        Thread sleep 100 * id
+        println("-----> SENDING REPLY: " + id)
+        sender.tell(id)
       }
-
-      override def postStop = {
-        shudownLatch foreach (_.countDown())
-      }
-    })
-  }
-
-  "broadcast router" must {
-
-    "be started when constructed" in {
-      val actor1 = system.actorOf[TestActor]
-
-      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(actor1)))
-      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
-      actor.isTerminated must be(false)
     }
 
-    "broadcast message using !" in {
-      val doneLatch = new CountDownLatch(2)
-
-      val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
-        def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter1.addAndGet(msg)
-        }
-      })
-
-      val counter2 = new AtomicInteger
-      val connection2 = system.actorOf(new Actor {
-        def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter2.addAndGet(msg)
-        }
-      })
-
-      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
-      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
-
-      actor ! 1
-      actor ! "end"
-
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
-
-      counter1.get must be(1)
-      counter2.get must be(1)
+    override def postStop = {
+      println("***** POSTSTOP")
+      shudownLatch foreach (_.countDown())
     }
-
-    "broadcast message using ?" in {
-      val doneLatch = new CountDownLatch(2)
-
-      val counter1 = new AtomicInteger
-      val connection1 = system.actorOf(new Actor {
-        def receive = {
-          case "end" ⇒ doneLatch.countDown()
-          case msg: Int ⇒
-            counter1.addAndGet(msg)
-            sender ! "ack"
-        }
-      })
-
-      val counter2 = new AtomicInteger
-      val connection2 = system.actorOf(new Actor {
-        def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter2.addAndGet(msg)
-        }
-      })
-
-      val props = RoutedProps(routerFactory = () ⇒ new BroadcastRouter, connectionManager = new LocalConnectionManager(List(connection1, connection2)))
-      val actor = new RoutedActorRef(system, props, system.asInstanceOf[ActorSystemImpl].guardian, "foo")
-
-      actor ? 1
-      actor ! "end"
-
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
-
-      counter1.get must be(1)
-      counter2.get must be(1)
-    }
-  }
-  */
+  })
+}
+*/
 }
