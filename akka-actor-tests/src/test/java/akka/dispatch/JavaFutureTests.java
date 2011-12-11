@@ -3,6 +3,7 @@ package akka.dispatch;
 import akka.actor.Timeout;
 import akka.actor.ActorSystem;
 
+import akka.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -269,7 +270,15 @@ public class JavaFutureTests {
       }
     });
 
-    final Integer got = f.get().get();
-    assertEquals(expect, got);
+    assertEquals(expect, Block.sync(f, Duration.create(5, TimeUnit.SECONDS)));
+  }
+
+  @Test
+  public void BlockMustBeCallable() {
+    Promise<String> p = ff.<String>promise();
+    Duration d = Duration.create(1, TimeUnit.SECONDS);
+    p.completeWithResult("foo");
+    Block.on(p, d);
+    assertEquals(Block.sync(p, d), "foo");
   }
 }

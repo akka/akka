@@ -37,6 +37,7 @@ object FutureSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -439,19 +440,15 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "shouldBlockUntilResult" in {
         val latch = new StandardLatch
 
-        val f = Future({ latch.await; 5 })
-        val f2 = Future({ f.get + 5 })
+        val f = Future { latch.await; 5 }
+        val f2 = Future { Block.sync(f, timeout.duration) + 5 }
 
-        assert(f2.resultOrException === None)
+        intercept[TimeoutException](Block.on(f2, 100 millis))
         latch.open
-        assert(f2.get === 10)
+        assert(Block.sync(f2, timeout.duration) === 10)
 
-        val f3 = Future({ Thread.sleep(100); 5 })
-        filterException[TimeoutException] {
-          intercept[TimeoutException] {
-            Block.on(f3, 0 millis)
-          }
-        }
+        val f3 = Future { Thread.sleep(100); 5 }
+        filterException[TimeoutException] { intercept[TimeoutException] { Block.on(f3, 0 millis) } }
       }
 
       "futureComposingWithContinuations" in {
@@ -826,7 +823,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "contain a result" in { f((future, result) ⇒ future.result must be(Some(result))) }
     "not contain an exception" in { f((future, _) ⇒ future.exception must be(None)) }
     "return result with 'get'" in { f((future, result) ⇒ future.get must be(result)) }
-    "return result with 'resultOrException'" in { f((future, result) ⇒ future.resultOrException must be(Some(result))) }
+    "return result with 'Block.sync'" in { f((future, result) ⇒ Block.sync(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ Block.on(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
@@ -850,7 +847,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "not contain a result" in { f((future, _) ⇒ future.result must be(None)) }
     "contain an exception" in { f((future, message) ⇒ future.exception.get.getMessage must be(message)) }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { future.get } must produce[E]).getMessage must be(message)) }
-    "throw exception with 'resultOrException'" in { f((future, message) ⇒ (evaluating { future.resultOrException } must produce[E]).getMessage must be(message)) }
+    "throw exception with 'Block.sync'" in { f((future, message) ⇒ (evaluating { Block.sync(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
         (evaluating { (future filter (_ ⇒ true)).get } must produce[E]).getMessage must be(message)

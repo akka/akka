@@ -49,7 +49,7 @@ object ComputeGridSample {
     val fun = () ⇒ "AKKA ROCKS"
     val futures = local send (fun, 2) // send and invoke function on to two cluster nodes and get result
 
-    val result = Futures.fold("")(futures)(_ + " - " + _).await.resultOrException
+    val result = Block.sync(Futures.fold("")(futures)(_ + " - " + _), timeout)
     println("===================>>> Cluster says [" + result + "]")
 
     local.stop
@@ -83,8 +83,8 @@ object ComputeGridSample {
     val future2 = local send (fun, 2, 1) head // send and invoke function on one cluster node and get result
 
     // grab the result from the first one that returns
-    val result = Futures.firstCompletedOf(List(future1, future2)).await.resultOrException
-    println("===================>>> Cluster says [" + result.get + "]")
+    val result = Block.sync(Futures.firstCompletedOf(List(future1, future2)), timeout)
+    println("===================>>> Cluster says [" + result + "]")
 
     local.stop
     remote1.stop

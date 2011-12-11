@@ -617,15 +617,6 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
     }
     future
   }
-
-  /**
-   * Returns the current result, throws the exception if one has been raised, else returns None
-   */
-  final def resultOrException: Option[T] = value match {
-    case Some(Left(e))  ⇒ throw e
-    case Some(Right(r)) ⇒ Some(r)
-    case _              ⇒ None
-  }
 }
 
 object Promise {
@@ -749,7 +740,11 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
     if (value.isDefined || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
-  def sync(atMost: Duration)(implicit permit: CanBlock): T = block(atMost).resultOrException.get
+  def sync(atMost: Duration)(implicit permit: CanBlock): T =
+    block(atMost).value.get match {
+      case Left(e)  ⇒ throw e
+      case Right(r) ⇒ r
+    }
 
   def value: Option[Either[Throwable, T]] = getState.value
 
@@ -824,5 +819,8 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val dis
   }
 
   def block(atMost: Duration)(implicit permit: CanBlock): this.type = this
-  def sync(atMost: Duration)(implicit permit: CanBlock): T = resultOrException.get
+  def sync(atMost: Duration)(implicit permit: CanBlock): T = value.get match {
+    case Left(e)  ⇒ throw e
+    case Right(r) ⇒ r
+  }
 }
