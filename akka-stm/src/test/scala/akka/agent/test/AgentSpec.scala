@@ -63,9 +63,9 @@ class AgentSpec extends AkkaSpec {
       val r2 = agent.alterOff((s: String) ⇒ { Thread.sleep(2000); s + "c" })(5000)
       val r3 = agent.alter(_ + "d")(5000)
 
-      Block.on(r1, 5 seconds).resultOrException.get must be === "ab"
-      Block.on(r2, 5 seconds).resultOrException.get must be === "abc"
-      Block.on(r3, 5 seconds).resultOrException.get must be === "abcd"
+      Block.sync(r1, 5 seconds) must be === "ab"
+      Block.sync(r2, 5 seconds) must be === "abc"
+      Block.sync(r3, 5 seconds) must be === "abcd"
 
       agent() must be("abcd")
 
@@ -141,7 +141,7 @@ class AgentSpec extends AkkaSpec {
       agent send (_ + "b")
       agent send (_ + "c")
 
-      Block.on(agent.future, timeout.duration).resultOrException.get must be("abc")
+      Block.sync(agent.future, timeout.duration) must be("abc")
 
       agent.close()
     }

@@ -27,17 +27,22 @@ import akka.dispatch.Block.CanBlock
 object Block {
   sealed trait CanBlock
 
-  trait Blockable {
-
+  trait Blockable[+T] {
     /**
      * Should throw java.util.concurrent.TimeoutException if times out
      */
     def block(atMost: Duration)(implicit permit: CanBlock): this.type
+
+    /**
+     * Throws exceptions if cannot produce a T within the specified time
+     */
+    def sync(atMost: Duration)(implicit permit: CanBlock): T
   }
 
   private implicit val permit = new CanBlock {}
 
-  def on[T <: Blockable](block: T, atMost: Duration /* = Duration.Inf*/ ): T = block.block(atMost)
+  def on[T <: Blockable[_]](block: T, atMost: Duration /* = Duration.Inf*/ ): T = block.block(atMost)
+  def sync[T](block: Blockable[T], atMost: Duration): T = block.sync(atMost)
 }
 
 class FutureFactory(implicit dispatcher: MessageDispatcher) {
@@ -361,7 +366,7 @@ object Future {
     }
 }
 
-sealed trait Future[+T] extends japi.Future[T] with Block.Blockable {
+sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
 
   implicit def dispatcher: MessageDispatcher
 
@@ -379,6 +384,7 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable {
    * conform, or any exception the Future was completed with. Will return None
    * in case of a timeout.
    */
+  @deprecated("Use Block.on")
   def as[A](implicit m: Manifest[A]): Option[A] = {
     try Block.on(this, Duration.Inf) catch { case _: TimeoutException ⇒ }
     value match {
@@ -394,7 +400,7 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable {
   }
 
   @deprecated("Used Block.on(future, timeoutDuration)")
-  def get: T = Block.on(this, Duration.Inf).resultOrException.get
+  def get: T = Block.sync(this, Duration.Inf)
 
   /**
    * Tests whether this Future has been completed.
@@ -471,6 +477,7 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable {
    * Creates a Future that will be the result of the first completed Future of this and the Future that was passed into this.
    * This is semantically the same as: Future.firstCompletedOf(Seq(this, that))
    */
+  //FIXME implement as The result of any of the Futures, or if oth failed, the first failure
   def orElse[A >: T](that: Future[A]): Future[A] = Future.firstCompletedOf(List(this, that)) //TODO Optimize
 
   /**
@@ -720,28 +727,29 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
 
   import DefaultPromise.{ FState, Success, Failure, Pending }
 
-  def block(atMost: Duration)(implicit permit: CanBlock): this.type = if (value.isDefined) this else {
+  protected final def tryAwait(atMost: Duration): Boolean = {
     Future.blocking
-    val start = MILLISECONDS.toNanos(System.currentTimeMillis)
 
     @tailrec
     def awaitUnsafe(waitTimeNanos: Long): Boolean = {
       if (value.isEmpty && waitTimeNanos > 0) {
         val ms = NANOSECONDS.toMillis(waitTimeNanos)
         val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
+        val start = System.nanoTime()
         try { synchronized { if (value.isEmpty) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
 
-        awaitUnsafe(waitTimeNanos - (MILLISECONDS.toNanos(System.currentTimeMillis) - start))
-      } else {
+        awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
+      } else
         value.isDefined
-      }
     }
-
-    val waitNanos = if (atMost.isFinite) atMost.toNanos else Long.MaxValue
-
-    if (awaitUnsafe(waitNanos)) this
-    else throw new TimeoutException("Futures timed out after [" + NANOSECONDS.toMillis(waitNanos) + "] milliseconds")
+    awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
+
+  def block(atMost: Duration)(implicit permit: CanBlock): this.type =
+    if (value.isDefined || tryAwait(atMost)) this
+    else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
+
+  def sync(atMost: Duration)(implicit permit: CanBlock): T = block(atMost).resultOrException.get
 
   def value: Option[Either[Throwable, T]] = getState.value
 
@@ -797,8 +805,8 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
   }
 
   private def notifyCompleted(func: Future[T] ⇒ Unit) {
-    // FIXME catching all and continue isn't good for OOME, ticket #1418
-    try { func(this) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) } //TODO catch, everything? Really?
+    // TODO FIXME catching all and continue isn't good for OOME, ticket #1418
+    try { func(this) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) }
   }
 }
 
@@ -816,4 +824,5 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val dis
   }
 
   def block(atMost: Duration)(implicit permit: CanBlock): this.type = this
+  def sync(atMost: Duration)(implicit permit: CanBlock): T = resultOrException.get
 }

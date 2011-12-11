@@ -168,7 +168,7 @@ class RemoteActorRefProvider(
           actors.replace(path.toString, newFuture, actor)
           actor
         case actor: InternalActorRef ⇒ actor
-        case future: Future[_]       ⇒ Block.on(future, system.settings.ActorTimeout.duration).resultOrException.get.asInstanceOf[InternalActorRef]
+        case future: Future[_]       ⇒ Block.sync(future, system.settings.ActorTimeout.duration).asInstanceOf[InternalActorRef]
       }
     }
 

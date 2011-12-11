@@ -75,7 +75,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
           ()
       }
     }
-    try { Block.on(envelopePromise, settings.ReadTimeout).resultOrException.orNull } catch { case _: TimeoutException ⇒ null }
+    try { Block.sync(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
   }
 
   def numberOfMessages: Int = {

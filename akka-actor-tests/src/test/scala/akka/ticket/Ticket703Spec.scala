@@ -28,7 +28,7 @@ class Ticket703Spec extends AkkaSpec {
             }
           }))
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))
-      Block.on(actorPool.?("Ping", 10000), 10 seconds).resultOrException.get must be === "Response"
+      Block.sync(actorPool.?("Ping", 10000), 10 seconds) must be === "Response"
     }
   }
 }

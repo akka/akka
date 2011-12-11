@@ -126,7 +126,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       try {
         (for (count ← 1 to 500) yield pool.?("Test", 20 seconds)) foreach {
-          Block.on(_, 20 seconds).resultOrException.get must be("Response")
+          Block.sync(_, 20 seconds) must be("Response")
         }
       } finally {
         pool.stop()

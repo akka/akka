@@ -128,7 +128,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
     val result = Promise[Actor]()
     val r = f(result)
-    Block.on(result, 1 minute).resultOrException
+    Block.sync(result, 1 minute)
     r
   }
 
