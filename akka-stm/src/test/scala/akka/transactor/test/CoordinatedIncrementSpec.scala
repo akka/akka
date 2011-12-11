@@ -7,6 +7,7 @@ import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
 import akka.testkit._
+import akka.dispatch.Block
 
 object CoordinatedIncrement {
   case class Increment(friends: Seq[ActorRef])
@@ -72,7 +73,7 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
       for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 1
+        Block.sync((counter ? GetCount).mapTo[Int], timeout.duration) must be === 1
       }
       counters foreach (_.stop())
       failer.stop()
