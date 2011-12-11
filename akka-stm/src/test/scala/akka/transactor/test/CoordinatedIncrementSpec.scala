@@ -90,7 +90,7 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
         counters(0) ! Coordinated(Increment(counters.tail :+ failer))
         coordinated.await
         for (counter ← counters) {
-          (counter ? GetCount).as[Int].get must be === 0
+          Block.sync(counter ? GetCount, timeout.duration) must be === 0
         }
         counters foreach (_.stop())
         failer.stop()

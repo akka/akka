@@ -4,7 +4,7 @@
 package akka.dataflow
 
 import akka.actor.{ Actor, Props }
-import akka.dispatch.Future
+import akka.dispatch.{ Future, Block }
 import akka.actor.future2actor
 import akka.util.duration._
 import akka.testkit.AkkaSpec
@@ -26,9 +26,9 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
           case "ex" ⇒ Future(throw new AssertionError) pipeTo context.sender
         }
       }))
-      (actor ? "do").as[Int] must be(Some(31))
+      Block.sync(actor ? "do", timeout.duration) must be(31)
       intercept[AssertionError] {
-        (actor ? "ex").get
+        Block.sync(actor ? "ex", timeout.duration)
       }
     }
   }

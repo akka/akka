@@ -378,14 +378,8 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
    */
   def apply(): T @cps[Future[Any]] = shift(this flatMap (_: T ⇒ Future[Any]))
 
-  /**
-   * Await completion of this Future and return its value if it conforms to A's
-   * erased type. Will throw a ClassCastException if the value does not
-   * conform, or any exception the Future was completed with. Will return None
-   * in case of a timeout.
-   */
-  @deprecated("Use Block.on")
-  def as[A](implicit m: Manifest[A]): Option[A] = {
+  //Removed
+  /*def as[A](implicit m: Manifest[A]): Option[A] = {
     try Block.on(this, Duration.Inf) catch { case _: TimeoutException ⇒ }
     value match {
       case None           ⇒ None
@@ -397,7 +391,7 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
             else throw new ClassCastException("'" + v + "' of class " + v.asInstanceOf[AnyRef].getClass + " cannot be cast to " + m.erasure)
         }
     }
-  }
+  }*/
 
   @deprecated("Used Block.on(future, timeoutDuration)")
   def get: T = Block.sync(this, Duration.Inf)

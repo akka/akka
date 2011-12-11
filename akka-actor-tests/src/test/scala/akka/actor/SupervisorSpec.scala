@@ -7,11 +7,10 @@ package akka.actor
 import org.scalatest.BeforeAndAfterEach
 import akka.util.duration._
 import akka.{ Die, Ping }
-import akka.actor.Actor._
+import akka.dispatch.Block
 import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.LinkedBlockingQueue
 
 object SupervisorSpec {
   val Timeout = 5 seconds
@@ -73,7 +72,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   // Creating actors and supervisors
   // =====================================================
 
-  private def child(supervisor: ActorRef, props: Props): ActorRef = (supervisor ? props).as[ActorRef].get
+  private def child(supervisor: ActorRef, props: Props): ActorRef = Block.sync((supervisor ? props).mapTo[ActorRef], props.timeout.duration)
 
   def temporaryActorAllForOne = {
     val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), Some(0))))
@@ -129,14 +128,14 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   }
 
   def ping(pingPongActor: ActorRef) = {
-    (pingPongActor.?(Ping, TimeoutMillis)).as[String] must be === Some(PongMessage)
+    Block.sync(pingPongActor.?(Ping, TimeoutMillis), TimeoutMillis millis) must be === PongMessage
     expectMsg(Timeout, PingMessage)
   }
 
   def kill(pingPongActor: ActorRef) = {
     val result = (pingPongActor ? (DieReply, TimeoutMillis))
     expectMsg(Timeout, ExceptionMessage)
-    intercept[RuntimeException] { result.get }
+    intercept[RuntimeException] { Block.sync(result, TimeoutMillis millis) }
   }
 
   "A supervisor" must {
@@ -293,16 +292,16 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
             throw e
         }
       })
-      val dyingActor = (supervisor ? dyingProps).as[ActorRef].get
+      val dyingActor = Block.sync((supervisor ? dyingProps).mapTo[ActorRef], timeout.duration)
 
       filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
         EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
           intercept[RuntimeException] {
-            (dyingActor.?(DieReply, TimeoutMillis)).get
+            Block.sync(dyingActor.?(DieReply, TimeoutMillis), TimeoutMillis millis)
           }
         }
 
-      (dyingActor.?(Ping, TimeoutMillis)).as[String] must be === Some(PongMessage)
+      Block.sync(dyingActor.?(Ping, TimeoutMillis), TimeoutMillis millis) must be === PongMessage
 
       inits.get must be(3)
 

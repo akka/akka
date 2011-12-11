@@ -81,7 +81,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
   def numberOfMessages: Int = {
     val count = Promise[Int]()(dispatcher)
     mongo.count()(count.completeWithResult)
-    count.as[Int].getOrElse(-1)
+    try { Block.sync(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
   }
 
   //TODO review find other solution, this will be very expensive

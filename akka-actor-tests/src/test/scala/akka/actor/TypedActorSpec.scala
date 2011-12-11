@@ -290,7 +290,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
         }))
-        val t = (boss ? Props().withTimeout(2 seconds)).as[Foo].get
+        val t = Block.sync((boss ? Props().withTimeout(2 seconds)).mapTo[Foo], timeout.duration)
 
         t.incr()
         t.failingPigdog()

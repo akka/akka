@@ -3,10 +3,10 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.testkit._
-import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
+import akka.dispatch.{ Block, PinnedDispatcher, Dispatchers }
 
 object PinnedActorSpec {
   class TestActor extends Actor {
@@ -35,8 +35,7 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeo
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
-      val result = (actor ? "Hello").as[String]
-      assert("World" === result.get)
+      assert("World" === Block.sync(actor ? "Hello", timeout.duration))
       actor.stop()
     }
   }

@@ -8,6 +8,7 @@ import akka.actor._
 import akka.stm._
 import akka.util.duration._
 import akka.testkit._
+import akka.dispatch.Block
 
 object TransactorIncrement {
   case class Increment(friends: Seq[ActorRef], latch: TestLatch)
@@ -95,7 +96,7 @@ class TransactorSpec extends AkkaSpec {
       counters(0) ! Increment(counters.tail, incrementLatch)
       incrementLatch.await
       for (counter ← counters) {
-        (counter ? GetCount).as[Int].get must be === 1
+        Block.sync(counter ? GetCount, timeout.duration) must be === 1
       }
       counters foreach (_.stop())
       failer.stop()
@@ -112,7 +113,7 @@ class TransactorSpec extends AkkaSpec {
         counters(0) ! Increment(counters.tail :+ failer, failLatch)
         failLatch.await
         for (counter ← counters) {
-          (counter ? GetCount).as[Int].get must be === 0
+          Block.sync(counter ? GetCount, timeout.duration) must be === 0
         }
         counters foreach (_.stop())
         failer.stop()

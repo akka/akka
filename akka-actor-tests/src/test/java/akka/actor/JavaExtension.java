@@ -14,7 +14,7 @@ import com.typesafe.config.Config;
 
 import static org.junit.Assert.*;
 
-public class JavaExtension {
+public class JavaExtension extends JavaExtensionSuite {
 
   static class Provider implements ExtensionIdProvider {
     public ExtensionId<TestExtension> lookup() {

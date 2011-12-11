@@ -14,6 +14,7 @@ import akka.japi.{ SideEffect, Option ⇒ JOption }
 import akka.util.Bootable
 
 import TypedCamelAccess._
+import akka.dispatch.Block
 
 /**
  * Publishes consumer actors at their Camel endpoints. Consumer actors are published asynchronously when
@@ -164,7 +165,7 @@ trait CamelService extends Bootable {
    * activations that occurred in the past are not considered.
    */
   private def expectEndpointActivationCount(count: Int): CountDownLatch =
-    (activationTracker ? SetExpectedActivationCount(count)).as[CountDownLatch].get
+    Block.sync((activationTracker ? SetExpectedActivationCount(count)).mapTo[CountDownLatch], 3 seconds)
 
   /**
    * Sets an expectation on the number of upcoming endpoint de-activations and returns
@@ -172,7 +173,7 @@ trait CamelService extends Bootable {
    * de-activations that occurred in the past are not considered.
    */
   private def expectEndpointDeactivationCount(count: Int): CountDownLatch =
-    (activationTracker ? SetExpectedDeactivationCount(count)).as[CountDownLatch].get
+    Block.sync((activationTracker ? SetExpectedDeactivationCount(count)).mapTo[CountDownLatch], 3 seconds)
 
   private[camel] def registerPublishRequestor: Unit =
     Actor.registry.addListener(publishRequestor)

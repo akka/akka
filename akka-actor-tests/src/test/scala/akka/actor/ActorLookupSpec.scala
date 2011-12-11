@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
+import akka.dispatch.Block
 
 object ActorLookupSpec {
 
@@ -36,7 +37,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
   val c1 = system.actorOf(p, "c1")
   val c2 = system.actorOf(p, "c2")
-  val c21 = (c2 ? Create("c21")).as[ActorRef].get
+  val c21 = Block.sync((c2 ? Create("c21")).mapTo[ActorRef], timeout.duration)
 
   val user = system.asInstanceOf[ActorSystemImpl].guardian
   val syst = system.asInstanceOf[ActorSystemImpl].systemGuardian

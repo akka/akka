@@ -33,7 +33,6 @@ import Status._
 import DeploymentConfig._
 
 import akka.event.EventHandler
-import akka.dispatch.{ Dispatchers, Future, PinnedDispatcher }
 import akka.config.Config
 import akka.config.Config._
 
@@ -52,6 +51,7 @@ import RemoteSystemDaemonMessageType._
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
+import akka.dispatch.{Block, Dispatchers, Future, PinnedDispatcher}
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -1156,22 +1156,17 @@ class DefaultClusterNode private[akka] (
       connection ! command
     } else {
       try {
-        (connection ? (command, remoteDaemonAckTimeout)).as[Status] match {
-
-          case Some(Success(status)) ⇒
+        Block.sync(connection ? (command, remoteDaemonAckTimeout), 10 seconds).asInstanceOf[Status] match {
+          case Success(status) ⇒
             EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(status))
-
-          case Some(Failure(cause)) ⇒
+          case Failure(cause) ⇒
             EventHandler.error(cause, this, cause.toString)
             throw cause
-
-          case None ⇒
-            val error = new ClusterException(
-              "Remote command to [%s] timed out".format(connection.address))
-            EventHandler.error(error, this, error.toString)
-            throw error
         }
       } catch {
+        case e: TimeoutException =>
+          EventHandler.error(e, this, "Remote command to [%s] timed out".format(connection.address))
+          throw e
         case e: Exception ⇒
           EventHandler.error(e, this, "Could not send remote command to [%s] due to: %s".format(connection.address, e.toString))
           throw e

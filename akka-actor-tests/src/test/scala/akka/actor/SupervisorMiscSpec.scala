@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.testkit.{ filterEvents, EventFilter }
-import akka.dispatch.{ PinnedDispatcher, Dispatchers }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers, Block }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
@@ -28,13 +28,11 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
           }
         })
 
-        val actor1 = (supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
+        val actor1, actor2 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
 
-        val actor2 = (supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
+        val actor3 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newDispatcher("test").build)).mapTo[ActorRef], timeout.duration)
 
-        val actor3 = (supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newDispatcher("test").build)).as[ActorRef].get
-
-        val actor4 = (supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).as[ActorRef].get
+        val actor4 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
 
         actor1 ! Kill
         actor2 ! Kill
@@ -42,10 +40,10 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
         actor4 ! Kill
 
         countDownLatch.await(10, TimeUnit.SECONDS)
-        assert((actor1 ? "status").as[String].get == "OK", "actor1 is shutdown")
-        assert((actor2 ? "status").as[String].get == "OK", "actor2 is shutdown")
-        assert((actor3 ? "status").as[String].get == "OK", "actor3 is shutdown")
-        assert((actor4 ? "status").as[String].get == "OK", "actor4 is shutdown")
+        assert(Block.sync(actor1 ? "status", timeout.duration) == "OK", "actor1 is shutdown")
+        assert(Block.sync(actor2 ? "status", timeout.duration) == "OK", "actor2 is shutdown")
+        assert(Block.sync(actor3 ? "status", timeout.duration) == "OK", "actor3 is shutdown")
+        assert(Block.sync(actor4 ? "status", timeout.duration) == "OK", "actor4 is shutdown")
       }
     }
   }

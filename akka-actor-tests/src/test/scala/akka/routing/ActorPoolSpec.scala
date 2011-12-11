@@ -47,7 +47,7 @@ class TypedActorPoolSpec extends AkkaSpec with DefaultTimeout {
       val results = for (i ← 1 to 100) yield (i, pool.sq(i, 0))
 
       for ((i, r) ← results)
-        r.get must equal(i * i)
+        Block.sync(r, timeout.duration) must equal(i * i)
 
       ta.stop(pool)
     }
@@ -97,7 +97,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       count.get must be(2)
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
 
       pool.stop()
     }
@@ -163,7 +163,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       pool ! 1
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
 
       var loops = 0
       def loop(t: Int) = {
@@ -183,7 +183,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch.await
       count.get must be(loops)
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
 
       // a whole bunch should max it out
 
@@ -192,7 +192,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch.await
       count.get must be(loops)
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(4)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(4)
 
       pool.stop()
     }
@@ -239,7 +239,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch.await
       count.get must be(loops)
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
 
       // send a bunch over the threshold and observe an increment
       loops = 15
@@ -248,7 +248,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch.await(10 seconds)
       count.get must be(loops)
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be >= (3)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be >= (3)
 
       pool.stop()
     }
@@ -342,7 +342,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       (5 millis).dilated.sleep
 
-      val z = (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size
+      val z = Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size
 
       z must be >= (2)
 
@@ -353,7 +353,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
         (500 millis).dilated.sleep
       }
 
-      (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
+      Block.sync((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be <= (z)
 
       pool.stop()
     }

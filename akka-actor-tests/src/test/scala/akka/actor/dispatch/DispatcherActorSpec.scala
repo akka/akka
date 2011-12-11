@@ -3,11 +3,11 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
-import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.actor.{ Props, Actor }
 import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.DefaultTimeout
+import akka.dispatch.{ Block, PinnedDispatcher, Dispatchers, Dispatcher }
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -44,8 +44,7 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
-      val result = (actor ? "Hello").as[String]
-      assert("World" === result.get)
+      assert("World" === Block.sync(actor ? "Hello", timeout.duration))
       actor.stop()
     }
 

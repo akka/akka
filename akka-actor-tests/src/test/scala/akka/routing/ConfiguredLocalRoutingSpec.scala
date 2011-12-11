@@ -8,6 +8,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.DeploymentConfig._
 import akka.routing.Routing.Broadcast
 import akka.testkit.DefaultTimeout
+import akka.dispatch.Block
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout {
@@ -82,7 +83,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout {
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val id = (actor ? "hit").as[Int].getOrElse(fail("No id returned by actor"))
+          val id = Block.sync((actor ? "hit").mapTo[Int], timeout.duration)
           replies = replies + (id -> (replies(id) + 1))
         }
       }
@@ -193,7 +194,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout {
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val id = (actor ? "hit").as[Int].getOrElse(fail("No id returned by actor"))
+          val id = Block.sync((actor ? "hit").mapTo[Int], timeout.duration)
           replies = replies + (id -> (replies(id) + 1))
         }
       }

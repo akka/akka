@@ -306,7 +306,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         def receive = { case _ ⇒ sender ! nested }
       })
 
-      val nested = (a ? "any").as[ActorRef].get
+      val nested = Block.sync((a ? "any").mapTo[ActorRef], timeout.duration)
       a must not be null
       nested must not be null
       (a ne nested) must be === true
@@ -314,13 +314,13 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "support advanced nested actorOfs" in {
       val a = system.actorOf(Props(new OuterActor(system.actorOf(Props(new InnerActor)))))
-      val inner = (a ? "innerself").as[Any].get
+      val inner = Block.sync(a ? "innerself", timeout.duration)
 
-      (a ? a).as[ActorRef].get must be(a)
-      (a ? "self").as[ActorRef].get must be(a)
+      Block.sync(a ? a, timeout.duration) must be(a)
+      Block.sync(a ? "self", timeout.duration) must be(a)
       inner must not be a
 
-      (a ? "msg").as[String] must be === Some("msg")
+      Block.sync(a ? "msg", timeout.duration) must be === "msg"
     }
 
     "support reply via sender" in {

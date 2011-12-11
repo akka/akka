@@ -172,7 +172,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
 
   private def sendSync(exchange: Exchange) = {
     val actor = target(exchange)
-    val result: Any = try { (actor ? requestFor(exchange)).as[Any] } catch { case e ⇒ Some(Failure(e)) }
+    val result: Any = try { Some(Block.sync((actor ? requestFor(exchange), 5 seconds)) } catch { case e ⇒ Some(Failure(e)) }
 
     result match {
       case Some(Ack)          ⇒ { /* no response message to set */ }
