@@ -157,8 +157,8 @@ class RemoteSystemDaemon(remote: Remote, _path: ActorPath, _parent: InternalActo
       import remote.remoteAddress
 
       message.getActorPath match {
-        case RemoteActorPath(`remoteAddress`, elems) if elems.size > 0 && elems.head == "remote" ⇒
-          // TODO RK canonicalize path so as not to duplicate it always
+        case RemoteActorPath(`remoteAddress`, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+          // TODO RK canonicalize path so as not to duplicate it always #1446
           val subpath = elems.drop(1)
           val path = remote.remoteDaemon.path / subpath
           val supervisor = remote.system.actorFor(message.getSupervisor).asInstanceOf[InternalActorRef]

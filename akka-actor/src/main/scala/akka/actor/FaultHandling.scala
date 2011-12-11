@@ -50,7 +50,7 @@ object FaultHandlingStrategy {
   case object Restart extends Action
   case object Stop extends Action
   case object Escalate extends Action
-  
+
   // Java API
   def resume = Resume
   def restart = Restart
