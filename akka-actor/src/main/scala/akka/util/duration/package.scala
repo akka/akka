@@ -7,6 +7,23 @@ package akka.util
 import java.util.concurrent.TimeUnit
 
 package object duration {
+  trait Classifier[C] {
+    type R
+    def convert(d: Duration): R
+  }
+
+  object span
+  implicit object spanConvert extends Classifier[span.type] {
+    type R = Duration
+    def convert(d: Duration) = d
+  }
+
+  object fromNow
+  implicit object fromNowConvert extends Classifier[fromNow.type] {
+    type R = Deadline
+    def convert(d: Duration) = Deadline.now + d
+  }
+
   implicit def intToDurationInt(n: Int) = new DurationInt(n)
   implicit def longToDurationLong(n: Long) = new DurationLong(n)
   implicit def doubleToDurationDouble(d: Double) = new DurationDouble(d)
