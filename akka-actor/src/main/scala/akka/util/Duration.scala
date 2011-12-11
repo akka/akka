@@ -38,13 +38,19 @@ case class Timer(duration: Duration, throwExceptionOnTimeout: Boolean = false) {
   }
 }
 
-case class Deadline(d: Duration)
+case class Deadline(d: Duration) {
+  def +(other: Duration): Deadline = copy(d = d + other)
+  def -(other: Duration): Deadline = copy(d = d - other)
+  def -(other: Deadline): Duration = d - other.d
+  def timeLeft: Duration = this - Deadline.now
+}
 object Deadline {
-  def now = Duration(System.nanoTime, NANOSECONDS)
-  implicit def toGo(d: Deadline): Duration = d.d - now
+  def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
 }
 
 object Duration {
+  implicit def timeLeft(implicit d: Deadline): Duration = d.timeLeft
+
   def apply(length: Long, unit: TimeUnit): Duration = new FiniteDuration(length, unit)
   def apply(length: Double, unit: TimeUnit): Duration = fromNanos(unit.toNanos(1) * length)
   def apply(length: Long, unit: String): Duration = new FiniteDuration(length, timeUnit(unit))
@@ -274,7 +280,7 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
   def sleep(): Unit = Thread.sleep(toMillis)
-  def fromNow: Deadline = Deadline(Deadline.now + this)
+  def fromNow: Deadline = Deadline.now + this
 
   // Java API
   def lt(other: Duration) = this < other

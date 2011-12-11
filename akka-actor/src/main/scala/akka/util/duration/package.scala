@@ -21,7 +21,7 @@ package object duration {
   object fromNow
   implicit object fromNowConvert extends Classifier[fromNow.type] {
     type R = Deadline
-    def convert(d: Duration) = Deadline(Deadline.now + d)
+    def convert(d: Duration) = Deadline.now + d
   }
 
   implicit def intToDurationInt(n: Int) = new DurationInt(n)
