@@ -5,9 +5,8 @@ package akka.remote
 
 import akka.testkit._
 import akka.actor._
+import akka.routing._
 import com.typesafe.config._
-import akka.actor.DeploymentConfig._
-import akka.remote.RemoteDeploymentConfig.RemoteScope
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -41,9 +40,9 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
       deployment must be(Some(
         Deploy(
           service,
+          deployment.get.config,
           None,
-          RoundRobin,
-          NrOfInstances(3),
+          RoundRobinRouter(3),
           RemoteScope(UnparsedSystemAddress(Some("sys"), UnparsedTransportAddress("akka", "wallace", 2552))))))
     }
 

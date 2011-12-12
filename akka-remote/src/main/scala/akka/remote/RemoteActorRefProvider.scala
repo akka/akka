@@ -87,7 +87,7 @@ class RemoteActorRefProvider(
        */
 
       @scala.annotation.tailrec
-      def lookupRemotes(p: Iterable[String]): Option[DeploymentConfig.Deploy] = {
+      def lookupRemotes(p: Iterable[String]): Option[Deploy] = {
         p.headOption match {
           case None           ⇒ None
           case Some("remote") ⇒ lookupRemotes(p.drop(2))
@@ -104,7 +104,7 @@ class RemoteActorRefProvider(
       })
 
       deployment match {
-        case Some(DeploymentConfig.Deploy(_, _, _, _, RemoteDeploymentConfig.RemoteScope(address))) ⇒
+        case Some(Deploy(_, _, _, _, RemoteScope(address))) ⇒
           if (address == rootPath.address) local.actorOf(system, props, supervisor, path, false)
           else address.parse(remote.transports) match {
             case Left(x) ⇒

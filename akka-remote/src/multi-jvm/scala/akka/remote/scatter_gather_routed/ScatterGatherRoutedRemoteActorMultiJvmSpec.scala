@@ -3,7 +3,6 @@ package akka.remote.scatter_gather_routed
 import akka.actor.Actor
 import akka.remote._
 import akka.routing._
-import akka.routing.Routing.Broadcast
 import akka.testkit.DefaultTimeout
 
 object ScatterGatherRoutedRemoteActorMultiJvmSpec {

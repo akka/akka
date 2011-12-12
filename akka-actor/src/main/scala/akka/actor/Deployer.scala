@@ -7,12 +7,20 @@ package akka.actor
 import collection.immutable.Seq
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.Logging
-import akka.actor.DeploymentConfig._
 import akka.AkkaException
 import akka.config.ConfigurationException
 import akka.util.Duration
 import akka.event.EventStream
 import com.typesafe.config._
+import akka.routing._
+
+case class Deploy(path: String, config: Config, recipe: Option[ActorRecipe] = None, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
+
+case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
+
+trait Scope
+case class LocalScope() extends Scope
+case object LocalScope extends Scope
 
 /**
  * Deployer maps actor paths to actor deployments.
@@ -40,48 +48,20 @@ class Deployer(val settings: ActorSystem.Settings) {
     import akka.util.ReflectiveAccess.getClassFor
 
     val deployment = config.withFallback(default)
-    // --------------------------------
-    // akka.actor.deployment.<path>.router
-    // --------------------------------
-    val router: Routing = deployment.getString("router") match {
-      case "round-robin"    ⇒ RoundRobin
-      case "random"         ⇒ Random
-      case "scatter-gather" ⇒ ScatterGather
-      case "least-cpu"      ⇒ LeastCPU
-      case "least-ram"      ⇒ LeastRAM
-      case "least-messages" ⇒ LeastMessages
-      case routerClassName  ⇒ CustomRouter(routerClassName)
+
+    val targets = deployment.getStringList("target.paths").asScala.toSeq
+
+    val nrOfInstances = deployment.getInt("nr-of-instances")
+
+    val router: RouterConfig = deployment.getString("router") match {
+      case "direct"         ⇒ NoRouter
+      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, targets)
+      case "random"         ⇒ RandomRouter(nrOfInstances, targets)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, targets)
+      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, targets)
+      case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 
-    // --------------------------------
-    // akka.actor.deployment.<path>.nr-of-instances
-    // --------------------------------
-    val nrOfInstances = {
-      if (router == NoRouting) OneNrOfInstances
-      else {
-        def invalidNrOfInstances(wasValue: Any) = new ConfigurationException(
-          "Config option [akka.actor.deployment." + key +
-            ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
-            wasValue + "]")
-
-        deployment.getAnyRef("nr-of-instances").asInstanceOf[Any] match {
-          case "auto" ⇒ AutoNrOfInstances
-          case 1      ⇒ OneNrOfInstances
-          case 0      ⇒ ZeroNrOfInstances
-          case nrOfReplicas: Number ⇒
-            try {
-              new NrOfInstances(nrOfReplicas.intValue)
-            } catch {
-              case e: Exception ⇒ throw invalidNrOfInstances(nrOfReplicas)
-            }
-          case unknown ⇒ throw invalidNrOfInstances(unknown)
-        }
-      }
-    }
-
-    // --------------------------------
-    // akka.actor.deployment.<path>.create-as
-    // --------------------------------
     val recipe: Option[ActorRecipe] =
       deployment.getString("create-as.class") match {
         case "" ⇒ None
@@ -91,7 +71,7 @@ class Deployer(val settings: ActorSystem.Settings) {
           Some(ActorRecipe(implementationClass))
       }
 
-    Some(Deploy(key, recipe, router, nrOfInstances, LocalScope))
+    Some(Deploy(key, deployment, recipe, router, LocalScope))
   }
 
 }

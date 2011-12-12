@@ -10,7 +10,6 @@ import akka.actor.Status._
 import akka.util._
 import akka.util.duration._
 import akka.util.Helpers._
-import akka.actor.DeploymentConfig._
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._

@@ -3,7 +3,6 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import collection.mutable.LinkedList
-import akka.routing.Routing.Broadcast
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 

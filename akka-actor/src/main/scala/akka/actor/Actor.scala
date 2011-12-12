@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import DeploymentConfig._
 import akka.dispatch._
 import akka.routing._
 import akka.util.Duration
