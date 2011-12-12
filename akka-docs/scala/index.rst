@@ -20,4 +20,3 @@ Scala API
    fsm
    http
    testing
-   tutorial-chat-server
