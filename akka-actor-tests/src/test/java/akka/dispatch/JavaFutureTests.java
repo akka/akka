@@ -60,7 +60,7 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
-    f.onResult(new Procedure<String>() {
+    f.onSuccess(new Procedure<String>() {
       public void apply(String result) {
         if (result.equals("foo"))
           latch.countDown();
@@ -77,7 +77,7 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
-    f.onException(new Procedure<Throwable>() {
+    f.onFailure(new Procedure<Throwable>() {
       public void apply(Throwable t) {
         if (t instanceof NullPointerException)
           latch.countDown();

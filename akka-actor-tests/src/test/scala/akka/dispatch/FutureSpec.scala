@@ -394,7 +394,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "receiveShouldExecuteOnComplete" in {
         val latch = new StandardLatch
         val actor = system.actorOf[TestActor]
-        actor ? "Hello" onResult { case "World" ⇒ latch.open }
+        actor ? "Hello" onSuccess { case "World" ⇒ latch.open }
         assert(latch.tryAwait(5, TimeUnit.SECONDS))
         actor.stop()
       }
@@ -427,12 +427,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val latch = new StandardLatch
           val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
           f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-          f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+          f2 onSuccess { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
           val f3 = f2 map (s ⇒ s.toUpperCase)
           latch.open
           assert(Block.sync(f2, timeout.duration) === "success")
           f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-          f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
+          f2 onSuccess { case _ ⇒ throw new ThrowableTest("current thread receive") }
           assert(Block.sync(f3, timeout.duration) === "SUCCESS")
         }
       }

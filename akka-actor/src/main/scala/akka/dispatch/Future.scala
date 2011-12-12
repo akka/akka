@@ -295,7 +295,7 @@ object Future {
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit dispatcher: MessageDispatcher): Future[A] = {
     val future = Promise[A]
     dispatchTask({ () ⇒
-      (reify(body) foreachFull (future success, future failure): Future[Any]) onException {
+      (reify(body) foreachFull (future success, future failure): Future[Any]) onFailure {
         case e: Exception ⇒ future failure e
       }
     }, true)
@@ -420,13 +420,13 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
    * When the future is completed with a valid result, apply the provided
    * PartialFunction to the result. See `onComplete` for more details.
    * <pre>
-   *   future onResult {
+   *   future onSuccess {
    *     case Foo ⇒ target ! "foo"
    *     case Bar ⇒ target ! "bar"
    *   }
    * </pre>
    */
-  final def onResult(pf: PartialFunction[T, Unit]): this.type = onComplete {
+  final def onSuccess(pf: PartialFunction[T, Unit]): this.type = onComplete {
     _.value match {
       case Some(Right(r)) if pf isDefinedAt r ⇒ pf(r)
       case _                                  ⇒
@@ -437,12 +437,12 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
    * When the future is completed with an exception, apply the provided
    * PartialFunction to the exception. See `onComplete` for more details.
    * <pre>
-   *   future onException {
+   *   future onFailure {
    *     case NumberFormatException ⇒ target ! "wrong format"
    *   }
    * </pre>
    */
-  final def onException(pf: PartialFunction[Throwable, Unit]): this.type = onComplete {
+  final def onFailure(pf: PartialFunction[Throwable, Unit]): this.type = onComplete {
     _.value match {
       case Some(Left(ex)) if pf isDefinedAt ex ⇒ pf(ex)
       case _                                   ⇒
