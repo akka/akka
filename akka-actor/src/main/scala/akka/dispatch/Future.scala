@@ -45,40 +45,32 @@ object Block {
   def sync[T](block: Blockable[T], atMost: Duration): T = block.sync(atMost)
 }
 
-class FutureFactory(implicit dispatcher: MessageDispatcher) {
+object Futures {
 
   /**
    * Java API, equivalent to Future.apply
    */
-  def future[T](body: Callable[T]): Future[T] =
-    Future(body.call)
-
-  /**
-   * Java API, equivalent to Future.apply
-   */
-  def future[T](body: Callable[T], dispatcher: MessageDispatcher): Future[T] =
-    Future(body.call)(dispatcher)
+  def future[T](body: Callable[T], dispatcher: MessageDispatcher): Future[T] = Future(body.call)(dispatcher)
 
   /**
    * Java API, equivalent to Promise.apply
    */
-  def promise[T](): Promise[T] = Promise[T]()
+  def promise[T](dispatcher: MessageDispatcher): Promise[T] = Promise[T]()(dispatcher)
 
   /**
    * Java API.
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
-  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean]): Future[JOption[T]] = {
-    val pred: T ⇒ Boolean = predicate.apply(_)
-    Future.find[T]((scala.collection.JavaConversions.iterableAsScalaIterable(futures)))(pred).map(JOption.fromScalaOption(_))
+  def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], dispatcher: MessageDispatcher): Future[JOption[T]] = {
+    Future.find[T]((scala.collection.JavaConversions.iterableAsScalaIterable(futures)))(predicate.apply(_))(dispatcher).map(JOption.fromScalaOption(_))
   }
 
   /**
    * Java API.
    * Returns a Future to the result of the first future in the list that is completed
    */
-  def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]]): Future[T] =
-    Future.firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures))
+  def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]], dispatcher: MessageDispatcher): Future[T] =
+    Future.firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(dispatcher)
 
   /**
    * Java API
@@ -87,22 +79,23 @@ class FutureFactory(implicit dispatcher: MessageDispatcher) {
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
    */
-  def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, R]): Future[R] =
-    Future.fold(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(zero)(fun.apply _)
+  def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, R], dispatcher: MessageDispatcher): Future[R] =
+    Future.fold(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(zero)(fun.apply _)(dispatcher)
 
   /**
    * Java API.
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
-  def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, T]): Future[R] =
-    Future.reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)
+  def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, T], dispatcher: MessageDispatcher): Future[R] =
+    Future.reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)(dispatcher)
 
   /**
    * Java API.
    * Simple version of Future.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.lang.Iterable[A]].
    * Useful for reducing many Futures into a single Future.
    */
-  def sequence[A](in: JIterable[Future[A]]): Future[JIterable[A]] = {
+  def sequence[A](in: JIterable[Future[A]], dispatcher: MessageDispatcher): Future[JIterable[A]] = {
+    implicit val d = dispatcher
     scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) ⇒
       for (r ← fr; a ← fa) yield {
         r add a
@@ -116,7 +109,8 @@ class FutureFactory(implicit dispatcher: MessageDispatcher) {
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
-  def traverse[A, B](in: JIterable[A], fn: JFunc[A, Future[B]]): Future[JIterable[B]] = {
+  def traverse[A, B](in: JIterable[A], fn: JFunc[A, Future[B]], dispatcher: MessageDispatcher): Future[JIterable[B]] = {
+    implicit val d = dispatcher
     scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
       val fb = fn(a)
       for (r ← fr; b ← fb) yield { r add b; r }
@@ -612,6 +606,8 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
 object Promise {
   /**
    * Creates a non-completed, new, Promise
+   *
+   * Scala API
    */
   def apply[A]()(implicit dispatcher: MessageDispatcher): Promise[A] = new DefaultPromise[A]()
 }
