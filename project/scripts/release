@@ -183,6 +183,7 @@ fi
 # build the release
 echolog "Building the release..."
 try sbt build-release
+try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
 echolog "Successfully created local release"
 
 # commit and tag this release
