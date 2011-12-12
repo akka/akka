@@ -15,6 +15,7 @@ import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
 import java.util.concurrent.{ TimeoutException, TimeUnit }
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -406,12 +407,13 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 class AskActorRef(
   val path: ActorPath,
   override val getParent: InternalActorRef,
-  deathWatch: DeathWatch,
-  val dispatcher: MessageDispatcher) extends MinimalActorRef {
+  val dispatcher: MessageDispatcher,
+  val deathWatch: DeathWatch) extends MinimalActorRef {
 
+  final val running = new AtomicBoolean(true)
   final val result = Promise[Any]()(dispatcher)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = if (running.get) message match {
     case Status.Success(r) ⇒ result.completeWithResult(r)
     case Status.Failure(f) ⇒ result.completeWithException(f)
     case other             ⇒ result.completeWithResult(other)
@@ -427,7 +429,9 @@ class AskActorRef(
 
   override def isTerminated = result.isCompleted
 
-  override def stop(): Unit = if (!isTerminated) result.completeWithException(new ActorKilledException("Stopped"))
+  override def stop(): Unit = if (running.getAndSet(false)) {
+    deathWatch.publish(Terminated(this))
+  }
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path.toString)

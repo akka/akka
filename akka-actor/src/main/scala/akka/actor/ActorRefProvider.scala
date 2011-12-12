@@ -571,15 +571,12 @@ class LocalActorRefProvider(
       case t ⇒
         val path = tempPath()
         val name = path.name
-        val a = new AskActorRef(path, tempContainer, deathWatch, dispatcher)
+        val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
         tempContainer.children.put(name, a)
-        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.children.remove(name) }
+        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.children.remove(name); a.stop() }
         a.result onComplete { _ ⇒
-          try { f.cancel() }
-          finally {
-            try { tempContainer.children.remove(name) }
-            finally { deathWatch.publish(Terminated(a)) }
-          }
+          try { a.stop(); f.cancel() }
+          finally { tempContainer.children.remove(name) }
         }
         recipient.tell(message, a)
         a.result
