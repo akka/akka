@@ -828,13 +828,29 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
     }
     "transform result with map" in { f((future, result) ⇒ (future map (_.toString.length)).get must be(result.toString.length)) }
-    "compose result with flatMap" is pending
-    "perform action with foreach" is pending
-    "match result with collect" is pending
-    "not recover from exception" is pending
-    "perform action on result" is pending
+    "compose result with flatMap" in {
+      f { (future, result) ⇒
+        val r = for (r ← future; p ← Promise.successful("foo")) yield r.toString + p
+        Block.sync(r, timeout.duration) must be(result.toString + "foo")
+      }
+    }
+    "perform action with foreach" in {
+      f { (future, result) ⇒
+        val p = Promise[Any]()
+        future foreach p.success
+        Block.sync(p, timeout.duration) must be(result)
+      }
+    }
+    "not recover from exception" in { f((future, result) ⇒ Block.sync(future.recover({ case _ ⇒ "pigdog" }), timeout.duration) must be(result)) }
+    "perform action on result" in {
+      f { (future, result) ⇒
+        val p = Promise[Any]()
+        future.onSuccess { case x ⇒ p.success(x) }
+        Block.sync(p, timeout.duration) must be(result)
+      }
+    }
     "not perform action on exception" is pending
-    "cast using mapTo" is pending
+    "cast using mapTo" in { f((future, result) ⇒ Block.sync(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), timeout.duration) must be(false)) }
   }
 
   def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) ⇒ Unit) ⇒ Unit) {
@@ -854,14 +870,19 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         (evaluating { (future filter (_ ⇒ false)).get } must produce[E]).getMessage must be(message)
       }
     }
-    "retain exception with map" in { f((future, message) ⇒ (evaluating { (future map (_.toString.length)).get } must produce[E]).getMessage must be(message)) }
-    "retain exception with flatMap" is pending
+    "retain exception with map" in { f((future, message) ⇒ (evaluating { Block.sync(future map (_.toString.length), timeout.duration) } must produce[E]).getMessage must be(message)) }
+    "retain exception with flatMap" in { f((future, message) ⇒ (evaluating { Block.sync(future flatMap (_ ⇒ Promise.successful[Any]("foo")), timeout.duration) } must produce[E]).getMessage must be(message)) }
     "not perform action with foreach" is pending
-    "retain exception with collect" is pending
-    "recover from exception" is pending
+    "recover from exception" in { f((future, message) ⇒ Block.sync(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), timeout.duration) must be("pigdog")) }
     "not perform action on result" is pending
-    "perform action on exception" is pending
-    "always cast successfully using mapTo" is pending
+    "perform action on exception" in {
+      f { (future, message) ⇒
+        val p = Promise[Any]()
+        future.onFailure { case _ ⇒ p.success(message) }
+        Block.sync(p, timeout.duration) must be(message)
+      }
+    }
+    "always cast successfully using mapTo" in { f((future, message) ⇒ (evaluating { Block.sync(future.mapTo[java.lang.Thread], timeout.duration) } must produce[E]).getMessage must be(message)) }
   }
 
   sealed trait IntAction { def apply(that: Int): Int }
