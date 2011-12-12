@@ -8,6 +8,7 @@ import akka.testkit._
 import akka.util.duration._
 import Actor._
 import akka.util.Duration
+import akka.dispatch.Block
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
@@ -32,20 +33,21 @@ class ForwardActorSpec extends AkkaSpec {
 
   "A Forward Actor" must {
 
-    "forward actor reference when invoking forward on bang" in {
+    "forward actor reference when invoking forward on tell" in {
       val latch = new TestLatch(1)
 
-      val replyTo = system.actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
+      val replyTo = system.actorOf(new Actor { def receive = { case ExpectedMessage ⇒ testActor ! ExpectedMessage } })
 
       val chain = createForwardingChain(system)
 
       chain.tell(ExpectedMessage, replyTo)
-      latch.await(Duration(5, "s")) must be === true
+      expectMsg(5 seconds, ExpectedMessage)
     }
 
-    "forward actor reference when invoking forward on bang bang" in {
+    "forward actor reference when invoking forward on ask" in {
       val chain = createForwardingChain(system)
-      chain.ask(ExpectedMessage, 5000).get must be === ExpectedMessage
+      chain.ask(ExpectedMessage, 5000) onSuccess { case ExpectedMessage ⇒ testActor ! ExpectedMessage }
+      expectMsg(5 seconds, ExpectedMessage)
     }
   }
 }

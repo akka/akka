@@ -8,6 +8,7 @@ import collection.mutable.LinkedList
 import akka.routing.Routing.Broadcast
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
+import akka.dispatch.Block
 
 object RoutingSpec {
 
@@ -270,7 +271,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
       shutdownLatch.await
 
-      (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
+      Block.sync(actor ? Broadcast(0), timeout.duration).asInstanceOf[Int] must be(1)
     }
 
     "throw an exception, if all the connections have stopped" in {
@@ -297,8 +298,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
 
-      (actor ? Broadcast("Hi!")).get.asInstanceOf[Int] must be(0)
-
+      Block.sync(actor ? Broadcast("Hi!"), timeout.duration).asInstanceOf[Int] must be(0)
     }
 
     "return the first response from connections, when some of them failed to reply" in {
@@ -306,7 +306,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
       val actor = new RoutedActorRef(system, props, impl.guardian, "foo")
 
-      (actor ? Broadcast(0)).get.asInstanceOf[Int] must be(1)
+      Block.sync(actor ? Broadcast(0), timeout.duration).asInstanceOf[Int] must be(1)
     }
 
     "be started when constructed" in {

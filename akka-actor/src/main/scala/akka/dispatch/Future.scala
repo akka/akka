@@ -376,24 +376,6 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
    */
   def apply(): T @cps[Future[Any]] = shift(this flatMap (_: T ⇒ Future[Any]))
 
-  //Removed
-  /*def as[A](implicit m: Manifest[A]): Option[A] = {
-    try Block.on(this, Duration.Inf) catch { case _: TimeoutException ⇒ }
-    value match {
-      case None           ⇒ None
-      case Some(Left(ex)) ⇒ throw ex
-      case Some(Right(v)) ⇒
-        try { Some(BoxedType(m.erasure).cast(v).asInstanceOf[A]) } catch {
-          case c: ClassCastException ⇒
-            if (v.asInstanceOf[AnyRef] eq null) throw new ClassCastException("null cannot be cast to " + m.erasure)
-            else throw new ClassCastException("'" + v + "' of class " + v.asInstanceOf[AnyRef].getClass + " cannot be cast to " + m.erasure)
-        }
-    }
-  }*/
-
-  @deprecated("Used Block.on(future, timeoutDuration)")
-  def get: T = Block.sync(this, Duration.Inf)
-
   /**
    * Tests whether this Future has been completed.
    */

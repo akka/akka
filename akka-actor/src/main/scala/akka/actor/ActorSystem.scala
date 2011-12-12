@@ -339,7 +339,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (systemGuardian ? CreateChild(props, name)).get match {
+    Block.sync(systemGuardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -347,7 +347,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateChild(props, name)).get match {
+    Block.sync(guardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -355,7 +355,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateRandomNameChild(props)).get match {
+    Block.sync(guardian ? CreateRandomNameChild(props), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }

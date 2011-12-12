@@ -193,9 +193,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
       val f3 = client ? ByteString("Hello World!3")
-      f1.get must equal(ByteString("Hello World!1"))
-      f2.get must equal(ByteString("Hello World!2"))
-      f3.get must equal(ByteString("Hello World!3"))
+      Block.sync(f1, timeout.duration) must equal(ByteString("Hello World!1"))
+      Block.sync(f2, timeout.duration) must equal(ByteString("Hello World!2"))
+      Block.sync(f3, timeout.duration) must equal(ByteString("Hello World!3"))
       client.stop
       server.stop
       ioManager.stop
@@ -209,7 +209,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val client = system.actorOf(new SimpleEchoClient("localhost", 8065, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 1000)
+      assert(Block.sync(f, timeout.duration).size === 1000)
       client.stop
       server.stop
       ioManager.stop
@@ -223,7 +223,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val client = system.actorOf(new SimpleEchoClient("localhost", 8066, ioManager))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 1000)
+      assert(Block.sync(f, timeout.duration).size === 1000)
       client.stop
       server.stop
       ioManager.stop
@@ -244,12 +244,12 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       Block.on(f4, timeout.duration)
       val f5 = client1 ? (('get, "test"))
       val f6 = client2 ? 'getall
-      f1.get must equal("OK")
-      f2.get must equal("OK")
-      f3.get must equal(ByteString("World"))
-      f4.get must equal("OK")
-      f5.get must equal(ByteString("I'm a test!"))
-      f6.get must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
+      Block.sync(f1, timeout.duration) must equal("OK")
+      Block.sync(f2, timeout.duration) must equal("OK")
+      Block.sync(f3, timeout.duration) must equal(ByteString("World"))
+      Block.sync(f4, timeout.duration) must equal("OK")
+      Block.sync(f5, timeout.duration) must equal(ByteString("I'm a test!"))
+      Block.sync(f6, timeout.duration) must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
       client1.stop
       client2.stop
       server.stop

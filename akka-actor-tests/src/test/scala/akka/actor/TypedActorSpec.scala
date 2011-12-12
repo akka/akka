@@ -247,7 +247,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t = newFooBar
       val f = t.futurePigdog(200)
       f.isCompleted must be(false)
-      f.get must be("Pigdog")
+      Block.sync(f, timeout.duration) must be("Pigdog")
       mustStop(t)
     }
 
@@ -255,7 +255,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t = newFooBar
       val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20, i))
       for ((i, f) ← futures) {
-        f.get must be("Pigdog" + i)
+        Block.sync(f, timeout.duration) must be("Pigdog" + i)
       }
       mustStop(t)
     }
@@ -278,7 +278,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t, t2 = newFooBar(Duration(2, "s"))
       val f = t.futureComposePigdogFrom(t2)
       f.isCompleted must be(false)
-      f.get must equal("PIGDOG")
+      Block.sync(f, timeout.duration) must equal("PIGDOG")
       mustStop(t)
       mustStop(t2)
     }
@@ -323,7 +323,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
       f.isCompleted must be(false)
-      f.get must equal(f2.get)
+      Block.sync(f, timeout.duration) must equal(Block.sync(f2, timeout.duration))
       mustStop(t)
     }
 
@@ -348,7 +348,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
 
-      for ((i, r) ← results) r.get must be("Pigdog" + i)
+      for ((i, r) ← results) Block.sync(r, timeout.duration) must be("Pigdog" + i)
 
       for (t ← thais) mustStop(t)
     }

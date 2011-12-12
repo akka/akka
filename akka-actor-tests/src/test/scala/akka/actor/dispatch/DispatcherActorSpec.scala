@@ -66,7 +66,7 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
-      assert((slowOne ? "hogexecutor").get === "OK")
+      assert(Block.sync(slowOne ? "hogexecutor", timeout.duration) === "OK")
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
       fastOne ! "sabotage"
       start.countDown()

@@ -415,7 +415,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ (actor.?(m, timeout)).get.asInstanceOf[AnyRef]
+          case m ⇒ Block.sync(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }

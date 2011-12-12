@@ -50,7 +50,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "return supplied value on timeout" in {
         val timedOut = new KeptPromise[String](Right("Timedout"))
         val promise = Promise[String]() orElse timedOut
-        promise.get must be("Timedout")
+        Block.sync(promise, timeout.duration) must be("Timedout")
       }
     }
     "completed with a result" must {
@@ -200,9 +200,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             c ← (actor ? 7).mapTo[String]
           } yield b + "-" + c
 
-          future1.get must be("10-14")
+          Block.sync(future1, timeout.duration) must be("10-14")
           assert(checkType(future1, manifest[String]))
-          intercept[ClassCastException] { future2.get }
+          intercept[ClassCastException] { Block.sync(future2, timeout.duration) }
           actor.stop()
         }
       }
@@ -230,8 +230,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             Res(c: Int) ← actor ? Req(7)
           } yield b + "-" + c
 
-          future1.get must be("10-14")
-          intercept[MatchError] { future2.get }
+          Block.sync(future1, timeout.duration) must be("10-14")
+          intercept[MatchError] { Block.sync(future2, timeout.duration) }
           actor.stop()
         }
       }
@@ -267,17 +267,17 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
           val future11 = actor ? "Failure" recover { case _ ⇒ "Oops!" }
 
-          future1.get must be(5)
-          intercept[ArithmeticException] { future2.get }
-          intercept[ArithmeticException] { future3.get }
-          future4.get must be("5")
-          future5.get must be("0")
-          intercept[ArithmeticException] { future6.get }
-          future7.get must be("You got ERROR")
-          intercept[RuntimeException] { future8.get }
-          future9.get must be("FAIL!")
-          future10.get must be("World")
-          future11.get must be("Oops!")
+          Block.sync(future1, timeout.duration) must be(5)
+          intercept[ArithmeticException] { Block.sync(future2, timeout.duration) }
+          intercept[ArithmeticException] { Block.sync(future3, timeout.duration) }
+          Block.sync(future4, timeout.duration) must be("5")
+          Block.sync(future5, timeout.duration) must be("0")
+          intercept[ArithmeticException] { Block.sync(future6, timeout.duration) }
+          Block.sync(future7, timeout.duration) must be("You got ERROR")
+          intercept[RuntimeException] { Block.sync(future8, timeout.duration) }
+          Block.sync(future9, timeout.duration) must be("FAIL!")
+          Block.sync(future10, timeout.duration) must be("World")
+          Block.sync(future11, timeout.duration) must be("Oops!")
 
           actor.stop()
         }
@@ -285,16 +285,16 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "firstCompletedOf" in {
         val futures = Vector.fill[Future[Int]](10)(Promise[Int]()) :+ new KeptPromise[Int](Right(5))
-        Future.firstCompletedOf(futures).get must be(5)
+        Block.sync(Future.firstCompletedOf(futures), timeout.duration) must be(5)
       }
 
       "find" in {
         val futures = for (i ← 1 to 10) yield Future { i }
         val result = Future.find[Int](futures)(_ == 3)
-        result.get must be(Some(3))
+        Block.sync(result, timeout.duration) must be(Some(3))
 
         val notFound = Future.find[Int](futures)(_ == 11)
-        notFound.get must be(None)
+        Block.sync(notFound, timeout.duration) must be(None)
       }
 
       "fold" in {
@@ -315,7 +315,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           })
         }
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
-        futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)).get must be(45)
+        Block.sync(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)), timeout.duration) must be(45)
       }
 
       "fold with an exception" in {
@@ -353,7 +353,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "return zero value if folding empty list" in {
-        Future.fold(List[Future[Int]]())(0)(_ + _).get must be(0)
+        Block.sync(Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) must be(0)
       }
 
       "shouldReduceResults" in {
@@ -410,11 +410,11 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         })
 
         val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo manifest[Int])
-        assert(Future.sequence(oddFutures).get.sum === 10000)
+        assert(Block.sync(Future.sequence(oddFutures), timeout.duration).sum === 10000)
         oddActor.stop()
 
         val list = (1 to 100).toList
-        assert(Future.traverse(list)(x ⇒ Future(x * 2 - 1)).get.sum === 10000)
+        assert(Block.sync(Future.traverse(list)(x ⇒ Future(x * 2 - 1)), timeout.duration).sum === 10000)
       }
 
       "shouldHandleThrowables" in {
@@ -461,7 +461,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         val r = flow(x() + " " + y() + "!")
 
-        assert(r.get === "Hello World!")
+        assert(Block.sync(r, timeout.duration) === "Hello World!")
 
         actor.stop
       }
@@ -475,7 +475,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
 
-          intercept[java.lang.ArithmeticException](r.get)
+          intercept[java.lang.ArithmeticException](Block.sync(r, timeout.duration))
         }
       }
 
@@ -490,7 +490,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + y(), 100)
 
-          intercept[ClassCastException](r.get)
+          intercept[ClassCastException](Block.sync(r, timeout.duration))
         }
       }
 
@@ -505,7 +505,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + y())
 
-          intercept[ClassCastException](r.get)
+          intercept[ClassCastException](Block.sync(r, timeout.duration))
         }
       }
 
@@ -529,10 +529,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         flow { x << 5 }
 
-        assert(y.get === 5)
-        assert(z.get === 5)
+        assert(Block.sync(y, timeout.duration) === 5)
+        assert(Block.sync(z, timeout.duration) === 5)
         assert(lz.isOpen)
-        assert(result.get === 10)
+        assert(Block.sync(result, timeout.duration) === 10)
 
         val a, b, c = Promise[Int]()
 
@@ -544,9 +544,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         c completeWith Future(5)
 
-        assert(a.get === 5)
-        assert(b.get === 3)
-        assert(result2.get === 50)
+        assert(Block.sync(a, timeout.duration) === 5)
+        assert(Block.sync(b, timeout.duration) === 3)
+        assert(Block.sync(result2, timeout.duration) === 50)
       }
 
       "futureDataFlowShouldEmulateBlocking1" in {
@@ -571,7 +571,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Block.on(two, 1 minute)
 
         assert(List(one, two).forall(_.isCompleted == true))
-        assert(simpleResult.get === 10)
+        assert(Block.sync(simpleResult, timeout.duration) === 10)
 
       }
 
@@ -625,7 +625,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(i2.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
         s1.open
         s2.open
-        assert(result.get === 10)
+        assert(Block.sync(result, timeout.duration) === 10)
       }
 
       "futureCompletingWithContinuationsFailure" in {
@@ -649,8 +649,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           flow { x << 5 }
 
-          assert(y.get === 5)
-          intercept[java.lang.ArithmeticException](result.get)
+          assert(Block.sync(y, timeout.duration) === 5)
+          intercept[java.lang.ArithmeticException](Block.sync(result, timeout.duration))
           assert(z.value === None)
           assert(!lz.isOpen)
         }
@@ -673,7 +673,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         latch.open
 
-        assert(result.get === Some("Hello"))
+        assert(Block.sync(result, timeout.duration) === Some("Hello"))
       }
 
       "futureFlowShouldBeTypeSafe" in {
@@ -711,7 +711,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         flow { x << 40 }
         flow { y << 2 }
 
-        assert(z.get === 42)
+        assert(Block.sync(z, timeout.duration) === 42)
       }
 
       "futureFlowLoops" in {
@@ -733,7 +733,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         var i = 0
         promises foreach { p ⇒
-          assert(p.get === i)
+          assert(Block.sync(p, timeout.duration) === i)
           i += 1
         }
 
@@ -793,7 +793,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "should not deadlock with nested await (ticket 1313)" in {
-        val simple = Future() map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
+        val simple = Future() map (_ ⇒ Block.sync((Future(()) map (_ ⇒ ())), timeout.duration))
         Block.on(simple, timeout.duration) must be('completed)
 
         val l1, l2 = new StandardLatch
@@ -818,16 +818,16 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   def futureWithResult(f: ((Future[Any], Any) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
     "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
-    "return result with 'get'" in { f((future, result) ⇒ future.get must be(result)) }
+    "return result with 'get'" in { f((future, result) ⇒ Block.sync(future, timeout.duration) must be(result)) }
     "return result with 'Block.sync'" in { f((future, result) ⇒ Block.sync(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ Block.on(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
-        (future filter (_ ⇒ true)).get must be(result)
-        (evaluating { (future filter (_ ⇒ false)).get } must produce[MatchError]).getMessage must startWith(result.toString)
+        Block.sync((future filter (_ ⇒ true)), timeout.duration) must be(result)
+        (evaluating { Block.sync((future filter (_ ⇒ false)), timeout.duration) } must produce[MatchError]).getMessage must startWith(result.toString)
       }
     }
-    "transform result with map" in { f((future, result) ⇒ (future map (_.toString.length)).get must be(result.toString.length)) }
+    "transform result with map" in { f((future, result) ⇒ Block.sync((future map (_.toString.length)), timeout.duration) must be(result.toString.length)) }
     "compose result with flatMap" in {
       f { (future, result) ⇒
         val r = for (r ← future; p ← Promise.successful("foo")) yield r.toString + p
@@ -862,12 +862,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         future.value.get.left.get.getMessage must be(message)
       })
     }
-    "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { future.get } must produce[E]).getMessage must be(message)) }
+    "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Block.sync(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "throw exception with 'Block.sync'" in { f((future, message) ⇒ (evaluating { Block.sync(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
-        (evaluating { (future filter (_ ⇒ true)).get } must produce[E]).getMessage must be(message)
-        (evaluating { (future filter (_ ⇒ false)).get } must produce[E]).getMessage must be(message)
+        (evaluating { Block.sync(future filter (_ ⇒ true), timeout.duration) } must produce[E]).getMessage must be(message)
+        (evaluating { Block.sync(future filter (_ ⇒ false), timeout.duration) } must produce[E]).getMessage must be(message)
       }
     }
     "retain exception with map" in { f((future, message) ⇒ (evaluating { Block.sync(future map (_.toString.length), timeout.duration) } must produce[E]).getMessage must be(message)) }

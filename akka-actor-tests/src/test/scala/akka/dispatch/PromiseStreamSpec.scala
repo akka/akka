@@ -21,9 +21,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         b << q
         c << q()
       }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
+      assert(Block.sync(a, timeout.duration) === 1)
+      assert(Block.sync(b, timeout.duration) === 2)
+      assert(Block.sync(c, timeout.duration) === 3)
     }
 
     "pend" in {
@@ -35,9 +35,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         c << q
       }
       flow { q <<< List(1, 2, 3) }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
+      assert(Block.sync(a, timeout.duration) === 1)
+      assert(Block.sync(b, timeout.duration) === 2)
+      assert(Block.sync(c, timeout.duration) === 3)
     }
 
     "pend again" in {
@@ -54,10 +54,10 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         c << q1
         d << q1
       }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
-      assert(d.get === 4)
+      assert(Block.sync(a, timeout.duration) === 1)
+      assert(Block.sync(b, timeout.duration) === 2)
+      assert(Block.sync(c, timeout.duration) === 3)
+      assert(Block.sync(d, timeout.duration) === 4)
     }
 
     "enque" in {
@@ -71,10 +71,10 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       }
       q ++= List(1, 2, 3, 4)
 
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
-      assert(d.get === 4)
+      assert(Block.sync(a, timeout.duration) === 1)
+      assert(Block.sync(b, timeout.duration) === 2)
+      assert(Block.sync(c, timeout.duration) === 3)
+      assert(Block.sync(d, timeout.duration) === 4)
     }
 
     "map" in {
@@ -90,9 +90,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       flow {
         qs << ("Hello", "World!", "Test")
       }
-      assert(a.get === 5)
-      assert(b.get === "World!")
-      assert(c.get === 4)
+      assert(Block.sync(a, timeout.duration) === 5)
+      assert(Block.sync(b, timeout.duration) === "World!")
+      assert(Block.sync(c, timeout.duration) === 4)
     }
 
     "not fail under concurrent stress" in {
@@ -128,8 +128,7 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         }
       }
 
-      val result = future.get
-      assert(result === (1L to 100000L).sum)
+      assert(Block.sync(future, timeout.duration) === (1L to 100000L).sum)
     }
   }
 }

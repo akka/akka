@@ -7,10 +7,10 @@ package akka.actor
 import org.scalatest.BeforeAndAfterEach
 import akka.util.duration._
 import akka.{ Die, Ping }
-import akka.dispatch.Block
 import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
+import akka.dispatch.Block
 
 object SupervisorSpec {
   val Timeout = 5 seconds
@@ -151,7 +151,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "not restart temporary actor" in {
       val (temporaryActor, _) = temporaryActorAllForOne
 
-      intercept[RuntimeException] { (temporaryActor.?(DieReply, TimeoutMillis)).get }
+      intercept[RuntimeException] { Block.sync(temporaryActor.?(DieReply, TimeoutMillis), TimeoutMillis millis) }
 
       expectNoMsg(1 second)
     }

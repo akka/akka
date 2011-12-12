@@ -140,7 +140,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.registerOnTermination(latch.countDown())
         system.stop()
         latch.await(2 seconds)
-        (davyJones ? "Die!").get must be === "finally gone"
+        Block.sync(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorRefProvider
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
+import akka.dispatch.Block
 
 object LoggingBus {
   implicit def fromActorSystem(system: ActorSystem): LoggingBus = system.eventStream
@@ -146,7 +147,7 @@ trait LoggingBus extends ActorEventBus {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
-    val response = try actor ? InitializeLogger(this) get catch {
+    val response = try Block.sync(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
         publish(Warning(simpleName(this), "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
     }

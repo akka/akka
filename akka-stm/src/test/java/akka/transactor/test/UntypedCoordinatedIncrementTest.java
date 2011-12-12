@@ -2,6 +2,8 @@ package akka.transactor.test;
 
 import static org.junit.Assert.*;
 
+import akka.dispatch.Block;
+import akka.util.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -10,7 +12,6 @@ import org.junit.Before;
 
 import akka.actor.ActorSystem;
 import akka.transactor.Coordinated;
-import akka.actor.Actors;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -82,7 +82,7 @@ public class UntypedCoordinatedIncrementTest {
     }
     for (ActorRef counter : counters) {
       Future<Object> future = counter.ask("GetCount", askTimeout);
-      assertEquals(1, ((Integer) future.get()).intValue());
+      assertEquals(1, ((Integer) Block.sync(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
     }
   }
 
@@ -102,8 +102,8 @@ public class UntypedCoordinatedIncrementTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
-      assertEquals(0, ((Integer) future.get()).intValue());
+      Future<Object>future = counter.ask("GetCount", askTimeout);
+      assertEquals(0,((Integer)Block.sync(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
     }
   }
 

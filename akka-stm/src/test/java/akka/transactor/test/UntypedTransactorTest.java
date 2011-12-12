@@ -101,7 +101,7 @@ public class UntypedTransactorTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
+      Future<Object> future = counter.ask("GetCount", askTimeout);
       int count = (Integer)Block.sync(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
       assertEquals(0, count);
     }

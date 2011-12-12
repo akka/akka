@@ -361,8 +361,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val fnull = (ref ? (null, timeout)).mapTo[String]
       ref ! PoisonPill
 
-      ffive.get must be("five")
-      fnull.get must be("null")
+      Block.sync(ffive, timeout.duration) must be("five")
+      Block.sync(fnull, timeout.duration) must be("null")
 
       awaitCond(ref.isTerminated, 2000 millis)
     }

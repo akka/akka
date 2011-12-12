@@ -25,8 +25,8 @@ public class UntypedTransactorExample {
     long timeout = 5000;
     Duration d = Duration.create(timeout, TimeUnit.MILLISECONDS);
 
-    Future future1 = counter1.ask("GetCount", timeout);
-    Future future2 = counter2.ask("GetCount", timeout);
+    Future<Object> future1 = counter1.ask("GetCount", timeout);
+    Future<Object> future2 = counter2.ask("GetCount", timeout);
 
     int count1 = (Integer)Block.sync(future1, d);
     System.out.println("counter 1: " + count1);
