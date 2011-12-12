@@ -549,10 +549,10 @@ object TransactionLog {
   }
 
   private[akka] def await[T](future: Promise[T]): T = {
-    future.await
-    if (future.result.isDefined) future.result.get
-    else if (future.exception.isDefined) handleError(future.exception.get)
-    else handleError(new ReplicationException("No result from async read of entries for transaction log"))
+    future.await.value.get match {
+      case Right(result) => result
+      case Left(throwable) => handleError(throwable)
+    }
   }
 
   private[akka] def handleError(e: Throwable): Nothing = {

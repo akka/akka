@@ -561,7 +561,7 @@ class LocalActorRefProvider(
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
+  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch(1024)
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
     import akka.dispatch.DefaultPromise
@@ -584,9 +584,7 @@ class LocalActorRefProvider(
   }
 }
 
-class LocalDeathWatch extends DeathWatch with ActorClassification {
-
-  def mapSize = 1024
+class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {
 
   override def publish(event: Event): Unit = {
     val monitors = dissociate(classify(event))

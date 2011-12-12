@@ -414,8 +414,8 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         assert(f2.get === "bar")
         assert(f4.get === "foo2")
         assert(f6.get === "bar2")
-        assert(f3.result === None)
-        assert(f5.result === None)
+        assert(f3.value.isEmpty)
+        assert(f5.value.isEmpty)
       }
     }
   }

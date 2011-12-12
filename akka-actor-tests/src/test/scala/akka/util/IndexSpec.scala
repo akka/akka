@@ -125,8 +125,7 @@ class IndexSpec extends AkkaSpec with MustMatchers with DefaultTimeout {
 
       val tasks = List.fill(nrOfTasks)(executeRandomTask)
 
-      tasks.foreach(Block.on(_, timeout.duration))
-      tasks.foreach(_.exception.map(throw _))
+      tasks.foreach(Block.sync(_, timeout.duration))
     }
   }
 }

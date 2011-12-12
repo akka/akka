@@ -537,7 +537,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val a, b, c = Promise[Int]()
 
         val result2 = flow {
-          val n = (a << c).result.get + 10
+          val n = (a << c).value.get.right.get + 10
           b << (c() - 2)
           a() + n * b()
         }
@@ -813,15 +813,11 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   def emptyFuture(f: (Future[Any] ⇒ Unit) ⇒ Unit) {
     "not be completed" in { f(_ must not be ('completed)) }
     "not contain a value" in { f(_.value must be(None)) }
-    "not contain a result" in { f(_.result must be(None)) }
-    "not contain an exception" in { f(_.exception must be(None)) }
   }
 
   def futureWithResult(f: ((Future[Any], Any) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
     "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
-    "contain a result" in { f((future, result) ⇒ future.result must be(Some(result))) }
-    "not contain an exception" in { f((future, _) ⇒ future.exception must be(None)) }
     "return result with 'get'" in { f((future, result) ⇒ future.get must be(result)) }
     "return result with 'Block.sync'" in { f((future, result) ⇒ Block.sync(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ Block.on(future, 0 millis)) }
@@ -843,9 +839,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
   def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
-    "contain a value" in { f((future, _) ⇒ future.value must be('defined)) }
-    "not contain a result" in { f((future, _) ⇒ future.result must be(None)) }
-    "contain an exception" in { f((future, message) ⇒ future.exception.get.getMessage must be(message)) }
+    "contain a value" in {
+      f((future, message) ⇒ {
+        future.value must be('defined)
+        future.value.get must be('left)
+        future.value.get.left.get.getMessage must be(message)
+      })
+    }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { future.get } must produce[E]).getMessage must be(message)) }
     "throw exception with 'Block.sync'" in { f((future, message) ⇒ (evaluating { Block.sync(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {

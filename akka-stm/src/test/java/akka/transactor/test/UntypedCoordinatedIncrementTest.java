@@ -81,7 +81,7 @@ public class UntypedCoordinatedIncrementTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
+      Future<Object> future = counter.ask("GetCount", askTimeout);
       assertEquals(1, ((Integer) future.get()).intValue());
     }
   }

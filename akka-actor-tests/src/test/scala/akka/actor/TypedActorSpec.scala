@@ -296,7 +296,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         t.failingPigdog()
         t.read() must be(1) //Make sure state is not reset after failure
 
-        Block.on(t.failingFuturePigdog, 2 seconds).exception.get.getMessage must be("expected")
+        intercept[IllegalStateException] { Block.sync(t.failingFuturePigdog, 2 seconds) }.getMessage must be("expected")
         t.read() must be(1) //Make sure state is not reset after failure
 
         (intercept[IllegalStateException] { t.failingJOptionPigdog }).getMessage must be("expected")

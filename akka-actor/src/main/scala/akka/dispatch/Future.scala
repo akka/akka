@@ -176,11 +176,15 @@ object Future {
       val result = Promise[Option[T]]()
       val ref = new AtomicInteger(futures.size)
       val search: Future[T] ⇒ Unit = f ⇒ try {
-        f.result.filter(predicate).foreach(r ⇒ result completeWithResult Some(r))
+        f.value.get match {
+          case Right(r) ⇒ if (predicate(r)) result completeWithResult Some(r)
+          case _        ⇒
+        }
       } finally {
         if (ref.decrementAndGet == 0)
           result completeWithResult None
       }
+
       futures.foreach(_ onComplete search)
 
       result
@@ -415,14 +419,6 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
   final def result: Option[T] = value match {
     case Some(Right(r)) ⇒ Some(r)
     case _              ⇒ None
-  }
-
-  /**
-   * Returns the contained exception of this Future if it exists.
-   */
-  final def exception: Option[Throwable] = value match {
-    case Some(Left(e)) ⇒ Some(e)
-    case _             ⇒ None
   }
 
   /**
