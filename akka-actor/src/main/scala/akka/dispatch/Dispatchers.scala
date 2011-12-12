@@ -14,6 +14,7 @@ import akka.actor.Scheduler
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import akka.config.ConfigurationException
 
 trait DispatcherPrerequisites {
   def eventStream: EventStream
@@ -27,6 +28,10 @@ case class DefaultDispatcherPrerequisites(
   val scheduler: Scheduler) extends DispatcherPrerequisites
 
 /**
+ * It is recommended to define the dispatcher in configuration to allow for tuning
+ * for different environments. Use the `newFromConfig` method to create a dispatcher
+ * as specified in configuration.
+ *
  * Scala API. Dispatcher factory.
  * <p/>
  * Example usage:
@@ -62,9 +67,10 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
-  // TODO PN Shouldn't we fail hard if default-dispatcher is wrong?
-  lazy val defaultGlobalDispatcher =
-    from(defaultDispatcherConfig) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
+  lazy val defaultGlobalDispatcher: MessageDispatcher =
+    from(defaultDispatcherConfig) getOrElse {
+      throw new ConfigurationException("Wrong configuration [akka.actor.default-dispatcher]")
+    }
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -183,7 +189,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case true ⇒
         val conf = cfg.getConfig(key)
         val confWithName = conf.withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
-        from(confWithName).getOrElse(default)
+        from(confWithName).getOrElse(throw new ConfigurationException("Wrong configuration [%s]".format(key)))
     }
   }
 
