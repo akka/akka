@@ -5,21 +5,13 @@
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
-import scala.annotation.tailrec
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
-import akka.actor.Timeout.intToTimeout
-import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
 import akka.util.{ Duration, Switch, Helpers }
-import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import akka.event._
-import akka.event.Logging.Error._
-import akka.event.Logging.Warning
 import java.io.Closeable
-import com.typesafe.config.Config
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -105,9 +97,10 @@ trait ActorRefProvider {
   def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
 
   /**
-   * Create AskActorRef to hook up message send to recipient with Future receiver.
+   * Create AskActorRef and register it properly so it can be serialized/deserialized;
+   * caller needs to send the message.
    */
-  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any]
+  def ask(within: Timeout): Option[AskActorRef]
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
@@ -527,22 +520,20 @@ class LocalActorRefProvider(
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef = {
     props.routerConfig match {
-      case NoRouting   ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
+      case NoRouter    ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case routedActor ⇒ new RoutedActorRef(system, props.withRouting(adaptFromDeploy(routedActor, path)), supervisor, path)
     }
   }
 
   private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
     val lookupPath = p.elements.mkString("/", "/", "")
-    val deploy = deployer.lookup(lookupPath)
-    r.adaptFromDeploy(deploy)
+    r.adaptFromDeploy(deployer.lookup(lookupPath))
   }
 
-  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
-    import akka.dispatch.DefaultPromise
+  def ask(within: Timeout): Option[AskActorRef] = {
     (if (within == null) settings.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒
-        new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
+        None
       case t ⇒
         val path = tempPath()
         val name = path.name
@@ -552,8 +543,7 @@ class LocalActorRefProvider(
           }
         }
         tempContainer.addChild(name, a)
-        recipient.tell(message, a)
-        a.result
+        Some(a)
     }
   }
 }

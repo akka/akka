@@ -7,7 +7,6 @@ package akka.remote
 import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
-import akka.util.duration._
 import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._

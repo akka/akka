@@ -4,24 +4,14 @@
 
 package akka.remote
 
-import akka.AkkaException
 import akka.actor._
-import akka.actor.Actor._
-import akka.actor.Status._
-import akka.routing._
 import akka.dispatch._
-import akka.util.duration._
-import akka.config.ConfigurationException
-import akka.event.{ DeathWatch, Logging }
+import akka.event.Logging
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import com.google.protobuf.ByteString
-import java.util.concurrent.atomic.AtomicBoolean
 import akka.event.EventStream
-import java.util.concurrent.ConcurrentHashMap
-import akka.dispatch.Promise
-import java.net.InetAddress
 import akka.serialization.SerializationExtension
 import akka.serialization.Serialization
 import akka.config.ConfigurationException
@@ -62,7 +52,7 @@ class RemoteActorRefProvider(
 
   def init(system: ActorSystemImpl) {
     local.init(system)
-    remote.init(system)
+    remote.init(system, this)
     local.registerExtraNames(Map(("remote", remote.remoteDaemon)))
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
@@ -145,7 +135,7 @@ class RemoteActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
-  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
+  def ask(within: Timeout): Option[AskActorRef] = local.ask(within)
 
   /**
    * Using (checking out) actor on a specific node.
@@ -178,7 +168,7 @@ class RemoteActorRefProvider(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class RemoteActorRef private[akka] (
-  provider: ActorRefProvider,
+  provider: RemoteActorRefProvider,
   remote: RemoteSupport[ParsedTransportAddress],
   val path: ActorPath,
   val getParent: InternalActorRef,
@@ -203,7 +193,16 @@ private[akka] class RemoteActorRef private[akka] (
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
 
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = provider.ask(message, this, timeout)
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    provider.ask(timeout) match {
+      case Some(a) ⇒
+        this.!(message)(a)
+        a.result
+      case None ⇒
+        this.!(message)(null)
+        new DefaultPromise[Any](0)(provider.dispatcher)
+    }
+  }
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

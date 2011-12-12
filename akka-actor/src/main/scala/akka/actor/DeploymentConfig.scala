@@ -156,7 +156,7 @@ object DeploymentConfig {
   }
 
   def routerTypeFor(routing: Routing): RouterType = routing match {
-    case _: NoRouting | NoRouting         ⇒ RouterType.NoRouting
+    case _: NoRouting | NoRouting         ⇒ RouterType.NoRouter
     case _: RoundRobin | RoundRobin       ⇒ RouterType.RoundRobin
     case _: Random | Random               ⇒ RouterType.Random
     case _: ScatterGather | ScatterGather ⇒ RouterType.ScatterGather

@@ -6,13 +6,12 @@ package akka.tutorial.first.java;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.InternalActorRef;
+import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
-import akka.japi.Creator;
-import akka.routing.*;
+import akka.routing.RoundRobinRouter;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class Pi {
@@ -105,23 +104,8 @@ public class Pi {
             this.nrOfMessages = nrOfMessages;
             this.nrOfElements = nrOfElements;
             this.latch = latch;
-            Creator<Router> routerCreator = new Creator<Router>() {
-                public Router create() {
-                    // TODO (HE) : implement
-                    //return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
-                    return null;
-                }
-            };
-            LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
-                {
-                    for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(Worker.class));
-                }
-            };
 
-			// FIXME routers are intended to be used like this
-            // TODO (HE): implement
-            //RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            //router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
+            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouting(new RoundRobinRouter(5)), "pi");
         }
 
         // message handler
@@ -170,7 +154,7 @@ public class Pi {
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = system.actorOf(new UntypedActorFactory() {
+        ActorRef master = system.actorOf(new akka.actor.UntypedActorFactory() {
             public UntypedActor create() {
                 return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
             }

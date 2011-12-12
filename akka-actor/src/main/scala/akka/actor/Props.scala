@@ -8,7 +8,7 @@ import akka.dispatch._
 import akka.japi.Creator
 import akka.util._
 import collection.immutable.Stack
-import akka.routing.{ NoRouting, RouterConfig, RoutedProps }
+import akka.routing.{ NoRouter, RouterConfig }
 
 /**
  * ActorRef configuration object, this is threadsafe and fully sharable
@@ -29,7 +29,7 @@ object Props {
     case _                               ⇒ Escalate
   }
 
-  final val defaultRoutedProps: RouterConfig = NoRouting
+  final val defaultRoutedProps: RouterConfig = NoRouter
 
   final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
 

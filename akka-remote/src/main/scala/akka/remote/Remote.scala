@@ -68,10 +68,15 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
   private var _server: RemoteSupport[ParsedTransportAddress] = _
   def server = _server
 
-  def init(system: ActorSystemImpl) = {
+  @volatile
+  private var _provider: RemoteActorRefProvider = _
+  def provider = _provider
+
+  def init(system: ActorSystemImpl, provider: RemoteActorRefProvider) = {
 
     val log = Logging(system, "Remote")
 
+    _provider = provider
     _serialization = SerializationExtension(system)
     _computeGridDispatcher = system.dispatcherFactory.fromConfig("akka.remote.compute-grid-dispatcher")
     _remoteDaemon = new RemoteSystemDaemon(system, this, system.provider.rootPath / "remote", system.provider.rootGuardian, log)
