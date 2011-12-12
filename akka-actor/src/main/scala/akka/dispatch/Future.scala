@@ -611,7 +611,7 @@ object Promise {
   /**
    * Creates an already completed Promise with the specified result
    */
-  def fulfilled[T](result: T)(implicit dispatcher: MessageDispatcher): Promise[T] = new KeptPromise[T](Right(result))
+  def successful[T](result: T)(implicit dispatcher: MessageDispatcher): Promise[T] = new KeptPromise[T](Right(result))
 }
 
 /**
