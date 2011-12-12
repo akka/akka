@@ -110,7 +110,7 @@ class RemoteActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
-  def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = local.ask(message, recipient, within)
+  def ask(within: Timeout): Option[AskActorRef] = local.ask(within)
 
   /**
    * Using (checking out) actor on a specific node.
@@ -143,7 +143,7 @@ class RemoteActorRefProvider(
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class RemoteActorRef private[akka] (
-  provider: ActorRefProvider,
+  provider: RemoteActorRefProvider,
   remote: RemoteSupport,
   val path: ActorPath,
   val getParent: InternalActorRef,
@@ -168,7 +168,16 @@ private[akka] class RemoteActorRef private[akka] (
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
 
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = provider.ask(message, this, timeout)
+  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    provider.ask(timeout) match {
+      case Some(a) ⇒
+        this.!(message)(a)
+        a.result
+      case None ⇒
+        this.!(message)(null)
+        new DefaultPromise[Any](0)(provider.dispatcher)
+    }
+  }
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

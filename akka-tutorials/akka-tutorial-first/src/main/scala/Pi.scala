@@ -53,12 +53,8 @@ object Pi extends App {
     var nrOfResults: Int = _
     var start: Long = _
 
-    // create the workers
-    val workers = Vector.fill(nrOfWorkers)(context.actorOf[Worker])
-
     // create a round robin router for the workers
     val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 5)), "pi")
-    //val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 3, targets = Seq(workers.head, workers.tail.head))), "pi")
 
     // message handler
     def receive = {
@@ -91,7 +87,7 @@ object Pi extends App {
   // ===== Run it =====
   // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-    val system = ActorSystem("PiSystem", ConfigFactory.load("akka.conf"))
+    val system = ActorSystem()
 
     // this latch is only plumbing to know when the calculation is completed
     val latch = new CountDownLatch(1)

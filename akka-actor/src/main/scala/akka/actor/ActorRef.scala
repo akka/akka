@@ -299,7 +299,16 @@ private[akka] class LocalActorRef private[akka] (
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    actorCell.provider.ask(timeout) match {
+      case Some(a) ⇒
+        this.!(message)(a)
+        a.result
+      case None ⇒
+        this.!(message)(null)
+        new DefaultPromise[Any](0)(system.dispatcher)
+    }
+  }
 
   def restart(cause: Throwable): Unit = actorCell.restart(cause)
 

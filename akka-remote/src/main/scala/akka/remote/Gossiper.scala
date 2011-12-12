@@ -7,7 +7,6 @@ package akka.remote
 import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
-import akka.util.duration._
 import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -161,7 +160,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ new RemoteActorRef(remote.system.provider, remote.server, RootActorPath(gossipingNode) / remote.remoteDaemon.path.elements, Nobody, None)
+          val connectionFactory = () ⇒ new RemoteActorRef(remote.system.provider.asInstanceOf[RemoteActorRefProvider], remote.server, RootActorPath(gossipingNode) / remote.remoteDaemon.path.elements, Nobody, None)
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }

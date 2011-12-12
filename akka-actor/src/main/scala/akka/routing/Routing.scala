@@ -9,13 +9,13 @@ import akka.actor._
 import akka.japi.Creator
 import java.lang.reflect.InvocationTargetException
 import akka.config.ConfigurationException
-import akka.routing.Routing.Broadcast
 import akka.actor.DeploymentConfig.Deploy
 import java.util.concurrent.atomic.AtomicInteger
-import akka.dispatch.Future
-import akka.util.{ Duration, ReflectiveAccess }
-import java.util.concurrent.TimeUnit
+import akka.util.ReflectiveAccess
 import akka.AkkaException
+import scala.collection.JavaConversions._
+import akka.routing.Routing.{ Destination, Broadcast }
+import java.util.concurrent.TimeUnit
 
 sealed trait RouterType
 
@@ -42,14 +42,14 @@ object RouterType {
   object RoundRobin extends RouterType
 
   /**
-   * A RouterType that selects the connection by using scatter gather.
-   */
-  object ScatterGather extends RouterType
-
-  /**
    * A RouterType that broadcasts the messages to all connections.
    */
   object Broadcast extends RouterType
+
+  /**
+   * A RouterType that selects the connection by using scatter gather.
+   */
+  object ScatterGather extends RouterType
 
   /**
    * A RouterType that selects the connection based on the least amount of cpu usage
@@ -70,7 +70,6 @@ object RouterType {
    * A user-defined custom RouterType.
    */
   case class Custom(implClass: String) extends RouterType
-
 }
 
 /**
@@ -106,20 +105,18 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   val route: Routing.Route = _props.routerConfig.createRoute(_props.creator, actorContext)
 
   override def !(message: Any)(implicit sender: ActorRef = null) {
-    route(message) match {
-      case null          ⇒ super.!(message)(sender)
-      case ref: ActorRef ⇒ ref.!(message)(sender)
-      case refs: Traversable[ActorRef] ⇒
-        message match {
-          case Broadcast(m) ⇒ refs foreach (_.!(m)(sender))
-          case _            ⇒ refs foreach (_.!(message)(sender))
-        }
+    val s = if (sender eq null) underlying.system.deadLetters else sender
+
+    val msg = message match {
+      case Broadcast(m) ⇒ m
+      case m            ⇒ m
+    }
+
+    route(s, message) match {
+      case Nil  ⇒ super.!(message)(s)
+      case refs ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
     }
   }
-
-  // TODO (HE) : Should the RoutedActorRef also override "?"?
-  // If not how then Broadcast messages cannot be sent via ? -
-  // which it is in some test cases at the moment.
 }
 
 trait RouterConfig extends Function0[Actor] {
@@ -134,6 +131,11 @@ trait RouterConfig extends Function0[Actor] {
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Router {
+  def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[ActorRef]): Vector[ActorRef] = (nrOfInstances, targets) match {
+    case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
+    case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+    case (_, xs)  ⇒ Vector.empty[ActorRef] ++ xs
+  }
 }
 
 /**
@@ -163,7 +165,8 @@ object Routing {
     }
   }
 
-  type Route = (Any) ⇒ AnyRef
+  case class Destination(sender: ActorRef, recipient: ActorRef)
+  type Route = (ActorRef, Any) ⇒ Iterable[Destination]
 }
 
 /**
@@ -192,6 +195,22 @@ case object NoRouter extends RouterConfig {
 case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Nil)
   extends Router with RouterConfig {
 
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[ActorRef]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
+
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
     deploy match {
       case Some(d) ⇒
@@ -208,11 +227,8 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] 
   }
 
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Routing.Route = {
-    val routees: Vector[ActorRef] = (nrOfInstances, targets) match {
-      case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
-      case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(context.props.copy(creator = creator, routerConfig = NoRouter)))(scala.collection.breakOut)
-      case (x, xs)  ⇒ Vector.empty[ActorRef] ++ xs
-    }
+    val routees: Vector[ActorRef] =
+      createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
 
     val next = new AtomicInteger(0)
 
@@ -220,10 +236,12 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] 
       routees(next.getAndIncrement % routees.size)
     }
 
-    {
-      case msg: AutoReceivedMessage ⇒ null // TODO (HE): how should system messages be handled?
-      case Broadcast(msg)           ⇒ routees
-      case msg                      ⇒ getNext()
+    { (sender, message) ⇒
+      message match {
+        case msg: AutoReceivedMessage ⇒ Nil
+        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
+        case msg                      ⇒ List(Destination(sender, getNext()))
+      }
     }
   }
 }
@@ -241,6 +259,22 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] 
  */
 case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Nil)
   extends Router with RouterConfig {
+
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[ActorRef]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
 
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
     deploy match {
@@ -264,20 +298,19 @@ case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Ni
   }
 
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Routing.Route = {
-    val routees: Vector[ActorRef] = (nrOfInstances, targets) match {
-      case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
-      case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(context.props.copy(creator = creator, routerConfig = NoRouter)))(scala.collection.breakOut)
-      case (x, xs)  ⇒ Vector.empty[ActorRef] ++ xs
-    }
+    val routees: Vector[ActorRef] =
+      createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
 
     def getNext(): ActorRef = {
       routees(random.get.nextInt(routees.size))
     }
 
-    {
-      case msg: AutoReceivedMessage ⇒ null // TODO (HE): how should system messages be handled?
-      case Broadcast(msg)           ⇒ routees
-      case msg                      ⇒ getNext()
+    { (sender, message) ⇒
+      message match {
+        case msg: AutoReceivedMessage ⇒ Nil
+        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
+        case msg                      ⇒ List(Destination(sender, getNext()))
+      }
     }
   }
 }
@@ -296,6 +329,22 @@ case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Ni
 case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Nil)
   extends Router with RouterConfig {
 
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[ActorRef]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
+
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
     deploy match {
       case Some(d) ⇒
@@ -312,28 +361,47 @@ case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] =
   }
 
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Routing.Route = {
-    val routees: Vector[ActorRef] = (nrOfInstances, targets) match {
-      case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
-      case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(context.props.copy(creator = creator, routerConfig = NoRouter)))(scala.collection.breakOut)
-      case (x, xs)  ⇒ Vector.empty[ActorRef] ++ xs
-    }
+    val routees: Vector[ActorRef] =
+      createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
 
-    {
-      case msg: AutoReceivedMessage ⇒ null // TODO (HE): how should system messages be handled?
-      case Broadcast(msg)           ⇒ routees
-      case msg                      ⇒ routees
+    { (sender, message) ⇒
+      message match {
+        case msg: AutoReceivedMessage ⇒ Nil
+        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
+        case msg                      ⇒ routees map (Destination(sender, _))
+      }
     }
   }
 }
 
-// TODO (HE) : Correct description below
 /**
- * Simple router that broadcasts the message to all connections, and replies with the first response.
- * Scatter-gather pattern will be applied only to the messages broadcast using Future
- * (wrapped into {@link Routing.Broadcast} and sent with "?" method).
- * For the messages sent in a fire-forget mode, the router would behave as {@link RoundRobinRouter}
+ * Simple router that broadcasts the message to all routees, and replies with the first response.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'targets' does not make logical sense as this means
+ * that the random router should both create new actors and use the 'targets' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'targets' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: Iterable[ActorRef] = Nil) extends Router with RouterConfig {
+
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[ActorRef]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
 
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
     deploy match {
@@ -357,28 +425,14 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: It
       case (x, xs)  ⇒ Vector.empty[ActorRef] ++ xs
     }
 
-    def scatterGather[S, G >: S](message: Any, t: Timeout): Future[G] = {
-      val responses = routees.flatMap { actor ⇒
-        try {
-          if (actor.isTerminated) None else Some(actor.?(message, t).asInstanceOf[Future[S]])
-        } catch {
-          case e: Exception ⇒ None
-        }
+    { (sender, message) ⇒
+      val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(5, TimeUnit.SECONDS)).get // FIXME, NO REALLY FIXME!
+      asker.result.pipeTo(sender)
+      message match {
+        case msg: AutoReceivedMessage ⇒ Nil
+        case Broadcast(msg)           ⇒ routees map (Destination(asker, _))
+        case msg                      ⇒ routees map (Destination(asker, _))
       }
-
-      if (!responses.isEmpty) throw new RoutingException("No connections can process the message [%s] sent to scatter-gather router" format (message))
-      else {
-        implicit val messageDispatcher = context.dispatcher
-        implicit val timeout = t
-        Future.firstCompletedOf(responses)
-      }
-    }
-
-    // TODO (HE) : Timeout and Future should be updated to new strategy - or hardcoded value below should at least be removed!
-    {
-      case msg: AutoReceivedMessage ⇒ null // TODO (HE): how should system messages be handled?
-      case Broadcast(msg)           ⇒ routees
-      case msg                      ⇒ scatterGather(msg, Timeout(Duration(5000, TimeUnit.MILLISECONDS)))
     }
   }
 }
