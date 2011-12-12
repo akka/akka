@@ -904,9 +904,14 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     val runNow =
       if (value.isEmpty) {
         if (!isExpired) {
-          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } } //TODO Reschedule is run prematurely
-          val fut = Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
-          onComplete(_ => fut.cancel(true))
+          // due to this java problem: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6213323
+          // cancelled FutureTasks keep holding on to their callables until they are scheduled
+          // this means that we have to manually break the reference chain to DefaultCompletableFuture.this
+          // in onComplete so as to avoid a memory leak
+          val runner = new AtomicReference(() => if (!isCompleted) func(DefaultCompletableFuture.this))
+          val runnable = new Runnable { def run() { val r = runner.get; if (r != null) r() } } //TODO Reschedule is run prematurely
+          val fut = Scheduler.scheduleOnce(runnable, timeLeft(), NANOS)
+          onComplete { _ => fut.cancel(false); runner.set(null) }
           false
         } else true
       } else false
