@@ -46,8 +46,8 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
     val result = Promise[Boolean]()(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
-        case Right((oid, wr)) ⇒ result.completeWithResult(true)
-        case Left(t)          ⇒ result.completeWithException(t)
+        case Right((oid, wr)) ⇒ result.success(true)
+        case Left(t)          ⇒ result.failure(t)
       }
     })
     Block.on(result, settings.WriteTimeout)
@@ -66,12 +66,12 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
       doc match {
         case Some(msg) ⇒ {
           log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
-          envelopePromise.completeWithResult(msg.envelope())
+          envelopePromise.success(msg.envelope())
           log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
         }
         case None ⇒
           log.info("No matching document found. Not an error, just an empty queue.")
-          envelopePromise.completeWithResult(null)
+          envelopePromise.success(null)
           ()
       }
     }
@@ -80,7 +80,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
 
   def numberOfMessages: Int = {
     val count = Promise[Int]()(dispatcher)
-    mongo.count()(count.completeWithResult)
+    mongo.count()(count.success)
     try { Block.sync(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
   }
 

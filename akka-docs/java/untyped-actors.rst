@@ -284,8 +284,8 @@ Summary of reply semantics and options
 
 Promise represents the write-side of a Future, enabled by the methods
 
-* completeWithResult(..)
-* completeWithException(..)
+* success(..)
+* break(..)
 
 Starting actors
 ---------------

@@ -117,11 +117,11 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
     val r = f
-    to.completeWithResult(r)
+    to.success(r)
     r
   } catch {
     case e ⇒
-      to.completeWithException(e)
+      to.failure(e)
       throw e
   }
 

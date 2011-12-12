@@ -84,9 +84,9 @@ class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, name, systemService)
     else {
       val path = supervisor.path / name
-      val newFuture = Promise[ActorRef]()(dispatcher)
+      val creationPromise = Promise[ActorRef]()(dispatcher)
 
-      actors.putIfAbsent(path.toString, newFuture) match { // we won the race -- create the actor and resolve the future
+      actors.putIfAbsent(path.toString, creationPromise) match { // we won the race -- create the actor and resolve the future
         case null ⇒
           val actor: InternalActorRef = try {
             deployer.lookupDeploymentFor(path.toString) match {
@@ -158,14 +158,14 @@ class RemoteActorRefProvider(
             }
           } catch {
             case e: Exception ⇒
-              newFuture completeWithException e // so the other threads gets notified of error
+              creationPromise failure e // so the other threads gets notified of error
               throw e
           }
 
           // actor foreach system.registry.register // only for ActorRegistry backward compat, will be removed later
 
-          newFuture completeWithResult actor
-          actors.replace(path.toString, newFuture, actor)
+          creationPromise success actor
+          actors.replace(path.toString, creationPromise, actor)
           actor
         case actor: InternalActorRef ⇒ actor
         case future: Future[_]       ⇒ Block.sync(future, system.settings.ActorTimeout.duration).asInstanceOf[InternalActorRef]

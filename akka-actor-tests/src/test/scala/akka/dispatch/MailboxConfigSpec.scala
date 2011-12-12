@@ -61,9 +61,9 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     val result = Promise[T]()
     val t = new Thread(new Runnable {
       def run = try {
-        result.completeWithResult(fun)
+        result.success(fun)
       } catch {
-        case e: Throwable ⇒ result.completeWithException(e)
+        case e: Throwable ⇒ result.failure(e)
       }
     })
     t.start

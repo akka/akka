@@ -67,7 +67,7 @@ public class JavaFutureTests {
       }
     });
 
-    cf.completeWithResult("foo");
+    cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     assertEquals(f.get(), "foo");
   }
@@ -85,7 +85,7 @@ public class JavaFutureTests {
     });
 
     Throwable exception = new NullPointerException();
-    cf.completeWithException(exception);
+    cf.failure(exception);
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     assertEquals(f.value().get().left().get(), exception);
   }
@@ -101,7 +101,7 @@ public class JavaFutureTests {
       }
     });
 
-    cf.completeWithResult("foo");
+    cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     assertEquals(f.get(), "foo");
   }
@@ -117,7 +117,7 @@ public class JavaFutureTests {
       }
     });
 
-    cf.completeWithResult("foo");
+    cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     assertEquals(f.get(), "foo");
   }
@@ -126,13 +126,13 @@ public class JavaFutureTests {
   public void mustBeAbleToFlatMapAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    cf.completeWithResult("1000");
+    cf.success("1000");
     Future<String> f = cf;
     Future<Integer> r = f.flatMap(new Function<String, Future<Integer>>() {
       public Future<Integer> apply(String r) {
         latch.countDown();
         Promise<Integer> cf = Futures.promise(system.dispatcher());
-        cf.completeWithResult(Integer.parseInt(r));
+        cf.success(Integer.parseInt(r));
         return cf;
       }
     });
@@ -154,7 +154,7 @@ public class JavaFutureTests {
       }
     });
 
-    cf.completeWithResult("foo");
+    cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     assertEquals(f.get(), "foo");
     assertEquals(r.get(), "foo");
@@ -275,7 +275,7 @@ public class JavaFutureTests {
   public void BlockMustBeCallable() {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
-    p.completeWithResult("foo");
+    p.success("foo");
     Block.on(p, d);
     assertEquals(Block.sync(p, d), "foo");
   }

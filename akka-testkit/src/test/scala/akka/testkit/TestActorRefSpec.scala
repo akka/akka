@@ -57,7 +57,7 @@ object TestActorRefSpec {
   class WorkerActor() extends TActor {
     def receiveT = {
       case "work"                ⇒ sender ! "workDone"; self.stop()
-      case replyTo: Promise[Any] ⇒ replyTo.completeWithResult("complexReply")
+      case replyTo: Promise[Any] ⇒ replyTo.success("complexReply")
       case replyTo: ActorRef     ⇒ replyTo ! "complexReply"
     }
   }

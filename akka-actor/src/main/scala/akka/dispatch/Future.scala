@@ -171,12 +171,12 @@ object Future {
       val ref = new AtomicInteger(futures.size)
       val search: Future[T] ⇒ Unit = f ⇒ try {
         f.value.get match {
-          case Right(r) ⇒ if (predicate(r)) result completeWithResult Some(r)
+          case Right(r) ⇒ if (predicate(r)) result success Some(r)
           case _        ⇒
         }
       } finally {
         if (ref.decrementAndGet == 0)
-          result completeWithResult None
+          result success None
       }
 
       futures.foreach(_ onComplete search)
@@ -214,11 +214,11 @@ object Future {
                   val i = results.iterator
                   var currentValue = zero
                   while (i.hasNext) { currentValue = foldFun(currentValue, i.next) }
-                  result completeWithResult currentValue
+                  result success currentValue
                 } catch {
                   case e: Exception ⇒
                     dispatcher.prerequisites.eventStream.publish(Error(e, "Future.fold", e.getMessage))
-                    result completeWithException e
+                    result failure e
                 } finally {
                   results.clear
                 }
@@ -226,7 +226,7 @@ object Future {
             }
           case Left(exception) ⇒
             if (done.switchOn) {
-              result completeWithException exception
+              result failure exception
               results.clear
             }
         }
@@ -254,7 +254,7 @@ object Future {
         if (seedFound.compareAndSet(false, true)) { //Only the first completed should trigger the fold
           f.value.get match {
             case Right(value)    ⇒ result.completeWith(fold(futures.filterNot(_ eq f))(value)(op))
-            case Left(exception) ⇒ result.completeWithException(exception)
+            case Left(exception) ⇒ result.failure(exception)
           }
         }
       }
@@ -295,8 +295,8 @@ object Future {
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit dispatcher: MessageDispatcher): Future[A] = {
     val future = Promise[A]
     dispatchTask({ () ⇒
-      (reify(body) foreachFull (future completeWithResult, future completeWithException): Future[Any]) onException {
-        case e: Exception ⇒ future completeWithException e
+      (reify(body) foreachFull (future success, future failure): Future[Any]) onException {
+        case e: Exception ⇒ future failure e
       }
     }, true)
     future
@@ -597,38 +597,55 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
 
 object Promise {
   /**
-   * Creates a non-completed, new, Promise
+   * Creates a non-completed Promise
    *
    * Scala API
    */
   def apply[A]()(implicit dispatcher: MessageDispatcher): Promise[A] = new DefaultPromise[A]()
+
+  /**
+   * Creates an already completed Promise with the specified exception
+   */
+  def failed[T](exception: Throwable)(implicit dispatcher: MessageDispatcher): Promise[T] = new KeptPromise[T](Left(exception))
+
+  /**
+   * Creates an already completed Promise with the specified result
+   */
+  def fulfilled[T](result: T)(implicit dispatcher: MessageDispatcher): Promise[T] = new KeptPromise[T](Right(result))
 }
 
 /**
  * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
 trait Promise[T] extends Future[T] {
-  /**
-   * Completes this Future with the specified result, if not already completed.
-   * @return this
-   */
-  def complete(value: Either[Throwable, T]): this.type
 
   /**
-   * Completes this Future with the specified result, if not already completed.
-   * @return this
+   * Completes this Promise with the specified result, if not already completed.
+   * @return whether this call completed the Promise
    */
-  final def completeWithResult(result: T): this.type = complete(Right(result))
+  def tryComplete(value: Either[Throwable, T]): Boolean
 
   /**
-   * Completes this Future with the specified exception, if not already completed.
+   * Completes this Promise with the specified result, if not already completed.
    * @return this
    */
-  final def completeWithException(exception: Throwable): this.type = complete(Left(exception))
+  final def complete(value: Either[Throwable, T]): this.type = { tryComplete(value); this }
 
   /**
-   * Completes this Future with the specified other Future, when that Future is completed,
-   * unless this Future has already been completed.
+   * Completes this Promise with the specified result, if not already completed.
+   * @return this
+   */
+  final def success(result: T): this.type = complete(Right(result))
+
+  /**
+   * Completes this Promise with the specified exception, if not already completed.
+   * @return this
+   */
+  final def failure(exception: Throwable): this.type = complete(Left(exception))
+
+  /**
+   * Completes this Promise with the specified other Future, when that Future is completed,
+   * unless this Promise has already been completed.
    * @return this.
    */
   final def completeWith(other: Future[T]): this.type = {
@@ -646,7 +663,7 @@ trait Promise[T] extends Future[T] {
       } catch {
         case e: Exception ⇒
           dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
-          fr completeWithException e
+          fr failure e
       }
     }
     fr
@@ -660,7 +677,7 @@ trait Promise[T] extends Future[T] {
       } catch {
         case e: Exception ⇒
           dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
-          fr completeWithException e
+          fr failure e
       }
     }
     fr
@@ -735,8 +752,8 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
   @inline
   protected final def getState: FState[T] = updater.get(this)
 
-  def complete(value: Either[Throwable, T]): this.type = {
-    val callbacks = {
+  def tryComplete(value: Either[Throwable, T]): Boolean = {
+    val callbacks: List[Future[T] ⇒ Unit] = {
       try {
         @tailrec
         def tryComplete: List[Future[T] ⇒ Unit] = {
@@ -746,7 +763,7 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
             case Pending(listeners) ⇒
               if (updateState(cur, if (value.isLeft) Failure(Some(value)) else Success(Some(value)))) listeners
               else tryComplete
-            case _ ⇒ Nil
+            case _ ⇒ null
           }
         }
         tryComplete
@@ -755,9 +772,11 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
       }
     }
 
-    if (callbacks.nonEmpty) Future.dispatchTask(() ⇒ callbacks foreach notifyCompleted)
-
-    this
+    callbacks match {
+      case null             ⇒ false
+      case cs if cs.isEmpty ⇒ true
+      case cs               ⇒ Future.dispatchTask(() ⇒ cs foreach notifyCompleted); true
+    }
   }
 
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
@@ -790,7 +809,7 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
 final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val dispatcher: MessageDispatcher) extends Promise[T] {
   val value = Some(suppliedValue)
 
-  def complete(value: Either[Throwable, T]): this.type = this
+  def tryComplete(value: Either[Throwable, T]): Boolean = true
   def onComplete(func: Future[T] ⇒ Unit): this.type = {
     Future dispatchTask (() ⇒ func(this))
     this

@@ -414,9 +414,9 @@ class AskActorRef(
   final val result = Promise[Any]()(dispatcher)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = if (running.get) message match {
-    case Status.Success(r) ⇒ result.completeWithResult(r)
-    case Status.Failure(f) ⇒ result.completeWithException(f)
-    case other             ⇒ result.completeWithResult(other)
+    case Status.Success(r) ⇒ result.success(r)
+    case Status.Failure(f) ⇒ result.failure(f)
+    case other             ⇒ result.success(other)
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {

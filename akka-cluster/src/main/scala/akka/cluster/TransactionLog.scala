@@ -210,8 +210,8 @@ class TransactionLog private (
               val future = ctx.asInstanceOf[Promise[Vector[Array[Byte]]]]
               val entries = toByteArrays(enumeration)
 
-              if (returnCode == BKException.Code.OK) future.completeWithResult(entries)
-              else future.completeWithException(BKException.create(returnCode))
+              if (returnCode == BKException.Code.OK) future.success(entries)
+              else future.failure(BKException.create(returnCode))
             }
           },
           future)
@@ -474,8 +474,8 @@ object TransactionLog {
               ledgerHandle: LedgerHandle,
               ctx: AnyRef) {
               val future = ctx.asInstanceOf[Promise[LedgerHandle]]
-              if (returnCode == BKException.Code.OK) future.completeWithResult(ledgerHandle)
-              else future.completeWithException(BKException.create(returnCode))
+              if (returnCode == BKException.Code.OK) future.success(ledgerHandle)
+              else future.failure(BKException.create(returnCode))
             }
           },
           future)
@@ -532,8 +532,8 @@ object TransactionLog {
           new AsyncCallback.OpenCallback {
             def openComplete(returnCode: Int, ledgerHandle: LedgerHandle, ctx: AnyRef) {
               val future = ctx.asInstanceOf[Promise[LedgerHandle]]
-              if (returnCode == BKException.Code.OK) future.completeWithResult(ledgerHandle)
-              else future.completeWithException(BKException.create(returnCode))
+              if (returnCode == BKException.Code.OK) future.success(ledgerHandle)
+              else future.failure(BKException.create(returnCode))
             }
           },
           future)

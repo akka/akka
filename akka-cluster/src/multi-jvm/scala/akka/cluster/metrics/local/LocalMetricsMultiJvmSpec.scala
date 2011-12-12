@@ -81,7 +81,7 @@ class LocalMetricsMultiJvmNode1 extends MasterClusterTestNode {
 
         def reactsOn(metrics: NodeMetrics) = metrics.usedHeapMemory > 1
 
-        def react(metrics: NodeMetrics) = monitorReponse.completeWithResult("Too much memory is used!")
+        def react(metrics: NodeMetrics) = monitorReponse.success("Too much memory is used!")
 
       })
 
