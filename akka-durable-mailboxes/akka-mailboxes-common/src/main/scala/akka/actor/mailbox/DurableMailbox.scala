@@ -108,6 +108,22 @@ case object ZooKeeperDurableMailboxType extends DurableMailboxType("akka.actor.m
 case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(mailboxFQN)
 
 /**
+ * Java API for the mailbox types. Usage:
+ * <pre><code>
+ * MessageDispatcher dispatcher = system.dispatcherFactory()
+ *   .newDispatcher("my-dispatcher", 1, DurableMailboxType.redisDurableMailboxType()).build();
+ * </code></pre>
+ */
+object DurableMailboxType {
+  def redisDurableMailboxType(): DurableMailboxType = RedisDurableMailboxType
+  def mongoDurableMailboxType(): DurableMailboxType = MongoDurableMailboxType
+  def beanstalkDurableMailboxType(): DurableMailboxType = BeanstalkDurableMailboxType
+  def fileDurableMailboxType(): DurableMailboxType = FileDurableMailboxType
+  def zooKeeperDurableMailboxType(): DurableMailboxType = ZooKeeperDurableMailboxType
+  def fqnDurableMailboxType(mailboxFQN: String): DurableMailboxType = FqnDurableMailboxType(mailboxFQN)
+}
+
+/**
  * Configurator for the DurableMailbox
  * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "zookeeper", "mongodb", "file",
  * or a full class name of the Mailbox implementation.
