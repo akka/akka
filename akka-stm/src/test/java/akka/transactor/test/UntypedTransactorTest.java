@@ -79,16 +79,9 @@ public class UntypedTransactorTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
-      Block.on(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
-        if (future.isCompleted()) {
-        Option resultOption = future.result();
-        if (resultOption.isDefined()) {
-          Object result = resultOption.get();
-          int count = (Integer) result;
-          assertEquals(1, count);
-        }
-      }
+      Future<Object> future = counter.ask("GetCount", askTimeout);
+      int count = (Integer)Block.sync(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      assertEquals(1, count);
     }
   }
 
@@ -109,15 +102,8 @@ public class UntypedTransactorTest {
     }
     for (ActorRef counter : counters) {
       Future future = counter.ask("GetCount", askTimeout);
-      Block.on(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
-      if (future.isCompleted()) {
-        Option resultOption = future.result();
-        if (resultOption.isDefined()) {
-          Object result = resultOption.get();
-          int count = (Integer) result;
-          assertEquals(0, count);
-        }
-      }
+      int count = (Integer)Block.sync(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      assertEquals(0, count);
     }
   }
 

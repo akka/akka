@@ -186,7 +186,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Gets this agent's value after all currently queued updates have completed.
    */
-  def await(implicit timeout: Timeout): T = Block.on(future, timeout.duration).result.get
+  def await(implicit timeout: Timeout): T = Block.sync(future, timeout.duration)
 
   /**
    * Map this agent to a new agent, applying the function to the internal state.

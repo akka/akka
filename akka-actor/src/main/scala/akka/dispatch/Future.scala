@@ -408,14 +408,6 @@ sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
   def value: Option[Either[Throwable, T]]
 
   /**
-   * Returns the successful result of this Future if it exists.
-   */
-  final def result: Option[T] = value match {
-    case Some(Right(r)) ⇒ Some(r)
-    case _              ⇒ None
-  }
-
-  /**
    * When this Future is completed, apply the provided function to the
    * Future. If the Future has already been completed, this will apply
    * immediately. Multiple

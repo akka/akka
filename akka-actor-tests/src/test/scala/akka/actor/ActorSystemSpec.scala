@@ -7,8 +7,7 @@ import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
 
-//FIXME SOME BUG WITH COMPILER?
-//class JavaExtensionSpec extends JavaExtension with JUnitSuite
+class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this

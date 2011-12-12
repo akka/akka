@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 public class UntypedTransactorExample {
   public static void main(String[] args) throws InterruptedException {
 
-    ActorSystem application = ActorSystem.create("UntypedTransactorExample", AkkaSpec.testConf());
+    ActorSystem app = ActorSystem.create("UntypedTransactorExample", AkkaSpec.testConf());
 
-    ActorRef counter1 = application.actorOf(new Props().withCreator(UntypedCounter.class));
-    ActorRef counter2 = application.actorOf(new Props().withCreator(UntypedCounter.class));
+    ActorRef counter1 = app.actorOf(new Props().withCreator(UntypedCounter.class));
+    ActorRef counter2 = app.actorOf(new Props().withCreator(UntypedCounter.class));
 
     counter1.tell(new Increment(counter2));
 
@@ -28,25 +28,11 @@ public class UntypedTransactorExample {
     Future future1 = counter1.ask("GetCount", timeout);
     Future future2 = counter2.ask("GetCount", timeout);
 
-    Block.on(future1, d);
-    if (future1.isCompleted()) {
-      if (future1.result().isDefined()) {
-        int result = (Integer) future1.result().get();
-        System.out.println("counter 1: " + result);
-      }
-    }
+    int count1 = (Integer)Block.sync(future1, d);
+    System.out.println("counter 1: " + count1);
+    int count2 = (Integer)Block.sync(future2, d);
+    System.out.println("counter 1: " + count2);
 
-    Block.on(future2, d);
-    if (future2.isCompleted()) {
-      if (future2.result().isDefined()) {
-        int result = (Integer) future2.result().get();
-        System.out.println("counter 2: " + result);
-      }
-    }
-
-    counter1.stop();
-    counter2.stop();
-
-    application.stop();
+    app.stop();
   }
 }
