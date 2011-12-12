@@ -2,7 +2,7 @@ package akka.transactor.test;
 
 import static org.junit.Assert.*;
 
-import akka.dispatch.Block;
+import akka.dispatch.Await;
 import akka.util.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -82,7 +82,7 @@ public class UntypedCoordinatedIncrementTest {
     }
     for (ActorRef counter : counters) {
       Future<Object> future = counter.ask("GetCount", askTimeout);
-      assertEquals(1, ((Integer) Block.sync(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
+      assertEquals(1, ((Integer) Await.result(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
     }
   }
 
@@ -103,7 +103,7 @@ public class UntypedCoordinatedIncrementTest {
     }
     for (ActorRef counter : counters) {
       Future<Object>future = counter.ask("GetCount", askTimeout);
-      assertEquals(0,((Integer)Block.sync(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
+      assertEquals(0,((Integer) Await.result(future, Duration.create(timeout, TimeUnit.SECONDS))).intValue());
     }
   }
 

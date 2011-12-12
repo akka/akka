@@ -11,7 +11,7 @@ import akka.util.duration._
 import java.util.concurrent.CountDownLatch
 import akka.testkit.AkkaSpec
 import akka.testkit._
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   val latch = new CountDownLatch(num)
@@ -63,9 +63,9 @@ class AgentSpec extends AkkaSpec {
       val r2 = agent.alterOff((s: String) ⇒ { Thread.sleep(2000); s + "c" })(5000)
       val r3 = agent.alter(_ + "d")(5000)
 
-      Block.sync(r1, 5 seconds) must be === "ab"
-      Block.sync(r2, 5 seconds) must be === "abc"
-      Block.sync(r3, 5 seconds) must be === "abcd"
+      Await.result(r1, 5 seconds) must be === "ab"
+      Await.result(r2, 5 seconds) must be === "abc"
+      Await.result(r3, 5 seconds) must be === "abcd"
 
       agent() must be("abcd")
 
@@ -141,7 +141,7 @@ class AgentSpec extends AkkaSpec {
       agent send (_ + "b")
       agent send (_ + "c")
 
-      Block.sync(agent.future, timeout.duration) must be("abc")
+      Await.result(agent.future, timeout.duration) must be("abc")
 
       agent.close()
     }

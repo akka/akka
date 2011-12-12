@@ -22,27 +22,27 @@ import scala.collection.mutable.Stack
 import akka.util.{ Switch, Duration, BoxedType }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 import java.util.concurrent.{ TimeoutException, ConcurrentLinkedQueue, TimeUnit, Callable }
-import akka.dispatch.Block.CanBlock
+import akka.dispatch.Await.CanAwait
 
-object Block {
-  sealed trait CanBlock
+object Await {
+  sealed trait CanAwait
 
-  trait Blockable[+T] {
+  trait Awaitable[+T] {
     /**
      * Should throw java.util.concurrent.TimeoutException if times out
      */
-    def block(atMost: Duration)(implicit permit: CanBlock): this.type
+    def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
     /**
      * Throws exceptions if cannot produce a T within the specified time
      */
-    def sync(atMost: Duration)(implicit permit: CanBlock): T
+    def result(atMost: Duration)(implicit permit: CanAwait): T
   }
 
-  private implicit val permit = new CanBlock {}
+  private implicit val permit = new CanAwait {}
 
-  def on[T <: Blockable[_]](block: T, atMost: Duration /* = Duration.Inf*/ ): T = block.block(atMost)
-  def sync[T](block: Blockable[T], atMost: Duration): T = block.sync(atMost)
+  def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
+  def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
 
 object Futures {
@@ -147,7 +147,7 @@ object Future {
    * Useful for reducing many Futures into a single Future.
    */
   def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], dispatcher: MessageDispatcher): Future[M[A]] =
-    in.foldLeft(new KeptPromise(Right(cbf(in))): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+    in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
 
   /**
    * Returns a Future to the result of the first future in the list that is completed
@@ -165,7 +165,7 @@ object Future {
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
   def find[T](futures: Iterable[Future[T]])(predicate: T ⇒ Boolean)(implicit dispatcher: MessageDispatcher): Future[Option[T]] = {
-    if (futures.isEmpty) new KeptPromise[Option[T]](Right(None))
+    if (futures.isEmpty) Promise.successful[Option[T]](None)
     else {
       val result = Promise[Option[T]]()
       val ref = new AtomicInteger(futures.size)
@@ -196,9 +196,8 @@ object Future {
    * </pre>
    */
   def fold[T, R](futures: Iterable[Future[T]])(zero: R)(foldFun: (R, T) ⇒ R)(implicit dispatcher: MessageDispatcher): Future[R] = {
-    if (futures.isEmpty) {
-      new KeptPromise[R](Right(zero))
-    } else {
+    if (futures.isEmpty) Promise.successful(zero)
+    else {
       val result = Promise[R]()
       val results = new ConcurrentLinkedQueue[T]()
       val done = new Switch(false)
@@ -245,8 +244,7 @@ object Future {
    * </pre>
    */
   def reduce[T, R >: T](futures: Iterable[Future[T]])(op: (R, T) ⇒ T)(implicit dispatcher: MessageDispatcher): Future[R] = {
-    if (futures.isEmpty)
-      new KeptPromise[R](Left(new UnsupportedOperationException("empty reduce left")))
+    if (futures.isEmpty) Promise[R].failure(new UnsupportedOperationException("empty reduce left"))
     else {
       val result = Promise[R]()
       val seedFound = new AtomicBoolean(false)
@@ -271,7 +269,7 @@ object Future {
    * </pre>
    */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A])(fn: A ⇒ Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], dispatcher: MessageDispatcher): Future[M[B]] =
-    in.foldLeft(new KeptPromise(Right(cbf(in))): Future[Builder[B, M[B]]]) { (fr, a) ⇒
+    in.foldLeft(Promise.successful(cbf(in)): Future[Builder[B, M[B]]]) { (fr, a) ⇒
       val fb = fn(a.asInstanceOf[A])
       for (r ← fr; b ← fb) yield (r += b)
     }.map(_.result)
@@ -364,7 +362,7 @@ object Future {
     }
 }
 
-sealed trait Future[+T] extends japi.Future[T] with Block.Blockable[T] {
+sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   implicit def dispatcher: MessageDispatcher
 
@@ -713,12 +711,12 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
     awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
 
-  def block(atMost: Duration)(implicit permit: CanBlock): this.type =
+  def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
     if (value.isDefined || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
-  def sync(atMost: Duration)(implicit permit: CanBlock): T =
-    block(atMost).value.get match {
+  def result(atMost: Duration)(implicit permit: CanAwait): T =
+    ready(atMost).value.get match {
       case Left(e)  ⇒ throw e
       case Right(r) ⇒ r
     }
@@ -797,8 +795,8 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val dis
     this
   }
 
-  def block(atMost: Duration)(implicit permit: CanBlock): this.type = this
-  def sync(atMost: Duration)(implicit permit: CanBlock): T = value.get match {
+  def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
+  def result(atMost: Duration)(implicit permit: CanAwait): T = value.get match {
     case Left(e)  ⇒ throw e
     case Right(r) ⇒ r
   }

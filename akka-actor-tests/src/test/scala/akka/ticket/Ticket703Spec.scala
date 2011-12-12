@@ -3,7 +3,7 @@ package akka.ticket
 import akka.actor._
 import akka.routing._
 import akka.testkit.AkkaSpec
-import akka.dispatch.Block
+import akka.dispatch.Await
 import akka.util.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -28,7 +28,7 @@ class Ticket703Spec extends AkkaSpec {
             }
           }))
         }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 5, 1000)))
-      Block.sync(actorPool.?("Ping", 10000), 10 seconds) must be === "Response"
+      Await.result(actorPool.?("Ping", 10000), 10 seconds) must be === "Response"
     }
   }
 }

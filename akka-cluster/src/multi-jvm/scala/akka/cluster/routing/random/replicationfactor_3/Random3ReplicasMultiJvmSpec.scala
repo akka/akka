@@ -9,7 +9,7 @@ import akka.actor._
 import akka.config.Config
 import Cluster._
 import akka.cluster.LocalCluster._
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
@@ -79,7 +79,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
       }
 
       for (i ← 0 until 1000) {
-        count(Block.sync((hello ? "Hello").mapTo[String], 10 seconds))
+        count(Await.result((hello ? "Hello").mapTo[String], 10 seconds))
       }
 
       val repliesNode1 = replies("World from node [node1]")

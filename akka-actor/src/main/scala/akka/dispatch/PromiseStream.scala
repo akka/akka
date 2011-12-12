@@ -183,7 +183,7 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
       if (eo eq null) dequeue()
       else {
         if (eo.nonEmpty) {
-          if (_elemOut.compareAndSet(eo, eo.tail)) new KeptPromise(Right(eo.head))
+          if (_elemOut.compareAndSet(eo, eo.tail)) Promise.successful(eo.head)
           else dequeue()
         } else dequeue(Promise[A])
       }

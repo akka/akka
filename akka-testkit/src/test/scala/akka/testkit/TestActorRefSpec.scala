@@ -7,7 +7,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
-import akka.dispatch.{ Future, Promise, Block }
+import akka.dispatch.{ Future, Promise, Await }
 import akka.util.duration._
 import akka.actor.ActorSystem
 
@@ -110,7 +110,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
-        val nested = Block.sync((a ? "any").mapTo[ActorRef], timeout.duration)
+        val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -121,7 +121,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
-        val nested = Block.sync((a ? "any").mapTo[ActorRef], timeout.duration)
+        val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -195,7 +195,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
       f must be('completed)
-      Block.sync(f, timeout.duration) must equal("workDone")
+      Await.result(f, timeout.duration) must equal("workDone")
     }
 
   }

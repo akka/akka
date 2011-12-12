@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.testkit.{ filterEvents, EventFilter }
-import akka.dispatch.{ PinnedDispatcher, Dispatchers, Block }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers, Await }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
@@ -28,11 +28,11 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
           }
         })
 
-        val actor1, actor2 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
+        val actor1, actor2 = Await.result((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
 
-        val actor3 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newDispatcher("test").build)).mapTo[ActorRef], timeout.duration)
+        val actor3 = Await.result((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newDispatcher("test").build)).mapTo[ActorRef], timeout.duration)
 
-        val actor4 = Block.sync((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
+        val actor4 = Await.result((supervisor ? workerProps.withDispatcher(system.dispatcherFactory.newPinnedDispatcher("pinned"))).mapTo[ActorRef], timeout.duration)
 
         actor1 ! Kill
         actor2 ! Kill
@@ -40,10 +40,10 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
         actor4 ! Kill
 
         countDownLatch.await(10, TimeUnit.SECONDS)
-        assert(Block.sync(actor1 ? "status", timeout.duration) == "OK", "actor1 is shutdown")
-        assert(Block.sync(actor2 ? "status", timeout.duration) == "OK", "actor2 is shutdown")
-        assert(Block.sync(actor3 ? "status", timeout.duration) == "OK", "actor3 is shutdown")
-        assert(Block.sync(actor4 ? "status", timeout.duration) == "OK", "actor4 is shutdown")
+        assert(Await.result(actor1 ? "status", timeout.duration) == "OK", "actor1 is shutdown")
+        assert(Await.result(actor2 ? "status", timeout.duration) == "OK", "actor2 is shutdown")
+        assert(Await.result(actor3 ? "status", timeout.duration) == "OK", "actor3 is shutdown")
+        assert(Await.result(actor4 ? "status", timeout.duration) == "OK", "actor4 is shutdown")
       }
     }
   }

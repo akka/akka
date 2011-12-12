@@ -54,7 +54,7 @@ public class JavaFutureTests {
       }
     });
 
-    assertEquals("Hello World",Block.sync(f2, timeout));
+    assertEquals("Hello World", Await.result(f2, timeout));
   }
 
   @Test
@@ -71,7 +71,7 @@ public class JavaFutureTests {
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(Block.sync(f, timeout), "foo");
+    assertEquals(Await.result(f, timeout), "foo");
   }
 
   @Test
@@ -105,7 +105,7 @@ public class JavaFutureTests {
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(Block.sync(f, timeout), "foo");
+    assertEquals(Await.result(f, timeout), "foo");
   }
 
   @Test
@@ -121,7 +121,7 @@ public class JavaFutureTests {
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(Block.sync(f, timeout), "foo");
+    assertEquals(Await.result(f, timeout), "foo");
   }
 
   @Test
@@ -139,8 +139,8 @@ public class JavaFutureTests {
       }
     });
 
-    assertEquals(Block.sync(f, timeout), "1000");
-    assertEquals(Block.sync(r, timeout).intValue(), 1000);
+    assertEquals(Await.result(f, timeout), "1000");
+    assertEquals(Await.result(r, timeout).intValue(), 1000);
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
   }
 
@@ -158,8 +158,8 @@ public class JavaFutureTests {
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(Block.sync(f, timeout), "foo");
-    assertEquals(Block.sync(r, timeout), "foo");
+    assertEquals(Await.result(f, timeout), "foo");
+    assertEquals(Await.result(r, timeout), "foo");
   }
 
   // TODO: Improve this test, perhaps with an Actor
@@ -179,7 +179,7 @@ public class JavaFutureTests {
 
     Future<Iterable<String>> futureList = Futures.sequence(listFutures, system.dispatcher());
 
-    assertEquals(Block.sync(futureList, timeout), listExpected);
+    assertEquals(Await.result(futureList, timeout), listExpected);
   }
 
   // TODO: Improve this test, perhaps with an Actor
@@ -203,7 +203,7 @@ public class JavaFutureTests {
       }
     }, system.dispatcher());
 
-    assertEquals(Block.sync(result, timeout), expected.toString());
+    assertEquals(Await.result(result, timeout), expected.toString());
   }
 
   @Test
@@ -226,7 +226,7 @@ public class JavaFutureTests {
       }
     }, system.dispatcher());
 
-    assertEquals(Block.sync(result, timeout), expected.toString());
+    assertEquals(Await.result(result, timeout), expected.toString());
   }
 
   @Test
@@ -249,7 +249,7 @@ public class JavaFutureTests {
       }
     }, system.dispatcher());
 
-    assertEquals(Block.sync(result, timeout), expectedStrings);
+    assertEquals(Await.result(result, timeout), expectedStrings);
   }
 
   @Test
@@ -270,7 +270,7 @@ public class JavaFutureTests {
       }
     }, system.dispatcher());
 
-    assertEquals(expect, Block.sync(f, timeout));
+    assertEquals(expect, Await.result(f, timeout));
   }
 
   @Test
@@ -278,7 +278,7 @@ public class JavaFutureTests {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
-    Block.on(p, d);
-    assertEquals(Block.sync(p, d), "foo");
+    Await.ready(p, d);
+    assertEquals(Await.result(p, d), "foo");
   }
 }

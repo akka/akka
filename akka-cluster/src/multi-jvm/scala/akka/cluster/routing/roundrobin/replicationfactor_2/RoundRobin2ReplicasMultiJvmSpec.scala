@@ -20,7 +20,7 @@ import akka.cluster.LocalCluster._
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.ConcurrentHashMap
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 /**
  * When a MultiJvmNode is started, will it automatically be part of the cluster (so will it automatically be eligible
@@ -109,7 +109,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
         implicit val timeout = Timeout(Duration(20, "seconds"))
 
         for(i <- 1 to 8)
-          count(Block.sync((hello ? "Hello").mapTo[String], timeout.duration))
+          count(Await.result((hello ? "Hello").mapTo[String], timeout.duration))
 
         replies.get("World from node [node1]").get must equal(4)
         replies.get("World from node [node2]").get must equal(4)

@@ -24,7 +24,7 @@ import scala.annotation.tailrec
 
 import com.google.protobuf.ByteString
 import java.util.concurrent.TimeoutException
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 /**
  * Interface for node membership change listener.
@@ -248,7 +248,7 @@ class Gossiper(remote: Remote) {
 
     try {
       val t = remoteExtension.RemoteSystemDaemonAckTimeout
-      Block.sync(connection ? (toRemoteMessage(newGossip), t), t) match {
+      Await.result(connection ? (toRemoteMessage(newGossip), t), t) match {
         case Success(receiver) ⇒ log.debug("Gossip sent to [{}] was successfully received", receiver)
         case Failure(cause)    ⇒ log.error(cause, cause.toString)
       }

@@ -4,7 +4,7 @@
 package akka.util
 
 import org.scalatest.matchers.MustMatchers
-import akka.dispatch.{ Future, Block }
+import akka.dispatch.{ Future, Await }
 import akka.testkit.AkkaSpec
 import scala.util.Random
 import akka.testkit.DefaultTimeout
@@ -125,7 +125,7 @@ class IndexSpec extends AkkaSpec with MustMatchers with DefaultTimeout {
 
       val tasks = List.fill(nrOfTasks)(executeRandomTask)
 
-      tasks.foreach(Block.sync(_, timeout.duration))
+      tasks.foreach(Await.result(_, timeout.duration))
     }
   }
 }

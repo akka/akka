@@ -85,7 +85,7 @@ class LocalMetricsMultiJvmNode1 extends MasterClusterTestNode {
 
       })
 
-      Block.sync(monitorReponse, 5 seconds) must be("Too much memory is used!")
+      Await.result(monitorReponse, 5 seconds) must be("Too much memory is used!")
 
     }
 

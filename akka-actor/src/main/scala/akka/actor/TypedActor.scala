@@ -410,12 +410,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor.?(m, timeout)
-            (try { Block.on(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
+            (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ Block.sync(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }

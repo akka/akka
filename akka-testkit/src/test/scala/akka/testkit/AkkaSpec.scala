@@ -15,7 +15,7 @@ import akka.actor.PoisonPill
 import akka.actor.CreateChild
 import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
-import akka.dispatch.{ Block, MessageDispatcher }
+import akka.dispatch.{ Await, MessageDispatcher }
 
 object TimingTest extends Tag("timing")
 
@@ -64,7 +64,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     system.stop()
-    try Block.on(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
+    try Await.ready(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
@@ -140,7 +140,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.registerOnTermination(latch.countDown())
         system.stop()
         latch.await(2 seconds)
-        Block.sync(davyJones ? "Die!", timeout.duration) must be === "finally gone"
+        Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))

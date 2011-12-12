@@ -31,7 +31,7 @@ object ActorModelSpec {
 
   case class Increment(counter: AtomicLong) extends ActorModelMessage
 
-  case class Await(latch: CountDownLatch) extends ActorModelMessage
+  case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
 
   case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
 
@@ -68,7 +68,7 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case Await(latch)                 ⇒ ack; latch.await(); busy.switchOff()
+      case AwaitLatch(latch)            ⇒ ack; latch.await(); busy.switchOff()
       case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
@@ -385,17 +385,17 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
         val f6 = a ? Reply("bar2")
 
-        assert(Block.sync(f1, timeout.duration) === "foo")
-        assert(Block.sync(f2, timeout.duration) === "bar")
-        assert(Block.sync(f4, timeout.duration) === "foo2")
-        assert(intercept[ActorInterruptedException](Block.sync(f3, timeout.duration)).getMessage === "Ping!")
-        assert(Block.sync(f6, timeout.duration) === "bar2")
-        assert(intercept[ActorInterruptedException](Block.sync(f5, timeout.duration)).getMessage === "Ping!")
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getMessage === "Ping!")
+        assert(Await.result(f6, timeout.duration) === "bar2")
+        assert(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getMessage === "Ping!")
       }
     }
 
@@ -410,10 +410,10 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
-        assert(Block.sync(f1, timeout.duration) === "foo")
-        assert(Block.sync(f2, timeout.duration) === "bar")
-        assert(Block.sync(f4, timeout.duration) === "foo2")
-        assert(Block.sync(f6, timeout.duration) === "bar2")
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(Await.result(f6, timeout.duration) === "bar2")
         assert(f3.value.isEmpty)
         assert(f5.value.isEmpty)
       }

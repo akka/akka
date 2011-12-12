@@ -168,7 +168,7 @@ class RemoteActorRefProvider(
           actors.replace(path.toString, creationPromise, actor)
           actor
         case actor: InternalActorRef ⇒ actor
-        case future: Future[_]       ⇒ Block.sync(future, system.settings.ActorTimeout.duration).asInstanceOf[InternalActorRef]
+        case future: Future[_]       ⇒ Await.result(future, system.settings.ActorTimeout.duration).asInstanceOf[InternalActorRef]
       }
     }
 
@@ -224,7 +224,7 @@ class RemoteActorRefProvider(
     if (withACK) {
       try {
         val f = connection ? (command, remoteExtension.RemoteSystemDaemonAckTimeout)
-        (try Block.on(f, remoteExtension.RemoteSystemDaemonAckTimeout).value catch { case _: TimeoutException ⇒ None }) match {
+        (try Await.ready(f, remoteExtension.RemoteSystemDaemonAckTimeout).value catch { case _: TimeoutException ⇒ None }) match {
           case Some(Right(receiver)) ⇒
             log.debug("Remote system command sent to [{}] successfully received", receiver)
 

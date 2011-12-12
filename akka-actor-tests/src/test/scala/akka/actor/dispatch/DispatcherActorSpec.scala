@@ -7,7 +7,7 @@ import akka.actor.{ Props, Actor }
 import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.DefaultTimeout
-import akka.dispatch.{ Block, PinnedDispatcher, Dispatchers, Dispatcher }
+import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers, Dispatcher }
 
 object DispatcherActorSpec {
   class TestActor extends Actor {
@@ -44,7 +44,7 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newDispatcher("test").build))
-      assert("World" === Block.sync(actor ? "Hello", timeout.duration))
+      assert("World" === Await.result(actor ? "Hello", timeout.duration))
       actor.stop()
     }
 
@@ -66,7 +66,7 @@ class DispatcherActorSpec extends AkkaSpec with DefaultTimeout {
           case "ping"        ⇒ if (works.get) latch.countDown()
         }).withDispatcher(throughputDispatcher))
 
-      assert(Block.sync(slowOne ? "hogexecutor", timeout.duration) === "OK")
+      assert(Await.result(slowOne ? "hogexecutor", timeout.duration) === "OK")
       (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
       fastOne ! "sabotage"
       start.countDown()

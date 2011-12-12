@@ -11,7 +11,7 @@ import java.nio.channels.NotYetConnectedException
 import java.lang.Thread
 import akka.routing.Routing.Broadcast
 import akka.cluster.LocalCluster._
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 object ScatterGatherFailoverMultiJvmSpec {
 
@@ -85,7 +85,7 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def identifyConnections(actor: ActorRef): JSet[String] = {
     val set = new java.util.HashSet[String]
     for (i ← 0 until NrOfNodes * 2) {
-      val value = Block.sync(actor ? "foo", timeout.duration).asInstanceOf[String]
+      val value = Await.result(actor ? "foo", timeout.duration).asInstanceOf[String]
       set.add(value)
     }
     set

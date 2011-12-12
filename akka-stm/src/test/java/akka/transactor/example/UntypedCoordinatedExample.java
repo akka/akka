@@ -3,9 +3,8 @@ package akka.transactor.example;
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.dispatch.Block;
+import akka.dispatch.Await;
 import akka.dispatch.Future;
-import akka.japi.Procedure;
 import akka.testkit.AkkaSpec;
 import akka.transactor.Coordinated;
 
@@ -30,9 +29,9 @@ public class UntypedCoordinatedExample {
     Future<Object> future1 = counter1.ask("GetCount", timeout);
     Future<Object> future2 = counter2.ask("GetCount", timeout);
 
-    int count1 = (Integer)Block.sync(future1, d);
+    int count1 = (Integer) Await.result(future1, d);
     System.out.println("counter 1: " + count1);
-    int count2 = (Integer)Block.sync(future2, d);
+    int count2 = (Integer) Await.result(future2, d);
     System.out.println("counter 1: " + count2);
 
     app.stop();

@@ -11,7 +11,7 @@ import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException
 import akka.cluster.LocalCluster._
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 object RandomFailoverMultiJvmSpec {
 
@@ -92,7 +92,7 @@ class RandomFailoverMultiJvmNode1 extends MasterClusterTestNode {
   def identifyConnections(actor: ActorRef): JSet[String] = {
     val set = new java.util.HashSet[String]
     for (i ← 0 until 100) { // we should get hits from both nodes in 100 attempts, if not then not very random
-      val value = Block.sync(actor ? "identify", timeout.duration).asInstanceOf[String]
+      val value = Await.result(actor ? "identify", timeout.duration).asInstanceOf[String]
       set.add(value)
     }
     set

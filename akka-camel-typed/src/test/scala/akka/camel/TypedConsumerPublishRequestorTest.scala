@@ -8,7 +8,7 @@ import akka.util.duration._
 import akka.actor._
 import akka.actor.Actor._
 import akka.camel.TypedCamelTestSupport.{ SetExpectedMessageCount ⇒ SetExpectedTestMessageCount, _ }
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 class TypedConsumerPublishRequestorTest extends JUnitSuite {
   import TypedConsumerPublishRequestorTest._
@@ -40,10 +40,10 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
   @Test
   def shouldReceiveOneConsumerMethodRegisteredEvent = {
     Actor.registry.addListener(requestor)
-    val latch = Block.sync((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
     val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], Props())
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    val event = Block.sync((publisher ? GetRetainedMessage).mapTo[ConsumerMethodRegistered], 3 seconds)
+    val event = Await.result((publisher ? GetRetainedMessage).mapTo[ConsumerMethodRegistered], 3 seconds)
     assert(event.endpointUri === "direct:foo")
     assert(event.typedActor === obj)
     assert(event.methodName === "foo")
@@ -51,21 +51,21 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveOneConsumerMethodUnregisteredEvent = {
-    val latch = Block.sync((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
     Actor.registry.addListener(requestor)
 
     val obj = TypedActor.typedActorOf(classOf[SampleTypedSingleConsumer], classOf[SampleTypedSingleConsumerImpl], Props())
 
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
 
-    val ignorableEvent = Block.sync((publisher ? GetRetainedMessage).mapTo[ConsumerMethodRegistered], 3 seconds)
+    val ignorableEvent = Await.result((publisher ? GetRetainedMessage).mapTo[ConsumerMethodRegistered], 3 seconds)
 
-    val latch2 = Block.sync((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
+    val latch2 = Await.result((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 3 seconds)
     TypedActor.stop(obj)
 
     assert(latch2.await(5000, TimeUnit.MILLISECONDS))
 
-    val event = Block.sync((publisher ? GetRetainedMessage).mapTo[ConsumerMethodUnregistered], 3 seconds)
+    val event = Await.result((publisher ? GetRetainedMessage).mapTo[ConsumerMethodUnregistered], 3 seconds)
 
     assert(event.endpointUri === "direct:foo")
     assert(event.typedActor === obj)
@@ -75,23 +75,23 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
   @Test
   def shouldReceiveThreeConsumerMethodRegisteredEvents = {
     Actor.registry.addListener(requestor)
-    val latch = Block.sync((publisher ? SetExpectedTestMessageCount(3)).mapTo[CountDownLatch], 3 seconds)
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(3)).mapTo[CountDownLatch], 3 seconds)
     val obj = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], Props())
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodRegistered])
-    val events = Block.sync((publisher ? request).mapTo[List[ConsumerMethodRegistered]], 3 seconds)
+    val events = Await.result((publisher ? request).mapTo[List[ConsumerMethodRegistered]], 3 seconds)
     assert(events.map(_.method.getName).sortWith(_ < _) === List("m2", "m3", "m4"))
   }
 
   @Test
   def shouldReceiveThreeConsumerMethodUnregisteredEvents = {
     val obj = TypedActor.typedActorOf(classOf[SampleTypedConsumer], classOf[SampleTypedConsumerImpl], Props())
-    val latch = Block.sync((publisher ? SetExpectedTestMessageCount(3)).mapTo[CountDownLatch], 3 seconds)
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(3)).mapTo[CountDownLatch], 3 seconds)
     Actor.registry.addListener(requestor)
     TypedActor.stop(obj)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
     val request = GetRetainedMessages(_.isInstanceOf[ConsumerMethodUnregistered])
-    val events = Block.sync((publisher ? request).mapTo[List[ConsumerMethodUnregistered]], 3 seconds)
+    val events = Await.result((publisher ? request).mapTo[List[ConsumerMethodUnregistered]], 3 seconds)
     assert(events.map(_.method.getName).sortWith(_ < _) === List("m2", "m3", "m4"))
   }
 }

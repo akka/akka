@@ -43,7 +43,7 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
 
     actor.resume //Signal the actor to start treating it's message backlog
 
-    Block.sync(actor.?('Result).mapTo[List[Int]], timeout.duration) must be === msgs.reverse
+    Await.result(actor.?('Result).mapTo[List[Int]], timeout.duration) must be === msgs.reverse
   }
 
 }

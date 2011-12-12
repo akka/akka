@@ -10,7 +10,7 @@ import org.bson.collection._
 import akka.actor.ActorCell
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.{ Block, Promise, Envelope, DefaultPromise }
+import akka.dispatch.{ Await, Promise, Envelope, DefaultPromise }
 import java.util.concurrent.TimeoutException
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
@@ -50,7 +50,7 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
         case Left(t)          ⇒ result.failure(t)
       }
     })
-    Block.on(result, settings.WriteTimeout)
+    Await.ready(result, settings.WriteTimeout)
   }
 
   def dequeue(): Envelope = withErrorHandling {
@@ -75,13 +75,13 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
           ()
       }
     }
-    try { Block.sync(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
+    try { Await.result(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
   }
 
   def numberOfMessages: Int = {
     val count = Promise[Int]()(dispatcher)
     mongo.count()(count.success)
-    try { Block.sync(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
+    try { Await.result(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
   }
 
   //TODO review find other solution, this will be very expensive

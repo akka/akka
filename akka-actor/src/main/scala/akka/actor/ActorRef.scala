@@ -383,7 +383,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
     _path = rootPath / "null"
-    brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef - promises are always broken.")))(dispatcher)
+    brokenPromise = Promise.failed(new ActorKilledException("In DeadLetterActorRef - promises are always broken."))(dispatcher)
   }
 
   override def isTerminated(): Boolean = true
@@ -425,7 +425,7 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
+    Promise.failed(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName)))(dispatcher)
 
   override def isTerminated = result.isCompleted
 

@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-import akka.dispatch.{ Block, Future }
+import akka.dispatch.{ Await, Future }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class LocalActorRefProviderSpec extends AkkaSpec {
@@ -32,7 +32,7 @@ class LocalActorRefProviderSpec extends AkkaSpec {
         val address = "new-actor" + i
         implicit val timeout = Timeout(5 seconds)
         val actors = for (j ← 1 to 4) yield Future(system.actorOf(Props(c ⇒ { case _ ⇒ }), address))
-        val set = Set() ++ actors.map(a ⇒ Block.on(a, timeout.duration).value match {
+        val set = Set() ++ actors.map(a ⇒ Await.ready(a, timeout.duration).value match {
           case Some(Right(a: ActorRef))                  ⇒ 1
           case Some(Left(ex: InvalidActorNameException)) ⇒ 2
           case x                                         ⇒ x

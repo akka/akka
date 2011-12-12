@@ -19,7 +19,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
       val f = spawn { q.dequeue }
 
-      Block.sync(f, 1 second) must be(null)
+      Await.result(f, 1 second) must be(null)
     }
 
     "create a bounded mailbox with 10 capacity and with push timeout" in {
@@ -115,8 +115,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     val consumers = for (i ← (1 to 4).toList) yield createConsumer
 
-    val ps = producers.map(Block.sync(_, within))
-    val cs = consumers.map(Block.sync(_, within))
+    val ps = producers.map(Await.result(_, within))
+    val cs = consumers.map(Await.result(_, within))
 
     ps.map(_.size).sum must be === totalMessages //Must have produced 1000 messages
     cs.map(_.size).sum must be === totalMessages //Must have consumed all produced messages

@@ -6,7 +6,7 @@ import akka.testkit._
 import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
-import akka.dispatch.{ Block, PinnedDispatcher, Dispatchers }
+import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers }
 
 object PinnedActorSpec {
   class TestActor extends Actor {
@@ -35,7 +35,7 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeo
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
-      assert("World" === Block.sync(actor ? "Hello", timeout.duration))
+      assert("World" === Await.result(actor ? "Hello", timeout.duration))
       actor.stop()
     }
   }

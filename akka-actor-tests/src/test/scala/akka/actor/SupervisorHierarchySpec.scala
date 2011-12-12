@@ -7,7 +7,7 @@ package akka.actor
 import akka.testkit._
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.dispatch.Block
+import akka.dispatch.Await
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
@@ -34,10 +34,10 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
       val boss = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), None, None)))
 
       val managerProps = Props(new CountDownActor(countDown)).withFaultHandler(AllForOneStrategy(List(), None, None))
-      val manager = Block.sync((boss ? managerProps).mapTo[ActorRef], timeout.duration)
+      val manager = Await.result((boss ? managerProps).mapTo[ActorRef], timeout.duration)
 
       val workerProps = Props(new CountDownActor(countDown))
-      val workerOne, workerTwo, workerThree = Block.sync((manager ? workerProps).mapTo[ActorRef], timeout.duration)
+      val workerOne, workerTwo, workerThree = Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration)
 
       filterException[ActorKilledException] {
         workerOne ! Kill

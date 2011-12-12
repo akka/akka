@@ -51,7 +51,7 @@ import RemoteSystemDaemonMessageType._
 import com.eaio.uuid.UUID
 
 import com.google.protobuf.ByteString
-import akka.dispatch.{Block, Dispatchers, Future, PinnedDispatcher}
+import akka.dispatch.{Await, Dispatchers, Future, PinnedDispatcher}
 
 // FIXME add watch for each node that when the entry for the node is removed then the node shuts itself down
 
@@ -1156,7 +1156,7 @@ class DefaultClusterNode private[akka] (
       connection ! command
     } else {
       try {
-        Block.sync(connection ? (command, remoteDaemonAckTimeout), 10 seconds).asInstanceOf[Status] match {
+        Await.result(connection ? (command, remoteDaemonAckTimeout), 10 seconds).asInstanceOf[Status] match {
           case Success(status) ⇒
             EventHandler.debug(this, "Remote command sent to [%s] successfully received".format(status))
           case Failure(cause) ⇒

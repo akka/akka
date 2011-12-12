@@ -13,7 +13,7 @@ import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.dispatch.{ Block, DefaultPromise, Promise, Future }
+import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
 
 object ActorRefSpec {
 
@@ -128,7 +128,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
     val result = Promise[Actor]()
     val r = f(result)
-    Block.sync(result, 1 minute)
+    Await.result(result, 1 minute)
     r
   }
 
@@ -306,7 +306,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         def receive = { case _ ⇒ sender ! nested }
       })
 
-      val nested = Block.sync((a ? "any").mapTo[ActorRef], timeout.duration)
+      val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
       a must not be null
       nested must not be null
       (a ne nested) must be === true
@@ -314,13 +314,13 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "support advanced nested actorOfs" in {
       val a = system.actorOf(Props(new OuterActor(system.actorOf(Props(new InnerActor)))))
-      val inner = Block.sync(a ? "innerself", timeout.duration)
+      val inner = Await.result(a ? "innerself", timeout.duration)
 
-      Block.sync(a ? a, timeout.duration) must be(a)
-      Block.sync(a ? "self", timeout.duration) must be(a)
+      Await.result(a ? a, timeout.duration) must be(a)
+      Await.result(a ? "self", timeout.duration) must be(a)
       inner must not be a
 
-      Block.sync(a ? "msg", timeout.duration) must be === "msg"
+      Await.result(a ? "msg", timeout.duration) must be === "msg"
     }
 
     "support reply via sender" in {
@@ -361,8 +361,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val fnull = (ref ? (null, timeout)).mapTo[String]
       ref ! PoisonPill
 
-      Block.sync(ffive, timeout.duration) must be("five")
-      Block.sync(fnull, timeout.duration) must be("null")
+      Await.result(ffive, timeout.duration) must be("five")
+      Await.result(fnull, timeout.duration) must be("null")
 
       awaitCond(ref.isTerminated, 2000 millis)
     }

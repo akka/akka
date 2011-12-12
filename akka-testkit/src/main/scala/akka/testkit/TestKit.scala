@@ -141,7 +141,7 @@ class TestKit(_system: ActorSystem) {
   def msgAvailable = !queue.isEmpty
 
   /**
-   * Block until the given condition evaluates to `true` or the timeout
+   * Await until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
@@ -536,7 +536,7 @@ object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 
   /**
-   * Block until the given condition evaluates to `true` or the timeout
+   * Await until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
