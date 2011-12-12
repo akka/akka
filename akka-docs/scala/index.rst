@@ -17,5 +17,4 @@ Scala API
    dispatchers
    routing
    fsm
-   http
    testing
