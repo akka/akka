@@ -904,9 +904,16 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     val runNow =
       if (value.isEmpty) {
         if (!isExpired) {
-          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } } //TODO Reschedule is run prematurely
+          //To avoid leaking memory from cancelled Futures, as described by:
+          //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6213323
+          val runnable = new AtomicReference[() => Unit](() => if(!this.isCompleted) func(this)) with Runnable {
+            def run() = getAndSet(null) match { //Do not run twice
+              case null =>
+              case some => some()
+            }
+          } //TODO Reschedule is run prematurely
           val fut = Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
-          onComplete(_ => fut.cancel(true))
+          onComplete(_ => { fut.cancel(false); runnable.set(null) })
           false
         } else true
       } else false
