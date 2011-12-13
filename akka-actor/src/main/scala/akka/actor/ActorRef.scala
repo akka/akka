@@ -455,7 +455,7 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
+    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName))))(dispatcher)
 
   override def isTerminated = result.isCompleted || result.isExpired
 

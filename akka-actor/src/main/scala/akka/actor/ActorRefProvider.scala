@@ -388,14 +388,14 @@ class LocalActorRefProvider(
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
       case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.stop()
-      case _                            ⇒ log.error(this + " received unexpected message " + message)
+      case _                            ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
         case Supervise(child)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(child) ⇒ stop()
-        case _                      ⇒ log.error(this + " received unexpected system message " + message)
+        case _                      ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }
@@ -538,7 +538,7 @@ class LocalActorRefProvider(
 
         actorOf(system, RoutedProps(routerFactory = routerFactory, connectionManager = new LocalConnectionManager(connections)), supervisor, path.name)
 
-      case unknown ⇒ throw new Exception("Don't know how to create this actor ref! Why? Got: " + unknown)
+      case unknown ⇒ throw new Exception("Don't know how to create this Actor - cause [" + unknown + "]")
     }
   }
 

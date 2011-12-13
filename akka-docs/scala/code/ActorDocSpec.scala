@@ -221,7 +221,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import akka.actor.ReceiveTimeout
     import akka.util.duration._
     class MyActor extends Actor {
-      context.receiveTimeout = Some(30 seconds)
+      context.setReceiveTimeout(30 milliseconds)
       def receive = {
         case "Hello"        ⇒ //...
         case ReceiveTimeout ⇒ throw new RuntimeException("received timeout")

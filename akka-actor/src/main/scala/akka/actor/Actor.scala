@@ -188,12 +188,12 @@ trait Actor {
 
     def noContextError =
       throw new ActorInitializationException(
-        "\n\tYou cannot create an instance of " + getClass.getName + " explicitly using the constructor (new)." +
+        "\n\tYou cannot create an instance of [" + getClass.getName + "] explicitly using the constructor (new)." +
           "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
-          "\n\t\t'val actor = context.actorOf[MyActor]'        (to create a supervised child actor from within an actor), or" +
-          "\n\t\t'val actor = system.actorOf(new MyActor(..))' (to create a top level actor from the ActorSystem),        or" +
-          "\n\t\t'val actor = context.actorOf[MyActor]'        (to create a supervised child actor from within an actor), or" +
-          "\n\t\t'val actor = system.actorOf(new MyActor(..))' (to create a top level actor from the ActorSystem)")
+          "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
+          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem),        or" +
+          "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
+          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem)")
 
     if (contextStack.isEmpty) noContextError
     val c = contextStack.head
