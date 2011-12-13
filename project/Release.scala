@@ -24,11 +24,13 @@ object Release {
     val state1 = extracted.runAggregated(publish in projectRef, state)
     val (state2, api) = extracted.runTask(Unidoc.unidoc, state1)
     val (state3, docs) = extracted.runTask(Rstdoc.rstdoc, state2)
+    val (state4, dist) = extracted.runTask(Dist.dist, state3)
     IO.delete(release)
     IO.createDirectory(release)
     IO.copyDirectory(repo, release / "releases")
     IO.copyDirectory(api, release / "api" / "akka" / releaseVersion)
     IO.copyDirectory(docs, release / "docs" / "akka" / releaseVersion)
-    state3
+    IO.copyFile(dist, release / "downloads" / dist.name)
+    state4
   }
 }

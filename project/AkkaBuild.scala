@@ -24,10 +24,11 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
       parallelExecution in GlobalScope := false,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id, tutorials.id)
+      Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
     aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, amqp, mailboxes, akkaSbtPlugin, samples, tutorials, docs)
   )
