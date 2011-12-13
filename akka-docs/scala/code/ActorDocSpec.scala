@@ -253,7 +253,5 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#hot-swap-actor
 
     val actor = system.actorOf(Props(new HotSwapActor))
-
   }
-
 }

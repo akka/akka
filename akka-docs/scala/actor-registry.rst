@@ -102,5 +102,5 @@ The above actor can be added as listener of registry events:
   import akka.actor._
   import akka.actor.Actor._
 
-  val listener = actorOf(Props[RegistryListener]
+  val listener = actorOf(Props[RegistryListener])
   registry.addListener(listener)

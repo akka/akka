@@ -24,14 +24,16 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
     */
 
    class TestKitUsageSpec extends WordSpec with BeforeAndAfterAll with ShouldMatchers with TestKit {
-     val echoRef = actorOf(Props(new EchoActor)
-     val forwardRef = actorOf(Props(new ForwardingActor(testActor))
-     val filterRef = actorOf(Props(new FilteringActor(testActor))
+     val system = ActorSystem()
+     import system._
+     val echoRef = actorOf(Props(new EchoActor))
+     val forwardRef = actorOf(Props(new ForwardingActor(testActor)))
+     val filterRef = actorOf(Props(new FilteringActor(testActor)))
      val randomHead = Random.nextInt(6)
      val randomTail = Random.nextInt(10)
      val headList = List().padTo(randomHead, "0")
      val tailList = List().padTo(randomTail, "1")
-     val seqRef = actorOf(Props(new SequencingActor(testActor, headList, tailList))
+     val seqRef = actorOf(Props(new SequencingActor(testActor, headList, tailList)))
 
      override protected def afterAll(): scala.Unit = {
        stopTestActor

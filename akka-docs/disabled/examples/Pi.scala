@@ -117,8 +117,7 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = actorOf(
-      new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+    val master = actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
 
     // start the calculation
     master ! Calculate

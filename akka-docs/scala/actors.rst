@@ -54,7 +54,7 @@ Creating Actors with default constructor
 ----------------------------------------
 
 .. includecode:: code/ActorDocSpec.scala
-   :include: imports2,system-actorOf
+:include: imports2,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
@@ -87,7 +87,7 @@ Creating Actors with non-default constructor
 --------------------------------------------
 
 If your Actor has a constructor that takes parameters then you can't create it
-using ``actorOf(Props[TYPE]``. Instead you can use a variant of ``actorOf`` that takes
+using ``actorOf(Props[TYPE])``. Instead you can use a variant of ``actorOf`` that takes
 a call-by-name block in which you can create the Actor in any way you like.
 
 Here is an example:

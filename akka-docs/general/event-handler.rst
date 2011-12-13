@@ -36,7 +36,7 @@ Example of creating a listener from Scala (from Java you just have to create an 
       case EventHandler.Debug(instance, message) => ...
       case genericEvent => ...
     }
-  })
+  }))
 
 To add the listener:
 

@@ -364,8 +364,7 @@ The ``Pi`` object is a perfect container module for our actors and messages, so 
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(
-          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+        val master = actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
 
         // start the calculation
         master ! Calculate

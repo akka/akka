@@ -27,8 +27,8 @@ An UntypedDispatcher is an actor that routes incoming messages to outbound actor
   }
 
   public class MyRouter extends UntypedRouter {
-    private ActorRef pinger = actorOf(Pinger.class);
-    private ActorRef ponger = actorOf(Ponger.class);
+    private ActorRef pinger = actorOf(new Props(Pinger.class));
+    private ActorRef ponger = actorOf(new Props(Ponger.class));
 
     //Route Ping-messages to the pinger, and Pong-messages to the ponger
     public ActorRef route(Object message) {
@@ -38,7 +38,7 @@ An UntypedDispatcher is an actor that routes incoming messages to outbound actor
     }
   }
 
-  ActorRef router = actorOf(MyRouter.class);
+  ActorRef router = actorOf(new Props(MyRouter.class));
   router.tell("Ping"); //Prints "Pinger: Ping"
   router.tell("Pong"); //Prints "Ponger: Pong"
 
@@ -71,8 +71,8 @@ An UntypedLoadBalancer is an actor that forwards messages it receives to a bound
   //Our load balancer, sends messages to a pinger, then a ponger, rinse and repeat.
   public class MyLoadBalancer extends UntypedLoadBalancer {
     private InfiniteIterator<ActorRef> actors = new CyclicIterator<ActorRef>(asList(
-      actorOf(Pinger.class),
-      actorOf(Ponger.class)
+      actorOf(new Props(Pinger.class)),
+      actorOf(new Props(Ponger.class))
     ));
 
     public InfiniteIterator<ActorRef> seq() {
@@ -80,7 +80,7 @@ An UntypedLoadBalancer is an actor that forwards messages it receives to a bound
     }
   }
 
-  ActorRef balancer = actorOf(MyLoadBalancer.class);
+  ActorRef balancer = actorOf(new Props(MyLoadBalancer.class));
   balancer.tell("Pong"); //Prints "Pinger: Pong"
   balancer.tell("Ping"); //Prints "Ponger: Ping"
   balancer.tell("Ping"); //Prints "Pinger: Ping"

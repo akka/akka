@@ -221,6 +221,7 @@ We start by creating a ``Pi.java`` file and adding these import statements at th
     import static akka.actor.Actors.poisonPill;
     import static java.util.Arrays.asList;
 
+    import akka.actor.Props;
     import akka.actor.ActorRef;
     import akka.actor.UntypedActor;
     import akka.actor.UntypedActorFactory;
@@ -337,15 +338,15 @@ The master actor is a little bit more involved. In its constructor we need to cr
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
+          workers[i] = actorOf(new Props(Worker.class));
         }
 
         // wrap them with a load-balancing router
-        ActorRef router = actorOf(Props(new UntypedActorFactory() {
+        ActorRef router = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        });
+        }));
       }
     }
 
@@ -404,15 +405,15 @@ Here is the master actor::
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
+          workers[i] = actorOf(new Props(Worker.class));
         }
 
         // wrap them with a load-balancing router
-        router = actorOf(Props(new UntypedActorFactory() {
+        router = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        });
+        }));
       }
 
       // message handler
@@ -495,11 +496,11 @@ Now the only thing that is left to implement is the runner that should bootstrap
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(Props(new UntypedActorFactory() {
+        ActorRef master = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());
@@ -519,6 +520,7 @@ Before we package it up and run it, let's take a look at the full code now, with
     import static akka.actor.Actors.poisonPill;
     import static java.util.Arrays.asList;
 
+    import akka.actor.Props;
     import akka.actor.ActorRef;
     import akka.actor.UntypedActor;
     import akka.actor.UntypedActorFactory;
@@ -629,15 +631,15 @@ Before we package it up and run it, let's take a look at the full code now, with
           // create the workers
           final ActorRef[] workers = new ActorRef[nrOfWorkers];
           for (int i = 0; i < nrOfWorkers; i++) {
-            workers[i] = actorOf(Worker.class);
+            workers[i] = actorOf(new Props(Worker.class));
           }
 
           // wrap them with a load-balancing router
-          router = actorOf(Props(new UntypedActorFactory() {
+          router = actorOf(new Props(new UntypedActorFactory() {
             public UntypedActor create() {
               return new PiRouter(workers);
             }
-          });
+          }));
         }
 
         // message handler
@@ -691,11 +693,11 @@ Before we package it up and run it, let's take a look at the full code now, with
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(Props(new UntypedActorFactory() {
+        ActorRef master = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());

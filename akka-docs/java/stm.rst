@@ -6,7 +6,7 @@ Software Transactional Memory (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 Module stability: **SOLID**
 
 Overview of STM
@@ -287,7 +287,7 @@ Here is an example of using ``retry`` to block until an account has enough money
       final Ref<Double> account1 = new Ref<Double>(100.0);
       final Ref<Double> account2 = new Ref<Double>(100.0);
 
-      ActorRef transferer = Actors.actorOf(Transferer.class);
+      ActorRef transferer = Actors.actorOf(new Props(Transferer.class));
 
       transferer.tell(new Transfer(account1, account2, 500.0));
       // Transferer: not enough money - retrying
@@ -410,7 +410,7 @@ You can also have two alternative blocking transactions, one of which can succee
       final Ref<Integer> left = new Ref<Integer>(100);
       final Ref<Integer> right = new Ref<Integer>(100);
 
-      ActorRef brancher = Actors.actorOf(Brancher.class);
+      ActorRef brancher = Actors.actorOf(new Props(Brancher.class));
 
       brancher.tell(new Branch(left, right, 500));
       // not enough on left - retrying

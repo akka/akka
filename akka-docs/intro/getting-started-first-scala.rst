@@ -318,7 +318,7 @@ Erlang actor's PID.
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf(Props[MyActor]`` -- can receive messages
+- Created & Started -- ``Actor.actorOf(Props[MyActor])`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.

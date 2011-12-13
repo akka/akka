@@ -102,8 +102,8 @@ Here is an example of coordinating two simple counter UntypedActors so that they
 
 .. code-block:: java
 
-  ActorRef counter1 = actorOf(Counter.class);
-  ActorRef counter2 = actorOf(Counter.class);
+  ActorRef counter1 = actorOf(new Props(Counter.class));
+  ActorRef counter2 = actorOf(new Props(Counter.class));
 
   counter1.tell(new Coordinated(new Increment(counter2)));
 

@@ -236,7 +236,7 @@ common task easy:
 
        "send back messages unchanged" in {
 
-         val echo = Actor.actorOf(Props[EchoActor]
+         val echo = Actor.actorOf(Props[EchoActor])
          echo ! "hello world"
          expectMsg("hello world")
 
@@ -431,7 +431,7 @@ maximum time bound, the overall block may take arbitrarily longer in this case.
   class SomeSpec extends WordSpec with MustMatchers with TestKit {
     "A Worker" must {
       "send timely replies" in {
-        val worker = actorOf(...)
+        val worker = ActorSystem().actorOf(...)
         within (500 millis) {
           worker ! "some work"
           expectMsg("some result")
@@ -471,7 +471,7 @@ simply mix in `ÌmplicitSender`` into your test.
   class SomeSpec extends WordSpec with MustMatchers with TestKit with ImplicitSender {
     "A Worker" must {
       "send timely replies" in {
-        val worker = actorOf(...)
+        val worker = ActorSystem().actorOf(...)
         within (500 millis) {
           worker ! "some work" // testActor is the "sender" for this message
           expectMsg("some result")
@@ -506,7 +506,7 @@ using a small example::
 
   val probe1 = TestProbe()
   val probe2 = TestProbe()
-  val actor = Actor.actorOf(Props[MyDoubleEcho]
+  val actor = ActorSystem().actorOf(Props[MyDoubleEcho])
   actor ! (probe1.ref, probe2.ref)
   actor ! "hello"
   probe1.expectMsg(50 millis, "hello")
@@ -553,8 +553,9 @@ concerning volume and timing of the message flow while still keeping the
 network functioning::
 
   val probe = TestProbe()
-  val source = Actor.actorOf(Props(new Source(probe))
-  val dest = Actor.actorOf(Props[Destination]
+  val system = ActorSystem()
+  val source = system.actorOf(Props(new Source(probe)))
+  val dest = system.actorOf(Props[Destination])
   source ! "start"
   probe.expectMsg("work")
   probe.forward(dest)
@@ -613,7 +614,7 @@ or from the client code
 
 .. code-block:: scala
 
-   val ref = Actor.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
+   val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
 
 As the :class:`CallingThreadDispatcher` does not have any configurable state,
 you may always use the (lazily) preallocated one as shown in the examples.

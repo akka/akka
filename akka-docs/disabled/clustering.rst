@@ -328,7 +328,7 @@ created actor::
 
     val clusterNode = Cluster.newNode(NodeAddress("test-cluster", "node1")).start
 
-    val hello = actorOf(Props[HelloActor].start.asInstanceOf[LocalActorRef]
+    val hello = actorOf(Props[HelloActor]).asInstanceOf[LocalActorRef]
 
     val serializeMailbox = false
     val nrOfInstances = 5
