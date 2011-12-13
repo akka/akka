@@ -58,11 +58,11 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val clients = (for (i ← 0 until numberOfClients) yield {
-          val destination = system.actorOf[Destination]
-          val w4 = system.actorOf(new Waypoint(destination))
-          val w3 = system.actorOf(new Waypoint(w4))
-          val w2 = system.actorOf(new Waypoint(w3))
-          val w1 = system.actorOf(new Waypoint(w2))
+          val destination = system.actorOf(Props[Destination])
+          val w4 = system.actorOf(Props(new Waypoint(destination)))
+          val w3 = system.actorOf(Props(new Waypoint(w4)))
+          val w2 = system.actorOf(Props(new Waypoint(w3)))
+          val w1 = system.actorOf(Props(new Waypoint(w2)))
           Props(new Client(w1, latch, repeatsPerClient, clientDelay.toMicros.intValue, stat)).withDispatcher(clientDispatcher)
         }).toList.map(system.actorOf(_))
 

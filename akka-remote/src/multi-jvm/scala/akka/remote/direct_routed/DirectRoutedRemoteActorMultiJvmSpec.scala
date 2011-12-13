@@ -47,7 +47,7 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTi
 
       barrier("start")
 
-      val actor = system.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor]("service-hello")
       //actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val result = (actor ? "identify").get

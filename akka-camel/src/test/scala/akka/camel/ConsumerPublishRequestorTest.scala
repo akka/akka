@@ -18,10 +18,10 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
 
   @Before
   def setUp{
-    publisher = actorOf(new ConsumerPublisherMock)
-    requestor = actorOf(new ConsumerPublishRequestor)
+    publisher = actorOf(Props(new ConsumerPublisherMock)
+    requestor = actorOf(Props(new ConsumerPublishRequestor)
     requestor ! InitPublishRequestor(publisher)
-    consumer = actorOf(new Actor with Consumer {
+    consumer = actorOf(Props(new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
     }).asInstanceOf[LocalActorRef]

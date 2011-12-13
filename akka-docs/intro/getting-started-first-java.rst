@@ -158,8 +158,8 @@ Here is the layout that Maven created::
 
 As you can see we already have a Java source file called ``App.java``, let's now rename it to ``Pi.java``.
 
-We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
-and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io. 
+We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_
+and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
 It should now look something like this:
 
 .. code-block:: xml
@@ -341,7 +341,7 @@ The master actor is a little bit more involved. In its constructor we need to cr
         }
 
         // wrap them with a load-balancing router
-        ActorRef router = actorOf(new UntypedActorFactory() {
+        ActorRef router = actorOf(Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
@@ -359,7 +359,7 @@ One thing to note is that we used two different versions of the ``actorOf`` meth
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
+- Created & Started -- ``Actor.actorOf(Props[MyActor]`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.
@@ -408,7 +408,7 @@ Here is the master actor::
         }
 
         // wrap them with a load-balancing router
-        router = actorOf(new UntypedActorFactory() {
+        router = actorOf(Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
@@ -495,7 +495,7 @@ Now the only thing that is left to implement is the runner that should bootstrap
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
+        ActorRef master = actorOf(Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
@@ -633,7 +633,7 @@ Before we package it up and run it, let's take a look at the full code now, with
           }
 
           // wrap them with a load-balancing router
-          router = actorOf(new UntypedActorFactory() {
+          router = actorOf(Props(new UntypedActorFactory() {
             public UntypedActor create() {
               return new PiRouter(workers);
             }
@@ -691,7 +691,7 @@ Before we package it up and run it, let's take a look at the full code now, with
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
+        ActorRef master = actorOf(Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }

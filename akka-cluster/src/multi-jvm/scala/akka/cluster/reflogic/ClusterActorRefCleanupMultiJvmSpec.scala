@@ -37,7 +37,7 @@ class ClusterActorRefCleanupMultiJvmNode1 extends MasterClusterTestNode {
       Cluster.node.start()
       barrier("awaitStarted", NrOfNodes).await()
 
-      val ref = Actor.actorOf[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
+      val ref = Actor.actorOf(Props[ClusterActorRefCleanupMultiJvmSpec.TestActor]("service-test")
 
       ref.isInstanceOf[ClusterActorRef] must be(true)
 

@@ -5,8 +5,7 @@ package akka.tutorial.first.scala
 
 import java.util.concurrent.CountDownLatch
 import akka.routing.{ RoutedActorRef, LocalConnectionManager, RoundRobinRouter, RoutedProps }
-import akka.actor.{ ActorSystemImpl, Actor, ActorSystem }
-import akka.actor.InternalActorRef
+import akka.actor._
 
 object Pi extends App {
 
@@ -53,7 +52,7 @@ object Pi extends App {
     var start: Long = _
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(context.actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(context.actorOf(Props[Worker]))
 
     // wrap them with a load-balancing router
     // FIXME routers are intended to be used like this
@@ -99,7 +98,7 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = system.actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+    val master = system.actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
 
     // start the calculation
     master ! Calculate

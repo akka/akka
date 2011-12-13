@@ -47,7 +47,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
 
       barrier("start")
 
-      val actor = system.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor]("service-hello")
       val result = (actor ? "identify").get
       result must equal("node1")
 

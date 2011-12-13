@@ -48,7 +48,7 @@ cluster node.
 Cluster configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
-Cluster is configured in the ``akka.cloud.cluster`` section in the :ref:`configuration`. 
+Cluster is configured in the ``akka.cloud.cluster`` section in the :ref:`configuration`.
 Here you specify the default addresses to the ZooKeeper
 servers, timeouts, if compression should be on or off, and so on.
 
@@ -328,7 +328,7 @@ created actor::
 
     val clusterNode = Cluster.newNode(NodeAddress("test-cluster", "node1")).start
 
-    val hello = actorOf[HelloActor].start.asInstanceOf[LocalActorRef]
+    val hello = actorOf(Props[HelloActor].start.asInstanceOf[LocalActorRef]
 
     val serializeMailbox = false
     val nrOfInstances = 5

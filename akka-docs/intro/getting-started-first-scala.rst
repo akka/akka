@@ -303,9 +303,9 @@ imported::
     import akka.actor.Actor.actorOf
 
 There are two versions of ``actorOf``; one of them taking a actor type and the
-other one an instance of an actor. The former one (``actorOf[MyActor]``) is used
+other one an instance of an actor. The former one (``actorOf(Props[MyActor]``) is used
 when the actor class has a no-argument constructor while the second one
-(``actorOf(new MyActor(..))``) is used when the actor class has a constructor
+(``actorOf(Props(new MyActor(..))``) is used when the actor class has a constructor
 that takes arguments. This is the only way to create an instance of an Actor and
 the ``actorOf`` method ensures this. The latter version is using call-by-name
 and lazily creates the actor within the scope of the ``actorOf`` method. The
@@ -318,7 +318,7 @@ Erlang actor's PID.
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
+- Created & Started -- ``Actor.actorOf(Props[MyActor]`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.

@@ -167,16 +167,16 @@ object ActorSystem {
  * system.actorOf(props)
  *
  * // Scala
- * system.actorOf[MyActor]("name")
- * system.actorOf[MyActor]
- * system.actorOf(new MyActor(...))
+ * system.actorOf(Props[MyActor]("name")
+ * system.actorOf(Props[MyActor]
+ * system.actorOf(Props(new MyActor(...))
  *
  * // Java
  * system.actorOf(classOf[MyActor]);
- * system.actorOf(new Creator<MyActor>() {
+ * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
- * system.actorOf(new Creator<MyActor>() {
+ * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}

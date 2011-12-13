@@ -3,19 +3,19 @@
  */
 package sample.hello
 
-import akka.actor.{ ActorSystem, Actor }
+import akka.actor.{ ActorSystem, Actor, Props }
 
 case object Start
 
 object Main {
   def main(args: Array[String]): Unit = {
     val system = ActorSystem()
-    system.actorOf[HelloActor] ! Start
+    system.actorOf(Props[HelloActor]) ! Start
   }
 }
 
 class HelloActor extends Actor {
-  val worldActor = context.actorOf[WorldActor]
+  val worldActor = context.actorOf(Props[WorldActor])
   def receive = {
     case Start ⇒ worldActor ! "Hello"
     case s: String ⇒

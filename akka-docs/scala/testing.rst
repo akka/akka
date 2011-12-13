@@ -106,13 +106,13 @@ and in addition allows access to the internal state::
         case Ev("back") => goto(1) using "back"
       }
     })
-  
+
   assert (fsm.stateName == 1)
   assert (fsm.stateData == "")
   fsm ! "go"                      // being a TestActorRef, this runs also on the CallingThreadDispatcher
   assert (fsm.stateName == 2)
   assert (fsm.stateData == "go")
-  
+
   fsm.setState(stateName = 1)
   assert (fsm.stateName == 1)
 
@@ -235,8 +235,8 @@ common task easy:
      "An Echo actor" must {
 
        "send back messages unchanged" in {
-         
-         val echo = Actor.actorOf[EchoActor]
+
+         val echo = Actor.actorOf(Props[EchoActor]
          echo ! "hello world"
          expectMsg("hello world")
 
@@ -352,11 +352,11 @@ with message flows:
   * :meth:`receiveWhile[T](max: Duration, idle: Duration)(pf: PartialFunction[Any, T]): Seq[T]`
 
     Collect messages as long as
-    
+
     * they are matching the given partial function
     * the given time interval is not used up
     * the next message is received within the idle timeout
-      
+
     All collected messages are returned. The maximum duration defaults to the
     time remaining in the innermost enclosing :ref:`within <TestKit.within>`
     block and the idle duration defaults to infinity (thereby disabling the
@@ -370,7 +370,7 @@ with message flows:
     :ref:`within <TestKit.within>` block.
 
   * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
-    
+
     :meth:`ignoreNoMsg`
 
     The internal :obj:`testActor` contains a partial function for ignoring
@@ -506,7 +506,7 @@ using a small example::
 
   val probe1 = TestProbe()
   val probe2 = TestProbe()
-  val actor = Actor.actorOf[MyDoubleEcho]
+  val actor = Actor.actorOf(Props[MyDoubleEcho]
   actor ! (probe1.ref, probe2.ref)
   actor ! "hello"
   probe1.expectMsg(50 millis, "hello")
@@ -553,8 +553,8 @@ concerning volume and timing of the message flow while still keeping the
 network functioning::
 
   val probe = TestProbe()
-  val source = Actor.actorOf(new Source(probe))
-  val dest = Actor.actorOf[Destination]
+  val source = Actor.actorOf(Props(new Source(probe))
+  val dest = Actor.actorOf(Props[Destination]
   source ! "start"
   probe.expectMsg("work")
   probe.forward(dest)
@@ -710,7 +710,7 @@ by debuggers as well as logging, where the Akka toolkit offers the following
 options:
 
 * *Logging of exceptions thrown within Actor instances*
-  
+
   This is always on; in contrast to the other logging mechanisms, this logs at
   ``ERROR`` level.
 
@@ -723,7 +723,7 @@ options:
     import akka.event.LoggingReceive
     def receive = LoggingReceive(this) {
       case msg => ...
-    } 
+    }
 
   The first argument to :meth:`LoggingReceive` defines the source to be used in the
   logging events, which should be the current actor.

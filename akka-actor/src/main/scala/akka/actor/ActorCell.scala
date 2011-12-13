@@ -28,16 +28,16 @@ import java.io.{ NotSerializableException, ObjectOutputStream }
  * context.actorOf(props)
  *
  * // Scala
- * context.actorOf[MyActor]("name")
- * context.actorOf[MyActor]
- * context.actorOf(new MyActor(...))
+ * context.actorOf(Props[MyActor]("name")
+ * context.actorOf(Props[MyActor]
+ * context.actorOf(Props(new MyActor(...))
  *
  * // Java
  * context.actorOf(classOf[MyActor]);
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}

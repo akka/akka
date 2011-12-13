@@ -21,10 +21,10 @@ class TypedConsumerPublishRequestorTest extends JUnitSuite {
 
   @Before
   def setUp{
-    publisher = actorOf(new TypedConsumerPublisherMock)
-    requestor = actorOf(new TypedConsumerPublishRequestor)
+    publisher = actorOf(Props(new TypedConsumerPublisherMock)
+    requestor = actorOf(Props(new TypedConsumerPublishRequestor)
     requestor ! InitPublishRequestor(publisher)
-    consumer = actorOf(new Actor with Consumer {
+    consumer = actorOf(Props(new Actor with Consumer {
       def endpointUri = "mock:test"
       protected def receive = null
     })

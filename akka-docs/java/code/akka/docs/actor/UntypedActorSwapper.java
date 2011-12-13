@@ -2,6 +2,7 @@ package akka.docs.actor;
 
 import static akka.docs.actor.UntypedActorSwapper.Swap.SWAP;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.actor.ActorSystem;
 import akka.actor.UnhandledMessageException;
 import akka.actor.UntypedActor;
@@ -40,7 +41,7 @@ public class UntypedActorSwapper {
 
   public static void main(String... args) {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef swap = system.actorOf(Swapper.class);
+    ActorRef swap = system.actorOf(new Props(Swapper.class));
     swap.tell(SWAP); // logs Hi
     swap.tell(SWAP); // logs Ho
     swap.tell(SWAP); // logs Hi

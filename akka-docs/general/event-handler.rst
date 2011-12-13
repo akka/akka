@@ -9,7 +9,7 @@ There is an Event Handler which takes the place of a logging system in Akka:
 
   akka.event.EventHandler
 
-You can configure which event handlers should be registered at boot time. That is done using the 'event-handlers' element in 
+You can configure which event handlers should be registered at boot time. That is done using the 'event-handlers' element in
 the :ref:`configuration`. Here you can also define the log level.
 
 .. code-block:: ruby
@@ -26,7 +26,7 @@ Example of creating a listener from Scala (from Java you just have to create an 
 
 .. code-block:: scala
 
-  val errorHandlerEventListener = Actor.actorOf(new Actor {
+  val errorHandlerEventListener = Actor.actorOf(Props(new Actor {
     self.dispatcher = EventHandler.EventHandlerDispatcher
 
     def receive = {

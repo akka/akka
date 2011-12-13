@@ -88,7 +88,7 @@ So your listener Actor needs to be able to handle these messages. Example:
   class RegistryListener extends Actor {
     def receive = {
       case event: ActorRegistered =>
-        EventHandler.info(this, "Actor registered: %s - %s".format( 
+        EventHandler.info(this, "Actor registered: %s - %s".format(
           event.actor.actorClassName, event.actor.uuid))
       case event: ActorUnregistered =>
         // ...
@@ -102,5 +102,5 @@ The above actor can be added as listener of registry events:
   import akka.actor._
   import akka.actor.Actor._
 
-  val listener = actorOf[RegistryListener]
+  val listener = actorOf(Props[RegistryListener]
   registry.addListener(listener)

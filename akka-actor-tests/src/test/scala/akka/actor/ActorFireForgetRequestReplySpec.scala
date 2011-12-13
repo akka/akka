@@ -63,16 +63,16 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
   "An Actor" must {
 
     "reply to bang message using reply" in {
-      val replyActor = system.actorOf[ReplyActor]
-      val senderActor = system.actorOf(new SenderActor(replyActor))
+      val replyActor = system.actorOf(Props[ReplyActor])
+      val senderActor = system.actorOf(Props(new SenderActor(replyActor)))
       senderActor ! "Init"
       state.finished.await
       state.s must be("Reply")
     }
 
     "reply to bang message using implicit sender" in {
-      val replyActor = system.actorOf[ReplyActor]
-      val senderActor = system.actorOf(new SenderActor(replyActor))
+      val replyActor = system.actorOf(Props[ReplyActor])
+      val senderActor = system.actorOf(Props(new SenderActor(replyActor)))
       senderActor ! "InitImplicit"
       state.finished.await
       state.s must be("ReplyImplicit")

@@ -44,7 +44,7 @@ class DirectRoutingFailoverMultiJvmNode1 extends MasterClusterTestNode {
       }
 
       LocalCluster.barrier("actor-creation", NrOfNodes) {
-        actor = Actor.actorOf[SomeActor]("service-hello")
+        actor = Actor.actorOf(Props[SomeActor]("service-hello")
       }
 
       LocalCluster.barrier("verify-actor", NrOfNodes) {

@@ -73,7 +73,7 @@ a top level actor, that is supervised by the system (internal guardian actor).
 .. includecode:: code/ActorDocSpec.scala#context-actorOf
 
 Actors are automatically started asynchronously when created.
-When you create the ``Actor`` then it will automatically call the ``preStart`` 
+When you create the ``Actor`` then it will automatically call the ``preStart``
 callback method on the ``Actor`` trait. This is an excellent place to
 add initialization code for the actor.
 
@@ -87,7 +87,7 @@ Creating Actors with non-default constructor
 --------------------------------------------
 
 If your Actor has a constructor that takes parameters then you can't create it
-using ``actorOf[TYPE]``. Instead you can use a variant of ``actorOf`` that takes
+using ``actorOf(Props[TYPE]``. Instead you can use a variant of ``actorOf`` that takes
 a call-by-name block in which you can create the Actor in any way you like.
 
 Here is an example:
@@ -98,7 +98,7 @@ Here is an example:
 Creating Actors with Props
 --------------------------
 
-``Props`` is a configuration object to specify additional things for the actor to 
+``Props`` is a configuration object to specify additional things for the actor to
 be created, such as the ``MessageDispatcher``.
 
 .. includecode:: code/ActorDocSpec.scala#creating-props
@@ -128,7 +128,7 @@ Actor API
 The :class:`Actor` trait defines only one abstract method, the above mentioned
 :meth:`receive`, which implements the behavior of the actor.
 
-If the current actor behavior does not match a received message, :meth:`unhandled` 
+If the current actor behavior does not match a received message, :meth:`unhandled`
 is called, which by default throws an :class:`UnhandledMessageException`.
 
 In addition, it offers:
@@ -145,7 +145,7 @@ In addition, it offers:
 
 You can import the members in the :obj:`context` to avoid prefixing access with ``context.``
 
-.. includecode:: code/ActorDocSpec.scala#import-context 
+.. includecode:: code/ActorDocSpec.scala#import-context
 
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following::
@@ -195,7 +195,7 @@ processing a message. This restart involves the hooks mentioned above:
 
 An actor restart replaces only the actual actor object; the contents of the
 mailbox and the hotswap stack are unaffected by the restart, so processing of
-messages will resume after the :meth:`postRestart` hook returns. The message 
+messages will resume after the :meth:`postRestart` hook returns. The message
 that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
@@ -205,9 +205,9 @@ Stop Hook
 
 After stopping an actor, its :meth:`postStop` hook is called, which may be used
 e.g. for deregistering this actor from other services. This hook is guaranteed
-to run after message queuing has been disabled for this actor, i.e. messages 
-sent to a stopped actor will be redirected to the :obj:`deadLetters` of the 
-:obj:`ActorSystem`. 
+to run after message queuing has been disabled for this actor, i.e. messages
+sent to a stopped actor will be redirected to the :obj:`deadLetters` of the
+:obj:`ActorSystem`.
 
 
 Identifying Actors
@@ -267,7 +267,7 @@ implicitly passed along with the message and available to the receiving Actor
 in its ``sender: ActorRef`` member field. The target actor can use this
 to reply to the original sender, by using ``sender ! replyMsg``.
 
-If invoked from an instance that is **not** an Actor the sender will be 
+If invoked from an instance that is **not** an Actor the sender will be
 :obj:`deadLetters` actor reference by default.
 
 Ask: Send-And-Receive-Future
@@ -281,11 +281,11 @@ will immediately return a :class:`Future`:
   val future = actor ? "hello"
 
 The receiving actor should reply to this message, which will complete the
-future with the reply message as value; ``sender ! result``. 
+future with the reply message as value; ``sender ! result``.
 
-To complete the future with an exception you need send a Failure message to the sender. 
-This is not done automatically when an actor throws an exception while processing a 
-message. 
+To complete the future with an exception you need send a Failure message to the sender.
+This is not done automatically when an actor throws an exception while processing a
+message.
 
 .. includecode:: code/ActorDocSpec.scala#reply-exception
 
@@ -296,7 +296,7 @@ which is taken from one of the following locations in order of precedence:
 #. implicit argument of type :class:`akka.actor.Timeout`, e.g.
 
    ::
-   
+
      import akka.actor.Timeout
      import akka.util.duration._
 
@@ -306,16 +306,16 @@ which is taken from one of the following locations in order of precedence:
 See :ref:`futures-scala` for more information on how to await or query a
 future.
 
-The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be 
-used to register a callback to get a notification when the Future completes. 
+The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be
+used to register a callback to get a notification when the Future completes.
 Gives you a way to avoid blocking.
 
 .. warning::
 
   When using future callbacks, inside actors you need to carefully avoid closing over
-  the containing actor’s reference, i.e. do not call methods or access mutable state 
-  on the enclosing actor from within the callback. This would break the actor 
-  encapsulation and may introduce synchronization bugs and race conditions because 
+  the containing actor’s reference, i.e. do not call methods or access mutable state
+  on the enclosing actor from within the callback. This would break the actor
+  encapsulation and may introduce synchronization bugs and race conditions because
   the callback will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time.
   See also: :ref:`jmm-shared-state`
@@ -403,17 +403,17 @@ object.
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorRef``. 
+Actors are stopped by invoking the ``stop`` method of the ``ActorRef``.
 The actual termination of the actor is performed asynchronously, i.e.
-``stop`` may return before the actor is stopped. 
+``stop`` may return before the actor is stopped.
 
 .. code-block:: scala
 
   actor.stop()
 
-Processing of the current message, if any, will continue before the actor is stopped, 
+Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
-messages are sent to the :obj:`deadLetters` of the :obj:`ActorSystem`, but that 
+messages are sent to the :obj:`deadLetters` of the :obj:`ActorSystem`, but that
 depends on the mailbox implementation.
 
 When stop is called then a call to the ``def postStop`` callback method will
@@ -540,11 +540,11 @@ messages on that mailbox, will be there as well.
 What happens to the actor
 -------------------------
 
-If an exception is thrown, the actor instance is discarded and a new instance is 
+If an exception is thrown, the actor instance is discarded and a new instance is
 created. This new instance will now be used in the actor references to this actor
-(so this is done invisible to the developer). Note that this means that current 
-state of the failing actor instance is lost if you don't store and restore it in 
-``preRestart`` and ``postRestart`` callbacks. 
+(so this is done invisible to the developer). Note that this means that current
+state of the failing actor instance is lost if you don't store and restore it in
+``preRestart`` and ``postRestart`` callbacks.
 
 
 Extending Actors using PartialFunction chaining
