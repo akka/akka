@@ -81,7 +81,7 @@ trait RouterConfig {
   protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[String]): Vector[ActorRef] = (nrOfInstances, targets) match {
     case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
     case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
-    case (_, xs)  ⇒ Vector.empty[ActorRef] ++ xs.map(context.actorFor(_))
+    case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
   }
 }
 
