@@ -73,7 +73,7 @@ class LocalMetricsMultiJvmNode1 extends MasterClusterTestNode {
     }
 
     "allow to track JVM state and bind handles through MetricsAlterationMonitors" in {
-      val monitorReponse = new DefaultPromise[String]
+      val monitorReponse = Promise[String]()
 
       node.metricsManager.addMonitor(new LocalMetricsAlterationMonitor {
 
@@ -81,11 +81,11 @@ class LocalMetricsMultiJvmNode1 extends MasterClusterTestNode {
 
         def reactsOn(metrics: NodeMetrics) = metrics.usedHeapMemory > 1
 
-        def react(metrics: NodeMetrics) = monitorReponse.completeWithResult("Too much memory is used!")
+        def react(metrics: NodeMetrics) = monitorReponse.success("Too much memory is used!")
 
       })
 
-      monitorReponse.get must be("Too much memory is used!")
+      Await.result(monitorReponse, 5 seconds) must be("Too much memory is used!")
 
     }
 

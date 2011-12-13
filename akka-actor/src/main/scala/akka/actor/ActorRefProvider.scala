@@ -442,7 +442,7 @@ class LocalActorRefProvider(
 
   def dispatcher: MessageDispatcher = system.dispatcher
 
-  lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
+  lazy val terminationFuture: Promise[Unit] = Promise[Unit]()(dispatcher)
 
   lazy val rootGuardian: InternalActorRef = new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
     override def getParent: InternalActorRef = this
@@ -561,31 +561,30 @@ class LocalActorRefProvider(
     new RoutedActorRef(system, props, supervisor, name)
   }
 
-  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch
+  private[akka] def createDeathWatch(): DeathWatch = new LocalDeathWatch(1024)
 
   private[akka] def ask(message: Any, recipient: ActorRef, within: Timeout): Future[Any] = {
     import akka.dispatch.DefaultPromise
     (if (within == null) settings.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒
-        new DefaultPromise[Any](0)(dispatcher) //Abort early if nonsensical timeout
+        Promise[Any]()(dispatcher) //Abort early if nonsensical timeout
       case t ⇒
         val path = tempPath()
         val name = path.name
-        val a = new AskActorRef(path, tempContainer, deathWatch, t, dispatcher) {
-          override def whenDone() {
-            tempContainer.children.remove(name)
-          }
-        }
+        val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
         tempContainer.children.put(name, a)
+        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.children.remove(name); a.stop() }
+        a.result onComplete { _ ⇒
+          try { a.stop(); f.cancel() }
+          finally { tempContainer.children.remove(name) }
+        }
         recipient.tell(message, a)
         a.result
     }
   }
 }
 
-class LocalDeathWatch extends DeathWatch with ActorClassification {
-
-  def mapSize = 1024
+class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {
 
   override def publish(event: Event): Unit = {
     val monitors = dissociate(classify(event))

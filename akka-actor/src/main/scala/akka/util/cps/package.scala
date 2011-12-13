@@ -42,7 +42,7 @@ package cps {
         if (test)
           Future(reify(block) flatMap (_ ⇒ reify(whileC(test)(block))) foreach c)
         else
-          Promise() completeWithResult (shiftUnitR[Unit, Future[Any]](()) foreach c)
+          Promise() success (shiftUnitR[Unit, Future[Any]](()) foreach c)
       }
 
     def repeatC[U](times: Int)(block: ⇒ U @cps[Future[Any]])(implicit dispatcher: MessageDispatcher, timeout: Timeout): Unit @cps[Future[Any]] =
@@ -50,7 +50,7 @@ package cps {
         if (times > 0)
           Future(reify(block) flatMap (_ ⇒ reify(repeatC(times - 1)(block))) foreach c)
         else
-          Promise() completeWithResult (shiftUnitR[Unit, Future[Any]](()) foreach c)
+          Promise() success (shiftUnitR[Unit, Future[Any]](()) foreach c)
       }
   }
 

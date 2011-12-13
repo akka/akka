@@ -7,7 +7,6 @@ package akka.actor
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Duration
 import akka.util.duration._
-import akka.dispatch.{ Dispatchers, Future, KeptPromise }
 import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
@@ -17,6 +16,7 @@ import akka.actor.TypedActor.{ PostRestart, PreRestart, PostStop, PreStart }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
+import akka.dispatch.{ Await, Dispatchers, Future, Promise }
 
 object TypedActorSpec {
 
@@ -85,7 +85,7 @@ object TypedActorSpec {
 
     def pigdog = "Pigdog"
 
-    def futurePigdog(): Future[String] = new KeptPromise(Right(pigdog))
+    def futurePigdog(): Future[String] = Promise.successful(pigdog)
 
     def futurePigdog(delay: Long): Future[String] = {
       Thread.sleep(delay)
@@ -94,7 +94,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: Long, numbered: Int): Future[String] = {
       Thread.sleep(delay)
-      new KeptPromise(Right(pigdog + numbered))
+      Promise.successful(pigdog + numbered)
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
@@ -247,7 +247,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t = newFooBar
       val f = t.futurePigdog(200)
       f.isCompleted must be(false)
-      f.get must be("Pigdog")
+      Await.result(f, timeout.duration) must be("Pigdog")
       mustStop(t)
     }
 
@@ -255,7 +255,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t = newFooBar
       val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20, i))
       for ((i, f) ← futures) {
-        f.get must be("Pigdog" + i)
+        Await.result(f, timeout.duration) must be("Pigdog" + i)
       }
       mustStop(t)
     }
@@ -278,7 +278,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val t, t2 = newFooBar(Duration(2, "s"))
       val f = t.futureComposePigdogFrom(t2)
       f.isCompleted must be(false)
-      f.get must equal("PIGDOG")
+      Await.result(f, timeout.duration) must equal("PIGDOG")
       mustStop(t)
       mustStop(t2)
     }
@@ -290,13 +290,13 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
         }))
-        val t = (boss ? Props().withTimeout(2 seconds)).as[Foo].get
+        val t = Await.result((boss ? Props().withTimeout(2 seconds)).mapTo[Foo], timeout.duration)
 
         t.incr()
         t.failingPigdog()
         t.read() must be(1) //Make sure state is not reset after failure
 
-        t.failingFuturePigdog.await.exception.get.getMessage must be("expected")
+        intercept[IllegalStateException] { Await.result(t.failingFuturePigdog, 2 seconds) }.getMessage must be("expected")
         t.read() must be(1) //Make sure state is not reset after failure
 
         (intercept[IllegalStateException] { t.failingJOptionPigdog }).getMessage must be("expected")
@@ -323,7 +323,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
       f.isCompleted must be(false)
-      f.get must equal(f2.get)
+      Await.result(f, timeout.duration) must equal(Await.result(f2, timeout.duration))
       mustStop(t)
     }
 
@@ -348,7 +348,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
 
       val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
 
-      for ((i, r) ← results) r.get must be("Pigdog" + i)
+      for ((i, r) ← results) Await.result(r, timeout.duration) must be("Pigdog" + i)
 
       for (t ← thais) mustStop(t)
     }

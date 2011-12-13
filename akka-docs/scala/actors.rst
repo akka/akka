@@ -312,12 +312,13 @@ Gives you a way to avoid blocking.
 
 .. warning::
 
-  When using future callbacks, inside actors you need to carefully avoid closing over
-  the containing actor’s reference, i.e. do not call methods or access mutable state 
-  on the enclosing actor from within the callback. This would break the actor 
-  encapsulation and may introduce synchronization bugs and race conditions because 
-  the callback will be scheduled concurrently to the enclosing actor. Unfortunately
-  there is not yet a way to detect these illegal accesses at compile time.
+  When using future callbacks, such as ``onComplete``, ``onSuccess``, and ``onFailure``,
+  inside actors you need to carefully avoid closing over the containing actor’s reference,
+  i.e. do not call methods or access mutable state  on the enclosing actor from
+  within the callback. This would break the actor encapsulation and may introduce
+  synchronization bugs and race conditions because  the callback will be scheduled
+  concurrently to the enclosing actor. Unfortunately there is not yet a way to detect
+  these illegal accesses at compile time.
   See also: :ref:`jmm-shared-state`
 
 The future returned from the ``?`` method can conveniently be passed around or

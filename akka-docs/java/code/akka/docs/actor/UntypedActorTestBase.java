@@ -8,6 +8,8 @@ import akka.actor.ActorSystem;
 
 //#import-future
 import akka.dispatch.Future;
+import akka.dispatch.Await;
+import akka.util.Duration;
 
 //#import-future
 
@@ -27,8 +29,9 @@ import akka.actor.UntypedActorFactory;
 import akka.dispatch.MessageDispatcher;
 
 import org.junit.Test;
-
 import scala.Option;
+import java.lang.Object;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -91,17 +94,8 @@ public class UntypedActorTestBase {
     });
 
     //#using-ask
-    Future future = myActor.ask("Hello", 1000);
-    future.await();
-    if (future.isCompleted()) {
-      Option resultOption = future.result();
-      if (resultOption.isDefined()) {
-        Object result = resultOption.get();
-        // ...
-      } else {
-        //...  whatever
-      }
-    }
+    Future<Object> future = myActor.ask("Hello", 1000);
+    Object result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     //#using-ask
     system.stop();
   }

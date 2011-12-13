@@ -4,8 +4,8 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.dispatch.Future
 import akka.util.duration._
+import akka.dispatch.{ Await, Future }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestProbeSpec extends AkkaSpec with DefaultTimeout {
@@ -18,7 +18,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.lastMessage.sender ! "world"
       future must be('completed)
-      future.get must equal("world")
+      Await.result(future, timeout.duration) must equal("world")
     }
 
     "reply to messages" in {
