@@ -16,6 +16,8 @@ object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
 
   case class SetIgnore(i: Ignore)
+  case class Watch(ref: ActorRef)
+  case class UnWatch(ref: ActorRef)
 
   trait Message {
     def msg: AnyRef
@@ -34,7 +36,9 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   var ignore: Ignore = None
 
   def receive = {
-    case SetIgnore(ign) ⇒ ignore = ign
+    case SetIgnore(ign)   ⇒ ignore = ign
+    case x @ Watch(ref)   ⇒ context.watch(ref); queue.offerLast(RealMessage(x, self))
+    case x @ UnWatch(ref) ⇒ context.unwatch(ref); queue.offerLast(RealMessage(x, self))
     case x: AnyRef ⇒
       val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender))
@@ -122,6 +126,26 @@ class TestKit(_system: ActorSystem) {
    * Stop ignoring messages in the test actor.
    */
   def ignoreNoMsg() { testActor ! TestActor.SetIgnore(None) }
+
+  /**
+   * Have the testActor watch someone (i.e. `context.watch(...)`). Waits until
+   * the Watch message is received back using expectMsg.
+   */
+  def watch(ref: ActorRef) {
+    val msg = TestActor.Watch(ref)
+    testActor ! msg
+    expectMsg(msg)
+  }
+
+  /**
+   * Have the testActor stop watching someone (i.e. `context.unwatch(...)`). Waits until
+   * the Watch message is received back using expectMsg.
+   */
+  def unwatch(ref: ActorRef) {
+    val msg = TestActor.UnWatch(ref)
+    testActor ! msg
+    expectMsg(msg)
+  }
 
   /**
    * Obtain current time (`System.nanoTime`) as Duration.
