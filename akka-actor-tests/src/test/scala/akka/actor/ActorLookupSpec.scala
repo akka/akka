@@ -84,7 +84,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find system-generated actors" in {
       system.actorFor("/user") must be === user
-      system.actorFor("/null") must be === system.deadLetters
+      system.actorFor("/deadLetters") must be === system.deadLetters
       system.actorFor("/system") must be === syst
       system.actorFor(syst.path) must be === syst
       system.actorFor(syst.path.toString) must be === syst
@@ -93,10 +93,10 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(root.path) must be === root
       system.actorFor(root.path.toString) must be === root
       system.actorFor("user") must be === user
-      system.actorFor("null") must be === system.deadLetters
+      system.actorFor("deadLetters") must be === system.deadLetters
       system.actorFor("system") must be === syst
       system.actorFor("user/") must be === user
-      system.actorFor("null/") must be === system.deadLetters
+      system.actorFor("deadLetters/") must be === system.deadLetters
       system.actorFor("system/") must be === syst
     }
 
