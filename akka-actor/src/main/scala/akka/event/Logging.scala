@@ -281,19 +281,34 @@ object Logging {
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
   /**
-   * Obtain LoggingAdapter for the given application and source object. The
-   * source is used to identify the source of this logging channel and must have
+   * Obtain LoggingAdapter for the given event stream (system) and source object.
+   * Note that there is an implicit conversion from [[akka.actor.ActorSystem]]
+   * to [[akka.event.LoggingBus]].
+   *
+   * The source is used to identify the source of this logging channel and must have
    * a corresponding LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types.
+   * provided for Class[_], Actor, ActorRef and String types. The source
+   * object is translated to a String according to the following rules:
+   * <ul>
+   * <li>if it is an Actor or ActorRef, its path is used</li>
+   * <li>in case of a String it is used as is</li>
+   * <li>in case of a class an approximation of its simpleName
+   * <li>and in all other cases the simpleName of its class</li>
+   * </ul>
    */
   def apply[T: LogSource](eventStream: LoggingBus, logSource: T): LoggingAdapter =
     new BusLogging(eventStream, implicitly[LogSource[T]].genString(logSource))
 
   /**
-   * Java API: Obtain LoggingAdapter for the given application and source object. The
-   * source object is used to identify the source of this logging channel; if it is
-   * an Actor or ActorRef, its address is used, in case of a class an approximation of
-   * its simpleName and in all other cases the simpleName of its class.
+   * Java API: Obtain LoggingAdapter for the given system and source object. The
+   * source object is used to identify the source of this logging channel. The source
+   * object is translated to a String according to the following rules:
+   * <ul>
+   * <li>if it is an Actor or ActorRef, its path is used</li>
+   * <li>in case of a String it is used as is</li>
+   * <li>in case of a class an approximation of its simpleName
+   * <li>and in all other cases the simpleName of its class</li>
+   * </ul>
    */
   def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = apply(system.eventStream, LogSource.fromAnyRef(logSource))
 
@@ -353,6 +368,11 @@ object Logging {
    * as soon as subscriptions are set-up.
    */
   case object LoggerInitialized
+
+  /**
+   * Java API to create a LoggerInitialized message.
+   */
+  def loggerInitialized() = LoggerInitialized
 
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 

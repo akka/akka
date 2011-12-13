@@ -8,6 +8,7 @@ Scala API
 
    actors
    typed-actors
+   logging
    futures
    dataflow
    agents
