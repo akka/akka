@@ -17,6 +17,7 @@ object DispatcherDocSpec {
     //#my-dispatcher-config
     my-dispatcher {
       type = Dispatcher             # Dispatcher is the name of the event-based dispatcher
+      daemonic = off                # Toggles whether the threads created by this dispatcher should be daemons or not
       core-pool-size-min = 2        # minimum number of threads to cap factor-based core number to
       core-pool-size-factor = 2.0   # No of core threads ... ceil(available processors * factor)
       core-pool-size-max = 10       # maximum number of threads to cap factor-based number to
