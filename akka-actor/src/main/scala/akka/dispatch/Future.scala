@@ -430,6 +430,20 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
+   * Returns a failure projection of this Future
+   * If `this` becomes completed with a failure, that failure will be the success of the returned Future
+   * If `this` becomes completed with a result, then the returned future will fail with a NoSuchElementException
+   */
+  final def failed: Future[Throwable] = {
+    val p = Promise[Throwable]()
+    this.onComplete(_.value.get match {
+      case Left(t)  ⇒ p success t
+      case Right(r) ⇒ p failure new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + r)
+    })
+    p
+  }
+
+  /**
    * Creates a Future that will be the result of the first completed Future of this and the Future that was passed into this.
    * This is semantically the same as: Future.firstCompletedOf(Seq(this, that))
    */
@@ -598,6 +612,11 @@ object Promise {
  * Essentially this is the Promise (or write-side) of a Future (read-side).
  */
 trait Promise[T] extends Future[T] {
+
+  /**
+   * Returns the Future associated with this Promise
+   */
+  def future: Future[T] = this
 
   /**
    * Completes this Promise with the specified result, if not already completed.

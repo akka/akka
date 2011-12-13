@@ -849,6 +849,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(p, timeout.duration) must be(result)
       }
     }
+    "not project a failure" in { f((future, result) ⇒ (evaluating { Await.result(future.failed, timeout.duration) } must produce[NoSuchElementException]).getMessage must be("Future.failed not completed with a throwable. Instead completed with: " + result)) }
     "not perform action on exception" is pending
     "cast using mapTo" in { f((future, result) ⇒ Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), timeout.duration) must be(false)) }
   }
@@ -875,6 +876,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "not perform action with foreach" is pending
     "recover from exception" in { f((future, message) ⇒ Await.result(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), timeout.duration) must be("pigdog")) }
     "not perform action on result" is pending
+    "project a failure" in { f((future, message) ⇒ Await.result(future.failed, timeout.duration).getMessage must be(message)) }
     "perform action on exception" in {
       f { (future, message) ⇒
         val p = Promise[Any]()
