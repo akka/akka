@@ -57,7 +57,7 @@ class RemoteActorRefProvider(
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef =
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef =
     if (systemService) local.actorOf(system, props, supervisor, path, systemService)
     else {
 
@@ -97,7 +97,7 @@ class RemoteActorRefProvider(
       }
 
       val elems = path.elements
-      val deployment = (elems.head match {
+      val deployment = deploy orElse (elems.head match {
         case "user"   ⇒ deployer.lookup(elems.drop(1).mkString("/", "/", ""))
         case "remote" ⇒ lookupRemotes(elems)
         case _        ⇒ None

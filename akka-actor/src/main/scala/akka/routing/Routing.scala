@@ -62,6 +62,12 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
  */
 trait RouterConfig {
 
+  def nrOfInstances: Int
+
+  def targets: Iterable[String]
+
+  def createRoute(creator: () ⇒ Actor, actorContext: ActorContext): Route
+
   def createActor(): Router = new Router {}
 
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
@@ -71,8 +77,6 @@ trait RouterConfig {
       case _                                  ⇒ this
     }
   }
-
-  def createRoute(creator: () ⇒ Actor, actorContext: ActorContext): Route
 
   protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[String]): Vector[ActorRef] = (nrOfInstances, targets) match {
     case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
@@ -106,7 +110,9 @@ case class Broadcast(message: Any)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def createRoute(creator: () ⇒ Actor, actorContext: ActorContext) = null
+  def nrOfInstances: Int = 0
+  def targets: Iterable[String] = Nil
+  def createRoute(creator: () ⇒ Actor, actorContext: ActorContext): Route = null
 }
 
 object RoundRobinRouter {
@@ -123,7 +129,7 @@ object RoundRobinRouter {
  * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig {
+case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with RoundRobinLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -140,7 +146,9 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[String] = 
   def this(t: java.util.Collection[String]) = {
     this(targets = collectionAsScalaIterable(t))
   }
+}
 
+trait RoundRobinLike { this: RouterConfig ⇒
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Route = {
     val routees: Vector[ActorRef] =
       createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
@@ -175,7 +183,7 @@ object RandomRouter {
  * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig {
+case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with RandomLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -192,6 +200,9 @@ case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil)
   def this(t: java.util.Collection[String]) = {
     this(targets = collectionAsScalaIterable(t))
   }
+}
+
+trait RandomLike { this: RouterConfig ⇒
 
   import java.security.SecureRandom
 
@@ -231,7 +242,7 @@ object BroadcastRouter {
  * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig {
+case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with BroadcastLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -248,7 +259,9 @@ case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[String] = N
   def this(t: java.util.Collection[String]) = {
     this(targets = collectionAsScalaIterable(t))
   }
+}
 
+trait BroadcastLike { this: RouterConfig ⇒
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Route = {
     val routees: Vector[ActorRef] =
       createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
@@ -277,7 +290,8 @@ object ScatterGatherFirstCompletedRouter {
  * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig {
+case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil)
+  extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -294,7 +308,9 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: It
   def this(t: java.util.Collection[String]) = {
     this(targets = collectionAsScalaIterable(t))
   }
+}
 
+trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
   def createRoute(creator: () ⇒ Actor, context: ActorContext): Route = {
     val routees: Vector[ActorRef] =
       createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)

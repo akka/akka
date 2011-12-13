@@ -72,7 +72,7 @@ trait ActorRefProvider {
    * in case of remote supervision). If systemService is true, deployment is
    * bypassed (local-only).
    */
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -518,16 +518,16 @@ class LocalActorRefProvider(
       case x      ⇒ x
     }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean): InternalActorRef = {
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef = {
     props.routerConfig match {
       case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
-      case router   ⇒ new RoutedActorRef(system, props.withRouting(adaptFromDeploy(router, path)), supervisor, path)
+      case router ⇒
+        val depl = deploy orElse {
+          val lookupPath = path.elements.drop(1).mkString("/", "/", "")
+          deployer.lookup(lookupPath)
+        }
+        new RoutedActorRef(system, props.withRouting(router.adaptFromDeploy(depl)), supervisor, path)
     }
-  }
-
-  private def adaptFromDeploy(r: RouterConfig, p: ActorPath): RouterConfig = {
-    val lookupPath = p.elements.drop(1).mkString("/", "/", "")
-    r.adaptFromDeploy(deployer.lookup(lookupPath))
   }
 
   def ask(within: Timeout): Option[AskActorRef] = {

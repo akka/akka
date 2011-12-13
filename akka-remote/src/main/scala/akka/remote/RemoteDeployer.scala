@@ -4,7 +4,7 @@
 package akka.remote
 
 import akka.actor._
-import akka.event.EventStream
+import akka.routing._
 import com.typesafe.config._
 import akka.config.ConfigurationException
 
@@ -16,16 +16,26 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
     import scala.collection.JavaConverters._
     import akka.util.ReflectiveAccess._
 
-    val deployment = config.withFallback(default)
-
-    val transform: Deploy ⇒ Deploy =
-      if (deployment.hasPath("remote")) deployment.getString("remote") match {
-        case RemoteAddressExtractor(r) ⇒ (d ⇒ d.copy(scope = RemoteScope(r)))
-        case x                         ⇒ identity
-      }
-      else identity
-
-    super.parseConfig(path, config) map transform
+    super.parseConfig(path, config) match {
+      case d @ Some(deploy) ⇒
+        deploy.config.getString("remote") match {
+          case RemoteAddressExtractor(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
+          case str ⇒
+            if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
+            val nodes = deploy.config.getStringList("target.nodes").asScala
+            if (nodes.isEmpty || deploy.routing == NoRouter) d
+            else {
+              val r = deploy.routing match {
+                case RoundRobinRouter(x, _)                  ⇒ RemoteRoundRobinRouter(x, nodes)
+                case RandomRouter(x, _)                      ⇒ RemoteRandomRouter(x, nodes)
+                case BroadcastRouter(x, _)                   ⇒ RemoteBroadcastRouter(x, nodes)
+                case ScatterGatherFirstCompletedRouter(x, _) ⇒ RemoteScatterGatherFirstCompletedRouter(x, nodes)
+              }
+              Some(deploy.copy(routing = r))
+            }
+        }
+      case None ⇒ None
+    }
   }
 
 }
