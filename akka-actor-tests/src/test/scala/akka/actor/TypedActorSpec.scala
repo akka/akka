@@ -334,7 +334,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
       mustStop(t)
     }
 
-    "be able to use work-stealing dispatcher" in {
+    "be able to use balancing dispatcher" in {
       val props = Props(
         timeout = Timeout(6600),
         dispatcher = system.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher")

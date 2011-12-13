@@ -28,10 +28,10 @@ configuration for each actor system, and grab the specific configuration when in
 ::
   
   myapp1 {  
-    akka.logLevel = WARNING
+    akka.loglevel = WARNING
   }
   myapp2 {  
-    akka.logLevel = ERROR
+    akka.loglevel = ERROR
   }
 
 .. code-block:: scala
@@ -120,7 +120,7 @@ A custom ``application.conf`` might look like this::
 
     actor {
       default-dispatcher {
-        throughput = 10  # Throughput for default Dispatcher, set to 1 for complete fairness
+        throughput = 10  # Throughput for default Dispatcher, set to 1 for as fair as possible
       }
     }
 
