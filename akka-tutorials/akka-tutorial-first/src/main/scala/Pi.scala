@@ -3,49 +3,45 @@
  */
 package akka.tutorial.first.scala
 
+//#imports
 import java.util.concurrent.CountDownLatch
 import akka.actor._
 import akka.routing._
-import com.typesafe.config.{ ConfigFactory, Config }
+//#imports
 
+//#app
 object Pi extends App {
 
-  // Initiate the calculation
   calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
 
-  // ====================
-  // ===== Messages =====
-  // ====================
+  //#actors-and-messages
+  //#messages
   sealed trait PiMessage
-
   case object Calculate extends PiMessage
-
   case class Work(start: Int, nrOfElements: Int) extends PiMessage
-
   case class Result(value: Double) extends PiMessage
+  //#messages
 
-  // ==================
-  // ===== Worker =====
-  // ==================
+  //#worker
   class Worker extends Actor {
 
-    // define the work
+    //#calculatePiFor
     def calculatePiFor(start: Int, nrOfElements: Int): Double = {
       var acc = 0.0
       for (i ← start until (start + nrOfElements))
         acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
       acc
     }
+    //#calculatePiFor
 
     def receive = {
       case Work(start, nrOfElements) ⇒
         sender ! Result(calculatePiFor(start, nrOfElements)) // perform the work
     }
   }
+  //#worker
 
-  // ==================
-  // ===== Master =====
-  // ==================
+  //#master
   class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
     extends Actor {
 
@@ -53,40 +49,40 @@ object Pi extends App {
     var nrOfResults: Int = _
     var start: Long = _
 
-    // create a round robin router for the workers
-    val router = context.actorOf(Props(new Worker).withRouter(RoundRobinRouter(nrOfInstances = 5)), "pi")
+    //#create-router
+    val router = context.actorOf(Props(new Worker).withRouter(RoundRobinRouter(nrOfInstances = nrOfWorkers)), "pi")
+    //#create-router
 
-    // message handler
+    //#master-receive
     def receive = {
+      //#handle-messages
       case Calculate ⇒
-        // schedule work
         for (i ← 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
       case Result(value) ⇒
-        // handle result from the worker
         pi += value
         nrOfResults += 1
-
-        // Stop this actor and all its supervised children
+        // Stops this actor and all its supervised children
         if (nrOfResults == nrOfMessages) self.stop()
+      //#handle-messages
     }
+    //#master-receive
 
     override def preStart() {
       start = System.currentTimeMillis
     }
 
     override def postStop() {
-      // tell the world that the calculation is complete
       println(
         "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
           .format(pi, (System.currentTimeMillis - start)))
       latch.countDown()
     }
   }
+  //#master
+  //#actors-and-messages
 
-  // ==================
-  // ===== Run it =====
-  // ==================
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
+    // Create an Akka system
     val system = ActorSystem("PiSystem")
 
     // this latch is only plumbing to know when the calculation is completed
@@ -105,3 +101,4 @@ object Pi extends App {
     system.stop()
   }
 }
+//#app
