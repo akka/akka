@@ -74,8 +74,10 @@ public class UntypedActorTestBase {
   public void propsActorOf() {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
-    MessageDispatcher dispatcher = system.dispatcherFactory().newFromConfig("my-dispatcher");
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher), "myactor");
+    MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
+    ActorRef myActor = system.actorOf(
+        new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+        "myactor");
     //#creating-props
     myActor.tell("test");
     system.stop();

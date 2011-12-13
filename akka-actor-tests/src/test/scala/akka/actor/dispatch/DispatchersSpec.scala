@@ -10,8 +10,18 @@ import akka.testkit.AkkaSpec
 import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
 
+object DispatchersSpec {
+  val config = """
+    myapp {
+      mydispatcher {
+        throughput = 17
+      }
+    }
+    """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DispatchersSpec extends AkkaSpec {
+class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
 
   val df = system.dispatcherFactory
   import df._
@@ -34,14 +44,6 @@ class DispatchersSpec extends AkkaSpec {
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
-  val dispatcherConf = ConfigFactory.parseString("""
-      myapp {
-        mydispatcher {
-          throughput = 17
-        }
-      }
-      """)
-
   lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
     validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t).asJava).withFallback(defaultDispatcherConfig)))).toMap
   }
@@ -59,13 +61,18 @@ class DispatchersSpec extends AkkaSpec {
     }
 
     "use defined properties when newFromConfig" in {
-      val dispatcher = newFromConfig("myapp.mydispatcher", defaultGlobalDispatcher, dispatcherConf)
+      val dispatcher = newFromConfig("myapp.mydispatcher")
       dispatcher.throughput must be(17)
     }
 
     "use specific name when newFromConfig" in {
-      val dispatcher = newFromConfig("myapp.mydispatcher", defaultGlobalDispatcher, dispatcherConf)
+      val dispatcher = newFromConfig("myapp.mydispatcher")
       dispatcher.name must be("mydispatcher")
+    }
+
+    "use default dispatcher when not configured" in {
+      val dispatcher = newFromConfig("myapp.other-dispatcher")
+      dispatcher must be === defaultGlobalDispatcher
     }
 
     "throw IllegalArgumentException if type does not exist" in {
@@ -79,6 +86,13 @@ class DispatchersSpec extends AkkaSpec {
       assert(allDispatchers.values.forall(_.isDefined))
       //All created/obtained dispatchers are of the expeced type/instance
       assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1).get)))
+    }
+
+    "provide lookup of dispatchers by key" in {
+      val d1 = lookup("myapp.mydispatcher")
+      val d2 = lookup("myapp.mydispatcher")
+      d1 must be === d2
+      d1.name must be("mydispatcher")
     }
 
   }

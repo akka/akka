@@ -4,16 +4,19 @@
 
 package akka.dispatch
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.ConcurrentHashMap
+
 import akka.actor.LocalActorRef
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
-import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import akka.config.ConfigurationException
 
 trait DispatcherPrerequisites {
   def eventStream: EventStream
@@ -27,6 +30,10 @@ case class DefaultDispatcherPrerequisites(
   val scheduler: Scheduler) extends DispatcherPrerequisites
 
 /**
+ * It is recommended to define the dispatcher in configuration to allow for tuning
+ * for different environments. Use the `lookup` or `newFromConfig` method to create
+ * a dispatcher as specified in configuration.
+ *
  * Scala API. Dispatcher factory.
  * <p/>
  * Example usage:
@@ -62,9 +69,33 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
-  // TODO PN Shouldn't we fail hard if default-dispatcher is wrong?
-  lazy val defaultGlobalDispatcher =
-    from(defaultDispatcherConfig) getOrElse newDispatcher("AkkaDefaultGlobalDispatcher", 1, MailboxType).build
+  lazy val defaultGlobalDispatcher: MessageDispatcher =
+    from(defaultDispatcherConfig) getOrElse {
+      throw new ConfigurationException("Wrong configuration [akka.actor.default-dispatcher]")
+    }
+
+  // FIXME: Dispatchers registered here are are not removed, see ticket #1494
+  private val dispatchers = new ConcurrentHashMap[String, MessageDispatcher]
+
+  /**
+   * Returns a dispatcher as specified in configuration, or if not defined it uses
+   * the default dispatcher. The same dispatcher instance is returned for subsequent
+   * lookups.
+   */
+  def lookup(key: String): MessageDispatcher = {
+    dispatchers.get(key) match {
+      case null ⇒
+        // It doesn't matter if we create a dispatcher that isn't used due to concurrent lookup.
+        // That shouldn't happen often and in case it does the actual ExecutorService isn't 
+        // created until used, i.e. cheap.
+        val newDispatcher = newFromConfig(key)
+        dispatchers.putIfAbsent(key, newDispatcher) match {
+          case null     ⇒ newDispatcher
+          case existing ⇒ existing
+        }
+      case existing ⇒ existing
+    }
+  }
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
@@ -133,7 +164,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       new Dispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -142,7 +173,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       settings.DispatcherThroughputDeadlineTime, MailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -152,7 +183,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -162,7 +193,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -170,6 +201,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     ThreadPoolConfigDispatcherBuilder(config ⇒
       new BalancingDispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType,
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
+
   /**
    * Creates a new dispatcher as specified in configuration
    * or if not defined it uses the supplied dispatcher.
@@ -183,7 +215,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case true ⇒
         val conf = cfg.getConfig(key)
         val confWithName = conf.withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
-        from(confWithName).getOrElse(default)
+        from(confWithName).getOrElse(throw new ConfigurationException("Wrong configuration [%s]".format(key)))
     }
   }
 

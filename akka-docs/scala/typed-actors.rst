@@ -9,7 +9,7 @@ The Typed Actors are implemented through `Typed Actors <http://en.wikipedia.org/
 
 If you are using the `Spring Framework <http://springsource.org>`_ then take a look at Akka's `Spring integration <spring-integration>`_.
 
-**WARNING:** Do not configure to use a ``WorkStealingDispatcher`` with your ``TypedActors``, it just isn't safe with how ``TypedActors`` currently are implemented. This limitation will most likely be removed in the future.
+**WARNING:** Do not configure to use a ``BalancingDispatcher`` with your ``TypedActors``, it just isn't safe with how ``TypedActors`` currently are implemented. This limitation will most likely be removed in the future.
 
 Creating Typed Actors
 ---------------------

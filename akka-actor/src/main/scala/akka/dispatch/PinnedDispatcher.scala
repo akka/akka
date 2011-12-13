@@ -30,7 +30,7 @@ class PinnedDispatcher(
     _shutdownTimeout) {
 
   @volatile
-  protected[akka] var owner: ActorCell = _actor
+  private var owner: ActorCell = _actor
 
   //Relies on an external lock provided by MessageDispatcher.attach
   protected[akka] override def register(actorCell: ActorCell) = {

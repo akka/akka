@@ -20,8 +20,9 @@ import org.junit.Test;
 import scala.Option;
 import static org.junit.Assert.*;
 
-import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 
@@ -30,11 +31,11 @@ public class LoggingDocTestBase {
   @Test
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new UntypedActorFactory() {
+    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new MyActor();
       }
-    });
+    }));
     myActor.tell("test");
     system.stop();
   }
