@@ -47,7 +47,7 @@ with ``/``. ``-Dconfig.resource=/dev.conf`` will load the ``dev.conf`` from the 
 You may also specify and parse the configuration programmatically in other ways when instantiating 
 the ``ActorSystem``.
 
-.. includecode:: code/ConfigDocSpec.scala
+.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
    :include: imports,custom-config
 
 The ``ConfigFactory`` provides several methods to parse the configuration from various sources.
