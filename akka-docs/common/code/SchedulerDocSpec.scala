@@ -5,7 +5,6 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.util.duration._
 
-
 //#imports1
 
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
@@ -34,11 +33,10 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#schedule-one-off-runnable
     //Schedules to send the "foo"-message to the testActor after 50ms
     system.scheduler.scheduleOnce(
-      50 milliseconds, 
+      50 milliseconds,
       new Runnable {
         def run = testActor ! "foo"
-      }
-    )
+      })
 
     //#schedule-one-off-runnable
 
@@ -57,9 +55,9 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //to the tickActor after 0ms repeating every 50ms
     val cancellable =
       system.scheduler.schedule(0 milliseconds,
-                                50 milliseconds,
-                                tickActor,
-                                Tick)
+        50 milliseconds,
+        tickActor,
+        Tick)
 
     //This cancels further Ticks to be sent
     cancellable.cancel()
