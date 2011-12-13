@@ -6,7 +6,7 @@ Dispatchers (Scala)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions of threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
@@ -118,7 +118,7 @@ should have, as shown above. This defines the number of messages for a specific
 Actor the dispatcher should process in one single sweep; in other words, the
 dispatcher will bunch up to ``throughput`` message invocations together when
 having elected an actor to run.  Setting this to a higher number will increase
-throughput but lower fairness, and vice versa. If you don't specify it explicitly 
+throughput but lower fairness, and vice versa. If you don't specify it explicitly
 then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
@@ -135,13 +135,13 @@ Creating a Dispatcher using PriorityGenerator:
 
   import akka.dispatch._
   import akka.actor._
-  
+
   val gen = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
       case 'highpriority => 0   // 'highpriority messages should be treated first if possible
       case 'lowpriority  => 100 // 'lowpriority messages should be treated last if possible
       case otherwise     => 50    // We default to 50
    }
-  
+
    val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
        Props(new Actor {
          self ! 'lowpriority

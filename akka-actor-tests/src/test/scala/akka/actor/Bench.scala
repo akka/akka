@@ -76,7 +76,7 @@ object Chameneos {
     var numFaded = 0
 
     override def preStart() = {
-      for (i ← 0 until numChameneos) context.actorOf(new Chameneo(self, colours(i % 3), i))
+      for (i ← 0 until numChameneos) context.actorOf(Props(new Chameneo(self, colours(i % 3), i)))
     }
 
     def receive = {
@@ -107,7 +107,7 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    val system = ActorSystem().actorOf(new Mall(1000000, 4))
+    val system = ActorSystem().actorOf(Props(new Mall(1000000, 4)))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
     system.stop()

@@ -2,6 +2,7 @@ package akka.docs.actor
 
 //#imports1
 import akka.actor.Actor
+import akka.actor.Props
 import akka.event.Logging
 //#imports1
 
@@ -29,12 +30,12 @@ case class Message(s: String)
 
 //#context-actorOf
 class FirstActor extends Actor {
-  val myActor = context.actorOf[MyActor]
+  val myActor = context.actorOf(Props[MyActor])
   //#context-actorOf
   //#anonymous-actor
   def receive = {
     case m: DoIt ⇒
-      context.actorOf(new Actor {
+      context.actorOf(Props(new Actor {
         def receive = {
           case DoIt(msg) ⇒
             val replyMsg = doSomeDangerousWork(msg)
@@ -42,7 +43,7 @@ class FirstActor extends Actor {
             self.stop()
         }
         def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
-      }) ! m
+      })) ! m
 
     case replyMsg: String ⇒ sender ! replyMsg
   }
@@ -52,7 +53,7 @@ class FirstActor extends Actor {
 //#system-actorOf
 object Main extends App {
   val system = ActorSystem("MySystem")
-  val myActor = system.actorOf[MyActor]
+  val myActor = system.actorOf(Props[MyActor])
   //#system-actorOf
 }
 
@@ -94,7 +95,7 @@ class Swapper extends Actor {
 
 object SwapperApp extends App {
   val system = ActorSystem("SwapperSystem")
-  val swap = system.actorOf[Swapper]
+  val swap = system.actorOf(Props[Swapper])
   swap ! Swap // logs Hi
   swap ! Swap // logs Ho
   swap ! Swap // logs Hi
@@ -134,20 +135,20 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#import-context
     class FirstActor extends Actor {
       import context._
-      val myActor = actorOf[MyActor]
+      val myActor = actorOf(Props[MyActor])
       def receive = {
         case x ⇒ myActor ! x
       }
     }
     //#import-context
 
-    val first = system.actorOf(new FirstActor)
+    val first = system.actorOf(Props(new FirstActor))
     first.stop()
 
   }
 
   "creating actor with AkkaSpec.actorOf" in {
-    val myActor = system.actorOf[MyActor]
+    val myActor = system.actorOf(Props[MyActor])
 
     // testing the actor
 
@@ -178,7 +179,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = system.actorOf(new MyActor("..."))
+    val myActor = system.actorOf(Props(new MyActor("...")))
     //#creating-constructor
 
     myActor.stop()
@@ -203,7 +204,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       }
     }
 
-    val myActor = system.actorOf(new MyActor)
+    val myActor = system.actorOf(Props(new MyActor))
     implicit val timeout = system.settings.ActorTimeout
     val future = myActor ? "hello"
     future.as[String] match {
@@ -221,7 +222,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import akka.actor.ReceiveTimeout
     import akka.util.duration._
     class MyActor extends Actor {
-      context.receiveTimeout = Some(30 seconds)
+      context.setReceiveTimeout(30 milliseconds)
       def receive = {
         case "Hello"        ⇒ //...
         case ReceiveTimeout ⇒ throw new RuntimeException("received timeout")
@@ -251,8 +252,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     }
     //#hot-swap-actor
 
-    val actor = system.actorOf(new HotSwapActor)
-
+    val actor = system.actorOf(Props(new HotSwapActor))
   }
-
 }

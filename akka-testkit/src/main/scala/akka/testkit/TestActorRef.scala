@@ -94,7 +94,7 @@ object TestActorRef {
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +
-          "\nOR try to change: 'actorOf[MyActor]' to 'actorOf(new MyActor)'.", exception)
+          "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.", exception)
     }
   }), name)
 }

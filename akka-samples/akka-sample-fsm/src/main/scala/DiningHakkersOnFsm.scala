@@ -3,7 +3,7 @@
  */
 package sample.fsm.dining.fsm
 
-import akka.actor.{ ActorRef, Actor, FSM, ActorSystem }
+import akka.actor._
 import akka.actor.FSM._
 import akka.util.Duration
 import akka.util.duration._
@@ -175,11 +175,11 @@ object DiningHakkersOnFsm {
 
   def run = {
     // Create 5 chopsticks
-    val chopsticks = for (i ← 1 to 5) yield system.actorOf[Chopstick]("Chopstick " + i)
+    val chopsticks = for (i ← 1 to 5) yield system.actorOf(Props[Chopstick], "Chopstick " + i)
     // Create 5 awesome fsm hakkers and assign them their left and right chopstick
     val hakkers = for {
       (name, i) ← List("Ghosh", "Bonér", "Klang", "Krasser", "Manie").zipWithIndex
-    } yield system.actorOf(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5)))
+    } yield system.actorOf(Props(new FSMHakker(name, chopsticks(i), chopsticks((i + 1) % 5))))
 
     hakkers.foreach(_ ! Think)
   }

@@ -33,7 +33,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     import CamelContextManager.mandatoryTemplate
 
     scenario("one-way communication") {
-      val actor = actorOf[Tester1]
+      val actor = actorOf(Props[Tester1]
       val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
       mandatoryTemplate.sendBody("actor:uuid:%s" format actor.uuid, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -42,7 +42,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("two-way communication") {
-      val actor = actorOf[Tester2]
+      val actor = actorOf(Props[Tester2]
       assert(mandatoryTemplate.requestBody("actor:uuid:%s" format actor.uuid, "Martin") === "Hello Martin")
     }
 
@@ -70,7 +70,7 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     import CamelContextManager.mandatoryTemplate
 
     scenario("one-way communication") {
-      val actor = actorOf[Tester1]
+      val actor = actorOf(Props[Tester1]
       val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
       mandatoryTemplate.sendBody("actor:%s" format actor.address, "Martin")
       assert(latch.await(5000, TimeUnit.MILLISECONDS))
@@ -79,12 +79,12 @@ class ActorComponentFeatureTest extends FeatureSpec with BeforeAndAfterAll with 
     }
 
     scenario("two-way communication") {
-      val actor = actorOf[Tester2]
+      val actor = actorOf(Props[Tester2]
       assert(mandatoryTemplate.requestBody("actor:%s" format actor.address, "Martin") === "Hello Martin")
     }
 
     scenario("two-way communication via a custom route") {
-      val actor = actorOf[CustomIdActor]("custom-id")
+      val actor = actorOf(Props[CustomIdActor]("custom-id")
       assert(mandatoryTemplate.requestBody("direct:custom-id-test-1", "Martin") === "Received Martin")
       assert(mandatoryTemplate.requestBody("direct:custom-id-test-2", "Martin") === "Received Martin")
     }
@@ -113,8 +113,8 @@ object ActorComponentFeatureTest {
   }
 
   class TestRoute extends RouteBuilder {
-    val failWithMessage = actorOf[FailWithMessage]
-    val failWithException = actorOf[FailWithException]
+    val failWithMessage = actorOf(Props[FailWithMessage]
+    val failWithException = actorOf(Props[FailWithException]
     def configure {
       from("direct:custom-id-test-1").to("actor:custom-id")
       from("direct:custom-id-test-2").to("actor:id:custom-id")

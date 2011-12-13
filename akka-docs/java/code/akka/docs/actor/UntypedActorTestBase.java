@@ -3,6 +3,7 @@ package akka.docs.actor;
 //#imports
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
 
 //#imports
 
@@ -38,7 +39,7 @@ public class UntypedActorTestBase {
   public void systemActorOf() {
     //#system-actorOf
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(MyUntypedActor.class);
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#system-actorOf
     myActor.tell("test");
     system.stop();
@@ -48,7 +49,7 @@ public class UntypedActorTestBase {
   public void contextActorOf() {
     //#context-actorOf
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(MyUntypedActor.class);
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#context-actorOf
     myActor.tell("test");
     system.stop();
@@ -59,11 +60,11 @@ public class UntypedActorTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    ActorRef myActor = system.actorOf(new UntypedActorFactory() {
+    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new MyActor("...");
       }
-    });
+    }));
     //#creating-constructor
     myActor.tell("test");
     system.stop();
@@ -74,8 +75,7 @@ public class UntypedActorTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
     MessageDispatcher dispatcher = system.dispatcherFactory().newFromConfig("my-dispatcher");
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
-        "myactor");
+    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher), "myactor");
     //#creating-props
     myActor.tell("test");
     system.stop();
@@ -84,11 +84,11 @@ public class UntypedActorTestBase {
   @Test
   public void usingAsk() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new UntypedActorFactory() {
+    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new MyAskActor();
       }
-    });
+    }));
 
     //#using-ask
     Future future = myActor.ask("Hello", 1000);
@@ -109,7 +109,7 @@ public class UntypedActorTestBase {
   @Test
   public void receiveTimeout() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(MyReceivedTimeoutUntypedActor.class);
+    ActorRef myActor = system.actorOf(new Props(MyReceivedTimeoutUntypedActor.class));
     myActor.tell("Hello");
     system.stop();
   }
@@ -117,7 +117,7 @@ public class UntypedActorTestBase {
   @Test
   public void usePoisonPill() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(MyUntypedActor.class);
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#poison-pill
     myActor.tell(poisonPill());
     //#poison-pill
@@ -127,7 +127,7 @@ public class UntypedActorTestBase {
   @Test
   public void useKill() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef victim = system.actorOf(MyUntypedActor.class);
+    ActorRef victim = system.actorOf(new Props(MyUntypedActor.class));
     //#kill
     victim.tell(kill());
     //#kill
@@ -137,11 +137,11 @@ public class UntypedActorTestBase {
   @Test
   public void useBecome() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new UntypedActorFactory() {
+    ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
         return new HotSwapActor();
       }
-    });
+    }));
     myActor.tell("foo");
     myActor.tell("bar");
     myActor.tell("bar");

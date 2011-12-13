@@ -82,11 +82,11 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
         }).withFaultHandler(faultHandler))
 
       val successes = TestLatch(2)
-      val successCounter = system.actorOf(new Actor {
+      val successCounter = system.actorOf(Props(new Actor {
         def receive = {
           case "success" ⇒ successes.countDown()
         }
-      })
+      }))
 
       implicit val replyTo = successCounter
       pool ! "a"

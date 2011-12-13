@@ -104,8 +104,7 @@ object ActorSystem {
     val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
 
     if (ConfigVersion != Version)
-      throw new ConfigurationException("Akka JAR version [" + Version +
-        "] does not match the provided config version [" + ConfigVersion + "]")
+      throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
     override def toString: String = config.root.render
   }
@@ -168,16 +167,16 @@ object ActorSystem {
  * system.actorOf(props)
  *
  * // Scala
- * system.actorOf[MyActor]("name")
- * system.actorOf[MyActor]
- * system.actorOf(new MyActor(...))
+ * system.actorOf(Props[MyActor]("name")
+ * system.actorOf(Props[MyActor]
+ * system.actorOf(Props(new MyActor(...))
  *
  * // Java
  * system.actorOf(classOf[MyActor]);
- * system.actorOf(new Creator<MyActor>() {
+ * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
- * system.actorOf(new Creator<MyActor>() {
+ * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}
@@ -328,7 +327,7 @@ abstract class ActorSystem extends ActorRefFactory {
 class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
 
   if (!name.matches("""^\w+$"""))
-    throw new IllegalArgumentException("invalid ActorSystem name '" + name + "', must contain only word characters (i.e. [a-zA-Z_0-9])")
+    throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
 
   import ActorSystem._
 
@@ -465,8 +464,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   /*
-   * This is called after the last actor has signaled its termination, i.e. 
-   * after the last dispatcher has had its chance to schedule its shutdown 
+   * This is called after the last actor has signaled its termination, i.e.
+   * after the last dispatcher has had its chance to schedule its shutdown
    * action.
    */
   protected def stopScheduler(): Unit = scheduler match {
@@ -493,7 +492,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
         extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
           case null ⇒ try { // Signal was successfully sent
             ext.createExtension(this) match { // Create and initialize the extension
-              case null ⇒ throw new IllegalStateException("Extension instance created as null for Extension: " + ext)
+              case null ⇒ throw new IllegalStateException("Extension instance created as 'null' for extension [" + ext + "]")
               case instance ⇒
                 extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
                 instance //Profit!
@@ -512,7 +511,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
-    case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension " + ext)
+    case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension [" + ext + "]")
     case some ⇒ some.asInstanceOf[T]
   }
 
@@ -525,8 +524,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
       getObjectFor[AnyRef](fqcn).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
-        case Right(other)                  ⇒ log.error("'{}' is not an ExtensionIdProvider or ExtensionId, skipping...", fqcn)
-        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension '{}', skipping...", fqcn)
+        case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
       }
 
     }

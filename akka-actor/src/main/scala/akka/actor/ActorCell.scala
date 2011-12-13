@@ -28,16 +28,16 @@ import java.io.{ NotSerializableException, ObjectOutputStream }
  * context.actorOf(props)
  *
  * // Scala
- * context.actorOf[MyActor]("name")
- * context.actorOf[MyActor]
- * context.actorOf(new MyActor(...))
+ * context.actorOf(Props[MyActor]("name")
+ * context.actorOf(Props[MyActor]
+ * context.actorOf(Props(new MyActor(...))
  *
  * // Java
  * context.actorOf(classOf[MyActor]);
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}
@@ -59,7 +59,12 @@ trait ActorContext extends ActorRefFactory {
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
    * 1 millisecond is the minimum supported timeout.
    */
-  def receiveTimeout_=(timeout: Option[Duration]): Unit
+  def setReceiveTimeout(timeout: Duration): Unit
+
+  /**
+   * Resets the current receive timeout.
+   */
+  def resetReceiveTimeout(): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -68,19 +73,29 @@ trait ActorContext extends ActorRefFactory {
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
-  def hotswap: Stack[PartialFunction[Any, Unit]]
-
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
   def unbecome(): Unit
 
+  /**
+   * Returns the current message envelope.
+   */
   def currentMessage: Envelope
 
-  def currentMessage_=(invocation: Envelope): Unit
+  /**
+   * Returns a stack with the hotswapped behaviors (as Scala PartialFunction).
+   */
+  def hotswap: Stack[PartialFunction[Any, Unit]]
 
+  /**
+   * Returns the sender 'ActorRef' of the current message.
+   */
   def sender: ActorRef
 
+  /**
+   * Returns all supervised children.
+   */
   def children: Iterable[ActorRef]
 
   /**
@@ -99,16 +114,19 @@ trait ActorContext extends ActorRefFactory {
    */
   implicit def system: ActorSystem
 
+  /**
+   * Returns the supervising parent ActorRef.
+   */
   def parent: ActorRef
 
   /**
-   * Registers this actor as a Monitor for the provided ActorRef
+   * Registers this actor as a Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
 
   /**
-   * Unregisters this actor as Monitor for the provided ActorRef
+   * Unregisters this actor as Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef
@@ -118,24 +136,12 @@ trait ActorContext extends ActorRefFactory {
 }
 
 trait UntypedActorContext extends ActorContext {
+
   /**
    * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
    */
   def getChildren(): java.lang.Iterable[ActorRef]
-
-  /**
-   * Gets the current receive timeout
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
-   */
-  def getReceiveTimeout: Option[Duration]
-
-  /**
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   * 1 millisecond is the minimum supported timeout.
-   */
-  def setReceiveTimeout(timeout: Duration): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
@@ -190,7 +196,9 @@ private[akka] final class ActorCell(
 
   override def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
 
-  override def receiveTimeout_=(timeout: Option[Duration]): Unit = {
+  override def setReceiveTimeout(timeout: Duration): Unit = setReceiveTimeout(Some(timeout))
+
+  def setReceiveTimeout(timeout: Option[Duration]): Unit = {
     val timeoutMs = timeout match {
       case None ⇒ -1L
       case Some(duration) ⇒
@@ -203,21 +211,13 @@ private[akka] final class ActorCell(
     receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
   }
 
+  override def resetReceiveTimeout(): Unit = setReceiveTimeout(None)
+
   /**
    * In milliseconds
    */
   var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
-
-  /**
-   * UntypedActorContext impl
-   */
-  def getReceiveTimeout: Option[Duration] = receiveTimeout
-
-  /**
-   * UntypedActorContext impl
-   */
-  def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
 
   var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
@@ -391,7 +391,7 @@ private[akka] final class ActorCell(
     def resume(): Unit = dispatcher resume this
 
     def terminate() {
-      receiveTimeout = None
+      setReceiveTimeout(None)
       cancelReceiveTimeout
 
       val c = children

@@ -6,7 +6,7 @@ Dispatchers (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
@@ -127,7 +127,7 @@ should have, as shown above. This defines the number of messages for a specific
 Actor the dispatcher should process in one single sweep; in other words, the
 dispatcher will bunch up to ``throughput`` message invocations together when
 having elected an actor to run.  Setting this to a higher number will increase
-throughput but lower fairness, and vice versa. If you don't specify it explicitly 
+throughput but lower fairness, and vice versa. If you don't specify it explicitly
 then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the :ref:`scaladoc` or look at the code for all the options available.
@@ -143,10 +143,10 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
 .. code-block:: java
 
   package some.pkg;
-  
+
   import akka.actor.*;
   import akka.dispatch.*;
-  
+
   public class Main {
       // A simple Actor that just prints the messages it processes
       public static class MyActor extends UntypedActor {
@@ -165,7 +165,7 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
     }
 
     public static void main(String[] args) {
-        // Create a new PriorityGenerator, lower prio means more important 
+        // Create a new PriorityGenerator, lower prio means more important
         PriorityGenerator gen = new PriorityGenerator() {
           public int gen(Object message) {
             if (message.equals("highpriority")) return 0;       // "highpriority" messages should be treated first if possible
@@ -175,7 +175,7 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
         };
         // We create an instance of the actor that will print out the messages it processes
         // We create a new Priority dispatcher and seed it with the priority generator
-      ActorRef ref = Actors.actorOf((new Props()).withCreator(MyActor.class).withDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen))));
+      ActorRef ref = Actors.actorOf(new Props(MyActor.class).withDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen))));
 
     }
   }

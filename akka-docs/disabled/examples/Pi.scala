@@ -62,7 +62,7 @@ object Pi extends App {
 
     //#create-workers
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(actorOf(Props[Worker])
 
     // wrap them with a load-balancing router
     val router = Routing.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(workers), "pi")
@@ -117,8 +117,7 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = actorOf(
-      new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+    val master = actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
 
     // start the calculation
     master ! Calculate

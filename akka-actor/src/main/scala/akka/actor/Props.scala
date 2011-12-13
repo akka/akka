@@ -81,6 +81,25 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
                  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
                  timeout: Timeout = Props.defaultTimeout,
                  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler) {
+
+  /**
+   * Java API
+   */
+  def this(factory: UntypedActorFactory) = this(
+    creator = () ⇒ factory.create(),
+    dispatcher = Props.defaultDispatcher,
+    timeout = Props.defaultTimeout,
+    faultHandler = Props.defaultFaultHandler)
+
+  /**
+   * Java API
+   */
+  def this(actorClass: Class[_ <: Actor]) = this(
+    creator = () ⇒ actorClass.newInstance,
+    dispatcher = Props.defaultDispatcher,
+    timeout = Props.defaultTimeout,
+    faultHandler = Props.defaultFaultHandler)
+
   /**
    * No-args constructor that sets all the default values
    * Java API

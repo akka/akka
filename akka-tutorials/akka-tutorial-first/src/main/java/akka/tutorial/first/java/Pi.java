@@ -4,6 +4,7 @@
 
 package akka.tutorial.first.java;
 
+import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.InternalActorRef;
@@ -112,7 +113,7 @@ public class Pi {
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
                 {
-                    for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(Worker.class));
+                    for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(new Props(Worker.class)));
                 }
             };
                         // FIXME routers are intended to be used like this
@@ -166,11 +167,11 @@ public class Pi {
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = system.actorOf(new UntypedActorFactory() {
+        ActorRef master = system.actorOf(new Props(new UntypedActorFactory() {
             public UntypedActor create() {
                 return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
             }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());

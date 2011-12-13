@@ -25,21 +25,21 @@ import scala.annotation.tailrec
  * <pre>
  *   import Actor._
  *
- *   val actor = actorOf[MyActor]
+ *   val actor = actorOf(Props[MyActor]
  *   actor ! message
  *   actor.stop()
  * </pre>
  *
  * You can also create and start actors like this:
  * <pre>
- *   val actor = actorOf[MyActor]
+ *   val actor = actorOf(Props[MyActor]
  * </pre>
  *
  * Here is an example on how to create an actor with a non-default constructor.
  * <pre>
  *   import Actor._
  *
- *   val actor = actorOf(new MyActor(...))
+ *   val actor = actorOf(Props(new MyActor(...))
  *   actor ! message
  *   actor.stop()
  * </pre>
@@ -455,7 +455,7 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
+    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName))))(dispatcher)
 
   override def isTerminated = result.isCompleted || result.isExpired
 
