@@ -125,7 +125,7 @@ final class Path {
         if (other instanceof Path) {
             Path that = (Path) other;
             return this.first.equals(that.first)
-                    && ConfigUtil.equalsHandlingNull(this.remainder,
+                    && ConfigImplUtil.equalsHandlingNull(this.remainder,
                             that.remainder);
         } else {
             return false;
@@ -167,7 +167,7 @@ final class Path {
 
     private void appendToStringBuilder(StringBuilder sb) {
         if (hasFunkyChars(first) || first.isEmpty())
-            sb.append(ConfigUtil.renderJsonString(first));
+            sb.append(ConfigImplUtil.renderJsonString(first));
         else
             sb.append(first);
         if (remainder != null) {

@@ -6,6 +6,7 @@ package com.typesafe.config.impl;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FilterReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -261,6 +262,34 @@ public abstract class Parseable implements ConfigParseable {
             return new File(parent, filename);
     }
 
+    // this is a parseable that doesn't exist and just throws when you try to
+    // parse it
+    private final static class ParseableNotFound extends Parseable {
+        final private String what;
+        final private String message;
+
+        ParseableNotFound(String what, String message, ConfigParseOptions options) {
+            this.what = what;
+            this.message = message;
+            postConstruct(options);
+        }
+
+        @Override
+        protected Reader reader() throws IOException {
+            throw new FileNotFoundException(message);
+        }
+
+        @Override
+        protected ConfigOrigin createOrigin() {
+            return SimpleConfigOrigin.newSimple(what);
+        }
+    }
+
+    public static Parseable newNotFound(String whatNotFound, String message,
+            ConfigParseOptions options) {
+        return new ParseableNotFound(whatNotFound, message, options);
+    }
+
     private final static class ParseableReader extends Parseable {
         final private Reader reader;
 
@@ -355,7 +384,7 @@ public abstract class Parseable implements ConfigParseable {
         // we want file: URLs and files to always behave the same, so switch
         // to a file if it's a file: URL
         if (input.getProtocol().equals("file")) {
-            return newFile(ConfigUtil.urlToFile(input), options);
+            return newFile(ConfigImplUtil.urlToFile(input), options);
         } else {
             return new ParseableURL(input, options);
         }

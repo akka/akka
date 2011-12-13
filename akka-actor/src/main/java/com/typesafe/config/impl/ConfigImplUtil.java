@@ -6,12 +6,14 @@ package com.typesafe.config.impl;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.typesafe.config.ConfigException;
 
 
 /** This is public just for the "config" package to use, don't touch it */
-final public class ConfigUtil {
+final public class ConfigImplUtil {
     static boolean equalsHandlingNull(Object a, Object b) {
         if (a == null && b != null)
             return false;
@@ -23,7 +25,11 @@ final public class ConfigUtil {
             return a.equals(b);
     }
 
-    static String renderJsonString(String s) {
+    /**
+     * This is public ONLY for use by the "config" package, DO NOT USE this ABI
+     * may change.
+     */
+    public static String renderJsonString(String s) {
         StringBuilder sb = new StringBuilder();
         sb.append('"');
         for (int i = 0; i < s.length(); ++i) {
@@ -145,5 +151,35 @@ final public class ConfigUtil {
             // apparently but mangles handling of hex escapes
             return new File(url.getPath());
         }
+    }
+
+    /**
+     * This is public ONLY for use by the "config" package, DO NOT USE this ABI
+     * may change. You can use the version in ConfigUtil instead.
+     */
+    public static String joinPath(String... elements) {
+        return (new Path(elements)).render();
+    }
+
+    /**
+     * This is public ONLY for use by the "config" package, DO NOT USE this ABI
+     * may change. You can use the version in ConfigUtil instead.
+     */
+    public static String joinPath(List<String> elements) {
+        return joinPath(elements.toArray(new String[0]));
+    }
+
+    /**
+     * This is public ONLY for use by the "config" package, DO NOT USE this ABI
+     * may change. You can use the version in ConfigUtil instead.
+     */
+    public static List<String> splitPath(String path) {
+        Path p = Path.newPath(path);
+        List<String> elements = new ArrayList<String>();
+        while (p != null) {
+            elements.add(p.first());
+            p = p.remainder();
+        }
+        return elements;
     }
 }

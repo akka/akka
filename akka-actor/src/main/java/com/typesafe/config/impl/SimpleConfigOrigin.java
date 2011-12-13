@@ -97,7 +97,7 @@ final class SimpleConfigOrigin implements ConfigOrigin {
                     && this.lineNumber == otherOrigin.lineNumber
                     && this.endLineNumber == otherOrigin.endLineNumber
                     && this.originType == otherOrigin.originType
-                    && ConfigUtil.equalsHandlingNull(this.urlOrNull, otherOrigin.urlOrNull);
+                    && ConfigImplUtil.equalsHandlingNull(this.urlOrNull, otherOrigin.urlOrNull);
         } else {
             return false;
         }
@@ -227,7 +227,7 @@ final class SimpleConfigOrigin implements ConfigOrigin {
         }
 
         String mergedURL;
-        if (ConfigUtil.equalsHandlingNull(a.urlOrNull, b.urlOrNull)) {
+        if (ConfigImplUtil.equalsHandlingNull(a.urlOrNull, b.urlOrNull)) {
             mergedURL = a.urlOrNull;
         } else {
             mergedURL = null;
@@ -252,7 +252,7 @@ final class SimpleConfigOrigin implements ConfigOrigin {
                 count += 1;
             if (a.endLineNumber == b.endLineNumber)
                 count += 1;
-            if (ConfigUtil.equalsHandlingNull(a.urlOrNull, b.urlOrNull))
+            if (ConfigImplUtil.equalsHandlingNull(a.urlOrNull, b.urlOrNull))
                 count += 1;
         }
 
