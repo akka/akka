@@ -7,6 +7,25 @@ of akka.actor.Scheduler, this instance is unique per ActorSystem and is used int
 to happen at specific points in time. Please note that the scheduled tasks are executed by the default
 ``MessageDispatcher`` of the ``ActorSystem``.
 
+You can schedule sending of messages to actors and execution of tasks (functions or Runnable).
+You will get a ``Cancellable`` back that you can call :meth:``cancel`` on to cancel the execution of the
+scheduled operation.
+
+Some examples
+-------------
+
+.. includecode:: code/SchedulerDocSpec.scala
+   :include: imports1,schedule-one-off-message
+
+.. includecode:: code/SchedulerDocSpec.scala
+   :include: imports1,schedule-one-off-thunk
+
+.. includecode:: code/SchedulerDocSpec.scala
+   :include: imports1,schedule-one-off-runnable
+
+.. includecode:: code/SchedulerDocSpec.scala
+   :include: imports1,schedule-recurring
+
 From ``akka.actor.ActorSystem``
 -------------------------------
 
