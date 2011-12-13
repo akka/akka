@@ -8,24 +8,57 @@ import akka.actor._
 import collection.mutable.LinkedList
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
+import akka.util.duration._
 
 object RoutingSpec {
 
-  class TestActor extends Actor with Serializable {
+  class TestActor extends Actor {
     def receive = {
       case _ ⇒
         println("Hello")
     }
   }
 
+  class Echo extends Actor {
+    def receive = {
+      case _ ⇒ sender ! self
+    }
+  }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec with DefaultTimeout {
+class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 
   import akka.routing.RoutingSpec._
+
+  "routers in general" must {
+
+    "evict terminated routees" in {
+      val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2)))
+      router ! ""
+      router ! ""
+      val c1, c2 = expectMsgType[ActorRef]
+      watch(router)
+      watch(c2)
+      c2.stop()
+      expectMsg(Terminated(c2))
+      // it might take a while until the Router has actually processed the Terminated message
+      awaitCond {
+        router ! ""
+        router ! ""
+        val res = receiveWhile(100 millis, messages = 2) {
+          case x: ActorRef ⇒ x
+        }
+        res == Seq(c1, c1)
+      }
+      c1.stop()
+      expectMsg(Terminated(router))
+    }
+
+  }
 
   "no router" must {
     "be started when constructed" in {
