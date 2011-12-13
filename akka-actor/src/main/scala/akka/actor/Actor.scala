@@ -262,9 +262,12 @@ trait Actor {
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
-   * By default it calls postStop()
+   * By default it disposes of all children calls postStop().
    */
-  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
+  def preRestart(reason: Throwable, message: Option[Any]) {
+    context.children foreach (context.stop(_))
+    postStop()
+  }
 
   /**
    * User overridable callback.

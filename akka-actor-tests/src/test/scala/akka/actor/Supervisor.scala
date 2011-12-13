@@ -7,4 +7,5 @@ class Supervisor extends Actor {
   def receive = {
     case x: Props ⇒ sender ! context.actorOf(x)
   }
+  override def preRestart(cause: Throwable, msg: Option[Any]) {}
 }
