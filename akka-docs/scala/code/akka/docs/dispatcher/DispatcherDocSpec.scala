@@ -26,14 +26,6 @@ object DispatcherDocSpec {
     }
     //#my-dispatcher-config
     
-    //#my-pinned-config
-    my-pinned-dispatcher {
-      type = Dispatcher
-      core-pool-size-min = 1
-      core-pool-size-max = 1
-    }
-    //#my-pinned-config
-    
     //#my-bounded-config
     my-dispatcher-bounded-queue {
       type = Dispatcher
@@ -74,6 +66,14 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   "defining dispatcher with bounded queue" in {
     val dispatcher = system.dispatcherFactory.lookup("my-dispatcher-bounded-queue")
+  }
+
+  "defining pinned dispatcher" in {
+    //#defining-pinned-dispatcher
+    val name = "myactor"
+    val dispatcher = system.dispatcherFactory.newPinnedDispatcher(name)
+    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name)
+    //#defining-pinned-dispatcher
   }
 
   "defining priority dispatcher" in {
