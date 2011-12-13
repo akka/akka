@@ -262,12 +262,13 @@ abstract class ActorSystem extends ActorRefFactory {
    * effort basis and hence not strictly guaranteed.
    */
   def deadLetters: ActorRef
-
+  //#scheduler
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
    * in the future. Not terribly precise but cheap.
    */
   def scheduler: Scheduler
+  //#scheduler
 
   /**
    * Helper object for creating new dispatchers and passing in all required
