@@ -4,12 +4,8 @@
 
 package akka
 
-import akka.actor.ActorRef
-
 package object routing {
 
-  case class Destination(sender: ActorRef, recipient: ActorRef)
-
-  type Route = PartialFunction[(ActorRef, Any), Iterable[Destination]]
+  type Route = PartialFunction[(akka.actor.ActorRef, Any), Iterable[Destination]]
 
 }

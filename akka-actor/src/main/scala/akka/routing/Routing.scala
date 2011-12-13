@@ -151,6 +151,14 @@ trait Router extends Actor {
 case class Broadcast(message: Any)
 
 /**
+ * For every message sent to a router, its route determines a set of destinations,
+ * where for each recipient a different sender may be specified; typically the
+ * sender should match the sender of the original request, but e.g. the scatter-
+ * gather router needs to receive the replies with an AskActorRef instead.
+ */
+case class Destination(sender: ActorRef, recipient: ActorRef)
+
+/**
  * Routing configuration that indicates no routing.
  * Oxymoron style.
  */
