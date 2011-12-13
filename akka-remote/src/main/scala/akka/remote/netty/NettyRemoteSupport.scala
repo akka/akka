@@ -38,7 +38,7 @@ class RemoteClientMessageBufferException(message: String, cause: Throwable = nul
  */
 abstract class RemoteClient private[akka] (
   val remoteSupport: NettyRemoteSupport,
-  val remoteAddress: RemoteAddress) {
+  val remoteAddress: RemoteNettyAddress) {
 
   val log = Logging(remoteSupport.system, "RemoteClient")
 
@@ -54,13 +54,13 @@ abstract class RemoteClient private[akka] (
 
   def shutdown(): Boolean
 
-  def isBoundTo(address: RemoteAddress): Boolean = remoteAddress == address
+  def isBoundTo(address: RemoteNettyAddress): Boolean = remoteAddress == address
 
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
-    send(remoteSupport.createRemoteMessageProtocolBuilder(Left(recipient), Right(message), senderOption).build)
+    send(remoteSupport.createRemoteMessageProtocolBuilder(recipient, message, senderOption).build)
   } else {
     val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", remoteSupport, remoteAddress)
     remoteSupport.notifyListeners(RemoteClientError(exception, remoteSupport, remoteAddress))
@@ -71,7 +71,7 @@ abstract class RemoteClient private[akka] (
    * Sends the message across the wire
    */
   def send(request: RemoteMessageProtocol): Unit = {
-    log.debug("Sending message: {}", new RemoteMessage(request, remoteSupport))
+    log.debug("Sending message: {}", new RemoteMessage(request, remoteSupport.system))
 
     try {
       val payload = remoteSupport.createMessageSendEnvelope(request)
@@ -95,7 +95,7 @@ abstract class RemoteClient private[akka] (
 
 class PassiveRemoteClient(val currentChannel: Channel,
                           remoteSupport: NettyRemoteSupport,
-                          remoteAddress: RemoteAddress)
+                          remoteAddress: RemoteNettyAddress)
   extends RemoteClient(remoteSupport, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
@@ -116,9 +116,11 @@ class PassiveRemoteClient(val currentChannel: Channel,
  */
 class ActiveRemoteClient private[akka] (
   remoteSupport: NettyRemoteSupport,
-  remoteAddress: RemoteAddress,
+  remoteAddress: RemoteNettyAddress,
   val loader: Option[ClassLoader] = None)
   extends RemoteClient(remoteSupport, remoteAddress) {
+
+  if (remoteAddress.ip.isEmpty) throw new java.net.UnknownHostException(remoteAddress.host)
 
   import remoteSupport.clientSettings._
 
@@ -148,8 +150,9 @@ class ActiveRemoteClient private[akka] (
       val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
       if (SecureCookie.nonEmpty) handshake.setCookie(SecureCookie.get)
       handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-        .setHostname(senderRemoteAddress.host)
-        .setPort(senderRemoteAddress.port)
+        .setSystem(senderRemoteAddress.system)
+        .setHostname(senderRemoteAddress.transport.host)
+        .setPort(senderRemoteAddress.transport.port)
         .build)
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
@@ -162,7 +165,7 @@ class ActiveRemoteClient private[akka] (
 
     def attemptReconnect(): Boolean = {
       log.debug("Remote client reconnecting to [{}]", remoteAddress)
-      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip, remoteAddress.port))
+      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
@@ -184,7 +187,7 @@ class ActiveRemoteClient private[akka] (
 
       log.debug("Starting remote client connection to [{}]", remoteAddress)
 
-      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip, remoteAddress.port))
+      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
 
       val channel = connection.awaitUninterruptibly.getChannel
       openChannels.add(channel)
@@ -242,7 +245,7 @@ class ActiveRemoteClient private[akka] (
 class ActiveRemoteClientPipelineFactory(
   name: String,
   bootstrap: ClientBootstrap,
-  remoteAddress: RemoteAddress,
+  remoteAddress: RemoteNettyAddress,
   client: ActiveRemoteClient) extends ChannelPipelineFactory {
 
   import client.remoteSupport.clientSettings._
@@ -263,7 +266,7 @@ class ActiveRemoteClientPipelineFactory(
 class ActiveRemoteClientHandler(
   val name: String,
   val bootstrap: ClientBootstrap,
-  val remoteAddress: RemoteAddress,
+  val remoteAddress: RemoteNettyAddress,
   val timer: HashedWheelTimer,
   val client: ActiveRemoteClient)
   extends SimpleChannelUpstreamHandler {
@@ -283,7 +286,7 @@ class ActiveRemoteClientHandler(
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-          client.remoteSupport.receiveMessage(new RemoteMessage(arp.getMessage, client.remoteSupport, client.loader))
+          client.remoteSupport.receiveMessage(new RemoteMessage(arp.getMessage, client.remoteSupport.system, client.loader))
 
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.remoteSupport, client.remoteAddress)
@@ -341,17 +344,18 @@ class ActiveRemoteClientHandler(
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends RemoteSupport(_system) with RemoteMarshallingOps {
+class NettyRemoteSupport(_system: ActorSystemImpl, val remote: Remote, val address: RemoteSystemAddress[RemoteNettyAddress])
+  extends RemoteSupport[RemoteNettyAddress](_system) with RemoteMarshallingOps {
   val log = Logging(system, "NettyRemoteSupport")
 
-  val serverSettings = RemoteExtension(system).serverSettings
-  val clientSettings = RemoteExtension(system).clientSettings
+  val serverSettings = remote.remoteSettings.serverSettings
+  val clientSettings = remote.remoteSettings.clientSettings
 
   val timer: HashedWheelTimer = new HashedWheelTimer
 
   _system.registerOnTermination(timer.stop()) //Shut this guy down at the end
 
-  private val remoteClients = new HashMap[RemoteAddress, RemoteClient]
+  private val remoteClients = new HashMap[RemoteNettyAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
 
   override protected def useUntrustedMode = serverSettings.UntrustedMode
@@ -359,9 +363,16 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
   protected[akka] def send(
     message: Any,
     senderOption: Option[ActorRef],
-    recipientAddress: RemoteAddress,
-    recipient: ActorRef,
+    recipient: RemoteActorRef,
     loader: Option[ClassLoader]): Unit = {
+
+    val recipientAddress = recipient.path.address match {
+      case RemoteSystemAddress(sys, transport) ⇒
+        transport match {
+          case x: RemoteNettyAddress ⇒ x
+          case _                     ⇒ throw new IllegalArgumentException("invoking NettyRemoteSupport.send with foreign target address " + transport)
+        }
+    }
 
     clientsLock.readLock.lock
     try {
@@ -394,7 +405,7 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
     }
   }
 
-  def bindClient(remoteAddress: RemoteAddress, client: RemoteClient, putIfAbsent: Boolean = false): Boolean = {
+  def bindClient(remoteAddress: RemoteNettyAddress, client: RemoteClient, putIfAbsent: Boolean = false): Boolean = {
     clientsLock.writeLock().lock()
     try {
       if (putIfAbsent && remoteClients.contains(remoteAddress)) false
@@ -408,7 +419,7 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
     }
   }
 
-  def unbindClient(remoteAddress: RemoteAddress): Unit = {
+  def unbindClient(remoteAddress: RemoteNettyAddress): Unit = {
     clientsLock.writeLock().lock()
     try {
       remoteClients.foreach { case (k, v) ⇒ if (v.isBoundTo(remoteAddress)) { v.shutdown(); remoteClients.remove(k) } }
@@ -417,7 +428,7 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
     }
   }
 
-  def shutdownClientConnection(remoteAddress: RemoteAddress): Boolean = {
+  def shutdownClientConnection(remoteAddress: RemoteNettyAddress): Boolean = {
     clientsLock.writeLock().lock()
     try {
       remoteClients.remove(remoteAddress) match {
@@ -429,7 +440,7 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
     }
   }
 
-  def restartClientConnection(remoteAddress: RemoteAddress): Boolean = {
+  def restartClientConnection(remoteAddress: RemoteNettyAddress): Boolean = {
     clientsLock.readLock().lock()
     try {
       remoteClients.get(remoteAddress) match {
@@ -455,11 +466,13 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
 
   def isRunning = _isRunning.isOn
 
-  def start(loader: Option[ClassLoader] = None): Unit = _isRunning switchOn {
-    try {
-      currentServer.set(Some(new NettyRemoteServer(this, loader)))
-    } catch {
-      case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
+  def start(loader: Option[ClassLoader] = None): Unit = {
+    _isRunning switchOn {
+      try {
+        currentServer.set(Some(new NettyRemoteServer(this, loader, address)))
+      } catch {
+        case e: Exception ⇒ notifyListeners(RemoteServerError(e, this))
+      }
     }
   }
 
@@ -479,11 +492,14 @@ class NettyRemoteSupport(_system: ActorSystem, val remote: Remote) extends Remot
   }
 }
 
-class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Option[ClassLoader]) {
+class NettyRemoteServer(
+  val remoteSupport: NettyRemoteSupport,
+  val loader: Option[ClassLoader],
+  val address: RemoteSystemAddress[RemoteNettyAddress]) {
   val log = Logging(remoteSupport.system, "NettyRemoteServer")
   import remoteSupport.serverSettings._
 
-  val address = remoteSupport.remote.remoteAddress
+  if (address.transport.ip.isEmpty) throw new java.net.UnknownHostException(address.transport.host)
 
   val name = "NettyRemoteServer@" + address
 
@@ -502,7 +518,7 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
   bootstrap.setOption("child.reuseAddress", true)
   bootstrap.setOption("child.connectTimeoutMillis", ConnectionTimeout.toMillis)
 
-  openChannels.add(bootstrap.bind(new InetSocketAddress(address.ip, address.port)))
+  openChannels.add(bootstrap.bind(new InetSocketAddress(address.transport.ip.get, address.transport.port)))
   remoteSupport.notifyListeners(RemoteServerStarted(remoteSupport))
 
   def shutdown() {
@@ -510,8 +526,9 @@ class NettyRemoteServer(val remoteSupport: NettyRemoteSupport, val loader: Optio
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-          .setHostname(address.host)
-          .setPort(address.port)
+          .setSystem(address.system)
+          .setHostname(address.transport.host)
+          .setPort(address.transport.port)
           .build)
         if (SecureCookie.nonEmpty)
           b.setCookie(SecureCookie.get)
@@ -620,21 +637,20 @@ class RemoteServerHandler(
         remoteSupport.unbindClient(address)
       remoteSupport.notifyListeners(RemoteServerClientClosed(remoteSupport, s))
     case None ⇒
-      remoteSupport.notifyListeners(RemoteServerClientClosed(remoteSupport, None))
+      remoteSupport.notifyListeners(RemoteServerClientClosed[RemoteNettyAddress](remoteSupport, None))
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
-        remoteSupport.receiveMessage(new RemoteMessage(remote.getMessage, remoteSupport, applicationLoader))
+        remoteSupport.receiveMessage(new RemoteMessage(remote.getMessage, remoteSupport.system, applicationLoader))
 
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         val instruction = remote.getInstruction
         instruction.getCommandType match {
           case CommandType.CONNECT if UsePassiveConnections ⇒
             val origin = instruction.getOrigin
-            // FIXME RK need to include system-name in remote protocol
-            val inbound = RemoteAddress("BORKED", origin.getHostname, origin.getPort)
+            val inbound = RemoteNettyAddress(origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
           case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410
@@ -651,9 +667,9 @@ class RemoteServerHandler(
     event.getChannel.close()
   }
 
-  private def getClientAddress(c: Channel): Option[RemoteAddress] =
+  private def getClientAddress(c: Channel): Option[RemoteNettyAddress] =
     c.getRemoteAddress match {
-      case inet: InetSocketAddress ⇒ Some(RemoteAddress("BORKED", inet.getHostName, inet.getPort)) // FIXME RK Broken!
+      case inet: InetSocketAddress ⇒ Some(RemoteNettyAddress(inet.getHostName, inet.getPort))
       case _                       ⇒ None
     }
 }

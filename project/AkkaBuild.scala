@@ -79,8 +79,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(stm, actorTests % "test->test", testkit % "test->test"),
-    // FIXME re-enable ASAP
-    settings = defaultSettings /*++ multiJvmSettings*/ ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq

@@ -1,470 +1,367 @@
 /**
  * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
-
 package akka.routing
 
-import akka.AkkaException
 import akka.actor._
-import akka.config.ConfigurationException
-import akka.dispatch.{ Future, MessageDispatcher }
-import akka.util.{ ReflectiveAccess, Duration }
-import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
-import scala.annotation.tailrec
 import akka.japi.Creator
-
-sealed trait RouterType
-
-/**
- * Used for declarative configuration of Routing.
- */
-object RouterType {
-
-  object Direct extends RouterType
-
-  /**
-   * A RouterType that randomly selects a connection to send a message to.
-   */
-  object Random extends RouterType
-
-  /**
-   * A RouterType that selects the connection by using round robin.
-   */
-  object RoundRobin extends RouterType
-
-  /**
-   * A RouterType that selects the connection by using scatter gather.
-   */
-  object ScatterGather extends RouterType
-
-  /**
-   * A RouterType that broadcasts the messages to all connections.
-   */
-  object Broadcast extends RouterType
-
-  /**
-   * A RouterType that selects the connection based on the least amount of cpu usage
-   */
-  object LeastCPU extends RouterType
-
-  /**
-   * A RouterType that select the connection based on the least amount of ram used.
-   */
-  object LeastRAM extends RouterType
-
-  /**
-   * A RouterType that select the connection where the actor has the least amount of messages in its mailbox.
-   */
-  object LeastMessages extends RouterType
-
-  /**
-   * A user-defined custom RouterType.
-   */
-  case class Custom(implClass: String) extends RouterType
-}
+import java.lang.reflect.InvocationTargetException
+import akka.config.ConfigurationException
+import java.util.concurrent.atomic.AtomicInteger
+import akka.util.ReflectiveAccess
+import akka.AkkaException
+import scala.collection.JavaConversions._
+import java.util.concurrent.TimeUnit
 
 /**
- * Contains the configuration to create local and clustered routed actor references.
- * Routed ActorRef configuration object, this is thread safe and fully sharable.
+ * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
+ * send a message to on (or more) of these actors.
  */
-case class RoutedProps private[akka] (
-  routerFactory: () ⇒ Router,
-  connectionManager: ConnectionManager,
-  timeout: Timeout = RoutedProps.defaultTimeout,
-  localOnly: Boolean = RoutedProps.defaultLocalOnly) {
-
-  // Java API
-  def this(creator: Creator[Router], connectionManager: ConnectionManager, timeout: Timeout, localOnly: Boolean) {
-    this(() ⇒ creator.create(), connectionManager, timeout, localOnly)
-  }
-
-}
-
-object RoutedProps {
-  final val defaultTimeout = Timeout(Duration.MinusInf)
-  final val defaultLocalOnly = false
-}
-
-/**
- * The Router is responsible for sending a message to one (or more) of its connections. Connections are stored in the
- * {@link FailureDetector} and each Router should be linked to only one {@link FailureDetector}.
- */
-trait Router {
-
-  /**
-   * Initializes this Router with a given set of Connections. The Router can use this datastructure to ask for
-   * the current connections, signal that there were problems with one of the connections and see if there have
-   * been changes in the connections.
-   *
-   * This method is not threadsafe, and should only be called once
-   *
-   * JMM Guarantees:
-   * This method guarantees that all changes made in this method, are visible before one of the routing methods is called.
-   */
-  def init(connectionManager: ConnectionManager)
-
-  /**
-   * Routes the message to one of the connections.
-   *
-   * @throws RoutingException if something goes wrong while routing the message
-   */
-  def route(message: Any)(implicit sender: ActorRef)
-
-  /**
-   * Routes the message using a timeout to one of the connections and returns a Future to synchronize on the
-   * completion of the processing of the message.
-   *
-   * @throws RoutingExceptionif something goes wrong while routing the message.
-   */
-  def route[T](message: Any, timeout: Timeout): Future[T]
-}
-
-/**
- * An {@link AkkaException} thrown when something goes wrong while routing a message
- */
-class RoutingException(message: String) extends AkkaException(message)
-
-/**
- * A Helper class to create actor references that use routing.
- */
-object Routing {
-
-  sealed trait RoutingMessage
-
-  /**
-   * Used to broadcast a message to all connections in a router. E.g. every connection gets the message
-   * regardless of their routing algorithm.
-   */
-  case class Broadcast(message: Any) extends RoutingMessage
-
-  def createCustomRouter(implClass: String): Router = {
-    ReflectiveAccess.createInstance(
-      implClass,
-      Array[Class[_]](),
-      Array[AnyRef]()) match {
-        case Right(router) ⇒ router.asInstanceOf[Router]
-        case Left(exception) ⇒
-          val cause = exception match {
-            case i: InvocationTargetException ⇒ i.getTargetException
-            case _                            ⇒ exception
-          }
-          throw new ConfigurationException(
-            "Could not instantiate custom Router of [" +
-              implClass + "] due to: " +
-              cause, cause)
-      }
-  }
-}
-
-/**
- * An Abstract convenience implementation for building an ActorReference that uses a Router.
- */
-abstract private[akka] class AbstractRoutedActorRef(val system: ActorSystem, val props: RoutedProps) extends MinimalActorRef {
-  val router = props.routerFactory()
-
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = router.route(message)(sender)
-
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = router.route(message, timeout)
-}
-
-/**
- * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to send a message to
- * on (or more) of these actors.
- */
-private[akka] class RoutedActorRef(system: ActorSystem, val routedProps: RoutedProps, val supervisor: InternalActorRef, name: String) extends AbstractRoutedActorRef(system, routedProps) {
-
-  val path = supervisor.path / name
+private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
+  extends LocalActorRef(
+    _system,
+    _props.copy(creator = () ⇒ _props.routerConfig.createActor()),
+    _supervisor,
+    _path) {
 
   @volatile
-  private var running: Boolean = true
+  private[akka] var _routees: Vector[ActorRef] = _ // this MUST be initialized during createRoute
+  def routees = _routees
 
-  override def isTerminated: Boolean = !running
+  val route = _props.routerConfig.createRoute(_props.copy(routerConfig = NoRouter), actorContext, this)
 
-  override def stop() {
-    synchronized {
-      if (running) {
-        running = false
-        router.route(Routing.Broadcast(PoisonPill))(this)
-        supervisor.sendSystemMessage(akka.dispatch.ChildTerminated(this))
-      }
+  def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
+    case _: AutoReceivedMessage ⇒ Nil
+    case Terminated(_)          ⇒ Nil
+    case _ ⇒
+      if (route.isDefinedAt(sender, message)) route(sender, message)
+      else Nil
+  }
+
+  _routees match {
+    case null ⇒ throw new ActorInitializationException("router " + _props.routerConfig + " did not register routees!")
+    case x ⇒
+      _routees = x // volatile write to publish the route before sending messages
+      // subscribe to Terminated messages for all route destinations, to be handled by Router actor
+      _routees foreach underlying.watch
+  }
+
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
+    val s = if (sender eq null) underlying.system.deadLetters else sender
+
+    val msg = message match {
+      case Broadcast(m) ⇒ m
+      case m            ⇒ m
+    }
+
+    applyRoute(s, message) match {
+      case Nil  ⇒ super.!(message)(s)
+      case refs ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
+    }
+  }
+}
+
+/**
+ * This trait represents a router factory: it produces the actual router actor
+ * and creates the routing table (a function which determines the recipients
+ * for each message which is to be dispatched). The resulting RoutedActorRef
+ * optimizes the sending of the message so that it does NOT go through the
+ * router’s mailbox unless the route returns an empty recipient set.
+ *
+ * '''Caution:''' This means
+ * that the route function is evaluated concurrently without protection by
+ * the RoutedActorRef: either provide a reentrant (i.e. pure) implementation or
+ * do the locking yourself!
+ *
+ * '''Caution:''' Please note that the [[akka.routing.Router]] which needs to
+ * be returned by `apply()` should not send a message to itself in its
+ * constructor or `preStart()` or publish its self reference from there: if
+ * someone tries sending a message to that reference before the constructor of
+ * RoutedActorRef has returned, there will be a `NullPointerException`!
+ */
+trait RouterConfig {
+
+  def nrOfInstances: Int
+
+  def targets: Iterable[String]
+
+  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route
+
+  def createActor(): Router = new Router {}
+
+  def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
+    deploy match {
+      case Some(Deploy(_, _, _, NoRouter, _)) ⇒ this
+      case Some(Deploy(_, _, _, r, _))        ⇒ r
+      case _                                  ⇒ this
     }
   }
 
-  router.init(routedProps.connectionManager)
+  protected def toAll(sender: ActorRef, targets: Iterable[ActorRef]): Iterable[Destination] = targets.map(Destination(sender, _))
+
+  protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[String]): Vector[ActorRef] = (nrOfInstances, targets) match {
+    case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
+    case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+    case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
+  }
+
+  protected def createAndRegisterRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[String]): Unit = {
+    val routees = createRoutees(props, context, nrOfInstances, targets)
+    registerRoutees(context, routees)
+  }
+
+  protected def registerRoutees(context: ActorContext, routees: Vector[ActorRef]): Unit = {
+    context.self.asInstanceOf[RoutedActorRef]._routees = routees
+  }
 }
 
 /**
- * An Abstract Router implementation that already provides the basic infrastructure so that a concrete
- * Router only needs to implement the next method.
+ * Base trait for `Router` actors. Override `receive` to handle custom
+ * messages which the corresponding [[akka.actor.RouterConfig]] lets
+ * through by returning an empty route.
  */
-trait BasicRouter extends Router {
+trait Router extends Actor {
 
-  @volatile
-  protected var connectionManager: ConnectionManager = _
-
-  def init(connectionManager: ConnectionManager) = {
-    this.connectionManager = connectionManager
+  val ref = self match {
+    case x: RoutedActorRef ⇒ x
+    case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
   }
 
-  def route(message: Any)(implicit sender: ActorRef) = message match {
-    case Routing.Broadcast(message) ⇒
+  final def receive = ({
 
-      //it is a broadcast message, we are going to send to message to all connections.
-      connectionManager.connections.iterable foreach { connection ⇒
-        try {
-          connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
-        } catch {
-          case e: Exception ⇒
-            connectionManager.remove(connection)
-            throw e
+    case Terminated(child) ⇒
+      ref._routees = ref._routees filterNot (_ == child)
+      if (ref.routees.isEmpty) self.stop()
+
+  }: Receive) orElse routerReceive
+
+  def routerReceive: Receive = {
+    case _ ⇒
+  }
+}
+
+/**
+ * Used to broadcast a message to all connections in a router; only the
+ * contained message will be forwarded, i.e. the `Broadcast(...)`
+ * envelope will be stripped off.
+ *
+ * Router implementations may choose to handle this message differently.
+ */
+case class Broadcast(message: Any)
+
+/**
+ * Routing configuration that indicates no routing.
+ * Oxymoron style.
+ */
+case object NoRouter extends RouterConfig {
+  def nrOfInstances: Int = 0
+  def targets: Iterable[String] = Nil
+  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
+}
+
+object RoundRobinRouter {
+  def apply(targets: Iterable[ActorRef]) = new RoundRobinRouter(targets = targets map (_.path.toString))
+}
+/**
+ * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'targets' does not make logical sense as this means
+ * that the round robin should both create new actors and use the 'targets' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'targets' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ */
+case class RoundRobinRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with RoundRobinLike {
+
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[String]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
+}
+
+trait RoundRobinLike { this: RouterConfig ⇒
+  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+    createAndRegisterRoutees(props, context, nrOfInstances, targets)
+
+    val next = new AtomicInteger(0)
+
+    def getNext(): ActorRef = {
+      ref.routees(next.getAndIncrement % ref.routees.size)
+    }
+
+    {
+      case (sender, message) ⇒
+        message match {
+          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case msg            ⇒ List(Destination(sender, getNext()))
         }
-      }
-    case _ ⇒
-      //it no broadcast message, we are going to select an actor from the connections and send the message to him.
-      next match {
-        case Some(connection) ⇒
-          try {
-            connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
-          } catch {
-            case e: Exception ⇒
-              connectionManager.remove(connection)
-              throw e
-          }
-        case None ⇒
-          throwNoConnectionsError
-      }
-  }
-
-  def route[T](message: Any, timeout: Timeout): Future[T] = message match {
-    case Routing.Broadcast(message) ⇒
-      throw new RoutingException("Broadcasting using '?'/'ask' is for the time being is not supported. Use ScatterGatherRouter.")
-    case _ ⇒
-      //it no broadcast message, we are going to select an actor from the connections and send the message to him.
-      next match {
-        case Some(connection) ⇒
-          try {
-            connection.?(message, timeout).asInstanceOf[Future[T]] //FIXME this does not preserve the original sender, shouldn't it??
-          } catch {
-            case e: Exception ⇒
-              connectionManager.remove(connection)
-              throw e
-          }
-        case None ⇒
-          throwNoConnectionsError
-      }
-  }
-
-  protected def next: Option[ActorRef]
-
-  private def throwNoConnectionsError = throw new RoutingException("No replica connections for router")
-}
-
-/**
- * A Router that uses broadcasts a message to all its connections.
- */
-class BroadcastRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter with Serializable {
-  override def route(message: Any)(implicit sender: ActorRef) = {
-    connectionManager.connections.iterable foreach { connection ⇒
-      try {
-        connection.!(message)(sender) // we use original sender, so this is essentially a 'forward'
-      } catch {
-        case e: Exception ⇒
-          connectionManager.remove(connection)
-          throw e
-      }
     }
   }
-
-  //protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] =
-  override def route[T](message: Any, timeout: Timeout): Future[T] = {
-    import Future._
-    implicit val t = timeout
-    val futures = connectionManager.connections.iterable map { connection ⇒
-      connection.?(message, timeout).asInstanceOf[Future[T]]
-    }
-    Future.firstCompletedOf(futures)
-  }
-
-  protected def next: Option[ActorRef] = None
 }
 
-/**
- * A DirectRouter a Router that only has a single connected actorRef and forwards all request to that actorRef.
- */
-class DirectRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
-
-  private val state = new AtomicReference[DirectRouterState]
-
-  lazy val next: Option[ActorRef] = {
-    val current = currentState
-    if (current.ref == null) None else Some(current.ref)
-  }
-
-  @tailrec
-  private def currentState: DirectRouterState = {
-    val current = state.get
-
-    if (current != null && connectionManager.version == current.version) {
-      //we are lucky since nothing has changed in the connections.
-      current
-    } else {
-      //there has been a change in the connections, or this is the first time this method is called. So we are going to do some updating.
-
-      val connections = connectionManager.connections
-
-      val connectionCount = connections.iterable.size
-      if (connectionCount > 1)
-        throw new RoutingException("A DirectRouter can't have more than 1 connected Actor, but found [%s]".format(connectionCount))
-
-      val newState = new DirectRouterState(connections.iterable.head, connections.version)
-      if (state.compareAndSet(current, newState))
-        //we are lucky since we just updated the state, so we can send it back as the state to use
-        newState
-      else //we failed to update the state, lets try again... better luck next time.
-        currentState // recur
-    }
-  }
-
-  private case class DirectRouterState(ref: ActorRef, version: Long)
+object RandomRouter {
+  def apply(targets: Iterable[ActorRef]) = new RandomRouter(targets = targets map (_.path.toString))
 }
-
 /**
  * A Router that randomly selects one of the target connections to send a message to.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'targets' does not make logical sense as this means
+ * that the random router should both create new actors and use the 'targets' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'targets' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-class RandomRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
-  import java.security.SecureRandom
+case class RandomRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with RandomLike {
 
-  private val state = new AtomicReference[RandomRouterState]
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[String]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
+}
+
+trait RandomLike { this: RouterConfig ⇒
+
+  import java.security.SecureRandom
 
   private val random = new ThreadLocal[SecureRandom] {
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
   }
 
-  def next: Option[ActorRef] = currentState.array match {
-    case a if a.isEmpty ⇒ None
-    case a              ⇒ Some(a(random.get.nextInt(a.length)))
-  }
+  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+    createAndRegisterRoutees(props, context, nrOfInstances, targets)
 
-  @tailrec
-  private def currentState: RandomRouterState = {
-    val current = state.get
-
-    if (current != null && current.version == connectionManager.version) {
-      //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
-      current
-    } else {
-      //there has been a change in connections, or it was the first try, so we need to update the internal state
-
-      val connections = connectionManager.connections
-      val newState = new RandomRouterState(connections.iterable.toIndexedSeq, connections.version)
-      if (state.compareAndSet(current, newState))
-        //we are lucky since we just updated the state, so we can send it back as the state to use
-        newState
-      else //we failed to update the state, lets try again... better luck next time.
-        currentState
+    def getNext(): ActorRef = {
+      ref.routees(random.get.nextInt(ref.routees.size))
     }
-  }
 
-  private case class RandomRouterState(array: IndexedSeq[ActorRef], version: Long)
-}
-
-/**
- * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
- */
-class RoundRobinRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
-
-  private val state = new AtomicReference[RoundRobinState]
-
-  def next: Option[ActorRef] = currentState.next
-
-  @tailrec
-  private def currentState: RoundRobinState = {
-    val current = state.get
-
-    if (current != null && current.version == connectionManager.version) {
-      //we are lucky, since there has not been any change in the connections. So therefor we can use the existing state.
-      current
-    } else {
-      //there has been a change in connections, or it was the first try, so we need to update the internal state
-
-      val connections = connectionManager.connections
-      val newState = new RoundRobinState(connections.iterable.toIndexedSeq[ActorRef], connections.version)
-      if (state.compareAndSet(current, newState))
-        //we are lucky since we just updated the state, so we can send it back as the state to use
-        newState
-      else //we failed to update the state, lets try again... better luck next time.
-        currentState
-    }
-  }
-
-  private case class RoundRobinState(array: IndexedSeq[ActorRef], version: Long) {
-
-    private val index = new AtomicInteger(0)
-
-    def next: Option[ActorRef] = if (array.isEmpty) None else Some(array(nextIndex))
-
-    @tailrec
-    private def nextIndex: Int = {
-      val oldIndex = index.get
-      var newIndex = if (oldIndex == array.length - 1) 0 else oldIndex + 1
-
-      if (!index.compareAndSet(oldIndex, newIndex)) nextIndex
-      else oldIndex
+    {
+      case (sender, message) ⇒
+        message match {
+          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case msg            ⇒ List(Destination(sender, getNext()))
+        }
     }
   }
 }
 
+object BroadcastRouter {
+  def apply(targets: Iterable[ActorRef]) = new BroadcastRouter(targets = targets map (_.path.toString))
+}
 /**
- * ScatterGatherRouter broadcasts the message to all connections and gathers results according to the
- * specified strategy (specific router needs to implement `gather` method).
- * Scatter-gather pattern will be applied only to the messages broadcasted using Future
- * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages, sent in a fire-forget
- * mode, the router would behave as {@link BasicRouter}, unless it's mixed in with other router type
- *
- *  FIXME: This also is the location where a failover  is done in the future if an ActorRef fails and a different one needs to be selected.
- * FIXME: this is also the location where message buffering should be done in case of failure.
+ * A Router that uses broadcasts a message to all its connections.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'targets' does not make logical sense as this means
+ * that the random router should both create new actors and use the 'targets' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'targets' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-trait ScatterGatherRouter extends BasicRouter with Serializable {
+case class BroadcastRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil) extends RouterConfig with BroadcastLike {
 
   /**
-   * Aggregates the responses into a single Future.
-   *
-   * @param results Futures of the responses from connections
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
    */
-  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G]
-
-  private def scatterGather[S, G >: S](message: Any, timeout: Timeout): Future[G] = {
-    val responses = connectionManager.connections.iterable.flatMap { actor ⇒
-      try {
-        if (actor.isTerminated) throw ActorInitializationException(actor, "For compatability - check death first", new Exception) // for stack trace
-        Some(actor.?(message, timeout).asInstanceOf[Future[S]])
-      } catch {
-        case e: Exception ⇒
-          connectionManager.remove(actor)
-          None
-      }
-    }
-
-    if (responses.isEmpty)
-      throw new RoutingException("No connections can process the message [%s] sent to scatter-gather router" format (message))
-    else gather(responses)
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
   }
 
-  override def route[T](message: Any, timeout: Timeout): Future[T] = message match {
-    case Routing.Broadcast(message) ⇒ scatterGather(message, timeout)
-    case message                    ⇒ super.route(message, timeout)
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[String]) = {
+    this(targets = collectionAsScalaIterable(t))
   }
 }
 
-/**
- * Simple router that broadcasts the message to all connections, and replies with the first response
- * Scatter-gather pattern will be applied only to the messages broadcasted using Future
- * (wrapped into {@link Routing.Broadcast} and sent with "?" method). For the messages sent in a fire-forget
- * mode, the router would behave as {@link RoundRobinRouter}
- */
-class ScatterGatherFirstCompletedRouter(implicit dispatcher: MessageDispatcher, timeout: Timeout) extends RoundRobinRouter with ScatterGatherRouter {
+trait BroadcastLike { this: RouterConfig ⇒
+  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+    createAndRegisterRoutees(props, context, nrOfInstances, targets)
 
-  protected def gather[S, G >: S](results: Iterable[Future[S]]): Future[G] = Future.firstCompletedOf(results)
+    {
+      case (sender, message) ⇒
+        message match {
+          case _ ⇒ toAll(sender, ref.routees)
+        }
+    }
+  }
+}
+
+object ScatterGatherFirstCompletedRouter {
+  def apply(targets: Iterable[ActorRef]) = new ScatterGatherFirstCompletedRouter(targets = targets map (_.path.toString))
+}
+/**
+ * Simple router that broadcasts the message to all routees, and replies with the first response.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'targets' does not make logical sense as this means
+ * that the random router should both create new actors and use the 'targets' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'targets' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'targets' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ */
+case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil)
+  extends RouterConfig with ScatterGatherFirstCompletedLike {
+
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the targets to be used.
+   * Java API
+   */
+  def this(t: java.util.Collection[String]) = {
+    this(targets = collectionAsScalaIterable(t))
+  }
+}
+
+trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
+  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+    createAndRegisterRoutees(props, context, nrOfInstances, targets)
+
+    {
+      case (sender, message) ⇒
+        val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(5, TimeUnit.SECONDS)).get // FIXME, NO REALLY FIXME!
+        asker.result.pipeTo(sender)
+        message match {
+          case _ ⇒ toAll(asker, ref.routees)
+        }
+    }
+  }
 }

@@ -4,11 +4,9 @@
 
 package akka.actor
 
-import DeploymentConfig._
 import akka.dispatch._
 import akka.routing._
 import akka.util.Duration
-import akka.remote.RemoteSupport
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
 import akka.event.Logging.Debug
@@ -26,7 +24,7 @@ import java.util.regex.Pattern
 /**
  * Marker trait to show which Messages are automatically handled by Akka
  */
-sealed trait AutoReceivedMessage extends Serializable
+trait AutoReceivedMessage extends Serializable
 
 trait PossiblyHarmful
 

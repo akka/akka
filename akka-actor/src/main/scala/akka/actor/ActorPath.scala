@@ -27,7 +27,7 @@ object ActorPath {
  * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
  * ChildActorPath in case the number of elements is different.
  */
-sealed trait ActorPath extends Comparable[ActorPath] {
+sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * The Address under which this path can be reached; walks up the tree to
    * the RootActorPath.

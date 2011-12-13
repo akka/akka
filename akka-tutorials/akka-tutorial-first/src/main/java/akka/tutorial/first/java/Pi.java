@@ -7,13 +7,12 @@ package akka.tutorial.first.java;
 import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.InternalActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
-import akka.japi.Creator;
-import akka.routing.*;
+import akka.routing.RoundRobinRouter;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class Pi {
@@ -106,19 +105,8 @@ public class Pi {
             this.nrOfMessages = nrOfMessages;
             this.nrOfElements = nrOfElements;
             this.latch = latch;
-            Creator<Router> routerCreator = new Creator<Router>() {
-                public Router create() {
-                    return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
-                }
-            };
-            LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
-                {
-                    for (int i = 0; i < nrOfWorkers; i++) add(getContext().actorOf(new Props(Worker.class)));
-                }
-            };
-                        // FIXME routers are intended to be used like this
-            RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
-            router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
+
+            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(5)), "pi");
         }
 
         // message handler

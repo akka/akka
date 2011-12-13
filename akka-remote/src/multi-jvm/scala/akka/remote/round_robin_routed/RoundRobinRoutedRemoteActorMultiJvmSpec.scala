@@ -1,9 +1,8 @@
 package akka.remote.round_robin_routed
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.routing._
-import akka.routing.Routing.Broadcast
 import akka.testkit.DefaultTimeout
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec {
@@ -21,8 +20,6 @@ class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -36,8 +33,6 @@ class RoundRobinRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -51,8 +46,6 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   val nodes = NrOfNodes
   "___" must {
     "___" in {
-      barrier("setup")
-      remote.start()
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -67,11 +60,8 @@ class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with Defau
   "A new remote actor configured with a RoundRobin router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
-      barrier("setup")
-      remote.start()
-
       barrier("start")
-      val actor = system.actorOf(Props[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

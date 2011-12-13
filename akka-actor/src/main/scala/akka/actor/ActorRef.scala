@@ -9,12 +9,12 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
-import java.net.InetSocketAddress
-import akka.remote.RemoteAddress
 import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
+import java.util.concurrent.ConcurrentHashMap
+import akka.event.LoggingAdapter
 
 /**
  * ActorRef is an immutable and serializable handle to an Actor.
@@ -48,7 +48,6 @@ import scala.annotation.tailrec
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
-  // Only mutable for RemoteServer in order to maintain identity across nodes
 
   /**
    * Returns the path for this actor (from this actor up to the root actor).
@@ -213,8 +212,8 @@ private[akka] case object Nobody extends MinimalActorRef {
 /**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
  */
-class LocalActorRef private[akka] (
-  system: ActorSystemImpl,
+private[akka] class LocalActorRef private[akka] (
+  _system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,
   val path: ActorPath,
@@ -233,8 +232,19 @@ class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = new ActorCell(system, this, _props, _supervisor, _receiveTimeout, _hotswap)
+  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout, _hotswap)
   actorCell.start()
+
+  protected def newActorCell(
+    system: ActorSystemImpl,
+    ref: InternalActorRef,
+    props: Props,
+    supervisor: InternalActorRef,
+    receiveTimeout: Option[Duration],
+    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap)
+
+  protected def actorContext: ActorContext = actorCell
 
   /**
    * Is the actor terminated?
@@ -250,13 +260,11 @@ class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  //FIXME TODO REMOVE THIS, NO REPLACEMENT, ticket #1415
   def resume(): Unit = actorCell.resume()
 
   /**
@@ -306,22 +314,20 @@ class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  // FIXME TODO: remove this method. It is used in testkit.
-  // @deprecated("This method does a spin-lock to block for the actor, which might never be there, do not use this", "2.0")
-  protected[akka] def underlyingActorInstance: Actor = {
-    var instance = actorCell.actor
-    while ((instance eq null) && !actorCell.isTerminated) {
-      try { Thread.sleep(1) } catch { case i: InterruptedException ⇒ }
-      instance = actorCell.actor
-    }
-    instance
-  }
-
   def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = actorCell.provider.ask(message, this, timeout)
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
+    actorCell.provider.ask(timeout) match {
+      case Some(a) ⇒
+        this.!(message)(a)
+        a.result
+      case None ⇒
+        this.!(message)(null)
+        new DefaultPromise[Any](0)(actorCell.system.dispatcher)
+    }
+  }
 
   def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
@@ -424,6 +430,41 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+}
+
+class VirtualPathContainer(val path: ActorPath, override val getParent: InternalActorRef, val log: LoggingAdapter) extends MinimalActorRef {
+
+  private val children = new ConcurrentHashMap[String, InternalActorRef]
+
+  def addChild(name: String, ref: InternalActorRef): Unit = {
+    children.put(name, ref) match {
+      case null ⇒ // okay
+      case old  ⇒ log.warning("{} replacing child {} ({} -> {})", path, name, old, ref)
+    }
+  }
+
+  def removeChild(name: String): Unit = {
+    children.remove(name) match {
+      case null ⇒ log.warning("{} trying to remove non-child {}", path, name)
+      case _    ⇒ //okay
+    }
+  }
+
+  def getChild(name: String): InternalActorRef = children.get(name)
+
+  override def getChild(name: Iterator[String]): InternalActorRef = {
+    if (name.isEmpty) this
+    else {
+      val n = name.next()
+      if (n.isEmpty) this
+      else children.get(n) match {
+        case null ⇒ Nobody
+        case some ⇒
+          if (name.isEmpty) some
+          else some.getChild(name)
+      }
+    }
+  }
 }
 
 class AskActorRef(

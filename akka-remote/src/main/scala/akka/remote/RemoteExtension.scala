@@ -12,12 +12,7 @@ import com.eaio.uuid.UUID
 import akka.actor._
 import scala.collection.JavaConverters._
 
-object RemoteExtension extends ExtensionId[RemoteExtensionSettings] with ExtensionIdProvider {
-  def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new RemoteExtensionSettings(system.settings.config, system.name)
-}
-
-class RemoteExtensionSettings(val config: Config, val systemName: String) extends Extension {
+class RemoteSettings(val config: Config, val systemName: String) extends Extension {
 
   import config._
 
@@ -31,7 +26,9 @@ class RemoteExtensionSettings(val config: Config, val systemName: String) extend
 
   // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
-  val SeedNodes = Set.empty[RemoteAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.toSeq.map(RemoteAddress(_, systemName))
+  val SeedNodes = Set.empty[RemoteNettyAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
+    case RemoteAddressExtractor(addr) ⇒ addr.transport
+  }
 
   val NodeName: String = config.getString("akka.cluster.nodename") match {
     case ""    ⇒ throw new ConfigurationException("akka.cluster.nodename configuration property must be defined")
@@ -78,5 +75,8 @@ class RemoteExtensionSettings(val config: Config, val systemName: String) extend
     val ConnectionTimeout = Duration(config.getMilliseconds("akka.remote.server.connection-timeout"), MILLISECONDS)
 
     val Backlog = config.getInt("akka.remote.server.backlog")
+
+    // TODO handle the system name right and move this to config file syntax
+    val URI = "akka://sys@" + Hostname + ":" + Port
   }
 }

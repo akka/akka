@@ -418,10 +418,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
   private lazy val _start: this.type = {
+    // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-    eventStream.startDefaultLoggers(this)
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()

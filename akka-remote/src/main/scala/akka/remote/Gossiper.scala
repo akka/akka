@@ -7,7 +7,6 @@ package akka.remote
 import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
-import akka.util.duration._
 import akka.util.Duration
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -28,8 +27,8 @@ import com.google.protobuf.ByteString
  * Interface for node membership change listener.
  */
 trait NodeMembershipChangeListener {
-  def nodeConnected(node: RemoteAddress)
-  def nodeDisconnected(node: RemoteAddress)
+  def nodeConnected(node: ParsedTransportAddress)
+  def nodeDisconnected(node: ParsedTransportAddress)
 }
 
 /**
@@ -37,22 +36,22 @@ trait NodeMembershipChangeListener {
  */
 case class Gossip(
   version: VectorClock,
-  node: RemoteAddress,
-  availableNodes: Set[RemoteAddress] = Set.empty[RemoteAddress],
-  unavailableNodes: Set[RemoteAddress] = Set.empty[RemoteAddress])
+  node: ParsedTransportAddress,
+  availableNodes: Set[ParsedTransportAddress] = Set.empty[ParsedTransportAddress],
+  unavailableNodes: Set[ParsedTransportAddress] = Set.empty[ParsedTransportAddress])
 
 // ====== START - NEW GOSSIP IMPLEMENTATION ======
 /*
   case class Gossip(
     version: VectorClock,
-    node: RemoteAddress,
-    leader: RemoteAddress, // FIXME leader is always head of 'members', so we probably don't need this field
+    node: ParsedTransportAddress,
+    leader: ParsedTransportAddress, // FIXME leader is always head of 'members', so we probably don't need this field
     members: SortedSet[Member] = SortetSet.empty[Member](Ordering.fromLessThan[String](_ > _)), // sorted set of members with their status, sorted by name
     seen: Map[Member, VectorClock] = Map.empty[Member, VectorClock],                            // for ring convergence
     pendingChanges: Option[Vector[PendingPartitioningChange]] = None,                           // for handoff
     meta: Option[Map[String, Array[Byte]]] = None)                                              // misc meta-data
 
-  case class Member(address: RemoteAddress, status: MemberStatus)
+  case class Member(address: ParsedTransportAddress, status: MemberStatus)
 
   sealed trait MemberStatus
   object MemberStatus {
@@ -73,8 +72,8 @@ case class Gossip(
   type VNodeMod = AnyRef
 
   case class PendingPartitioningChange(
-    owner: RemoteAddress,
-    nextOwner: RemoteAddress,
+    owner: ParsedTransportAddress,
+    nextOwner: ParsedTransportAddress,
     changes: Vector[VNodeMod],
     status: PendingPartitioningStatus)
 */
@@ -95,7 +94,7 @@ case class Gossip(
  *       gossip to random seed with certain probability depending on number of unreachable, seed and live nodes.
  * </pre>
  */
-class Gossiper(remote: Remote) {
+class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
   /**
    * Represents the state for this Gossiper. Implemented using optimistic lockless concurrency,
@@ -105,15 +104,21 @@ class Gossiper(remote: Remote) {
     currentGossip: Gossip,
     nodeMembershipChangeListeners: Set[NodeMembershipChangeListener] = Set.empty[NodeMembershipChangeListener])
 
-  private val system = remote.system
-  private val remoteExtension = RemoteExtension(system)
-  private val serialization = SerializationExtension(system)
+  private val remoteSettings = remote.remoteSettings
+  private val serialization = remote.serialization
   private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
-  private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[RemoteAddress, ActorRef])
+  private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[ParsedTransportAddress, ActorRef])
 
   private val seeds = {
-    val seeds = remoteExtension.SeedNodes
+    val seeds = remoteSettings.SeedNodes flatMap {
+      case x: UnparsedTransportAddress ⇒
+        x.parse(remote.transports) match {
+          case y: ParsedTransportAddress ⇒ Some(y)
+          case _                         ⇒ None
+        }
+      case _ ⇒ None
+    }
     if (seeds.isEmpty) throw new ConfigurationException(
       "At least one seed node must be defined in the configuration [akka.cluster.seed-nodes]")
     else seeds
@@ -123,8 +128,8 @@ class Gossiper(remote: Remote) {
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
-  private val initalDelayForGossip = remoteExtension.InitalDelayForGossip
-  private val gossipFrequency = remoteExtension.GossipFrequency
+  private val initalDelayForGossip = remoteSettings.InitalDelayForGossip
+  private val gossipFrequency = remoteSettings.GossipFrequency
 
   private val state = new AtomicReference[State](State(currentGossip = newGossip()))
 
@@ -161,7 +166,7 @@ class Gossiper(remote: Remote) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ RemoteActorRef(remote.system.provider, remote.server, gossipingNode, remote.remoteDaemon.path, None)
+          val connectionFactory = () ⇒ system.actorFor(RootActorPath(RemoteSystemAddress(system.name, gossipingNode)) / "remote")
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }
@@ -235,7 +240,7 @@ class Gossiper(remote: Remote) {
   /**
    * Gossips set of nodes passed in as argument. Returns 'true' if it gossiped to a "seed" node.
    */
-  private def gossipTo(nodes: Set[RemoteAddress]): Boolean = {
+  private def gossipTo(nodes: Set[ParsedTransportAddress]): Boolean = {
     val peers = nodes filter (_ != address) // filter out myself
     val peer = selectRandomNode(peers)
     val oldState = state.get
@@ -245,7 +250,7 @@ class Gossiper(remote: Remote) {
       throw new IllegalStateException("Connection for [" + peer + "] is not set up"))
 
     try {
-      (connection ? (toRemoteMessage(newGossip), remoteExtension.RemoteSystemDaemonAckTimeout)).as[Status] match {
+      (connection ? (toRemoteMessage(newGossip), remoteSettings.RemoteSystemDaemonAckTimeout)).as[Status] match {
         case Some(Success(receiver)) ⇒
           log.debug("Gossip sent to [{}] was successfully received", receiver)
 
@@ -298,8 +303,8 @@ class Gossiper(remote: Remote) {
 
   private def newGossip(): Gossip = Gossip(
     version = VectorClock(),
-    node = address,
-    availableNodes = Set(address))
+    node = address.transport,
+    availableNodes = Set(address.transport))
 
   private def incrementVersionForGossip(from: Gossip): Gossip = {
     val newVersion = from.version.increment(nodeFingerprint, newTimestamp)
@@ -327,7 +332,7 @@ class Gossiper(remote: Remote) {
     }
   }
 
-  private def selectRandomNode(nodes: Set[RemoteAddress]): RemoteAddress = {
+  private def selectRandomNode(nodes: Set[ParsedTransportAddress]): ParsedTransportAddress = {
     nodes.toList(random.nextInt(nodes.size))
   }
 }

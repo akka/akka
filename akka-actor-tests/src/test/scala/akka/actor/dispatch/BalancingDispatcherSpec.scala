@@ -71,9 +71,9 @@ class BalancingDispatcherSpec extends AkkaSpec {
       finishedCounter.await(5, TimeUnit.SECONDS)
       fast.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
       slow.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
-      fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
-      fast.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount must be >
-        (slow.underlyingActorInstance.asInstanceOf[DelayableActor].invocationCount)
+      fast.underlying.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
+      fast.underlying.actor.asInstanceOf[DelayableActor].invocationCount must be >
+        (slow.underlying.actor.asInstanceOf[DelayableActor].invocationCount)
       slow.stop()
       fast.stop()
     }
