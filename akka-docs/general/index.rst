@@ -7,6 +7,5 @@ General
    jmm
    message-send-semantics
    configuration
-   logging
    addressing
    supervision

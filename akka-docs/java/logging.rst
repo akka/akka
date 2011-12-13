@@ -1,8 +1,8 @@
-.. _logging:
+.. _logging-java:
 
-#########
- Logging
-#########
+################
+ Logging (Java)
+################
 
 .. sidebar:: Contents
 
@@ -12,23 +12,12 @@ How to Log
 ==========
 
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
-as illustrated in this example in Scala:
-
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala
-   :include: my-actor
-
-For convenience you can mixin the ``log`` member into actors, instead of defining it as above.
-
-.. code-block:: scala
-
-  class MyActor extends Actor with akka.actor.ActorLogging { 
-
-Corresponding example in Java:
+as illustrated in this example:
 
 .. includecode:: code/akka/docs/event/LoggingDocTestBase.java
    :include: imports,my-actor
 
-The second parameter to the ``Logging`` or ``Logging.getLogger`` is the source of this logging channel.
+The second parameter to the ``Logging.getLogger`` is the source of this logging channel.
 The source object is translated to a String according to the following rules:
 
   * if it is an Actor or ActorRef, its path is used
@@ -54,21 +43,16 @@ Here you can also define the log level.
     loglevel = "DEBUG" # Options: ERROR, WARNING, INFO, DEBUG
   }
 
-The default one logs to STDOUT and is registered by default. It is not intended to be used for production. There is also an :ref:`slf4j` 
+The default one logs to STDOUT and is registered by default. It is not intended to be used for production. There is also an :ref:`slf4j-java` 
 event handler available in the 'akka-slf4j' module.
 
-Example of creating a listener in Scala:
-
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala
-   :include: my-event-listener
-
-Corresponding example in Java:
+Example of creating a listener:
 
 .. includecode:: code/akka/docs/event/LoggingDocTestBase.java
    :include: imports,imports-listener,my-event-listener 
 
 
-.. _slf4j:
+.. _slf4j-java:
 
 SLF4J
 =====
@@ -76,10 +60,14 @@ SLF4J
 Akka provides an event handler for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'. 
 It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
 
-  .. code-block:: scala
+  .. code-block:: xml
 
-     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.0" % "runtime"
-
+     <dependency>
+       <groupId>ch.qos.logback</groupId>
+       <artifactId>logback-classic</artifactId>
+       <version>1.0.0</version>
+       <scope>runtime</scope>
+     </dependency>
 
 You need to enable the Slf4jEventHandler in the 'event-handlers' element in 
 the :ref:`configuration`. Here you can also define the log level of the event bus. 
