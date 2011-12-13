@@ -1,12 +1,33 @@
 Scheduler
 =========
 
-//FIXME
+Sometimes the need for making things happen in the future arises, and where do you go look then?
+Look no further than ``ActorSystem``! There you find the :meth:``scheduler`` method that returns an instance
+of akka.actor.Scheduler, this instance is unique per ActorSystem and is used internally for scheduling things
+to happen at specific points in time. Please note that the scheduled tasks are executed by the default
+``MessageDispatcher`` of the ``ActorSystem``.
 
-Here is an example:
--------------------
+From ``akka.actor.ActorSystem``
+-------------------------------
 
-.. code-block:: scala
-  
-  //TODO FIXME
+.. includecode:: ../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala
+   :include: scheduler
+
+
+The Scheduler interface
+-----------------------
+
+.. includecode:: ../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
+   :include: scheduler
+
+The Cancellable interface
+-------------------------
+
+This allows you to ``cancel`` something that has been scheduled for execution.
+
+.. warning::
+  This does not abort the execution of the task, if it had already been started.
+
+.. includecode:: ../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
+   :include: cancellable
 
