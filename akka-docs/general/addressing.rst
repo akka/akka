@@ -255,7 +255,7 @@ other actors are found. The next level consists of the following:
 - ``"/system"`` is the guardian actor for all system-created top-level actors, 
   e.g. logging listeners or actors automatically deployed by configuration at 
   the start of the actor system.
-- ``"/null"`` is the dead letter actor, which is where all messages sent to 
+- ``"/deadLetters"`` is the dead letter actor, which is where all messages sent to 
   stopped or non-existing actors are re-routed.
 - ``"/temp"`` is the guardian for all short-lived system-created actors, e.g.  
   those which are used in the implementation of :meth:`ActorRef.ask`.
