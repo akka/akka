@@ -361,6 +361,24 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
+  def stop(actor: ActorRef): Unit = {
+    implicit val timeout = settings.CreationTimeout
+    val path = actor.path
+    if (path.parent == guardian.path) {
+      (guardian ? StopChild(actor)).get match {
+        case ex: Exception ⇒ throw ex
+        case _             ⇒
+      }
+    } else if (path.parent == systemGuardian.path) {
+      (systemGuardian ? StopChild(actor)).get match {
+        case ex: Exception ⇒ throw ex
+        case _             ⇒
+      }
+    } else {
+      actor.asInstanceOf[InternalActorRef].stop()
+    }
+  }
+
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
@@ -428,13 +446,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     this
   }
 
+  lazy val locker: Locker = new Locker(scheduler, lookupRoot.path / "locker", deathWatch)
+
   def start() = _start
 
   def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
   def stop() {
-    guardian.stop()
+    stop(guardian)
   }
 
   /**

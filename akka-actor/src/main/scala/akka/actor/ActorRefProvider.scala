@@ -234,6 +234,14 @@ trait ActorRefFactory {
    * replies in order to resolve the matching set of actors.
    */
   def actorSelection(path: String): ActorSelection = ActorSelection(lookupRoot, path)
+
+  /**
+   * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
+   * an asynchronous operation, i.e. involves a message send, but if invoked
+   * on an [[akka.actor.ActorContext]] if operating on a child of that
+   * context it will free up the name for immediate reuse.
+   */
+  def stop(actor: ActorRef): Unit
 }
 
 class ActorRefProviderException(message: String) extends AkkaException(message)
@@ -247,6 +255,11 @@ private[akka] case class CreateChild(props: Props, name: String)
  * Internal Akka use only, used in implementation of system.actorOf.
  */
 private[akka] case class CreateRandomNameChild(props: Props)
+
+/**
+ * Internal Akka use only, used in implementation of system.stop(child).
+ */
+private[akka] case class StopChild(child: ActorRef)
 
 /**
  * Local ActorRef provider.
@@ -309,7 +322,7 @@ class LocalActorRefProvider(
     override def isTerminated = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
-      case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.stop()
+      case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
       case _                            ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
@@ -329,9 +342,10 @@ class LocalActorRefProvider(
    */
   private class Guardian extends Actor {
     def receive = {
-      case Terminated(_)                ⇒ context.self.stop()
+      case Terminated(_)                ⇒ context.stop(self)
       case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
       case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
@@ -345,9 +359,10 @@ class LocalActorRefProvider(
     def receive = {
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
-        context.self.stop()
+        context.stop(self)
       case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
       case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e })
+      case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
   }
@@ -508,6 +523,9 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(delay, f), initialDelay))
 
+  def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable =
+    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(delay, runnable), initialDelay))
+
   def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
     new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay))
 
@@ -558,6 +576,17 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
         dispatcher.dispatchTask(() ⇒ f)
+        try timeout.getTimer.newTimeout(this, delay) catch {
+          case _: IllegalStateException ⇒ // stop recurring if timer is stopped
+        }
+      }
+    }
+  }
+
+  private def createContinuousTask(delay: Duration, runnable: Runnable): TimerTask = {
+    new TimerTask {
+      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+        dispatcher.dispatchTask(() ⇒ runnable.run())
         try timeout.getTimer.newTimeout(this, delay) catch {
           case _: IllegalStateException ⇒ // stop recurring if timer is stopped
         }

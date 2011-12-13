@@ -49,7 +49,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! "hello"
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
 
@@ -104,7 +104,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
   }
@@ -134,7 +134,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         for (i ← 1 to 5) expectMsg("world")
       }
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
 
@@ -190,7 +190,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
   }

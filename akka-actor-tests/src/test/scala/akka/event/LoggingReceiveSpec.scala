@@ -201,7 +201,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
             assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")
           }
 
-          supervisor.stop()
+          system.stop(supervisor)
           expectMsg(Logging.Debug(sname, "stopping"))
           expectMsg(Logging.Debug(aname, "stopped"))
           expectMsg(Logging.Debug(sname, "stopped"))

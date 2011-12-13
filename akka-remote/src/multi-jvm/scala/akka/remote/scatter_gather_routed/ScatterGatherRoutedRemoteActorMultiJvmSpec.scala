@@ -11,7 +11,7 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec {
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "hit" ⇒ sender ! context.system.nodename
-      case "end" ⇒ self.stop()
+      case "end" ⇒ context.stop(self)
     }
   }
 }

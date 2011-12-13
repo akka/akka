@@ -26,7 +26,7 @@ object ConsistencySpec {
         }
 
         lastStep = step
-      case "done" ⇒ sender ! "done"; self.stop()
+      case "done" ⇒ sender ! "done"; context.stop(self)
     }
   }
 }

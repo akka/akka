@@ -67,7 +67,7 @@ object Pi extends App {
         nrOfResults += 1
 
         // Stop this actor and all its supervised children
-        if (nrOfResults == nrOfMessages) self.stop()
+        if (nrOfResults == nrOfMessages) context.stop(self)
     }
 
     override def preStart() {

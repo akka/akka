@@ -302,8 +302,8 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
       sender.tell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
     } finally {
       agent.resume()
-      self.stop()
+      context.stop(self)
     }
-    case _ ⇒ self.stop()
+    case _ ⇒ context.stop(self)
   }
 }

@@ -511,7 +511,7 @@ trait FSM[S, D] extends ListenerManagement {
       case _ ⇒
         nextState.replies.reverse foreach { r ⇒ sender ! r }
         terminate(nextState)
-        self.stop()
+        context.stop(self)
     }
   }
 

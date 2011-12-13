@@ -97,8 +97,8 @@ class TransactorSpec extends AkkaSpec {
       for (counter ← counters) {
         (counter ? GetCount).as[Int].get must be === 1
       }
-      counters foreach (_.stop())
-      failer.stop()
+      counters foreach (system.stop(_))
+      system.stop(failer)
     }
 
     "increment no counters with a failing transaction" in {
@@ -114,8 +114,8 @@ class TransactorSpec extends AkkaSpec {
         for (counter ← counters) {
           (counter ? GetCount).as[Int].get must be === 0
         }
-        counters foreach (_.stop())
-        failer.stop()
+        counters foreach (system.stop(_))
+        system.stop(failer)
       }
     }
   }
@@ -129,7 +129,7 @@ class TransactorSpec extends AkkaSpec {
       latch.await
       val value = atomic { ref.get }
       value must be === 5
-      transactor.stop()
+      system.stop(transactor)
     }
   }
 }

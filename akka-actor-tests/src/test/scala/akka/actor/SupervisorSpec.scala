@@ -306,7 +306,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       inits.get must be(3)
 
-      supervisor.stop()
+      system.stop(supervisor)
     }
   }
 }

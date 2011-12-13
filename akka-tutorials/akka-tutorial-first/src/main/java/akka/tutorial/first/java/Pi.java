@@ -124,7 +124,7 @@ public class Pi {
                 Result result = (Result) message;
                 pi += result.getValue();
                 nrOfResults += 1;
-                if (nrOfResults == nrOfMessages) getSelf().stop();
+                if (nrOfResults == nrOfMessages) getContext().stop(getSelf());
 
             } else throw new IllegalArgumentException("Unknown message [" + message + "]");
         }

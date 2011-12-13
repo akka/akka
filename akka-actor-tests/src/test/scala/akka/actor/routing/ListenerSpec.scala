@@ -50,7 +50,7 @@ class ListenerSpec extends AkkaSpec {
 
       fooLatch.await
 
-      for (a ← List(broadcast, a1, a2, a3)) a.stop()
+      for (a ← List(broadcast, a1, a2, a3)) system.stop(a)
     }
   }
 }

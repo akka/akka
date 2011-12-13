@@ -61,7 +61,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
         restarter ! Kill
         expectMsg(("postStop", id, 3))
         expectNoMsg(1 seconds)
-        supervisor.stop
+        system.stop(supervisor)
       }
     }
 
@@ -92,7 +92,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
         restarter ! Kill
         expectMsg(("postStop", id, 3))
         expectNoMsg(1 seconds)
-        supervisor.stop
+        system.stop(supervisor)
       }
     }
 
@@ -105,10 +105,10 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
       expectMsg(("preStart", id, 0))
       a ! "status"
       expectMsg(("OK", id, 0))
-      a.stop
+      system.stop(a)
       expectMsg(("postStop", id, 0))
       expectNoMsg(1 seconds)
-      supervisor.stop
+      system.stop(supervisor)
     }
   }
 

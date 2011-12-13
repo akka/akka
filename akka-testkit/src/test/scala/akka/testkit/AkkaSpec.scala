@@ -76,7 +76,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   protected def atTermination() {}
 
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcher)) ! "go"
   }
 }
 
@@ -120,7 +120,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         implicit val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter ⇒ locker :+= m
-            case "Die!"        ⇒ sender ! "finally gone"; self.stop()
+            case "Die!"        ⇒ sender ! "finally gone"; context.stop(self)
           }
         }), "davyJones")
 

@@ -103,7 +103,7 @@ akka {
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)
-      r.stop()
+      system.stop(r)
       expectMsg("postStop")
     }
 

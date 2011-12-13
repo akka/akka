@@ -28,7 +28,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 
         supervised.!("test")(testActor)
         expectMsg("failure1")
-        supervisor.stop()
+        system.stop(supervisor)
       }
     }
 
@@ -39,7 +39,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 
         supervised.!("test")(testActor)
         expectMsg("failure2")
-        supervisor.stop()
+        system.stop(supervisor)
       }
     }
   }
