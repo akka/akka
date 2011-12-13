@@ -36,7 +36,7 @@ class Random1ReplicaMultiJvmNode1 extends MasterClusterTestNode {
     "create clustered actor, get a 'local' actor on 'home' node and a 'ref' to actor on remote node" in {
       Cluster.node.start()
 
-      var hello = Actor.actorOf[HelloWorld]("service-hello")
+      var hello = Actor.actorOf(Props[HelloWorld]("service-hello")
       hello must not equal (null)
       hello.address must equal("service-hello")
       hello.isInstanceOf[ClusterActorRef] must be(true)

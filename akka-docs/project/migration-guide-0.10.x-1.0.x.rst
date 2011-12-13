@@ -133,7 +133,7 @@ Important changes from RC2-RC3
 
 **classes RemoteActor, RemoteUntypedActor and RemoteUntypedConsumerActors has been deleted and replaced with akka.actor.Actors.remote().actorOf(x, host port)/akka.actor.Actor.remote.actorOf(x, host, port)**
 
-- RemoteActor, RemoteUntypedActor - deleted, use: remote().actorOf(YourActor.class, host, port) (Java) or remote.actorOf[YourActor](host, port)
+- RemoteActor, RemoteUntypedActor - deleted, use: remote().actorOf(YourActor.class, host, port) (Java) or remote.actorOf(Props[YourActor](host, port)
 
 **Remoted spring-actors now default to spring id as service-name, use "service-name" attribute on "remote"-tag to override**
 
@@ -369,7 +369,7 @@ The API for waiting for consumer endpoint activation and de-activation has been 
   import se.scalablesolutions.akka.camel.CamelServiceManager._
 
   val s = startCamelService
-  val actor = Actor.actorOf[SampleConsumer]
+  val actor = Actor.actorOf(Props[SampleConsumer]
 
   // wait for 1 consumer being activated
   s.awaitEndpointActivation(1) {

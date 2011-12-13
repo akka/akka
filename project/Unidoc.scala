@@ -1,8 +1,8 @@
 package akka
 
 import sbt._
-import Keys._
-import Project.Initialize
+import sbt.Keys._
+import sbt.Project.Initialize
 
 object Unidoc {
   val unidocDirectory = SettingKey[File]("unidoc-directory")
@@ -42,7 +42,7 @@ object Unidoc {
   }
 
   def unidocTask: Initialize[Task[File]] = {
-    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scaladocOptions in Compile, streams) map {
+    (compilers, cacheDirectory, unidocSources, unidocClasspath, unidocDirectory, scalacOptions in doc, streams) map {
       (compilers, cache, sources, classpath, target, options, s) => {
         val scaladoc = new Scaladoc(100, compilers.scalac)
         scaladoc.cached(cache / "unidoc", "main", sources, classpath, target, options, s.log)

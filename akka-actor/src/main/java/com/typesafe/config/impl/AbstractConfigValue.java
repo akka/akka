@@ -144,7 +144,7 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
             return canEqual(other)
                     && (this.valueType() ==
                             ((ConfigValue) other).valueType())
-                    && ConfigUtil.equalsHandlingNull(this.unwrapped(),
+                    && ConfigImplUtil.equalsHandlingNull(this.unwrapped(),
                             ((ConfigValue) other).unwrapped());
         } else {
             return false;
@@ -178,7 +178,7 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
 
     protected void render(StringBuilder sb, int indent, String atKey, boolean formatted) {
         if (atKey != null) {
-            sb.append(ConfigUtil.renderJsonString(atKey));
+            sb.append(ConfigImplUtil.renderJsonString(atKey));
             sb.append(" : ");
         }
         render(sb, indent, formatted);

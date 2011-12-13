@@ -28,8 +28,6 @@ import akka.util.Duration
  *
  * @see akka.dispatch.BalancingDispatcher
  * @see akka.dispatch.Dispatchers
- *
- * @author Viktor Klang
  */
 class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,
@@ -65,6 +63,21 @@ class BalancingDispatcher(
     final def numberOfMessages: Int = messageQueue.numberOfMessages
 
     final def hasMessages: Boolean = messageQueue.hasMessages
+
+    override def cleanUp(): Unit = {
+      //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
+      if (hasSystemMessages) {
+        val dlq = actor.systemImpl.deadLetterMailbox
+        var message = systemDrain()
+        while (message ne null) {
+          // message must be “virgin” before being able to systemEnqueue again
+          val next = message.next
+          message.next = null
+          dlq.systemEnqueue(actor.self, message)
+          message = next
+        }
+      }
+    }
   }
 
   protected[akka] override def register(actor: ActorCell) = {
@@ -76,19 +89,6 @@ class BalancingDispatcher(
     buddies.remove(actor)
     super.unregister(actor)
     intoTheFray(except = actor) //When someone leaves, he tosses a friend into the fray
-  }
-
-  protected override def cleanUpMailboxFor(actor: ActorCell, mailBox: Mailbox) {
-    if (mailBox.hasSystemMessages) {
-      var message = mailBox.systemDrain()
-      while (message ne null) {
-        // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        prerequisites.deadLetterMailbox.systemEnqueue(actor.self, message)
-        message = next
-      }
-    }
   }
 
   def intoTheFray(except: ActorCell): Unit =

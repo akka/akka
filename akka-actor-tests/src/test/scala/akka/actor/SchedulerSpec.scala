@@ -26,9 +26,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
     "schedule more than once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = system.actorOf(new Actor {
+      val tickActor = system.actorOf(Props(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
-      })
+      }))
       // run every 50 milliseconds
       collectCancellable(system.scheduler.schedule(0 milliseconds, 50 milliseconds, tickActor, Tick))
 
@@ -56,9 +56,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
     "schedule once" in {
       case object Tick
       val countDownLatch = new CountDownLatch(3)
-      val tickActor = system.actorOf(new Actor {
+      val tickActor = system.actorOf(Props(new Actor {
         def receive = { case Tick ⇒ countDownLatch.countDown() }
-      })
+      }))
 
       // run after 300 millisec
       collectCancellable(system.scheduler.scheduleOnce(300 milliseconds, tickActor, Tick))
@@ -81,9 +81,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       object Ping
       val ticks = new CountDownLatch(1)
 
-      val actor = system.actorOf(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = { case Ping ⇒ ticks.countDown() }
-      })
+      }))
 
       (1 to 10).foreach { i ⇒
         val timeout = collectCancellable(system.scheduler.scheduleOnce(1 second, actor, Ping))
@@ -131,7 +131,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       case class Msg(ts: Long)
 
-      val actor = system.actorOf(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case Msg(ts) ⇒
             val now = System.nanoTime
@@ -139,7 +139,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
             if (now - ts < 10000000) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
-      })
+      }))
 
       (1 to 300).foreach { i ⇒
         collectCancellable(system.scheduler.scheduleOnce(10 milliseconds, actor, Msg(System.nanoTime)))
@@ -154,11 +154,11 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       case object Msg
 
-      val actor = system.actorOf(new Actor {
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
           case Msg ⇒ ticks.countDown()
         }
-      })
+      }))
 
       val startTime = System.nanoTime()
       val cancellable = system.scheduler.schedule(1 second, 100 milliseconds, actor, Msg)

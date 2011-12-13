@@ -5,14 +5,11 @@
 package akka
 
 import sbt._
-import Keys._
-
+import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
-
-import MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
-import ScalariformPlugin.{ format, formatPreferences, formatSourceDirectories }
-
+import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
@@ -27,10 +24,11 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
       parallelExecution in GlobalScope := false,
+      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
-      rstdocDirectory <<= baseDirectory / "akka-docs"
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
     aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, amqp, mailboxes, akkaSbtPlugin, samples, tutorials, docs)
   )
@@ -224,14 +222,14 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-  
+
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
     settings = defaultSettings
   )
-  
+
   lazy val tutorials = Project(
     id = "akka-tutorials",
     base = file("akka-tutorials"),
@@ -258,17 +256,17 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", stm, remote, slf4j),
+    dependencies = Seq(actor, testkit % "test->test", stm, remote, slf4j, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      formatSourceDirectories in Test <<= unmanagedSourceDirectories in Test
+      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
     )
   )
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
+  override lazy val settings = super.settings ++ buildSettings
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -334,9 +332,9 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oF")
   )
 
-  lazy val formatSettings = ScalariformPlugin.settings ++ Seq(
-    formatPreferences in Compile := formattingPreferences,
-    formatPreferences in Test    := formattingPreferences
+  lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(
+    ScalariformKeys.preferences in Compile := formattingPreferences,
+    ScalariformKeys.preferences in Test    := formattingPreferences
   )
 
   def formattingPreferences = {
@@ -347,27 +345,10 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.formatSettings) ++ Seq(
-    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (format in MultiJvm),
-    formatPreferences in MultiJvm := formattingPreferences
+  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+    compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences
   )
-
-  // reStructuredText docs
-
-  val rstdocDirectory = SettingKey[File]("rstdoc-directory")
-  val rstdoc = TaskKey[File]("rstdoc", "Build the reStructuredText documentation.")
-
-  lazy val rstdocSettings = Seq(rstdoc <<= rstdocTask)
-
-  def rstdocTask = (rstdocDirectory, streams) map {
-    (dir, s) => {
-      s.log.info("Building reStructuredText documentation...")
-      val exitCode = Process(List("make", "clean", "html", "pdf"), dir) ! s.log
-      if (exitCode != 0) sys.error("Failed to build docs.")
-      s.log.info("Done building docs.")
-      dir
-    }
-  }
 }
 
 // Dependencies

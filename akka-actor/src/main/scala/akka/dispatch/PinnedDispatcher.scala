@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,
@@ -32,7 +30,7 @@ class PinnedDispatcher(
     _shutdownTimeout) {
 
   @volatile
-  protected[akka] var owner: ActorCell = _actor
+  private var owner: ActorCell = _actor
 
   //Relies on an external lock provided by MessageDispatcher.attach
   protected[akka] override def register(actorCell: ActorCell) = {

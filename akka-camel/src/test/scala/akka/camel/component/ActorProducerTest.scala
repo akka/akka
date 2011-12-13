@@ -23,7 +23,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorWithSyncProcessor = {
-    val actor = actorOf[Tester1]
+    val actor = actorOf(Props[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
@@ -38,7 +38,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorWithAsyncProcessor = {
-    val actor = actorOf[Tester1]
+    val actor = actorOf(Props[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
     val exchange = endpoint.createExchange(ExchangePattern.InOnly)
@@ -53,7 +53,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndReceiveResponseWithSyncProcessor = {
-    val actor = actorOf(new Tester2 {
+    val actor = actorOf(Props(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
     })
     val endpoint = actorEndpoint("actor:uuid:%s" format actor.uuid)
@@ -67,7 +67,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndReceiveResponseWithAsyncProcessor = {
-    val actor = actorOf(new Tester2 {
+    val actor = actorOf(Props(new Tester2 {
       override def response(msg: Message) = Message(super.response(msg), Map("k2" -> "v2"))
     })
     val completion = expectAsyncCompletion
@@ -83,7 +83,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndReceiveFailureWithAsyncProcessor = {
-    val actor = actorOf(new Tester2 {
+    val actor = actorOf(Props(new Tester2 {
       override def response(msg: Message) = Failure(new Exception("testmsg"), Map("k3" -> "v3"))
     })
     val completion = expectAsyncCompletion
@@ -100,7 +100,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldSendMessageToActorAndReceiveAckWithAsyncProcessor = {
-    val actor = actorOf(new Tester2 {
+    val actor = actorOf(Props(new Tester2 {
       override def response(msg: Message) = akka.camel.Ack
     })
     val completion = expectAsyncCompletion
@@ -115,8 +115,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithDefaultId = {
-    val actor1 = actorOf[Tester1]("x")
-    val actor2 = actorOf[Tester1]("y")
+    val actor1 = actorOf(Props[Tester1]("x")
+    val actor2 = actorOf(Props[Tester1]("y")
     actor1
     actor2
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
@@ -139,8 +139,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithoutDefaultId = {
-    val actor1 = actorOf[Tester1]("x")
-    val actor2 = actorOf[Tester1]("y")
+    val actor1 = actorOf(Props[Tester1]("x")
+    val actor2 = actorOf(Props[Tester1]("y")
     actor1
     actor2
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
@@ -164,8 +164,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithDefaultUuid = {
-    val actor1 = actorOf[Tester1]
-    val actor2 = actorOf[Tester1]
+    val actor1 = actorOf(Props[Tester1]
+    val actor2 = actorOf(Props[Tester1]
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:%s" format actor1.uuid)
@@ -186,8 +186,8 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldDynamicallyRouteMessageToActorWithoutDefaultUuid = {
-    val actor1 = actorOf[Tester1]
-    val actor2 = actorOf[Tester1]
+    val actor1 = actorOf(Props[Tester1]
+    val actor2 = actorOf(Props[Tester1]
     val latch1 = (actor1 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val latch2 = (actor2 ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:")
@@ -209,7 +209,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldThrowExceptionWhenIdNotSet{
-    val actor = actorOf[Tester1]
+    val actor = actorOf(Props[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:id:")
     intercept[ActorIdentifierNotSetException] {
@@ -219,7 +219,7 @@ class ActorProducerTest extends JUnitSuite with BeforeAndAfterAll {
 
   @Test
   def shouldThrowExceptionWhenUuidNotSet{
-    val actor = actorOf[Tester1]
+    val actor = actorOf(Props[Tester1]
     val latch = (actor ? SetExpectedMessageCount(1)).as[CountDownLatch].get
     val endpoint = actorEndpoint("actor:uuid:")
     intercept[ActorIdentifierNotSetException] {

@@ -17,7 +17,7 @@ import org.bson.DefaultBSONSerializer
 import akka.actor.SerializedActorRef
 import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
-import akka.actor.{ ActorSystem, ActorSystemImpl }
+import akka.actor.{ ActorSystem, ActorSystemImpl, Props }
 
 class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 
@@ -71,7 +71,7 @@ class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObjec
     val msg = MessageSerializer.deserialize(system, msgData)
     val ownerPath = doc.as[String]("ownerPath")
     val senderPath = doc.as[String]("senderPath")
-    val sender = systemImpl.actorOf(senderPath)
+    val sender = systemImpl.actorFor(senderPath)
 
     MongoDurableMessage(ownerPath, msg, sender)
   }

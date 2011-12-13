@@ -49,7 +49,7 @@ class RoundRobinFailoverMultiJvmNode1 extends MasterClusterTestNode {
       }
 
       barrier("actor-creation", NrOfNodes) {
-        actor = Actor.actorOf[SomeActor]("service-hello")
+        actor = Actor.actorOf(Props[SomeActor]("service-hello")
         actor.isInstanceOf[ClusterActorRef] must be(true)
       }
 

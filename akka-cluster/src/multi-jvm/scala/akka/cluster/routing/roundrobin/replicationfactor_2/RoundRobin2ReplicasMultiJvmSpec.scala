@@ -89,7 +89,7 @@ class RoundRobin2ReplicasMultiJvmNode2 extends ClusterTestNode {
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
       barrier("get-ref-to-actor-on-node2", NrOfNodes) {
-        hello = Actor.actorOf[HelloWorld]("service-hello")
+        hello = Actor.actorOf(Props[HelloWorld]("service-hello")
         hello must not equal (null)
         hello.address must equal("service-hello")
         hello.isInstanceOf[ClusterActorRef] must be(true)

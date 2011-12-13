@@ -12,7 +12,7 @@ object RemoteCommunicationSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case (p: Props, n: String) ⇒ sender ! context.actorOf[Echo](n)
+      case (p: Props, n: String) ⇒ sender ! context.actorOf(Props[Echo], n)
       case ex: Exception         ⇒ throw ex
       case s: String             ⇒ sender ! context.actorFor(s)
       case x                     ⇒ target = sender; sender ! x
@@ -93,7 +93,7 @@ akka {
     }
 
     "create and supervise children on remote node" in {
-      val r = system.actorOf[Echo]("blub")
+      val r = system.actorOf(Props[Echo], "blub")
       r.path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
       r ! 42
       expectMsg(42)

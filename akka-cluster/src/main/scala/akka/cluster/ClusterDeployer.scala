@@ -24,10 +24,6 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 /**
  * A ClusterDeployer is responsible for deploying a Deploy.
- *
- * FIXME Document: what does Deploy mean?
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ClusterDeployer extends ActorDeployer {
   val clusterName = Cluster.name

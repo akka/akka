@@ -1,16 +1,19 @@
 package akka
 
 import sbt._
-import Keys._
+import sbt.Keys._
+import sbt.Project.Initialize
 import java.io.File
 
 object Publish {
   final val Snapshot = "-SNAPSHOT"
 
+  val defaultPublishTo = SettingKey[File]("default-publish-to")
+
   lazy val settings = Seq(
     crossPaths := false,
     pomExtra := akkaPomExtra,
-    publishTo := akkaPublishTo,
+    publishTo <<= akkaPublishTo,
     credentials ++= akkaCredentials,
     organizationName := "Typesafe Inc.",
     organizationHomepage := Some(url("http://www.typesafe.com"))
@@ -32,11 +35,12 @@ object Publish {
     </licenses>
   }
 
-  def akkaPublishTo: Option[Resolver] = {
-    val property = Option(System.getProperty("akka.publish.repository"))
-    val repo = property map { "Akka Publish Repository" at _ }
-    val m2repo = Path.userHome / ".m2" /"repository"
-    repo orElse Some(Resolver.file("Local Maven Repository", m2repo))
+  def akkaPublishTo: Initialize[Option[Resolver]] = {
+    defaultPublishTo { default =>
+      val property = Option(System.getProperty("akka.publish.repository"))
+      val repo = property map { "Akka Publish Repository" at _ }
+      repo orElse Some(Resolver.file("Default Local Repository", default))
+    }
   }
 
   def akkaCredentials: Seq[Credentials] = {
@@ -44,17 +48,11 @@ object Publish {
     property map (f => Credentials(new File(f))) toSeq
   }
 
-  def stampVersion = Command.command("stamp-version") { state =>
-    append((version in ThisBuild ~= stamp) :: Nil, state)
-  }
+  // timestamped versions
 
-  // TODO: replace with extracted.append when updated to sbt 0.10.1
-  def append(settings: Seq[Setting[_]], state: State): State = {
+  def stampVersion = Command.command("stamp-version") { state =>
     val extracted = Project.extract(state)
-    import extracted._
-    val append = Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, settings)
-    val newStructure = Load.reapply(session.original ++ append, structure)
-    Project.setProject(session, newStructure, state)
+    extracted.append(List(version in ThisBuild ~= stamp), state)
   }
 
   def stamp(version: String): String = {

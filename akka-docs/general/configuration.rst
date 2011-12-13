@@ -1,3 +1,5 @@
+.. _configuration:
+
 Configuration
 =============
 
@@ -26,10 +28,10 @@ configuration for each actor system, and grab the specific configuration when in
 ::
   
   myapp1 {  
-    akka.logLevel = WARNING
+    akka.loglevel = WARNING
   }
   myapp2 {  
-    akka.logLevel = ERROR
+    akka.loglevel = ERROR
   }
 
 .. code-block:: scala
@@ -45,7 +47,7 @@ with ``/``. ``-Dconfig.resource=/dev.conf`` will load the ``dev.conf`` from the 
 You may also specify and parse the configuration programmatically in other ways when instantiating 
 the ``ActorSystem``.
 
-.. includecode:: code/ConfigDocSpec.scala
+.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
    :include: imports,custom-config
 
 The ``ConfigFactory`` provides several methods to parse the configuration from various sources.
@@ -118,7 +120,7 @@ A custom ``application.conf`` might look like this::
 
     actor {
       default-dispatcher {
-        throughput = 10  # Throughput for default Dispatcher, set to 1 for complete fairness
+        throughput = 10  # Throughput for default Dispatcher, set to 1 for as fair as possible
       }
     }
 
@@ -133,7 +135,7 @@ A custom ``application.conf`` might look like this::
 Config file format
 ------------------
 
-The configuration file syntax is described in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+The configuration file syntax is described in the `HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_
 specification. Note that it supports three formats; conf, json, and properties. 
 
 
@@ -155,7 +157,7 @@ dev.conf:
     loglevel = "DEBUG"
   }
 
-More advanced include and substitution mechanisms are explained in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+More advanced include and substitution mechanisms are explained in the `HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_
 specification.
 
 

@@ -4,6 +4,8 @@
 package com.typesafe.config;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * An immutable map from config paths to config values.
@@ -32,6 +34,10 @@ import java.util.List;
  * {@code ConfigObject} is a tree of nested maps from <em>keys</em> to values.
  *
  * <p>
+ * Use {@link ConfigUtil#joinPath} and {@link ConfigUtil#splitPath} to convert
+ * between path expressions and individual path elements (keys).
+ *
+ * <p>
  * Another difference between {@code Config} and {@code ConfigObject} is that
  * conceptually, {@code ConfigValue}s with a {@link ConfigValue#valueType()
  * valueType()} of {@link ConfigValueType#NULL NULL} exist in a
@@ -54,10 +60,11 @@ import java.util.List;
  * are performed for you though.
  *
  * <p>
- * If you want to iterate over the contents of a {@code Config}, you have to get
- * its {@code ConfigObject} with {@link #root()}, and then iterate over the
- * {@code ConfigObject}.
- *
+ * If you want to iterate over the contents of a {@code Config}, you can get its
+ * {@code ConfigObject} with {@link #root()}, and then iterate over the
+ * {@code ConfigObject} (which implements <code>java.util.Map</code>). Or, you
+ * can use {@link #entrySet()} which recurses the object tree for you and builds
+ * up a <code>Set</code> of all path-value pairs where the value is not null.
  *
  * <p>
  * <em>Do not implement {@code Config}</em>; it should only be implemented by
@@ -255,6 +262,17 @@ public interface Config extends ConfigMergeable {
      * @return true if the configuration is empty
      */
     boolean isEmpty();
+
+    /**
+     * Returns the set of path-value pairs, excluding any null values, found by
+     * recursing {@link #root() the root object}. Note that this is very
+     * different from <code>root().entrySet()</code> which returns the set of
+     * immediate-child keys in the root object and includes null values.
+     *
+     * @return set of paths with non-null values, built up by recursing the
+     *         entire tree of {@link ConfigObject}
+     */
+    Set<Map.Entry<String, ConfigValue>> entrySet();
 
     /**
      *

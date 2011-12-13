@@ -8,7 +8,7 @@ Java API
 
    untyped-actors
    typed-actors
-   actor-registry
+   logging
    futures
    dataflow
    stm

@@ -1,6 +1,6 @@
 package akka.remote.new_remote_actor
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.testkit.DefaultTimeout
 
@@ -39,7 +39,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
       barrier("start")
 
-      val actor = system.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor], "service-hello")
       val result = (actor ? "identify").get
       result must equal("node1")
 

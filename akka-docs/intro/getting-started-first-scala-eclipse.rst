@@ -93,7 +93,6 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
 - ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
 - ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
 
@@ -158,7 +157,7 @@ If you have not already done so, now is the time to create an Eclipse project fo
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project. 
+If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project.
 You need to install the plugin as described in the `README of sbteclipse <https://github.com/typesafehub/sbteclipse>`_
 
 Then run the ``eclipse`` target to generate the Eclipse project::
@@ -254,7 +253,7 @@ Now create a new class for the master actor. The master actor is a little bit mo
 and then we can create the workers::
 
     // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
+    val workers = Vector.fill(nrOfWorkers)(actorOf(Props[Worker])
 
     // wrap them with a load-balancing router
     val router = Routing.loadBalancerActor(CyclicIterator(workers))
@@ -263,11 +262,11 @@ As you can see we are using the ``actorOf`` factory method to create actors, thi
 
     import akka.actor.Actor.actorOf
 
-There are two versions of ``actorOf``; one of them taking a actor type and the other one an instance of an actor. The former one (``actorOf[MyActor]``) is used when the actor class has a no-argument constructor while the second one (``actorOf(new MyActor(..))``) is used when the actor class has a constructor that takes arguments. This is the only way to create an instance of an Actor and the ``actorOf`` method ensures this. The latter version is using call-by-name and lazily creates the actor within the scope of the ``actorOf`` method. The ``actorOf`` method instantiates the actor and returns, not an instance to the actor, but an instance to an ``ActorRef``. This reference is the handle through which you communicate with the actor. It is immutable, serializable and location-aware meaning that it "remembers" its original actor even if it is sent to other nodes across the network and can be seen as the equivalent to the Erlang actor's PID.
+There are two versions of ``actorOf``; one of them taking a actor type and the other one an instance of an actor. The former one (``actorOf(Props[MyActor]``) is used when the actor class has a no-argument constructor while the second one (``actorOf(Props(new MyActor(..))``) is used when the actor class has a constructor that takes arguments. This is the only way to create an instance of an Actor and the ``actorOf`` method ensures this. The latter version is using call-by-name and lazily creates the actor within the scope of the ``actorOf`` method. The ``actorOf`` method instantiates the actor and returns, not an instance to the actor, but an instance to an ``ActorRef``. This reference is the handle through which you communicate with the actor. It is immutable, serializable and location-aware meaning that it "remembers" its original actor even if it is sent to other nodes across the network and can be seen as the equivalent to the Erlang actor's PID.
 
 The actor's life-cycle is:
 
-- Created -- ``Actor.actorOf[MyActor]`` -- can **not** receive messages
+- Created -- ``Actor.actorOf(Props[MyActor]`` -- can **not** receive messages
 - Started -- ``actorRef`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
@@ -290,7 +289,7 @@ Here is the master actor::
       var start: Long = _
 
       // create the workers
-      val workers = Vector.fill(nrOfWorkers)(actorOf[Worker])
+      val workers = Vector.fill(nrOfWorkers)(actorOf(Props[Worker])
 
       // wrap them with a load-balancing router
       val router = Routing.loadBalancerActor(CyclicIterator(workers))
@@ -365,8 +364,7 @@ The ``Pi`` object is a perfect container module for our actors and messages, so 
         val latch = new CountDownLatch(1)
 
         // create the master
-        val master = actorOf(
-          new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+        val master = actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
 
         // start the calculation
         master ! Calculate
@@ -383,15 +381,10 @@ Run it from Eclipse
 
 Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
 
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
-    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
-
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
 
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
-
-You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where ``akka.conf`` is:
+You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where :ref:`configuration` is:
 
 .. image:: ../images/run-config.png
 

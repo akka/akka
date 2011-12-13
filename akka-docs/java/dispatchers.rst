@@ -6,8 +6,6 @@ Dispatchers (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
-Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
@@ -19,7 +17,7 @@ Default dispatcher
 ------------------
 
 For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created. The default dispatcher used is "GlobalDispatcher" which also is retrievable in ``akka.dispatch.Dispatchers.globalDispatcher``.
-The Dispatcher specified in the akka.conf as "default-dispatcher" is  as ``Dispatchers.defaultGlobalDispatcher``.
+The Dispatcher specified in the :ref:`configuration` as "default-dispatcher" is  as ``Dispatchers.defaultGlobalDispatcher``.
 
 The "GlobalDispatcher" is not configurable but will use default parameters given by Akka itself.
 
@@ -124,16 +122,13 @@ Here is an example:
      ...
   }
 
-This 'Dispatcher' allows you to define the 'throughput' it should have. This defines the number of messages for a specific Actor the dispatcher should process in one single sweep.
-Setting this to a higher number will increase throughput but lower fairness, and vice versa. If you don't specify it explicitly then it uses the default value defined in the 'akka.conf' configuration file:
-
-.. code-block:: xml
-
-  actor {
-    throughput = 5
-  }
-
-If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
+The standard :class:`Dispatcher` allows you to define the ``throughput`` it
+should have, as shown above. This defines the number of messages for a specific
+Actor the dispatcher should process in one single sweep; in other words, the
+dispatcher will bunch up to ``throughput`` message invocations together when
+having elected an actor to run.  Setting this to a higher number will increase
+throughput but lower fairness, and vice versa. If you don't specify it explicitly
+then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the :ref:`scaladoc` or look at the code for all the options available.
 
@@ -148,10 +143,10 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
 .. code-block:: java
 
   package some.pkg;
-  
+
   import akka.actor.*;
   import akka.dispatch.*;
-  
+
   public class Main {
       // A simple Actor that just prints the messages it processes
       public static class MyActor extends UntypedActor {
@@ -170,7 +165,7 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
     }
 
     public static void main(String[] args) {
-        // Create a new PriorityGenerator, lower prio means more important 
+        // Create a new PriorityGenerator, lower prio means more important
         PriorityGenerator gen = new PriorityGenerator() {
           public int gen(Object message) {
             if (message.equals("highpriority")) return 0;       // "highpriority" messages should be treated first if possible
@@ -180,7 +175,7 @@ Creating a Dispatcher with a priority mailbox using PriorityGenerator:
         };
         // We create an instance of the actor that will print out the messages it processes
         // We create a new Priority dispatcher and seed it with the priority generator
-      ActorRef ref = Actors.actorOf((new Props()).withCreator(MyActor.class).withDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen))));
+      ActorRef ref = Actors.actorOf(new Props(MyActor.class).withDispatcher(new Dispatcher("foo", 5, new UnboundedPriorityMailbox(gen))));
 
     }
   }

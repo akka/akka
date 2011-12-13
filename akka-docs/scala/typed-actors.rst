@@ -5,13 +5,11 @@ Typed Actors (Scala)
 
    .. contents:: :local:
    
-Module stability: **SOLID**
-
 The Typed Actors are implemented through `Typed Actors <http://en.wikipedia.org/wiki/Active_object>`_. It uses AOP through `AspectWerkz <http://aspectwerkz.codehaus.org/>`_ to turn regular POJOs into asynchronous non-blocking Actors with semantics of the Actor Model. Each method dispatch is turned into a message that is put on a queue to be processed by the Typed Actor sequentially one by one.
 
 If you are using the `Spring Framework <http://springsource.org>`_ then take a look at Akka's `Spring integration <spring-integration>`_.
 
-**WARNING:** Do not configure to use a ``WorkStealingDispatcher`` with your ``TypedActors``, it just isn't safe with how ``TypedActors`` currently are implemented. This limitation will most likely be removed in the future.
+**WARNING:** Do not configure to use a ``BalancingDispatcher`` with your ``TypedActors``, it just isn't safe with how ``TypedActors`` currently are implemented. This limitation will most likely be removed in the future.
 
 Creating Typed Actors
 ---------------------
@@ -178,7 +176,7 @@ Messages and immutability
 
 **IMPORTANT**: Messages can be any kind of object but have to be immutable (there is a workaround, see next section). Java or Scala can’t enforce immutability (yet) so this has to be by convention. Primitives like String, int, Long are always immutable. Apart from these you have to create your own immutable objects to send as messages. If you pass on a reference to an instance that is mutable then this instance can be modified concurrently by two different Typed Actors and the Actor model is broken leaving you with NO guarantees and most likely corrupt data.
 
-Akka can help you in this regard. It allows you to turn on an option for serializing all messages, e.g. all parameters to the Typed Actor effectively making a deep clone/copy of the parameters. This will make sending mutable messages completely safe. This option is turned on in the ‘$AKKA_HOME/config/akka.conf’ config file like this:
+Akka can help you in this regard. It allows you to turn on an option for serializing all messages, e.g. all parameters to the Typed Actor effectively making a deep clone/copy of the parameters. This will make sending mutable messages completely safe. This option is turned on in the :ref:`configuration` file like this:
 
 .. code-block:: ruby
 

@@ -27,7 +27,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     service = CamelServiceFactory.createCamelService
     // register test consumer before registering the publish requestor
     // and before starting the CamelService (registry is scanned for consumers)
-    actorOf(new TestConsumer("direct:publish-test-1"))
+    actorOf(Props(new TestConsumer("direct:publish-test-1"))
     service.registerPublishRequestor
     service.awaitEndpointActivation(1) {
       service.start
@@ -54,7 +54,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     "started" must {
       "support an in-out message exchange via its endpoint" in {
         service.awaitEndpointActivation(1) {
-          consumer = actorOf(new TestConsumer("direct:publish-test-2"))
+          consumer = actorOf(Props(new TestConsumer("direct:publish-test-2"))
         } must be(true)
         mandatoryTemplate.requestBody("direct:publish-test-2", "msg2") must equal("received msg2")
       }
@@ -119,7 +119,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     "activated with a custom error handler" must {
       "handle thrown exceptions by generating a custom response" in {
         service.awaitEndpointActivation(1) {
-          actorOf[ErrorHandlingConsumer]
+          actorOf(Props[ErrorHandlingConsumer]
         } must be(true)
         mandatoryTemplate.requestBody("direct:error-handler-test", "hello") must equal("error: hello")
 
@@ -128,7 +128,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     "activated with a custom redelivery handler" must {
       "handle thrown exceptions by redelivering the initial message" in {
         service.awaitEndpointActivation(1) {
-          actorOf[RedeliveringConsumer]
+          actorOf(Props[RedeliveringConsumer]
         } must be(true)
         mandatoryTemplate.requestBody("direct:redelivery-test", "hello") must equal("accepted: hello")
 
@@ -143,7 +143,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
         var consumer: ActorRef = null
 
         service.awaitEndpointActivation(1) {
-          consumer = actorOf(new TestAckConsumer("direct:system-ack-test"))
+          consumer = actorOf(Props(new TestAckConsumer("direct:system-ack-test"))
         } must be(true)
 
         val endpoint = mandatoryContext.getEndpoint("direct:system-ack-test", classOf[DirectEndpoint])
@@ -169,19 +169,19 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
 
   "A supervised consumer" must {
     "be able to reply during receive" in {
-      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-1"))
+      val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-1"))
       (consumer ? "succeed").get must equal("ok")
     }
 
     "be able to reply on failure during preRestart" in {
-      val consumer = Actor.actorOf(new SupervisedConsumer("reply-channel-test-2"))
+      val consumer = Actor.actorOf(Props(new SupervisedConsumer("reply-channel-test-2"))
       val supervisor = Supervisor(
         SupervisorConfig(
           OneForOneStrategy(List(classOf[Exception]), 2, 10000),
           Supervise(consumer, Permanent) :: Nil))
 
       val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender("pr", latch))
+      val sender = Actor.actorOf(Props(new Sender("pr", latch))
 
       consumer.!("fail")(Some(sender))
       latch.await(5, TimeUnit.SECONDS) must be(true)
@@ -195,7 +195,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
           Supervise(consumer, Temporary) :: Nil))
 
       val latch = new CountDownLatch(1)
-      val sender = Actor.actorOf(new Sender("ps", latch))
+      val sender = Actor.actorOf(Props(new Sender("ps", latch))
 
       consumer.!("fail")(Some(sender))
       latch.await(5, TimeUnit.SECONDS) must be(true)

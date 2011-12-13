@@ -63,7 +63,7 @@ class ScatterGatherFailoverMultiJvmNode1 extends MasterClusterTestNode {
       /*
              FIXME: Uncomment, when custom routers will be fully supported (ticket #1109)
 
-             val actor = Actor.actorOf[TestActor]("service-hello").asInstanceOf[ClusterActorRef]
+             val actor = Actor.actorOf(Props[TestActor]("service-hello").asInstanceOf[ClusterActorRef]
 
              identifyConnections(actor).size() must be(2)
 

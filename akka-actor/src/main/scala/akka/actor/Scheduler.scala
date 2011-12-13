@@ -13,7 +13,7 @@
 package akka.actor
 
 import akka.util.Duration
-
+//#scheduler
 /**
  * An Akka scheduler service. This one needs one special behavior: if
  * Closeable, it MUST execute all outstanding tasks upon .close() in order
@@ -28,6 +28,8 @@ trait Scheduler {
    * Schedules a message to be sent repeatedly with an initial delay and frequency.
    * E.g. if you would like a message to be sent immediately and thereafter every 500ms you would set
    * delay = Duration.Zero and frequency = Duration(500, TimeUnit.MILLISECONDS)
+   *
+   * Java & Scala API
    */
   def schedule(initialDelay: Duration, frequency: Duration, receiver: ActorRef, message: Any): Cancellable
 
@@ -35,33 +37,53 @@ trait Scheduler {
    * Schedules a function to be run repeatedly with an initial delay and a frequency.
    * E.g. if you would like the function to be run after 2 seconds and thereafter every 100ms you would set
    * delay = Duration(2, TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   *
+   * Scala API
    */
   def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that has to pass before the runnable is executed.
+   *
+   * Java & Scala API
    */
   def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has to pass before the message is sent.
+   *
+   * Java & Scala API
    */
   def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable
 
   /**
    * Schedules a function to be run once with a delay, i.e. a time period that has to pass before the function is run.
+   *
+   * Scala API
    */
   def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable
 }
+//#scheduler
 
+//#cancellable
+/**
+ * Signifies something that can be cancelled
+ * There is no strict guarantee that the implementation is thread-safe,
+ * but it should be good practice to make it so.
+ */
 trait Cancellable {
   /**
-   * Cancels the underlying scheduled task.
+   * Cancels this Cancellable
+   *
+   * Java & Scala API
    */
   def cancel(): Unit
 
   /**
-   * Checks if the underlying scheduled task has been cancelled.
+   * Returns whether this Cancellable has been cancelled
+   *
+   * Java & Scala API
    */
   def isCancelled: Boolean
 }
+//#cancellable

@@ -482,10 +482,10 @@ public class HashedWheelTimer implements Timer {
             buf.append("deadline: ");
             if (remaining > 0) {
                 buf.append(remaining);
-                buf.append(" ms later, ");
+                buf.append(" ns later, ");
             } else if (remaining < 0) {
                 buf.append(-remaining);
-                buf.append(" ms ago, ");
+                buf.append(" ns ago, ");
             } else {
                 buf.append("now, ");
             }

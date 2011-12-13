@@ -2,7 +2,7 @@ package akka.remote.direct_routed
 
 import akka.remote._
 import akka.routing._
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
 import akka.testkit._
 
 object DirectRoutedRemoteActorMultiJvmSpec {
@@ -39,7 +39,7 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTi
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
       barrier("start")
 
-      val actor = system.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor], "service-hello")
       actor.isInstanceOf[RemoteActorRef] must be(true)
 
       val result = (actor ? "identify").get

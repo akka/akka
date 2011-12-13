@@ -21,8 +21,6 @@ import annotation.tailrec
 
 /**
  * ClusterActorRef factory and locator.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object ClusterActorRef {
   import FailureDetectorType._
@@ -77,8 +75,6 @@ object ClusterActorRef {
 /**
  * ActorRef representing a one or many instances of a clustered, load-balanced and sometimes replicated actor
  * where the instances can reside on other nodes in the cluster.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class ClusterActorRef(props: RoutedProps, val address: String) extends AbstractRoutedActorRef(props) {
 

@@ -28,28 +28,7 @@ trait AutoReceivedMessage extends Serializable
 
 trait PossiblyHarmful
 
-case class HotSwap(code: ActorContext ⇒ Actor.Receive, discardOld: Boolean = true) extends AutoReceivedMessage {
-
-  /**
-   * Java API
-   */
-  def this(code: akka.japi.Function[ActorContext, Procedure[Any]], discardOld: Boolean) = {
-    this((context: ActorContext) ⇒ {
-      val behavior = code(context)
-      val result: Actor.Receive = { case msg ⇒ behavior(msg) }
-      result
-    }, discardOld)
-  }
-
-  /**
-   *  Java API with default non-stacking behavior
-   */
-  def this(code: akka.japi.Function[ActorContext, Procedure[Any]]) = this(code, true)
-}
-
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
-
-case object RevertHotSwap extends AutoReceivedMessage with PossiblyHarmful
 
 case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
@@ -112,7 +91,7 @@ case class ActorInterruptedException private[akka] (cause: Throwable)
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
-case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
+case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends RuntimeException {
 
   def this(msg: String) = this(msg, null)
 
@@ -186,8 +165,6 @@ object Actor {
  *
  * <p/>
  * The Actor's own ActorRef is available in the 'self' member variable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
 
@@ -204,18 +181,17 @@ trait Actor {
    * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
    * context.
    */
-  @transient
   protected[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
 
     def noContextError =
       throw new ActorInitializationException(
-        "\n\tYou cannot create an instance of " + getClass.getName + " explicitly using the constructor (new)." +
+        "\n\tYou cannot create an instance of [" + getClass.getName + "] explicitly using the constructor (new)." +
           "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
-          "\n\t\t'val actor = context.actorOf[MyActor]'        (to create a supervised child actor from within an actor), or" +
-          "\n\t\t'val actor = system.actorOf(new MyActor(..))' (to create a top level actor from the ActorSystem),        or" +
-          "\n\t\t'val actor = context.actorOf[MyActor]'        (to create a supervised child actor from within an actor), or" +
-          "\n\t\t'val actor = system.actorOf(new MyActor(..))' (to create a top level actor from the ActorSystem)")
+          "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
+          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem),        or" +
+          "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
+          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem)")
 
     if (contextStack.isEmpty) noContextError
     val c = contextStack.head
@@ -267,14 +243,17 @@ trait Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started by invoking 'actor'.
+   * Is called when an Actor is started.
+   * Actors are automatically started asynchronously when created.
+   * Empty default implementation.
    */
   def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop()' is invoked.
+   * Is called asynchronously after 'actor.stop()' is invoked.
+   * Empty default implementation.
    */
   def postStop() {}
 

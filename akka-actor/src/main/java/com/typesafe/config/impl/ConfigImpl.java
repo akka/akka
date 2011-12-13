@@ -40,47 +40,66 @@ public class ConfigImpl {
                 || name.endsWith(".properties")) {
             ConfigParseable p = source.nameToParseable(name);
 
-            if (p != null) {
-                obj = p.parse(p.options().setAllowMissing(
-                        options.getAllowMissing()));
-            } else {
-                obj = SimpleConfigObject.emptyMissing(SimpleConfigOrigin.newSimple(name));
-            }
+            obj = p.parse(p.options().setAllowMissing(options.getAllowMissing()));
         } else {
             ConfigParseable confHandle = source.nameToParseable(name + ".conf");
             ConfigParseable jsonHandle = source.nameToParseable(name + ".json");
             ConfigParseable propsHandle = source.nameToParseable(name
                     + ".properties");
-
-            if (!options.getAllowMissing() && confHandle == null
-                    && jsonHandle == null && propsHandle == null) {
-                throw new ConfigException.IO(SimpleConfigOrigin.newSimple(name),
-                        "No config files {.conf,.json,.properties} found");
-            }
+            boolean gotSomething = false;
+            List<String> failMessages = new ArrayList<String>();
 
             ConfigSyntax syntax = options.getSyntax();
 
             obj = SimpleConfigObject.empty(SimpleConfigOrigin.newSimple(name));
-            if (confHandle != null
-                    && (syntax == null || syntax == ConfigSyntax.CONF)) {
-                obj = confHandle.parse(confHandle.options()
-                        .setAllowMissing(true).setSyntax(ConfigSyntax.CONF));
+            if (syntax == null || syntax == ConfigSyntax.CONF) {
+                try {
+                    obj = confHandle.parse(confHandle.options().setAllowMissing(false)
+                            .setSyntax(ConfigSyntax.CONF));
+                    gotSomething = true;
+                } catch (ConfigException.IO e) {
+                    failMessages.add(e.getMessage());
+                }
             }
 
-            if (jsonHandle != null
-                    && (syntax == null || syntax == ConfigSyntax.JSON)) {
-                ConfigObject parsed = jsonHandle.parse(jsonHandle
-                        .options().setAllowMissing(true)
-                        .setSyntax(ConfigSyntax.JSON));
-                obj = obj.withFallback(parsed);
+            if (syntax == null || syntax == ConfigSyntax.JSON) {
+                try {
+                    ConfigObject parsed = jsonHandle.parse(jsonHandle.options()
+                            .setAllowMissing(false).setSyntax(ConfigSyntax.JSON));
+                    obj = obj.withFallback(parsed);
+                    gotSomething = true;
+                } catch (ConfigException.IO e) {
+                    failMessages.add(e.getMessage());
+                }
             }
 
-            if (propsHandle != null
-                    && (syntax == null || syntax == ConfigSyntax.PROPERTIES)) {
-                ConfigObject parsed = propsHandle.parse(propsHandle.options()
-                        .setAllowMissing(true)
-                        .setSyntax(ConfigSyntax.PROPERTIES));
-                obj = obj.withFallback(parsed);
+            if (syntax == null || syntax == ConfigSyntax.PROPERTIES) {
+                try {
+                    ConfigObject parsed = propsHandle.parse(propsHandle.options()
+                            .setAllowMissing(false).setSyntax(ConfigSyntax.PROPERTIES));
+                    obj = obj.withFallback(parsed);
+                    gotSomething = true;
+                } catch (ConfigException.IO e) {
+                    failMessages.add(e.getMessage());
+                }
+            }
+
+            if (!options.getAllowMissing() && !gotSomething) {
+                String failMessage;
+                if (failMessages.isEmpty()) {
+                    // this should not happen
+                    throw new ConfigException.BugOrBroken(
+                            "should not be reached: nothing found but no exceptions thrown");
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    for (String msg : failMessages) {
+                        sb.append(msg);
+                        sb.append(", ");
+                    }
+                    sb.setLength(sb.length() - 2);
+                    failMessage = sb.toString();
+                }
+                throw new ConfigException.IO(SimpleConfigOrigin.newSimple(name), failMessage);
             }
         }
 
@@ -269,7 +288,14 @@ public class ConfigImpl {
             NameSource source = new NameSource() {
                 @Override
                 public ConfigParseable nameToParseable(String name) {
-                    return context.relativeTo(name);
+                    ConfigParseable p = context.relativeTo(name);
+                    if (p == null) {
+                        // avoid returning null
+                        return Parseable.newNotFound(name, "include was not found: '" + name + "'",
+                                ConfigParseOptions.defaults());
+                    } else {
+                        return p;
+                    }
                 }
             };
 
@@ -308,7 +334,7 @@ public class ConfigImpl {
         try {
             return DefaultIncluderHolder.defaultIncluder;
         } catch (ExceptionInInitializerError e) {
-            throw ConfigUtil.extractInitializerError(e);
+            throw ConfigImplUtil.extractInitializerError(e);
         }
     }
 
@@ -326,7 +352,7 @@ public class ConfigImpl {
         try {
             return SystemPropertiesHolder.systemProperties;
         } catch (ExceptionInInitializerError e) {
-            throw ConfigUtil.extractInitializerError(e);
+            throw ConfigImplUtil.extractInitializerError(e);
         }
     }
 
@@ -362,7 +388,7 @@ public class ConfigImpl {
         try {
             return EnvVariablesHolder.envVariables;
         } catch (ExceptionInInitializerError e) {
-            throw ConfigUtil.extractInitializerError(e);
+            throw ConfigImplUtil.extractInitializerError(e);
         }
     }
 
@@ -384,7 +410,7 @@ public class ConfigImpl {
         try {
             return ReferenceHolder.referenceConfig;
         } catch (ExceptionInInitializerError e) {
-            throw ConfigUtil.extractInitializerError(e);
+            throw ConfigImplUtil.extractInitializerError(e);
         }
     }
 }

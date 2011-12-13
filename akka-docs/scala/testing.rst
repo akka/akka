@@ -106,13 +106,13 @@ and in addition allows access to the internal state::
         case Ev("back") => goto(1) using "back"
       }
     })
-  
+
   assert (fsm.stateName == 1)
   assert (fsm.stateData == "")
   fsm ! "go"                      // being a TestActorRef, this runs also on the CallingThreadDispatcher
   assert (fsm.stateName == 2)
   assert (fsm.stateData == "go")
-  
+
   fsm.setState(stateName = 1)
   assert (fsm.stateName == 1)
 
@@ -235,8 +235,8 @@ common task easy:
      "An Echo actor" must {
 
        "send back messages unchanged" in {
-         
-         val echo = Actor.actorOf[EchoActor]
+
+         val echo = Actor.actorOf(Props[EchoActor])
          echo ! "hello world"
          expectMsg("hello world")
 
@@ -352,11 +352,11 @@ with message flows:
   * :meth:`receiveWhile[T](max: Duration, idle: Duration)(pf: PartialFunction[Any, T]): Seq[T]`
 
     Collect messages as long as
-    
+
     * they are matching the given partial function
     * the given time interval is not used up
     * the next message is received within the idle timeout
-      
+
     All collected messages are returned. The maximum duration defaults to the
     time remaining in the innermost enclosing :ref:`within <TestKit.within>`
     block and the idle duration defaults to infinity (thereby disabling the
@@ -370,7 +370,7 @@ with message flows:
     :ref:`within <TestKit.within>` block.
 
   * :meth:`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`
-    
+
     :meth:`ignoreNoMsg`
 
     The internal :obj:`testActor` contains a partial function for ignoring
@@ -431,7 +431,7 @@ maximum time bound, the overall block may take arbitrarily longer in this case.
   class SomeSpec extends WordSpec with MustMatchers with TestKit {
     "A Worker" must {
       "send timely replies" in {
-        val worker = actorOf(...)
+        val worker = ActorSystem().actorOf(...)
         within (500 millis) {
           worker ! "some work"
           expectMsg("some result")
@@ -457,7 +457,7 @@ Accounting for Slow Test Systems
 The tight timeouts you use during testing on your lightning-fast notebook will
 invariably lead to spurious test failures on the heavily loaded Jenkins server
 (or similar). To account for this situation, all maximum durations are
-internally scaled by a factor taken from ``akka.conf``,
+internally scaled by a factor taken from the :ref:`configuration`,
 ``akka.test.timefactor``, which defaults to 1.
 
 Resolving Conflicts with Implicit ActorRef
@@ -471,7 +471,7 @@ simply mix in `ÌmplicitSender`` into your test.
   class SomeSpec extends WordSpec with MustMatchers with TestKit with ImplicitSender {
     "A Worker" must {
       "send timely replies" in {
-        val worker = actorOf(...)
+        val worker = ActorSystem().actorOf(...)
         within (500 millis) {
           worker ! "some work" // testActor is the "sender" for this message
           expectMsg("some result")
@@ -506,7 +506,7 @@ using a small example::
 
   val probe1 = TestProbe()
   val probe2 = TestProbe()
-  val actor = Actor.actorOf[MyDoubleEcho]
+  val actor = ActorSystem().actorOf(Props[MyDoubleEcho])
   actor ! (probe1.ref, probe2.ref)
   actor ! "hello"
   probe1.expectMsg(50 millis, "hello")
@@ -553,8 +553,9 @@ concerning volume and timing of the message flow while still keeping the
 network functioning::
 
   val probe = TestProbe()
-  val source = Actor.actorOf(new Source(probe))
-  val dest = Actor.actorOf[Destination]
+  val system = ActorSystem()
+  val source = system.actorOf(Props(new Source(probe)))
+  val dest = system.actorOf(Props[Destination])
   source ! "start"
   probe.expectMsg("work")
   probe.forward(dest)
@@ -613,7 +614,7 @@ or from the client code
 
 .. code-block:: scala
 
-   val ref = Actor.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
+   val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
 
 As the :class:`CallingThreadDispatcher` does not have any configurable state,
 you may always use the (lazily) preallocated one as shown in the examples.
@@ -710,25 +711,25 @@ by debuggers as well as logging, where the Akka toolkit offers the following
 options:
 
 * *Logging of exceptions thrown within Actor instances*
-  
+
   This is always on; in contrast to the other logging mechanisms, this logs at
   ``ERROR`` level.
 
 * *Logging of message invocations on certain actors*
 
-  This is enabled by a setting in ``akka.conf`` — namely
+  This is enabled by a setting in the :ref:`configuration` — namely
   ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
   statement to be applied to an actor’s :meth:`receive` function::
 
     import akka.event.LoggingReceive
     def receive = LoggingReceive(this) {
       case msg => ...
-    } 
+    }
 
   The first argument to :meth:`LoggingReceive` defines the source to be used in the
   logging events, which should be the current actor.
 
-  If the abovementioned setting is not given in ``akka.conf``, this method will
+  If the abovementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.
 

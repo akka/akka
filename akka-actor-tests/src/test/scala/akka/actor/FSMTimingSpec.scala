@@ -14,7 +14,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   import FSMTimingSpec._
   import FSM._
 
-  val fsm = system.actorOf(new StateMachine(testActor))
+  val fsm = system.actorOf(Props(new StateMachine(testActor)))
   fsm ! SubscribeTransitionCallBack(testActor)
   expectMsg(1 second, CurrentState(fsm, Initial))
 

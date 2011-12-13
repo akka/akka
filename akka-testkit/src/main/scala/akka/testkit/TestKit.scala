@@ -58,7 +58,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  *
  * <pre>
  * class Test extends TestKit {
- *     val test = actorOf[SomeActor]
+ *     val test = actorOf(Props[SomeActor]
  *
  *     within (1 second) {
  *       test ! SomeWork

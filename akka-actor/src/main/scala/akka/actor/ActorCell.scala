@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
+import java.io.{ NotSerializableException, ObjectOutputStream }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -27,16 +28,16 @@ import akka.japi.Procedure
  * context.actorOf(props)
  *
  * // Scala
- * context.actorOf[MyActor]("name")
- * context.actorOf[MyActor]
- * context.actorOf(new MyActor(...))
+ * context.actorOf(Props[MyActor]("name")
+ * context.actorOf(Props[MyActor]
+ * context.actorOf(Props(new MyActor(...))
  *
  * // Java
  * context.actorOf(classOf[MyActor]);
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
- * context.actorOf(new Creator<MyActor>() {
+ * context.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * }, "name");
  * }}}
@@ -63,7 +64,12 @@ trait ActorContext extends ActorRefFactory {
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
    * 1 millisecond is the minimum supported timeout.
    */
-  def receiveTimeout_=(timeout: Option[Duration]): Unit
+  def setReceiveTimeout(timeout: Duration): Unit
+
+  /**
+   * Resets the current receive timeout.
+   */
+  def resetReceiveTimeout(): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -72,19 +78,29 @@ trait ActorContext extends ActorRefFactory {
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
-  def hotswap: Stack[PartialFunction[Any, Unit]]
-
   /**
    * Reverts the Actor behavior to the previous one in the hotswap stack.
    */
   def unbecome(): Unit
 
+  /**
+   * Returns the current message envelope.
+   */
   def currentMessage: Envelope
 
-  def currentMessage_=(invocation: Envelope): Unit
+  /**
+   * Returns a stack with the hotswapped behaviors (as Scala PartialFunction).
+   */
+  def hotswap: Stack[PartialFunction[Any, Unit]]
 
+  /**
+   * Returns the sender 'ActorRef' of the current message.
+   */
   def sender: ActorRef
 
+  /**
+   * Returns all supervised children.
+   */
   def children: Iterable[ActorRef]
 
   /**
@@ -103,40 +119,34 @@ trait ActorContext extends ActorRefFactory {
    */
   implicit def system: ActorSystem
 
+  /**
+   * Returns the supervising parent ActorRef.
+   */
   def parent: ActorRef
 
   /**
-   * Registers this actor as a Monitor for the provided ActorRef
+   * Registers this actor as a Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
 
   /**
-   * Unregisters this actor as Monitor for the provided ActorRef
+   * Unregisters this actor as Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */
   def unwatch(subject: ActorRef): ActorRef
+
+  final protected def writeObject(o: ObjectOutputStream): Unit =
+    throw new NotSerializableException("ActorContext is not serializable!")
 }
 
 trait UntypedActorContext extends ActorContext {
+
   /**
    * Returns an unmodifiable Java Collection containing the linked actors,
    * please note that the backing map is thread-safe but not immutable
    */
   def getChildren(): java.lang.Iterable[ActorRef]
-
-  /**
-   * Gets the current receive timeout
-   * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
-   */
-  def getReceiveTimeout: Option[Duration]
-
-  /**
-   * Defines the default timeout for an initial receive invocation.
-   * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
-   * 1 millisecond is the minimum supported timeout.
-   */
-  def setReceiveTimeout(timeout: Duration): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
@@ -191,7 +201,9 @@ private[akka] class ActorCell(
 
   override final def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
 
-  override final def receiveTimeout_=(timeout: Option[Duration]): Unit = {
+  override final def setReceiveTimeout(timeout: Duration): Unit = setReceiveTimeout(Some(timeout))
+
+  final def setReceiveTimeout(timeout: Option[Duration]): Unit = {
     val timeoutMs = timeout match {
       case None ⇒ -1L
       case Some(duration) ⇒
@@ -204,21 +216,13 @@ private[akka] class ActorCell(
     receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
   }
 
+  final override def resetReceiveTimeout(): Unit = setReceiveTimeout(None)
+
   /**
    * In milliseconds
    */
   final var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
-
-  /**
-   * UntypedActorContext impl
-   */
-  final def getReceiveTimeout: Option[Duration] = receiveTimeout
-
-  /**
-   * UntypedActorContext impl
-   */
-  final def setReceiveTimeout(timeout: Duration): Unit = receiveTimeout = Some(timeout)
 
   final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
@@ -392,7 +396,7 @@ private[akka] class ActorCell(
     def resume(): Unit = dispatcher resume this
 
     def terminate() {
-      receiveTimeout = None
+      setReceiveTimeout(None)
       cancelReceiveTimeout
 
       val c = children
@@ -515,23 +519,23 @@ private[akka] class ActorCell(
     if (system.settings.DebugAutoReceive) system.eventStream.publish(Debug(self.path.toString, "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case HotSwap(code, discardOld) ⇒ become(code(this), discardOld)
-      case RevertHotSwap             ⇒ unbecome()
-      case Failed(cause)             ⇒ handleFailure(sender, cause)
-      case Kill                      ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill                ⇒ self.stop()
-      case SelectParent(m)           ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m)  ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
-      case SelectChildPattern(p, m)  ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      case Failed(cause)            ⇒ handleFailure(sender, cause)
+      case Kill                     ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill               ⇒ self.stop()
+      case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
+      case SelectChildName(name, m) ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
+      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
 
   private def doTerminate() {
-    dispatcher.detach(this)
-
     try {
-      val a = actor
-      if (a ne null) a.postStop()
+      try {
+        val a = actor
+        if (a ne null) a.postStop()
+      } finally {
+        dispatcher.detach(this)
+      }
     } finally {
       try {
         parent.sendSystemMessage(ChildTerminated(self))

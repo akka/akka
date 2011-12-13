@@ -60,3 +60,44 @@ even depend on the used configuration. But they will build on the other JMM rule
 volatile variable rule. This means that you, the Akka user, do not need to worry about adding synchronization to provide
 such a "happens before" relation, because it is the responsibility of Akka. So you have your hands free to deal with your
 business logic, and the Akka framework makes sure that those rules are guaranteed on your behalf.
+
+.. _jmm-shared-state:
+
+Actors and shared mutable state
+-------------------------------
+
+Since Akka runs on the JVM there are still some rules to be followed.
+
+* Closing over internal Actor state and exposing it to other threads
+
+.. code-block:: scala
+
+    class MyActor extends Actor {
+     var state = ...
+     def receive = {
+        case _ =>
+          //Wrongs
+
+        // Very bad, shared mutable state,
+        // will break your application in weird ways
+          Future { state = NewState }
+          anotherActor ? message onResult { r => state = r }
+
+        // Very bad, "sender" changes for every message,
+        // shared mutable state bug
+          Future { expensiveCalculation(sender) }
+
+          //Rights
+
+        // Completely safe, "self" is OK to close over
+        // and it's an ActorRef, which is thread-safe
+          Future { expensiveCalculation() } onComplete { f => self ! f.value.get }
+
+        // Completely safe, we close over a fixed value
+        // and it's an ActorRef, which is thread-safe
+          val currentSender = sender
+          Future { expensiveCalculation(currentSender) }
+     }
+    }
+
+* Messages **should** be immutable, this is to avoid the shared mutable state trap.

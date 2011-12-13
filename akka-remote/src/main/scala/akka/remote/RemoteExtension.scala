@@ -24,7 +24,7 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
   val InitalDelayForGossip = Duration(config.getMilliseconds("akka.remote.gossip.initialDelay"), MILLISECONDS)
   val GossipFrequency = Duration(config.getMilliseconds("akka.remote.gossip.frequency"), MILLISECONDS)
 
-  // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
+  // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
   val SeedNodes = Set.empty[RemoteNettyAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
     case RemoteAddressExtractor(addr) ⇒ addr.transport

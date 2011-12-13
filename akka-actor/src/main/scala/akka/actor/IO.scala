@@ -193,7 +193,7 @@ trait IO {
   private def run() {
     _next match {
       case ByteStringLength(continuation, handle, message, waitingFor) ⇒
-        context.currentMessage = message
+        context.asInstanceOf[ActorCell].currentMessage = message
         val st = state(handle)
         if (st.readBytes.length >= waitingFor) {
           val bytes = st.readBytes.take(waitingFor) //.compact
@@ -202,7 +202,7 @@ trait IO {
           run()
         }
       case bsd @ ByteStringDelimited(continuation, handle, message, delimiter, inclusive, scanned) ⇒
-        context.currentMessage = message
+        context.asInstanceOf[ActorCell].currentMessage = message
         val st = state(handle)
         val idx = st.readBytes.indexOfSlice(delimiter, scanned)
         if (idx >= 0) {
@@ -215,7 +215,7 @@ trait IO {
           _next = bsd.copy(scanned = math.min(idx - delimiter.length, 0))
         }
       case ByteStringAny(continuation, handle, message) ⇒
-        context.currentMessage = message
+        context.asInstanceOf[ActorCell].currentMessage = message
         val st = state(handle)
         if (st.readBytes.length > 0) {
           val bytes = st.readBytes //.compact

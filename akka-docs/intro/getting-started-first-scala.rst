@@ -114,7 +114,6 @@ core distribution has seven modules:
 - ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
 - ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
 - ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
 
@@ -304,9 +303,9 @@ imported::
     import akka.actor.Actor.actorOf
 
 There are two versions of ``actorOf``; one of them taking a actor type and the
-other one an instance of an actor. The former one (``actorOf[MyActor]``) is used
+other one an instance of an actor. The former one (``actorOf(Props[MyActor]``) is used
 when the actor class has a no-argument constructor while the second one
-(``actorOf(new MyActor(..))``) is used when the actor class has a constructor
+(``actorOf(Props(new MyActor(..))``) is used when the actor class has a constructor
 that takes arguments. This is the only way to create an instance of an Actor and
 the ``actorOf`` method ensures this. The latter version is using call-by-name
 and lazily creates the actor within the scope of the ``actorOf`` method. The
@@ -319,7 +318,7 @@ Erlang actor's PID.
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
+- Created & Started -- ``Actor.actorOf(Props[MyActor])`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.
@@ -425,18 +424,11 @@ compiled ourselves::
     $ java \
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
-    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   858 millis
 
 Yippee! It is working.
-
-If you have not defined the ``AKKA_HOME`` environment variable then Akka can't
-find the ``akka.conf`` configuration file and will print out a ``Can’t load
-akka.conf`` warning. This is ok since it will then just use the defaults.
-
 
 Run it inside SBT
 =================
@@ -456,11 +448,6 @@ When this in done we can run our application directly inside SBT::
     Calculation time:   942 millis
 
 Yippee! It is working.
-
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka
-can't find the ``akka.conf`` configuration file and will print out a ``Can’t
-load akka.conf`` warning. This is ok since it will then just use the defaults.
-
 
 Conclusion
 ==========

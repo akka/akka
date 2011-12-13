@@ -9,9 +9,6 @@ import java.lang.management.ManagementFactory
 import javax.management.{ ObjectInstance, ObjectName, InstanceAlreadyExistsException, InstanceNotFoundException }
 import akka.actor.ActorSystem
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object JMX {
   private val mbeanServer = ManagementFactory.getPlatformMBeanServer
 

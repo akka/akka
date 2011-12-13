@@ -112,9 +112,7 @@ class PassiveRemoteClient(val currentChannel: Channel,
 }
 
 /**
- *  RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
  */
 class ActiveRemoteClient private[akka] (
   remoteSupport: NettyRemoteSupport,
@@ -244,9 +242,6 @@ class ActiveRemoteClient private[akka] (
   private[akka] def resetReconnectionTimeWindow = reconnectionTimeWindowStart = 0L
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class ActiveRemoteClientPipelineFactory(
   name: String,
   bootstrap: ClientBootstrap,
@@ -267,9 +262,6 @@ class ActiveRemoteClientPipelineFactory(
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 @ChannelHandler.Sharable
 class ActiveRemoteClientHandler(
   val name: String,
@@ -553,9 +545,6 @@ class NettyRemoteServer(
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class RemoteServerPipelineFactory(
   val name: String,
   val openChannels: ChannelGroup,
@@ -604,9 +593,6 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
   }
 }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 @ChannelHandler.Sharable
 class RemoteServerHandler(
   val name: String,

@@ -13,12 +13,23 @@ Automatically published documentation for the latest SNAPSHOT version of Akka ca
 be found here:
 
 - Akka - http://akka.io/docs/akka/snapshot/ (or in `PDF format <http://akka.io/docs/akka/snapshot/Akka.pdf>`__)
-- Akka Modules - http://akka.io/docs/akka-modules/snapshot/ (or in `PDF format <http://akka.io/docs/akka-modules/snapshot/AkkaModules.pdf>`__)
 
 
 
 Release Versions
 ================
+
+1.3
+---
+
+- Akka 1.3 - http://akka.io/docs/akka/1.3/ (or in `PDF format <http://akka.io/docs/akka/1.3/Akka.pdf>`__)
+- Akka Modules 1.3 - http://akka.io/docs/akka-modules/1.3/ (or in `PDF format <http://akka.io/docs/akka-modules/1.3/AkkaModules.pdf>`__)
+
+1.2
+---
+
+- Akka 1.2 - http://akka.io/docs/akka/1.2/ (or in `PDF format <http://akka.io/docs/akka/1.2/Akka.pdf>`__)
+- Akka Modules 1.2 - http://akka.io/docs/akka-modules/1.2/ (or in `PDF format <http://akka.io/docs/akka-modules/1.2/AkkaModules.pdf>`__)
 
 1.1
 ---

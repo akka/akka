@@ -13,14 +13,14 @@ object ForwardActorSpec {
   val ExpectedMessage = "FOO"
 
   def createForwardingChain(system: ActorSystem): ActorRef = {
-    val replier = system.actorOf(new Actor {
+    val replier = system.actorOf(Props(new Actor {
       def receive = { case x ⇒ sender ! x }
-    })
+    }))
 
-    def mkforwarder(forwardTo: ActorRef) = system.actorOf(
+    def mkforwarder(forwardTo: ActorRef) = system.actorOf(Props(
       new Actor {
         def receive = { case x ⇒ forwardTo forward x }
-      })
+      }))
 
     mkforwarder(mkforwarder(mkforwarder(replier)))
   }
@@ -35,7 +35,7 @@ class ForwardActorSpec extends AkkaSpec {
     "forward actor reference when invoking forward on bang" in {
       val latch = new TestLatch(1)
 
-      val replyTo = system.actorOf(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } })
+      val replyTo = system.actorOf(Props(new Actor { def receive = { case ExpectedMessage ⇒ latch.countDown() } }))
 
       val chain = createForwardingChain(system)
 

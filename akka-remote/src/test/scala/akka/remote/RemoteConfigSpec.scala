@@ -32,7 +32,7 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
       getMilliseconds("akka.remote.client.read-timeout") must equal(3600 * 1000)
       getMilliseconds("akka.remote.client.reconnection-time-window") must equal(600 * 1000)
 
-      // TODO cluster config will go into akka-cluster-reference.conf when we enable that module
+      // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
       //akka.cluster
       getString("akka.cluster.name") must equal("default-cluster")
       getString("akka.cluster.nodename") must equal("node1")

@@ -18,8 +18,6 @@ import akka.config.ConfigurationException
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteActorRefProvider(
   val systemName: String,
@@ -167,8 +165,6 @@ class RemoteActorRefProvider(
 /**
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class RemoteActorRef private[akka] (
   provider: RemoteActorRefProvider,

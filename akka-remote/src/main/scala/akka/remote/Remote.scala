@@ -24,8 +24,6 @@ import scala.annotation.tailrec
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSettings) {
 
@@ -77,7 +75,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
 
     _provider = provider
     _serialization = SerializationExtension(system)
-    _computeGridDispatcher = system.dispatcherFactory.fromConfig("akka.remote.compute-grid-dispatcher")
+    _computeGridDispatcher = system.dispatcherFactory.newFromConfig("akka.remote.compute-grid-dispatcher")
     _remoteDaemon = new RemoteSystemDaemon(system, this, system.provider.rootPath / "remote", system.provider.rootGuardian, log)
     _eventStream = new NetworkEventStream(system)
     _server = {
@@ -121,8 +119,6 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
  * Internal system "daemon" actor for remote internal communication.
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
   extends VirtualPathContainer(_path, _parent, _log) {

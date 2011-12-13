@@ -16,8 +16,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Remote connection manager, manages remote connections, e.g. RemoteActorRef's.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteConnectionManager(
   system: ActorSystemImpl,

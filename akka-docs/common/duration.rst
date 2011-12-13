@@ -4,8 +4,6 @@
 Duration
 ########
 
-Module stability: **SOLID**
-
 Durations are used throughout the Akka library, wherefore this concept is
 represented by a special data type, :class:`Duration`. Values of this type may
 represent infinite (:obj:`Duration.Inf`, :obj:`Duration.MinusInf`) or finite
@@ -48,4 +46,18 @@ method calls instead:
    assert (diff.lt(fivesec));
    assert (Duration.Zero().lt(Duration.Inf()));
 
+Deadline
+========
 
+Durations have a brother name :class:`Deadline`, which is a class holding a representation
+of an absolute point in time, and support deriving a duration from this by calculating the
+difference between now and the deadline. This is useful when you want to keep one overall
+deadline without having to take care of the book-keeping wrt. the passing of time yourself::
+
+  val deadline = 10 seconds fromNow
+  // do something which takes time
+  awaitCond(..., deadline.timeLeft)
+
+In Java you create these from durations::
+
+  final Deadline d = Duration.create(5, "seconds").fromNow();

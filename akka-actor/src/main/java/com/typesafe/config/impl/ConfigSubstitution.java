@@ -266,7 +266,7 @@ final class ConfigSubstitution extends AbstractConfigValue implements
             if (p instanceof SubstitutionExpression) {
                 sb.append(p.toString());
             } else {
-                sb.append(ConfigUtil.renderJsonString((String) p));
+                sb.append(ConfigImplUtil.renderJsonString((String) p));
             }
         }
     }

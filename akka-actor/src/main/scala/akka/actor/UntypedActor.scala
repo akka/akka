@@ -48,8 +48,6 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *    }
  *  }
  * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class UntypedActor extends Actor {
 
@@ -75,30 +73,36 @@ abstract class UntypedActor extends Actor {
   /**
    * User overridable callback.
    * <p/>
-   * Is called when an Actor is started, this only happens at most once in the life of an actor.
+   * Is called when an Actor is started.
+   * Actor are automatically started asynchronously when created.
+   * Empty default implementation.
    */
   override def preStart() {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called when 'actor.stop()' is invoked.
+   * Is called asynchronously after 'actor.stop()' is invoked.
+   * Empty default implementation.
    */
   override def postStop() {}
 
   /**
    * User overridable callback.
    * <p/>
-   * Is called on a crashed Actor right BEFORE it is restarted to allow clean up of resources before Actor is terminated.
+   * Is called on a crashed Actor right BEFORE it is restarted to allow clean
+   * up of resources before Actor is terminated.
+   * By default it calls postStop()
    */
-  override def preRestart(reason: Throwable, lastMessage: Option[Any]) {}
+  override def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
 
   /**
    * User overridable callback.
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
+   * By default it calls preStart()
    */
-  override def postRestart(reason: Throwable) {}
+  override def postRestart(reason: Throwable) { preStart() }
 
   /**
    * User overridable callback.
@@ -117,7 +121,5 @@ abstract class UntypedActor extends Actor {
 
 /**
  * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait UntypedActorFactory extends Creator[Actor]

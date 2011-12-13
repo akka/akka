@@ -123,7 +123,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       a ! 42
       f.isCompleted must be === true
       f.get must be === 42
-      system.actorFor(a.path) must be === system.deadLetters
+      // clean-up is run as onComplete callback, i.e. dispatched on another thread
+      awaitCond(system.actorFor(a.path) == system.deadLetters, 1 second)
     }
 
   }
@@ -229,7 +230,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       a ! 42
       f.isCompleted must be === true
       f.get must be === 42
-      (c2 ? LookupPath(a.path)).get must be === system.deadLetters
+      // clean-up is run as onComplete callback, i.e. dispatched on another thread
+      awaitCond((c2 ? LookupPath(a.path)).get == system.deadLetters, 1 second)
     }
 
   }

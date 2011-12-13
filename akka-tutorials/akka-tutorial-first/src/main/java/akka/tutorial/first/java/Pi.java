@@ -4,10 +4,11 @@
 
 package akka.tutorial.first.java;
 
+import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
 import akka.routing.RoundRobinRouter;
 
 import java.util.ArrayList;
@@ -154,11 +155,11 @@ public class Pi {
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = system.actorOf(new akka.actor.UntypedActorFactory() {
+        ActorRef master = system.actorOf(new Props(new UntypedActorFactory() {
             public UntypedActor create() {
                 return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
             }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());

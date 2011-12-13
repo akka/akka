@@ -35,14 +35,14 @@ To:
 .. code-block:: scala
 
   import Actor._
-  val a = actorOf[MyActor]
+  val a = actorOf(Props[MyActor]
   a ! msg
 
 You can also start it in the same statement:
 
 .. code-block:: scala
 
-  val a = actorOf[MyActor]
+  val a = actorOf(Props[MyActor]
 
 Creating Actors with non-default constructor
 --------------------------------------------
@@ -59,7 +59,7 @@ To:
 .. code-block:: scala
 
   import Actor._
-  val a = actorOf(new MyActor(..))
+  val a = actorOf(Props(new MyActor(..))
   a ! msg
 
 Use of 'self' ActorRef API
@@ -119,7 +119,7 @@ If you want to serialize it yourself, here is how to do it:
 
 .. code-block:: scala
 
-  val actorRef1 = actorOf[MyActor]
+  val actorRef1 = actorOf(Props[MyActor]
 
   val bytes = actorRef1.toBinary
 
@@ -129,7 +129,7 @@ If you are also using Protobuf then you can use the methods that work with Proto
 
 .. code-block:: scala
 
-  val actorRef1 = actorOf[MyActor]
+  val actorRef1 = actorOf(Props[MyActor]
 
   val protobufMessage = actorRef1.toProtocol
 
@@ -166,7 +166,7 @@ They will be removed in 1.0. Instead use
 
 Usage example:
 .. code-block:: scala
-  
+
   val m = Message(1.4)
   val b = m.bodyAs[String]
 

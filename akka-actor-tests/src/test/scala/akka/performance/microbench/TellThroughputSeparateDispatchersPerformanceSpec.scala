@@ -127,7 +127,7 @@ class TellThroughputSeparateDispatchersPerformanceSpec extends PerformanceSpec {
           yield system.actorOf(Props(new Destination).withDispatcher(clientDispatcher))
         val clients = for ((dest, j) ← destinations.zipWithIndex)
           yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
-	*/
+        */
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)

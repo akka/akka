@@ -25,28 +25,26 @@ import akka.event.LoggingAdapter
  * <pre>
  *   import Actor._
  *
- *   val actor = actorOf[MyActor]
+ *   val actor = actorOf(Props[MyActor]
  *   actor ! message
  *   actor.stop()
  * </pre>
  *
  * You can also create and start actors like this:
  * <pre>
- *   val actor = actorOf[MyActor]
+ *   val actor = actorOf(Props[MyActor]
  * </pre>
  *
  * Here is an example on how to create an actor with a non-default constructor.
  * <pre>
  *   import Actor._
  *
- *   val actor = actorOf(new MyActor(...))
+ *   val actor = actorOf(Props(new MyActor(...))
  *   actor ! message
  *   actor.stop()
  * </pre>
  *
  * The natural ordering of ActorRef is defined in terms of its [[akka.actor.ActorPath]].
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
@@ -81,17 +79,29 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
   /**
-   * Akka Java API. <p/>
+   * Akka Java API.
+   *
    * Sends a message asynchronously returns a future holding the eventual reply message.
-   * <p/>
+   *
    * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'tell' together with the 'getContext().getSender()' to
-   * implement request/response message exchanges.
-   * <p/>
-   * If you are sending messages using <code>ask</code> then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
-   * to send a reply message to the original sender. If not then the sender will block until the timeout expires.
+   * Use this method with care. In most cases it is better to use 'tell' together with the sender
+   * parameter to implement non-blocking request/response message exchanges.
+   *
+   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
+   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
+   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
+   * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
    */
-  def ask(message: AnyRef, timeout: Long): Future[AnyRef] = ?(message, Timeout(timeout)).asInstanceOf[Future[AnyRef]]
+  def ask(message: AnyRef, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
+
+  def ask(message: AnyRef, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -146,6 +156,21 @@ trait ScalaActorRef { ref: ActorRef ⇒
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with implicit or explicit
+   * sender parameter to implement non-blocking request/response message exchanges.
+   *
+   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
+   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
+   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
+   * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
    */
   def ?(message: Any)(implicit timeout: Timeout): Future[Any]
 
@@ -186,8 +211,6 @@ private[akka] case object Nobody extends MinimalActorRef {
 
 /**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class LocalActorRef private[akka] (
   _system: ActorSystemImpl,
@@ -473,7 +496,7 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName))))(dispatcher)
+    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName))))(dispatcher)
 
   override def isTerminated = result.isCompleted || result.isExpired
 

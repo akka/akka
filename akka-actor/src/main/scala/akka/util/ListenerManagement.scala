@@ -9,8 +9,6 @@ import akka.actor.{ ActorInitializationException, ActorRef }
 
 /**
  * A manager for listener actors. Intended for mixin by observables.
- *
- * @author Martin Krasser
  */
 trait ListenerManagement {
 

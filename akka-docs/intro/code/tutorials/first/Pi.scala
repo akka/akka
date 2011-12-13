@@ -66,7 +66,7 @@
 
 //     //#create-workers
 //     // create the workers
-//     val workers = Vector.fill(nrOfWorkers)(system.actorOf[Worker])
+//     val workers = Vector.fill(nrOfWorkers)(system.actorOf(Props[Worker])
 
 //     // wrap them with a load-balancing router
 //     val router = system.actorOf(RoutedProps().withRoundRobinRouter.withLocalConnections(workers), "pi")
@@ -119,7 +119,7 @@
 //     val latch = new CountDownLatch(1)
 
 //     // create the master
-//     val master = system.actorOf(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
+//     val master = system.actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch))
 
 //     // start the calculation
 //     master ! Calculate

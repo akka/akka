@@ -64,7 +64,7 @@ class Random3ReplicasMultiJvmNode2 extends ClusterTestNode {
 
       //check if the actorRef is the expected remoteActorRef.
       var hello: ActorRef = null
-      hello = Actor.actorOf[HelloWorld]("service-hello")
+      hello = Actor.actorOf(Props[HelloWorld]("service-hello")
       hello must not equal (null)
       hello.address must equal("service-hello")
       hello.isInstanceOf[ClusterActorRef] must be(true)

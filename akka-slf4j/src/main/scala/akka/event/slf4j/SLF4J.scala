@@ -11,8 +11,6 @@ import akka.actor._
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait SLF4JLogging {
   @transient
@@ -29,8 +27,6 @@ object Logger {
  *
  * The thread in which the logging was performed is captured in
  * Mapped Diagnostic Context (MDC) with attribute name "sourceThread".
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Slf4jEventHandler extends Actor with SLF4JLogging {
 

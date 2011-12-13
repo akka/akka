@@ -31,7 +31,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message and receive normal response") {
       given("a registered two-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-2", true))
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-2", true))
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
@@ -44,7 +44,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message and receive failure response") {
       given("a registered two-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-2"))
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-2"))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
@@ -59,7 +59,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message oneway") {
       given("a registered one-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-1", true) with Oneway)
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-1", true) with Oneway)
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("TEST")
@@ -71,7 +71,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message twoway without sender reference") {
       given("a registered two-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-1"))
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-1"))
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("test")
@@ -86,7 +86,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message and receive normal response") {
       given("a registered two-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-3"))
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-3"))
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
@@ -98,7 +98,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message and receive failure response") {
       given("a registered two-way producer")
-      val producer = actorOf(new TestProducer("direct:producer-test-3"))
+      val producer = actorOf(Props(new TestProducer("direct:producer-test-3"))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
@@ -116,8 +116,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward normal response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target))
+      val target = actorOf(Props[ReplyingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-2", target))
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
@@ -130,8 +130,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward failure response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target))
+      val target = actorOf(Props[ReplyingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-2", target))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
@@ -146,8 +146,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target))
+      val target = actorOf(Props[ProducingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-2", target))
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
@@ -159,8 +159,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target))
+      val target = actorOf(Props[ProducingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-2", target))
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
@@ -176,8 +176,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward normal response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target))
+      val target = actorOf(Props[ReplyingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-3", target))
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
@@ -190,8 +190,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward failure response to a replying target actor and receive response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target))
+      val target = actorOf(Props[ReplyingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-3", target))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
@@ -206,8 +206,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target))
+      val target = actorOf(Props[ProducingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-3", target))
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
@@ -219,8 +219,8 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
     scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget]
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target))
+      val target = actorOf(Props[ProducingForwardTarget]
+      val producer = actorOf(Props(new TestForwarder("direct:producer-test-3", target))
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
@@ -271,7 +271,7 @@ object ProducerFeatureTest {
   }
 
   class TestRoute extends RouteBuilder {
-    val responder = actorOf[TestResponder]
+    val responder = actorOf(Props[TestResponder]
     def configure {
       from("direct:forward-test-1").to("mock:mock")
       // for one-way messaging tests

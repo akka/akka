@@ -6,8 +6,6 @@ Dispatchers (Scala)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
-Module stability: **SOLID**
 
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
@@ -18,119 +16,100 @@ The event-based Actors currently consume ~600 bytes per Actor which means that y
 Default dispatcher
 ------------------
 
-For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created. The dispatcher used is this one:
+For most scenarios the default settings are the best. Here we have one single event-based dispatcher for all Actors created.
+The default dispatcher is available from the ``ActorSystem.dispatcher`` and can be configured in the ``akka.actor.default-dispatcher``
+section of the :ref:`configuration`.
 
-.. code-block:: scala
-
-  Dispatchers.globalDispatcher
-
-But if you feel that you are starting to contend on the single dispatcher (the 'Executor' and its queue) or want to group a specific set of Actors for a dedicated dispatcher for better flexibility and configurability then you can override the defaults and define your own dispatcher. See below for details on which ones are available and how they can be configured.
+If you are starting to get contention on the single dispatcher (the ``Executor`` and its queue) or want to group a specific set of Actors
+for a dedicated dispatcher for better flexibility and configurability then you can override the defaults and define your own dispatcher.
+See below for details on which ones are available and how they can be configured.
 
 Setting the dispatcher
 ----------------------
 
-Normally you set the dispatcher from within the Actor itself. The dispatcher is defined by the 'dispatcher: MessageDispatcher' member field in 'ActorRef'.
+You specify the dispatcher to use when creating an actor.
 
-.. code-block:: scala
-
-  class MyActor extends Actor {
-    self.dispatcher = ... // set the dispatcher
-     ...
-  }
-
-You can also set the dispatcher for an Actor **before** it has been started:
-
-.. code-block:: scala
-
-  actorRef.dispatcher = dispatcher
+.. includecode:: code/DispatcherDocSpec.scala
+   :include: imports,defining-dispatcher
 
 Types of dispatchers
 --------------------
 
-There are six different types of message dispatchers:
+There are 4 different types of message dispatchers:
 
-* Thread-based
+* Thread-based (Pinned)
 * Event-based
 * Priority event-based
-* Work-stealing
+* Work-stealing (Balancing)
 
-Factory methods for all of these, including global versions of some of them, are in the 'akka.dispatch.Dispatchers' object.
+It is recommended to define the dispatcher in :ref:`configuration` to allow for tuning for different environments.
+
+Example of a custom event-based dispatcher, which can be fetched with ``system.dispatcherFactory.lookup("my-dispatcher")``
+as in the example above:
+
+.. includecode:: code/DispatcherDocSpec.scala#my-dispatcher-config
+
+Default values are taken from ``default-dispatcher``, i.e. all options doesn't need to be defined.
+
+.. warning::
+
+  Factory methods for creating dispatchers programmatically are available in ``akka.dispatch.Dispatchers``, i.e.
+  ``dispatcherFactory`` of the ``ActorSystem``. These methods will probably be changed or removed before
+  2.0 final release, because dispatchers need to be defined by configuration to work in a clustered setup.
 
 Let's now walk through the different dispatchers in more detail.
 
 Thread-based
 ^^^^^^^^^^^^
 
-The 'PinnedDispatcher' binds a dedicated OS thread to each specific Actor. The messages are posted to a 'LinkedBlockingQueue' which feeds the messages to the dispatcher one by one. A 'PinnedDispatcher' cannot be shared between actors. This dispatcher has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with this dispatcher is that Actors do not block threads for each other.
+The ``PinnedDispatcher`` binds a dedicated OS thread to each specific Actor. The messages are posted to a
+`LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_
+which feeds the messages to the dispatcher one by one. A ``PinnedDispatcher`` cannot be shared between actors. This dispatcher
+has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes
+a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with
+this dispatcher is that Actors do not block threads for each other.
 
-It would normally by used from within the actor like this:
+FIXME PN: Is this the way to configure a PinnedDispatcher, and then why "A ``PinnedDispatcher`` cannot be shared between actors."
 
-.. code-block:: scala
+The ``PinnedDispatcher`` is configured as a event-based dispatcher with with core pool size of 1.
 
-  class MyActor extends Actor {
-      self.dispatcher = Dispatchers.newPinnedDispatcher(self)
-    ...
-  }
+.. includecode:: code/DispatcherDocSpec.scala#my-pinned-config
 
 Event-based
 ^^^^^^^^^^^
 
-The 'Dispatcher' binds a set of Actors to a thread pool backed up by a 'BlockingQueue'. This dispatcher is highly configurable and supports a fluent configuration API to configure the 'BlockingQueue' (type of queue, max items etc.) as well as the thread pool.
+The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
+`BlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/BlockingQueue.html>`_. This dispatcher is highly configurable
+and supports a fluent configuration API to configure the ``BlockingQueue`` (type of queue, max items etc.) as well as the thread pool.
 
-The event-driven dispatchers **must be shared** between multiple Actors. One best practice is to let each top-level Actor, e.g. the Actors you define in the declarative supervisor config, to get their own dispatcher but reuse the dispatcher for each new Actor that the top-level Actor creates. But you can also share dispatcher between multiple top-level Actors. This is very use-case specific and needs to be tried out on a case by case basis. The important thing is that Akka tries to provide you with the freedom you need to design and implement your system in the most efficient way in regards to performance, throughput and latency.
+The event-driven dispatchers **must be shared** between multiple Actors. One best practice is to let each top-level Actor, e.g.
+the Actors you create from ``system.actorOf`` to get their own dispatcher but reuse the dispatcher for each new Actor
+that the top-level Actor creates. But you can also share dispatcher between multiple top-level Actors. This is very use-case specific
+and needs to be tried out on a case by case basis. The important thing is that Akka tries to provide you with the freedom you need to
+design and implement your system in the most efficient way in regards to performance, throughput and latency.
 
 It comes with many different predefined BlockingQueue configurations:
 
-* Bounded LinkedBlockingQueue
-* Unbounded LinkedBlockingQueue
-* Bounded ArrayBlockingQueue
-* Unbounded ArrayBlockingQueue
-* SynchronousQueue
+* Bounded `LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_
+* Unbounded `LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_
+* Bounded `ArrayBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ArrayBlockingQueue.html>`_
+* Unbounded `ArrayBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ArrayBlockingQueue.html>`_
+* `SynchronousQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/SynchronousQueue.html>`_
 
-You can also set the rejection policy that should be used, e.g. what should be done if the dispatcher (e.g. the Actor) can't keep up and the mailbox is growing up to the limit defined. You can choose between four different rejection policies:
+When using a bounded queue and it has grown up to limit defined the message processing will run in the caller's
+thread as a way to slow him down and balance producer/consumer.
 
-* java.util.concurrent.ThreadPoolExecutor.CallerRuns - will run the message processing in the caller's thread as a way to slow him down and balance producer/consumer
-* java.util.concurrent.ThreadPoolExecutor.AbortPolicy - rejected messages by throwing a 'RejectedExecutionException'
-* java.util.concurrent.ThreadPoolExecutor.DiscardPolicy - discards the message (throws it away)
-* java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy - discards the oldest message in the mailbox (throws it away)
+Here is an example of a bounded mailbox:
 
-You can read more about these policies `here <http://java.sun.com/javase/6/docs/api/index.html?java/util/concurrent/RejectedExecutionHandler.html>`_.
-
-Here is an example:
-
-.. code-block:: scala
-
-  import akka.actor.Actor
-  import akka.dispatch.Dispatchers
-  import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
-
-  class MyActor extends Actor {
-    self.dispatcher = Dispatchers.newDispatcher(name, throughput = 15)
-      .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
-      .setCorePoolSize(16)
-      .setMaxPoolSize(128)
-      .setKeepAliveTimeInMillis(60000)
-      .setRejectionPolicy(new CallerRunsPolicy)
-      .build
-     ...
-  }
+.. includecode:: code/DispatcherDocSpec.scala#my-bounded-config
 
 The standard :class:`Dispatcher` allows you to define the ``throughput`` it
 should have, as shown above. This defines the number of messages for a specific
 Actor the dispatcher should process in one single sweep; in other words, the
-dispatcher will bunch up to ``throughput`` message invocations together when
+dispatcher will batch process up to ``throughput`` messages together when
 having elected an actor to run.  Setting this to a higher number will increase
-throughput but lower fairness, and vice versa. If you don't specify it
-explicitly then it uses the default value defined in the 'akka.conf'
-configuration file:
-
-.. code-block:: ruby
-
-  actor {
-    throughput = 5
-  }
-
-If you don't define a the 'throughput' option in the configuration file then the default value of '5' will be used.
+throughput but lower fairness, and vice versa. If you don't specify it explicitly
+then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
 
 Browse the `ScalaDoc <scaladoc>`_ or look at the code for all the options available.
 
@@ -138,62 +117,21 @@ Priority event-based
 ^^^^^^^^^^^^^^^^^^^^
 
 Sometimes it's useful to be able to specify priority order of messages, that is done by using Dispatcher and supply
-an UnboundedPriorityMailbox or BoundedPriorityMailbox with a java.util.Comparator[MessageInvocation] or use a akka.dispatch.PriorityGenerator (recommended):
+an UnboundedPriorityMailbox or BoundedPriorityMailbox with a ``java.util.Comparator[Envelope]`` or use a
+``akka.dispatch.PriorityGenerator`` (recommended):
 
 Creating a Dispatcher using PriorityGenerator:
 
-.. code-block:: scala
-
-  import akka.dispatch._
-  import akka.actor._
-  
-  val gen = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
-      case 'highpriority => 0   // 'highpriority messages should be treated first if possible
-      case 'lowpriority  => 100 // 'lowpriority messages should be treated last if possible
-      case otherwise     => 50    // We default to 50
-   }
-  
-   val a = Actor.actorOf( // We create a new Actor that just prints out what it processes
-       Props(new Actor {
-         self ! 'lowpriority
-         self ! 'lowpriority
-         self ! 'highpriority
-         self ! 'pigdog
-         self ! 'pigdog2
-         self ! 'pigdog3
-         self ! 'highpriority
-         def receive = {
-           case x => println(x)
-         }
-    }).withDispatcher(new Dispatcher("foo", 5, UnboundedPriorityMailbox(gen)))) // We create a new Priority dispatcher and seed it with the priority generator
-
-Prints:
-
-'highpriority
-'highpriority
-'pigdog
-'pigdog2
-'pigdog3
-'lowpriority
-'lowpriority
+.. includecode:: code/DispatcherDocSpec.scala#prio-dispatcher
 
 Work-stealing event-based
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The 'BalancingDispatcher' is a variation of the 'Dispatcher' in which Actors of the same type can be set up to share this dispatcher and during execution time the different actors will steal messages from other actors if they have less messages to process. This can be a great way to improve throughput at the cost of a little higher latency.
+The ``BalancingDispatcher`` is a variation of the ``Dispatcher`` in which Actors of the same type can be set up to
+share this dispatcher and during execution time the different actors will steal messages from other actors if they
+have less messages to process. This can be a great way to improve throughput at the cost of a little higher latency.
 
-Normally the way you use it is to create an Actor companion object to hold the dispatcher and then set in in the Actor explicitly.
-
-.. code-block:: scala
-
-  object MyActor {
-    val dispatcher = Dispatchers.newBalancingDispatcher(name).build
-  }
-
-  class MyActor extends Actor {
-    self.dispatcher = MyActor.dispatcher
-    ...
-  }
+.. includecode:: code/DispatcherDocSpec.scala#my-balancing-config
 
 Here is an article with some more information: `Load Balancing Actors with Work Stealing Techniques <http://janvanbesien.blogspot.com/2010/03/load-balancing-actors-with-work.html>`_
 Here is another article discussing this particular dispatcher: `Flexible load balancing with Akka in Scala <http://vasilrem.com/blog/software-development/flexible-load-balancing-with-akka-in-scala/>`_
@@ -204,14 +142,18 @@ Making the Actor mailbox bounded
 Global configuration
 ^^^^^^^^^^^^^^^^^^^^
 
-You can make the Actor mailbox bounded by a capacity in two ways. Either you define it in the configuration file under 'default-dispatcher'. This will set it globally.
+You can make the Actor mailbox bounded by a capacity in two ways. Either you define it in the :ref:`configuration` file under
+``default-dispatcher``. This will set it globally as default for the DefaultDispatcher and for other configured dispatchers,
+if not specified otherwise.
 
 .. code-block:: ruby
 
-  actor {
-    default-dispatcher {
-      mailbox-capacity = -1            # If negative (or zero) then an unbounded mailbox is used (default)
-                                       # If positive then a bounded mailbox is used and the capacity is set to the number specified
+  akka {
+    actor {
+      default-dispatcher {
+        task-queue-size = 1000   # If negative (or zero) then an unbounded mailbox is used (default)
+                                 # If positive then a bounded mailbox is used and the capacity is set to the number specified
+      }
     }
   }
 
@@ -220,26 +162,11 @@ Per-instance based configuration
 
 You can also do it on a specific dispatcher instance.
 
-For the 'Dispatcher' and the 'ExecutorBasedWorkStealingDispatcher' you can do it through their constructor
+.. includecode:: code/DispatcherDocSpec.scala#my-bounded-config
 
-.. code-block:: scala
 
-  class MyActor extends Actor {
-    val mailboxCapacity = BoundedMailbox(capacity = 100)
-    self.dispatcher = Dispatchers.newDispatcher(name, throughput, mailboxCapacity).build
-     ...
-  }
-
-For the 'PinnedDispatcher', it is non-shareable between actors, and associates a dedicated Thread with the actor.
-Making it bounded (by specifying a capacity) is optional, but if you do, you need to provide a pushTimeout (default is 10 seconds). When trying to send a message to the Actor it will throw a MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out") if the message cannot be added to the mailbox within the time specified by the pushTimeout.
-
-.. code-block:: scala
-
-  class MyActor extends Actor {
-    import akka.util.duration._
-    self.dispatcher = Dispatchers.newPinnedDispatcher(self, mailboxCapacity = 100,
-      pushTimeOut = 10 seconds)
-     ...
-  }
-
+For the ``PinnedDispatcher``, it is non-shareable between actors, and associates a dedicated Thread with the actor.
+Making it bounded (by specifying a capacity) is optional, but if you do, you need to provide a pushTimeout (default is 10 seconds).
+When trying to send a message to the Actor it will throw a MessageQueueAppendFailedException("BlockingMessageTransferQueue transfer timed out")
+if the message cannot be added to the mailbox within the time specified by the pushTimeout.
 

@@ -108,7 +108,6 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
 - ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-2.0-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
 - ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
 - ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
 
@@ -159,8 +158,8 @@ Here is the layout that Maven created::
 
 As you can see we already have a Java source file called ``App.java``, let's now rename it to ``Pi.java``.
 
-We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_ 
-and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io. 
+We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_
+and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
 It should now look something like this:
 
 .. code-block:: xml
@@ -222,6 +221,7 @@ We start by creating a ``Pi.java`` file and adding these import statements at th
     import static akka.actor.Actors.poisonPill;
     import static java.util.Arrays.asList;
 
+    import akka.actor.Props;
     import akka.actor.ActorRef;
     import akka.actor.UntypedActor;
     import akka.actor.UntypedActorFactory;
@@ -338,15 +338,15 @@ The master actor is a little bit more involved. In its constructor we need to cr
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
+          workers[i] = actorOf(new Props(Worker.class));
         }
 
         // wrap them with a load-balancing router
-        ActorRef router = actorOf(new UntypedActorFactory() {
+        ActorRef router = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        });
+        }));
       }
     }
 
@@ -360,7 +360,7 @@ One thing to note is that we used two different versions of the ``actorOf`` meth
 
 The actor's life-cycle is:
 
-- Created & Started -- ``Actor.actorOf[MyActor]`` -- can receive messages
+- Created & Started -- ``Actor.actorOf(Props[MyActor]`` -- can receive messages
 - Stopped -- ``actorRef.stop()`` -- can **not** receive messages
 
 Once the actor has been stopped it is dead and can not be started again.
@@ -405,15 +405,15 @@ Here is the master actor::
         // create the workers
         final ActorRef[] workers = new ActorRef[nrOfWorkers];
         for (int i = 0; i < nrOfWorkers; i++) {
-          workers[i] = actorOf(Worker.class);
+          workers[i] = actorOf(new Props(Worker.class));
         }
 
         // wrap them with a load-balancing router
-        router = actorOf(new UntypedActorFactory() {
+        router = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new PiRouter(workers);
           }
-        });
+        }));
       }
 
       // message handler
@@ -496,11 +496,11 @@ Now the only thing that is left to implement is the runner that should bootstrap
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
+        ActorRef master = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());
@@ -520,6 +520,7 @@ Before we package it up and run it, let's take a look at the full code now, with
     import static akka.actor.Actors.poisonPill;
     import static java.util.Arrays.asList;
 
+    import akka.actor.Props;
     import akka.actor.ActorRef;
     import akka.actor.UntypedActor;
     import akka.actor.UntypedActorFactory;
@@ -630,15 +631,15 @@ Before we package it up and run it, let's take a look at the full code now, with
           // create the workers
           final ActorRef[] workers = new ActorRef[nrOfWorkers];
           for (int i = 0; i < nrOfWorkers; i++) {
-            workers[i] = actorOf(Worker.class);
+            workers[i] = actorOf(new Props(Worker.class));
           }
 
           // wrap them with a load-balancing router
-          router = actorOf(new UntypedActorFactory() {
+          router = actorOf(new Props(new UntypedActorFactory() {
             public UntypedActor create() {
               return new PiRouter(workers);
             }
-          });
+          }));
         }
 
         // message handler
@@ -692,11 +693,11 @@ Before we package it up and run it, let's take a look at the full code now, with
         final CountDownLatch latch = new CountDownLatch(1);
 
         // create the master
-        ActorRef master = actorOf(new UntypedActorFactory() {
+        ActorRef master = actorOf(new Props(new UntypedActorFactory() {
           public UntypedActor create() {
             return new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch);
           }
-        });
+        }));
 
         // start the calculation
         master.tell(new Calculate());
@@ -730,17 +731,11 @@ we compiled ourselves::
     $ java \
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:tutorial \
         akka.tutorial.java.first.Pi
-    AKKA_HOME is defined as [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT]
-    loading config from [/Users/jboner/tools/akka-actors-2.0-SNAPSHOT/config/akka.conf].
 
     Pi estimate:        3.1435501812459323
     Calculation time:   822 millis
 
 Yippee! It is working.
-
-If you have not defined the ``AKKA_HOME`` environment variable then Akka can't
-find the ``akka.conf`` configuration file and will print out a ``Can’t load
-akka.conf`` warning. This is ok since it will then just use the defaults.
 
 
 Run it inside Maven
@@ -758,8 +753,6 @@ When this in done we can run our application directly inside Maven::
     Calculation time:   939 millis
 
 Yippee! It is working.
-
-If you have not defined an the ``AKKA_HOME`` environment variable then Akka can't find the ``akka.conf`` configuration file and will print out a ``Can’t load akka.conf`` warning. This is ok since it will then just use the defaults.
 
 Conclusion
 ----------

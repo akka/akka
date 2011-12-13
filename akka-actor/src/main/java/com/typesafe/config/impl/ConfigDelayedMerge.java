@@ -189,7 +189,7 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
                 indent(sb, indent);
                 if (atKey != null) {
                     sb.append("#     unmerged value " + i + " for key "
-                            + ConfigUtil.renderJsonString(atKey) + " from ");
+                            + ConfigImplUtil.renderJsonString(atKey) + " from ");
                 } else {
                     sb.append("#     unmerged value " + i + " from ");
                 }
@@ -200,7 +200,7 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
             }
 
             if (atKey != null) {
-                sb.append(ConfigUtil.renderJsonString(atKey));
+                sb.append(ConfigImplUtil.renderJsonString(atKey));
                 sb.append(" : ");
             }
             v.render(sb, indent, formatted);

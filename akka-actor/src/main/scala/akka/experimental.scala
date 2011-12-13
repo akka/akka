@@ -10,7 +10,6 @@ import annotation.target._
  * This annotation marks a feature which is not yet considered stable and may
  * change or be removed in a future release.
  *
- * @author Roland Kuhn
  * @since 1.2
  */
 @getter

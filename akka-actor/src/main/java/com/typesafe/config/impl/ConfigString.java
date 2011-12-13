@@ -32,6 +32,6 @@ final class ConfigString extends AbstractConfigValue {
 
     @Override
     protected void render(StringBuilder sb, int indent, boolean formatted) {
-        sb.append(ConfigUtil.renderJsonString(value));
+        sb.append(ConfigImplUtil.renderJsonString(value));
     }
 }
