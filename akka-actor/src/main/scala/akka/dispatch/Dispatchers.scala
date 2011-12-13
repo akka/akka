@@ -74,6 +74,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       throw new ConfigurationException("Wrong configuration [akka.actor.default-dispatcher]")
     }
 
+  // FIXME: Dispatchers registered here are are not removed, see ticket #1494
   private val dispatchers = new ConcurrentHashMap[String, MessageDispatcher]
 
   /**
@@ -84,7 +85,9 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   def lookup(key: String): MessageDispatcher = {
     dispatchers.get(key) match {
       case null ⇒
-        // doesn't matter if we create a dispatcher that isn't used due to concurrent lookup
+        // It doesn't matter if we create a dispatcher that isn't used due to concurrent lookup.
+        // That shouldn't happen often and in case it does the actual ExecutorService isn't 
+        // created until used, i.e. cheap.
         val newDispatcher = newFromConfig(key)
         dispatchers.putIfAbsent(key, newDispatcher) match {
           case null     ⇒ newDispatcher
@@ -161,7 +164,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       new Dispatcher(prerequisites, name, throughput, throughputDeadline, mailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -170,7 +173,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       settings.DispatcherThroughputDeadlineTime, MailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -180,7 +183,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */
@@ -190,7 +193,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   /**
-   * Creates a executor-based event-driven dispatcher, with work-stealing, serving multiple (millions) of actors through a thread pool.
+   * Creates a executor-based event-driven dispatcher, with work-sharing, serving multiple (millions) of actors through a thread pool.
    * <p/>
    * Has a fluent builder interface for configuring its semantics.
    */

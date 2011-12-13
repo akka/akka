@@ -14,7 +14,6 @@ import akka.actor.PoisonPill
 
 object DispatcherDocSpec {
   val config = """
-    akka.logLevel=INFO
     //#my-dispatcher-config
     my-dispatcher {
       type = Dispatcher             # Dispatcher is the name of the event-based dispatcher
@@ -22,7 +21,7 @@ object DispatcherDocSpec {
       core-pool-size-factor = 2.0   # No of core threads ... ceil(available processors * factor)
       core-pool-size-max = 10       # maximum number of threads to cap factor-based number to
       throughput = 100              # Throughput defines the number of messages that are processed in a batch before the
-                                    # thread is returned to the pool. Set to 1 for complete fairness.
+                                    # thread is returned to the pool. Set to 1 for as fair as possible.
     }
     //#my-dispatcher-config
     

@@ -64,7 +64,8 @@ Let's now walk through the different dispatchers in more detail.
 Thread-based
 ^^^^^^^^^^^^
 
-The ``PinnedDispatcher`` binds a dedicated OS thread to each specific Actor. The messages are posted to a ``LinkedBlockingQueue`` 
+The ``PinnedDispatcher`` binds a dedicated OS thread to each specific Actor. The messages are posted to a 
+`LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_ 
 which feeds the messages to the dispatcher one by one. A ``PinnedDispatcher`` cannot be shared between actors. This dispatcher 
 has worse performance and scalability than the event-based dispatcher but works great for creating "daemon" Actors that consumes 
 a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with 
@@ -79,7 +80,8 @@ The ``PinnedDispatcher`` is configured as a event-based dispatcher with with cor
 Event-based
 ^^^^^^^^^^^
 
-The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a ``BlockingQueue``. This dispatcher is highly configurable 
+The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a 
+`BlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/BlockingQueue.html>`_. This dispatcher is highly configurable 
 and supports a fluent configuration API to configure the ``BlockingQueue`` (type of queue, max items etc.) as well as the thread pool.
 
 The event-driven dispatchers **must be shared** between multiple Actors. One best practice is to let each top-level Actor, e.g. 
@@ -90,21 +92,14 @@ design and implement your system in the most efficient way in regards to perform
 
 It comes with many different predefined BlockingQueue configurations:
 
-* Bounded LinkedBlockingQueue
-* Unbounded LinkedBlockingQueue
-* Bounded ArrayBlockingQueue
-* Unbounded ArrayBlockingQueue
-* SynchronousQueue
+* Bounded `LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_
+* Unbounded `LinkedBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/LinkedBlockingQueue.html>`_
+* Bounded `ArrayBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ArrayBlockingQueue.html>`_
+* Unbounded `ArrayBlockingQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ArrayBlockingQueue.html>`_
+* `SynchronousQueue <http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/SynchronousQueue.html>`_
 
-You can also set the rejection policy that should be used, e.g. what should be done if the dispatcher (e.g. the Actor) can't keep up 
-and the mailbox is growing up to the limit defined. You can choose between four different rejection policies:
-
-* java.util.concurrent.ThreadPoolExecutor.CallerRuns - will run the message processing in the caller's thread as a way to slow him down and balance producer/consumer
-* java.util.concurrent.ThreadPoolExecutor.AbortPolicy - rejected messages by throwing a ``RejectedExecutionException``
-* java.util.concurrent.ThreadPoolExecutor.DiscardPolicy - discards the message (throws it away)
-* java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy - discards the oldest message in the mailbox (throws it away)
-
-You can read more about these policies `here <http://java.sun.com/javase/6/docs/api/index.html?java/util/concurrent/RejectedExecutionHandler.html>`_.
+When using a bounded queue and it has grown up to limit defined the message processing will run in the caller's 
+thread as a way to slow him down and balance producer/consumer.
 
 Here is an example of a bounded mailbox:
 
@@ -113,7 +108,7 @@ Here is an example of a bounded mailbox:
 The standard :class:`Dispatcher` allows you to define the ``throughput`` it
 should have, as shown above. This defines the number of messages for a specific
 Actor the dispatcher should process in one single sweep; in other words, the
-dispatcher will bunch up to ``throughput`` messages together when
+dispatcher will batch process up to ``throughput`` messages together when
 having elected an actor to run.  Setting this to a higher number will increase
 throughput but lower fairness, and vice versa. If you don't specify it explicitly 
 then it uses the value (5) defined for ``default-dispatcher`` in the :ref:`configuration`.
