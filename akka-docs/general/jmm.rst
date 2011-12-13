@@ -61,6 +61,8 @@ volatile variable rule. This means that you, the Akka user, do not need to worry
 such a "happens before" relation, because it is the responsibility of Akka. So you have your hands free to deal with your
 business logic, and the Akka framework makes sure that those rules are guaranteed on your behalf.
 
+.. _jmm-shared-state:
+
 Actors and shared mutable state
 -------------------------------
 

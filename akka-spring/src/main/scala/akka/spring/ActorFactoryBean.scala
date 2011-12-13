@@ -33,7 +33,6 @@ class AkkaBeansException(message: String, cause: Throwable) extends BeansExcepti
  * @author michaelkober
  * @author <a href="johan.rask@jayway.com">Johan Rask</a>
  * @author Martin Krasser
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActorFactoryBean extends AbstractFactoryBean[AnyRef] with ApplicationContextAware {
   import AkkaSpringConfigurationTags._

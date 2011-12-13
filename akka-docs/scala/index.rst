@@ -8,7 +8,6 @@ Scala API
 
    actors
    typed-actors
-   actor-registry
    futures
    dataflow
    agents
@@ -18,6 +17,4 @@ Scala API
    dispatchers
    routing
    fsm
-   http
    testing
-   tutorial-chat-server

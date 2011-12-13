@@ -56,22 +56,6 @@ Sample parallel computing with Akka and Scala API
 
 `<https://github.com/yannart/ParallelPolynomialIntegral>`_
 
-Akka, Facebook Graph API, WebGL sample
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Showcasing Akka Mist HTTP module
-`<https://github.com/buka/fbgl1>`_
-
-Akka Mist Sample
-^^^^^^^^^^^^^^^^
-
-`<https://github.com/buka/akka-mist-sample>`_
-
-Another Akka Mist Sample
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-`<https://github.com/nppssk/akka-http-sbt>`_
-
 Bank application
 ^^^^^^^^^^^^^^^^
 

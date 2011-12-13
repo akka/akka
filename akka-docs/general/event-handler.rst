@@ -9,7 +9,8 @@ There is an Event Handler which takes the place of a logging system in Akka:
 
   akka.event.EventHandler
 
-You can configure which event handlers should be registered at boot time. That is done using the 'event-handlers' element in akka.conf. Here you can also define the log level.
+You can configure which event handlers should be registered at boot time. That is done using the 'event-handlers' element in 
+the :ref:`configuration`. Here you can also define the log level.
 
 .. code-block:: ruby
 

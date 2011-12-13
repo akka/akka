@@ -7,7 +7,6 @@ package akka.serialization
 import akka.actor.Actor
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  * trait Serializer extends scala.Serializable {
  * @volatile
  * var classLoader: Option[ClassLoader] = None

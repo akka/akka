@@ -25,7 +25,6 @@
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
 * Akka: clone the Akka repository from `<http://github.com/jboner/akka>`_
-* Akka Modules: clone the Akka Modules repository from `<http://github.com/jboner/akka-modules>`_
 
 
 `Maven Repository <http://akka.io/repository/>`_
@@ -50,14 +49,14 @@ directly.
 SNAPSHOT Versions
 =================
 
-Nightly builds are available in `<http://repo.typesafe.com/typesafe/maven-timestamps/>`_ repository as
+Nightly builds are available in `<http://repo.typesafe.com/typesafe/akka-snapshots/>`_ repository as
 timestamped snapshot versions. Pick a timestamp from 
-`<http://repo.typesafe.com/typesafe/maven-timestamps/com/typesafe/akka/akka-actor/>`_. 
+`<http://repo.typesafe.com/typesafe/akka-snapshots/com/typesafe/akka/akka-actor/>`_. 
 All Akka modules that belong to the same build have the same timestamp.
 
 Make sure that you add the repository to the sbt resolvers or maven repositories::
  
-  resolvers += "Typesafe Timestamp Repo" at "http://repo.typesafe.com/typesafe/maven-timestamps/"
+  resolvers += "Typesafe Timestamp Repo" at "http://repo.typesafe.com/typesafe/akka-snapshots/"
   
 Define the library dependencies with the timestamp as version::
 

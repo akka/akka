@@ -11,7 +11,6 @@ Simple Trading system.
 
 Compares:
 
-- Synchronous Scala solution
 - Scala library Actors
 
   - Fire-forget

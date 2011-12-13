@@ -35,7 +35,7 @@ multi-JVM testing::
      base = file("akka-cluster"),
      settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
        extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dconfig.file=" + _.absolutePath).toSeq
        },
        test in Test <<= (test in Test) dependsOn (test in MultiJvm)
      )
@@ -176,10 +176,10 @@ and add the options to them.
     -Dakka.cluster.nodename=node3 -Dakka.remote.port=9993
 
 
-Overriding akka.conf options
-----------------------------
+Overriding configuration options
+--------------------------------
 
-You can also override the options in the ``akka.conf`` file with different options for each
+You can also override the options in the :ref:`configuration` file with different options for each
 spawned JVM. You do that by creating a file named after the node in the test with suffix
 ``.conf`` and put them in the same  directory as the test .
 

@@ -564,7 +564,6 @@ trait FSM[S, D] extends ListenerManagement {
 /**
  * Stackable trait for FSM which adds a rolling event log.
  *
- * @author Roland Kuhn
  * @since 1.2
  */
 trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒

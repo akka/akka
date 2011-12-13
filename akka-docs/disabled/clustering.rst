@@ -48,8 +48,8 @@ cluster node.
 Cluster configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
-Cluster is configured in the ``akka.cloud.cluster`` section in the ``akka.conf``
-configuration file. Here you specify the default addresses to the ZooKeeper
+Cluster is configured in the ``akka.cloud.cluster`` section in the :ref:`configuration`. 
+Here you specify the default addresses to the ZooKeeper
 servers, timeouts, if compression should be on or off, and so on.
 
 .. code-block:: conf
@@ -594,7 +594,7 @@ Consolidation and management of the Akka configuration file
 
 Not implemented yet.
 
-The actor configuration file ``akka.conf`` will also be stored into the cluster
+The actor :ref:`configuration` file will also be stored into the cluster
 and it will be possible to have one single configuration file, stored on the server, and pushed out to all
 the nodes that joins the cluster. Each node only needs to be configured with the ZooKeeper
 server address and the master configuration will only reside in one single place

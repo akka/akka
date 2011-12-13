@@ -30,13 +30,11 @@ trait ActorDeployer {
 
 /**
  * Deployer maps actor paths to actor deployments.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream, val nodename: String) extends ActorDeployer {
 
   val deploymentConfig = new DeploymentConfig(nodename)
-  val log = Logging(eventStream, "Deployer")
+  private val log = Logging(eventStream, "Deployer")
 
   val instance: ActorDeployer = {
     val deployer = new LocalDeployer()
@@ -74,11 +72,14 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
   private[akka] def lookupDeploymentFor(path: String): Option[Deploy] =
     instance.lookupDeploymentFor(path)
 
-  private[akka] def deploymentsInConfig: List[Deploy] = {
-    for (path ← pathsInConfig) yield lookupInConfig(path)
+  private def deploymentsInConfig: List[Deploy] = {
+    val allDeployments = settings.config.getConfig("akka.actor.deployment")
+    val defaultDeployment = allDeployments.getConfig("default")
+    // foreach akka.actor.deployment.<path>
+    for (path ← pathsInConfig) yield parseDeploymentConfig(allDeployments.getConfig(path), defaultDeployment, path)
   }
 
-  private[akka] def pathsInConfig: List[String] = {
+  private def pathsInConfig: List[String] = {
     def pathSubstring(path: String) = {
       val i = path.indexOf(".")
       if (i == -1) path else path.substring(0, i)
@@ -92,21 +93,16 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
   }
 
   /**
-   * Lookup deployment in 'akka.conf' configuration file.
+   * Parse deployment in supplied deployment Config, using the
+   * defaultDeployment Config as fallback.
+   * The path is the actor path and used for error reporting.
+   *
    */
-  private[akka] def lookupInConfig(path: String, configuration: Config = settings.config): Deploy = {
+  private def parseDeploymentConfig(deployment: Config, defaultDeployment: Config, path: String): Deploy = {
     import scala.collection.JavaConverters._
     import akka.util.ReflectiveAccess.getClassFor
 
-    val defaultDeploymentConfig = configuration.getConfig("akka.actor.deployment.default")
-
-    // --------------------------------
-    // akka.actor.deployment.<path>
-    // --------------------------------
-    val deploymentKey = "akka.actor.deployment." + path
-    val deployment = configuration.getConfig(deploymentKey)
-
-    val deploymentWithFallback = deployment.withFallback(defaultDeploymentConfig)
+    val deploymentWithFallback = deployment.withFallback(defaultDeployment)
     // --------------------------------
     // akka.actor.deployment.<path>.router
     // --------------------------------
@@ -128,7 +124,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
       if (router == Direct) OneNrOfInstances
       else {
         def invalidNrOfInstances(wasValue: Any) = new ConfigurationException(
-          "Config option [" + deploymentKey +
+          "Deployment config option [" + path +
             ".nr-of-instances] needs to be either [\"auto\"] or [1-N] - was [" +
             wasValue + "]")
 
@@ -155,7 +151,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
         case "" ⇒ None
         case impl ⇒
           val implementationClass = getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
-            "Config option [" + deploymentKey + ".create-as.class] load failed", e), identity)
+            "Deployment config option [" + path + ".create-as.class] load failed", e), identity)
           Some(ActorRecipe(implementationClass))
       }
 
@@ -167,7 +163,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     // --------------------------------
     def parseRemote: Scope = {
       def raiseRemoteNodeParsingError() = throw new ConfigurationException(
-        "Config option [" + deploymentKey +
+        "Deployment config option [" + path +
           ".remote.nodes] needs to be a list with elements on format \"<hostname>:<port>\", was [" + remoteNodes.mkString(", ") + "]")
 
       val remoteAddresses = remoteNodes map { node ⇒
@@ -190,7 +186,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
     // --------------------------------
     def parseCluster: Scope = {
       def raiseHomeConfigError() = throw new ConfigurationException(
-        "Config option [" + deploymentKey +
+        "Deployment config option [" + path +
           ".cluster.preferred-nodes] needs to be a list with elements on format\n'host:<hostname>', 'ip:<ip address>' or 'node:<node name>', was [" +
           clusterPreferredNodes + "]")
 
@@ -222,7 +218,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
             case "transaction-log" ⇒ TransactionLog
             case "data-grid"       ⇒ DataGrid
             case unknown ⇒
-              throw new ConfigurationException("Config option [" + deploymentKey +
+              throw new ConfigurationException("Deployment config option [" + path +
                 ".cluster.replication.storage] needs to be either [\"transaction-log\"] or [\"data-grid\"] - was [" +
                 unknown + "]")
           }
@@ -230,7 +226,7 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
             case "write-through" ⇒ WriteThrough
             case "write-behind"  ⇒ WriteBehind
             case unknown ⇒
-              throw new ConfigurationException("Config option [" + deploymentKey +
+              throw new ConfigurationException("Deployment config option [" + path +
                 ".cluster.replication.strategy] needs to be either [\"write-through\"] or [\"write-behind\"] - was [" +
                 unknown + "]")
           }
@@ -269,8 +265,6 @@ class Deployer(val settings: ActorSystem.Settings, val eventStream: EventStream,
 
 /**
  * Simple local deployer, only for internal use.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class LocalDeployer extends ActorDeployer {
   private val deployments = new ConcurrentHashMap[String, Deploy]

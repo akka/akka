@@ -1,8 +1,8 @@
 package akka
 
 import sbt._
-import Keys._
-import Project.Initialize
+import sbt.Keys._
+import sbt.Project.Initialize
 
 object Unidoc {
   val unidocDirectory = SettingKey[File]("unidoc-directory")

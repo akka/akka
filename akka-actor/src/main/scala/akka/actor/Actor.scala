@@ -93,7 +93,7 @@ case class ActorInterruptedException private[akka] (cause: Throwable)
 /**
  * This message is thrown by default when an Actors behavior doesn't match a message
  */
-case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Exception {
+case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends RuntimeException {
 
   def this(msg: String) = this(msg, null)
 
@@ -167,8 +167,6 @@ object Actor {
  *
  * <p/>
  * The Actor's own ActorRef is available in the 'self' member variable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Actor {
 

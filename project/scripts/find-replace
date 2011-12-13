@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+#
+# Find and replace across all source files.
+# This script will be called as part of the release script.
+
+# get the source location for this script; handles symlinks
+function get_script_path {
+  local source="${BASH_SOURCE[0]}"
+  while [ -h "${source}" ] ; do
+    source="$(readlink "${source}")";
+  done
+  echo ${source}
+}
+
+# path, name, and dir for this script
+declare -r script_path=$(get_script_path)
+declare -r script_name=$(basename "${script_path}")
+declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
+
+# print usage info
+function usage {
+  echo "Usage: ${script_name} find_expr replace_expr"
+}
+
+function echolog {
+  echo "[${script_name}] $@"
+}
+
+declare -r find_expr=$1
+declare -r replace_expr=$2
+
+if [ -z "$find_expr" ]; then
+  usage
+  exit 1
+fi
+
+echolog "$find_expr --> $replace_expr"
+
+# exclude directories from search
+
+declare exclude_dirs=".git dist deploy embedded-repo lib_managed project/boot project/scripts src_managed target"
+
+echolog "excluding directories: $exclude_dirs"
+
+exclude_opts="\("
+op="-path"
+for dir in $exclude_dirs; do
+  exclude_opts="${exclude_opts} ${op} '*/${dir}/*'"
+  op="-or -path"
+done
+exclude_opts="${exclude_opts} \) -prune -o"
+
+# replace in files
+
+search="find . ${exclude_opts} -type f -print0 | xargs -0 grep -Il \"$find_expr\""
+
+files=$(eval "$search")
+
+simple_diff="diff --old-line-format='[$script_name]   - %l
+' --new-line-format='[$script_name]   + %l
+' --changed-group-format='%<%>' --unchanged-group-format=''"
+
+for file in $files; do
+  echolog $file
+  # escape / for sed
+  sedfind=$(echo $find_expr | sed 's/\//\\\//g')
+  sedreplace=$(echo $replace_expr | sed 's/\//\\\//g')
+  sed -i '.sed' "s/${sedfind}/${sedreplace}/g" $file
+  eval "$simple_diff $file.sed $file"
+  rm -f $file.sed
+done
+
+# replace in file names
+
+search="find . ${exclude_opts} -type f -name \"*${find_expr}*\" -print"
+
+files=$(eval "$search")
+
+for file in $files; do
+  dir=$(dirname $file)
+  name=$(basename $file)
+  newname=$(echo $name | sed "s/${find_expr}/${replace_expr}/g")
+  echolog "$file --> $newname"
+  mv $file $dir/$newname
+done

@@ -55,7 +55,6 @@ import java.util.concurrent._
  * But the preferred way of creating dispatchers is to use
  * the {@link akka.dispatch.Dispatchers} factory object.
  *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
  *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
  *                   always continues until the mailbox is empty.

@@ -457,7 +457,7 @@ Accounting for Slow Test Systems
 The tight timeouts you use during testing on your lightning-fast notebook will
 invariably lead to spurious test failures on the heavily loaded Jenkins server
 (or similar). To account for this situation, all maximum durations are
-internally scaled by a factor taken from ``akka.conf``,
+internally scaled by a factor taken from the :ref:`configuration`,
 ``akka.test.timefactor``, which defaults to 1.
 
 Resolving Conflicts with Implicit ActorRef
@@ -716,7 +716,7 @@ options:
 
 * *Logging of message invocations on certain actors*
 
-  This is enabled by a setting in ``akka.conf`` — namely
+  This is enabled by a setting in the :ref:`configuration` — namely
   ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
   statement to be applied to an actor’s :meth:`receive` function::
 
@@ -728,7 +728,7 @@ options:
   The first argument to :meth:`LoggingReceive` defines the source to be used in the
   logging events, which should be the current actor.
 
-  If the abovementioned setting is not given in ``akka.conf``, this method will
+  If the abovementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.
 

@@ -7,9 +7,6 @@ package akka.util
 import java.util.concurrent.locks.{ ReentrantLock }
 import java.util.concurrent.atomic.{ AtomicBoolean }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 final class ReentrantGuard {
   final val lock = new ReentrantLock
 

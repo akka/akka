@@ -26,19 +26,12 @@ import java.util.Enumeration
 // FIXME allow user to choose dynamically between 'async' and 'sync' tx logging (asyncAddEntry(byte[] data, AddCallback cb, Object ctx))
 // FIXME clean up old entries in log after doing a snapshot
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class ReplicationException(message: String, cause: Throwable = null) extends AkkaException(message) {
   def this(msg: String) = this(msg, null)
 }
 
 /**
- * TODO: Explain something about threadsafety.
- *
  * A TransactionLog makes chunks of data durable.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class TransactionLog private (
   ledger: LedgerHandle,
@@ -352,7 +345,7 @@ class TransactionLog private (
 }
 
 /**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
+ * TODO: Documentation.
  */
 object TransactionLog {
 
@@ -563,8 +556,6 @@ object TransactionLog {
 
 /**
  * TODO: Documentation.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object LocalBookKeeperEnsemble {
   private val isRunning = new Switch(false)

@@ -14,7 +14,8 @@ also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
 Event Handler
 -------------
 
-This module includes a SLF4J Event Handler that works with Akka's standard Event Handler. You enabled it in the 'event-handlers' element in akka.conf. Here you can also define the log level.
+This module includes a SLF4J Event Handler that works with Akka's standard Event Handler. You enabled it in the 'event-handlers' element in 
+the :ref:`configuration`. Here you can also define the log level.
 
 .. code-block:: ruby
 

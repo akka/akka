@@ -21,8 +21,6 @@ import java.lang.{ Float ⇒ JFloat, Double ⇒ JDouble }
  *    result
  *  }
  * </pre>
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object HashCode {
   val SEED = 23

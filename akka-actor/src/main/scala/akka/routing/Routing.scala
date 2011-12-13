@@ -19,8 +19,6 @@ sealed trait RouterType
 
 /**
  * Used for declarative configuration of Routing.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 object RouterType {
 
@@ -92,8 +90,6 @@ object RoutedProps {
 /**
  * The Router is responsible for sending a message to one (or more) of its connections. Connections are stored in the
  * {@link FailureDetector} and each Router should be linked to only one {@link FailureDetector}.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 trait Router {
 
@@ -296,8 +292,6 @@ class BroadcastRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeo
 
 /**
  * A DirectRouter a Router that only has a single connected actorRef and forwards all request to that actorRef.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class DirectRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
 
@@ -338,8 +332,6 @@ class DirectRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout)
 
 /**
  * A Router that randomly selects one of the target connections to send a message to.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RandomRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
   import java.security.SecureRandom
@@ -380,8 +372,6 @@ class RandomRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout)
 
 /**
  * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RoundRobinRouter(implicit val dispatcher: MessageDispatcher, timeout: Timeout) extends BasicRouter {
 

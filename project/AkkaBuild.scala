@@ -24,10 +24,10 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Unidoc.settings ++ rstdocSettings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Seq(
       parallelExecution in GlobalScope := false,
-      Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
-      rstdocDirectory <<= baseDirectory / "akka-docs"
+      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
+      Unidoc.unidocExclude := Seq(samples.id, tutorials.id)
     ),
     aggregate = Seq(actor, testkit, actorTests, stm, remote, slf4j, amqp, mailboxes, akkaSbtPlugin, samples, tutorials, docs)
   )
@@ -256,7 +256,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", stm, remote, slf4j),
+    dependencies = Seq(actor, testkit % "test->test", stm, remote, slf4j, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -266,7 +266,7 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings ++ Publish.versionSettings
+  override lazy val settings = super.settings ++ buildSettings
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -349,23 +349,6 @@ object AkkaBuild extends Build {
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences
   )
-
-  // reStructuredText docs
-
-  val rstdocDirectory = SettingKey[File]("rstdoc-directory")
-  val rstdoc = TaskKey[File]("rstdoc", "Build the reStructuredText documentation.")
-
-  lazy val rstdocSettings = Seq(rstdoc <<= rstdocTask)
-
-  def rstdocTask = (rstdocDirectory, streams) map {
-    (dir, s) => {
-      s.log.info("Building reStructuredText documentation...")
-      val exitCode = Process(List("make", "clean", "html", "pdf"), dir) ! s.log
-      if (exitCode != 0) sys.error("Failed to build docs.")
-      s.log.info("Done building docs.")
-      dir
-    }
-  }
 }
 
 // Dependencies

@@ -25,8 +25,6 @@ import akka.serialization.SerializationExtension
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class Remote(val system: ActorSystemImpl, val nodename: String) {
 
@@ -47,7 +45,7 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
 
   val remoteDaemonServiceName = "akka-system-remote-daemon".intern
 
-  val computeGridDispatcher = dispatcherFactory.fromConfig("akka.remote.compute-grid-dispatcher")
+  val computeGridDispatcher = dispatcherFactory.newFromConfig("akka.remote.compute-grid-dispatcher")
 
   // FIXME it is probably better to create another supervisor for handling the children created by handle_*, ticket #1408
   private[remote] lazy val remoteDaemonSupervisor = system.actorOf(Props(
@@ -101,8 +99,6 @@ class Remote(val system: ActorSystemImpl, val nodename: String) {
  * Internal system "daemon" actor for remote internal communication.
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class RemoteSystemDaemon(remote: Remote) extends Actor {
 

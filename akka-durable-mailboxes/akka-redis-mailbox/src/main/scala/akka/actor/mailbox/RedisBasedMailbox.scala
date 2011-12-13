@@ -13,9 +13,6 @@ import akka.actor.ActorRef
 
 class RedisBasedMailboxException(message: String) extends AkkaException(message)
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class RedisBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   private val settings = RedisBasedMailboxExtension(owner.system)

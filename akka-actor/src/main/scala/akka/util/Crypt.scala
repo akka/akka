@@ -6,9 +6,6 @@ package akka.util
 
 import java.security.{ MessageDigest, SecureRandom }
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 object Crypt {
   val hex = "0123456789ABCDEF"
   val lineSeparator = System.getProperty("line.separator")

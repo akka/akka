@@ -17,9 +17,6 @@ import akka.actor.ActorRef
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
-/**
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
- */
 class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   private val settings = ZooKeeperBasedMailboxExtension(owner.system)
