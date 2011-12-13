@@ -3,10 +3,13 @@
  */
 package com.typesafe.config.impl;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.typesafe.config.Config;
@@ -20,12 +23,10 @@ import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 
 /**
- * One thing to keep in mind in the future: if any Collection-like APIs are
- * added here, including iterators or size() or anything, then we'd have to
- * grapple with whether ConfigNull values are "in" the Config (probably not) and
- * we'd probably want to make the collection look flat - not like a tree. So the
- * key-value pairs would be all the tree's leaf values, in a big flat list with
- * their full paths.
+ * One thing to keep in mind in the future: as Collection-like APIs are added
+ * here, including iterators or size() or anything, they should be consistent
+ * with a one-level java.util.Map from paths to non-null values. Null values are
+ * not "in" the map.
  */
 final class SimpleConfig implements Config, MergeableValue {
 
@@ -71,6 +72,31 @@ final class SimpleConfig implements Config, MergeableValue {
     @Override
     public boolean isEmpty() {
         return object.isEmpty();
+    }
+
+    private static void findPaths(Set<Map.Entry<String, ConfigValue>> entries, Path parent,
+            AbstractConfigObject obj) {
+        for (Map.Entry<String, ConfigValue> entry : obj.entrySet()) {
+            String elem = entry.getKey();
+            ConfigValue v = entry.getValue();
+            Path path = Path.newKey(elem);
+            if (parent != null)
+                path = path.prepend(parent);
+            if (v instanceof AbstractConfigObject) {
+                findPaths(entries, path, (AbstractConfigObject) v);
+            } else if (v instanceof ConfigNull) {
+                // nothing; nulls are conceptually not in a Config
+            } else {
+                entries.add(new AbstractMap.SimpleImmutableEntry<String, ConfigValue>(path.render(), v));
+            }
+        }
+    }
+
+    @Override
+    public Set<Map.Entry<String, ConfigValue>> entrySet() {
+        Set<Map.Entry<String, ConfigValue>> entries = new HashSet<Map.Entry<String, ConfigValue>>();
+        findPaths(entries, null, object);
+        return entries;
     }
 
     static private AbstractConfigValue find(AbstractConfigObject self,
@@ -440,10 +466,10 @@ final class SimpleConfig implements Config, MergeableValue {
      */
     public static long parseDuration(String input,
             ConfigOrigin originForException, String pathForException) {
-        String s = ConfigUtil.unicodeTrim(input);
+        String s = ConfigImplUtil.unicodeTrim(input);
         String originalUnitString = getUnits(s);
         String unitString = originalUnitString;
-        String numberString = ConfigUtil.unicodeTrim(s.substring(0, s.length()
+        String numberString = ConfigImplUtil.unicodeTrim(s.substring(0, s.length()
                 - unitString.length()));
         TimeUnit units = null;
 
@@ -592,9 +618,9 @@ final class SimpleConfig implements Config, MergeableValue {
      */
     public static long parseBytes(String input, ConfigOrigin originForException,
             String pathForException) {
-        String s = ConfigUtil.unicodeTrim(input);
+        String s = ConfigImplUtil.unicodeTrim(input);
         String unitString = getUnits(s);
-        String numberString = ConfigUtil.unicodeTrim(s.substring(0,
+        String numberString = ConfigImplUtil.unicodeTrim(s.substring(0,
                 s.length() - unitString.length()));
 
         // this would be caught later anyway, but the error message

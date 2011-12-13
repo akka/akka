@@ -135,7 +135,7 @@ A custom ``application.conf`` might look like this::
 Config file format
 ------------------
 
-The configuration file syntax is described in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+The configuration file syntax is described in the `HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_
 specification. Note that it supports three formats; conf, json, and properties. 
 
 
@@ -157,7 +157,7 @@ dev.conf:
     loglevel = "DEBUG"
   }
 
-More advanced include and substitution mechanisms are explained in the `HOCON <https://github.com/havocp/config/blob/master/HOCON.md>`_
+More advanced include and substitution mechanisms are explained in the `HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_
 specification.
 
 
