@@ -262,6 +262,7 @@ abstract class MessageDispatcherConfigurator {
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
       conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
+      conf_?(config getBool "daemonic")(daemonicity => _.setDaemonic(daemonicity)),
       conf_?(config getInt "task-queue-size" flatMap {
         case size if size > 0 =>
           config getString "task-queue-type" map {

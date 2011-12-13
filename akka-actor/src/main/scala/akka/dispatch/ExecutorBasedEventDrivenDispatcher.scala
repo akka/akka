@@ -85,7 +85,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
   val name = "akka:event-driven:dispatcher:" + _name
 
-  protected[akka] val threadFactory = new MonitorableThreadFactory(name)
+  protected[akka] val threadFactory = new MonitorableThreadFactory(name, config.daemonic)
   protected[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
   protected[akka] def dispatch(invocation: MessageInvocation) = {
