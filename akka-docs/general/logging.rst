@@ -17,6 +17,12 @@ as illustrated in this example in Scala:
 .. includecode:: code/akka/docs/event/LoggingDocSpec.scala
    :include: my-actor
 
+For convenience you can mixin the ``log`` member into actors, instead of defining it as above.
+
+.. code-block:: scala
+
+  class MyActor extends Actor with akka.actor.ActorLogging { 
+
 Corresponding example in Java:
 
 .. includecode:: code/akka/docs/event/LoggingDocTestBase.java
