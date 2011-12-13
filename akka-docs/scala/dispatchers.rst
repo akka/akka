@@ -46,7 +46,7 @@ There are 4 different types of message dispatchers:
 
 It is recommended to define the dispatcher in :ref:`configuration` to allow for tuning for different environments.
 
-Example of a custom event-based dispatcher, which can be created with ``system.dispatcherFactory.newFromConfig("my-dispatcher")`` 
+Example of a custom event-based dispatcher, which can be fetched with ``system.dispatcherFactory.lookup("my-dispatcher")`` 
 as in the example above: 
 
 .. includecode:: code/DispatcherDocSpec.scala#my-dispatcher-config

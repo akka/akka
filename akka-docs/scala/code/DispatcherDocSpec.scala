@@ -66,14 +66,14 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   "defining dispatcher" in {
     //#defining-dispatcher
     import akka.actor.Props
-    val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher")
+    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
     val myActor1 = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor1")
     val myActor2 = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor2")
     //#defining-dispatcher
   }
 
   "defining dispatcher with bounded queue" in {
-    val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher-bounded-queue")
+    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher-bounded-queue")
   }
 
   "defining priority dispatcher" in {
@@ -122,7 +122,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   }
 
   "defining balancing dispatcher" in {
-    val dispatcher = system.dispatcherFactory.newFromConfig("my-balancing-dispatcher")
+    val dispatcher = system.dispatcherFactory.lookup("my-balancing-dispatcher")
   }
 
 }
