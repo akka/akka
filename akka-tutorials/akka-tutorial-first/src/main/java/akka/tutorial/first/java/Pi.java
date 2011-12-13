@@ -105,7 +105,7 @@ public class Pi {
             this.nrOfElements = nrOfElements;
             this.latch = latch;
 
-            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouting(new RoundRobinRouter(5)), "pi");
+            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(5)), "pi");
         }
 
         // message handler

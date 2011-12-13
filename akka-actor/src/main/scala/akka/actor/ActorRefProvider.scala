@@ -526,7 +526,7 @@ class LocalActorRefProvider(
           val lookupPath = path.elements.drop(1).mkString("/", "/", "")
           deployer.lookup(lookupPath)
         }
-        new RoutedActorRef(system, props.withRouting(router.adaptFromDeploy(depl)), supervisor, path)
+        new RoutedActorRef(system, props.withRouter(router.adaptFromDeploy(depl)), supervisor, path)
     }
   }
 

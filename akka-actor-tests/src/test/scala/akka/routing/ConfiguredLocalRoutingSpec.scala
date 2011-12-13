@@ -20,7 +20,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         def receive = {
           case "get" ⇒ sender ! context.props
         }
-      }).withRouting(RoundRobinRouter(12)), "config")
+      }).withRouter(RoundRobinRouter(12)), "config")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RandomRouter(4)
     }
 
@@ -40,7 +40,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         override def postStop() {
           stopLatch.countDown()
         }
-      }).withRouting(RoundRobinRouter(5)), "round-robin-shutdown")
+      }).withRouter(RoundRobinRouter(5)), "round-robin-shutdown")
 
       actor ! "hello"
       actor ! "hello"
@@ -70,7 +70,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
           case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }).withRouting(RoundRobinRouter(connectionCount)), "round-robin")
+      }).withRouter(RoundRobinRouter(connectionCount)), "round-robin")
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -99,7 +99,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         override def postStop() {
           stopLatch.countDown()
         }
-      }).withRouting(RoundRobinRouter(5)), "round-robin-broadcast")
+      }).withRouter(RoundRobinRouter(5)), "round-robin-broadcast")
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
@@ -122,7 +122,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         override def postStop() {
           stopLatch.countDown()
         }
-      }).withRouting(RandomRouter(7)), "random-shutdown")
+      }).withRouter(RandomRouter(7)), "random-shutdown")
 
       actor ! "hello"
       actor ! "hello"
@@ -155,7 +155,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
           case "hit" ⇒ sender ! id
           case "end" ⇒ doneLatch.countDown()
         }
-      }).withRouting(RandomRouter(connectionCount)), "random")
+      }).withRouter(RandomRouter(connectionCount)), "random")
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
@@ -185,7 +185,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         override def postStop() {
           stopLatch.countDown()
         }
-      }).withRouting(RandomRouter(6)), "random-broadcast")
+      }).withRouter(RandomRouter(6)), "random-broadcast")
 
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)

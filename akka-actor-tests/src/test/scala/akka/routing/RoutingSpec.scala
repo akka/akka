@@ -29,7 +29,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
   "no router" must {
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(NoRouter))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(NoRouter))
       routedActor.isTerminated must be(false)
     }
 
@@ -45,7 +45,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       }
 
-      val routedActor = system.actorOf(Props(new Actor1).withRouting(NoRouter))
+      val routedActor = system.actorOf(Props(new Actor1).withRouter(NoRouter))
       routedActor ! "hello"
       routedActor ! "end"
 
@@ -57,7 +57,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
   "round robin router" must {
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(nrOfInstances = 1)))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(RoundRobinRouter(nrOfInstances = 1)))
       routedActor.isTerminated must be(false)
     }
 
@@ -85,7 +85,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         actors = actors :+ actor
       }
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(targets = actors)))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(RoundRobinRouter(targets = actors)))
 
       //send messages to the actor.
       for (i ← 0 until iterationCount) {
@@ -123,7 +123,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(RoundRobinRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(RoundRobinRouter(targets = List(actor1, actor2))))
 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
@@ -138,7 +138,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
   "random router" must {
 
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(RandomRouter(nrOfInstances = 1)))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(RandomRouter(nrOfInstances = 1)))
       routedActor.isTerminated must be(false)
     }
 
@@ -161,7 +161,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(RandomRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(RandomRouter(targets = List(actor1, actor2))))
 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
@@ -175,7 +175,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
 
   "broadcast router" must {
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(nrOfInstances = 1)))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(BroadcastRouter(nrOfInstances = 1)))
       routedActor.isTerminated must be(false)
     }
 
@@ -198,7 +198,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(BroadcastRouter(targets = List(actor1, actor2))))
       routedActor ! 1
       routedActor ! "end"
 
@@ -229,7 +229,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(BroadcastRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(BroadcastRouter(targets = List(actor1, actor2))))
       routedActor ? 1
       routedActor ! "end"
 
@@ -243,7 +243,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
   "Scatter-gather router" must {
 
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(ScatterGatherFirstCompletedRouter(targets = List(newActor(0)))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(ScatterGatherFirstCompletedRouter(targets = List(newActor(0)))))
       routedActor.isTerminated must be(false)
     }
 
@@ -266,7 +266,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
         }
       })
 
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(ScatterGatherFirstCompletedRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(ScatterGatherFirstCompletedRouter(targets = List(actor1, actor2))))
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
@@ -280,7 +280,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout {
       val shutdownLatch = new TestLatch(1)
       val actor1 = newActor(1, Some(shutdownLatch))
       val actor2 = newActor(22, Some(shutdownLatch))
-      val routedActor = system.actorOf(Props(new TestActor).withRouting(ScatterGatherFirstCompletedRouter(targets = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props(new TestActor).withRouter(ScatterGatherFirstCompletedRouter(targets = List(actor1, actor2))))
 
       routedActor ! Broadcast(Stop(Some(1)))
       shutdownLatch.await

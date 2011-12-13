@@ -54,7 +54,7 @@ object Pi extends App {
     var start: Long = _
 
     // create a round robin router for the workers
-    val router = context.actorOf(Props(new Worker).withRouting(RoundRobinRouter(nrOfInstances = 5)), "pi")
+    val router = context.actorOf(Props(new Worker).withRouter(RoundRobinRouter(nrOfInstances = 5)), "pi")
 
     // message handler
     def receive = {

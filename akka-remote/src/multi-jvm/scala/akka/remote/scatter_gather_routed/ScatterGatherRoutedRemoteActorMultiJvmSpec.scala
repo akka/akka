@@ -62,7 +62,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with De
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       barrier("start")
-      val actor = system.actorOf(Props[SomeActor].withRouting(RoundRobinRouter()), "service-hello")
+      val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
       //actor.asInstanceOf[RoutedActorRef].router.isInstanceOf[ScatterGatherFirstCompletedRouter] must be(true)
 

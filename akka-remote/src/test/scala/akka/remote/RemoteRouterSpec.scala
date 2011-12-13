@@ -46,7 +46,7 @@ akka {
   "A Remote Router" must {
 
     "deploy its children on remote host driven by configuration" in {
-      val router = system.actorOf(Props[Echo].withRouting(RoundRobinRouter(2)), "blub")
+      val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2)), "blub")
       router ! ""
       expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub/c1"
       router ! ""

@@ -137,5 +137,5 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
    * Returns a new Props with the specified router config set
    * Java API
    */
-  def withRouting(r: RouterConfig) = copy(routerConfig = r)
+  def withRouter(r: RouterConfig) = copy(routerConfig = r)
 }
