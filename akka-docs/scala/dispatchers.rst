@@ -7,8 +7,6 @@ Dispatchers (Scala)
 
    .. contents:: :local:
    
-Module stability: **SOLID**
-
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions of threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.

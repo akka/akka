@@ -5,8 +5,6 @@ Agents (Scala)
 
    .. contents:: :local:
    
-Module stability: **SOLID**
-
 Agents in Akka were inspired by `agents in Clojure <http://clojure.org/agents>`_.
 
 Agents provide asynchronous change of individual locations. Agents are bound to a single storage location for their lifetime, and only allow mutation of that location (to a new state) to occur as a result of an action. Update actions are functions that are asynchronously applied to the Agent's state and whose return value becomes the Agent's new state. The state of an Agent should be immutable.

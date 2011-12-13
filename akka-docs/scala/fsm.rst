@@ -14,8 +14,6 @@ FSM
 .. versionchanged:: 1.2
    added Tracing and Logging
 
-Module stability: **STABLE**
-
 Overview
 ========
 

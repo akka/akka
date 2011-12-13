@@ -5,8 +5,6 @@ Typed Actors (Scala)
 
    .. contents:: :local:
    
-Module stability: **SOLID**
-
 The Typed Actors are implemented through `Typed Actors <http://en.wikipedia.org/wiki/Active_object>`_. It uses AOP through `AspectWerkz <http://aspectwerkz.codehaus.org/>`_ to turn regular POJOs into asynchronous non-blocking Actors with semantics of the Actor Model. Each method dispatch is turned into a message that is put on a queue to be processed by the Typed Actor sequentially one by one.
 
 If you are using the `Spring Framework <http://springsource.org>`_ then take a look at Akka's `Spring integration <spring-integration>`_.

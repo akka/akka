@@ -7,8 +7,6 @@ Transactors (Scala)
 
    .. contents:: :local:
 
-Module stability: **SOLID**
-
 Why Transactors?
 ----------------
 

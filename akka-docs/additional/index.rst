@@ -11,4 +11,3 @@ Additional Information
    companies-using-akka
    third-party-integrations
    language-bindings
-   stability-matrix

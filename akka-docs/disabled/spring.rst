@@ -5,8 +5,6 @@
  Spring Integration
 ####################
 
-Module stability: **STABLE**
-
 Akkas integration with the `Spring Framework <http://www.springsource.org>`_ supplies the Spring way of using the Typed Actor Java API and for CamelService configuration for :ref:`camel-spring-applications`. It uses Spring's custom namespaces to create Typed Actors, supervisor hierarchies and a CamelService in a Spring environment.
 
 Contents:

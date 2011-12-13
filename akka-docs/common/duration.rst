@@ -4,8 +4,6 @@
 Duration
 ########
 
-Module stability: **SOLID**
-
 Durations are used throughout the Akka library, wherefore this concept is
 represented by a special data type, :class:`Duration`. Values of this type may
 represent infinite (:obj:`Duration.Inf`, :obj:`Duration.MinusInf`) or finite

@@ -7,8 +7,6 @@ Transactors (Java)
 
    .. contents:: :local:
 
-Module stability: **SOLID**
-
 Why Transactors?
 ----------------
 

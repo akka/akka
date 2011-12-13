@@ -7,8 +7,6 @@ HTTP
 
    .. contents:: :local:
 
-Module stability: **SOLID**
-
 When deploying in a servlet container:
 --------------------------------------------
 
