@@ -7,13 +7,7 @@ package akka.dispatch
 import java.util.Collection
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
 import akka.util.Duration
-import akka.event.Logging.{ Warning, Error }
-import akka.actor.ActorSystem
 import java.util.concurrent._
-import akka.event.EventStream
-import concurrent.forkjoin.ForkJoinPool._
-import concurrent.forkjoin.{ ForkJoinTask, ForkJoinWorkerThread, ForkJoinPool }
-import concurrent.forkjoin.ForkJoinTask._
 
 object ThreadPoolConfig {
   type Bounds = Int
@@ -72,16 +66,17 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
                             corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
-                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue())
+                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
+                            daemonic: Boolean = false)
   extends ExecutorServiceFactoryProvider {
-  final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ExecutorServiceFactory {
-    val threadFactory = new MonitorableThreadFactory(name)
+  class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
       val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory, new SaneRejectedExecutionHandler)
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
       service
     }
   }
+  final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ThreadPoolExecutorServiceFactory(new MonitorableThreadFactory(name, daemonic))
 }
 
 trait DispatcherBuilder {
