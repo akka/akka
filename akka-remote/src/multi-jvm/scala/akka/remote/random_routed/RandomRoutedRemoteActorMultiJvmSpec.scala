@@ -1,6 +1,6 @@
 package akka.remote.random_routed
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
@@ -19,7 +19,7 @@ class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" ignore {
+    "___" in {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -32,7 +32,7 @@ class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" ignore {
+    "___" in {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -45,7 +45,7 @@ class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
-    "___" ignore {
+    "___" in {
       barrier("start")
       barrier("broadcast-end")
       barrier("end")
@@ -58,10 +58,10 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with DefaultTi
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a Random router" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" ignore {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       barrier("start")
-      val actor = system.actorOf[SomeActor]("service-hello")
+      val actor = system.actorOf(Props[SomeActor].withRouting(RoundRobinRouter()), "service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1

@@ -57,8 +57,8 @@ class RemoteActorRefProvider(
     terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
   }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef =
-    if (systemService) local.actorOf(system, props, supervisor, path, systemService)
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
+    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy)
     else {
 
       /*
@@ -105,20 +105,23 @@ class RemoteActorRefProvider(
 
       deployment match {
         case Some(Deploy(_, _, _, _, RemoteScope(address))) ⇒
-          if (address == rootPath.address) local.actorOf(system, props, supervisor, path, false)
-          else address.parse(remote.transports) match {
+          // FIXME RK this should be done within the deployer, i.e. the whole parsing business
+          address.parse(remote.transports) match {
             case Left(x) ⇒
-              // FIXME RK this should be done within the deployer, i.e. the whole parsing business
               throw new ConfigurationException("cannot parse remote address: " + x)
             case Right(addr) ⇒
-              val rpath = RootActorPath(addr) / "remote" / rootPath.address.hostPort / path.elements
-              useActorOnNode(rpath, props.creator, supervisor)
-              new RemoteActorRef(this, remote.server, rpath, supervisor, None)
+              if (addr == rootPath.address) local.actorOf(system, props, supervisor, path, false, deployment)
+              else {
+                val rpath = RootActorPath(addr) / "remote" / rootPath.address.hostPort / path.elements
+                useActorOnNode(rpath, props.creator, supervisor)
+                new RemoteActorRef(this, remote.server, rpath, supervisor, None)
+              }
           }
 
-        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService)
+        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment)
       }
     }
+  }
 
   def actorFor(path: ActorPath): InternalActorRef = path.root match {
     case `rootPath` ⇒ actorFor(rootGuardian, path.elements)

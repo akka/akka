@@ -72,7 +72,7 @@ trait ActorRefProvider {
    * in case of remote supervision). If systemService is true, deployment is
    * bypassed (local-only).
    */
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -481,10 +481,10 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true)
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true)
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None)
 
   lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
@@ -518,7 +518,7 @@ class LocalActorRefProvider(
       case x      ⇒ x
     }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy] = None): InternalActorRef = {
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
     props.routerConfig match {
       case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case router ⇒

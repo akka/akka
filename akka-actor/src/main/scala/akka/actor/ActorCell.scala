@@ -223,7 +223,7 @@ private[akka] class ActorCell(
   final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false)
+    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
   }
