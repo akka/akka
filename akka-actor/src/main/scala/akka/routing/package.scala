@@ -10,6 +10,6 @@ package object routing {
 
   case class Destination(sender: ActorRef, recipient: ActorRef)
 
-  type Route = (ActorRef, Any) ⇒ Iterable[Destination]
+  type Route = PartialFunction[(ActorRef, Any), Iterable[Destination]]
 
 }

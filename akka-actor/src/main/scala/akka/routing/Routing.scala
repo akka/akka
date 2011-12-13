@@ -25,7 +25,11 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _supervisor,
     _path) {
 
-  val route: Route = _props.routerConfig.createRoute(_props.creator, actorContext)
+  val route: Route = ({
+    case (_, _: AutoReceivedMessage) ⇒ Nil
+  }: Route) orElse _props.routerConfig.createRoute(_props.creator, actorContext) orElse {
+    case _ ⇒ Nil
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
     val s = if (sender eq null) underlying.system.deadLetters else sender
@@ -78,6 +82,8 @@ trait RouterConfig {
     }
   }
 
+  protected def toAll(sender: ActorRef, targets: Iterable[ActorRef]): Iterable[Destination] = targets.map(Destination(sender, _))
+
   protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, targets: Iterable[String]): Vector[ActorRef] = (nrOfInstances, targets) match {
     case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
     case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
@@ -91,8 +97,8 @@ trait RouterConfig {
  * through by returning an empty route.
  */
 trait Router extends Actor {
-  def receive = {
-    case _ ⇒
+  final def receive = {
+    case Terminated(child) ⇒
   }
 }
 
@@ -159,12 +165,12 @@ trait RoundRobinLike { this: RouterConfig ⇒
       routees(next.getAndIncrement % routees.size)
     }
 
-    { (sender, message) ⇒
-      message match {
-        case msg: AutoReceivedMessage ⇒ Nil
-        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
-        case msg                      ⇒ List(Destination(sender, getNext()))
-      }
+    {
+      case (sender, message) ⇒
+        message match {
+          case Broadcast(msg) ⇒ toAll(sender, routees)
+          case msg            ⇒ List(Destination(sender, getNext()))
+        }
     }
   }
 }
@@ -218,12 +224,12 @@ trait RandomLike { this: RouterConfig ⇒
       routees(random.get.nextInt(routees.size))
     }
 
-    { (sender, message) ⇒
-      message match {
-        case msg: AutoReceivedMessage ⇒ Nil
-        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
-        case msg                      ⇒ List(Destination(sender, getNext()))
-      }
+    {
+      case (sender, message) ⇒
+        message match {
+          case Broadcast(msg) ⇒ toAll(sender, routees)
+          case msg            ⇒ List(Destination(sender, getNext()))
+        }
     }
   }
 }
@@ -266,12 +272,11 @@ trait BroadcastLike { this: RouterConfig ⇒
     val routees: Vector[ActorRef] =
       createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
 
-    { (sender, message) ⇒
-      message match {
-        case msg: AutoReceivedMessage ⇒ Nil
-        case Broadcast(msg)           ⇒ routees map (Destination(sender, _))
-        case msg                      ⇒ routees map (Destination(sender, _))
-      }
+    {
+      case (sender, message) ⇒
+        message match {
+          case _ ⇒ toAll(sender, routees)
+        }
     }
   }
 }
@@ -315,14 +320,13 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     val routees: Vector[ActorRef] =
       createRoutees(context.props.copy(creator = creator, routerConfig = NoRouter), context, nrOfInstances, targets)
 
-    { (sender, message) ⇒
-      val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(5, TimeUnit.SECONDS)).get // FIXME, NO REALLY FIXME!
-      asker.result.pipeTo(sender)
-      message match {
-        case msg: AutoReceivedMessage ⇒ Nil
-        case Broadcast(msg)           ⇒ routees map (Destination(asker, _))
-        case msg                      ⇒ routees map (Destination(asker, _))
-      }
+    {
+      case (sender, message) ⇒
+        val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(5, TimeUnit.SECONDS)).get // FIXME, NO REALLY FIXME!
+        asker.result.pipeTo(sender)
+        message match {
+          case _ ⇒ toAll(asker, routees)
+        }
     }
   }
 }
