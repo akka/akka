@@ -76,18 +76,16 @@ add initialization code for the actor.
 Creating Actors with non-default constructor
 --------------------------------------------
 
-If your UntypedActor has a constructor that takes parameters then you can't create it using 'actorOf(clazz)'.
-Instead you can use a variant of ``actorOf`` that takes an instance of an 'UntypedActorFactory'
-in which you can create the Actor in any way you like. If you use this method then you to make sure that
-no one can get a reference to the actor instance. If they can get a reference it then they can
-touch state directly in bypass the whole actor dispatching mechanism and create race conditions
-which can lead to corrupt data.
+If your UntypedActor has a constructor that takes parameters then you can't create it using
+'actorOf(new Props(clazz))'. Then you can instead pass in 'new Props(new UntypedActorFactory() {..})'
+in which you can create the Actor in any way you like.
 
 Here is an example:
 
 .. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-constructor
 
-This way of creating the Actor is also great for integrating with Dependency Injection (DI) frameworks like Guice or Spring.
+This way of creating the Actor is also great for integrating with Dependency Injection
+(DI) frameworks like Guice or Spring.
 
 
 Props
