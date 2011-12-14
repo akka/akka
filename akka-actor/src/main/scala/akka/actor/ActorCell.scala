@@ -185,7 +185,7 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  final val parent: InternalActorRef,
+  @volatile var parent: InternalActorRef,
   /*no member*/ _receiveTimeout: Option[Duration],
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends UntypedActorContext {
 

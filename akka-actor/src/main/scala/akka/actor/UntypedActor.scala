@@ -27,7 +27,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *
  * {{{
  *  public class SampleUntypedActor extends UntypedActor {
- *  
+ *
  *    public class Reply {
  *      final public ActorRef sender;
  *      final public Result result;
@@ -36,7 +36,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *        this.result = result;
  *      }
  *    }
- *    
+ *
  *    public void onReceive(Object message) throws Exception {
  *      if (message instanceof String) {
  *        String msg = (String)message;

@@ -15,6 +15,7 @@ object SupervisorHierarchySpec {
     protected def receive = {
       case p: Props ⇒ sender ! context.actorOf(p)
     }
+    // test relies on keeping children around during restart
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
     override def postRestart(reason: Throwable) = {
       countDown.countDown()

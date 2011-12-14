@@ -15,7 +15,7 @@ class Locker(scheduler: Scheduler, period: Duration, val path: ActorPath, val de
     def run = {
       val iter = heap.entrySet.iterator
       while (iter.hasNext) {
-        val soul = iter.next();
+        val soul = iter.next()
         deathWatch.subscribe(Locker.this, soul.getKey) // in case Terminated got lost somewhere
         soul.getKey match {
           case _: LocalActorRef ⇒ // nothing to do, they know what they signed up for
@@ -41,24 +41,10 @@ class Locker(scheduler: Scheduler, period: Duration, val path: ActorPath, val de
       soul match {
         case local: LocalActorRef ⇒
           val cell = local.underlying
-          rebind(cell, cell.getClass)
+          cell.parent = this
         case _ ⇒
       }
     case _ ⇒ // ignore
-  }
-
-  @scala.annotation.tailrec
-  final private def rebind(cell: ActorCell, clazz: Class[_]): Unit = {
-    try {
-      val heart = clazz.getDeclaredField("parent")
-      heart.setAccessible(true)
-      heart.set(cell, this)
-      return
-    } catch {
-      case _: NoSuchFieldException ⇒
-    }
-    val sc = clazz.getSuperclass
-    if (sc != null) rebind(cell, sc)
   }
 
 }
