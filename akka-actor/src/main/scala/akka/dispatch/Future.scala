@@ -192,7 +192,7 @@ object Future {
    * or the result of the fold.
    * Example:
    * <pre>
-   *   val result = Futures.fold(0)(futures)(_ + _).await.result
+   *   val result = Await.result(Futures.fold(0)(futures)(_ + _), 5 seconds)
    * </pre>
    */
   def fold[T, R](futures: Traversable[Future[T]])(zero: R)(foldFun: (R, T) ⇒ R)(implicit dispatcher: MessageDispatcher): Future[R] = {
@@ -258,7 +258,7 @@ object Future {
    * block, causing delays in executing the remaining tasks which in some
    * cases may cause a deadlock.
    *
-   * Note: Calling 'Future.await' will automatically trigger this method.
+   * Note: Calling 'Await.result(future)' or 'Await.ready(future)' will automatically trigger this method.
    *
    * For example, in the following block of code the call to 'latch.open'
    * might not be executed until after the call to 'latch.await', causing
