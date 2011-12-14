@@ -9,12 +9,12 @@ import org.scalacheck.Gen._
 import akka.actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.util.duration._
-import org.multiverse.api.latches.StandardLatch
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import java.lang.ArithmeticException
 import akka.testkit.DefaultTimeout
+import akka.testkit.TestLatch
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -26,7 +26,7 @@ object FutureSpec {
     }
   }
 
-  class TestDelayActor(await: StandardLatch) extends Actor {
+  class TestDelayActor(await: TestLatch) extends Actor {
     def receive = {
       case "Hello"   ⇒ await.await; sender ! "World"
       case "NoReply" ⇒ await.await
@@ -70,26 +70,26 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "awaiting a result" that {
       "is not completed" must {
         behave like emptyFuture { test ⇒
-          val latch = new StandardLatch
+          val latch = new TestLatch
           val result = "test value"
           val future = Future {
             latch.await
             result
           }
           test(future)
-          latch.open
+          latch.open()
           future.await
         }
       }
       "is completed" must {
         behave like futureWithResult { test ⇒
-          val latch = new StandardLatch
+          val latch = new TestLatch
           val result = "test value"
           val future = Future {
             latch.await
             result
           }
-          latch.open
+          latch.open()
           future.await
           test(future, result)
         }
@@ -392,10 +392,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "receiveShouldExecuteOnComplete" in {
-        val latch = new StandardLatch
+        val latch = new TestLatch
         val actor = system.actorOf(Props[TestActor])
-        actor ? "Hello" onResult { case "World" ⇒ latch.open }
-        assert(latch.tryAwait(5, TimeUnit.SECONDS))
+        actor ? "Hello" onResult { case "World" ⇒ latch.open() }
+        assert(latch.await(5 seconds))
         actor.stop()
       }
 
@@ -425,12 +425,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           f1.await
           intercept[ThrowableTest] { f1.get }
 
-          val latch = new StandardLatch
-          val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
+          val latch = new TestLatch
+          val f2 = Future { latch.await(5 seconds); "success" }
           f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
           f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
           val f3 = f2 map (s ⇒ s.toUpperCase)
-          latch.open
+          latch.open()
           f2.await
           assert(f2.get === "success")
           f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
@@ -441,13 +441,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "shouldBlockUntilResult" in {
-        val latch = new StandardLatch
+        val latch = new TestLatch
 
         val f = Future({ latch.await; 5 })
         val f2 = Future({ f.get + 5 })
 
         assert(f2.resultOrException === None)
-        latch.open
+        latch.open()
         assert(f2.get === 10)
 
         val f3 = Future({ Thread.sleep(10); 5 }, 10 millis)
@@ -520,19 +520,19 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         import Future.flow
 
         val x, y, z = Promise[Int]()
-        val ly, lz = new StandardLatch
+        val ly, lz = new TestLatch
 
         val result = flow {
           y completeWith x
-          ly.open // not within continuation
+          ly.open() // not within continuation
 
           z << x
-          lz.open // within continuation, will wait for 'z' to complete
+          lz.open() // within continuation, will wait for 'z' to complete
           z() + y()
         }
 
-        assert(ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
-        assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+        assert(ly.await(100 milliseconds))
+        lz.awaitTimeout(100 milliseconds)
 
         flow { x << 5 }
 
@@ -557,10 +557,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
-        val latch = new StandardLatch
+        val latch = new TestLatch
         val f = Promise[Int](0)
         Thread.sleep(25)
-        f.onComplete(_ ⇒ latch.open) //Shouldn't throw any exception here
+        f.onComplete(_ ⇒ latch.open()) //Shouldn't throw any exception here
 
         assert(f.isExpired) //Should be expired
 
@@ -599,7 +599,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "futureDataFlowShouldEmulateBlocking2" in {
         import Future.flow
         val x1, x2, y1, y2 = Promise[Int](1000 * 60)
-        val lx, ly, lz = new StandardLatch
+        val lx, ly, lz = new TestLatch
         val result = flow {
           lx.open()
           x1 << y1
@@ -608,20 +608,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           lz.open()
           x1() + x2()
         }
-        assert(lx.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+        assert(lx.await(2000 milliseconds))
         assert(!ly.isOpen)
         assert(!lz.isOpen)
         assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
 
         flow { y1 << 1 } // When this is set, it should cascade down the line
 
-        assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+        assert(ly.await(2000 milliseconds))
         assert(x1.get === 1)
         assert(!lz.isOpen)
 
         flow { y2 << 9 } // When this is set, it should cascade down the line
 
-        assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
+        assert(lz.await(2000 milliseconds))
         assert(x2.get === 9)
 
         assert(List(x1, x2, y1, y2).forall(_.isCompleted == true))
@@ -632,20 +632,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "dataFlowAPIshouldbeSlick" in {
         import Future.flow
 
-        val i1, i2, s1, s2 = new StandardLatch
+        val i1, i2, s1, s2 = new TestLatch
 
-        val callService1 = Future { i1.open; s1.awaitUninterruptible; 1 }
-        val callService2 = Future { i2.open; s2.awaitUninterruptible; 9 }
+        val callService1 = Future { i1.open(); s1.await; 1 }
+        val callService2 = Future { i2.open(); s2.await; 9 }
 
         val result = flow { callService1() + callService2() }
 
         assert(!s1.isOpen)
         assert(!s2.isOpen)
         assert(!result.isCompleted)
-        assert(i1.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-        assert(i2.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-        s1.open
-        s2.open
+        assert(i1.await(2000 milliseconds))
+        assert(i2.await(2000 milliseconds))
+        s1.open()
+        s2.open()
         assert(result.get === 10)
       }
 
@@ -654,19 +654,19 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           import Future.flow
 
           val x, y, z = Promise[Int]()
-          val ly, lz = new StandardLatch
+          val ly, lz = new TestLatch
 
           val result = flow {
             y << x
-            ly.open
+            ly.open()
             val oops = 1 / 0
             z << x
-            lz.open
+            lz.open()
             z() + y() + oops
           }
 
-          assert(!ly.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
-          assert(!lz.tryAwaitUninterruptible(100, TimeUnit.MILLISECONDS))
+          ly.awaitTimeout(100 milliseconds)
+          lz.awaitTimeout(100 milliseconds)
 
           flow { x << 5 }
 
@@ -680,7 +680,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "futureContinuationsShouldNotBlock" in {
         import Future.flow
 
-        val latch = new StandardLatch
+        val latch = new TestLatch
         val future = Future {
           latch.await
           "Hello"
@@ -692,7 +692,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         assert(!result.isCompleted)
 
-        latch.open
+        latch.open()
 
         assert(result.get === Some("Hello"))
       }
@@ -763,39 +763,39 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "run callbacks async" in {
-        val latch = Vector.fill(10)(new StandardLatch)
+        val latch = Vector.fill(10)(new TestLatch)
 
-        val f1 = Future { latch(0).open; latch(1).await; "Hello" }
-        val f2 = f1 map { s ⇒ latch(2).open; latch(3).await; s.length }
-        f2 foreach (_ ⇒ latch(4).open)
+        val f1 = Future { latch(0).open(); latch(1).await; "Hello" }
+        val f2 = f1 map { s ⇒ latch(2).open(); latch(3).await; s.length }
+        f2 foreach (_ ⇒ latch(4).open())
 
         latch(0).await
 
         f1 must not be ('completed)
         f2 must not be ('completed)
 
-        latch(1).open
+        latch(1).open()
         latch(2).await
 
         f1 must be('completed)
         f2 must not be ('completed)
 
-        val f3 = f1 map { s ⇒ latch(5).open; latch(6).await; s.length * 2 }
-        f3 foreach (_ ⇒ latch(3).open)
+        val f3 = f1 map { s ⇒ latch(5).open(); latch(6).await; s.length * 2 }
+        f3 foreach (_ ⇒ latch(3).open())
 
         latch(5).await
 
         f3 must not be ('completed)
 
-        latch(6).open
+        latch(6).open()
         latch(4).await
 
         f2 must be('completed)
         f3 must be('completed)
 
         val p1 = Promise[String]()
-        val f4 = p1 map { s ⇒ latch(7).open; latch(8).await; s.length }
-        f4 foreach (_ ⇒ latch(9).open)
+        val f4 = p1 map { s ⇒ latch(7).open(); latch(8).await; s.length }
+        f4 foreach (_ ⇒ latch(9).open())
 
         p1 must not be ('completed)
         f4 must not be ('completed)
@@ -807,7 +807,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         p1 must be('completed)
         f4 must not be ('completed)
 
-        latch(8).open
+        latch(8).open()
         latch(9).await
 
         f4.await must be('completed)
@@ -817,13 +817,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val simple = Future() map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
         simple.await must be('completed)
 
-        val l1, l2 = new StandardLatch
+        val l1, l2 = new TestLatch
         val complex = Future() map { _ ⇒
           Future.blocking()
           val nested = Future()
-          nested foreach (_ ⇒ l1.open)
+          nested foreach (_ ⇒ l1.open())
           l1.await // make sure nested is completed
-          nested foreach (_ ⇒ l2.open)
+          nested foreach (_ ⇒ l2.open())
           l2.await
         }
         assert(complex.await.isCompleted)

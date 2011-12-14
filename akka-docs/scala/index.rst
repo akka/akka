@@ -12,7 +12,6 @@ Scala API
    futures
    dataflow
    agents
-   stm
    transactors
    fault-tolerance
    dispatchers
