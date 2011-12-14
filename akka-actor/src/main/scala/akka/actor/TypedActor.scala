@@ -313,7 +313,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         case null ⇒
         case some ⇒
           some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
-          proxyVar.set(null)
+          proxyVar.set(null.asInstanceOf[R])
       }
     }
 
