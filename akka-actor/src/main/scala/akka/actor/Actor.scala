@@ -156,15 +156,44 @@ object Actor {
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
  * <a href="http://en.wikipedia.org/wiki/Actor_model">http://en.wikipedia.org/wiki/Actor_model</a>
- * <p/>
- * An actor has a well-defined (non-cyclic) life-cycle.
- * <pre>
- * => RUNNING (created and started actor) - can receive messages
- * => SHUTDOWN (when 'stop' or 'exit' is invoked) - can't do anything
- * </pre>
  *
- * <p/>
- * The Actor's own ActorRef is available in the 'self' member variable.
+ * An actor has a well-defined (non-cyclic) life-cycle.
+ *  - ''RUNNING'' (created and started actor) - can receive messages
+ *  - ''SHUTDOWN'' (when 'stop' or 'exit' is invoked) - can't do anything
+ *
+ * The Actor's own [[akka.actor.ActorRef]] is available as `self`, the current
+ * message’s sender as `sender` and the [[akka.actor.ActorContext]] as
+ * `context`. The only abstract method is `receive` which shall return the
+ * initial behavior of the actor as a partial function (behavior can be changed
+ * using `context.become` and `context.unbecome`).
+ *
+ * {{{
+ * class ExampleActor extends Actor {
+ *   def receive = {
+ *                                      // directly calculated reply
+ *     case Request(r)               => sender ! calculate(r)
+ *
+ *                                      // just to demonstrate how to stop yourself
+ *     case Shutdown                 => context.stop(self)
+ *
+ *                                      // error kernel with child replying directly to “customer”
+ *     case Dangerous(r)             => context.actorOf(Props[ReplyToOriginWorker]).tell(PerformWork(r), sender)
+ *
+ *                                      // error kernel with reply going through us
+ *     case OtherJob(r)              => context.actorOf(Props[ReplyToMeWorker]) ! JobRequest(r, sender)
+ *     case JobReply(result, orig_s) => orig_s ! result
+ *   }
+ * }
+ * }}}
+ *
+ * The last line demonstrates the essence of the error kernel design: spawn
+ * one-off actors which terminate after doing their job, pass on `sender` to
+ * allow direct reply if that is what makes sense, or round-trip the sender
+ * as shown with the fictitious JobRequest/JobReply message pair.
+ *
+ * If you don’t like writing `context` you can always `import context._` to get
+ * direct access to `actorOf`, `stop` etc. This is not default in order to keep
+ * the name-space clean.
  */
 trait Actor {
 
@@ -218,25 +247,8 @@ trait Actor {
   final def sender: ActorRef = context.sender
 
   /**
-   * User overridable callback/setting.
-   * <p/>
-   * Partial function implementing the actor logic.
-   * To be implemented by concrete actor class.
-   * <p/>
-   * Example code:
-   * <pre>
-   *   def receive = {
-   *     case Ping =&gt;
-   *       println("got a 'Ping' message")
-   *       sender ! "pong"
-   *
-   *     case OneWay =&gt;
-   *       println("got a 'OneWay' message")
-   *
-   *     case unknown =&gt;
-   *       println("unknown message: " + unknown)
-   * }
-   * </pre>
+   * This defines the initial actor behavior, it must return a partial function
+   * with the actor logic.
    */
   protected def receive: Receive
 
@@ -258,11 +270,10 @@ trait Actor {
   def postStop() {}
 
   /**
-   * User overridable callback.
+   * User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
-   * By default it disposes of all children calls postStop().
    */
   def preRestart(reason: Throwable, message: Option[Any]) {
     context.children foreach (context.stop(_))
@@ -270,10 +281,9 @@ trait Actor {
   }
 
   /**
-   * User overridable callback.
+   * User overridable callback: By default it calls `preStart()`.
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
-   * By default it calls preStart()
    */
   def postRestart(reason: Throwable) { preStart() }
 
@@ -281,7 +291,9 @@ trait Actor {
    * User overridable callback.
    * <p/>
    * Is called when a message isn't handled by the current behavior of the actor
-   * by default it does: EventHandler.warning(self, message)
+   * by default it fails with either a [[akka.actor.DeathPactException]] (in
+   * case of an unhandled [[akka.actor.Terminated]] message) or a
+   * [[akka.actor.UnhandledMessageException]].
    */
   def unhandled(message: Any) {
     message match {

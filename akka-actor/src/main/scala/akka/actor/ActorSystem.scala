@@ -365,18 +365,12 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def stop(actor: ActorRef): Unit = {
     implicit val timeout = settings.CreationTimeout
     val path = actor.path
-    if (path.parent == guardian.path) {
-      (guardian ? StopChild(actor)).get match {
-        case ex: Exception ⇒ throw ex
-        case _             ⇒
-      }
-    } else if (path.parent == systemGuardian.path) {
-      (systemGuardian ? StopChild(actor)).get match {
-        case ex: Exception ⇒ throw ex
-        case _             ⇒
-      }
-    } else {
-      actor.asInstanceOf[InternalActorRef].stop()
+    val guard = guardian.path
+    val sys = systemGuardian.path
+    path.parent match {
+      case `guard` ⇒ (guardian ? StopChild(actor)).get
+      case `sys`   ⇒ (systemGuardian ? StopChild(actor)).get
+      case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
 
