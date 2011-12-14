@@ -52,10 +52,12 @@ object Dist {
     (baseDirectory, distSources, distUnzipped, version, distFile, streams) map {
       (projectBase, allSources, unzipped, version, zipFile, s) => {
         val base = unzipped / ("akka-" + version)
-        val scripts = (projectBase / "scripts" / "microkernel" * "*").get
+        val scripts = (projectBase / "akka-kernel" / "src" / "main" / "scripts" * "*").get
         val bin = base / "bin"
         val configSources = projectBase / "config"
         val config = base / "config"
+        val deploy = base / "deploy"
+        val deployReadme = deploy / "readme"
         val doc = base / "doc" / "akka"
         val api = doc / "api"
         val docs = doc / "docs"
@@ -68,6 +70,8 @@ object Dist {
         IO.delete(unzipped)
         copyFilesTo(scripts, bin, setExecutable = true)
         IO.copyDirectory(configSources, config)
+        IO.createDirectory(deploy)
+        IO.write(deployReadme, "Place application jars in this directory")
         IO.copyDirectory(allSources.api, api)
         IO.copyDirectory(allSources.docs, docs)
         copyFilesTo(allSources.docJars, docJars)

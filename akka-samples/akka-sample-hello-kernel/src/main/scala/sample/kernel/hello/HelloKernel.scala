@@ -25,9 +25,13 @@ class WorldActor extends Actor {
 }
 
 class HelloKernel extends Bootable {
-  def startup(system: ActorSystem) = {
+  val system = ActorSystem("hellokernel")
+
+  def startup = {
     system.actorOf(Props[HelloActor]) ! Start
   }
 
-  def shutdown(system: ActorSystem) = {}
+  def shutdown = {
+    system.shutdown()
+  }
 }
