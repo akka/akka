@@ -67,7 +67,7 @@ trait ActorContext extends ActorRefFactory {
   def setReceiveTimeout(timeout: Duration): Unit
 
   /**
-   * Resets the current receive timeout.
+   * Clears the receive timeout, i.e. deactivates this feature.
    */
   def resetReceiveTimeout(): Unit
 
@@ -84,16 +84,6 @@ trait ActorContext extends ActorRefFactory {
   def unbecome(): Unit
 
   /**
-   * Returns the current message envelope.
-   */
-  def currentMessage: Envelope
-
-  /**
-   * Returns a stack with the hotswapped behaviors (as Scala PartialFunction).
-   */
-  def hotswap: Stack[PartialFunction[Any, Unit]]
-
-  /**
    * Returns the sender 'ActorRef' of the current message.
    */
   def sender: ActorRef
@@ -108,10 +98,6 @@ trait ActorContext extends ActorRefFactory {
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
   implicit def dispatcher: MessageDispatcher
-
-  def handleFailure(child: ActorRef, cause: Throwable): Unit
-
-  def handleChildTerminated(child: ActorRef): Unit
 
   /**
    * The system that the actor belongs to.
