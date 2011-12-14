@@ -38,6 +38,16 @@ class DurationSpec extends WordSpec with MustMatchers {
       (inf - minf) must be(inf)
       (minf - inf) must be(minf)
       (minf + minf) must be(minf)
+      assert(inf == inf)
+      assert(minf == minf)
+      inf.compareTo(inf) must be(0)
+      inf.compareTo(one) must be(1)
+      minf.compareTo(minf) must be(0)
+      minf.compareTo(one) must be(-1)
+      assert(inf != minf)
+      assert(minf != inf)
+      assert(one != inf)
+      assert(minf != one)
     }
 
     "support fromNow" in {
