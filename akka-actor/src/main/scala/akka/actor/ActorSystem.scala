@@ -96,9 +96,6 @@ object ActorSystem {
       case "" ⇒ None
       case x  ⇒ Some(x)
     }
-    val BootClasses: Seq[String] = getStringList("akka.boot").asScala
-
-    val EnabledModules: Seq[String] = getStringList("akka.enabled-modules").asScala
 
     val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
     val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")

@@ -66,9 +66,8 @@ object Dist {
         val libAkka = lib / "akka"
         val src = base / "src" / "akka"
         IO.delete(unzipped)
-        // TODO: re-enable bin and config dirs, and add deploy dir, when akka-kernel is enabled
-        //copyFilesTo(scripts, bin, setExecutable = true)
-        //IO.copyDirectory(configSources, config)
+        copyFilesTo(scripts, bin, setExecutable = true)
+        IO.copyDirectory(configSources, config)
         IO.copyDirectory(allSources.api, api)
         IO.copyDirectory(allSources.docs, docs)
         copyFilesTo(allSources.docJars, docJars)
