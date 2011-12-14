@@ -4,11 +4,12 @@
 package akka.actor
 
 import akka.dispatch._
+import akka.util.Duration
 import akka.util.duration._
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.DeathWatch
 
-class Locker(scheduler: Scheduler, val path: ActorPath, val deathWatch: DeathWatch) extends MinimalActorRef {
+class Locker(scheduler: Scheduler, period: Duration, val path: ActorPath, val deathWatch: DeathWatch) extends MinimalActorRef {
 
   class DavyJones extends Runnable {
     def run = {
@@ -26,7 +27,7 @@ class Locker(scheduler: Scheduler, val path: ActorPath, val deathWatch: DeathWat
 
   private val heap = new ConcurrentHashMap[InternalActorRef, Long]
 
-  scheduler.schedule(5 seconds, 5 seconds, new DavyJones)
+  scheduler.schedule(period, period, new DavyJones)
 
   override def sendSystemMessage(msg: SystemMessage): Unit = this.!(msg)
 

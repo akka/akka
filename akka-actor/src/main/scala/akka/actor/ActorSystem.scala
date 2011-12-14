@@ -73,6 +73,7 @@ object ActorSystem {
     val ProviderClass = getString("akka.actor.provider")
 
     val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    val ReaperPeriod = Duration(getMilliseconds("akka.actor.reaper-period"), MILLISECONDS)
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
@@ -446,7 +447,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     this
   }
 
-  lazy val locker: Locker = new Locker(scheduler, lookupRoot.path / "locker", deathWatch)
+  lazy val locker: Locker = new Locker(scheduler, ReaperPeriod, lookupRoot.path / "locker", deathWatch)
 
   def start() = _start
 
