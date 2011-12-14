@@ -436,12 +436,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
+    _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
   }
 
-  lazy val locker: Locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
+  @volatile
+  private var _locker: Locker = _ // initialized in start()
+  def locker = _locker
 
   def start() = _start
 
