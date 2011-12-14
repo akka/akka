@@ -303,9 +303,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _           ⇒ super.preStart()
     }
 
-    override def postStop(): Unit = me match {
-      case l: PostStop ⇒ l.postStop()
-      case _           ⇒ super.postStop()
+    override def postStop(): Unit = try {
+      me match {
+        case l: PostStop ⇒ l.postStop()
+        case _           ⇒ super.postStop()
+      }
+    } finally {
+      TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
+        case null ⇒
+        case some ⇒
+          some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
+          proxyVar.set(null)
+      }
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = me match {
@@ -396,7 +405,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def postRestart(reason: Throwable): Unit = ()
   }
 
-  private[akka] class TypedActorInvocationHandler(extension: TypedActorExtension, actorVar: AtomVar[ActorRef], timeout: Timeout) extends InvocationHandler {
+  private[akka] class TypedActorInvocationHandler(val extension: TypedActorExtension, val actorVar: AtomVar[ActorRef], val timeout: Timeout) extends InvocationHandler {
     def actor = actorVar.get
 
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
