@@ -51,7 +51,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
   "A Deployer" must {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
-      println(system.settings.toString)
       val service = "/user/service1"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
