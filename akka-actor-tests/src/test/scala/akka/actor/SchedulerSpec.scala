@@ -1,12 +1,12 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import org.multiverse.api.latches.StandardLatch
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit.DefaultTimeout
+import akka.testkit.TestLatch
 import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -102,7 +102,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       object Ping
       object Crash
 
-      val restartLatch = new StandardLatch
+      val restartLatch = new TestLatch
       val pingLatch = new CountDownLatch(6)
 
       val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
@@ -122,7 +122,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
         collectCancellable(system.scheduler.scheduleOnce(1000 milliseconds, actor, Crash))
       }
 
-      assert(restartLatch.tryAwait(2, TimeUnit.SECONDS))
+      assert(restartLatch.await(2 seconds))
       // should be enough time for the ping countdown to recover and reach 6 pings
       assert(pingLatch.await(4, TimeUnit.SECONDS))
     }
