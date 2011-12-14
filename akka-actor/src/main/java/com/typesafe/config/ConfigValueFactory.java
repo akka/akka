@@ -8,9 +8,9 @@ import java.util.Map;
 import com.typesafe.config.impl.ConfigImpl;
 
 /**
- * This class holds some static factory methods for building ConfigValue. See
- * also ConfigFactory which has methods for parsing files and certain in-memory
- * data structures.
+ * This class holds some static factory methods for building {@link ConfigValue}
+ * instances. See also {@link ConfigFactory} which has methods for parsing files
+ * and certain in-memory data structures.
  */
 public final class ConfigValueFactory {
     private ConfigValueFactory() {

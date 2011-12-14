@@ -4,6 +4,7 @@
 package com.typesafe.config;
 
 import java.net.URL;
+import java.util.List;
 
 
 /**
@@ -12,13 +13,13 @@ import java.net.URL;
  * with {@link ConfigValue#origin}. Exceptions may have an origin, see
  * {@link ConfigException#origin}, but be careful because
  * <code>ConfigException.origin()</code> may return null.
- * 
+ *
  * <p>
  * It's best to use this interface only for debugging; its accuracy is
  * "best effort" rather than guaranteed, and a potentially-noticeable amount of
  * memory could probably be saved if origins were not kept around, so in the
  * future there might be some option to discard origins.
- * 
+ *
  * <p>
  * <em>Do not implement this interface</em>; it should only be implemented by
  * the config library. Arbitrary implementations will not work because the
@@ -66,4 +67,16 @@ public interface ConfigOrigin {
      * @return line number or -1 if none is available
      */
     public int lineNumber();
+
+    /**
+     * Returns any comments that appeared to "go with" this place in the file.
+     * Often an empty list, but never null. The details of this are subject to
+     * change, but at the moment comments that are immediately before an array
+     * element or object field, with no blank line after the comment, "go with"
+     * that element or field.
+     * 
+     * @return any comments that seemed to "go with" this origin, empty list if
+     *         none
+     */
+    public List<String> comments();
 }

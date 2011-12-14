@@ -168,40 +168,27 @@ final class Tokenizer {
             return c != '\n' && ConfigImplUtil.isWhitespace(c);
         }
 
-        private int slurpComment() {
-            for (;;) {
-                int c = nextCharRaw();
-                if (c == -1 || c == '\n') {
-                    return c;
-                }
-            }
-        }
-
-        // get next char, skipping comments
-        private int nextCharSkippingComments() {
-            for (;;) {
-                int c = nextCharRaw();
-
-                if (c == -1) {
-                    return -1;
-                } else {
-                    if (allowComments) {
-                        if (c == '#') {
-                            return slurpComment();
-                        } else if (c == '/') {
-                            int maybeSecondSlash = nextCharRaw();
-                            if (maybeSecondSlash == '/') {
-                                return slurpComment();
-                            } else {
-                                putBack(maybeSecondSlash);
-                                return c;
-                            }
+        private boolean startOfComment(int c) {
+            if (c == -1) {
+                return false;
+            } else {
+                if (allowComments) {
+                    if (c == '#') {
+                        return true;
+                    } else if (c == '/') {
+                        int maybeSecondSlash = nextCharRaw();
+                        // we want to predictably NOT consume any chars
+                        putBack(maybeSecondSlash);
+                        if (maybeSecondSlash == '/') {
+                            return true;
                         } else {
-                            return c;
+                            return false;
                         }
                     } else {
-                        return c;
+                        return false;
                     }
+                } else {
+                    return false;
                 }
             }
         }
@@ -209,7 +196,7 @@ final class Tokenizer {
         // get next char, skipping non-newline whitespace
         private int nextCharAfterWhitespace(WhitespaceSaver saver) {
             for (;;) {
-                int c = nextCharSkippingComments();
+                int c = nextCharRaw();
 
                 if (c == -1) {
                     return -1;
@@ -269,6 +256,27 @@ final class Tokenizer {
             return ((SimpleConfigOrigin) baseOrigin).setLineNumber(lineNumber);
         }
 
+        // ONE char has always been consumed, either the # or the first /, but
+        // not both slashes
+        private Token pullComment(int firstChar) {
+            if (firstChar == '/') {
+                int discard = nextCharRaw();
+                if (discard != '/')
+                    throw new ConfigException.BugOrBroken("called pullComment but // not seen");
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (;;) {
+                int c = nextCharRaw();
+                if (c == -1 || c == '\n') {
+                    putBack(c);
+                    return Tokens.newComment(lineOrigin, sb.toString());
+                } else {
+                    sb.appendCodePoint(c);
+                }
+            }
+        }
+
         // chars JSON allows a number to start with
         static final String firstNumberChars = "0123456789-";
         // chars JSON allows to be part of a number
@@ -283,13 +291,15 @@ final class Tokenizer {
         private Token pullUnquotedText() {
             ConfigOrigin origin = lineOrigin;
             StringBuilder sb = new StringBuilder();
-            int c = nextCharSkippingComments();
+            int c = nextCharRaw();
             while (true) {
                 if (c == -1) {
                     break;
                 } else if (notInUnquotedText.indexOf(c) >= 0) {
                     break;
                 } else if (isWhitespace(c)) {
+                    break;
+                } else if (startOfComment(c)) {
                     break;
                 } else {
                     sb.appendCodePoint(c);
@@ -310,7 +320,7 @@ final class Tokenizer {
                         return Tokens.newBoolean(origin, false);
                 }
 
-                c = nextCharSkippingComments();
+                c = nextCharRaw();
             }
 
             // put back the char that ended the unquoted text
@@ -324,12 +334,12 @@ final class Tokenizer {
             StringBuilder sb = new StringBuilder();
             sb.appendCodePoint(firstChar);
             boolean containedDecimalOrE = false;
-            int c = nextCharSkippingComments();
+            int c = nextCharRaw();
             while (c != -1 && numberChars.indexOf(c) >= 0) {
                 if (c == '.' || c == 'e' || c == 'E')
                     containedDecimalOrE = true;
                 sb.appendCodePoint(c);
-                c = nextCharSkippingComments();
+                c = nextCharRaw();
             }
             // the last character we looked at wasn't part of the number, put it
             // back
@@ -382,7 +392,7 @@ final class Tokenizer {
                 // kind of absurdly slow, but screw it for now
                 char[] a = new char[4];
                 for (int i = 0; i < 4; ++i) {
-                    int c = nextCharSkippingComments();
+                    int c = nextCharRaw();
                     if (c == -1)
                         throw problem("End of input but expecting 4 hex digits for \\uXXXX escape");
                     a[i] = (char) c;
@@ -431,14 +441,14 @@ final class Tokenizer {
         private Token pullSubstitution() throws ProblemException {
             // the initial '$' has already been consumed
             ConfigOrigin origin = lineOrigin;
-            int c = nextCharSkippingComments();
+            int c = nextCharRaw();
             if (c != '{') {
                 throw problem(asString(c), "'$' not followed by {, '" + asString(c)
                         + "' not allowed after '$'", true /* suggestQuotes */);
             }
 
             boolean optional = false;
-            c = nextCharSkippingComments();
+            c = nextCharRaw();
             if (c == '?') {
                 optional = true;
             } else {
@@ -484,45 +494,49 @@ final class Tokenizer {
                 return line;
             } else {
                 Token t = null;
-                switch (c) {
-                case '"':
-                    t = pullQuotedString();
-                    break;
-                case '$':
-                    t = pullSubstitution();
-                    break;
-                case ':':
-                    t = Tokens.COLON;
-                    break;
-                case ',':
-                    t = Tokens.COMMA;
-                    break;
-                case '=':
-                    t = Tokens.EQUALS;
-                    break;
-                case '{':
-                    t = Tokens.OPEN_CURLY;
-                    break;
-                case '}':
-                    t = Tokens.CLOSE_CURLY;
-                    break;
-                case '[':
-                    t = Tokens.OPEN_SQUARE;
-                    break;
-                case ']':
-                    t = Tokens.CLOSE_SQUARE;
-                    break;
-                }
+                if (startOfComment(c)) {
+                    t = pullComment(c);
+                } else {
+                    switch (c) {
+                    case '"':
+                        t = pullQuotedString();
+                        break;
+                    case '$':
+                        t = pullSubstitution();
+                        break;
+                    case ':':
+                        t = Tokens.COLON;
+                        break;
+                    case ',':
+                        t = Tokens.COMMA;
+                        break;
+                    case '=':
+                        t = Tokens.EQUALS;
+                        break;
+                    case '{':
+                        t = Tokens.OPEN_CURLY;
+                        break;
+                    case '}':
+                        t = Tokens.CLOSE_CURLY;
+                        break;
+                    case '[':
+                        t = Tokens.OPEN_SQUARE;
+                        break;
+                    case ']':
+                        t = Tokens.CLOSE_SQUARE;
+                        break;
+                    }
 
-                if (t == null) {
-                    if (firstNumberChars.indexOf(c) >= 0) {
-                        t = pullNumber(c);
-                    } else if (notInUnquotedText.indexOf(c) >= 0) {
-                        throw problem(asString(c), "Reserved character '" + asString(c)
-                                + "' is not allowed outside quotes", true /* suggestQuotes */);
-                    } else {
-                        putBack(c);
-                        t = pullUnquotedText();
+                    if (t == null) {
+                        if (firstNumberChars.indexOf(c) >= 0) {
+                            t = pullNumber(c);
+                        } else if (notInUnquotedText.indexOf(c) >= 0) {
+                            throw problem(asString(c), "Reserved character '" + asString(c)
+                                    + "' is not allowed outside quotes", true /* suggestQuotes */);
+                        } else {
+                            putBack(c);
+                            t = pullUnquotedText();
+                        }
                     }
                 }
 
@@ -548,6 +562,7 @@ final class Tokenizer {
             Token whitespace = whitespaceSaver.check(t, origin, lineNumber);
             if (whitespace != null)
                 tokens.add(whitespace);
+
             tokens.add(t);
         }
 
