@@ -407,13 +407,14 @@ object.
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorRef``.
-The actual termination of the actor is performed asynchronously, i.e.
+Actors are stopped by invoking the ``stop`` method of the ``ActorContext``
+for child actors or ``stop`` method of the ``ActorSystem`` for top level
+actors. The actual termination of the actor is performed asynchronously, i.e.
 ``stop`` may return before the actor is stopped.
 
 .. code-block:: scala
 
-  actor.stop()
+  context.stop(childActorRef)
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
