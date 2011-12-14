@@ -1,5 +1,7 @@
 package akka.docs.actor;
 
+import akka.actor.Timeout;
+
 //#imports
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -33,7 +35,26 @@ import scala.Option;
 
 import static org.junit.Assert.*;
 
-public class UntypedActorTestBase {
+public class UntypedActorDocTestBase {
+
+  @Test
+  public void createProps() {
+    //#creating-props-config
+    Props props1 = new Props();
+    Props props2 = new Props(MyUntypedActor.class);
+    Props props3 = new Props(new UntypedActorFactory() {
+      public UntypedActor create() {
+        return new MyUntypedActor();
+      }
+    });
+    Props props4 = props1.withCreator(new UntypedActorFactory() {
+      public UntypedActor create() {
+        return new MyUntypedActor();
+      }
+    });
+    Props props5 = props4.withTimeout(new Timeout(1000));
+    //#creating-props-config
+  }
 
   @Test
   public void systemActorOf() {
