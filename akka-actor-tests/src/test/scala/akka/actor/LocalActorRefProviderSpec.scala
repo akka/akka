@@ -6,6 +6,7 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
+import akka.util.Timeout
 import akka.dispatch.{ Await, Future }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

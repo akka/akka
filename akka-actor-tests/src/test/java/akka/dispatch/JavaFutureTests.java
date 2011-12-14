@@ -1,6 +1,6 @@
 package akka.dispatch;
 
-import akka.actor.Timeout;
+import akka.util.Timeout;
 import akka.actor.ActorSystem;
 
 import akka.japi.*;
@@ -21,7 +21,7 @@ public class JavaFutureTests {
 
   private static ActorSystem system;
   private static Timeout t;
-    
+
   private final Duration timeout = Duration.create(5, TimeUnit.SECONDS);
 
   @BeforeClass

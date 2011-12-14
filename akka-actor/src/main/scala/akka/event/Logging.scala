@@ -10,7 +10,7 @@ import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
 import akka.util.duration._
-import akka.actor.Timeout
+import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorRefProvider
 import scala.util.control.NoStackTrace

@@ -8,10 +8,12 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
-import akka.actor.Timeout.intToTimeout
+import akka.util.Timeout
+import akka.util.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
+import akka.util.Timeout
 import akka.AkkaException
 import com.eaio.uuid.UUID
 import akka.util.{ Duration, Switch, Helpers }

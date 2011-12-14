@@ -6,6 +6,7 @@ package akka.actor.dispatch
 import org.scalatest.Assertions._
 import akka.testkit._
 import akka.dispatch._
+import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import akka.util.Switch

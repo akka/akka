@@ -11,6 +11,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.japi.Creator;
 import akka.routing.*;
+import akka.util.Timeout;
 
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
@@ -107,7 +108,7 @@ public class Pi {
             this.latch = latch;
             Creator<Router> routerCreator = new Creator<Router>() {
                 public Router create() {
-                    return new RoundRobinRouter(getContext().dispatcher(), new akka.actor.Timeout(-1));
+                    return new RoundRobinRouter(getContext().dispatcher(), new Timeout(-1));
                 }
             };
             LinkedList<ActorRef> actors = new LinkedList<ActorRef>() {
@@ -116,7 +117,7 @@ public class Pi {
                 }
             };
                         // FIXME routers are intended to be used like this
-            RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new akka.actor.Timeout(-1), true);
+            RoutedProps props = new RoutedProps(routerCreator, new LocalConnectionManager(actors), new Timeout(-1), true);
             router = new RoutedActorRef(getContext().system(), props, (InternalActorRef) getSelf(), "pi");
         }
 

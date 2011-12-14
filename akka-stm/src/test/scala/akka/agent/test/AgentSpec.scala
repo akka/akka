@@ -3,7 +3,7 @@ package akka.agent.test
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.actor.ActorSystem
-import akka.actor.Timeout
+import akka.util.Timeout
 import akka.agent.Agent
 import akka.stm._
 import akka.util.Duration

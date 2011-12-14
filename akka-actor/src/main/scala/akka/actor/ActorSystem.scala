@@ -8,6 +8,8 @@ import akka.actor._
 import akka.event._
 import akka.dispatch._
 import akka.util.duration._
+import akka.util.Timeout
+import akka.util.Timeout._
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -464,8 +466,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   /*
-   * This is called after the last actor has signaled its termination, i.e. 
-   * after the last dispatcher has had its chance to schedule its shutdown 
+   * This is called after the last actor has signaled its termination, i.e.
+   * after the last dispatcher has had its chance to schedule its shutdown
    * action.
    */
   protected def stopScheduler(): Unit = scheduler match {

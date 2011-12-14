@@ -11,6 +11,7 @@ import akka.actor.Status._
 import akka.routing._
 import akka.dispatch._
 import akka.util.duration._
+import akka.util.Timeout
 import akka.config.ConfigurationException
 import akka.event.{ DeathWatch, Logging }
 import akka.serialization.Compression.LZF
