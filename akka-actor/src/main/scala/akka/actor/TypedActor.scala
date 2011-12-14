@@ -229,7 +229,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   private val selfReference = new ThreadLocal[AnyRef]
-  private val currentSystem = new ThreadLocal[ActorSystem]
+  private val currentContext = new ThreadLocal[ActorContext]
 
   /**
    * Returns the reference to the proxy when called inside a method call in a TypedActor
@@ -255,23 +255,30 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   /**
-   * Returns the akka system (for a TypedActor) when inside a method call in a TypedActor.
+   * Returns the ActorContext (for a TypedActor) when inside a method call in a TypedActor.
    */
-  def system = currentSystem.get match {
-    case null ⇒ throw new IllegalStateException("Calling TypedActor.system outside of a TypedActor implementation method!")
+  def context = currentContext.get match {
+    case null ⇒ throw new IllegalStateException("Calling TypedActor.context outside of a TypedActor implementation method!")
     case some ⇒ some
   }
 
   /**
    * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def dispatcher = system.dispatcher
+  implicit def dispatcher = context.dispatcher
 
   /**
    * Implementation of TypedActor as an Actor
    */
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
-    val me = createInstance
+    val me = try {
+      TypedActor.selfReference set proxyVar.get
+      TypedActor.currentContext set context
+      createInstance
+    } finally {
+      TypedActor.selfReference set null
+      TypedActor.currentContext set null
+    }
 
     override def preStart(): Unit = me match {
       case l: PreStart ⇒ l.preStart()
@@ -305,7 +312,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def receive = {
       case m: MethodCall ⇒
         TypedActor.selfReference set proxyVar.get
-        TypedActor.currentSystem set context.system
+        TypedActor.currentContext set context
         try {
           if (m.isOneWay) m(me)
           else {
@@ -325,7 +332,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           }
         } finally {
           TypedActor.selfReference set null
-          TypedActor.currentSystem set null
+          TypedActor.currentContext set null
         }
     }
   }

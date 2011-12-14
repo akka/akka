@@ -15,52 +15,149 @@ The advantage of Typed Actors vs. Actors is that with TypedActors you have a sta
 
 Typed Actors are implemented using `JDK Proxies <http://docs.oracle.com/javase/6/docs/api/java/lang/reflect/Proxy.html>`_ which provide a pretty easy-worked API to intercept method calls.
 
-Typed Actor is an Akka Extension and could as such be implemented as a User Level API, but is provided in the core Akka package.
+
+The tools of the trade
+----------------------
+
+Before we create our first Typed Actor we should first go through the tools that we have at our disposal,
+it's located in ``akka.actor.TypedActor``.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-extension-tools
+
+.. warning::
+    
+    Same as not exposing ``this`` of an Akka Actor, it's important not to expose ``this`` of a Typed Actor,
+    instead you should pass the external proxy reference, which is obtained from within your Typed Actor as
+    ``TypedActor.self``, this is your external identity, as the ``ActorRef`` is the external identity of
+    and Akka Actor.
+
+Creating Typed Actors
+---------------------
+
+To create a Typed Actor you need to have one or more interfaces, and one implementation.
+
+Our example interface:
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: imports,typed-actor-iface
+   :exclude: typed-actor-iface-methods
+
+Our example implementation of that interface:
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: imports,typed-actor-impl
+   :exclude: typed-actor-impl-methods
+
+The most trivial way of creating a Typed Actor instance
+of our Squarer:
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-create1
+
+First type is the type of the proxy, the second type is the type of the implementation.
+If you need to call a specific constructor you do it like this:
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-create2
+
+Since you supply a Props, you can specify which dispatcher to use, what the default timeout should be used and more.
+Now, our Squarer doesn't have any methods, so we'd better add those.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: imports,typed-actor-iface
+
+Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: imports,typed-actor-impl
+
+Alright, now we have an interface and an implementation of that interface,
+and we know how to create a Typed Actor from that, so let's look at calling these methods.
 
 Method dispatch semantics
 -------------------------
 
 Methods returning:
 
-  * ``Unit`` will be dispatched with ``fire-and-forget`` semantics, exactly like :meth:``Actor.tell``
-  * ``akka.dispatch.Future[_]`` will use ``send-request-reply`` semantics, exactly like :meth:``Actor.ask``
+  * ``Unit`` will be dispatched with ``fire-and-forget`` semantics, exactly like ``Actor.tell``
+  * ``akka.dispatch.Future[_]`` will use ``send-request-reply`` semantics, exactly like ``Actor.ask``
   * ``scala.Option[_]`` or akka.japi.Option[_] will use ``send-request-reply`` semantics, but _will_ block to wait for an answer,
     and return None if no answer was produced within the timout, or scala.Some/akka.japi.Some containing the result otherwise.
     Any exception that was thrown during this call will be rethrown.
   * Any other type of value will use ``send-request-reply`` semantics, but _will_ block to wait for an answer,
     throwing ``java.util.concurrent.TimeoutException`` if there was a timeout or rethrow any exception that was thrown during this call.
 
-Creating Typed Actors
----------------------
+Messages and immutability
+-------------------------
 
-To create a Typed Actor you need to have one or more interfaces, and one implementation:
-
-.. includecode:: code/TypedActorDocSpec.scala
-   :include: imports,typed-actor-create
-
-If you need to call a specific constructor you do it like this:
-
-INSERT EXAMPLE HERE
-
-Since you supply a Props, you can specify which dispatcher to use etc.
-
-Sending messages
-----------------
+While Akka cannot enforce that the parameters to the methods of your Typed Actors are immutable,
+we *strongly* recommend that parameters passed are immutable.
 
 One-way message send
 ^^^^^^^^^^^^^^^^^^^^
 
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-call-oneway
+
+As simple as that! The method will be executed on another thread; asynchronously.
+
 Request-reply message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-call-option
+
+This will block for as long as the timeout that was set in the Props of the Typed Actor,
+if needed. It will return ``None`` if a timeout occurs.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-call-strict
+
+This will block for as long as the timeout that was set in the Props of the Typed Actor,
+if needed. It will throw a ``java.util.concurrent.TimeoutException`` if a timeout occurs.
 
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-call-future
+
+This call is asynchronous, and the Future returned can be used for asynchronous composition. 
+
 Stopping Typed Actors
 ---------------------
+
+Since Akkas Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-stop
+
+This asynchronously stops the Typed Actor associated with the specified proxy ASAP.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-poisonpill
+
+This asynchronously stops the Typed Actor associated with the specified proxy
+after it's done with all calls that were made prior to this call.
+
+Typed Actor Hierarchies
+-----------------------
+
+Since you can obtain a contextual Typed Actor Extension by passing in an ``ActorContext``
+you can create child Typed Actors by invoking ``typedActorOf(..)`` on that.
+
+This also works for creating child Typed Actors in regular Akka Actors.
 
 Lifecycle callbacks
 -------------------
 
-Messages and immutability
--------------------------
+By having your Typed Actor implementation class implement ``TypedActor.PreStart``, ``TypedActor.PostStop``, ``TypedActor.PreRestart`` and/or ``TypedActor.PostRestart`` you can hook into the lifecyle of your Typed Actor.
+
+Supercharging
+-------------
+
+Here's an example on how you can use traits to mix in behavior in your Typed Actors.
+
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: typed-actor-supercharge,typed-actor-supercharge-usage
