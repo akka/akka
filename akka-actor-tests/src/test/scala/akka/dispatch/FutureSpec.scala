@@ -608,7 +608,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           lz.open()
           x1() + x2()
         }
-        assert(lx.await(2000 milliseconds))
+        assert(lx.await(2 seconds))
         assert(!ly.isOpen)
         assert(!lz.isOpen)
         assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
