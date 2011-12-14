@@ -195,7 +195,7 @@ object AkkaBuild extends Build {
   lazy val kernel = Project(
     id = "akka-kernel",
     base = file("akka-kernel"),
-    dependencies = Seq(actor),
+    dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel
     )
@@ -395,7 +395,7 @@ object Dependencies {
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
-  val kernel = Seq()
+  val kernel = Seq(Test.scalatest, Test.junit)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
