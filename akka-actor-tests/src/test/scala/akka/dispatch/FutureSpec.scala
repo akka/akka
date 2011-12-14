@@ -595,13 +595,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         flow { y1 << 1 } // When this is set, it should cascade down the line
 
-        assert(ly.await(2000 milliseconds))
+        assert(ly.await(2 seconds))
         assert(Await.result(x1, 1 minute) === 1)
         assert(!lz.isOpen)
 
         flow { y2 << 9 } // When this is set, it should cascade down the line
 
-        assert(lz.await(2000 milliseconds))
+        assert(lz.await(2 seconds))
         assert(Await.result(x2, 1 minute) === 9)
 
         assert(List(x1, x2, y1, y2).forall(_.isCompleted))
@@ -622,8 +622,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(!s1.isOpen)
         assert(!s2.isOpen)
         assert(!result.isCompleted)
-        assert(i1.await(2000 milliseconds))
-        assert(i2.await(2000 milliseconds))
+        assert(i1.await(2 seconds))
+        assert(i2.await(2 seconds))
         s1.open()
         s2.open()
         assert(Await.result(result, timeout.duration) === 10)
