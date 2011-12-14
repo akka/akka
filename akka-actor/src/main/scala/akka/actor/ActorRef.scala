@@ -18,34 +18,57 @@ import akka.event.LoggingAdapter
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * ActorRef is an immutable and serializable handle to an Actor.
- * <p/>
- * Create an ActorRef for an Actor by using the factory method on the Actor object.
- * <p/>
- * Here is an example on how to create an actor with a default constructor.
- * <pre>
- *   import Actor._
+ * Immutable and serializable handle to an actor, which may or may not reside
+ * on the local host or inside the same [[akka.actor.ActorSystem]]. An ActorRef
+ * can be obtained from an [[akka.actor.ActorRefFactory]], an interface which
+ * is implemented by ActorSystem and [[akka.actor.ActorContext]]. This means
+ * actors can be created top-level in the ActorSystem or as children of an
+ * existing actor, but only from within that actor.
  *
- *   val actor = actorOf(Props[MyActor]
- *   actor ! message
- *   actor.stop()
- * </pre>
+ * ActorRefs can be freely shared among actors by message passing. Message
+ * passing conversely is their only purpose, as demonstrated in the following
+ * examples:
  *
- * You can also create and start actors like this:
- * <pre>
- *   val actor = actorOf(Props[MyActor]
- * </pre>
+ * Scala:
+ * {{{
+ * class ExampleActor extends Actor {
+ *   val other = context.actorOf(Props[OtherActor], "childName") // will be destroyed and re-created upon restart by default
  *
- * Here is an example on how to create an actor with a non-default constructor.
- * <pre>
- *   import Actor._
+ *   def receive {
+ *     case Request1(msg) => other ! refine(msg)     // uses this actor as sender reference, reply goes to us
+ *     case Request2(msg) => other.tell(msg, sender) // forward sender reference, enabling direct reply
+ *     case Request3(msg) => sender ! (other ? msg)  // will reply with a Future for holding other’s reply (implicit timeout from "akka.actor.timeout")
+ *   }
+ * }
+ * }}}
  *
- *   val actor = actorOf(Props(new MyActor(...))
- *   actor ! message
- *   actor.stop()
- * </pre>
+ * Java:
+ * {{{
+ * public class ExampleActor Extends UntypedActor {
+ *   // this child will be destroyed and re-created upon restart by default
+ *   final ActorRef other = getContext().actorOf(new Props(OtherActor.class), "childName");
  *
- * The natural ordering of ActorRef is defined in terms of its [[akka.actor.ActorPath]].
+ *   @Override
+ *   public void onReceive(Object o) {
+ *     if (o instanceof Request1) {
+ *       val msg = ((Request1) o).getMsg();
+ *       other.tell(msg);              // uses this actor as sender reference, reply goes to us
+ *
+ *     } else if (o instanceof Request2) {
+ *       val msg = ((Request2) o).getMsg();
+ *       other.tell(msg, getSender()); // forward sender reference, enabling direct reply
+ *
+ *     } else if (o instanceof Request3) {
+ *       val msg = ((Request3) o).getMsg();
+ *       getSender().tell(other.ask(msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
+ *
+ *     }
+ *   }
+ * }
+ * }}}
+ *
+ * ActorRef does not have a method for terminating the actor it points to, use
+ * [[akka.actor.ActorRefFactory]]`.stop(child)` for this purpose.
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
