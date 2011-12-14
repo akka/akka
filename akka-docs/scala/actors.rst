@@ -54,7 +54,7 @@ Creating Actors with default constructor
 ----------------------------------------
 
 .. includecode:: code/ActorDocSpec.scala
-:include: imports2,system-actorOf
+    :include: imports2,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
@@ -95,11 +95,19 @@ Here is an example:
 .. includecode:: code/ActorDocSpec.scala#creating-constructor
 
 
+Props
+-----
+
+``Props`` is a configuration object to specify configuration options for the creation
+of actors. Here are some examples on how to create a ``Props`` instance.
+
+.. includecode:: code/ActorDocSpec.scala#creating-props-config
+
+
 Creating Actors with Props
 --------------------------
 
-``Props`` is a configuration object to specify additional things for the actor to
-be created, such as the ``MessageDispatcher``.
+Actors are created by passing in the ``Props`` object into the ``actorOf`` factory method.
 
 .. includecode:: code/ActorDocSpec.scala#creating-props
 
