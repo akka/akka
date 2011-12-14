@@ -35,7 +35,8 @@ Creating Typed Actors
 
 To create a Typed Actor you need to have one or more interfaces, and one implementation:
 
-INSERT EXAMPLE HERE
+.. includecode:: code/TypedActorDocSpec.scala
+   :include: imports,typed-actor-create
 
 If you need to call a specific constructor you do it like this:
 

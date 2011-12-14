@@ -51,6 +51,8 @@ trait TypedActorFactory {
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the suppli  ed interface class (if the class represents an interface) or
    * all interfaces (Class.getInterfaces) if it's not an interface class
+   *
+   * Java API
    */
   def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props): R =
     typedActor.createProxyAndTypedActor(actorFactory, interface, impl.newInstance, props, None, interface.getClassLoader)
@@ -59,6 +61,8 @@ trait TypedActorFactory {
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
    * all interfaces (Class.getInterfaces) if it's not an interface class
+   *
+   * Java API
    */
   def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props, name: String): R =
     typedActor.createProxyAndTypedActor(actorFactory, interface, impl.newInstance, props, Some(name), interface.getClassLoader)
@@ -67,6 +71,8 @@ trait TypedActorFactory {
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
    * all interfaces (Class.getInterfaces) if it's not an interface class
+   *
+   * Java API
    */
   def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props): R =
     typedActor.createProxyAndTypedActor(actorFactory, interface, impl.create, props, None, interface.getClassLoader)
@@ -75,6 +81,8 @@ trait TypedActorFactory {
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
    * all interfaces (Class.getInterfaces) if it's not an interface class
+   *
+   * Java API
    */
   def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props, name: String): R =
     typedActor.createProxyAndTypedActor(actorFactory, interface, impl.create, props, Some(name), interface.getClassLoader)
@@ -83,55 +91,21 @@ trait TypedActorFactory {
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
    * all interfaces (Class.getInterfaces) if it's not an interface class
+   *
+   * Scala API
    */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, interface, impl.newInstance, props, None, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Class[T], props: Props, name: String, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, interface, impl.newInstance, props, Some(name), loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, interface, impl.create, props, None, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied interface class (if the class represents an interface) or
-   * all interfaces (Class.getInterfaces) if it's not an interface class
-   */
-  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: Creator[T], props: Props, name: String, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, interface, impl.create, props, Some(name), loader)
+  def typedActorOf[R <: AnyRef, T <: R](interface: Class[R], impl: ⇒ T, props: Props, name: String): R =
+    typedActor.createProxyAndTypedActor(actorFactory, interface, impl, props, Some(name), interface.getClassLoader)
 
   /**
    * Creates a new TypedActor proxy using the supplied Props,
    * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
+   *
+   * Scala API
    */
-  def typedActorOf[R <: AnyRef, T <: R](impl: Class[T], props: Props, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, impl, impl.newInstance, props, None, loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
-   */
-  def typedActorOf[R <: AnyRef, T <: R](impl: Class[T], props: Props, name: String, loader: ClassLoader): R =
-    typedActor.createProxyAndTypedActor(actorFactory, impl, impl.newInstance, props, Some(name), loader)
-
-  /**
-   * Creates a new TypedActor proxy using the supplied Props,
-   * the interfaces usable by the returned proxy is the supplied implementation class' interfaces (Class.getInterfaces)
-   */
-  def typedActorOf[R <: AnyRef, T <: R](props: Props = Props(), name: String = null, loader: ClassLoader = null)(implicit m: Manifest[T]): R = {
-    val clazz = m.erasure.asInstanceOf[Class[T]]
-    typedActor.createProxyAndTypedActor(actorFactory, clazz, clazz.newInstance, props, Option(name), if (loader eq null) clazz.getClassLoader else loader)
+  def typedActorOf[R <: AnyRef, T <: R: ClassManifest](props: Props = Props(), name: String = null): R = {
+    val clazz = implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[T]]
+    typedActor.createProxyAndTypedActor(actorFactory, clazz, clazz.newInstance, props, Option(name), clazz.getClassLoader)
   }
 
   /**
