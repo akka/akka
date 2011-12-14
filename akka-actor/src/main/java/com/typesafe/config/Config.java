@@ -21,7 +21,7 @@ import java.util.Set;
  * is a key in a JSON object; it's just a string that's the key in a map. A
  * "path" is a parseable expression with a syntax and it refers to a series of
  * keys. Path expressions are described in the <a
- * href="https://github.com/havocp/config/blob/master/HOCON.md">spec for
+ * href="https://github.com/typesafehub/config/blob/master/HOCON.md">spec for
  * Human-Optimized Config Object Notation</a>. In brief, a path is
  * period-separated so "a.b.c" looks for key c in object b in object a in the
  * root object. Sometimes double quotes are needed around special characters in
@@ -97,7 +97,7 @@ public interface Config extends ConfigMergeable {
     /**
      * Returns a replacement config with all substitutions (the
      * <code>${foo.bar}</code> syntax, see <a
-     * href="https://github.com/havocp/config/blob/master/HOCON.md">the
+     * href="https://github.com/typesafehub/config/blob/master/HOCON.md">the
      * spec</a>) resolved. Substitutions are looked up using this
      * <code>Config</code> as the root object, that is, a substitution
      * <code>${foo.bar}</code> will be replaced with the result of
@@ -395,7 +395,8 @@ public interface Config extends ConfigMergeable {
      * Gets a value as a size in bytes (parses special strings like "128M"). If
      * the value is already a number, then it's left alone; if it's a string,
      * it's parsed understanding unit suffixes such as "128K", as documented in
-     * the <a href="https://github.com/havocp/config/blob/master/HOCON.md">the
+     * the <a
+     * href="https://github.com/typesafehub/config/blob/master/HOCON.md">the
      * spec</a>.
      *
      * @param path
@@ -414,9 +415,9 @@ public interface Config extends ConfigMergeable {
      * Get value as a duration in milliseconds. If the value is already a
      * number, then it's left alone; if it's a string, it's parsed understanding
      * units suffixes like "10m" or "5ns" as documented in the <a
-     * href="https://github.com/havocp/config/blob/master/HOCON.md">the
+     * href="https://github.com/typesafehub/config/blob/master/HOCON.md">the
      * spec</a>.
-     *
+     * 
      * @param path
      *            path expression
      * @return the duration value at the requested path, in milliseconds

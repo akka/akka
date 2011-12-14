@@ -39,4 +39,9 @@ final class ConfigNull extends AbstractConfigValue {
     protected void render(StringBuilder sb, int indent, boolean formatted) {
         sb.append("null");
     }
+
+    @Override
+    protected ConfigNull newCopy(boolean ignoresFallbacks, ConfigOrigin origin) {
+        return new ConfigNull(origin);
+    }
 }
