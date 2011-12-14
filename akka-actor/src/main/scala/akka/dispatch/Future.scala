@@ -197,43 +197,7 @@ object Future {
    */
   def fold[T, R](futures: Traversable[Future[T]])(zero: R)(foldFun: (R, T) ⇒ R)(implicit dispatcher: MessageDispatcher): Future[R] = {
     if (futures.isEmpty) Promise.successful(zero)
-    else {
-      val result = Promise[R]()
-      val results = new ConcurrentLinkedQueue[T]()
-      val done = new Switch(false)
-      val allDone = futures.size
-
-      val aggregate: Either[Throwable, T] ⇒ Unit = v ⇒ if (done.isOff && !result.isCompleted) {
-        v match {
-          case Right(value) ⇒
-            val added = results add value
-            if (added && results.size == allDone) { //Only one thread can get here
-              if (done.switchOn) {
-                try {
-                  val i = results.iterator
-                  var currentValue = zero
-                  while (i.hasNext) { currentValue = foldFun(currentValue, i.next) }
-                  result success currentValue
-                } catch {
-                  case e: Exception ⇒
-                    dispatcher.prerequisites.eventStream.publish(Error(e, "Future.fold", e.getMessage))
-                    result failure e
-                } finally {
-                  results.clear
-                }
-              }
-            }
-          case Left(exception) ⇒
-            if (done.switchOn) {
-              result failure exception
-              results.clear
-            }
-        }
-      }
-
-      futures foreach { _ onComplete aggregate }
-      result
-    }
+    else sequence(futures).map(_.foldLeft(zero)(foldFun))
   }
 
   /**
@@ -244,7 +208,7 @@ object Future {
    * </pre>
    */
   def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) ⇒ T)(implicit dispatcher: MessageDispatcher): Future[R] = {
-    if (futures.isEmpty) Promise[R].failure(new UnsupportedOperationException("empty reduce left"))
+    if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection"))
     else sequence(futures).map(_ reduce op)
   }
   /**
@@ -748,7 +712,7 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
     callbacks match {
       case null             ⇒ false
       case cs if cs.isEmpty ⇒ true
-      case cs               ⇒ Future.dispatchTask(() ⇒ cs foreach notifyCompleted); true
+      case cs               ⇒ Future.dispatchTask(() ⇒ cs.foreach(f ⇒ notifyCompleted(f, value))); true
     }
   }
 
@@ -764,13 +728,16 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
       }
     }
 
-    if (tryAddCallback()) Future.dispatchTask(() ⇒ notifyCompleted(func))
+    if (tryAddCallback()) {
+      val result = value.get
+      Future.dispatchTask(() ⇒ notifyCompleted(func, result))
+    }
 
     this
   }
 
-  private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit) {
-    try { func(this.value.get) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) }
+  private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
+    try { func(result) } catch { case e ⇒ dispatcher.prerequisites.eventStream.publish(Error(e, "Future", "Future onComplete-callback raised an exception")) }
   }
 }
 

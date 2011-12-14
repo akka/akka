@@ -387,7 +387,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "shouldReduceThrowIAEOnEmptyInput" in {
         filterException[IllegalArgumentException] {
-          intercept[UnsupportedOperationException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
+          intercept[java.util.NoSuchElementException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
         }
       }
 
