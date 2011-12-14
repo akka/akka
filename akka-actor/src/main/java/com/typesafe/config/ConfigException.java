@@ -5,7 +5,8 @@ package com.typesafe.config;
 
 
 /**
- * All exceptions thrown by the library are subclasses of ConfigException.
+ * All exceptions thrown by the library are subclasses of
+ * <code>ConfigException</code>.
  */
 public abstract class ConfigException extends RuntimeException {
     private static final long serialVersionUID = 1L;
@@ -338,6 +339,9 @@ public abstract class ConfigException extends RuntimeException {
                 sb.append(p.problem());
                 sb.append(", ");
             }
+            if (sb.length() == 0)
+                throw new ConfigException.BugOrBroken(
+                        "ValidationFailed must have a non-empty list of problems");
             sb.setLength(sb.length() - 2); // chop comma and space
 
             return sb.toString();

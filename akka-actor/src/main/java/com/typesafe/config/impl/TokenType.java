@@ -17,5 +17,6 @@ enum TokenType {
     NEWLINE,
     UNQUOTED_TEXT,
     SUBSTITUTION,
-    PROBLEM;
+    PROBLEM,
+    COMMENT;
 }

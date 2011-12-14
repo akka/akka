@@ -45,8 +45,9 @@ final class SimpleConfigObject extends AbstractConfigObject {
     }
 
     @Override
-    protected SimpleConfigObject newCopy(ResolveStatus newStatus, boolean newIgnoresFallbacks) {
-        return new SimpleConfigObject(origin(), value, newStatus, newIgnoresFallbacks);
+    protected SimpleConfigObject newCopy(ResolveStatus newStatus, boolean newIgnoresFallbacks,
+            ConfigOrigin newOrigin) {
+        return new SimpleConfigObject(newOrigin, value, newStatus, newIgnoresFallbacks);
     }
 
     @Override
