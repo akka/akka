@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class UntypedActorTestBase {
+public class UntypedActorDocTestBase {
 
   @Test
   public void systemActorOf() {
