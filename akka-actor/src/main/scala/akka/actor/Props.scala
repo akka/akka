@@ -93,17 +93,16 @@ object Props {
  * {{{
  *  val props = Props[MyActor]
  *  val props = Props(new MyActor)
- *  val props = Props {
+ *  val props = Props(
  *    creator = ..,
  *    dispatcher = ..,
  *    timeout = ..,
  *    faultHandler = ..,
  *    routerConfig = ..
- *  }
+ *  )
  *  val props = Props().withCreator(new MyActor)
  *  val props = Props[MyActor].withTimeout(timeout)
- *  val props = Props[MyActor].withRouter[RoundRobinRouter]
- *  val props = Props[MyActor].withRouter(new RoundRobinRouter(..))
+ *  val props = Props[MyActor].withRouter(RoundRobinRouter(..))
  *  val props = Props[MyActor].withFaultHandler(OneForOneStrategy {
  *    case e: IllegalStateException ⇒ Resume
  *  })
@@ -199,20 +198,4 @@ case class Props(
    * Returns a new Props with the specified router config set.
    */
   def withRouter(r: RouterConfig) = copy(routerConfig = r)
-
-  /**
-   * Returns a new Props with the specified router config set.
-   *
-   * Scala API.
-   */
-  def withRouter[T <: RouterConfig: ClassManifest] = {
-    val routerConfig = implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: RouterConfig]] match {
-      case RoundRobinRouterClass    ⇒ RoundRobinRouter()
-      case RandomRouterClass        ⇒ RandomRouter()
-      case BroadcastRouterClass     ⇒ BroadcastRouter()
-      case ScatterGatherRouterClass ⇒ ScatterGatherFirstCompletedRouter()
-      case unknown                  ⇒ throw new akka.config.ConfigurationException("Router not supported [" + unknown.getName + "]")
-    }
-    copy(routerConfig = routerConfig)
-  }
 }

@@ -50,7 +50,7 @@ object Pi extends App {
     var start: Long = _
 
     //#create-router
-    val router = context.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfInstances = nrOfWorkers)), "pi")
+    val router = context.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), "pi")
     //#create-router
 
     //#master-receive
