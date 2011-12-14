@@ -66,9 +66,9 @@ object Dist {
         val libAkka = lib / "akka"
         val src = base / "src" / "akka"
         IO.delete(unzipped)
-        //createStructure(doc, docJars, lib, src)
-        copyFilesTo(scripts, bin, setExecutable = true)
-        IO.copyDirectory(configSources, config)
+        // TODO: re-enable bin and config dirs, and add deploy dir, when akka-kernel is enabled
+        //copyFilesTo(scripts, bin, setExecutable = true)
+        //IO.copyDirectory(configSources, config)
         IO.copyDirectory(allSources.api, api)
         IO.copyDirectory(allSources.docs, docs)
         copyFilesTo(allSources.docJars, docJars)
@@ -81,10 +81,6 @@ object Dist {
         zipFile
       }
     }
-  }
-
-  def createStructure(dirs: File*): Unit = {
-    dirs foreach IO.createDirectory
   }
 
   def copyFilesTo(files: Seq[File], dir: File, setExecutable: Boolean = false): Unit = {

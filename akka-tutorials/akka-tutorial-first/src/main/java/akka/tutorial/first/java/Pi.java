@@ -4,17 +4,13 @@
 
 package akka.tutorial.first.java;
 
-import akka.actor.Props;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
+//#imports
+import akka.actor.*;
 import akka.routing.RoundRobinRouter;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
+//#imports
 
+//#app
 public class Pi {
 
     public static void main(String[] args) throws Exception {
@@ -22,9 +18,8 @@ public class Pi {
         pi.calculate(4, 10000, 10000);
     }
 
-    // ====================
-    // ===== Messages =====
-    // ====================
+    //#actors-and-messages
+    //#messages
     static class Calculate {
     }
 
@@ -57,13 +52,12 @@ public class Pi {
             return value;
         }
     }
+    //#messages
 
-    // ==================
-    // ===== Worker =====
-    // ==================
+    //#worker
     public static class Worker extends UntypedActor {
 
-        // define the work
+        //#calculatePiFor
         private double calculatePiFor(int start, int nrOfElements) {
             double acc = 0.0;
             for (int i = start * nrOfElements; i <= ((start + 1) * nrOfElements - 1); i++) {
@@ -71,25 +65,22 @@ public class Pi {
             }
             return acc;
         }
+        //#calculatePiFor
 
-        // message handler
         public void onReceive(Object message) {
             if (message instanceof Work) {
                 Work work = (Work) message;
 
-                // perform the work
                 double result = calculatePiFor(work.getStart(), work.getNrOfElements());
 
-                // reply with the result
                 getSender().tell(new Result(result));
 
             } else throw new IllegalArgumentException("Unknown message [" + message + "]");
         }
     }
+    //#worker
 
-    // ==================
-    // ===== Master =====
-    // ==================
+    //#master
     public static class Master extends UntypedActor {
         private final int nrOfMessages;
         private final int nrOfElements;
@@ -106,28 +97,27 @@ public class Pi {
             this.nrOfElements = nrOfElements;
             this.latch = latch;
 
-            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(5)), "pi");
+            //#create-router
+            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)), "pi");
+            //#create-router
         }
 
-        // message handler
+        //#master-receive
         public void onReceive(Object message) {
-
+            //#handle-messages
             if (message instanceof Calculate) {
-                // schedule work
                 for (int start = 0; start < nrOfMessages; start++) {
                     router.tell(new Work(start, nrOfElements), getSelf());
                 }
-
             } else if (message instanceof Result) {
-
-                // handle result from the worker
                 Result result = (Result) message;
                 pi += result.getValue();
                 nrOfResults += 1;
                 if (nrOfResults == nrOfMessages) getSelf().stop();
-
             } else throw new IllegalArgumentException("Unknown message [" + message + "]");
+            //#handle-messages
         }
+        //#master-receive
 
         @Override
         public void preStart() {
@@ -136,19 +126,18 @@ public class Pi {
 
         @Override
         public void postStop() {
-            // tell the world that the calculation is complete
             System.out.println(String.format(
                     "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
                     pi, (System.currentTimeMillis() - start)));
             latch.countDown();
         }
     }
+    //#master
+    //#actors-and-messages
 
-    // ==================
-    // ===== Run it =====
-    // ==================
     public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
             throws Exception {
+        // Create an Akka system
         final ActorSystem system = ActorSystem.create();
 
         // this latch is only plumbing to know when the calculation is completed
@@ -171,3 +160,4 @@ public class Pi {
         system.stop();
     }
 }
+//#app
