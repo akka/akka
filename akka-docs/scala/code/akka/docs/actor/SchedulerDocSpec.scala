@@ -1,4 +1,4 @@
-package akka.scheduler.actor
+package akka.docs.actor
 
 //#imports1
 import akka.actor.Actor
@@ -10,7 +10,6 @@ import akka.util.duration._
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
-import akka.util.duration._
 
 class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "schedule a one-off task" in {
@@ -22,25 +21,12 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     expectMsg(1 second, "foo")
 
     //#schedule-one-off-thunk
-    //Schedules to send the "foo"-message to the testActor after 50ms
+    //Schedules a function to be executed (send the current time) to the testActor after 50ms
     system.scheduler.scheduleOnce(50 milliseconds) {
-      testActor ! "foo"
+      testActor ! System.currentTimeMillis
     }
     //#schedule-one-off-thunk
 
-    expectMsg(1 second, "foo")
-
-    //#schedule-one-off-runnable
-    //Schedules to send the "foo"-message to the testActor after 50ms
-    system.scheduler.scheduleOnce(
-      50 milliseconds,
-      new Runnable {
-        def run = testActor ! "foo"
-      })
-
-    //#schedule-one-off-runnable
-
-    expectMsg(1 second, "foo")
   }
 
   "schedule a recurring task" in {

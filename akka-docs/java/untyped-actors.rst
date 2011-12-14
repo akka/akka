@@ -42,7 +42,7 @@ Here is an example:
 Creating Actors with default constructor
 ----------------------------------------
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: imports,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
@@ -85,7 +85,7 @@ which can lead to corrupt data.
 
 Here is an example:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#creating-constructor
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-constructor
 
 This way of creating the Actor is also great for integrating with Dependency Injection (DI) frameworks like Guice or Spring.
 
@@ -95,7 +95,7 @@ Creating Actors with Props
 ``Props`` is a configuration object to specify additional things for the actor to
 be created, such as the ``MessageDispatcher``.
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#creating-props
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
 
 
 UntypedActor API
@@ -119,7 +119,7 @@ In addition, it offers:
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#lifecycle-callbacks
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#lifecycle-callbacks
 
 The implementations shown above are the defaults provided by the :class:`UntypedActor`
 class.
@@ -250,7 +250,7 @@ To complete the future with an exception you need send a Failure message to the 
 This is not done automatically when an actor throws an exception while processing a
 message.
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#reply-exception
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the ``ask`` method.
@@ -278,7 +278,7 @@ even if that entails waiting for it (but keep in mind that waiting inside an
 actor is prone to dead-locks, e.g. if obtaining the result depends on
 processing another message on this actor).
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-future,using-ask
 
 Forward message
@@ -379,7 +379,7 @@ If the ``PoisonPill`` was sent with ``ask``, the ``Future`` will be completed wi
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,poison-pill
 
 .. _UntypedActor.HotSwap:
@@ -400,7 +400,7 @@ The hotswapped code is kept in a Stack which can be pushed and popped.
 
 To hotswap the Actor using ``getContext().become``:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-procedure,hot-swap-actor
 
 The ``become`` method is useful for many different things, such as to implement
@@ -430,7 +430,7 @@ through regular supervisor semantics.
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,kill
 
 Actors and exceptions

@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigFactory;
 
 import akka.actor.ActorSystem;
 import akka.docs.actor.MyUntypedActor;
-import akka.docs.actor.UntypedActorTestBase.MyActor;
+import akka.docs.actor.UntypedActorDocTestBase.MyActor;
 import akka.testkit.AkkaSpec;
 
 public class DispatcherDocTestBase {

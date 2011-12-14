@@ -9,6 +9,7 @@ Java API
    untyped-actors
    typed-actors
    logging
+   scheduler
    futures
    dataflow
    transactors
