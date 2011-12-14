@@ -78,8 +78,7 @@ public class UntypedActorTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
     MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
-    ActorRef myActor = system.actorOf(
-        new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
         "myactor");
     //#creating-props
     myActor.tell("test");
@@ -166,6 +165,8 @@ public class UntypedActorTestBase {
     }
 
     public void preRestart(Throwable reason, Option<Object> message) {
+      for (ActorRef each : getContext().getChildren())
+        getContext().stop(each);
       postStop();
     }
 

@@ -54,7 +54,7 @@ Creating Actors with default constructor
 ----------------------------------------
 
 .. includecode:: code/ActorDocSpec.scala
-:include: imports2,system-actorOf
+   :include: imports2,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
@@ -151,7 +151,10 @@ The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following::
 
   def preStart() {}
-  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
+  def preRestart(reason: Throwable, message: Option[Any]) {
+    context.children foreach (context.stop(_))
+    postStop()
+  }
   def postRestart(reason: Throwable) { preStart() }
   def postStop() {}
 
@@ -185,7 +188,7 @@ processing a message. This restart involves the hooks mentioned above:
    message, e.g. when a supervisor does not trap the exception and is restarted
    in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
-   By default it calls :meth:`postStop`.
+   By default it stops all children and calls :meth:`postStop`.
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
