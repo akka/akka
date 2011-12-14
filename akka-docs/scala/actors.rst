@@ -54,7 +54,7 @@ Creating Actors with default constructor
 ----------------------------------------
 
 .. includecode:: code/ActorDocSpec.scala
-:include: imports2,system-actorOf
+   :include: imports2,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
@@ -151,7 +151,10 @@ The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following::
 
   def preStart() {}
-  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
+  def preRestart(reason: Throwable, message: Option[Any]) {
+    context.children foreach (context.stop(_))
+    postStop()
+  }
   def postRestart(reason: Throwable) { preStart() }
   def postStop() {}
 
@@ -185,7 +188,7 @@ processing a message. This restart involves the hooks mentioned above:
    message, e.g. when a supervisor does not trap the exception and is restarted
    in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
-   By default it calls :meth:`postStop`.
+   By default it stops all children and calls :meth:`postStop`.
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
@@ -312,7 +315,8 @@ Gives you a way to avoid blocking.
 
 .. warning::
 
-  When using future callbacks, inside actors you need to carefully avoid closing over
+  When using future callbacks, such as ``onComplete``, ``onSuccess``, and ``onFailure``,
+  inside actors you need to carefully avoid closing over
   the containing actor’s reference, i.e. do not call methods or access mutable state
   on the enclosing actor from within the callback. This would break the actor
   encapsulation and may introduce synchronization bugs and race conditions because
@@ -403,13 +407,11 @@ object.
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorRef``.
-The actual termination of the actor is performed asynchronously, i.e.
-``stop`` may return before the actor is stopped.
-
-.. code-block:: scala
-
-  actor.stop()
+Actors are stopped by invoking the :meth:`stop` method of a ``ActorRefFactory``,
+i.e. ``ActorContext`` or ``ActorSystem``. Typically the context is used for stopping
+child actors and the system for stopping top level actors. The actual termination of
+the actor is performed asynchronously, i.e. :meth:`stop` may return before the actor is
+stopped.
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these

@@ -30,8 +30,10 @@ package object actor {
 
   implicit def future2actor[T](f: akka.dispatch.Future[T]) = new {
     def pipeTo(actor: ActorRef): this.type = {
-      def send(f: akka.dispatch.Future[T]) { f.value.get.fold(f ⇒ actor ! Status.Failure(f), r ⇒ actor ! r) }
-      if (f.isCompleted) send(f) else f onComplete send
+      f onComplete {
+        case Right(r) ⇒ actor ! r
+        case Left(f)  ⇒ actor ! Status.Failure(f)
+      }
       this
     }
   }

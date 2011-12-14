@@ -108,6 +108,11 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
     }
 
     @Override
+    protected AbstractConfigValue newCopy(boolean newIgnoresFallbacks, ConfigOrigin newOrigin) {
+        return new ConfigDelayedMerge(newOrigin, stack, newIgnoresFallbacks);
+    }
+
+    @Override
     protected final ConfigDelayedMerge mergedWithTheUnmergeable(Unmergeable fallback) {
         if (ignoresFallbacks)
             throw new ConfigException.BugOrBroken("should not be reached");
@@ -196,6 +201,12 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
                 i += 1;
                 sb.append(v.origin().description());
                 sb.append("\n");
+                for (String comment : v.origin().comments()) {
+                    indent(sb, indent);
+                    sb.append("# ");
+                    sb.append(comment);
+                    sb.append("\n");
+                }
                 indent(sb, indent);
             }
 

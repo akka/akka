@@ -3,10 +3,10 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.testkit._
-import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
+import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers }
 
 object PinnedActorSpec {
   class TestActor extends Actor {
@@ -30,14 +30,13 @@ class PinnedActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeo
       val actor = system.actorOf(Props(self ⇒ { case "OneWay" ⇒ oneWay.countDown() }).withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
       val result = actor ! "OneWay"
       assert(oneWay.await(1, TimeUnit.SECONDS))
-      actor.stop()
+      system.stop(actor)
     }
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor].withDispatcher(system.dispatcherFactory.newPinnedDispatcher("test")))
-      val result = (actor ? "Hello").as[String]
-      assert("World" === result.get)
-      actor.stop()
+      assert("World" === Await.result(actor ? "Hello", timeout.duration))
+      system.stop(actor)
     }
   }
 }

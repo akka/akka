@@ -8,6 +8,7 @@ import org.scalatest.junit.JUnitSuite
 import akka.actor._
 import akka.actor.Actor._
 import akka.camel.CamelTestSupport.{ SetExpectedMessageCount ⇒ SetExpectedTestMessageCount, _ }
+import akka.dispatch.Await
 
 class ConsumerPublishRequestorTest extends JUnitSuite {
   import ConsumerPublishRequestorTest._
@@ -35,19 +36,19 @@ class ConsumerPublishRequestorTest extends JUnitSuite {
 
   @Test
   def shouldReceiveOneConsumerRegisteredEvent = {
-    val latch = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 5 seconds)
     requestor ! ActorRegistered(consumer.address, consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    assert((publisher ? GetRetainedMessage).get ===
+    assert(Await.result(publisher ? GetRetainedMessage, 5 seconds) ===
       ConsumerActorRegistered(consumer, consumer.underlyingActorInstance.asInstanceOf[Consumer]))
   }
 
   @Test
   def shouldReceiveOneConsumerUnregisteredEvent = {
-    val latch = (publisher ? SetExpectedTestMessageCount(1)).as[CountDownLatch].get
+    val latch = Await.result((publisher ? SetExpectedTestMessageCount(1)).mapTo[CountDownLatch], 5 seconds)
     requestor ! ActorUnregistered(consumer.address, consumer)
     assert(latch.await(5000, TimeUnit.MILLISECONDS))
-    assert((publisher ? GetRetainedMessage).get ===
+    assert(Await.result(publisher ? GetRetainedMessage, 5 seconds) ===
       ConsumerActorUnregistered(consumer, consumer.underlyingActorInstance.asInstanceOf[Consumer]))
   }
 }

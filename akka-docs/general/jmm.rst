@@ -81,7 +81,7 @@ Since Akka runs on the JVM there are still some rules to be followed.
         // Very bad, shared mutable state,
         // will break your application in weird ways
           Future { state = NewState }
-          anotherActor ? message onResult { r => state = r }
+          anotherActor ? message onSuccess { r => state = r }
 
         // Very bad, "sender" changes for every message,
         // shared mutable state bug

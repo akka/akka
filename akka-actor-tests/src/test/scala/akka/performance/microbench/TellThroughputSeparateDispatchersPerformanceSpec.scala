@@ -159,8 +159,8 @@ class TellThroughputSeparateDispatchersPerformanceSpec extends PerformanceSpec {
           ok must be(true)
           logMeasurement(numberOfClients, durationNs, repeat)
         }
-        clients.foreach(_.stop())
-        destinations.foreach(_.stop())
+        clients.foreach(system.stop(_))
+        destinations.foreach(system.stop(_))
 
       }
     }

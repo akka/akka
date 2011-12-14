@@ -11,10 +11,11 @@ import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
 import akka.util.duration._
 import akka.actor.Timeout
-import akka.dispatch.FutureTimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorRefProvider
 import scala.util.control.NoStackTrace
+import java.util.concurrent.TimeoutException
+import akka.dispatch.Await
 
 object LoggingBus {
   implicit def fromActorSystem(system: ActorSystem): LoggingBus = system.eventStream
@@ -137,7 +138,10 @@ trait LoggingBus extends ActorEventBus {
     } {
       // this is very necessary, else you get infinite loop with DeadLetter
       unsubscribe(logger)
-      logger.stop()
+      logger match {
+        case ref: InternalActorRef ⇒ ref.stop()
+        case _                     ⇒
+      }
     }
     publish(Debug(simpleName(this), "all default loggers stopped"))
   }
@@ -146,8 +150,8 @@ trait LoggingBus extends ActorEventBus {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
-    val response = try actor ? InitializeLogger(this) get catch {
-      case _: FutureTimeoutException ⇒
+    val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
+      case _: TimeoutException ⇒
         publish(Warning(simpleName(this), "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
     }
     if (response != LoggerInitialized)

@@ -2,9 +2,6 @@ package akka.performance.trading.system
 
 import akka.performance.trading.domain._
 import akka.actor._
-import akka.dispatch.Future
-import akka.dispatch.FutureTimeoutException
-import akka.dispatch.MessageDispatcher
 
 trait MatchingEngine {
   val meId: String

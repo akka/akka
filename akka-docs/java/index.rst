@@ -11,7 +11,6 @@ Java API
    logging
    futures
    dataflow
-   stm
    transactors
    fault-tolerance
    dispatchers

@@ -8,6 +8,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
@@ -43,9 +44,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      monitor1.stop()
-      monitor2.stop()
-      monitor3.stop()
+      system.stop(monitor1)
+      system.stop(monitor2)
+      system.stop(monitor3)
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
@@ -69,28 +70,28 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      monitor1.stop()
-      monitor2.stop()
-      monitor3.stop()
+      system.stop(monitor1)
+      system.stop(monitor2)
+      system.stop(monitor3)
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
       filterException[ActorKilledException] {
         val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
-        val terminal = (supervisor ? terminalProps).as[ActorRef].get
+        val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
         val monitor = startWatching(terminal)
 
         terminal ! Kill
         terminal ! Kill
-        (terminal ? "foo").as[String] must be === Some("foo")
+        Await.result(terminal ? "foo", timeout.duration) must be === "foo"
         terminal ! Kill
 
         expectTerminationOf(terminal)
         terminal.isTerminated must be === true
 
-        supervisor.stop()
+        system.stop(supervisor)
       }
     }
 
@@ -99,17 +100,17 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         case class FF(fail: Failed)
         val supervisor = system.actorOf(Props[Supervisor]
           .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {
-            override def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
+            override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
               testActor.tell(FF(Failed(cause)), child)
-              super.handleFailure(child, cause, stats, children)
+              super.handleFailure(context, child, cause, stats, children)
             }
           }))
 
-        val failed = (supervisor ? Props.empty).as[ActorRef].get
-        val brother = (supervisor ? Props(new Actor {
+        val failed = Await.result((supervisor ? Props.empty).mapTo[ActorRef], timeout.duration)
+        val brother = Await.result((supervisor ? Props(new Actor {
           context.watch(failed)
           def receive = Actor.emptyBehavior
-        })).as[ActorRef].get
+        })).mapTo[ActorRef], timeout.duration)
 
         startWatching(brother)
 

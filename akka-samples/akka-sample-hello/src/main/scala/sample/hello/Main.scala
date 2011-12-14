@@ -20,7 +20,7 @@ class HelloActor extends Actor {
     case Start ⇒ worldActor ! "Hello"
     case s: String ⇒
       println("Received message: %s".format(s))
-      context.system.stop()
+      context.system.shutdown()
   }
 }
 

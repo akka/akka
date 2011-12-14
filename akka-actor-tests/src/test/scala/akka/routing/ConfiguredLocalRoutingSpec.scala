@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
@@ -49,7 +50,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! "hello"
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
 
@@ -74,7 +75,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val id = (actor ? "hit").as[Int].getOrElse(fail("No id returned by actor"))
+          val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
           replies = replies + (id -> (replies(id) + 1))
         }
       }
@@ -104,7 +105,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
   }
@@ -134,7 +135,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
         for (i ← 1 to 5) expectMsg("world")
       }
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
 
@@ -159,7 +160,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val id = (actor ? "hit").as[Int].getOrElse(fail("No id returned by actor"))
+          val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
           replies = replies + (id -> (replies(id) + 1))
         }
       }
@@ -190,7 +191,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! Broadcast("hello")
       helloLatch.await(5, TimeUnit.SECONDS) must be(true)
 
-      actor.stop()
+      system.stop(actor)
       stopLatch.await(5, TimeUnit.SECONDS) must be(true)
     }
   }

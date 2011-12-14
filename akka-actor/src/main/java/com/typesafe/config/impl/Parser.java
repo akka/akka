@@ -32,9 +32,53 @@ final class Parser {
         return context.parse();
     }
 
+    static private final class TokenWithComments {
+        final Token token;
+        final List<Token> comments;
+
+        TokenWithComments(Token token, List<Token> comments) {
+            this.token = token;
+            this.comments = comments;
+        }
+
+        TokenWithComments(Token token) {
+            this(token, Collections.<Token> emptyList());
+        }
+
+        TokenWithComments prepend(List<Token> earlier) {
+            if (this.comments.isEmpty()) {
+                return new TokenWithComments(token, earlier);
+            } else {
+                List<Token> merged = new ArrayList<Token>();
+                merged.addAll(earlier);
+                merged.addAll(comments);
+                return new TokenWithComments(token, merged);
+            }
+        }
+
+        SimpleConfigOrigin setComments(SimpleConfigOrigin origin) {
+            if (comments.isEmpty()) {
+                return origin;
+            } else {
+                List<String> newComments = new ArrayList<String>();
+                for (Token c : comments) {
+                    newComments.add(Tokens.getCommentText(c));
+                }
+                return origin.setComments(newComments);
+            }
+        }
+
+        @Override
+        public String toString() {
+            // this ends up in user-visible error messages, so we don't want the
+            // comments
+            return token.toString();
+        }
+    }
+
     static private final class ParseContext {
         private int lineNumber;
-        final private Stack<Token> buffer;
+        final private Stack<TokenWithComments> buffer;
         final private Iterator<Token> tokens;
         final private ConfigIncluder includer;
         final private ConfigIncludeContext includeContext;
@@ -50,7 +94,7 @@ final class Parser {
                 Iterator<Token> tokens, ConfigIncluder includer,
                 ConfigIncludeContext includeContext) {
             lineNumber = 1;
-            buffer = new Stack<Token>();
+            buffer = new Stack<TokenWithComments>();
             this.tokens = tokens;
             this.flavor = flavor;
             this.baseOrigin = origin;
@@ -60,13 +104,66 @@ final class Parser {
             this.equalsCount = 0;
         }
 
-        private Token nextToken() {
-            Token t = null;
-            if (buffer.isEmpty()) {
-                t = tokens.next();
-            } else {
-                t = buffer.pop();
+        private void consolidateCommentBlock(Token commentToken) {
+            // a comment block "goes with" the following token
+            // unless it's separated from it by a blank line.
+            // we want to build a list of newline tokens followed
+            // by a non-newline non-comment token; with all comments
+            // associated with that final non-newline non-comment token.
+            List<Token> newlines = new ArrayList<Token>();
+            List<Token> comments = new ArrayList<Token>();
+
+            Token previous = null;
+            Token next = commentToken;
+            while (true) {
+                if (Tokens.isNewline(next)) {
+                    if (previous != null && Tokens.isNewline(previous)) {
+                        // blank line; drop all comments to this point and
+                        // start a new comment block
+                        comments.clear();
+                    }
+                    newlines.add(next);
+                } else if (Tokens.isComment(next)) {
+                    comments.add(next);
+                } else {
+                    // a non-newline non-comment token
+                    break;
+                }
+
+                previous = next;
+                next = tokens.next();
             }
+
+            // put our concluding token in the queue with all the comments
+            // attached
+            buffer.push(new TokenWithComments(next, comments));
+
+            // now put all the newlines back in front of it
+            ListIterator<Token> li = newlines.listIterator(newlines.size());
+            while (li.hasPrevious()) {
+                buffer.push(new TokenWithComments(li.previous()));
+            }
+        }
+
+        private TokenWithComments popToken() {
+            if (buffer.isEmpty()) {
+                Token t = tokens.next();
+                if (Tokens.isComment(t)) {
+                    consolidateCommentBlock(t);
+                    return buffer.pop();
+                } else {
+                    return new TokenWithComments(t);
+                }
+            } else {
+                return buffer.pop();
+            }
+        }
+
+        private TokenWithComments nextToken() {
+            TokenWithComments withComments = null;
+
+            withComments = popToken();
+            Token t = withComments.token;
 
             if (Tokens.isProblem(t)) {
                 ConfigOrigin origin = t.origin();
@@ -79,32 +176,35 @@ final class Parser {
                     message = addKeyName(message);
                 }
                 throw new ConfigException.Parse(origin, message, cause);
-            }
-
-            if (flavor == ConfigSyntax.JSON) {
-                if (Tokens.isUnquotedText(t)) {
-                    throw parseError(addKeyName("Token not allowed in valid JSON: '"
-                            + Tokens.getUnquotedText(t) + "'"));
-                } else if (Tokens.isSubstitution(t)) {
-                    throw parseError(addKeyName("Substitutions (${} syntax) not allowed in JSON"));
+            } else {
+                if (flavor == ConfigSyntax.JSON) {
+                    if (Tokens.isUnquotedText(t)) {
+                        throw parseError(addKeyName("Token not allowed in valid JSON: '"
+                                + Tokens.getUnquotedText(t) + "'"));
+                    } else if (Tokens.isSubstitution(t)) {
+                        throw parseError(addKeyName("Substitutions (${} syntax) not allowed in JSON"));
+                    }
                 }
-            }
 
-            return t;
+                return withComments;
+            }
         }
 
-        private void putBack(Token token) {
+        private void putBack(TokenWithComments token) {
             buffer.push(token);
         }
 
-        private Token nextTokenIgnoringNewline() {
-            Token t = nextToken();
-            while (Tokens.isNewline(t)) {
+        private TokenWithComments nextTokenIgnoringNewline() {
+            TokenWithComments t = nextToken();
+
+            while (Tokens.isNewline(t.token)) {
                 // line number tokens have the line that was _ended_ by the
                 // newline, so we have to add one.
-                lineNumber = t.lineNumber() + 1;
+                lineNumber = t.token.lineNumber() + 1;
+
                 t = nextToken();
             }
+
             return t;
         }
 
@@ -116,8 +216,8 @@ final class Parser {
         // is left just after the comma or the newline.
         private boolean checkElementSeparator() {
             if (flavor == ConfigSyntax.JSON) {
-                Token t = nextTokenIgnoringNewline();
-                if (t == Tokens.COMMA) {
+                TokenWithComments t = nextTokenIgnoringNewline();
+                if (t.token == Tokens.COMMA) {
                     return true;
                 } else {
                     putBack(t);
@@ -125,15 +225,16 @@ final class Parser {
                 }
             } else {
                 boolean sawSeparatorOrNewline = false;
-                Token t = nextToken();
+                TokenWithComments t = nextToken();
                 while (true) {
-                    if (Tokens.isNewline(t)) {
+                    if (Tokens.isNewline(t.token)) {
                         // newline number is the line just ended, so add one
-                        lineNumber = t.lineNumber() + 1;
+                        lineNumber = t.token.lineNumber() + 1;
                         sawSeparatorOrNewline = true;
+
                         // we want to continue to also eat
                         // a comma if there is one.
-                    } else if (t == Tokens.COMMA) {
+                    } else if (t.token == Tokens.COMMA) {
                         return true;
                     } else {
                         // non-newline-or-comma
@@ -154,12 +255,17 @@ final class Parser {
                 return;
 
             List<Token> values = null; // create only if we have value tokens
-            Token t = nextTokenIgnoringNewline(); // ignore a newline up front
-            while (Tokens.isValue(t) || Tokens.isUnquotedText(t)
-                    || Tokens.isSubstitution(t)) {
-                if (values == null)
+            TokenWithComments firstValueWithComments = null;
+            TokenWithComments t = nextTokenIgnoringNewline(); // ignore a
+                                                              // newline up
+                                                              // front
+            while (Tokens.isValue(t.token) || Tokens.isUnquotedText(t.token)
+                    || Tokens.isSubstitution(t.token)) {
+                if (values == null) {
                     values = new ArrayList<Token>();
-                values.add(t);
+                    firstValueWithComments = t;
+                }
+                values.add(t.token);
                 t = nextToken(); // but don't consolidate across a newline
             }
             // the last one wasn't a value token
@@ -168,9 +274,9 @@ final class Parser {
             if (values == null)
                 return;
 
-            if (values.size() == 1 && Tokens.isValue(values.get(0))) {
+            if (values.size() == 1 && Tokens.isValue(firstValueWithComments.token)) {
                 // a single value token requires no consolidation
-                putBack(values.get(0));
+                putBack(firstValueWithComments);
                 return;
             }
 
@@ -235,7 +341,7 @@ final class Parser {
                         firstOrigin, minimized));
             }
 
-            putBack(consolidated);
+            putBack(new TokenWithComments(consolidated, firstValueWithComments.comments));
         }
 
         private ConfigOrigin lineOrigin() {
@@ -309,17 +415,23 @@ final class Parser {
                 return part + ")";
         }
 
-        private AbstractConfigValue parseValue(Token token) {
-            if (Tokens.isValue(token)) {
-                return Tokens.getValue(token);
-            } else if (token == Tokens.OPEN_CURLY) {
-                return parseObject(true);
-            } else if (token == Tokens.OPEN_SQUARE) {
-                return parseArray();
+        private AbstractConfigValue parseValue(TokenWithComments t) {
+            AbstractConfigValue v;
+
+            if (Tokens.isValue(t.token)) {
+                v = Tokens.getValue(t.token);
+            } else if (t.token == Tokens.OPEN_CURLY) {
+                v = parseObject(true);
+            } else if (t.token == Tokens.OPEN_SQUARE) {
+                v = parseArray();
             } else {
-                throw parseError(addQuoteSuggestion(token.toString(),
-                        "Expecting a value but got wrong token: " + token));
+                throw parseError(addQuoteSuggestion(t.token.toString(),
+                        "Expecting a value but got wrong token: " + t.token));
             }
+
+            v = v.withOrigin(t.setComments(v.origin()));
+
+            return v;
         }
 
         private static AbstractConfigObject createValueUnderPath(Path path,
@@ -339,24 +451,29 @@ final class Parser {
                     remaining = remaining.remainder();
                 }
             }
+
+            // the setComments(null) is to ensure comments are only
+            // on the exact leaf node they apply to.
+            // a comment before "foo.bar" applies to the full setting
+            // "foo.bar" not also to "foo"
             ListIterator<String> i = keys.listIterator(keys.size());
             String deepest = i.previous();
-            AbstractConfigObject o = new SimpleConfigObject(value.origin(),
+            AbstractConfigObject o = new SimpleConfigObject(value.origin().setComments(null),
                     Collections.<String, AbstractConfigValue> singletonMap(
                             deepest, value));
             while (i.hasPrevious()) {
                 Map<String, AbstractConfigValue> m = Collections.<String, AbstractConfigValue> singletonMap(
                         i.previous(), o);
-                o = new SimpleConfigObject(value.origin(), m);
+                o = new SimpleConfigObject(value.origin().setComments(null), m);
             }
 
             return o;
         }
 
-        private Path parseKey(Token token) {
+        private Path parseKey(TokenWithComments token) {
             if (flavor == ConfigSyntax.JSON) {
-                if (Tokens.isValueWithType(token, ConfigValueType.STRING)) {
-                    String key = (String) Tokens.getValue(token).unwrapped();
+                if (Tokens.isValueWithType(token.token, ConfigValueType.STRING)) {
+                    String key = (String) Tokens.getValue(token.token).unwrapped();
                     return Path.newKey(key);
                 } else {
                     throw parseError(addKeyName("Expecting close brace } or a field name here, got "
@@ -364,9 +481,9 @@ final class Parser {
                 }
             } else {
                 List<Token> expression = new ArrayList<Token>();
-                Token t = token;
-                while (Tokens.isValue(t) || Tokens.isUnquotedText(t)) {
-                    expression.add(t);
+                TokenWithComments t = token;
+                while (Tokens.isValue(t.token) || Tokens.isUnquotedText(t.token)) {
+                    expression.add(t.token);
                     t = nextToken(); // note: don't cross a newline
                 }
 
@@ -400,13 +517,13 @@ final class Parser {
         }
 
         private void parseInclude(Map<String, AbstractConfigValue> values) {
-            Token t = nextTokenIgnoringNewline();
-            while (isUnquotedWhitespace(t)) {
+            TokenWithComments t = nextTokenIgnoringNewline();
+            while (isUnquotedWhitespace(t.token)) {
                 t = nextTokenIgnoringNewline();
             }
 
-            if (Tokens.isValueWithType(t, ConfigValueType.STRING)) {
-                String name = (String) Tokens.getValue(t).unwrapped();
+            if (Tokens.isValueWithType(t.token, ConfigValueType.STRING)) {
+                String name = (String) Tokens.getValue(t.token).unwrapped();
                 AbstractConfigObject obj = (AbstractConfigObject) includer
                         .include(includeContext, name);
 
@@ -448,8 +565,8 @@ final class Parser {
             boolean lastInsideEquals = false;
 
             while (true) {
-                Token t = nextTokenIgnoringNewline();
-                if (t == Tokens.CLOSE_CURLY) {
+                TokenWithComments t = nextTokenIgnoringNewline();
+                if (t.token == Tokens.CLOSE_CURLY) {
                     if (flavor == ConfigSyntax.JSON && afterComma) {
                         throw parseError(addQuoteSuggestion(t.toString(),
                                 "expecting a field name after a comma, got a close brace } instead"));
@@ -458,44 +575,44 @@ final class Parser {
                                 "unbalanced close brace '}' with no open brace"));
                     }
                     break;
-                } else if (t == Tokens.END && !hadOpenCurly) {
+                } else if (t.token == Tokens.END && !hadOpenCurly) {
                     putBack(t);
                     break;
-                } else if (flavor != ConfigSyntax.JSON && isIncludeKeyword(t)) {
+                } else if (flavor != ConfigSyntax.JSON && isIncludeKeyword(t.token)) {
                     parseInclude(values);
 
                     afterComma = false;
                 } else {
-                    Path path = parseKey(t);
-                    Token afterKey = nextTokenIgnoringNewline();
+                    TokenWithComments keyToken = t;
+                    Path path = parseKey(keyToken);
+                    TokenWithComments afterKey = nextTokenIgnoringNewline();
                     boolean insideEquals = false;
 
                     // path must be on-stack while we parse the value
                     pathStack.push(path);
 
-                    Token valueToken;
+                    TokenWithComments valueToken;
                     AbstractConfigValue newValue;
-                    if (flavor == ConfigSyntax.CONF
-                            && afterKey == Tokens.OPEN_CURLY) {
+                    if (flavor == ConfigSyntax.CONF && afterKey.token == Tokens.OPEN_CURLY) {
                         // can omit the ':' or '=' before an object value
                         valueToken = afterKey;
-                        newValue = parseObject(true);
                     } else {
-                        if (!isKeyValueSeparatorToken(afterKey)) {
+                        if (!isKeyValueSeparatorToken(afterKey.token)) {
                             throw parseError(addQuoteSuggestion(afterKey.toString(),
                                     "Key '" + path.render() + "' may not be followed by token: "
                                             + afterKey));
                         }
 
-                        if (afterKey == Tokens.EQUALS) {
+                        if (afterKey.token == Tokens.EQUALS) {
                             insideEquals = true;
                             equalsCount += 1;
                         }
 
                         consolidateValueTokens();
                         valueToken = nextTokenIgnoringNewline();
-                        newValue = parseValue(valueToken);
                     }
+
+                    newValue = parseValue(valueToken.prepend(keyToken.comments));
 
                     lastPath = pathStack.pop();
                     if (insideEquals) {
@@ -547,7 +664,7 @@ final class Parser {
                     afterComma = true;
                 } else {
                     t = nextTokenIgnoringNewline();
-                    if (t == Tokens.CLOSE_CURLY) {
+                    if (t.token == Tokens.CLOSE_CURLY) {
                         if (!hadOpenCurly) {
                             throw parseError(addQuoteSuggestion(lastPath, lastInsideEquals,
                                     t.toString(), "unbalanced close brace '}' with no open brace"));
@@ -557,7 +674,7 @@ final class Parser {
                         throw parseError(addQuoteSuggestion(lastPath, lastInsideEquals,
                                 t.toString(), "Expecting close brace } or a comma, got " + t));
                     } else {
-                        if (t == Tokens.END) {
+                        if (t.token == Tokens.END) {
                             putBack(t);
                             break;
                         } else {
@@ -567,6 +684,7 @@ final class Parser {
                     }
                 }
             }
+
             return new SimpleConfigObject(objectOrigin, values);
         }
 
@@ -577,18 +695,15 @@ final class Parser {
 
             consolidateValueTokens();
 
-            Token t = nextTokenIgnoringNewline();
+            TokenWithComments t = nextTokenIgnoringNewline();
 
             // special-case the first element
-            if (t == Tokens.CLOSE_SQUARE) {
+            if (t.token == Tokens.CLOSE_SQUARE) {
                 return new SimpleConfigList(arrayOrigin,
                         Collections.<AbstractConfigValue> emptyList());
-            } else if (Tokens.isValue(t)) {
+            } else if (Tokens.isValue(t.token) || t.token == Tokens.OPEN_CURLY
+                    || t.token == Tokens.OPEN_SQUARE) {
                 values.add(parseValue(t));
-            } else if (t == Tokens.OPEN_CURLY) {
-                values.add(parseObject(true));
-            } else if (t == Tokens.OPEN_SQUARE) {
-                values.add(parseArray());
             } else {
                 throw parseError(addKeyName("List should have ] or a first element after the open [, instead had token: "
                         + t
@@ -604,7 +719,7 @@ final class Parser {
                     // comma (or newline equivalent) consumed
                 } else {
                     t = nextTokenIgnoringNewline();
-                    if (t == Tokens.CLOSE_SQUARE) {
+                    if (t.token == Tokens.CLOSE_SQUARE) {
                         return new SimpleConfigList(arrayOrigin, values);
                     } else {
                         throw parseError(addKeyName("List should have ended with ] or had a comma, instead had token: "
@@ -619,14 +734,10 @@ final class Parser {
                 consolidateValueTokens();
 
                 t = nextTokenIgnoringNewline();
-                if (Tokens.isValue(t)) {
+                if (Tokens.isValue(t.token) || t.token == Tokens.OPEN_CURLY
+                        || t.token == Tokens.OPEN_SQUARE) {
                     values.add(parseValue(t));
-                } else if (t == Tokens.OPEN_CURLY) {
-                    values.add(parseObject(true));
-                } else if (t == Tokens.OPEN_SQUARE) {
-                    values.add(parseArray());
-                } else if (flavor != ConfigSyntax.JSON
-                        && t == Tokens.CLOSE_SQUARE) {
+                } else if (flavor != ConfigSyntax.JSON && t.token == Tokens.CLOSE_SQUARE) {
                     // we allow one trailing comma
                     putBack(t);
                 } else {
@@ -640,8 +751,8 @@ final class Parser {
         }
 
         AbstractConfigValue parse() {
-            Token t = nextTokenIgnoringNewline();
-            if (t == Tokens.START) {
+            TokenWithComments t = nextTokenIgnoringNewline();
+            if (t.token == Tokens.START) {
                 // OK
             } else {
                 throw new ConfigException.BugOrBroken(
@@ -650,13 +761,11 @@ final class Parser {
 
             t = nextTokenIgnoringNewline();
             AbstractConfigValue result = null;
-            if (t == Tokens.OPEN_CURLY) {
-                result = parseObject(true);
-            } else if (t == Tokens.OPEN_SQUARE) {
-                result = parseArray();
+            if (t.token == Tokens.OPEN_CURLY || t.token == Tokens.OPEN_SQUARE) {
+                result = parseValue(t);
             } else {
                 if (flavor == ConfigSyntax.JSON) {
-                    if (t == Tokens.END) {
+                    if (t.token == Tokens.END) {
                         throw parseError("Empty document");
                     } else {
                         throw parseError("Document must have an object or array at root, unexpected token: "
@@ -668,11 +777,14 @@ final class Parser {
                     // of it, so put it back.
                     putBack(t);
                     result = parseObject(false);
+                    // in this case we don't try to use commentsStack comments
+                    // since they would all presumably apply to fields not the
+                    // root object
                 }
             }
 
             t = nextTokenIgnoringNewline();
-            if (t == Tokens.END) {
+            if (t.token == Tokens.END) {
                 return result;
             } else {
                 throw parseError("Document has trailing tokens after first object or array: "

@@ -49,8 +49,8 @@ class DispatcherActorsSpec extends AkkaSpec {
       assert(sFinished.getCount > 0)
       sFinished.await
       assert(sFinished.getCount === 0)
-      f.stop()
-      s.stop()
+      system.stop(f)
+      system.stop(s)
     }
   }
 }

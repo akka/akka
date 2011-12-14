@@ -31,7 +31,7 @@ object ActorModelSpec {
 
   case class Increment(counter: AtomicLong) extends ActorModelMessage
 
-  case class Await(latch: CountDownLatch) extends ActorModelMessage
+  case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
 
   case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
 
@@ -68,7 +68,7 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case Await(latch)                 ⇒ ack; latch.await(); busy.switchOff()
+      case AwaitLatch(latch)            ⇒ ack; latch.await(); busy.switchOff()
       case Meet(sign, wait)             ⇒ ack; sign.countDown(); wait.await(); busy.switchOff()
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
@@ -77,7 +77,7 @@ object ActorModelSpec {
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l)            ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
+      case CountDownNStop(l)            ⇒ ack; l.countDown(); context.stop(self); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
       case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
@@ -239,7 +239,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertDispatcher(dispatcher)(stops = 0)
       val a = newTestActor(dispatcher)
       assertDispatcher(dispatcher)(stops = 0)
-      a.stop()
+      system.stop(a)
       assertDispatcher(dispatcher)(stops = 1)
       assertRef(a, dispatcher)(
         suspensions = 0,
@@ -260,7 +260,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
 
       assertDispatcher(dispatcher)(stops = 2)
 
-      a2.stop
+      system.stop(a2)
       assertDispatcher(dispatcher)(stops = 3)
     }
 
@@ -279,7 +279,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertCountDown(oneAtATime, (1.5 seconds).dilated.toMillis, "Processed message when allowed")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
-      a.stop()
+      system.stop(a)
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
     }
 
@@ -298,7 +298,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertCountDown(counter, 3.seconds.dilated.toMillis, "Should process 200 messages")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
-      a.stop()
+      system.stop(a)
     }
 
     def spawn(f: ⇒ Unit) {
@@ -328,7 +328,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
         suspensions = 1, resumes = 1)
 
-      a.stop()
+      system.stop(a)
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
         suspensions = 1, resumes = 1)
     }
@@ -370,7 +370,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
             throw e
         }
         assertCountDown(stopLatch, waitTime, "Expected all children to stop")
-        boss.stop()
+        system.stop(boss)
       }
       for (run ← 1 to 3) {
         flood(50000)
@@ -385,17 +385,17 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         val a = newTestActor(dispatcher)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ new KeptPromise(Left(ActorInterruptedException(ie))) }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
         val f6 = a ? Reply("bar2")
 
-        assert(f1.get === "foo")
-        assert(f2.get === "bar")
-        assert(f4.get === "foo2")
-        assert(intercept[ActorInterruptedException](f3.get).getMessage === "Ping!")
-        assert(f6.get === "bar2")
-        assert(intercept[ActorInterruptedException](f5.get).getMessage === "Ping!")
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getMessage === "Ping!")
+        assert(Await.result(f6, timeout.duration) === "bar2")
+        assert(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getMessage === "Ping!")
       }
     }
 
@@ -410,12 +410,12 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
         val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
-        assert(f1.get === "foo")
-        assert(f2.get === "bar")
-        assert(f4.get === "foo2")
-        assert(f6.get === "bar2")
-        assert(f3.result === None)
-        assert(f5.result === None)
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(Await.result(f6, timeout.duration) === "bar2")
+        assert(f3.value.isEmpty)
+        assert(f5.value.isEmpty)
       }
     }
   }
@@ -447,8 +447,8 @@ class DispatcherModelSpec extends ActorModelSpec {
 
       aStop.countDown()
 
-      a.stop
-      b.stop
+      system.stop(a)
+      system.stop(b)
 
       while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
 
@@ -484,8 +484,8 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
 
       aStop.countDown()
 
-      a.stop
-      b.stop
+      system.stop(a)
+      system.stop(b)
 
       while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
 

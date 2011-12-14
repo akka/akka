@@ -6,12 +6,12 @@ package akka.actor
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
-import akka.dispatch.Dispatchers
 import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
+import akka.dispatch.{ Await, Dispatchers }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {
@@ -28,14 +28,14 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeou
             override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.path }
           }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
           val headActor = system.actorOf(p)
-          val middleActor = (headActor ? p).as[ActorRef].get
-          val lastActor = (middleActor ? p).as[ActorRef].get
+          val middleActor = Await.result((headActor ? p).mapTo[ActorRef], timeout.duration)
+          val lastActor = Await.result((middleActor ? p).mapTo[ActorRef], timeout.duration)
 
           middleActor ! Kill
           expectMsg(middleActor.path)
           expectMsg(lastActor.path)
           expectNoMsg(2 seconds)
-          headActor.stop()
+          system.stop(headActor)
         }
       }
     }
