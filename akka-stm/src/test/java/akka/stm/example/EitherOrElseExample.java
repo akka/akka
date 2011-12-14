@@ -24,6 +24,6 @@ public class EitherOrElseExample {
             }
         }.execute();
 
-        brancher.stop();
+        application.stop(brancher);
     }
 }

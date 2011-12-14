@@ -7,7 +7,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
-import akka.dispatch.{ Future, Promise }
+import akka.dispatch.{ Future, Promise, Await }
 import akka.util.duration._
 import akka.actor.ActorSystem
 
@@ -56,8 +56,8 @@ object TestActorRefSpec {
 
   class WorkerActor() extends TActor {
     def receiveT = {
-      case "work"                ⇒ sender ! "workDone"; self.stop()
-      case replyTo: Promise[Any] ⇒ replyTo.completeWithResult("complexReply")
+      case "work"                ⇒ sender ! "workDone"; context.stop(self)
+      case replyTo: Promise[Any] ⇒ replyTo.success("complexReply")
       case replyTo: ActorRef     ⇒ replyTo ! "complexReply"
     }
   }
@@ -110,7 +110,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
-        val nested = (a ? "any").as[ActorRef].get
+        val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -121,7 +121,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
-        val nested = (a ? "any").as[ActorRef].get
+        val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
         nested must not be (null)
         a must not be theSameInstanceAs(nested)
       }
@@ -195,7 +195,7 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
       f must be('completed)
-      f.as[String] must equal(Some("workDone"))
+      Await.result(f, timeout.duration) must equal("workDone")
     }
 
   }

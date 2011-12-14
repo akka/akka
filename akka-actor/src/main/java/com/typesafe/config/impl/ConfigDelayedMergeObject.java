@@ -49,12 +49,12 @@ class ConfigDelayedMergeObject extends AbstractConfigObject implements
     }
 
     @Override
-    protected ConfigDelayedMergeObject newCopy(ResolveStatus status,
-            boolean ignoresFallbacks) {
+    protected ConfigDelayedMergeObject newCopy(ResolveStatus status, boolean ignoresFallbacks,
+            ConfigOrigin origin) {
         if (status != resolveStatus())
             throw new ConfigException.BugOrBroken(
                     "attempt to create resolved ConfigDelayedMergeObject");
-        return new ConfigDelayedMergeObject(origin(), stack, ignoresFallbacks);
+        return new ConfigDelayedMergeObject(origin, stack, ignoresFallbacks);
     }
 
     @Override

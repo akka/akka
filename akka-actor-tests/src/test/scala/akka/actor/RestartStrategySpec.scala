@@ -6,6 +6,7 @@ package akka.actor
 
 import java.lang.Thread.sleep
 import org.scalatest.BeforeAndAfterAll
+import akka.dispatch.Await
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
@@ -52,7 +53,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = (boss ? slaveProps).as[ActorRef].get
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       slave ! Ping
       slave ! Crash
@@ -87,7 +88,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           countDownLatch.countDown()
         }
       })
-      val slave = (boss ? slaveProps).as[ActorRef].get
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       (1 to 100) foreach { _ ⇒ slave ! Crash }
       assert(countDownLatch.await(120, TimeUnit.SECONDS))
@@ -125,7 +126,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           }
         }
       })
-      val slave = (boss ? slaveProps).as[ActorRef].get
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       slave ! Ping
       slave ! Crash
@@ -176,7 +177,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = (boss ? slaveProps).as[ActorRef].get
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       slave ! Ping
       slave ! Crash
@@ -228,7 +229,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = (boss ? slaveProps).as[ActorRef].get
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       slave ! Ping
       slave ! Crash

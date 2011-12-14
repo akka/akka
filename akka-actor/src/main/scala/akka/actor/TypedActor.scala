@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serializer, Serialization }
 import akka.dispatch._
 import akka.serialization.SerializationExtension
+import java.util.concurrent.TimeoutException
 
 trait TypedActorFactory {
 
@@ -24,7 +25,7 @@ trait TypedActorFactory {
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null ⇒ false
-    case ref  ⇒ ref.stop; true
+    case ref  ⇒ ref.asInstanceOf[InternalActorRef].stop; true
   }
 
   /**
@@ -338,10 +339,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               if (m.returnsFuture_?) {
                 val s = sender
                 m(me).asInstanceOf[Future[Any]] onComplete {
-                  _.value.get match {
-                    case Left(f)  ⇒ s ! Status.Failure(f)
-                    case Right(r) ⇒ s ! r
-                  }
+                  case Left(f)  ⇒ s ! Status.Failure(f)
+                  case Right(r) ⇒ s ! r
                 }
               } else {
                 sender ! m(me)
@@ -418,12 +417,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = actor.?(m, timeout)
-            (try { f.await.value } catch { case _: FutureTimeoutException ⇒ None }) match {
+            (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ (actor.?(m, timeout)).get.asInstanceOf[AnyRef]
+          case m ⇒ Await.result(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }

@@ -52,7 +52,7 @@ final class Tokens {
 
         @Override
         public String toString() {
-            return "'\n'@" + lineNumber();
+            return "'\\n'@" + lineNumber();
         }
 
         @Override
@@ -167,6 +167,45 @@ final class Tokens {
         }
     }
 
+    static private class Comment extends Token {
+        final private String text;
+
+        Comment(ConfigOrigin origin, String text) {
+            super(TokenType.COMMENT, origin);
+            this.text = text;
+        }
+
+        String text() {
+            return text;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("'#");
+            sb.append(text);
+            sb.append("' (COMMENT)");
+            return sb.toString();
+        }
+
+        @Override
+        protected boolean canEqual(Object other) {
+            return other instanceof Comment;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return super.equals(other) && ((Comment) other).text.equals(text);
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 41 * (41 + super.hashCode());
+            h = 41 * (h + text.hashCode());
+            return h;
+        }
+    }
+
     // This is not a Value, because it requires special processing
     static private class Substitution extends Token {
         final private boolean optional;
@@ -262,6 +301,18 @@ final class Tokens {
         }
     }
 
+    static boolean isComment(Token token) {
+        return token instanceof Comment;
+    }
+
+    static String getCommentText(Token token) {
+        if (token instanceof Comment) {
+            return ((Comment) token).text();
+        } else {
+            throw new ConfigException.BugOrBroken("tried to get comment text from " + token);
+        }
+    }
+
     static boolean isUnquotedText(Token token) {
         return token instanceof UnquotedText;
     }
@@ -314,6 +365,10 @@ final class Tokens {
     static Token newProblem(ConfigOrigin origin, String what, String message,
             boolean suggestQuotes, Throwable cause) {
         return new Problem(origin, what, message, suggestQuotes, cause);
+    }
+
+    static Token newComment(ConfigOrigin origin, String text) {
+        return new Comment(origin, text);
     }
 
     static Token newUnquotedText(ConfigOrigin origin, String s) {

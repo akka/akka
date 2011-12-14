@@ -4,6 +4,8 @@ package akka.docs.actor
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
+import akka.dispatch.Future
+
 //#imports1
 
 //#imports2
@@ -40,7 +42,7 @@ class FirstActor extends Actor {
           case DoIt(msg) ⇒
             val replyMsg = doSomeDangerousWork(msg)
             sender ! replyMsg
-            self.stop()
+            context.stop(self)
         }
         def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
       })) ! m
@@ -143,7 +145,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#import-context
 
     val first = system.actorOf(Props(new FirstActor))
-    first.stop()
+    system.stop(first)
 
   }
 
@@ -169,7 +171,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.eventStream.unsubscribe(testActor)
     system.eventStream.publish(TestEvent.UnMute(filter))
 
-    myActor.stop()
+    system.stop(myActor)
   }
 
   "creating actor with constructor" in {
@@ -182,7 +184,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new MyActor("...")))
     //#creating-constructor
 
-    myActor.stop()
+    system.stop(myActor)
   }
 
   "creating actor with Props" in {
@@ -192,7 +194,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
     //#creating-props
 
-    myActor.stop()
+    system.stop(myActor)
   }
 
   "using ask" in {
@@ -207,14 +209,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new MyActor))
     implicit val timeout = system.settings.ActorTimeout
     val future = myActor ? "hello"
-    future.as[String] match {
-      case Some(answer) ⇒ //...
-      case None         ⇒ //...
-    }
-    val result: Option[Int] = for (x ← (myActor ? 3).as[Int]) yield { 2 * x }
+    for (x ← future) println(x) //Prints "hello"
+
+    val result: Future[Int] = for (x ← (myActor ? 3).mapTo[Int]) yield { 2 * x }
     //#using-ask
 
-    myActor.stop()
+    system.stop(myActor)
   }
 
   "using receiveTimeout" in {

@@ -7,6 +7,7 @@ import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
@@ -113,7 +114,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
         override def postRestart(reason: Throwable) = restartLatch.open
       })
-      val actor = (supervisor ? props).as[ActorRef].get
+      val actor = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)
 
       collectCancellable(system.scheduler.schedule(500 milliseconds, 500 milliseconds, actor, Ping))
       // appx 2 pings before crash

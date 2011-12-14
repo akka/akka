@@ -17,13 +17,9 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
-      implicit val within = 1 second
+      val f = spawn { q.dequeue }
 
-      val f = spawn {
-        q.dequeue
-      }
-
-      f.await.resultOrException must be === Some(null)
+      Await.result(f, 1 second) must be(null)
     }
 
     "create a bounded mailbox with 10 capacity and with push timeout" in {
@@ -61,13 +57,13 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
   }
 
   //CANDIDATE FOR TESTKIT
-  def spawn[T <: AnyRef](fun: ⇒ T)(implicit within: Duration): Future[T] = {
-    val result = new DefaultPromise[T](within.length, within.unit)
+  def spawn[T <: AnyRef](fun: ⇒ T): Future[T] = {
+    val result = Promise[T]()
     val t = new Thread(new Runnable {
       def run = try {
-        result.completeWithResult(fun)
+        result.success(fun)
       } catch {
-        case e: Throwable ⇒ result.completeWithException(e)
+        case e: Throwable ⇒ result.failure(e)
       }
     })
     t.start
@@ -119,8 +115,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     val consumers = for (i ← (1 to 4).toList) yield createConsumer
 
-    val ps = producers.map(_.await.resultOrException.get)
-    val cs = consumers.map(_.await.resultOrException.get)
+    val ps = producers.map(Await.result(_, within))
+    val cs = consumers.map(Await.result(_, within))
 
     ps.map(_.size).sum must be === totalMessages //Must have produced 1000 messages
     cs.map(_.size).sum must be === totalMessages //Must have consumed all produced messages

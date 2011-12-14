@@ -26,7 +26,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       }))
 
       timeoutLatch.await
-      timeoutActor.stop()
+      system.stop(timeoutActor)
     }
 
     "reschedule timeout after regular receive" in {
@@ -45,7 +45,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       timeoutActor ! Tick
 
       timeoutLatch.await
-      timeoutActor.stop()
+      system.stop(timeoutActor)
     }
 
     "be able to turn off timeout if desired" in {
@@ -69,7 +69,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       timeoutLatch.await
       count.get must be(1)
-      timeoutActor.stop()
+      system.stop(timeoutActor)
     }
 
     "not receive timeout message when not specified" in {
@@ -82,7 +82,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       }))
 
       timeoutLatch.awaitTimeout(1 second) // timeout expected
-      timeoutActor.stop()
+      system.stop(timeoutActor)
     }
 
     "have ReceiveTimeout eq to Actors ReceiveTimeout" in {

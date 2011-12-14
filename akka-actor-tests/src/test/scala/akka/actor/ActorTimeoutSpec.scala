@@ -4,10 +4,11 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterAll
-import akka.dispatch.FutureTimeoutException
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
+import java.util.concurrent.TimeoutException
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeout {
@@ -28,8 +29,8 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
         val echo = actorWithTimeout(Timeout(12))
         try {
           val f = echo ? "hallo"
-          intercept[FutureTimeoutException] { f.await }
-        } finally { echo.stop }
+          intercept[TimeoutException] { Await.ready(f, system.settings.ActorTimeout.duration) }
+        } finally { system.stop(echo) }
       }
     }
 
@@ -39,16 +40,20 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
         val echo = actorWithTimeout(Props.defaultTimeout)
         try {
           val f = (echo ? "hallo").mapTo[String]
-          intercept[FutureTimeoutException] { f.await }
+          intercept[TimeoutException] { Await.ready(f, timeout.duration) }
           f.value must be(None)
-        } finally { echo.stop }
+        } finally { system.stop(echo) }
       }
     }
 
     "use explicitly supplied timeout" in {
       within(testTimeout - 100.millis, testTimeout + 300.millis) {
         val echo = actorWithTimeout(Props.defaultTimeout)
-        try { (echo.?("hallo", testTimeout)).as[String] must be(None) } finally { echo.stop }
+        val f = echo.?("hallo", testTimeout)
+        try {
+          intercept[TimeoutException] { Await.ready(f, testTimeout) }
+          f.value must be === None
+        } finally { system.stop(echo) }
       }
     }
   }

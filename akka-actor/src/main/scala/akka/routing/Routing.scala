@@ -132,7 +132,7 @@ trait Router extends Actor {
 
     case Terminated(child) ⇒
       ref._routees = ref._routees filterNot (_ == child)
-      if (ref.routees.isEmpty) self.stop()
+      if (ref.routees.isEmpty) context.stop(self)
 
   }: Receive) orElse routerReceive
 

@@ -11,9 +11,9 @@ import akka.testkit._
 import akka.util.duration._
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
-import akka.dispatch.{ DefaultPromise, Promise, Future }
 import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
 
 object ActorRefSpec {
 
@@ -42,7 +42,7 @@ object ActorRefSpec {
       case "work" ⇒ {
         work
         sender ! "workDone"
-        self.stop()
+        context.stop(self)
       }
       case ReplyTo(replyTo) ⇒ {
         work
@@ -117,18 +117,18 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
   def promiseIntercept(f: ⇒ Actor)(to: Promise[Actor]): Actor = try {
     val r = f
-    to.completeWithResult(r)
+    to.success(r)
     r
   } catch {
     case e ⇒
-      to.completeWithException(e)
+      to.failure(e)
       throw e
   }
 
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
-    val result = new DefaultPromise[Actor](10 * 60 * 1000)
+    val result = Promise[Actor]()
     val r = f(result)
-    result.get
+    Await.result(result, 1 minute)
     r
   }
 
@@ -306,7 +306,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         def receive = { case _ ⇒ sender ! nested }
       }))
 
-      val nested = (a ? "any").as[ActorRef].get
+      val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
       a must not be null
       nested must not be null
       (a ne nested) must be === true
@@ -314,13 +314,13 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "support advanced nested actorOfs" in {
       val a = system.actorOf(Props(new OuterActor(system.actorOf(Props(new InnerActor)))))
-      val inner = (a ? "innerself").as[Any].get
+      val inner = Await.result(a ? "innerself", timeout.duration)
 
-      (a ? a).as[ActorRef].get must be(a)
-      (a ? "self").as[ActorRef].get must be(a)
+      Await.result(a ? a, timeout.duration) must be(a)
+      Await.result(a ? "self", timeout.duration) must be(a)
       inner must not be a
 
-      (a ? "msg").as[String] must be === Some("msg")
+      Await.result(a ? "msg", timeout.duration) must be === "msg"
     }
 
     "support reply via sender" in {
@@ -344,8 +344,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       latch.await
 
-      clientRef.stop()
-      serverRef.stop()
+      system.stop(clientRef)
+      system.stop(serverRef)
     }
 
     "stop when sent a poison pill" in {
@@ -361,8 +361,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val fnull = (ref ? (null, timeout)).mapTo[String]
       ref ! PoisonPill
 
-      ffive.get must be("five")
-      fnull.get must be("null")
+      Await.result(ffive, timeout.duration) must be("five")
+      Await.result(fnull, timeout.duration) must be("null")
 
       awaitCond(ref.isTerminated, 2000 millis)
     }
