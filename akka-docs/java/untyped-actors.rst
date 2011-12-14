@@ -340,14 +340,13 @@ message.
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorContext``
-for child actors or ``stop`` method of the ``ActorSystem`` for top level
-actors. The actual termination of the actor is performed asynchronously, i.e.
-``stop`` may return before the actor is stopped.
-
-.. code-block:: java
-
-  getContext().stop(childActorRef);
+Actors are stopped by invoking the :meth:`stop` method of a ``ActorRefFactory``,
+i.e. ``ActorContext`` or ``ActorSystem``. Typically the context is used for stopping
+child actors and the system for stopping top level actors. When using the context
+to stop an actor the actual termination of the actor is performed asynchronously,
+i.e. :meth:`stop` may return before the actor is stopped. When using the system to
+stop an actor the :meth:`stop` method will block until the actor is stopped, or
+timeout occurs (``akka.actor.creation-timeout`` :ref:`configuration` property).
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
