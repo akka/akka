@@ -22,6 +22,8 @@ import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
 import com.google.protobuf.ByteString
+import java.util.concurrent.TimeoutException
+import akka.dispatch.Await
 
 /**
  * Interface for node membership change listener.
@@ -250,18 +252,13 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
       throw new IllegalStateException("Connection for [" + peer + "] is not set up"))
 
     try {
-      (connection ? (toRemoteMessage(newGossip), remoteSettings.RemoteSystemDaemonAckTimeout)).as[Status] match {
-        case Some(Success(receiver)) ⇒
-          log.debug("Gossip sent to [{}] was successfully received", receiver)
-
-        case Some(Failure(cause)) ⇒
-          log.error(cause, cause.toString)
-
-        case None ⇒
-          val error = new RemoteException("Gossip to [%s] timed out".format(connection.path))
-          log.error(error, error.toString)
+      val t = remoteSettings.RemoteSystemDaemonAckTimeout
+      Await.result(connection ? (toRemoteMessage(newGossip), t), t) match {
+        case Success(receiver) ⇒ log.debug("Gossip sent to [{}] was successfully received", receiver)
+        case Failure(cause)    ⇒ log.error(cause, cause.toString)
       }
     } catch {
+      case e: TimeoutException ⇒ log.error(e, "Gossip to [%s] timed out".format(connection.path))
       case e: Exception ⇒
         log.error(e, "Could not gossip to [{}] due to: {}", connection.path, e.toString)
     }

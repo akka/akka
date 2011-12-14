@@ -4,13 +4,14 @@ import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
+import akka.dispatch.Await
 
 object RandomRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "hit" ⇒ sender ! context.system.nodename
-      case "end" ⇒ self.stop()
+      case "end" ⇒ context.stop(self)
     }
   }
 }
@@ -74,7 +75,7 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with DefaultTi
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val nodeName = (actor ? "hit").as[String].getOrElse(fail("No id returned by actor"))
+          val nodeName = Await.result(actor ? "hit", timeout.duration).toString
           replies = replies + (nodeName -> (replies(nodeName) + 1))
         }
       }

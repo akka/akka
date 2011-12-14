@@ -17,7 +17,7 @@ class WorkerSpec extends WordSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem()
 
   override def afterAll {
-    system.stop()
+    system.shutdown()
   }
 
   "Worker" must {

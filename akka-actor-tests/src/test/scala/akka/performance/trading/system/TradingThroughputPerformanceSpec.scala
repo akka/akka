@@ -105,7 +105,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
         }
         logMeasurement(numberOfClients, durationNs, totalNumberOfOrders)
       }
-      clients.foreach(_.stop())
+      clients.foreach(system.stop(_))
     }
   }
 

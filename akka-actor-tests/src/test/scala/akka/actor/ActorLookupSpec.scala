@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
+import akka.dispatch.Await
 
 object ActorLookupSpec {
 
@@ -36,7 +37,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
   val c1 = system.actorOf(p, "c1")
   val c2 = system.actorOf(p, "c2")
-  val c21 = (c2 ? Create("c21")).as[ActorRef].get
+  val c21 = Await.result((c2 ? Create("c21")).mapTo[ActorRef], timeout.duration)
 
   val user = system.asInstanceOf[ActorSystemImpl].guardian
   val syst = system.asInstanceOf[ActorSystemImpl].systemGuardian
@@ -84,7 +85,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find system-generated actors" in {
       system.actorFor("/user") must be === user
-      system.actorFor("/null") must be === system.deadLetters
+      system.actorFor("/deadLetters") must be === system.deadLetters
       system.actorFor("/system") must be === syst
       system.actorFor(syst.path) must be === syst
       system.actorFor(syst.path.toString) must be === syst
@@ -93,10 +94,10 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(root.path) must be === root
       system.actorFor(root.path.toString) must be === root
       system.actorFor("user") must be === user
-      system.actorFor("null") must be === system.deadLetters
+      system.actorFor("deadLetters") must be === system.deadLetters
       system.actorFor("system") must be === syst
       system.actorFor("user/") must be === user
-      system.actorFor("null/") must be === system.deadLetters
+      system.actorFor("deadLetters/") must be === system.deadLetters
       system.actorFor("system/") must be === syst
     }
 
@@ -122,7 +123,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       f.isCompleted must be === false
       a ! 42
       f.isCompleted must be === true
-      f.get must be === 42
+      Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
       awaitCond(system.actorFor(a.path) == system.deadLetters, 1 second)
     }
@@ -135,7 +136,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find actors by looking up their path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        (looker ? LookupPath(pathOf.path)).get must be === result
+        Await.result(looker ? LookupPath(pathOf.path), timeout.duration) must be === result
       }
       for {
         looker ← all
@@ -145,8 +146,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find actors by looking up their string representation" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        (looker ? LookupString(pathOf.path.toString)).get must be === result
-        (looker ? LookupString(pathOf.path.toString + "/")).get must be === result
+        Await.result(looker ? LookupString(pathOf.path.toString), timeout.duration) must be === result
+        Await.result(looker ? LookupString(pathOf.path.toString + "/"), timeout.duration) must be === result
       }
       for {
         looker ← all
@@ -156,8 +157,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find actors by looking up their root-anchored relative path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
-        (looker ? LookupString(pathOf.path.elements.mkString("/", "/", ""))).get must be === result
-        (looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/"))).get must be === result
+        Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "")), timeout.duration) must be === result
+        Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/")), timeout.duration) must be === result
       }
       for {
         looker ← all
@@ -167,9 +168,9 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
 
     "find actors by looking up their relative path" in {
       def check(looker: ActorRef, result: ActorRef, elems: String*) {
-        (looker ? LookupElems(elems)).get must be === result
-        (looker ? LookupString(elems mkString "/")).get must be === result
-        (looker ? LookupString(elems mkString ("", "/", "/"))).get must be === result
+        Await.result(looker ? LookupElems(elems), timeout.duration) must be === result
+        Await.result(looker ? LookupString(elems mkString "/"), timeout.duration) must be === result
+        Await.result(looker ? LookupString(elems mkString ("", "/", "/")), timeout.duration) must be === result
       }
       check(c1, user, "..")
       for {
@@ -184,11 +185,11 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "find system-generated actors" in {
       def check(target: ActorRef) {
         for (looker ← all) {
-          (looker ? LookupPath(target.path)).get must be === target
-          (looker ? LookupString(target.path.toString)).get must be === target
-          (looker ? LookupString(target.path.toString + "/")).get must be === target
-          (looker ? LookupString(target.path.elements.mkString("/", "/", ""))).get must be === target
-          if (target != root) (looker ? LookupString(target.path.elements.mkString("/", "/", "/"))).get must be === target
+          Await.result(looker ? LookupPath(target.path), timeout.duration) must be === target
+          Await.result(looker ? LookupString(target.path.toString), timeout.duration) must be === target
+          Await.result(looker ? LookupString(target.path.toString + "/"), timeout.duration) must be === target
+          Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "")), timeout.duration) must be === target
+          if (target != root) Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "/")), timeout.duration) must be === target
         }
       }
       for (target ← Seq(root, syst, user, system.deadLetters)) check(target)
@@ -198,7 +199,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       import scala.collection.JavaConverters._
 
       def checkOne(looker: ActorRef, query: Query) {
-        (looker ? query).get must be === system.deadLetters
+        Await.result(looker ? query, timeout.duration) must be === system.deadLetters
       }
       def check(looker: ActorRef) {
         Seq(LookupString("a/b/c"),
@@ -217,21 +218,21 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       val f = c1 ? GetSender(testActor)
       val a = expectMsgType[ActorRef]
       a.path.elements.head must be === "temp"
-      (c2 ? LookupPath(a.path)).get must be === a
-      (c2 ? LookupString(a.path.toString)).get must be === a
-      (c2 ? LookupString(a.path.elements.mkString("/", "/", ""))).get must be === a
-      (c2 ? LookupString("../../" + a.path.elements.mkString("/"))).get must be === a
-      (c2 ? LookupString(a.path.toString + "/")).get must be === a
-      (c2 ? LookupString(a.path.elements.mkString("/", "/", "") + "/")).get must be === a
-      (c2 ? LookupString("../../" + a.path.elements.mkString("/") + "/")).get must be === a
-      (c2 ? LookupElems(Seq("..", "..") ++ a.path.elements)).get must be === a
-      (c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ "")).get must be === a
+      Await.result(c2 ? LookupPath(a.path), timeout.duration) must be === a
+      Await.result(c2 ? LookupString(a.path.toString), timeout.duration) must be === a
+      Await.result(c2 ? LookupString(a.path.elements.mkString("/", "/", "")), timeout.duration) must be === a
+      Await.result(c2 ? LookupString("../../" + a.path.elements.mkString("/")), timeout.duration) must be === a
+      Await.result(c2 ? LookupString(a.path.toString + "/"), timeout.duration) must be === a
+      Await.result(c2 ? LookupString(a.path.elements.mkString("/", "/", "") + "/"), timeout.duration) must be === a
+      Await.result(c2 ? LookupString("../../" + a.path.elements.mkString("/") + "/"), timeout.duration) must be === a
+      Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements), timeout.duration) must be === a
+      Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ ""), timeout.duration) must be === a
       f.isCompleted must be === false
       a ! 42
       f.isCompleted must be === true
-      f.get must be === 42
+      Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
-      awaitCond((c2 ? LookupPath(a.path)).get == system.deadLetters, 1 second)
+      awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration) == system.deadLetters, 1 second)
     }
 
   }

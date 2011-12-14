@@ -78,7 +78,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)
         expectMsg(CurrentState(fsm, 0))
-        forward.stop()
+        system.stop(forward)
         fsm ! "tick"
         expectNoMsg
       }

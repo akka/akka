@@ -57,7 +57,7 @@ class RemoteConnectionManager(
   def isEmpty: Boolean = connections.connections.isEmpty
 
   def shutdown() {
-    state.get.iterable foreach (_.stop()) // shut down all remote connections
+    state.get.iterable foreach (system.stop(_)) // shut down all remote connections
   }
 
   @tailrec
@@ -136,7 +136,7 @@ class RemoteConnectionManager(
         //if we are not able to update the state, we just try again.
         if (!state.compareAndSet(oldState, newState)) {
           // we failed, need compensating action
-          newConnection.stop() // stop the new connection actor and try again
+          system.stop(newConnection) // stop the new connection actor and try again
           putIfAbsent(address, newConnectionFactory) // recur
         } else {
           // we succeeded

@@ -73,6 +73,7 @@ object ActorSystem {
     val ProviderClass = getString("akka.actor.provider")
 
     val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    val ReaperInterval = Duration(getMilliseconds("akka.actor.reaper-interval"), MILLISECONDS)
     val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
@@ -300,7 +301,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
-  def stop()
+  def shutdown()
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -339,7 +340,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (systemGuardian ? CreateChild(props, name)).get match {
+    Await.result(systemGuardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -347,7 +348,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateChild(props, name)).get match {
+    Await.result(guardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -355,9 +356,21 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateRandomNameChild(props)).get match {
+    Await.result(guardian ? CreateRandomNameChild(props), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
+    }
+  }
+
+  def stop(actor: ActorRef): Unit = {
+    implicit val timeout = settings.CreationTimeout
+    val path = actor.path
+    val guard = guardian.path
+    val sys = systemGuardian.path
+    path.parent match {
+      case `guard` ⇒ Await.result(guardian ? StopChild(actor), timeout.duration)
+      case `sys`   ⇒ Await.result(systemGuardian ? StopChild(actor), timeout.duration)
+      case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
 
@@ -423,18 +436,23 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
+    _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
   }
+
+  @volatile
+  private var _locker: Locker = _ // initialized in start()
+  def locker = _locker
 
   def start() = _start
 
   def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
-  def stop() {
-    guardian.stop()
+  def shutdown() {
+    stop(guardian)
   }
 
   /**

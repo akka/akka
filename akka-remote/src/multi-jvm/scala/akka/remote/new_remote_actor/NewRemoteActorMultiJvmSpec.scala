@@ -3,6 +3,7 @@ package akka.remote.new_remote_actor
 import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.testkit.DefaultTimeout
+import akka.dispatch.Await
 
 object NewRemoteActorMultiJvmSpec {
   val NrOfNodes = 2
@@ -40,8 +41,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
       barrier("start")
 
       val actor = system.actorOf(Props[SomeActor], "service-hello")
-      val result = (actor ? "identify").get
-      result must equal("node1")
+      Await.result(actor ? "identify", timeout.duration) must equal("node1")
 
       barrier("done")
     }

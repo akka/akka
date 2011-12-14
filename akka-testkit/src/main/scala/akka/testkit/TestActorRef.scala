@@ -11,8 +11,8 @@ import akka.actor.Props._
 import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventStream
-import akka.dispatch.{ DefaultDispatcherPrerequisites, DispatcherPrerequisites, Mailbox, Envelope }
 import scala.collection.immutable.Stack
+import akka.dispatch._
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -69,8 +69,10 @@ class TestActorRef[T <: Actor](
     // volatile mailbox read to bring in actor field
     if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated")
     underlying.actor.asInstanceOf[T] match {
-      case null ⇒ ?(InternalGetActor)(underlying.system.settings.ActorTimeout).get.asInstanceOf[T]
-      case ref  ⇒ ref
+      case null ⇒
+        val t = underlying.system.settings.ActorTimeout
+        Await.result(?(InternalGetActor)(t), t.duration).asInstanceOf[T]
+      case ref ⇒ ref
     }
   }
 

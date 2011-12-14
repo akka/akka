@@ -99,28 +99,6 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   /**
    * Creates an thread based dispatcher serving a single actor through the same single thread.
-   * Uses the default timeout
-   * <p/>
-   * E.g. each actor consumes its own thread.
-   */
-  def newPinnedDispatcher(actor: LocalActorRef) = actor match {
-    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", MailboxType, settings.DispatcherDefaultShutdown)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.path.toString, MailboxType, settings.DispatcherDefaultShutdown)
-  }
-
-  /**
-   * Creates an thread based dispatcher serving a single actor through the same single thread.
-   * If capacity is negative, it's Integer.MAX_VALUE
-   * <p/>
-   * E.g. each actor consumes its own thread.
-   */
-  def newPinnedDispatcher(actor: LocalActorRef, mailboxType: MailboxType) = actor match {
-    case null ⇒ new PinnedDispatcher(prerequisites, null, "anon", mailboxType, settings.DispatcherDefaultShutdown)
-    case some ⇒ new PinnedDispatcher(prerequisites, some.underlying, some.path.toString, mailboxType, settings.DispatcherDefaultShutdown)
-  }
-
-  /**
-   * Creates an thread based dispatcher serving a single actor through the same single thread.
    * <p/>
    * E.g. each actor consumes its own thread.
    */

@@ -26,7 +26,7 @@ class ConfigDocSpec extends WordSpec with MustMatchers {
     val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
     //#custom-config
 
-    system.stop()
+    system.shutdown()
 
   }
 

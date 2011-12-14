@@ -6,7 +6,7 @@ Dispatchers (Scala)
 .. sidebar:: Contents
 
    .. contents:: :local:
-
+   
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions of threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
@@ -29,7 +29,7 @@ Setting the dispatcher
 
 You specify the dispatcher to use when creating an actor.
 
-.. includecode:: code/DispatcherDocSpec.scala
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala
    :include: imports,defining-dispatcher
 
 Types of dispatchers
@@ -40,14 +40,14 @@ There are 4 different types of message dispatchers:
 * Thread-based (Pinned)
 * Event-based
 * Priority event-based
-* Work-stealing (Balancing)
+* Work-sharing (Balancing)
 
 It is recommended to define the dispatcher in :ref:`configuration` to allow for tuning for different environments.
 
 Example of a custom event-based dispatcher, which can be fetched with ``system.dispatcherFactory.lookup("my-dispatcher")``
 as in the example above:
 
-.. includecode:: code/DispatcherDocSpec.scala#my-dispatcher-config
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
 
 Default values are taken from ``default-dispatcher``, i.e. all options doesn't need to be defined.
 
@@ -69,11 +69,9 @@ has worse performance and scalability than the event-based dispatcher but works 
 a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with
 this dispatcher is that Actors do not block threads for each other.
 
-FIXME PN: Is this the way to configure a PinnedDispatcher, and then why "A ``PinnedDispatcher`` cannot be shared between actors."
+The ``PinnedDispatcher`` can't be configured, but is created and associated with an actor like this:
 
-The ``PinnedDispatcher`` is configured as a event-based dispatcher with with core pool size of 1.
-
-.. includecode:: code/DispatcherDocSpec.scala#my-pinned-config
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#defining-pinned-dispatcher
 
 Event-based
 ^^^^^^^^^^^
@@ -101,7 +99,7 @@ thread as a way to slow him down and balance producer/consumer.
 
 Here is an example of a bounded mailbox:
 
-.. includecode:: code/DispatcherDocSpec.scala#my-bounded-config
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-bounded-config
 
 The standard :class:`Dispatcher` allows you to define the ``throughput`` it
 should have, as shown above. This defines the number of messages for a specific
@@ -118,20 +116,23 @@ Priority event-based
 
 Sometimes it's useful to be able to specify priority order of messages, that is done by using Dispatcher and supply
 an UnboundedPriorityMailbox or BoundedPriorityMailbox with a ``java.util.Comparator[Envelope]`` or use a
-``akka.dispatch.PriorityGenerator`` (recommended):
+``akka.dispatch.PriorityGenerator`` (recommended).
 
 Creating a Dispatcher using PriorityGenerator:
 
-.. includecode:: code/DispatcherDocSpec.scala#prio-dispatcher
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher
 
-Work-stealing event-based
+Work-sharing event-based
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``BalancingDispatcher`` is a variation of the ``Dispatcher`` in which Actors of the same type can be set up to
 share this dispatcher and during execution time the different actors will steal messages from other actors if they
-have less messages to process. This can be a great way to improve throughput at the cost of a little higher latency.
+have less messages to process. 
+Although the technique used in this implementation is commonly known as "work stealing", the actual implementation is probably
+best described as "work donating" because the actor of which work is being stolen takes the initiative. 
+This can be a great way to improve throughput at the cost of a little higher latency.
 
-.. includecode:: code/DispatcherDocSpec.scala#my-balancing-config
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-balancing-config
 
 Here is an article with some more information: `Load Balancing Actors with Work Stealing Techniques <http://janvanbesien.blogspot.com/2010/03/load-balancing-actors-with-work.html>`_
 Here is another article discussing this particular dispatcher: `Flexible load balancing with Akka in Scala <http://vasilrem.com/blog/software-development/flexible-load-balancing-with-akka-in-scala/>`_
@@ -162,7 +163,7 @@ Per-instance based configuration
 
 You can also do it on a specific dispatcher instance.
 
-.. includecode:: code/DispatcherDocSpec.scala#my-bounded-config
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-bounded-config
 
 
 For the ``PinnedDispatcher``, it is non-shareable between actors, and associates a dedicated Thread with the actor.
