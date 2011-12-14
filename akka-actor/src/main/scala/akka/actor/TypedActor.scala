@@ -330,10 +330,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               if (m.returnsFuture_?) {
                 val s = sender
                 m(me).asInstanceOf[Future[Any]] onComplete {
-                  _.value.get match {
-                    case Left(f)  ⇒ s ! Status.Failure(f)
-                    case Right(r) ⇒ s ! r
-                  }
+                  case Left(f)  ⇒ s ! Status.Failure(f)
+                  case Right(r) ⇒ s ! r
                 }
               } else {
                 sender ! m(me)

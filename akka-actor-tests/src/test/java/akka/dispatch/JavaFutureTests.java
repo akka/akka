@@ -3,6 +3,7 @@ package akka.dispatch;
 import akka.actor.Timeout;
 import akka.actor.ActorSystem;
 
+import akka.japi.*;
 import akka.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,10 +15,6 @@ import java.lang.Iterable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import akka.japi.Function;
-import akka.japi.Function2;
-import akka.japi.Procedure;
-import akka.japi.Option;
 import akka.testkit.AkkaSpec;
 
 public class JavaFutureTests {
@@ -97,8 +94,8 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
-    f.onComplete(new Procedure<Future<String>>() {
-      public void apply(akka.dispatch.Future<String> future) {
+    f.onComplete(new Procedure2<Throwable,String>() {
+      public void apply(Throwable t, String r) {
         latch.countDown();
       }
     });
