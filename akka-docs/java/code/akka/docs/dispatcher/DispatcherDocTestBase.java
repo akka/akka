@@ -43,7 +43,7 @@ public class DispatcherDocTestBase {
 
   @After
   public void tearDown() {
-    system.stop();
+    system.shutdown();
   }
 
   @Test
