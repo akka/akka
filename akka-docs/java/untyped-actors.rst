@@ -39,6 +39,23 @@ Here is an example:
 
 .. includecode:: code/akka/docs/actor/MyUntypedActor.java#my-untyped-actor
 
+Props
+-----
+
+``Props`` is a configuration class to specify options for the creation
+of actors. Here are some examples on how to create a ``Props`` instance.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props-config
+
+
+Creating Actors with Props
+--------------------------
+
+Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
+
+
 Creating Actors with default constructor
 ----------------------------------------
 
@@ -86,23 +103,6 @@ Here is an example:
 
 This way of creating the Actor is also great for integrating with Dependency Injection
 (DI) frameworks like Guice or Spring.
-
-
-Props
------
-
-``Props`` is a configuration class to specify options for the creation
-of actors. Here are some examples on how to create a ``Props`` instance.
-
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props-config
-
-
-Creating Actors with Props
---------------------------
-
-Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
-
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
 
 
 UntypedActor API
