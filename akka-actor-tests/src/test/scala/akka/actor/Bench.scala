@@ -85,7 +85,7 @@ object Chameneos {
         sumMeetings += i
         if (numFaded == numChameneos) {
           Chameneos.end = System.currentTimeMillis
-          self.stop()
+          context.stop(self)
         }
 
       case msg @ Meet(a, c) ⇒
@@ -107,10 +107,11 @@ object Chameneos {
   def run {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
-    val system = ActorSystem().actorOf(Props(new Mall(1000000, 4)))
+    val system = ActorSystem()
+    val actor = system.actorOf(Props(new Mall(1000000, 4)))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
-    system.stop()
+    system.shutdown()
   }
 
   def main(args: Array[String]): Unit = run

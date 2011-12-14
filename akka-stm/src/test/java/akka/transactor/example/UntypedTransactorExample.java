@@ -39,9 +39,9 @@ public class UntypedTransactorExample {
       }
     }
 
-    counter1.stop();
-    counter2.stop();
+    application.stop(counter1);
+    application.stop(counter2);
 
-    application.stop();
+    application.shutdown();
   }
 }

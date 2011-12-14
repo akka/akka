@@ -77,7 +77,7 @@ object ActorModelSpec {
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
-      case CountDownNStop(l)            ⇒ ack; l.countDown(); self.stop(); busy.switchOff()
+      case CountDownNStop(l)            ⇒ ack; l.countDown(); context.stop(self); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
       case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
@@ -239,7 +239,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertDispatcher(dispatcher)(stops = 0)
       val a = newTestActor(dispatcher)
       assertDispatcher(dispatcher)(stops = 0)
-      a.stop()
+      system.stop(a)
       assertDispatcher(dispatcher)(stops = 1)
       assertRef(a, dispatcher)(
         suspensions = 0,
@@ -260,7 +260,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
 
       assertDispatcher(dispatcher)(stops = 2)
 
-      a2.stop
+      system.stop(a2)
       assertDispatcher(dispatcher)(stops = 3)
     }
 
@@ -279,7 +279,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertCountDown(oneAtATime, (1.5 seconds).dilated.toMillis, "Processed message when allowed")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 3, msgsProcessed = 3)
 
-      a.stop()
+      system.stop(a)
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 3, msgsProcessed = 3)
     }
 
@@ -298,7 +298,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertCountDown(counter, 3.seconds.dilated.toMillis, "Should process 200 messages")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 200, msgsProcessed = 200)
 
-      a.stop()
+      system.stop(a)
     }
 
     def spawn(f: ⇒ Unit) {
@@ -328,7 +328,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
         suspensions = 1, resumes = 1)
 
-      a.stop()
+      system.stop(a)
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1,
         suspensions = 1, resumes = 1)
     }
@@ -370,7 +370,7 @@ abstract class ActorModelSpec extends AkkaSpec with DefaultTimeout {
             throw e
         }
         assertCountDown(stopLatch, waitTime, "Expected all children to stop")
-        boss.stop()
+        system.stop(boss)
       }
       for (run ← 1 to 3) {
         flood(50000)
@@ -447,8 +447,8 @@ class DispatcherModelSpec extends ActorModelSpec {
 
       aStop.countDown()
 
-      a.stop
-      b.stop
+      system.stop(a)
+      system.stop(b)
 
       while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
 
@@ -484,8 +484,8 @@ class BalancingDispatcherModelSpec extends ActorModelSpec {
 
       aStop.countDown()
 
-      a.stop
-      b.stop
+      system.stop(a)
+      system.stop(b)
 
       while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
 

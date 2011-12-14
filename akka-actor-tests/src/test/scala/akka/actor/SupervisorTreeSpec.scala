@@ -35,7 +35,7 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeou
           expectMsg(middleActor.path)
           expectMsg(lastActor.path)
           expectNoMsg(2 seconds)
-          headActor.stop()
+          system.stop(headActor)
         }
       }
     }

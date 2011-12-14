@@ -29,7 +29,7 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
         try {
           val f = echo ? "hallo"
           intercept[FutureTimeoutException] { f.await }
-        } finally { echo.stop }
+        } finally { system.stop(echo) }
       }
     }
 
@@ -41,14 +41,14 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
           val f = (echo ? "hallo").mapTo[String]
           intercept[FutureTimeoutException] { f.await }
           f.value must be(None)
-        } finally { echo.stop }
+        } finally { system.stop(echo) }
       }
     }
 
     "use explicitly supplied timeout" in {
       within(testTimeout - 100.millis, testTimeout + 300.millis) {
         val echo = actorWithTimeout(Props.defaultTimeout)
-        try { (echo.?("hallo", testTimeout)).as[String] must be(None) } finally { echo.stop }
+        try { (echo.?("hallo", testTimeout)).as[String] must be(None) } finally { system.stop(echo) }
       }
     }
   }

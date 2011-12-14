@@ -196,9 +196,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       f1.get must equal(ByteString("Hello World!1"))
       f2.get must equal(ByteString("Hello World!2"))
       f3.get must equal(ByteString("Hello World!3"))
-      client.stop
-      server.stop
-      ioManager.stop
+      system.stop(client)
+      system.stop(server)
+      system.stop(ioManager)
     }
 
     "run echo server under high load" in {
@@ -210,9 +210,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
-      client.stop
-      server.stop
-      ioManager.stop
+      system.stop(client)
+      system.stop(server)
+      system.stop(ioManager)
     }
 
     "run echo server under high load with small buffer" in {
@@ -224,9 +224,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(f.get.size === 1000)
-      client.stop
-      server.stop
-      ioManager.stop
+      system.stop(client)
+      system.stop(server)
+      system.stop(ioManager)
     }
 
     "run key-value store" in {
@@ -250,10 +250,10 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       f4.get must equal("OK")
       f5.get must equal(ByteString("I'm a test!"))
       f6.get must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
-      client1.stop
-      client2.stop
-      server.stop
-      ioManager.stop
+      system.stop(client1)
+      system.stop(client2)
+      system.stop(server)
+      system.stop(ioManager)
     }
   }
 

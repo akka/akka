@@ -137,7 +137,10 @@ trait LoggingBus extends ActorEventBus {
     } {
       // this is very necessary, else you get infinite loop with DeadLetter
       unsubscribe(logger)
-      logger.stop()
+      logger match {
+        case ref: InternalActorRef ⇒ ref.stop()
+        case _                     ⇒
+      }
     }
     publish(Debug(simpleName(this), "all default loggers stopped"))
   }

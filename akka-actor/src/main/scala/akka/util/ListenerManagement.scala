@@ -4,13 +4,15 @@
 
 package akka.util
 
+import akka.actor.Actor
+
 import java.util.concurrent.ConcurrentSkipListSet
 import akka.actor.{ ActorInitializationException, ActorRef }
 
 /**
  * A manager for listener actors. Intended for mixin by observables.
  */
-trait ListenerManagement {
+trait ListenerManagement { this: Actor ⇒
 
   private val listeners = new ConcurrentSkipListSet[ActorRef]
 
@@ -33,7 +35,7 @@ trait ListenerManagement {
    */
   def removeListener(listener: ActorRef) {
     listeners remove listener
-    if (manageLifeCycleOfListeners) listener.stop()
+    if (manageLifeCycleOfListeners) context.stop(listener)
   }
 
   /*

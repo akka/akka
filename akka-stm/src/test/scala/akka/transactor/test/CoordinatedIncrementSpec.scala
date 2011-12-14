@@ -74,8 +74,8 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
       for (counter ← counters) {
         (counter ? GetCount).as[Int].get must be === 1
       }
-      counters foreach (_.stop())
-      failer.stop()
+      counters foreach (system.stop(_))
+      system.stop(failer)
     }
 
     "increment no counters with a failing transaction" in {
@@ -91,8 +91,8 @@ class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
         for (counter ← counters) {
           (counter ? GetCount).as[Int].get must be === 0
         }
-        counters foreach (_.stop())
-        failer.stop()
+        counters foreach (system.stop(_))
+        system.stop(failer)
       }
     }
   }

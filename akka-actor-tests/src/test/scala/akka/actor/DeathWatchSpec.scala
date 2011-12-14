@@ -43,9 +43,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      monitor1.stop()
-      monitor2.stop()
-      monitor3.stop()
+      system.stop(monitor1)
+      system.stop(monitor2)
+      system.stop(monitor3)
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
@@ -69,9 +69,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectTerminationOf(terminal)
       expectTerminationOf(terminal)
 
-      monitor1.stop()
-      monitor2.stop()
-      monitor3.stop()
+      system.stop(monitor1)
+      system.stop(monitor2)
+      system.stop(monitor3)
     }
 
     "notify with a Terminated message once when an Actor is stopped but not when restarted" in {
@@ -90,7 +90,7 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         expectTerminationOf(terminal)
         terminal.isTerminated must be === true
 
-        supervisor.stop()
+        system.stop(supervisor)
       }
     }
 
@@ -99,9 +99,9 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         case class FF(fail: Failed)
         val supervisor = system.actorOf(Props[Supervisor]
           .withFaultHandler(new OneForOneStrategy(FaultHandlingStrategy.makeDecider(List(classOf[Exception])), Some(0)) {
-            override def handleFailure(child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
+            override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
               testActor.tell(FF(Failed(cause)), child)
-              super.handleFailure(child, cause, stats, children)
+              super.handleFailure(context, child, cause, stats, children)
             }
           }))
 

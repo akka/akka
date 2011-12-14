@@ -25,7 +25,9 @@ which explains the existence of the fourth choice (as a supervisor also is
 subordinate to another supervisor higher up) and has implications on the first
 three: resuming an actor resumes all its subordinates, restarting an actor
 entails restarting all its subordinates, similarly stopping an actor will also
-stop all its subordinates.
+stop all its subordinates. It should be noted that the default behavior of an
+actor is to stop all its children before restarting, but this can be overridden
+using the :meth:`preRestart` hook.
 
 Each supervisor is configured with a function translating all possible failure
 causes (i.e. exceptions) into one of the four choices given above; notably,
@@ -69,14 +71,12 @@ that the restart is not visible outside of the actor itself with the notable
 exception that the message during which the failure occurred is not
 re-processed.
 
-Restarting an actor in this way recursively restarts all its children in the
-same fashion, whereby all parent–child relationships are kept intact. If this
-is not the right approach for certain sub-trees of the supervision hierarchy,
-you should choose to stop the failed actor instead, which will terminate all
-its children recursively, after which that part of the system may be recreated
-from scratch. The second part of this action may be implemented using the
-lifecycle monitoring described next or using lifecycle callbacks as described
-in :class:`Actor`.
+Restarting an actor in this way recursively terminates all its children. If 
+this is not the right approach for certain sub-trees of the supervision 
+hierarchy, you may choose to retain the children, in which case they will be 
+recursively restarted in the same fashion as the failed parent (with the same 
+default to terminate children, which must be overridden on a per-actor basis, 
+see :class:`Actor` for details).
 
 What Lifecycle Monitoring Means
 -------------------------------

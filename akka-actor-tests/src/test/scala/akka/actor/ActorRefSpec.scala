@@ -42,7 +42,7 @@ object ActorRefSpec {
       case "work" ⇒ {
         work
         sender ! "workDone"
-        self.stop()
+        context.stop(self)
       }
       case ReplyTo(replyTo) ⇒ {
         work
@@ -344,8 +344,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       latch.await
 
-      clientRef.stop()
-      serverRef.stop()
+      system.stop(clientRef)
+      system.stop(serverRef)
     }
 
     "stop when sent a poison pill" in {

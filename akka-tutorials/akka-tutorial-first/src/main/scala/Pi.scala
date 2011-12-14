@@ -62,7 +62,7 @@ object Pi extends App {
         pi += value
         nrOfResults += 1
         // Stops this actor and all its supervised children
-        if (nrOfResults == nrOfMessages) self.stop()
+        if (nrOfResults == nrOfMessages) context.stop(self)
       //#handle-messages
     }
     //#master-receive
@@ -98,7 +98,7 @@ object Pi extends App {
     latch.await()
 
     // Shut down the system
-    system.stop()
+    system.shutdown()
   }
 }
 //#app

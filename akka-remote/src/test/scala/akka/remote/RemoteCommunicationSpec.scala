@@ -61,7 +61,7 @@ akka {
   implicit val timeout = system.settings.ActorTimeout
 
   override def atTermination() {
-    other.stop()
+    other.shutdown()
   }
 
   "Remoting" must {
@@ -103,7 +103,7 @@ akka {
       expectMsg("preRestart")
       r ! 42
       expectMsg(42)
-      r.stop()
+      system.stop(r)
       expectMsg("postStop")
     }
 
