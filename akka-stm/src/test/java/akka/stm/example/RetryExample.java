@@ -48,6 +48,6 @@ public class RetryExample {
 
     application.stop(transferer);
 
-    application.stop();
+    application.shutdown();
   }
 }

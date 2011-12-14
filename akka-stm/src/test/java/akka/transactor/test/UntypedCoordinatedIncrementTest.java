@@ -44,7 +44,7 @@ public class UntypedCoordinatedIncrementTest {
 
   @AfterClass
   public static void afterAll() {
-    system.stop();
+    system.shutdown();
     system = null;
   }
 
@@ -113,6 +113,6 @@ public class UntypedCoordinatedIncrementTest {
 
   @After
   public void stop() {
-    application.stop();
+    application.shutdown();
   }
 }

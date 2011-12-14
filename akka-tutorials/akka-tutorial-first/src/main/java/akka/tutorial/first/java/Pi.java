@@ -168,6 +168,6 @@ public class Pi {
         latch.await();
 
         // Shut down the system
-        system.stop();
+        system.shutdown();
     }
 }

@@ -124,7 +124,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
           (deadLetters eq a.deadLetters) must be(true)
         }
       } finally {
-        a.stop()
+        a.shutdown()
       }
     }
   }

@@ -102,6 +102,6 @@ object Pi extends App {
     latch.await()
 
     // Shut down the system
-    system.stop()
+    system.shutdown()
   }
 }

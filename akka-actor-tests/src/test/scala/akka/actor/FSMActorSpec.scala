@@ -233,7 +233,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           }
         }
       } finally {
-        fsmEventSystem.stop()
+        fsmEventSystem.shutdown()
       }
     }
 

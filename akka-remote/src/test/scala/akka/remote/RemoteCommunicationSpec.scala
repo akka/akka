@@ -61,7 +61,7 @@ akka {
   implicit val timeout = system.settings.ActorTimeout
 
   override def atTermination() {
-    other.stop()
+    other.shutdown()
   }
 
   "Remoting" must {

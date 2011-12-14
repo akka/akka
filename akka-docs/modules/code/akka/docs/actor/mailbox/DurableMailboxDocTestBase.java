@@ -31,7 +31,7 @@ public class DurableMailboxDocTestBase {
     }));
     //#define-dispatcher
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   public static class MyUntypedActor extends UntypedActor {

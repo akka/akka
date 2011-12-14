@@ -43,6 +43,6 @@ public class UntypedCoordinatedExample {
     application.stop(counter1);
     application.stop(counter2);
 
-    application.stop();
+    application.shutdown();
   }
 }

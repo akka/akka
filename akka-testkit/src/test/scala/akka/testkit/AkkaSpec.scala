@@ -64,7 +64,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
-    system.stop()
+    system.shutdown()
     try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
       case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
@@ -96,7 +96,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
       spec.ref foreach (_.isTerminated must not be true)
-      system.stop()
+      system.shutdown()
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
@@ -139,15 +139,15 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
-        system.stop()
+        system.shutdown()
         latch.await(2 seconds)
         (davyJones ? "Die!").get must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        system.stop()
-        otherSystem.stop()
+        system.shutdown()
+        otherSystem.shutdown()
       }
     }
 

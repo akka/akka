@@ -300,7 +300,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
-  def stop()
+  def shutdown()
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -453,7 +453,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
   def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
 
-  def stop() {
+  def shutdown() {
     stop(guardian)
   }
 

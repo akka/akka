@@ -42,7 +42,7 @@ public class UntypedActorTestBase {
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#system-actorOf
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -52,7 +52,7 @@ public class UntypedActorTestBase {
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#context-actorOf
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -67,7 +67,7 @@ public class UntypedActorTestBase {
     }));
     //#creating-constructor
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -80,7 +80,7 @@ public class UntypedActorTestBase {
         "myactor");
     //#creating-props
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -105,7 +105,7 @@ public class UntypedActorTestBase {
       }
     }
     //#using-ask
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -113,7 +113,7 @@ public class UntypedActorTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyReceivedTimeoutUntypedActor.class));
     myActor.tell("Hello");
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -123,7 +123,7 @@ public class UntypedActorTestBase {
     //#poison-pill
     myActor.tell(poisonPill());
     //#poison-pill
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -133,7 +133,7 @@ public class UntypedActorTestBase {
     //#kill
     victim.tell(kill());
     //#kill
-    system.stop();
+    system.shutdown();
   }
 
   @Test
@@ -147,7 +147,7 @@ public class UntypedActorTestBase {
     myActor.tell("foo");
     myActor.tell("bar");
     myActor.tell("bar");
-    system.stop();
+    system.shutdown();
   }
 
   public static class MyActor extends UntypedActor {

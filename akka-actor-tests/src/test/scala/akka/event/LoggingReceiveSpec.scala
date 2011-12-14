@@ -52,9 +52,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
   }
 
   override def afterAll {
-    appLogging.stop()
-    appAuto.stop()
-    appLifecycle.stop()
+    appLogging.shutdown()
+    appAuto.shutdown()
+    appLifecycle.shutdown()
   }
 
   "A LoggingReceive" must {

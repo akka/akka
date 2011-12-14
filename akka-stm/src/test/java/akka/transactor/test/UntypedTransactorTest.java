@@ -41,7 +41,7 @@ public class UntypedTransactorTest {
 
   @AfterClass
   public static void afterAll() {
-    system.stop();
+    system.shutdown();
     system = null;
   }
 

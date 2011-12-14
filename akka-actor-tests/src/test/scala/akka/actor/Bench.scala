@@ -111,7 +111,7 @@ object Chameneos {
     val actor = system.actorOf(Props(new Mall(1000000, 4)))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
-    system.stop()
+    system.shutdown()
   }
 
   def main(args: Array[String]): Unit = run
