@@ -148,8 +148,6 @@ object Duration {
   trait Infinite {
     this: Duration ⇒
 
-    override def equals(other: Any) = false
-
     def +(other: Duration): Duration =
       other match {
         case _: this.type ⇒ this
@@ -192,7 +190,7 @@ object Duration {
    */
   val Inf: Duration = new Duration with Infinite {
     override def toString = "Duration.Inf"
-    def compare(other: Duration) = 1
+    def compare(other: Duration) = if (other eq this) 0 else 1
     def unary_- : Duration = MinusInf
   }
 
@@ -202,7 +200,7 @@ object Duration {
    */
   val MinusInf: Duration = new Duration with Infinite {
     override def toString = "Duration.MinusInf"
-    def compare(other: Duration) = -1
+    def compare(other: Duration) = if (other eq this) 0 else -1
     def unary_- : Duration = Inf
   }
 
