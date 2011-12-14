@@ -46,8 +46,8 @@ public class RetryExample {
     System.out.println("Account 2: " + acc2);
     // Account 2: 600.0
 
-    transferer.stop();
+    application.stop(transferer);
 
-    application.stop();
+    application.shutdown();
   }
 }

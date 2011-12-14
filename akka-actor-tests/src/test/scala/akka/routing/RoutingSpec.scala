@@ -43,7 +43,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val c1, c2 = expectMsgType[ActorRef]
       watch(router)
       watch(c2)
-      c2.stop()
+      system.stop(c2)
       expectMsg(Terminated(c2))
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
@@ -54,7 +54,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         }
         res == Seq(c1, c1)
       }
-      c1.stop()
+      system.stop(c1)
       expectMsg(Terminated(router))
     }
 
@@ -324,8 +324,8 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = system.actorOf(Props(new Actor {
       def receive = {
-        case Stop(None)                     ⇒ self.stop()
-        case Stop(Some(_id)) if (_id == id) ⇒ self.stop()
+        case Stop(None)                     ⇒ context.stop(self)
+        case Stop(Some(_id)) if (_id == id) ⇒ context.stop(self)
         case _id: Int if (_id == id)        ⇒
         case x ⇒ {
           Thread sleep 100 * id

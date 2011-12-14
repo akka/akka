@@ -96,7 +96,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
             }
             """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
 
-        ActorSystem("invalid", invalidDeployerConf).stop()
+        ActorSystem("invalid", invalidDeployerConf).shutdown()
       }
     }
 

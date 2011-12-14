@@ -24,7 +24,7 @@ trait TypedActorFactory {
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null ⇒ false
-    case ref  ⇒ ref.stop; true
+    case ref  ⇒ ref.asInstanceOf[InternalActorRef].stop; true
   }
 
   /**

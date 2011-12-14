@@ -187,7 +187,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       }
       val ref = system.actorOf(Props(fsm))
       started.await
-      ref.stop()
+      system.stop(ref)
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
     }
 
@@ -233,7 +233,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
           }
         }
       } finally {
-        fsmEventSystem.stop()
+        fsmEventSystem.shutdown()
       }
     }
 

@@ -87,7 +87,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
         state.finished.await
         1.second.dilated.sleep()
         actor.isTerminated must be(true)
-        supervisor.stop()
+        system.stop(supervisor)
       }
     }
   }

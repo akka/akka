@@ -111,11 +111,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
 
   /**
-   * Shuts down the actor its dispatcher and message queue.
-   */
-  def stop(): Unit
-
-  /**
    * Is the actor shut down?
    */
   def isTerminated: Boolean
@@ -192,6 +187,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
+  def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
   def getParent: InternalActorRef
   /**

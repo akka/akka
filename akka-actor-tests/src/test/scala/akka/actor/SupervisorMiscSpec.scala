@@ -24,7 +24,7 @@ class SupervisorMiscSpec extends AkkaSpec with DefaultTimeout {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }
           protected def receive = {
             case "status" ⇒ this.sender ! "OK"
-            case _        ⇒ this.self.stop()
+            case _        ⇒ this.context.stop(self)
           }
         })
 

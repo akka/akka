@@ -99,7 +99,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(2)
 
-      pool.stop()
+      system.stop(pool)
     }
 
     "pass ticket #705" in {
@@ -129,7 +129,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
           _.await.resultOrException.get must be("Response")
         }
       } finally {
-        pool.stop()
+        system.stop(pool)
       }
     }
 
@@ -194,7 +194,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be(4)
 
-      pool.stop()
+      system.stop(pool)
     }
 
     "grow as needed under mailbox pressure" in {
@@ -250,7 +250,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be >= (3)
 
-      pool.stop()
+      system.stop(pool)
     }
 
     "round robin" in {
@@ -281,7 +281,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch1.await
       delegates.size must be(1)
 
-      pool1.stop()
+      system.stop(pool1)
 
       val latch2 = TestLatch(2)
       delegates.clear()
@@ -309,7 +309,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       latch2.await
       delegates.size must be(2)
 
-      pool2.stop()
+      system.stop(pool2)
     }
 
     "backoff" in {
@@ -355,7 +355,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       (pool ? ActorPool.Stat).as[ActorPool.Stats].get.size must be <= (z)
 
-      pool.stop()
+      system.stop(pool)
     }
   }
 }

@@ -75,7 +75,7 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
           ok must be(true)
           logMeasurement(numberOfClients, durationNs, stat)
         }
-        clients.foreach(_.stop())
+        clients.foreach(system.stop(_))
 
       }
     }

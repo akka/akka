@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
-import akka.actor.{ Props, Actor, ActorRef }
+import akka.actor.{ Props, Actor, ActorRef, ActorSystem }
 import java.util.Comparator
 import akka.japi.{ Procedure, Function }
 
@@ -33,7 +33,7 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
 
   def classifierFor(event: BusType#Event): BusType#Classifier
 
-  def disposeSubscriber(subscriber: BusType#Subscriber): Unit
+  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit
 
   busName must {
 
@@ -58,7 +58,7 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
     "not allow to unsubscribe non-existing subscriber" in {
       val sub = createNewSubscriber()
       bus.unsubscribe(sub, classifier) must be === false
-      disposeSubscriber(sub)
+      disposeSubscriber(system, sub)
     }
 
     "not allow for the same subscriber to subscribe to the same channel twice" in {
@@ -80,7 +80,7 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
       subscribers.zip(classifiers) forall { case (s, c) ⇒ bus.subscribe(s, c) } must be === true
       subscribers.zip(classifiers) forall { case (s, c) ⇒ bus.unsubscribe(s, c) } must be === true
 
-      subscribers foreach disposeSubscriber
+      subscribers foreach (disposeSubscriber(system, _))
     }
 
     "publishing events without any subscribers shouldn't be a problem" in {
@@ -113,7 +113,7 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
       subscribers foreach { s ⇒ bus.subscribe(s, classifier) must be === true }
       bus.publish(event)
       range foreach { _ ⇒ expectMsg(event) }
-      subscribers foreach { s ⇒ bus.unsubscribe(s, classifier) must be === true; disposeSubscriber(s) }
+      subscribers foreach { s ⇒ bus.unsubscribe(s, classifier) must be === true; disposeSubscriber(system, s) }
     }
 
     "not publish the given event to any other subscribers than the intended ones" in {
@@ -136,7 +136,7 @@ abstract class EventBusSpec(busName: String) extends AkkaSpec with BeforeAndAfte
     }
 
     "cleanup subscriber" in {
-      disposeSubscriber(subscriber)
+      disposeSubscriber(system, subscriber)
     }
   }
 }
@@ -165,7 +165,7 @@ class ActorEventBusSpec extends EventBusSpec("ActorEventBus") {
 
   def classifierFor(event: BusType#Event) = event.toString
 
-  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = subscriber.stop()
+  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = system.stop(subscriber)
 }
 
 object ScanningEventBusSpec {
@@ -194,7 +194,7 @@ class ScanningEventBusSpec extends EventBusSpec("ScanningEventBus") {
 
   def classifierFor(event: BusType#Event) = event.toString
 
-  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = ()
+  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = ()
 }
 
 object LookupEventBusSpec {
@@ -219,5 +219,5 @@ class LookupEventBusSpec extends EventBusSpec("LookupEventBus") {
 
   def classifierFor(event: BusType#Event) = event.toString
 
-  def disposeSubscriber(subscriber: BusType#Subscriber): Unit = ()
+  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit = ()
 }

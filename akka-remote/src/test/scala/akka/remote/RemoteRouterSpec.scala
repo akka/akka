@@ -40,7 +40,7 @@ akka {
   val other = ActorSystem("remote_sys", conf)
 
   override def atTermination() {
-    other.stop()
+    other.shutdown()
   }
 
   "A Remote Router" must {

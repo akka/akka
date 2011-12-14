@@ -62,6 +62,6 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //This cancels further Ticks to be sent
     cancellable.cancel()
     //#schedule-recurring
-    tickActor.stop()
+    system.stop(tickActor)
   }
 }

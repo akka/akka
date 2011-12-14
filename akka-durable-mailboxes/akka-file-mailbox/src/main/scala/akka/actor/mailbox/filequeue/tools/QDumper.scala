@@ -149,6 +149,6 @@ object QDumper {
       new QueueDumper(filename, system.log)()
     }
 
-    system.stop()
+    system.shutdown()
   }
 }

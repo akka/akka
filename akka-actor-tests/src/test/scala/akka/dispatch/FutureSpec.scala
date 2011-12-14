@@ -120,7 +120,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val future = actor ? "Hello"
           future.await
           test(future, "World")
-          actor.stop()
+          system.stop(actor)
         }
       }
       "throws an exception" must {
@@ -130,7 +130,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             val future = actor ? "Failure"
             future.await
             test(future, "Expected exception; to test fault-tolerance")
-            actor.stop()
+            system.stop(actor)
           }
         }
       }
@@ -144,8 +144,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
           future.await
           test(future, "WORLD")
-          actor1.stop()
-          actor2.stop()
+          system.stop(actor1)
+          system.stop(actor2)
         }
       }
       "will throw an exception" must {
@@ -156,8 +156,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
             future.await
             test(future, "/ by zero")
-            actor1.stop()
-            actor2.stop()
+            system.stop(actor1)
+            system.stop(actor2)
           }
         }
       }
@@ -169,8 +169,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
             future.await
             test(future, "World (of class java.lang.String)")
-            actor1.stop()
-            actor2.stop()
+            system.stop(actor1)
+            system.stop(actor2)
           }
         }
       }
@@ -204,7 +204,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           future1.get must be("10-14")
           assert(checkType(future1, manifest[String]))
           intercept[ClassCastException] { future2.get }
-          actor.stop()
+          system.stop(actor)
         }
       }
 
@@ -233,7 +233,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           future1.get must be("10-14")
           intercept[MatchError] { future2.get }
-          actor.stop()
+          system.stop(actor)
         }
       }
 
@@ -280,7 +280,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           future10.get must be("World")
           future11.get must be("Oops!")
 
-          actor.stop()
+          system.stop(actor)
         }
       }
 
@@ -396,7 +396,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val actor = system.actorOf(Props[TestActor])
         actor ? "Hello" onResult { case "World" ⇒ latch.open }
         assert(latch.tryAwait(5, TimeUnit.SECONDS))
-        actor.stop()
+        system.stop(actor)
       }
 
       "shouldTraverseFutures" in {
@@ -411,7 +411,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo manifest[Int])
         assert(Future.sequence(oddFutures).get.sum === 10000)
-        oddActor.stop()
+        system.stop(oddActor)
 
         val list = (1 to 100).toList
         assert(Future.traverse(list)(x ⇒ Future(x * 2 - 1)).get.sum === 10000)
@@ -470,7 +470,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         assert(r.get === "Hello World!")
 
-        actor.stop
+        system.stop(actor)
       }
 
       "futureComposingWithContinuationsFailureDivideZero" in {
