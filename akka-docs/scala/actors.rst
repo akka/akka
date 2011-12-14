@@ -98,7 +98,7 @@ Here is an example:
 Props
 -----
 
-``Props`` is a configuration object to specify configuration options for the creation
+``Props`` is a configuration class to specify options for the creation
 of actors. Here are some examples on how to create a ``Props`` instance.
 
 .. includecode:: code/ActorDocSpec.scala#creating-props-config
@@ -107,7 +107,7 @@ of actors. Here are some examples on how to create a ``Props`` instance.
 Creating Actors with Props
 --------------------------
 
-Actors are created by passing in the ``Props`` object into the ``actorOf`` factory method.
+Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
 
 .. includecode:: code/ActorDocSpec.scala#creating-props
 
