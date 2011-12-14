@@ -1528,7 +1528,8 @@ when camel is added to the enabled-modules list in :ref:`configuration`, for exa
 
    akka {
      ...
-     enabled-modules = ["camel"] # Options: ["remote", "camel", "http"]
+     # Options: ["remote", "camel", "http"]
+     enabled-modules = ["camel"]
      ...
    }
 
