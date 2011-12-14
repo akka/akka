@@ -5,8 +5,17 @@
 package akka.tutorial.first.java;
 
 //#imports
-import akka.actor.*;
-import akka.routing.RoundRobinRouter;
+import akka.actor.Props;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.InternalActorRef;
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
+import akka.japi.Creator;
+import akka.routing.*;
+import akka.util.Timeout;
+
+import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 //#imports
 

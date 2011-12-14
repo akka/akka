@@ -296,11 +296,15 @@ If the actor does not complete the future, it will expire after the timeout peri
 which is taken from one of the following locations in order of precedence:
 
 #. explicitly given timeout as in ``actor.?("hello")(timeout = 12 millis)``
-#. implicit argument of type :class:`akka.actor.Timeout`, e.g.
+#. implicit argument of type :class:`akka.util.Timeout`, e.g.
 
    ::
 
+<<<<<<< HEAD
      import akka.actor.Timeout
+=======
+     import akka.util.Timeout
+>>>>>>> wip-remove-timeout-jboner
      import akka.util.duration._
 
      implicit val timeout = Timeout(12 millis)
@@ -407,9 +411,14 @@ object.
 Stopping actors
 ===============
 
+<<<<<<< HEAD
 Actors are stopped by invoking the ``stop`` method of the ``ActorContext``
 for child actors or ``stop`` method of the ``ActorSystem`` for top level
 actors. The actual termination of the actor is performed asynchronously, i.e.
+=======
+Actors are stopped by invoking the ``stop`` method of the ``ActorRef``.
+The actual termination of the actor is performed asynchronously, i.e.
+>>>>>>> wip-remove-timeout-jboner
 ``stop`` may return before the actor is stopped.
 
 .. code-block:: scala
