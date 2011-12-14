@@ -2,6 +2,8 @@ package akka.transactor.test;
 
 import static org.junit.Assert.*;
 
+import akka.dispatch.Await;
+import akka.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,7 +11,6 @@ import org.junit.Before;
 
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
-import akka.actor.Actors;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 import akka.testkit.AkkaSpec;
@@ -77,16 +77,9 @@ public class UntypedTransactorTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
-      future.await();
-      if (future.isCompleted()) {
-        Option resultOption = future.result();
-        if (resultOption.isDefined()) {
-          Object result = resultOption.get();
-          int count = (Integer) result;
-          assertEquals(1, count);
-        }
-      }
+      Future<Object> future = counter.ask("GetCount", askTimeout);
+      int count = (Integer) Await.result(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      assertEquals(1, count);
     }
   }
 
@@ -106,16 +99,9 @@ public class UntypedTransactorTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future future = counter.ask("GetCount", askTimeout);
-      future.await();
-      if (future.isCompleted()) {
-        Option resultOption = future.result();
-        if (resultOption.isDefined()) {
-          Object result = resultOption.get();
-          int count = (Integer) result;
-          assertEquals(0, count);
-        }
-      }
+      Future<Object> future = counter.ask("GetCount", askTimeout);
+      int count = (Integer) Await.result(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      assertEquals(0, count);
     }
   }
 

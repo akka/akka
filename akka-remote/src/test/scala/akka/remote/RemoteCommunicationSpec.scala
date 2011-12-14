@@ -6,6 +6,7 @@ package akka.remote
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
+import akka.dispatch.Await
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -80,7 +81,7 @@ akka {
     }
 
     "support ask" in {
-      (here ? "ping").get match {
+      Await.result(here ? "ping", timeout.duration) match {
         case ("pong", s: AskActorRef) ⇒ // good
         case m                        ⇒ fail(m + " was not (pong, AskActorRef)")
       }
@@ -124,8 +125,8 @@ akka {
       myref ! 43
       expectMsg(43)
       lastSender must be theSameInstanceAs remref
-      (l ? "child/..").as[ActorRef].get must be theSameInstanceAs l
-      (system.actorFor(system / "looker" / "child") ? "..").as[ActorRef].get must be theSameInstanceAs l
+      Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+      Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
     }
 
   }

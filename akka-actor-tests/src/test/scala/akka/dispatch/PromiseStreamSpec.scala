@@ -21,9 +21,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         b << q
         c << q()
       }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
+      assert(Await.result(a, timeout.duration) === 1)
+      assert(Await.result(b, timeout.duration) === 2)
+      assert(Await.result(c, timeout.duration) === 3)
     }
 
     "pend" in {
@@ -35,43 +35,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         c << q
       }
       flow { q <<< List(1, 2, 3) }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
-    }
-
-    "timeout" in {
-      val a, c = Promise[Int]()
-      val b = Promise[Int](0)
-      val q = PromiseStream[Int](1000)
-      flow {
-        a << q()
-        b << q()
-        c << q()
-      }
-      Thread.sleep(10)
-      flow {
-        q << (1, 2)
-        q << 3
-      }
-      assert(a.get === 1)
-      intercept[FutureTimeoutException] { b.get }
-      assert(c.get === 3)
-    }
-
-    "timeout again" in {
-      val q = PromiseStream[Int](500)
-      val a = q.dequeue()
-      val b = q.dequeue()
-      q += 1
-      Thread.sleep(500)
-      q += (2, 3)
-      val c = q.dequeue()
-      val d = q.dequeue()
-      assert(a.get === 1)
-      intercept[FutureTimeoutException] { b.get }
-      assert(c.get === 2)
-      assert(d.get === 3)
+      assert(Await.result(a, timeout.duration) === 1)
+      assert(Await.result(b, timeout.duration) === 2)
+      assert(Await.result(c, timeout.duration) === 3)
     }
 
     "pend again" in {
@@ -88,10 +54,10 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         c << q1
         d << q1
       }
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
-      assert(d.get === 4)
+      assert(Await.result(a, timeout.duration) === 1)
+      assert(Await.result(b, timeout.duration) === 2)
+      assert(Await.result(c, timeout.duration) === 3)
+      assert(Await.result(d, timeout.duration) === 4)
     }
 
     "enque" in {
@@ -105,10 +71,10 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       }
       q ++= List(1, 2, 3, 4)
 
-      assert(a.get === 1)
-      assert(b.get === 2)
-      assert(c.get === 3)
-      assert(d.get === 4)
+      assert(Await.result(a, timeout.duration) === 1)
+      assert(Await.result(b, timeout.duration) === 2)
+      assert(Await.result(c, timeout.duration) === 3)
+      assert(Await.result(d, timeout.duration) === 4)
     }
 
     "map" in {
@@ -124,9 +90,9 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       flow {
         qs << ("Hello", "World!", "Test")
       }
-      assert(a.get === 5)
-      assert(b.get === "World!")
-      assert(c.get === 4)
+      assert(Await.result(a, timeout.duration) === 5)
+      assert(Await.result(b, timeout.duration) === "World!")
+      assert(Await.result(c, timeout.duration) === 4)
     }
 
     "not fail under concurrent stress" in {
@@ -162,8 +128,7 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
         }
       }
 
-      val result = future.get
-      assert(result === (1L to 100000L).sum)
+      assert(Await.result(future, timeout.duration) === (1L to 100000L).sum)
     }
   }
 }

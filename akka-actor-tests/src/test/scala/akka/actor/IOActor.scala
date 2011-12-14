@@ -8,9 +8,9 @@ import org.scalatest.BeforeAndAfterEach
 
 import akka.util.ByteString
 import akka.util.cps._
-import akka.dispatch.Future
 import scala.util.continuations._
 import akka.testkit._
+import akka.dispatch.{ Await, Future }
 
 object IOActorSpec {
   import IO._
@@ -193,9 +193,9 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
       val f3 = client ? ByteString("Hello World!3")
-      f1.get must equal(ByteString("Hello World!1"))
-      f2.get must equal(ByteString("Hello World!2"))
-      f3.get must equal(ByteString("Hello World!3"))
+      Await.result(f1, timeout.duration) must equal(ByteString("Hello World!1"))
+      Await.result(f2, timeout.duration) must equal(ByteString("Hello World!2"))
+      Await.result(f3, timeout.duration) must equal(ByteString("Hello World!3"))
       system.stop(client)
       system.stop(server)
       system.stop(ioManager)
@@ -209,7 +209,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065, ioManager)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 1000)
+      assert(Await.result(f, timeout.duration).size === 1000)
       system.stop(client)
       system.stop(server)
       system.stop(ioManager)
@@ -223,7 +223,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8066, ioManager)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(f.get.size === 1000)
+      assert(Await.result(f, timeout.duration).size === 1000)
       system.stop(client)
       system.stop(server)
       system.stop(ioManager)
@@ -239,17 +239,17 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val f1 = client1 ? (('set, "hello", ByteString("World")))
       val f2 = client1 ? (('set, "test", ByteString("No one will read me")))
       val f3 = client1 ? (('get, "hello"))
-      f2.await
+      Await.ready(f2, timeout.duration)
       val f4 = client2 ? (('set, "test", ByteString("I'm a test!")))
-      f4.await
+      Await.ready(f4, timeout.duration)
       val f5 = client1 ? (('get, "test"))
       val f6 = client2 ? 'getall
-      f1.get must equal("OK")
-      f2.get must equal("OK")
-      f3.get must equal(ByteString("World"))
-      f4.get must equal("OK")
-      f5.get must equal(ByteString("I'm a test!"))
-      f6.get must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
+      Await.result(f1, timeout.duration) must equal("OK")
+      Await.result(f2, timeout.duration) must equal("OK")
+      Await.result(f3, timeout.duration) must equal(ByteString("World"))
+      Await.result(f4, timeout.duration) must equal("OK")
+      Await.result(f5, timeout.duration) must equal(ByteString("I'm a test!"))
+      Await.result(f6, timeout.duration) must equal(Map("hello" -> ByteString("World"), "test" -> ByteString("I'm a test!")))
       system.stop(client1)
       system.stop(client2)
       system.stop(server)

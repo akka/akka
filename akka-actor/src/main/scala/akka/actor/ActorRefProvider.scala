@@ -393,7 +393,7 @@ class LocalActorRefProvider(
 
   def dispatcher: MessageDispatcher = system.dispatcher
 
-  lazy val terminationFuture: DefaultPromise[Unit] = new DefaultPromise[Unit](Timeout.never)(dispatcher)
+  lazy val terminationFuture: Promise[Unit] = Promise[Unit]()(dispatcher)
 
   @volatile
   private var extraNames: Map[String, InternalActorRef] = Map()
@@ -431,7 +431,7 @@ class LocalActorRefProvider(
 
   lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
-  val deathWatch = new LocalDeathWatch
+  val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
 
   def init(_system: ActorSystemImpl) {
     system = _system
@@ -480,20 +480,20 @@ class LocalActorRefProvider(
       case t ⇒
         val path = tempPath()
         val name = path.name
-        val a = new AskActorRef(path, tempContainer, deathWatch, t, dispatcher) {
-          override def whenDone() {
-            tempContainer.removeChild(name)
-          }
-        }
+        val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
         tempContainer.addChild(name, a)
+        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.removeChild(name); a.stop() }
+        a.result onComplete { _ ⇒
+          try { a.stop(); f.cancel() }
+          finally { tempContainer.removeChild(name) }
+        }
+
         Some(a)
     }
   }
 }
 
-class LocalDeathWatch extends DeathWatch with ActorClassification {
-
-  def mapSize = 1024
+class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {
 
   override def publish(event: Event): Unit = {
     val monitors = dissociate(classify(event))

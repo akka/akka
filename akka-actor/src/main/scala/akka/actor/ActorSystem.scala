@@ -340,7 +340,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (systemGuardian ? CreateChild(props, name)).get match {
+    Await.result(systemGuardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -348,7 +348,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateChild(props, name)).get match {
+    Await.result(guardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -356,7 +356,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    (guardian ? CreateRandomNameChild(props)).get match {
+    Await.result(guardian ? CreateRandomNameChild(props), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -368,8 +368,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     val guard = guardian.path
     val sys = systemGuardian.path
     path.parent match {
-      case `guard` ⇒ (guardian ? StopChild(actor)).get
-      case `sys`   ⇒ (systemGuardian ? StopChild(actor)).get
+      case `guard` ⇒ Await.result(guardian ? StopChild(actor), timeout.duration)
+      case `sys`   ⇒ Await.result(systemGuardian ? StopChild(actor), timeout.duration)
       case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }

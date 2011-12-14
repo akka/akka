@@ -9,6 +9,7 @@ import collection.mutable.LinkedList
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
+import akka.dispatch.Await
 
 object RoutingSpec {
 
@@ -317,7 +318,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       routedActor ! Broadcast(Stop(Some(1)))
       shutdownLatch.await
-      (routedActor ? Broadcast(0)).as[Int].get must be(22)
+      Await.result(routedActor ? Broadcast(0), timeout.duration) must be(22)
     }
 
     case class Stop(id: Option[Int] = None)

@@ -7,7 +7,7 @@ package akka.actor
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
 import akka.util.duration._
-import akka.dispatch.Dispatchers
+import akka.dispatch.Await
 
 object ActorFireForgetRequestReplySpec {
 
@@ -81,7 +81,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected exception")) {
         val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(0))))
-        val actor = (supervisor ? Props[CrashingActor]).as[ActorRef].get
+        val actor = Await.result((supervisor ? Props[CrashingActor]).mapTo[ActorRef], timeout.duration)
         actor.isTerminated must be(false)
         actor ! "Die"
         state.finished.await

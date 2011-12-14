@@ -4,6 +4,8 @@ package akka.docs.actor
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
+import akka.dispatch.Future
+
 //#imports1
 
 //#imports2
@@ -207,11 +209,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new MyActor))
     implicit val timeout = system.settings.ActorTimeout
     val future = myActor ? "hello"
-    future.as[String] match {
-      case Some(answer) ⇒ //...
-      case None         ⇒ //...
-    }
-    val result: Option[Int] = for (x ← (myActor ? 3).as[Int]) yield { 2 * x }
+    for (x ← future) println(x) //Prints "hello"
+
+    val result: Future[Int] = for (x ← (myActor ? 3).mapTo[Int]) yield { 2 * x }
     //#using-ask
 
     system.stop(myActor)

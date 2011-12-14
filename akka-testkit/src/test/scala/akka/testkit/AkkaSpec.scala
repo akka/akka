@@ -7,16 +7,15 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
-import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
-import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
-import java.util.concurrent.LinkedBlockingQueue
 import akka.actor.CreateChild
 import akka.actor.DeadLetter
+import java.util.concurrent.TimeoutException
+import akka.dispatch.{ Await, MessageDispatcher }
 
 object TimingTest extends Tag("timing")
 
@@ -65,8 +64,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     system.shutdown()
-    try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+    try Await.ready(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
+      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
   }
@@ -141,7 +140,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         system.registerOnTermination(latch.countDown())
         system.shutdown()
         latch.await(2 seconds)
-        (davyJones ? "Die!").get must be === "finally gone"
+        Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))

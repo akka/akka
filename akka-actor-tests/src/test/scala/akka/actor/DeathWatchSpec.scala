@@ -8,6 +8,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
@@ -78,13 +79,13 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       filterException[ActorKilledException] {
         val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(2))))
         val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
-        val terminal = (supervisor ? terminalProps).as[ActorRef].get
+        val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
         val monitor = startWatching(terminal)
 
         terminal ! Kill
         terminal ! Kill
-        (terminal ? "foo").as[String] must be === Some("foo")
+        Await.result(terminal ? "foo", timeout.duration) must be === "foo"
         terminal ! Kill
 
         expectTerminationOf(terminal)
@@ -105,11 +106,11 @@ class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
             }
           }))
 
-        val failed = (supervisor ? Props.empty).as[ActorRef].get
-        val brother = (supervisor ? Props(new Actor {
+        val failed = Await.result((supervisor ? Props.empty).mapTo[ActorRef], timeout.duration)
+        val brother = Await.result((supervisor ? Props(new Actor {
           context.watch(failed)
           def receive = Actor.emptyBehavior
-        })).as[ActorRef].get
+        })).mapTo[ActorRef], timeout.duration)
 
         startWatching(brother)
 

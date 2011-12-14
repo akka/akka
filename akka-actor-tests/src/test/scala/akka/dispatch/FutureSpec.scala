@@ -10,11 +10,11 @@ import akka.actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.util.duration._
 import org.multiverse.api.latches.StandardLatch
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import java.lang.ArithmeticException
 import akka.testkit.DefaultTimeout
+import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -37,6 +37,7 @@ object FutureSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -47,8 +48,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "never completed" must {
       behave like emptyFuture(_(Promise()))
       "return supplied value on timeout" in {
-        val promise = Promise[String](100) orElse "Timedout"
-        promise.get must be("Timedout")
+        val timedOut = Promise.successful[String]("Timedout")
+        val promise = Promise[String]() orElse timedOut
+        Await.result(promise, timeout.duration) must be("Timedout")
       }
     }
     "completed with a result" must {
@@ -60,9 +62,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       val message = "Expected Exception"
       val future = Promise[String]().complete(Left(new RuntimeException(message)))
       behave like futureWithException[RuntimeException](_(future, message))
-    }
-    "expired" must {
-      behave like expiredFuture(_(Promise(0)))
     }
   }
 
@@ -78,7 +77,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
           test(future)
           latch.open
-          future.await
+          Await.ready(future, timeout.duration)
         }
       }
       "is completed" must {
@@ -90,7 +89,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             result
           }
           latch.open
-          future.await
+          Await.ready(future, timeout.duration)
           test(future, result)
         }
       }
@@ -99,8 +98,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           filterException[ArithmeticException] {
             check({ (future: Future[Int], actions: List[FutureAction]) ⇒
               val result = (future /: actions)(_ /: _)
-              val expected = (future.await.value.get /: actions)(_ /: _)
-              ((result.await.value.get, expected) match {
+              val expected = (Await.ready(future, timeout.duration).value.get /: actions)(_ /: _)
+              ((Await.ready(result, timeout.duration).value.get, expected) match {
                 case (Right(a), Right(b))                           ⇒ a == b
                 case (Left(a), Left(b)) if a.toString == b.toString ⇒ true
                 case (Left(a), Left(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒
@@ -118,7 +117,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         behave like futureWithResult { test ⇒
           val actor = system.actorOf(Props[TestActor])
           val future = actor ? "Hello"
-          future.await
+          Await.ready(future, timeout.duration)
           test(future, "World")
           system.stop(actor)
         }
@@ -128,7 +127,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           filterException[RuntimeException] {
             val actor = system.actorOf(Props[TestActor])
             val future = actor ? "Failure"
-            future.await
+            Await.ready(future, timeout.duration)
             test(future, "Expected exception; to test fault-tolerance")
             system.stop(actor)
           }
@@ -142,7 +141,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val actor1 = system.actorOf(Props[TestActor])
           val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! s.toUpperCase } }))
           val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
-          future.await
+          Await.ready(future, timeout.duration)
           test(future, "WORLD")
           system.stop(actor1)
           system.stop(actor2)
@@ -154,7 +153,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             val actor1 = system.actorOf(Props[TestActor])
             val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! Status.Failure(new ArithmeticException("/ by zero")) } }))
             val future = actor1 ? "Hello" flatMap { case s: String ⇒ actor2 ? s }
-            future.await
+            Await.ready(future, timeout.duration)
             test(future, "/ by zero")
             system.stop(actor1)
             system.stop(actor2)
@@ -167,7 +166,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             val actor1 = system.actorOf(Props[TestActor])
             val actor2 = system.actorOf(Props(new Actor { def receive = { case s: String ⇒ sender ! s.toUpperCase } }))
             val future = actor1 ? "Hello" flatMap { case i: Int ⇒ actor2 ? i }
-            future.await
+            Await.ready(future, timeout.duration)
             test(future, "World (of class java.lang.String)")
             system.stop(actor1)
             system.stop(actor2)
@@ -201,9 +200,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             c ← (actor ? 7).mapTo[String]
           } yield b + "-" + c
 
-          future1.get must be("10-14")
+          Await.result(future1, timeout.duration) must be("10-14")
           assert(checkType(future1, manifest[String]))
-          intercept[ClassCastException] { future2.get }
+          intercept[ClassCastException] { Await.result(future2, timeout.duration) }
           system.stop(actor)
         }
       }
@@ -231,8 +230,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             Res(c: Int) ← actor ? Req(7)
           } yield b + "-" + c
 
-          future1.get must be("10-14")
-          intercept[MatchError] { future2.get }
+          Await.result(future1, timeout.duration) must be("10-14")
+          intercept[MatchError] { Await.result(future2, timeout.duration) }
           system.stop(actor)
         }
       }
@@ -268,34 +267,34 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
           val future11 = actor ? "Failure" recover { case _ ⇒ "Oops!" }
 
-          future1.get must be(5)
-          intercept[ArithmeticException] { future2.get }
-          intercept[ArithmeticException] { future3.get }
-          future4.get must be("5")
-          future5.get must be("0")
-          intercept[ArithmeticException] { future6.get }
-          future7.get must be("You got ERROR")
-          intercept[RuntimeException] { future8.get }
-          future9.get must be("FAIL!")
-          future10.get must be("World")
-          future11.get must be("Oops!")
+          Await.result(future1, timeout.duration) must be(5)
+          intercept[ArithmeticException] { Await.result(future2, timeout.duration) }
+          intercept[ArithmeticException] { Await.result(future3, timeout.duration) }
+          Await.result(future4, timeout.duration) must be("5")
+          Await.result(future5, timeout.duration) must be("0")
+          intercept[ArithmeticException] { Await.result(future6, timeout.duration) }
+          Await.result(future7, timeout.duration) must be("You got ERROR")
+          intercept[RuntimeException] { Await.result(future8, timeout.duration) }
+          Await.result(future9, timeout.duration) must be("FAIL!")
+          Await.result(future10, timeout.duration) must be("World")
+          Await.result(future11, timeout.duration) must be("Oops!")
 
           system.stop(actor)
         }
       }
 
       "firstCompletedOf" in {
-        val futures = Vector.fill[Future[Int]](10)(new DefaultPromise[Int]()) :+ new KeptPromise[Int](Right(5))
-        Future.firstCompletedOf(futures).get must be(5)
+        val futures = Vector.fill[Future[Int]](10)(Promise[Int]()) :+ Promise.successful[Int](5)
+        Await.result(Future.firstCompletedOf(futures), timeout.duration) must be(5)
       }
 
       "find" in {
         val futures = for (i ← 1 to 10) yield Future { i }
         val result = Future.find[Int](futures)(_ == 3)
-        result.get must be(Some(3))
+        Await.result(result, timeout.duration) must be(Some(3))
 
         val notFound = Future.find[Int](futures)(_ == 11)
-        notFound.get must be(None)
+        Await.result(notFound, timeout.duration) must be(None)
       }
 
       "fold" in {
@@ -306,7 +305,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
-        Future.fold(futures, timeout)(0)(_ + _).get must be(45)
+        Await.result(Future.fold(futures)(0)(_ + _), timeout millis) must be(45)
       }
 
       "fold by composing" in {
@@ -316,7 +315,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }))
         }
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), 10000).mapTo[Int] }
-        futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)).get must be(45)
+        Await.result(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)), timeout.duration) must be(45)
       }
 
       "fold with an exception" in {
@@ -333,18 +332,19 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
           val timeout = 10000
           def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-          Future.fold(futures, timeout)(0)(_ + _).await.exception.get.getMessage must be("shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), timeout millis) }.getMessage must be("shouldFoldResultsWithException: expected")
         }
       }
 
       "fold mutable zeroes safely" in {
         import scala.collection.mutable.ArrayBuffer
         def test(testNumber: Int) {
-          val fs = (0 to 1000) map (i ⇒ Future(i, 10000))
-          val result = Future.fold(fs, 10000)(ArrayBuffer.empty[AnyRef]) {
+          val fs = (0 to 1000) map (i ⇒ Future(i))
+          val f = Future.fold(fs)(ArrayBuffer.empty[AnyRef]) {
             case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
             case (l, _)               ⇒ l
-          }.get.asInstanceOf[ArrayBuffer[Int]].sum
+          }
+          val result = Await.result(f.mapTo[ArrayBuffer[Int]], 10000 millis).sum
 
           assert(result === 250500)
         }
@@ -353,7 +353,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "return zero value if folding empty list" in {
-        Future.fold(List[Future[Int]]())(0)(_ + _).get must be(0)
+        Await.result(Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) must be(0)
       }
 
       "shouldReduceResults" in {
@@ -364,7 +364,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
-        assert(Future.reduce(futures, timeout)(_ + _).get === 45)
+        assert(Await.result(Future.reduce(futures)(_ + _), timeout millis) === 45)
       }
 
       "shouldReduceResultsWithException" in {
@@ -381,20 +381,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
           val timeout = 10000
           def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100), timeout).mapTo[Int] }
-          assert(Future.reduce(futures, timeout)(_ + _).await.exception.get.getMessage === "shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), timeout millis) }.getMessage must be === "shouldFoldResultsWithException: expected"
         }
       }
 
       "shouldReduceThrowIAEOnEmptyInput" in {
         filterException[IllegalArgumentException] {
-          intercept[UnsupportedOperationException] { Future.reduce(List[Future[Int]]())(_ + _).get }
+          intercept[java.util.NoSuchElementException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
         }
       }
 
       "receiveShouldExecuteOnComplete" in {
         val latch = new StandardLatch
         val actor = system.actorOf(Props[TestActor])
-        actor ? "Hello" onResult { case "World" ⇒ latch.open }
+        actor ? "Hello" onSuccess { case "World" ⇒ latch.open }
         assert(latch.tryAwait(5, TimeUnit.SECONDS))
         system.stop(actor)
       }
@@ -410,52 +410,46 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }))
 
         val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo manifest[Int])
-        assert(Future.sequence(oddFutures).get.sum === 10000)
+
+        assert(Await.result(Future.sequence(oddFutures), timeout.duration).sum === 10000)
         system.stop(oddActor)
 
         val list = (1 to 100).toList
-        assert(Future.traverse(list)(x ⇒ Future(x * 2 - 1)).get.sum === 10000)
+        assert(Await.result(Future.traverse(list)(x ⇒ Future(x * 2 - 1)), timeout.duration).sum === 10000)
       }
 
       "shouldHandleThrowables" in {
         class ThrowableTest(m: String) extends Throwable(m)
 
         filterException[ThrowableTest] {
-          val f1 = Future { throw new ThrowableTest("test") }
-          f1.await
-          intercept[ThrowableTest] { f1.get }
+          val f1 = Future[Any] { throw new ThrowableTest("test") }
+          intercept[ThrowableTest] { Await.result(f1, timeout.duration) }
 
           val latch = new StandardLatch
           val f2 = Future { latch.tryAwait(5, TimeUnit.SECONDS); "success" }
           f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-          f2 onResult { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+          f2 onSuccess { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
           val f3 = f2 map (s ⇒ s.toUpperCase)
           latch.open
-          f2.await
-          assert(f2.get === "success")
+          assert(Await.result(f2, timeout.duration) === "success")
           f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-          f2 onResult { case _ ⇒ throw new ThrowableTest("current thread receive") }
-          f3.await
-          assert(f3.get === "SUCCESS")
+          f2 onSuccess { case _ ⇒ throw new ThrowableTest("current thread receive") }
+          assert(Await.result(f3, timeout.duration) === "SUCCESS")
         }
       }
 
       "shouldBlockUntilResult" in {
         val latch = new StandardLatch
 
-        val f = Future({ latch.await; 5 })
-        val f2 = Future({ f.get + 5 })
+        val f = Future { latch.await; 5 }
+        val f2 = Future { Await.result(f, timeout.duration) + 5 }
 
-        assert(f2.resultOrException === None)
+        intercept[TimeoutException](Await.ready(f2, 100 millis))
         latch.open
-        assert(f2.get === 10)
+        assert(Await.result(f2, timeout.duration) === 10)
 
-        val f3 = Future({ Thread.sleep(10); 5 }, 10 millis)
-        filterException[FutureTimeoutException] {
-          intercept[FutureTimeoutException] {
-            f3.get
-          }
-        }
+        val f3 = Future { Thread.sleep(100); 5 }
+        filterException[TimeoutException] { intercept[TimeoutException] { Await.ready(f3, 0 millis) } }
       }
 
       "futureComposingWithContinuations" in {
@@ -468,7 +462,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         val r = flow(x() + " " + y() + "!")
 
-        assert(r.get === "Hello World!")
+        assert(Await.result(r, timeout.duration) === "Hello World!")
 
         system.stop(actor)
       }
@@ -482,7 +476,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + " " + y.map(_ / 0).map(_.toString).apply, 100)
 
-          intercept[java.lang.ArithmeticException](r.get)
+          intercept[java.lang.ArithmeticException](Await.result(r, timeout.duration))
         }
       }
 
@@ -497,7 +491,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + y(), 100)
 
-          intercept[ClassCastException](r.get)
+          intercept[ClassCastException](Await.result(r, timeout.duration))
         }
       }
 
@@ -512,7 +506,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           val r = flow(x() + y())
 
-          intercept[ClassCastException](r.get)
+          intercept[ClassCastException](Await.result(r, timeout.duration))
         }
       }
 
@@ -536,44 +530,30 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         flow { x << 5 }
 
-        assert(y.get === 5)
-        assert(z.get === 5)
+        assert(Await.result(y, timeout.duration) === 5)
+        assert(Await.result(z, timeout.duration) === 5)
         assert(lz.isOpen)
-        assert(result.get === 10)
+        assert(Await.result(result, timeout.duration) === 10)
 
         val a, b, c = Promise[Int]()
 
         val result2 = flow {
-          val n = (a << c).result.get + 10
+          val n = (a << c).value.get.right.get + 10
           b << (c() - 2)
           a() + n * b()
         }
 
         c completeWith Future(5)
 
-        assert(a.get === 5)
-        assert(b.get === 3)
-        assert(result2.get === 50)
-      }
-
-      "shouldNotAddOrRunCallbacksAfterFailureToBeCompletedBeforeExpiry" in {
-        val latch = new StandardLatch
-        val f = Promise[Int](0)
-        Thread.sleep(25)
-        f.onComplete(_ ⇒ latch.open) //Shouldn't throw any exception here
-
-        assert(f.isExpired) //Should be expired
-
-        f.complete(Right(1)) //Shouldn't complete the Future since it is expired
-
-        assert(f.value.isEmpty) //Shouldn't be completed
-        assert(!latch.isOpen) //Shouldn't run the listener
+        assert(Await.result(a, timeout.duration) === 5)
+        assert(Await.result(b, timeout.duration) === 3)
+        assert(Await.result(result2, timeout.duration) === 50)
       }
 
       "futureDataFlowShouldEmulateBlocking1" in {
         import Future.flow
 
-        val one, two = Promise[Int](1000 * 60)
+        val one, two = Promise[Int]()
         val simpleResult = flow {
           one() + two()
         }
@@ -582,23 +562,23 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         flow { one << 1 }
 
-        one.await
+        Await.ready(one, 1 minute)
 
         assert(one.isCompleted)
         assert(List(two, simpleResult).forall(_.isCompleted == false))
 
         flow { two << 9 }
 
-        two.await
+        Await.ready(two, 1 minute)
 
         assert(List(one, two).forall(_.isCompleted == true))
-        assert(simpleResult.get === 10)
+        assert(Await.result(simpleResult, timeout.duration) === 10)
 
       }
 
       "futureDataFlowShouldEmulateBlocking2" in {
         import Future.flow
-        val x1, x2, y1, y2 = Promise[Int](1000 * 60)
+        val x1, x2, y1, y2 = Promise[Int]()
         val lx, ly, lz = new StandardLatch
         val result = flow {
           lx.open()
@@ -616,17 +596,17 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         flow { y1 << 1 } // When this is set, it should cascade down the line
 
         assert(ly.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-        assert(x1.get === 1)
+        assert(Await.result(x1, 1 minute) === 1)
         assert(!lz.isOpen)
 
         flow { y2 << 9 } // When this is set, it should cascade down the line
 
         assert(lz.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
-        assert(x2.get === 9)
+        assert(Await.result(x2, 1 minute) === 9)
 
-        assert(List(x1, x2, y1, y2).forall(_.isCompleted == true))
+        assert(List(x1, x2, y1, y2).forall(_.isCompleted))
 
-        assert(result.get === 10)
+        assert(Await.result(result, 1 minute) === 10)
       }
 
       "dataFlowAPIshouldbeSlick" in {
@@ -646,7 +626,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(i2.tryAwaitUninterruptible(2000, TimeUnit.MILLISECONDS))
         s1.open
         s2.open
-        assert(result.get === 10)
+        assert(Await.result(result, timeout.duration) === 10)
       }
 
       "futureCompletingWithContinuationsFailure" in {
@@ -670,8 +650,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
           flow { x << 5 }
 
-          assert(y.get === 5)
-          intercept[java.lang.ArithmeticException](result.get)
+          assert(Await.result(y, timeout.duration) === 5)
+          intercept[java.lang.ArithmeticException](Await.result(result, timeout.duration))
           assert(z.value === None)
           assert(!lz.isOpen)
         }
@@ -694,7 +674,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         latch.open
 
-        assert(result.get === Some("Hello"))
+        assert(Await.result(result, timeout.duration) === Some("Hello"))
       }
 
       "futureFlowShouldBeTypeSafe" in {
@@ -717,8 +697,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(!checkType(rInt, manifest[Nothing]))
         assert(!checkType(rInt, manifest[Any]))
 
-        rString.await
-        rInt.await
+        Await.result(rString, timeout.duration)
+        Await.result(rInt, timeout.duration)
       }
 
       "futureFlowSimpleAssign" in {
@@ -732,7 +712,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         flow { x << 40 }
         flow { y << 2 }
 
-        assert(z.get === 42)
+        assert(Await.result(z, timeout.duration) === 42)
       }
 
       "futureFlowLoops" in {
@@ -754,7 +734,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         var i = 0
         promises foreach { p ⇒
-          assert(p.get === i)
+          assert(Await.result(p, timeout.duration) === i)
           i += 1
         }
 
@@ -810,88 +790,102 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         latch(8).open
         latch(9).await
 
-        f4.await must be('completed)
+        Await.ready(f4, timeout.duration) must be('completed)
       }
 
       "should not deadlock with nested await (ticket 1313)" in {
-        val simple = Future() map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
-        simple.await must be('completed)
+        val simple = Future() map (_ ⇒ Await.result((Future(()) map (_ ⇒ ())), timeout.duration))
+        Await.ready(simple, timeout.duration) must be('completed)
 
         val l1, l2 = new StandardLatch
         val complex = Future() map { _ ⇒
-          Future.blocking()
-          val nested = Future()
+          Future.blocking(system.dispatcher)
+          val nested = Future(())
           nested foreach (_ ⇒ l1.open)
           l1.await // make sure nested is completed
           nested foreach (_ ⇒ l2.open)
           l2.await
         }
-        assert(complex.await.isCompleted)
+        Await.ready(complex, timeout.duration) must be('completed)
       }
     }
   }
 
   def emptyFuture(f: (Future[Any] ⇒ Unit) ⇒ Unit) {
     "not be completed" in { f(_ must not be ('completed)) }
-    "not be expired" in { f(_ must not be ('expired)) }
     "not contain a value" in { f(_.value must be(None)) }
-    "not contain a result" in { f(_.result must be(None)) }
-    "not contain an exception" in { f(_.exception must be(None)) }
   }
 
   def futureWithResult(f: ((Future[Any], Any) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
-    "not be expired" in { f((future, _) ⇒ future must not be ('expired)) }
     "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
-    "contain a result" in { f((future, result) ⇒ future.result must be(Some(result))) }
-    "not contain an exception" in { f((future, _) ⇒ future.exception must be(None)) }
-    "return result with 'get'" in { f((future, result) ⇒ future.get must be(result)) }
-    "return result with 'resultOrException'" in { f((future, result) ⇒ future.resultOrException must be(Some(result))) }
-    "not timeout" in { f((future, _) ⇒ future.await) }
+    "return result with 'get'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
+    "return result with 'Await.sync'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
+    "not timeout" in { f((future, _) ⇒ Await.ready(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
-        (future filter (_ ⇒ true)).get must be(result)
-        (evaluating { (future filter (_ ⇒ false)).get } must produce[MatchError]).getMessage must startWith(result.toString)
+        Await.result((future filter (_ ⇒ true)), timeout.duration) must be(result)
+        (evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } must produce[MatchError]).getMessage must startWith(result.toString)
       }
     }
-    "transform result with map" in { f((future, result) ⇒ (future map (_.toString.length)).get must be(result.toString.length)) }
-    "compose result with flatMap" is pending
-    "perform action with foreach" is pending
-    "match result with collect" is pending
-    "not recover from exception" is pending
-    "perform action on result" is pending
+    "transform result with map" in { f((future, result) ⇒ Await.result((future map (_.toString.length)), timeout.duration) must be(result.toString.length)) }
+    "compose result with flatMap" in {
+      f { (future, result) ⇒
+        val r = for (r ← future; p ← Promise.successful("foo")) yield r.toString + p
+        Await.result(r, timeout.duration) must be(result.toString + "foo")
+      }
+    }
+    "perform action with foreach" in {
+      f { (future, result) ⇒
+        val p = Promise[Any]()
+        future foreach p.success
+        Await.result(p, timeout.duration) must be(result)
+      }
+    }
+    "not recover from exception" in { f((future, result) ⇒ Await.result(future.recover({ case _ ⇒ "pigdog" }), timeout.duration) must be(result)) }
+    "perform action on result" in {
+      f { (future, result) ⇒
+        val p = Promise[Any]()
+        future.onSuccess { case x ⇒ p.success(x) }
+        Await.result(p, timeout.duration) must be(result)
+      }
+    }
+    "not project a failure" in { f((future, result) ⇒ (evaluating { Await.result(future.failed, timeout.duration) } must produce[NoSuchElementException]).getMessage must be("Future.failed not completed with a throwable. Instead completed with: " + result)) }
     "not perform action on exception" is pending
-    "cast using mapTo" is pending
+    "cast using mapTo" in { f((future, result) ⇒ Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), timeout.duration) must be(false)) }
   }
 
   def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
-    "not be expired" in { f((future, _) ⇒ future must not be ('expired)) }
-    "contain a value" in { f((future, _) ⇒ future.value must be('defined)) }
-    "not contain a result" in { f((future, _) ⇒ future.result must be(None)) }
-    "contain an exception" in { f((future, message) ⇒ future.exception.get.getMessage must be(message)) }
-    "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { future.get } must produce[E]).getMessage must be(message)) }
-    "throw exception with 'resultOrException'" in { f((future, message) ⇒ (evaluating { future.resultOrException } must produce[E]).getMessage must be(message)) }
-    "not timeout" in { f((future, _) ⇒ future.await) }
+    "contain a value" in {
+      f((future, message) ⇒ {
+        future.value must be('defined)
+        future.value.get must be('left)
+        future.value.get.left.get.getMessage must be(message)
+      })
+    }
+    "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
+    "throw exception with 'Await.sync'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
-        (evaluating { (future filter (_ ⇒ true)).get } must produce[E]).getMessage must be(message)
-        (evaluating { (future filter (_ ⇒ false)).get } must produce[E]).getMessage must be(message)
+        (evaluating { Await.result(future filter (_ ⇒ true), timeout.duration) } must produce[E]).getMessage must be(message)
+        (evaluating { Await.result(future filter (_ ⇒ false), timeout.duration) } must produce[E]).getMessage must be(message)
       }
     }
-    "retain exception with map" in { f((future, message) ⇒ (evaluating { (future map (_.toString.length)).get } must produce[E]).getMessage must be(message)) }
-    "retain exception with flatMap" is pending
+    "retain exception with map" in { f((future, message) ⇒ (evaluating { Await.result(future map (_.toString.length), timeout.duration) } must produce[E]).getMessage must be(message)) }
+    "retain exception with flatMap" in { f((future, message) ⇒ (evaluating { Await.result(future flatMap (_ ⇒ Promise.successful[Any]("foo")), timeout.duration) } must produce[E]).getMessage must be(message)) }
     "not perform action with foreach" is pending
-    "retain exception with collect" is pending
-    "recover from exception" is pending
+    "recover from exception" in { f((future, message) ⇒ Await.result(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), timeout.duration) must be("pigdog")) }
     "not perform action on result" is pending
-    "perform action on exception" is pending
-    "always cast successfully using mapTo" is pending
-  }
-
-  def expiredFuture(f: (Future[Any] ⇒ Unit) ⇒ Unit) {
-    "not be completed" in { f(_ must not be ('completed)) }
-    "be expired" in { f(_ must be('expired)) }
+    "project a failure" in { f((future, message) ⇒ Await.result(future.failed, timeout.duration).getMessage must be(message)) }
+    "perform action on exception" in {
+      f { (future, message) ⇒
+        val p = Promise[Any]()
+        future.onFailure { case _ ⇒ p.success(message) }
+        Await.result(p, timeout.duration) must be(message)
+      }
+    }
+    "always cast successfully using mapTo" in { f((future, message) ⇒ (evaluating { Await.result(future.mapTo[java.lang.Thread], timeout.duration) } must produce[E]).getMessage must be(message)) }
   }
 
   sealed trait IntAction { def apply(that: Int): Int }
