@@ -101,7 +101,7 @@ Props
 ``Props`` is a configuration class to specify options for the creation
 of actors. Here are some examples on how to create a ``Props`` instance.
 
-.. includecode:: code/ActorDocSpec.scala#creating-props-config
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#creating-props-config
 
 
 Creating Actors with Props
