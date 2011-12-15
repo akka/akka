@@ -100,7 +100,7 @@ Physical Actor Paths
 ^^^^^^^^^^^^^^^^^^^^
 
 While the logical actor path describes the functional location within one actor 
-system, configuration-based transparent remoting means that an actor may be 
+system, configuration-based remote deployment means that an actor may be 
 created on a different network host as its parent, i.e. within a different 
 actor system. In this case, following the actor path from the root guardian up 
 entails traversing the network, which is a costly operation. Therefore, each 

@@ -1,12 +1,12 @@
 .. _remoting:
 
-Transparent Remoting
-====================
+Location Transparency
+=====================
 
-The previous section describes how actor paths are used to make possible
-transparent remoting. This special feature deserves some extra explanation,
-because it is a term which was used quite differently in the context of
-programming languages, platforms and technologies.
+The previous section describes how actor paths are used to enable location
+transparency. This special feature deserves some extra explanation, because the
+related term “transparent remoting” was used quite differently in the context
+of programming languages, platforms and technologies.
 
 Distributed by Default
 ----------------------
@@ -60,5 +60,5 @@ to achieve this is that the developer needs to declare a certain actor as
 up a configurable number of children of the desired type and route to them in
 the configured fashion. Once such a router has been declared, its configuration
 can be freely overridden from the configuration file, including mixing it with
-the transparent remote deployment of (some of) the children. Read more about
-this in :ref:`routing`.
+the remote deployment of (some of) the children. Read more about
+this in :ref:`routing-scala` and :ref:`routing-java`.

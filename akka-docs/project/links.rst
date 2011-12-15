@@ -1,7 +1,7 @@
 .. _support:
 
 `Commercial Support <http://typesafe.com>`__
-=========================================
+============================================
 
 Commercial support is provided by `Typesafe <http://typesafe.com>`_.
 Akka is now part of the `Typesafe Stack <http://typesafe.com/stack>`_.
