@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, amqp, mailboxes, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, amqp, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -183,14 +183,14 @@ object AkkaBuild extends Build {
   //   )
   // )
 
-  // lazy val kernel = Project(
-  //   id = "akka-kernel",
-  //   base = file("akka-kernel"),
-  //   dependencies = Seq(cluster, slf4j, spring),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.kernel
-  //   )
-  // )
+  lazy val kernel = Project(
+    id = "akka-kernel",
+    base = file("akka-kernel"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.kernel
+    )
+  )
 
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
@@ -204,7 +204,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample, helloSample)
+    aggregate = Seq(fsmSample, helloSample, helloKernelSample)
   )
 
   lazy val fsmSample = Project(
@@ -218,6 +218,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
+    settings = defaultSettings
+  )
+
+  lazy val helloKernelSample = Project(
+    id = "akka-sample-hello-kernel",
+    base = file("akka-samples/akka-sample-hello-kernel"),
+    dependencies = Seq(kernel),
     settings = defaultSettings
   )
 
@@ -377,9 +384,7 @@ object Dependencies {
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
-  val kernel = Seq(
-    jettyUtil, jettyXml, jettyServlet, jacksonCore, staxApi
-  )
+  val kernel = Seq(Test.scalatest, Test.junit)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,

@@ -50,7 +50,8 @@ object Pi extends App {
     var start: Long = _
 
     //#create-router
-    val router = context.actorOf(Props(new Worker).withRouter(RoundRobinRouter(nrOfInstances = nrOfWorkers)), "pi")
+    val router = context.actorOf(Props(new Worker).withRouter(
+      RoundRobinRouter(nrOfInstances = nrOfWorkers)), "pi")
     //#create-router
 
     //#master-receive
@@ -89,7 +90,9 @@ object Pi extends App {
     val latch = new CountDownLatch(1)
 
     // create the master
-    val master = system.actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)), "master")
+    val master = system.actorOf(Props(new Master(
+      nrOfWorkers, nrOfMessages, nrOfElements, latch)),
+      "master")
 
     // start the calculation
     master ! Calculate

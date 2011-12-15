@@ -101,13 +101,16 @@ public class Pi {
 
         private ActorRef router;
 
-        public Master(final int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+        public Master(final int nrOfWorkers, int nrOfMessages,
+                      int nrOfElements, CountDownLatch latch) {
             this.nrOfMessages = nrOfMessages;
             this.nrOfElements = nrOfElements;
             this.latch = latch;
 
             //#create-router
-            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)), "pi");
+            router = this.getContext().actorOf(new Props().withCreator(
+                    Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)),
+                    "pi");
             //#create-router
         }
 
@@ -144,8 +147,10 @@ public class Pi {
     //#master
     //#actors-and-messages
 
-    public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
-            throws Exception {
+    public void calculate(final int nrOfWorkers,
+                          final int nrOfElements,
+                          final int nrOfMessages)
+                          throws Exception {
         // Create an Akka system
         final ActorSystem system = ActorSystem.create();
 

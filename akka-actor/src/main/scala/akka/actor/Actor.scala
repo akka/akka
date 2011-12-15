@@ -281,7 +281,8 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-    val behaviorStack = context.hotswap
+    // FIXME this should all go into ActorCell
+    val behaviorStack = context.asInstanceOf[ActorCell].hotswap
     msg match {
       case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
       case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)

@@ -205,7 +205,7 @@ object ActorModelSpec {
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
       case e ⇒
-        system.eventStream.publish(Error(e, dispatcher.toString, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+        system.eventStream.publish(Error(e, Option(dispatcher).toString, "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
           ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
           ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e

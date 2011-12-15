@@ -84,14 +84,6 @@ to use from an sbt project) use the ``publish-local`` command::
    sbt publish-local
 
 
-Publish to local Maven repository
----------------------------------
-
-If you want to deploy the artifacts to your local Maven repository use::
-
-   sbt publish
-
-
 sbt interactive mode
 --------------------
 
@@ -129,6 +121,6 @@ Dependencies
 You can look at the Ivy dependency resolution information that is created on
 ``sbt update`` and found in ``~/.ivy2/cache``. For example, the
 ``~/.ivy2/cache/com.typesafe.akka-akka-remote-compile.xml`` file contains
-the resolution information for the akka-cluster module compile dependencies. If
+the resolution information for the akka-remote module compile dependencies. If
 you open this file in a web browser you will get an easy to navigate view of
 dependencies.
