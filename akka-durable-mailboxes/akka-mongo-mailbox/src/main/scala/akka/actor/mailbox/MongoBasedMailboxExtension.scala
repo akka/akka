@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object MongoBasedMailboxExtension extends ExtensionId[MongoBasedMailboxSettings] with ExtensionIdProvider {
+  override def get(system: ActorSystem): MongoBasedMailboxSettings = super.get(system)
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new MongoBasedMailboxSettings(system.settings.config)
 }

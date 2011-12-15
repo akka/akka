@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object FileBasedMailboxExtension extends ExtensionId[FileBasedMailboxSettings] with ExtensionIdProvider {
+  override def get(system: ActorSystem): FileBasedMailboxSettings = super.get(system)
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new FileBasedMailboxSettings(system.settings.config)
 }

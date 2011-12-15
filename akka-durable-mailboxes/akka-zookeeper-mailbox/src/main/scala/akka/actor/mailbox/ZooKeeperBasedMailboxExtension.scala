@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object ZooKeeperBasedMailboxExtension extends ExtensionId[ZooKeeperBasedMailboxSettings] with ExtensionIdProvider {
+  override def get(system: ActorSystem): ZooKeeperBasedMailboxSettings = super.get(system)
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new ZooKeeperBasedMailboxSettings(system.settings.config)
 }
