@@ -8,6 +8,7 @@ General
    actors
    supervision
    addressing
+   remoting
    jmm
    message-send-semantics
    configuration
