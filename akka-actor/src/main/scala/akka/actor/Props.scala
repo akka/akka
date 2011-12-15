@@ -8,11 +8,13 @@ import akka.dispatch._
 import akka.japi.Creator
 import akka.util._
 import collection.immutable.Stack
-import akka.routing.{ NoRouter, RouterConfig }
+import akka.routing._
 
 /**
  * Factory for Props instances.
+ *
  * Props is a ActorRef configuration object, that is thread safe and fully sharable.
+ *
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
 object Props {
@@ -47,6 +49,8 @@ object Props {
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied type using the default constructor.
+   *
+   * Scala API.
    */
   def apply[T <: Actor: ClassManifest]: Props =
     default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]].newInstance)
@@ -61,6 +65,8 @@ object Props {
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * using the supplied thunk.
+   *
+   * Scala API.
    */
   def apply(creator: ⇒ Actor): Props =
     default.withCreator(creator)
@@ -87,7 +93,16 @@ object Props {
  * {{{
  *  val props = Props[MyActor]
  *  val props = Props(new MyActor)
+ *  val props = Props(
+ *    creator = ..,
+ *    dispatcher = ..,
+ *    timeout = ..,
+ *    faultHandler = ..,
+ *    routerConfig = ..
+ *  )
+ *  val props = Props().withCreator(new MyActor)
  *  val props = Props[MyActor].withTimeout(timeout)
+ *  val props = Props[MyActor].withRouter(RoundRobinRouter(..))
  *  val props = Props[MyActor].withFaultHandler(OneForOneStrategy {
  *    case e: IllegalStateException ⇒ Resume
  *  })
@@ -103,19 +118,20 @@ object Props {
  *    }
  *  });
  *  Props props = new Props().withCreator(new UntypedActorFactory() { ... });
- *  Props props = new Props().withTimeout(timeout);
- *  Props props = new Props().withFaultHandler(new OneForOneStrategy(...));
+ *  Props props = new Props(MyActor.class).withTimeout(timeout);
+ *  Props props = new Props(MyActor.class).withFaultHandler(new OneForOneStrategy(...));
+ *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
-case class Props(creator: () ⇒ Actor = Props.defaultCreator,
-                 @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
-                 timeout: Timeout = Props.defaultTimeout,
-                 faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
-                 routerConfig: RouterConfig = Props.defaultRoutedProps) {
+case class Props(
+  creator: () ⇒ Actor = Props.defaultCreator,
+  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
+  timeout: Timeout = Props.defaultTimeout,
+  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
+  routerConfig: RouterConfig = Props.defaultRoutedProps) {
 
   /**
    * No-args constructor that sets all the default values.
-   * Java API.
    */
   def this() = this(
     creator = Props.defaultCreator,
@@ -144,43 +160,42 @@ case class Props(creator: () ⇒ Actor = Props.defaultCreator,
 
   /**
    * Returns a new Props with the specified creator set.
+   *
    * Scala API.
    */
   def withCreator(c: ⇒ Actor) = copy(creator = () ⇒ c)
 
   /**
    * Returns a new Props with the specified creator set.
+   *
    * Java API.
    */
   def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
 
   /**
    * Returns a new Props with the specified creator set.
+   *
    * Java API.
    */
   def withCreator(c: Class[_ <: Actor]) = copy(creator = () ⇒ c.newInstance)
 
   /**
    * Returns a new Props with the specified dispatcher set.
-   * Java API.
    */
   def withDispatcher(d: MessageDispatcher) = copy(dispatcher = d)
 
   /**
-   * Returns a new Props with the specified timeout set
-   * Java API.
+   * Returns a new Props with the specified timeout set.
    */
   def withTimeout(t: Timeout) = copy(timeout = t)
 
   /**
    * Returns a new Props with the specified faulthandler set.
-   * Java API.
    */
   def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
   /**
-   * Returns a new Props with the specified router config set
-   * Java API
+   * Returns a new Props with the specified router config set.
    */
   def withRouter(r: RouterConfig) = copy(routerConfig = r)
 }

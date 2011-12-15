@@ -15,6 +15,7 @@ import akka.actor.ActorSystem
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
+import akka.util._
 import akka.util.duration._
 
 //#my-actor
@@ -185,6 +186,23 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#creating-constructor
 
     system.stop(myActor)
+  }
+
+  "creating a Props config" in {
+    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
+    //#creating-props-config
+    import akka.actor.Props
+    val props1 = Props()
+    val props2 = Props[MyActor]
+    val props3 = Props(new MyActor)
+    val props4 = Props(
+      creator = { () ⇒ new MyActor },
+      dispatcher = dispatcher,
+      timeout = Timeout(100))
+    val props5 = props1.withCreator(new MyActor)
+    val props6 = props5.withDispatcher(dispatcher)
+    val props7 = props6.withTimeout(Timeout(100))
+    //#creating-props-config
   }
 
   "creating actor with Props" in {

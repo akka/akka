@@ -95,11 +95,19 @@ Here is an example:
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#creating-constructor
 
 
+Props
+-----
+
+``Props`` is a configuration class to specify options for the creation
+of actors. Here are some examples on how to create a ``Props`` instance.
+
+.. includecode:: code/ActorDocSpec.scala#creating-props-config
+
+
 Creating Actors with Props
 --------------------------
 
-``Props`` is a configuration object to specify additional things for the actor to
-be created, such as the ``MessageDispatcher``.
+Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#creating-props
 

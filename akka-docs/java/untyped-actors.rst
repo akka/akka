@@ -39,6 +39,23 @@ Here is an example:
 
 .. includecode:: code/akka/docs/actor/MyUntypedActor.java#my-untyped-actor
 
+Props
+-----
+
+``Props`` is a configuration class to specify options for the creation
+of actors. Here are some examples on how to create a ``Props`` instance.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props-config
+
+
+Creating Actors with Props
+--------------------------
+
+Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
+
+
 Creating Actors with default constructor
 ----------------------------------------
 
@@ -76,26 +93,16 @@ add initialization code for the actor.
 Creating Actors with non-default constructor
 --------------------------------------------
 
-If your UntypedActor has a constructor that takes parameters then you can't create it using 'actorOf(clazz)'.
-Instead you can use a variant of ``actorOf`` that takes an instance of an 'UntypedActorFactory'
-in which you can create the Actor in any way you like. If you use this method then you to make sure that
-no one can get a reference to the actor instance. If they can get a reference it then they can
-touch state directly in bypass the whole actor dispatching mechanism and create race conditions
-which can lead to corrupt data.
+If your UntypedActor has a constructor that takes parameters then you can't create it using
+'actorOf(new Props(clazz))'. Then you can instead pass in 'new Props(new UntypedActorFactory() {..})'
+in which you can create the Actor in any way you like.
 
 Here is an example:
 
 .. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-constructor
 
-This way of creating the Actor is also great for integrating with Dependency Injection (DI) frameworks like Guice or Spring.
-
-Creating Actors with Props
---------------------------
-
-``Props`` is a configuration object to specify additional things for the actor to
-be created, such as the ``MessageDispatcher``.
-
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
+This way of creating the Actor is also great for integrating with Dependency Injection
+(DI) frameworks like Guice or Spring.
 
 
 UntypedActor API

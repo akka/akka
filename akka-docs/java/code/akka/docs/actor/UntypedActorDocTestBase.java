@@ -4,24 +4,21 @@ package akka.docs.actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-
 //#imports
 
 //#import-future
 import akka.dispatch.Future;
 import akka.dispatch.Await;
 import akka.util.Duration;
-
+import akka.util.Timeout;
 //#import-future
 
 //#import-actors
 import static akka.actor.Actors.*;
-
 //#import-actors
 
 //#import-procedure
 import akka.japi.Procedure;
-
 //#import-procedure
 
 import akka.actor.Props;
@@ -37,6 +34,25 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class UntypedActorDocTestBase {
+
+  @Test
+  public void createProps() {
+    //#creating-props-config
+    Props props1 = new Props();
+    Props props2 = new Props(MyUntypedActor.class);
+    Props props3 = new Props(new UntypedActorFactory() {
+      public UntypedActor create() {
+        return new MyUntypedActor();
+      }
+    });
+    Props props4 = props1.withCreator(new UntypedActorFactory() {
+      public UntypedActor create() {
+        return new MyUntypedActor();
+      }
+    });
+    Props props5 = props4.withTimeout(new Timeout(1000));
+    //#creating-props-config
+  }
 
   @Test
   public void systemActorOf() {
@@ -78,8 +94,9 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
     MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
-        "myactor");
+    ActorRef myActor = system.actorOf(
+      new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+      "myactor");
     //#creating-props
     myActor.tell("test");
     system.shutdown();
