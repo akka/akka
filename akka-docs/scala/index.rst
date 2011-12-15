@@ -16,6 +16,7 @@ Scala API
    dispatchers
    routing
    remoting
+   serialization
    fsm
    testing
    extending-akka

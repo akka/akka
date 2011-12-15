@@ -10,6 +10,14 @@ For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The Akka remoting is a separate jar file. Make sure that you have a dependency from your project to this jar::
+
+  akka-remote.jar
+
+In you SBT project you should add the following as a dependency::
+
+  "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
+
 First of all you have to change the actor provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``::
 
   akka {
@@ -54,11 +62,22 @@ The "app" in this case refers to the name of the ``ActorSystem``::
     }
   }
 
+Logical path lookup is supported on the node you are on, i.e. to use the
+actor created above you would do the following::
+
+  val actor = actorFor("/serviceA/retrieval")
+
+To use an actor on a remote node::
+
+  val actor = actorFor("akka://app@10.0.0.1:2552/user/theActor")
+
 Serialization
 ^^^^^^^^^^^^^
 
 When using remoting for actors you must ensure that the ``props`` and ``messages`` used for
 those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
+
+For more information please see :ref:`serialization-scala`
 
 Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

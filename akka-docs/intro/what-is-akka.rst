@@ -50,8 +50,8 @@ provide truly fault-tolerant systems.
 
 See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
 
-Transparent Remoting
---------------------
+Location Transparency
+---------------------
 Everything in Akka is designed to work in a distributed environment: all
 interactions of actors use purely message passing and everything is asynchronous.
 

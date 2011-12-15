@@ -16,4 +16,5 @@ Java API
    dispatchers
    routing
    remoting
+   serialization
    extending-akka
