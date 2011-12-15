@@ -65,13 +65,13 @@ If you need to call a specific constructor you do it like this:
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-create2
 
-Since you supply a Props, you can specify which dispatcher to use, what the default timeout should be used and more.
-Now, our Squarer doesn't have any methods, so we'd better add those.
+Since you supply a ``Props``, you can specify which dispatcher to use, what the default timeout should be used and more.
+Now, our ``Squarer`` doesn't have any methods, so we'd better add those.
 
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: imports,typed-actor-iface
 
-Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
+Alright, now we've got some methods we can call, but we need to implement those in ``SquarerImpl``.
 
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: imports,typed-actor-impl
@@ -84,7 +84,7 @@ Method dispatch semantics
 
 Methods returning:
 
-  * ``Unit`` will be dispatched with ``fire-and-forget`` semantics, exactly like ``ActorRef.tell``
+  * ``void`` will be dispatched with ``fire-and-forget`` semantics, exactly like ``ActorRef.tell``
   * ``akka.dispatch.Future<?>`` will use ``send-request-reply`` semantics, exactly like ``ActorRef.ask``
   * ``scala.Option<?>`` or ``akka.japi.Option<?>`` will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
     and return None if no answer was produced within the timout, or scala.Some/akka.japi.Some containing the result otherwise.
@@ -112,13 +112,13 @@ Request-reply message send
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-call-option
 
-This will block for as long as the timeout that was set in the Props of the Typed Actor,
+This will block for as long as the timeout that was set in the ``Props`` of the Typed Actor,
 if needed. It will return ``None`` if a timeout occurs.
 
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-call-strict
 
-This will block for as long as the timeout that was set in the Props of the Typed Actor,
+This will block for as long as the timeout that was set in the ``Props` of the Typed Actor,
 if needed. It will throw a ``java.util.concurrent.TimeoutException`` if a timeout occurs.
 
 Request-reply-with-future message send
