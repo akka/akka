@@ -11,7 +11,7 @@ details please refer to :ref:`actors-scala` and :ref:`untyped-actors-java`.
 
 An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Children`_ 
 and a `Fault Handling Strategy`_. All of this is encapsulated behind an `Actor 
-Reference`_.
+Reference`_. Finally, this happens `When and Actor Terminates`_.
 
 Actor Reference
 ---------------
@@ -121,4 +121,22 @@ that if different strategies apply to the various children of an actor, the
 children should be grouped beneath intermediate supervisors with matching 
 strategies, preferring once more the structuring of actor systems according to 
 the splitting of tasks into sub-tasks.
+
+When an Actor Terminates
+------------------------
+
+Once an actor terminates, i.e. fails in a way which is not handled by a
+restart, stops itself or is stopped by its supervisor, it will free up its
+resources, draining all remaining messages from its mailbox into the system’s
+“dead letter mailbox”. The mailbox is then replaced within the actor reference
+with a that system mailbox, redirecting all new messages “into the drain”. This
+is done on a best effort basis, though, so do not rely on it in order to
+construct “guaranteed delivery”.
+
+The reason for not just silently dumping the messages was inspired by our
+tests: we register the TestEventListener on the event bus to which the dead
+letters are forwarded, and that will log a warning for every dead letter
+received—this has been very helpful for deciphering test failures more quickly.
+It is conceivable that this feature may also be of use for other purposes.
+
 
