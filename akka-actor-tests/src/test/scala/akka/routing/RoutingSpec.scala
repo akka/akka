@@ -356,11 +356,8 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val democratsResult = (routedActor ? DemocratCountResult)
       val republicansResult = (routedActor ? RepublicanCountResult)
 
-      Await.result(democratsResult, 1 seconds)
-      Await.result(republicansResult, 1 seconds)
-
-      democratsResult.value must be(Some(Right(3)))
-      republicansResult.value must be(Some(Right(2)))
+      Await.result(democratsResult, 1 seconds) === 3
+      Await.result(republicansResult, 1 seconds) === 2
     }
 
     // DO NOT CHANGE THE COMMENTS BELOW AS THEY ARE USED IN THE DOCUMENTATION
