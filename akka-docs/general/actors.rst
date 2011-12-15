@@ -11,7 +11,7 @@ details please refer to :ref:`actors-scala` and :ref:`untyped-actors-java`.
 
 An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Children`_ 
 and a `Fault Handling Strategy`_. All of this is encapsulated behind an `Actor 
-Reference`_. Finally, this happens `When and Actor Terminates`_.
+Reference`_. Finally, this happens `When an Actor Terminates`_.
 
 Actor Reference
 ---------------
