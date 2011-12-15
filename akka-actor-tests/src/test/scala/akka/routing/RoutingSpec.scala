@@ -398,8 +398,8 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       def createRoute(props: Props,
                       actorContext: ActorContext,
                       ref: RoutedActorRef): Route = {
-        val democratActor = actorContext.actorOf(Props[DemocratActor], "d")
-        val republicanActor = actorContext.actorOf(Props[RepublicanActor], "r")
+        val democratActor = actorContext.actorOf(Props(new DemocratActor()), "d")
+        val republicanActor = actorContext.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)
 
         //#crRegisterRoutees
