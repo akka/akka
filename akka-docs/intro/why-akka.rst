@@ -4,6 +4,8 @@ Why Akka?
 What features can the Akka platform offer, over the competition?
 ----------------------------------------------------------------
 
+Akka provides scalable real-time transaction processing.
+
 Akka is an unified runtime and programming model for:
 
 - Scale up (Concurrency)
@@ -25,39 +27,21 @@ even if you're only running it on one machine. Akka also supplies a wide array
 of concurrency-paradigms, allowing for users to choose the right tool for the
 job.
 
-The integration possibilities for Akka Actors are immense through the Apache
-Camel integration. We have Transactors for coordinated concurrent transactions,
-as well as Agents and Dataflow concurrency.
-
 
 What's a good use-case for Akka?
 --------------------------------
 
-(Web, Cloud, Application) Services - Actors lets you manage service failures
-(Supervisors), load management (back-off strategies, timeouts and
-processing-isolation), both horizontal and vertical scalability (add more cores
-and/or add more machines). Think payment processing, invoicing, order matching,
-datacrunching, messaging. Really any highly transactional systems like banking,
-betting, games.
+We see Akka being adopted by many large organizations in a big range of industries
+all from investment and merchant banking, retail and social media, simulation,
+gaming and betting, automobile and traffic systems, health care, data analytics
+and much more. Any system that have the need for high-throughput and low latency
+is a good candidate for using Akka.
+
+Actors lets you manage service failures (Supervisors), load management (back-off
+strategies, timeouts and processing-isolation), both horizontal and vertical
+scalability (add more cores and/or add more machines).
 
 Here's what some of the Akka users have to say about how they are using Akka:
 http://stackoverflow.com/questions/4493001/good-use-case-for-akka
 
-
-Akka Atmos
-----------
-
-And that's all in the ApacheV2-licensed open source project. On top of that we
-have a commercial product called Akka Atmos which provides the following
-features:
-
-#. Management through Dashboard, JMX and REST
-#. Dapper-style tracing of messages across components and remote nodes
-#. A configurable alert system
-#. Real-time statistics
-#. Very low overhead monitoring agents (should always be on in production)
-#. Consolidation of statistics and logging information to a single node
-#. Storage of statistics data for later processing
-#. Provisioning and rolling upgrades
-
-Read more `here <http://typesafe.com/products/typesafe-subscription>`_.
+All this in the ApacheV2-licensed open source project.

@@ -30,11 +30,13 @@ object Await {
   trait Awaitable[+T] {
     /**
      * Should throw java.util.concurrent.TimeoutException if times out
+     * This method should not be called directly.
      */
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
     /**
      * Throws exceptions if cannot produce a T within the specified time
+     * This method should not be called directly.
      */
     def result(atMost: Duration)(implicit permit: CanAwait): T
   }
@@ -45,6 +47,9 @@ object Await {
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
 
+/**
+ * Futures is the Java API for Futures and Promises
+ */
 object Futures {
 
   /**
@@ -56,6 +61,16 @@ object Futures {
    * Java API, equivalent to Promise.apply
    */
   def promise[T](dispatcher: MessageDispatcher): Promise[T] = Promise[T]()(dispatcher)
+
+  /**
+   * Java API, creates an already completed Promise with the specified exception
+   */
+  def failed[T](exception: Throwable, dispatcher: MessageDispatcher): Promise[T] = Promise.failed(exception)(dispatcher)
+
+  /**
+   * Java API, Creates an already completed Promise with the specified result
+   */
+  def successful[T](result: T, dispatcher: MessageDispatcher): Promise[T] = Promise.successful(result)(dispatcher)
 
   /**
    * Java API.

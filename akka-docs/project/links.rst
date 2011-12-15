@@ -1,9 +1,10 @@
 .. _support:
 
-`Support <http://typesafe.com>`__
-=========================================
+`Commercial Support <http://typesafe.com>`__
+============================================
 
-`Typesafe <http://typesafe.com>`_
+Commercial support is provided by `Typesafe <http://typesafe.com>`_.
+Akka is now part of the `Typesafe Stack <http://typesafe.com/stack>`_.
 
 `Mailing List <http://groups.google.com/group/akka-user>`_
 ==========================================================

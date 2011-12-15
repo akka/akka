@@ -10,11 +10,7 @@ Akka Snapshot
 =============
 
 Automatically published Scaladoc API for the latest SNAPSHOT version of Akka can
-be found here:
-
-- Akka - http://akka.io/api/akka/snapshot
-
-- Akka Modules - http://akka.io/api/akka-modules/snapshot
+be found here: http://akka.io/api/akka/snapshot
 
 
 Release Versions

@@ -12,8 +12,6 @@ Scala API
    scheduler
    futures
    dataflow
-   agents
-   transactors
    fault-tolerance
    dispatchers
    routing

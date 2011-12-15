@@ -25,48 +25,60 @@ import akka.util.Duration
  */
 trait Scheduler {
   /**
-   * Schedules a message to be sent repeatedly with an initial delay and frequency.
-   * E.g. if you would like a message to be sent immediately and thereafter every 500ms you would set
-   * delay = Duration.Zero and frequency = Duration(500, TimeUnit.MILLISECONDS)
+   * Schedules a message to be sent repeatedly with an initial delay and
+   * frequency. E.g. if you would like a message to be sent immediately and
+   * thereafter every 500ms you would set delay = Duration.Zero and frequency
+   * = Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */
-  def schedule(initialDelay: Duration, frequency: Duration, receiver: ActorRef, message: Any): Cancellable
+  def schedule(
+    initialDelay: Duration,
+    frequency: Duration,
+    receiver: ActorRef,
+    message: Any): Cancellable
 
   /**
-   * Schedules a function to be run repeatedly with an initial delay and a frequency.
-   * E.g. if you would like the function to be run after 2 seconds and thereafter every 100ms you would set
-   * delay = Duration(2, TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * Schedules a function to be run repeatedly with an initial delay and a
+   * frequency. E.g. if you would like the function to be run after 2 seconds
+   * and thereafter every 100ms you would set delay = Duration(2, TimeUnit.SECONDS)
+   * and frequency = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Scala API
    */
-  def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable
+  def schedule(
+    initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable
 
   /**
-   * Schedules a function to be run repeatedly with an initial delay and a frequency.
-   * E.g. if you would like the function to be run after 2 seconds and thereafter every 100ms you would set
-   * delay = Duration(2, TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * Schedules a function to be run repeatedly with an initial delay and
+   * a frequency. E.g. if you would like the function to be run after 2
+   * seconds and thereafter every 100ms you would set delay = Duration(2,
+   * TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Java API
    */
-  def schedule(initialDelay: Duration, frequency: Duration, runnable: Runnable): Cancellable
+  def schedule(
+    initialDelay: Duration, frequency: Duration, runnable: Runnable): Cancellable
 
   /**
-   * Schedules a Runnable to be run once with a delay, i.e. a time period that has to pass before the runnable is executed.
+   * Schedules a Runnable to be run once with a delay, i.e. a time period that
+   * has to pass before the runnable is executed.
    *
    * Java & Scala API
    */
   def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable
 
   /**
-   * Schedules a message to be sent once with a delay, i.e. a time period that has to pass before the message is sent.
+   * Schedules a message to be sent once with a delay, i.e. a time period that has
+   * to pass before the message is sent.
    *
    * Java & Scala API
    */
   def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable
 
   /**
-   * Schedules a function to be run once with a delay, i.e. a time period that has to pass before the function is run.
+   * Schedules a function to be run once with a delay, i.e. a time period that has
+   * to pass before the function is run.
    *
    * Scala API
    */

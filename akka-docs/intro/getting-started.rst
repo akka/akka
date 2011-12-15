@@ -44,16 +44,12 @@ Modules
 
 Akka is very modular and has many JARs for containing different features.
 
-- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors
-- ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
+- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors, Typed Actors and much more
 - ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 - ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
 - ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
-- ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-- ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
 - ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
+- ``akka-<storage-system>-mailbox-2.0-SNAPSHOT.jar`` -- Akka durable mailboxes
 
 How to see the JARs dependencies of each Akka module is described in the
 :ref:`dependencies` section. Worth noting is that ``akka-actor`` has zero

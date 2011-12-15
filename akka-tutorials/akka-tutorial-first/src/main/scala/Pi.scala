@@ -42,7 +42,8 @@ object Pi extends App {
   //#worker
 
   //#master
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+  class Master(
+    nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
     extends Actor {
 
     var pi: Double = _
@@ -50,7 +51,8 @@ object Pi extends App {
     var start: Long = _
 
     //#create-router
-    val router = context.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), "pi")
+    val router = context.actorOf(
+      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), "pi")
     //#create-router
 
     //#master-receive
@@ -72,9 +74,8 @@ object Pi extends App {
     }
 
     override def postStop() {
-      println(
-        "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-          .format(pi, (System.currentTimeMillis - start)))
+      println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
+        .format(pi, (System.currentTimeMillis - start)))
       latch.countDown()
     }
   }

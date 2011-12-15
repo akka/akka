@@ -19,13 +19,13 @@ resides on crashes, then when you restart the node, the actor will be able to
 continue processing as if nothing had happened; with all pending messages still
 in its mailbox.
 
-None of these mailboxes implements transactions for current message. It's possible 
+None of these mailboxes implements transactions for current message. It's possible
 if the actor crashes after receiving a message, but before completing processing of
-it, that the message could be lost. 
+it, that the message could be lost.
 
 .. warning:: **IMPORTANT**
 
-   None of these mailboxes work with blocking message send, e.g. the message
+   None of these mailboxes work with blocking message send, i.e. the message
    send operations that are relying on futures; ``?`` or ``ask``. If the node
    has crashed and then restarted, the thread that was blocked waiting for the
    reply is gone and there is no way we can deliver the message.
@@ -42,11 +42,15 @@ We'll walk through each one of these in detail in the sections below.
 
 You can easily implement your own mailbox. Look at the existing implementations for inspiration.
 
-Soon Akka will also have:
+We are also discussing adding some of these durable mailboxes:
 
   - ``AmqpBasedMailbox`` -- AMQP based mailbox (default RabbitMQ)
   - ``JmsBasedMailbox`` -- JMS based mailbox (default ActiveMQ)
+  - ``CassandraBasedMailbox`` -- Cassandra based mailbox
+  - ``CamelBasedMailbox`` -- Camel based mailbox
+  - ``SqlBasedMailbox`` -- SQL based mailbox for general RDBMS (Postgres, MySQL, Oracle etc.)
 
+Let us know if you have a wish for a certain priority order.
 
 .. _DurableMailbox.General:
 
@@ -57,7 +61,7 @@ The durable mailboxes and their configuration options reside in the
 ``akka.actor.mailbox`` package.
 
 You configure durable mailboxes through the dispatcher. The
-actor is oblivious to which type of mailbox it is using. 
+actor is oblivious to which type of mailbox it is using.
 Here is an example in Scala:
 
 .. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocSpec.scala
@@ -186,13 +190,13 @@ MongoDB-based Durable Mailboxes
 ===============================
 
 This mailbox is backed by `MongoDB <http://mongodb.org>`_.
-MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of 
+MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of
 features cohesive to a fast, reliable & durable queueing mechanism which the Akka Mailbox takes advantage of.
 
-Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver 
-(often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``) 
-and as such are purely callback based with a Netty network layer.  This makes them extremely fast & 
-lightweight versus building on other MongoDB implementations such as 
+Akka's implementations of MongoDB mailboxes are built on top of the purely asynchronous MongoDB driver
+(often known as `Hammersmith <http://github.com/bwmcadams/hammersmith>`_ and ``com.mongodb.async``)
+and as such are purely callback based with a Netty network layer.  This makes them extremely fast &
+lightweight versus building on other MongoDB implementations such as
 `mongo-java-driver <http://github.com/mongodb/mongo-java-driver>`_ and `Casbah <http://github.com/mongodb/casbah>`_.
 
 You configure durable mailboxes through the dispatcher, as described in
@@ -206,15 +210,15 @@ Java::
 
   akka.actor.mailbox.DurableMailboxType.mongoDurableMailboxType()
 
-You will need to configure the URI for the MongoDB server, using the URI Format specified in the 
+You will need to configure the URI for the MongoDB server, using the URI Format specified in the
 `MongoDB Documentation <http://www.mongodb.org/display/DOCS/Connections>`_. This is done in
 the ``akka.actor.mailbox.mongodb`` section in the :ref:`configuration`.
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
    :language: none
 
-You must specify a hostname (and optionally port) and at *least* a Database name.  If you specify a 
-collection name, it will be used as a 'prefix' for the collections Akka creates to store mailbox messages. 
+You must specify a hostname (and optionally port) and at *least* a Database name.  If you specify a
+collection name, it will be used as a 'prefix' for the collections Akka creates to store mailbox messages.
 Otherwise, collections will be prefixed with ``mailbox.``
 
 It is also possible to configure the timeout thresholds for Read and Write operations in the ``timeout`` block.

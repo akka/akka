@@ -1,6 +1,3 @@
-
-.. _routing-java:
-
 Routing (Java)
 ==============
 
