@@ -339,4 +339,89 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       }
     }), "Actor:" + id)
   }
+
+  "custom router" must {
+    "be started when constructed" in {
+      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter()))
+      routedActor.isTerminated must be(false)
+    }
+
+    "count votes as intended - not as in Florida" in {
+      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter()))
+      routedActor ! DemocratVote
+      routedActor ! DemocratVote
+      routedActor ! RepublicanVote
+      routedActor ! DemocratVote
+      routedActor ! RepublicanVote
+      val democratsResult = (routedActor ? DemocratCountResult)
+      val republicansResult = (routedActor ? RepublicanCountResult)
+
+      Await.result(democratsResult, 1 seconds) === 3
+      Await.result(republicansResult, 1 seconds) === 2
+    }
+
+    // DO NOT CHANGE THE COMMENTS BELOW AS THEY ARE USED IN THE DOCUMENTATION
+
+    //#CustomRouter
+    //#crMessages
+    case object DemocratVote
+    case object DemocratCountResult
+    case object RepublicanVote
+    case object RepublicanCountResult
+    //#crMessages
+
+    //#crActors
+    class DemocratActor extends Actor {
+      var counter = 0
+
+      def receive = {
+        case DemocratVote        ⇒ counter += 1
+        case DemocratCountResult ⇒ sender ! counter
+      }
+    }
+
+    class RepublicanActor extends Actor {
+      var counter = 0
+
+      def receive = {
+        case RepublicanVote        ⇒ counter += 1
+        case RepublicanCountResult ⇒ sender ! counter
+      }
+    }
+    //#crActors
+
+    //#crRouter
+    case class VoteCountRouter(nrOfInstances: Int = 0, targets: Iterable[String] = Nil)
+      extends RouterConfig {
+
+      //#crRoute
+      def createRoute(props: Props,
+                      actorContext: ActorContext,
+                      ref: RoutedActorRef): Route = {
+        val democratActor = actorContext.actorOf(Props[DemocratActor], "d")
+        val republicanActor = actorContext.actorOf(Props[RepublicanActor], "r")
+        val routees = Vector[ActorRef](democratActor, republicanActor)
+
+        //#crRegisterRoutees
+        registerRoutees(actorContext, routees)
+        //#crRegisterRoutees
+
+        //#crRoutingLogic
+        {
+          case (sender, message) ⇒
+            message match {
+              case DemocratVote | DemocratCountResult ⇒
+                List(Destination(sender, democratActor))
+              case RepublicanVote | RepublicanCountResult ⇒
+                List(Destination(sender, republicanActor))
+            }
+        }
+        //#crRoutingLogic
+      }
+      //#crRoute
+
+    }
+    //#crRouter
+    //#CustomRouter
+  }
 }
