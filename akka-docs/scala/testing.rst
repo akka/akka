@@ -15,11 +15,6 @@ Testing Actor Systems
 .. module:: akka-testkit
    :synopsis: Tools for Testing Actor Systems
 .. moduleauthor:: Roland Kuhn
-.. versionadded:: 1.0
-.. versionchanged:: 1.1
-   added :class:`TestActorRef`
-.. versionchanged:: 1.2
-   added :class:`TestFSMRef`
 
 As with any piece of software, automated tests are a very important part of the
 development cycle. The actor model presents a different view on how units of
@@ -74,12 +69,7 @@ Having access to the actual :class:`Actor` object allows application of all
 traditional unit testing techniques on the contained methods. Obtaining a
 reference is done like this:
 
-.. code-block:: scala
-
-   import akka.testkit.TestActorRef
-
-   val actorRef = TestActorRef[MyActor]
-   val actor = actorRef.underlyingActor
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-actor-ref
 
 Since :class:`TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
@@ -92,35 +82,9 @@ Testing Finite State Machines
 
 If your actor under test is a :class:`FSM`, you may use the special
 :class:`TestFSMRef` which offers all features of a normal :class:`TestActorRef`
-and in addition allows access to the internal state::
+and in addition allows access to the internal state:
 
-  import akka.testkit.TestFSMRef
-  import akka.util.duration._
-
-  val fsm = TestFSMRef(new Actor with FSM[Int, String] {
-      startWith(1, "")
-      when (1) {
-        case Ev("go") => goto(2) using "go"
-      }
-      when (2) {
-        case Ev("back") => goto(1) using "back"
-      }
-    })
-
-  assert (fsm.stateName == 1)
-  assert (fsm.stateData == "")
-  fsm ! "go"                      // being a TestActorRef, this runs also on the CallingThreadDispatcher
-  assert (fsm.stateName == 2)
-  assert (fsm.stateData == "go")
-
-  fsm.setState(stateName = 1)
-  assert (fsm.stateName == 1)
-
-  assert (fsm.timerActive_?("test") == false)
-  fsm.setTimer("test", 12, 10 millis, true)
-  assert (fsm.timerActive_?("test") == true)
-  fsm.cancelTimer("test")
-  assert (fsm.timerActive_?("test") == false)
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-fsm-ref
 
 Due to a limitation in Scala’s type inference, there is only the factory method
 shown above, so you will probably write code like ``TestFSMRef(new MyFSM)``
@@ -150,11 +114,7 @@ usual. This trick is made possible by the :class:`CallingThreadDispatcher`
 described below; this dispatcher is set implicitly for any actor instantiated
 into a :class:`TestActorRef`.
 
-.. code-block:: scala
-
-   val actorRef = TestActorRef(new MyActor).start()
-   val result = (actorRef ? Say42).as[Int] // hypothetical message stimulating a '42' answer
-   result must be (Some(42))
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-behavior
 
 As the :class:`TestActorRef` is a subclass of :class:`LocalActorRef` with a few
 special extras, also aspects like linking to a supervisor and restarting work
@@ -172,7 +132,7 @@ One more special aspect which is overridden for single-threaded tests is the
 
    To summarize: :class:`TestActorRef` overwrites two fields: it sets the
    dispatcher to :obj:`CallingThreadDispatcher.global` and it sets the
-   :obj:`receiveTimeout` to zero.
+   :obj:`receiveTimeout` to None.
 
 The Way In-Between
 ------------------
@@ -180,15 +140,13 @@ The Way In-Between
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the :class:`TestActorRef` swallow
 any thrown exceptions, then there is another mode available for you: just use
-the :class:`TestActorRef` as a partial function, the calls to
-:meth:`isDefinedAt` and :meth:`apply` will be forwarded to the underlying
-actor:
+the :meth:`apply` method :class:`TestActorRef`, which will be forwarded to the
+underlying actor:
 
-.. code-block:: scala
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-unhandled
 
-   val ref = TestActorRef[MyActor]
-   ref.isDefinedAt('unknown) must be (false)
-   intercept[IllegalActorStateException] { ref(RequestReply) }
+The above sample assumes the default behavior for unhandled messages, i.e.
+that the actor doesn't swallow all messages and doesn't override :meth:`unhandled`.
 
 Use Cases
 ---------
@@ -221,33 +179,13 @@ stimuli at varying injection points and arrange results to be sent from
 different emission points, but the basic principle stays the same in that a
 single procedure drives the test.
 
-The :class:`TestKit` trait contains a collection of tools which makes this
-common task easy:
+The :class:`TestKit` class contains a collection of tools which makes this
+common task easy.
 
-.. code-block:: scala
+.. includecode:: code/akka/docs/testkit/PlainWordSpec.scala#plain-spec
 
-   import akka.testkit.TestKit
-   import org.scalatest.WordSpec
-   import org.scalatest.matchers.MustMatchers
-
-   class MySpec extends WordSpec with MustMatchers with TestKit {
-
-     "An Echo actor" must {
-
-       "send back messages unchanged" in {
-
-         val echo = Actor.actorOf(Props[EchoActor])
-         echo ! "hello world"
-         expectMsg("hello world")
-
-       }
-
-     }
-
-   }
-
-The :class:`TestKit` contains an actor named :obj:`testActor` which is
-implicitly used as sender reference when dispatching messages from the test
+When using ``with ImplicitSender`` the :class:`TestKit` contains an actor named :obj:`testActor`
+which is implicitly used as sender reference when dispatching messages from the test
 procedure. This enables replies to be received by this internal actor, whose
 only function is to queue them so that interrogation methods like
 :meth:`expectMsg` can examine them. The :obj:`testActor` may also be passed to
@@ -255,6 +193,9 @@ other actors as usual, usually subscribing it as notification listener. There
 is a whole set of examination methods, e.g. receiving all consecutive messages
 matching certain criteria, receiving a whole sequence of fixed messages or
 classes, receiving nothing for some time, etc.
+
+To avoid memory leaks it is important that you shutdown the :class:`ActorSystem`
+when the test is finished, as illustrated in the :meth:`afterAll` method above.
 
 .. note::
 
@@ -385,15 +326,11 @@ with message flows:
 Expecting Exceptions
 --------------------
 
-One case which is not handled by the :obj:`testActor` is if an exception is
-thrown while processing the message sent to the actor under test. This can be
-tested by using a :class:`Future` based invocation::
+Testing that an expected exception is thrown while processing a message sent to
+the actor under test can be done by using a :class:`TestActorRef` :meth:`apply` based
+invocation:
 
-  // assuming ScalaTest ShouldMatchers
-
-  evaluating {
-    (someActor ? badOperation).await.get
-  } should produce [UnhandledMessageException]
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-expecting-exceptions
 
 .. _TestKit.within:
 
@@ -426,21 +363,7 @@ It should be noted that if the last message-receiving assertion of the block is
 latencies. This means that while individual contained assertions still use the
 maximum time bound, the overall block may take arbitrarily longer in this case.
 
-.. code-block:: scala
-
-  class SomeSpec extends WordSpec with MustMatchers with TestKit {
-    "A Worker" must {
-      "send timely replies" in {
-        val worker = ActorSystem().actorOf(...)
-        within (500 millis) {
-          worker ! "some work"
-          expectMsg("some result")
-          expectNoMsg        // will block for the rest of the 500ms
-          Thread.sleep(1000) // will NOT make this block fail
-        }
-      }
-    }
-  }
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-within
 
 .. note::
 
@@ -460,25 +383,18 @@ invariably lead to spurious test failures on the heavily loaded Jenkins server
 internally scaled by a factor taken from the :ref:`configuration`,
 ``akka.test.timefactor``, which defaults to 1.
 
+You can scale other durations with the same factor by using the implicit conversion
+in ``akka.testkit`` package object to add dilated function to :class:`Duration`.
+
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#duration-dilation
+
 Resolving Conflicts with Implicit ActorRef
 ------------------------------------------
 
-If you want the sender of messages inside your TestKit-based tests to be the `testActor```
-simply mix in `ÌmplicitSender`` into your test.
+If you want the sender of messages inside your TestKit-based tests to be the ``testActor``
+simply mix in ``ÌmplicitSender`` into your test.
 
-.. code-block:: scala
-
-  class SomeSpec extends WordSpec with MustMatchers with TestKit with ImplicitSender {
-    "A Worker" must {
-      "send timely replies" in {
-        val worker = ActorSystem().actorOf(...)
-        within (500 millis) {
-          worker ! "some work" // testActor is the "sender" for this message
-          expectMsg("some result")
-        }
-      }
-    }
-  }
+.. includecode:: code/akka/docs/testkit/PlainWordSpec.scala#implicit-sender
 
 Using Multiple Probe Actors
 ---------------------------
@@ -489,42 +405,16 @@ at the :obj:`testActor` when using the :class:`TestKit` as a mixin. Another
 approach is to use it for creation of simple probe actors to be inserted in the
 message flows. To make this more powerful and convenient, there is a concrete
 implementation called :class:`TestProbe`. The functionality is best explained
-using a small example::
+using a small example:
 
-  class MyDoubleEcho extends Actor {
-    var dest1 : ActorRef = _
-    var dest2 : ActorRef = _
-    def receive = {
-      case (d1: ActorRef, d2: ActorRef) =>
-        dest1 = d1
-        dest2 = d2
-      case x =>
-        dest1 ! x
-        dest2 ! x
-    }
-  }
-
-  val probe1 = TestProbe()
-  val probe2 = TestProbe()
-  val actor = ActorSystem().actorOf(Props[MyDoubleEcho])
-  actor ! (probe1.ref, probe2.ref)
-  actor ! "hello"
-  probe1.expectMsg(50 millis, "hello")
-  probe2.expectMsg(50 millis, "hello")
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala
+   :include: imports-test-probe,my-double-echo,test-probe
 
 Probes may also be equipped with custom assertions to make your test code even
-more concise and clear::
+more concise and clear:
 
-  case class Update(id : Int, value : String)
-
-  val probe = new TestProbe {
-      def expectUpdate(x : Int) = {
-        expectMsg {
-          case Update(id, _) if id == x => true
-        }
-        reply("ACK")
-      }
-    }
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala
+   :include: test-special-probe
 
 You have complete flexibility here in mixing and matching the :class:`TestKit`
 facilities with your own checks and choosing an intuitive name for it. In real
@@ -535,13 +425,9 @@ Replying to Messages Received by Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The probes keep track of the communications channel for replies, if possible,
-so they can also reply::
+so they can also reply:
 
-  val probe = TestProbe()
-  val future = probe.ref ? "hello"
-  probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
-  probe.reply("world")
-  assert (future.isCompleted && future.as[String] == "world")
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-probe-reply
 
 Forwarding Messages Received by Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -550,15 +436,10 @@ Given a destination actor ``dest`` which in the nominal actor network would
 receive a message from actor ``source``. If you arrange for the message to be
 sent to a :class:`TestProbe` ``probe`` instead, you can make assertions
 concerning volume and timing of the message flow while still keeping the
-network functioning::
+network functioning:
 
-  val probe = TestProbe()
-  val system = ActorSystem()
-  val source = system.actorOf(Props(new Source(probe)))
-  val dest = system.actorOf(Props[Destination])
-  source ! "start"
-  probe.expectMsg("work")
-  probe.forward(dest)
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala
+   :include: test-probe-forward-actors,test-probe-forward
 
 The ``dest`` actor will receive the same message invocation as if no test probe
 had intervened.
@@ -572,7 +453,7 @@ described :ref:`above <TestKit.within>` is local to each probe. Hence, probes
 do not react to each other's deadlines or to the deadline set in an enclosing
 :class:`TestKit` instance::
 
-  class SomeTest extends TestKit {
+  class SomeTest extends TestKit(_system: ActorSystem) with ImplicitSender {
 
     val probe = TestProbe()
 
@@ -599,25 +480,9 @@ so long as all intervening actors run on this dispatcher.
 How to use it
 -------------
 
-Just set the dispatcher as you normally would, either from within the actor
+Just set the dispatcher as you normally would:
 
-.. code-block:: scala
-
-   import akka.testkit.CallingThreadDispatcher
-
-   class MyActor extends Actor {
-     self.dispatcher = CallingThreadDispatcher.global
-     ...
-   }
-
-or from the client code
-
-.. code-block:: scala
-
-   val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.global))
-
-As the :class:`CallingThreadDispatcher` does not have any configurable state,
-you may always use the (lazily) preallocated one as shown in the examples.
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#calling-thread-dispatcher
 
 How it works
 ------------
@@ -719,13 +584,11 @@ options:
 
   This is enabled by a setting in the :ref:`configuration` — namely
   ``akka.actor.debug.receive`` — which enables the :meth:`loggable`
-  statement to be applied to an actor’s :meth:`receive` function::
+  statement to be applied to an actor’s :meth:`receive` function:
 
-    import akka.event.LoggingReceive
-    def receive = LoggingReceive(this) {
-      case msg => ...
-    }
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#logging-receive
 
+.
   The first argument to :meth:`LoggingReceive` defines the source to be used in the
   logging events, which should be the current actor.
 
@@ -755,12 +618,12 @@ All these messages are logged at ``DEBUG`` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment::
 
   akka {
-    loglevel = "DEBUG"
+    loglevel = DEBUG
     actor {
       debug {
-        receive = "true"
-        autoreceive = "true"
-        lifecycle = "true"
+        receive = on
+        autoreceive = on
+        lifecycle = on
       }
     }
   }
