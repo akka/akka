@@ -15,4 +15,5 @@ Java API
    fault-tolerance
    dispatchers
    routing
+   remoting
    extending-akka

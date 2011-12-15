@@ -1,0 +1,84 @@
+
+.. _remoting-scala:
+
+#################
+ Remoting (Scala)
+#################
+
+For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
+
+Preparing your ActorSystem for Remoting
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+First of all you have to change the actor provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``::
+
+  akka {
+    actor {
+     provider = "akka.remote.RemoteActorRefProvider"
+    }
+  }
+
+After that you must also add the following settings::
+
+  akka {
+    server {
+      # The hostname or ip to bind the remoting to,
+      # InetAddress.getLocalHost.getHostAddress is used if empty
+      hostname = ""
+
+      # The default remote server port clients should connect to.
+      # Default is 2552 (AKKA)
+      port = 2552
+    }
+  }
+
+These are the bare minimal settings that must exist in order to get started with remoting.
+There are, of course, more properties that can be tweaked. We refer to the following
+reference file for more information:
+
+* `reference.conf of akka-remote <https://github.com/jboner/akka/blob/master/akka-remote/src/main/resources/reference.conf#L39>`_
+
+Using Remote Actors
+^^^^^^^^^^^^^^^^^^^
+
+The configuration below instructs the system to deploy the actor "retrieval” on the specific host "app@10.0.0.1".
+The "app" in this case refers to the name of the ``ActorSystem``::
+
+  akka {
+    actor {
+      deployment {
+        /serviceA/retrieval {
+          remote = “akka://app@10.0.0.1:2552”
+        }
+      }
+    }
+  }
+
+Serialization
+^^^^^^^^^^^^^
+
+When using remoting for actors you must ensure that the ``props`` and ``messages`` used for
+those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
+
+Routers with Remote Destinations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is absolutely feasible to combine remoting with :ref:`routers`.
+This is also done via configuration::
+
+  akka {
+    actor {
+      deployment {
+        /serviceA/aggregation {
+          router = “round-robin”
+          nr-of-instances = 10
+          target {
+            nodes = [“akka://app@10.0.0.2:2552”, “akka://app@10.0.0.3:2552”]
+          }
+        }
+      }
+    }
+  }
+
+This configuration setting will clone the actor “aggregation” 10 times and deploy it evenly distributed across
+the two given target nodes.
