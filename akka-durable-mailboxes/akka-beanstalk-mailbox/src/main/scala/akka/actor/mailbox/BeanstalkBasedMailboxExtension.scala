@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 
 object BeanstalkBasedMailboxExtension extends ExtensionId[BeanstalkMailboxSettings] with ExtensionIdProvider {
+  override def get(system: ActorSystem): BeanstalkMailboxSettings = super.get(system)
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new BeanstalkMailboxSettings(system.settings.config)
 }
