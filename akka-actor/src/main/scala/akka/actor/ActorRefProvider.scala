@@ -352,6 +352,9 @@ class LocalActorRefProvider(
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
   /*
@@ -369,6 +372,9 @@ class LocalActorRefProvider(
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
   private val guardianFaultHandlingStrategy = {
