@@ -2,7 +2,7 @@ package akka.util
 
 import scala.util.continuations._
 import akka.dispatch.MessageDispatcher
-import akka.actor.Timeout
+import akka.util.Timeout
 
 package object cps {
   def matchC[A, B, C, D](in: A)(pf: PartialFunction[A, B @cpsParam[C, D]]): B @cpsParam[C, D] = pf(in)

@@ -3,7 +3,7 @@ package akka.camel;
 import akka.actor.Actor;
 import akka.actor.TypedActor;
 import akka.actor.Props;
-import akka.actor.Timeout;
+import akka.util.Timeout;
 import akka.dispatch.Dispatchers;
 import akka.japi.SideEffect;
 import akka.util.FiniteDuration;

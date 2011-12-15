@@ -5,6 +5,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
 import akka.actor.ActorSystem
 import akka.actor._
+import akka.util.Timeout
 import akka.stm._
 import akka.util.duration._
 import akka.testkit._

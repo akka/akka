@@ -7,7 +7,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.Logging.Error
-import akka.actor.Timeout
+import akka.util.Timeout
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
