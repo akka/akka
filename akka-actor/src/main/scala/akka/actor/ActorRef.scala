@@ -136,6 +136,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 
   /**
    * Is the actor shut down?
+   * The contract is that if this method returns true, then it will never be false again.
+   * But you cannot rely on that it is alive if it returns true, since this by nature is a racy method.
    */
   def isTerminated: Boolean
 
