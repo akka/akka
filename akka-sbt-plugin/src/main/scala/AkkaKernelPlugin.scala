@@ -95,7 +95,9 @@ object AkkaKernelPlugin extends Plugin {
     }
 
   def isKernelProject(dependencies: Seq[ModuleID]): Boolean = {
-    dependencies.exists(moduleId ⇒ moduleId.organization == "se.scalablesolutions.akka" && moduleId.name == "akka-kernel")
+    dependencies.exists { d ⇒
+      (d.organization == "com.typesafe.akka" || d.organization == "se.scalablesolutions.akka") && d.name == "akka-kernel"
+    }
   }
 
   private def defaultConfigSourceDirs = (sourceDirectory, unmanagedResourceDirectories) map { (src, resources) ⇒
@@ -128,7 +130,7 @@ object AkkaKernelPlugin extends Plugin {
     |AKKA_CLASSPATH="$AKKA_HOME/lib/*:$AKKA_HOME/config"
     |JAVA_OPTS="%s"
     |
-    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s
+    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s "$@"
     |""".stripMargin.format(jvmOptions, mainClass)
 
     private def distBatScript =
@@ -137,7 +139,7 @@ object AkkaKernelPlugin extends Plugin {
     |set AKKA_CLASSPATH=%%AKKA_HOME%%\lib\*;%%AKKA_HOME%%\config
     |set JAVA_OPTS=%s
     |
-    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s
+    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s %%*
     |""".stripMargin.format(jvmOptions, mainClass)
 
     private def setExecutable(target: File, executable: Boolean): Option[String] = {
@@ -194,9 +196,9 @@ object AkkaKernelPlugin extends Plugin {
   private def projectInfo(projectRef: ProjectRef, project: ResolvedProject, buildStruct: BuildStructure, state: State,
                           allProjects: Map[ProjectRef, ResolvedProject]): SubProjectInfo = {
 
-    def optionalSetting[A](key: ScopedSetting[A]) = key in projectRef get buildStruct.data
+    def optionalSetting[A](key: SettingKey[A]) = key in projectRef get buildStruct.data
 
-    def setting[A](key: ScopedSetting[A], errorMessage: ⇒ String) = {
+    def setting[A](key: SettingKey[A], errorMessage: ⇒ String) = {
       optionalSetting(key) getOrElse {
         logger(state).error(errorMessage);
         throw new IllegalArgumentException()
@@ -204,7 +206,7 @@ object AkkaKernelPlugin extends Plugin {
     }
 
     def evaluateTask[T](taskKey: sbt.Project.ScopedKey[sbt.Task[T]]) = {
-      EvaluateTask.evaluateTask(buildStruct, taskKey, state, projectRef, false, EvaluateTask.SystemProcessors)
+      EvaluateTask(buildStruct, taskKey, state, projectRef).map(_._2)
     }
 
     val projDeps: Seq[ModuleID] = evaluateTask(Keys.projectDependencies) match {
