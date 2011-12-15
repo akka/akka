@@ -8,12 +8,13 @@
 How can I use and deploy Akka?
 ==============================
 
-Akka can be used in two different ways:
+Akka can be used in different ways:
 
 - As a library: used as a regular JAR on the classpath and/or in a web app, to
   be put into ``WEB-INF/lib``
 
-- As a stand alone application by instantiating ActorSystem
+- As a stand alone application by instantiating ActorSystem in a main class or
+  using the :ref:`microkernel`
 
 
 Using Akka as library
@@ -34,3 +35,10 @@ Actors as regular services referenced from your Web application. You should also
 be able to use the Remoting service, e.g. be able to make certain Actors remote
 on other hosts. Please note that remoting service does not speak HTTP over port
 80, but a custom protocol over the port is specified in :ref:`configuration`.
+
+
+Using Akka as a stand alone microkernel
+----------------------------------------
+
+Akka can also be run as a stand-alone microkernel. See :ref:`microkernel` for
+more information.

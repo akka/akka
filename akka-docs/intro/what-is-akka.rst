@@ -76,7 +76,6 @@ Akka can be used in two different ways
 - As a library: used by a web app, to be put into ‘WEB-INF/lib’ or as a regular
   JAR on your classpath.
 
-- As a microkernel: stand-alone kernel, embedding a servlet container and all
-  the other modules.
+- As a microkernel: stand-alone kernel to drop your application into.
 
 See the :ref:`deployment-scenarios` for details.

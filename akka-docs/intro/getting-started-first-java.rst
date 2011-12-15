@@ -63,10 +63,10 @@ Downloading and installing Akka
 -------------------------------
 
 To build and run the tutorial sample from the command line, you have to download
-Akka. If you prefer to use SBT to build and run the sample then you can skip
-this section and jump to the next one.
+Akka. If you prefer to use SBT to build and run the sample then you can skip this
+section and jump to the next one.
 
-Let's get the ``akka-actors-2.0-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.0-SNAPSHOT.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -77,46 +77,55 @@ You need to do one more thing in order to install Akka properly: set the
 I'm opening up a shell, navigating down to the distribution, and setting the
 ``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-actors-2.0-SNAPSHOT
+    $ cd /Users/jboner/tools/akka-2.0-SNAPSHOT
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-actors-2.0-SNAPSHOT
+    /Users/jboner/tools/akka-2.0-SNAPSHOT
 
 The distribution looks like this::
 
     $ ls -1
+    bin
     config
+    deploy
     doc
     lib
     src
 
+- In the ``bin`` directory we have scripts for starting the Akka Microkernel.
 - In the ``config`` directory we have the Akka conf files.
-- In the ``doc`` directory we have the documentation, API, doc JARs, and also
-  the source files for the tutorials.
+- In the ``deploy`` directory we can place applications to be run with the microkernel.
+- In the ``doc`` directory we have the documentation, API, and doc JARs.
 - In the ``lib`` directory we have the Scala and Akka JARs.
 - In the ``src`` directory we have the source JARs for Akka.
-
 
 The only JAR we will need for this tutorial (apart from the
 ``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
-Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
+Akka is very modular and has many JARs for containing different features. The
+modules are:
 
-- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors
-- ``akka-typed-actor-2.0-SNAPSHOT.jar`` -- Typed Actors
-- ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener for logging with SLF4J
-- ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
+- ``akka-actor`` -- Actors
 
-The Akka Microkernel distribution also includes these jars:
+- ``akka-remote`` -- Remote Actors
 
-- ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-- ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+- ``akka-slf4j`` -- SLF4J Event Handler Listener for logging with SLF4J
+
+- ``akka-testkit`` -- Toolkit for testing Actors
+
+- ``akka-kernel`` -- Akka microkernel for running a bare-bones mini application server
+
+- ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Zookeeper
+
+- ``akka-amqp`` -- AMQP integration
+
+.. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+
 
 
 Downloading and installing Maven
@@ -158,9 +167,11 @@ Here is the layout that Maven created::
 
 As you can see we already have a Java source file called ``App.java``, let's now rename it to ``Pi.java``.
 
-We also need to edit the ``pom.xml`` build file. Let's add the dependency we need as well as the Maven repository it should download it from. The Akka Maven repository can be found at `<http://akka.io/repository>`_
-and Typesafe provides `<http://repo.typesafe.com/typesafe/releases/>`_ that proxies several other repositories, including akka.io.
-It should now look something like this:
+We also need to edit the ``pom.xml`` build file. Let's add the dependency we
+need as well as the Maven repository it should download it from. The Akka Maven
+repository can be found at http://akka.io/releases/ and Typesafe provides
+http://repo.typesafe.com/typesafe/releases/ that proxies several other
+repositories, including akka.io.  It should now look something like this:
 
 .. code-block:: xml
 
