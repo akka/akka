@@ -17,3 +17,4 @@ Java API
    dispatchers
    routing
    guice-integration
+   extending-akka
