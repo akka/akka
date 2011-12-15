@@ -50,7 +50,6 @@ Now lets create an object representing the FSM and defining the behavior.
 .. code-block:: scala
 
   import akka.actor.{Actor, FSM}
-  import akka.event.EventHandler
   import akka.util.duration._
 
   case object Move
@@ -63,19 +62,19 @@ Now lets create an object representing the FSM and defining the behavior.
 
     when(A) {
       case Ev(Move) =>
-        EventHandler.info(this, "Go to B and move on after 5 seconds")
+        log.info(this, "Go to B and move on after 5 seconds")
         goto(B) forMax (5 seconds)
     }
 
     when(B) {
       case Ev(StateTimeout) =>
-        EventHandler.info(this, "Moving to C")
+        log.info(this, "Moving to C")
         goto(C)
     }
 
     when(C) {
       case Ev(Move) =>
-        EventHandler.info(this, "Stopping")
+        log.info(this, "Stopping")
         stop
     }
 
@@ -132,10 +131,12 @@ Now we can create a lock FSM that takes :class:`LockState` as a state and a
         // add the digit to what we have
         soFar + digit match {
           case incomplete if incomplete.length < code.length =>
-            // not enough digits yet so stay using the incomplete code as the new state data
+            // not enough digits yet so stay using the
+            // incomplete code as the new state data
             stay using incomplete
           case `code` =>
-            // code matched the one from the lock so go to Open state and reset the state data
+            // code matched the one from the lock
+            // so go to Open state and reset the state data
             goto(Open) using emptyCode forMax (1 seconds)
           case wrong =>
             // wrong code, stay Locked and reset the state data
@@ -236,12 +237,12 @@ demonstrated below:
 
   when(Idle) {
     case Ev(Start(msg)) => // convenience extractor when state data not needed
-      goto(Timer) using (msg, self.channel)
+      goto(Timer) using (msg, sender)
   }
 
   when(Timer, stateTimeout = 12 seconds) {
-    case Event(StateTimeout, (msg, channel)) =>
-      channel ! msg
+    case Event(StateTimeout, (msg, sender)) =>
+      sender ! msg
       goto(Idle)
   }
 
@@ -271,10 +272,10 @@ do something else in this case you can specify that with
 
   whenUnhandled {
     case Event(x : X, data) =>
-      EventHandler.info(this, "Received unhandled event: " + x)
+      log.info(this, "Received unhandled event: " + x)
       stay
     case Ev(msg) =>
-      EventHandler.warn(this, "Received unknown event: " + x)
+      log.warn(this, "Received unknown event: " + x)
       goto(Error)
   }
 
@@ -359,7 +360,7 @@ progress.
    onTransition {
      case Idle -> Active => setTimer("timeout")
      case Active -> _ => cancelTimer("timeout")
-     case x -> Idle => EventHandler.info("entering Idle from "+x)
+     case x -> Idle => log.info("entering Idle from "+x)
    }
 
 The convenience extractor :obj:`->` enables decomposition of the pair of states
@@ -526,7 +527,7 @@ certain failure state) or for other creative uses::
     override def logDepth = 12
     onTermination {
       case StopEvent(Failure(_), state, data) =>
-        EventHandler.warning(this, "Failure in state "+state+" with data "+data+"\n"+
+        log.warning(this, "Failure in state "+state+" with data "+data+"\n"+
           "Events leading up to this point:\n\t"+getLog.mkString("\n\t"))
     }
     ...
