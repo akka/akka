@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.docs.routing
 
 import akka.routing.{ ScatterGatherFirstCompletedRouter, BroadcastRouter, RandomRouter, RoundRobinRouter }
@@ -21,7 +24,7 @@ class PrintlnActor extends Actor {
 //#fibonacciActor
 class FibonacciActor extends Actor {
   def receive = {
-    case FibonacciNumber(nbr) ⇒ sender.tell(fibonacci(nbr))
+    case FibonacciNumber(nbr) ⇒ sender tell fibonacci(nbr)
   }
 
   private def fibonacci(n: Int): Int = {

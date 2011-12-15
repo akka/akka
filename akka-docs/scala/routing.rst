@@ -1,3 +1,6 @@
+
+.. _routing-scala:
+
 Routing (Scala)
 ===============
 
@@ -38,11 +41,11 @@ and
 
 Here is the configuration file to instruct the routers how many instances of routees to create::
 
-    akka.actor.deployment {
-        /user/router {
-            nr-of-instances = 5
-        }
+  akka.actor.deployment {
+    /router {
+      nr-of-instances = 5
     }
+  }
 
 RoundRobinRouter
 ****************
@@ -55,19 +58,21 @@ When run you should see a similar output to this:
 
 .. code-block:: scala
 
-    Received message '1' in actor $b
-    Received message '2' in actor $c
-    Received message '3' in actor $d
-    Received message '6' in actor $b
-    Received message '4' in actor $e
-    Received message '8' in actor $d
-    Received message '5' in actor $f
-    Received message '9' in actor $e
-    Received message '10' in actor $f
-    Received message '7' in actor $c
+  Received message '1' in actor $b
+  Received message '2' in actor $c
+  Received message '3' in actor $d
+  Received message '6' in actor $b
+  Received message '4' in actor $e
+  Received message '8' in actor $d
+  Received message '5' in actor $f
+  Received message '9' in actor $e
+  Received message '10' in actor $f
+  Received message '7' in actor $c
 
 If you look closely to the output you can see that each of the routees received two messages which
 is exactly what you would expect from a round-robin router to happen.
+(The name of an actor is automatically created in the format ``$letter`` unless you specify it -
+hence the names printed above.)
 
 RandomRouter
 ************
@@ -82,16 +87,16 @@ When run you should see a similar output to this:
 
 .. code-block:: scala
 
-    Received message '1' in actor $e
-    Received message '2' in actor $c
-    Received message '4' in actor $b
-    Received message '5' in actor $d
-    Received message '3' in actor $e
-    Received message '6' in actor $c
-    Received message '7' in actor $d
-    Received message '8' in actor $e
-    Received message '9' in actor $d
-    Received message '10' in actor $d
+  Received message '1' in actor $e
+  Received message '2' in actor $c
+  Received message '4' in actor $b
+  Received message '5' in actor $d
+  Received message '3' in actor $e
+  Received message '6' in actor $c
+  Received message '7' in actor $d
+  Received message '8' in actor $e
+  Received message '9' in actor $d
+  Received message '10' in actor $d
 
 The result from running the random router should be different, or at least random, every time you run it.
 Try to run it a couple of times to verify its behavior if you don't trust us.
@@ -107,11 +112,11 @@ When run you should see a similar output to this:
 
 .. code-block:: scala
 
-    Received message 'this is a broadcast message' in actor $f
-    Received message 'this is a broadcast message' in actor $d
-    Received message 'this is a broadcast message' in actor $e
-    Received message 'this is a broadcast message' in actor $c
-    Received message 'this is a broadcast message' in actor $b
+  Received message 'this is a broadcast message' in actor $f
+  Received message 'this is a broadcast message' in actor $d
+  Received message 'this is a broadcast message' in actor $e
+  Received message 'this is a broadcast message' in actor $c
+  Received message 'this is a broadcast message' in actor $b
 
 As you can see here above each of the routees, five in total, received the broadcast message.
 
@@ -127,7 +132,7 @@ When run you should see this:
 
 .. code-block:: scala
 
-    The result of calculating Fibonacci for 10 is 55
+  The result of calculating Fibonacci for 10 is 55
 
 From the output above you can't really see that all the routees performed the calculation, but they did!
 The result you see is from the first routee that returned its calculation to the router.
@@ -156,7 +161,7 @@ Once you have the router actor it is just to send messages to it as you would to
 
 .. code-block:: scala
 
-    router ! MyMsg
+  router ! MyMsg
 
 The router will apply its behavior to the message it receives and forward it to the routees.
 
@@ -164,11 +169,11 @@ Broadcast Messages
 ^^^^^^^^^^^^^^^^^^
 
 There is a special type of message that will be sent to all routees regardless of the router.
-This message is called 'Broadcast' and is used in the following manner:
+This message is called `Broadcast`` and is used in the following manner:
 
 .. code-block:: scala
 
-    router ! Broadcast("Watch out for Davy Jones' locker")
+  router ! Broadcast("Watch out for Davy Jones' locker")
 
 Only the actual message is forwarded to the routees, i.e. "Watch out for Davy Jones' locker" in the example above.
 It is up to the routee implementation whether to handle the broadcast message or not.
@@ -234,7 +239,7 @@ The actor pool is built around three concepts: capacity, filtering and selection
 Selection
 ^^^^^^^^^
 
-All pools require a *Selector* to be mixed-in. This trait controls how and how many actors in the pool will
+All pools require a ``Selector`` to be mixed-in. This trait controls how and how many actors in the pool will
 receive the incoming message. Define *selectionCount* to some positive number greater than one to route to
 multiple actors. Currently two are provided:
 
@@ -245,7 +250,7 @@ Partial Fills
 *************
 
 When selecting more than one pooled actor, its possible that in order to fulfill the requested amount,
-the selection set must contain duplicates. By setting *partialFill* to **true**, you instruct the selector to
+the selection set must contain duplicates. By setting ``partialFill`` to ``true``, you instruct the selector to
 return only unique actors from the pool.
 
 Capacity

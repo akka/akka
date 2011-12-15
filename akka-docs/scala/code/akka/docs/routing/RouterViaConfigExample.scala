@@ -1,6 +1,8 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.docs.routing
 
-import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.{ Actor, Props, ActorSystem }
 import akka.routing.RoundRobinRouter
 
