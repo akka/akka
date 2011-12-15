@@ -54,7 +54,7 @@ Our example implementation of that interface:
    :exclude: typed-actor-impl-methods
 
 The most trivial way of creating a Typed Actor instance
-of our Squarer:
+of our ``Squarer``:
 
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-create1
@@ -132,7 +132,7 @@ This call is asynchronous, and the Future returned can be used for asynchronous 
 Stopping Typed Actors
 ---------------------
 
-Since Akkas Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
+Since Akka's Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
 
 .. includecode:: code/akka/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-stop
