@@ -52,6 +52,7 @@ import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.docs.actor.MyUntypedActor;
 import akka.actor.Props;
+import akka.dispatch.Futures;
 
 import static org.junit.Assert.*;
 
@@ -183,20 +184,9 @@ public class FutureDocTestBase {
 
   @Test
   public void useSequence() {
-    Future<Integer> f1 = future(new Callable<Integer>() {
-      public Integer call() {
-        return 1;
-      }
-    }, system.dispatcher());
-    Future<Integer> f2 = future(new Callable<Integer>() {
-      public Integer call() {
-        return 2;
-      }
-    }, system.dispatcher());
-
     List<Future<Integer>> source = new ArrayList<Future<Integer>>();
-    source.add(f1);
-    source.add(f2);
+    source.add(Futures.successful(1, system.dispatcher()));
+    source.add(Futures.successful(2, system.dispatcher()));
 
     //#sequence
     //Some source generating a sequence of Future<Integer>:s
@@ -244,20 +234,9 @@ public class FutureDocTestBase {
 
   @Test
   public void useFold() {
-    Future<String> f1 = future(new Callable<String>() {
-      public String call() {
-        return "a";
-      }
-    }, system.dispatcher());
-    Future<String> f2 = future(new Callable<String>() {
-      public String call() {
-        return "b";
-      }
-    }, system.dispatcher());
-
     List<Future<String>> source = new ArrayList<Future<String>>();
-    source.add(f1);
-    source.add(f2);
+    source.add(Futures.successful("a", system.dispatcher()));
+    source.add(Futures.successful("b", system.dispatcher()));
     //#fold
 
     //A sequence of Futures, in this case Strings
@@ -277,20 +256,9 @@ public class FutureDocTestBase {
 
   @Test
   public void useReduce() {
-    Future<String> f1 = future(new Callable<String>() {
-      public String call() {
-        return "a";
-      }
-    }, system.dispatcher());
-    Future<String> f2 = future(new Callable<String>() {
-      public String call() {
-        return "b";
-      }
-    }, system.dispatcher());
-
     List<Future<String>> source = new ArrayList<Future<String>>();
-    source.add(f1);
-    source.add(f2);
+    source.add(Futures.successful("a", system.dispatcher()));
+    source.add(Futures.successful("b", system.dispatcher()));
     //#reduce
 
     //A sequence of Futures, in this case Strings
