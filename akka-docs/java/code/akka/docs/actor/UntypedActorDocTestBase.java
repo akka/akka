@@ -58,7 +58,7 @@ public class UntypedActorDocTestBase {
   public void systemActorOf() {
     //#system-actorOf
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
     //#system-actorOf
     myActor.tell("test");
     system.shutdown();
@@ -68,7 +68,7 @@ public class UntypedActorDocTestBase {
   public void contextActorOf() {
     //#context-actorOf
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
     //#context-actorOf
     myActor.tell("test");
     system.shutdown();
@@ -83,7 +83,7 @@ public class UntypedActorDocTestBase {
       public UntypedActor create() {
         return new MyActor("...");
       }
-    }));
+    }), "myactor");
     //#creating-constructor
     myActor.tell("test");
     system.shutdown();
@@ -94,9 +94,8 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
     MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
-    ActorRef myActor = system.actorOf(
-      new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
-      "myactor");
+    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+        "myactor");
     //#creating-props
     myActor.tell("test");
     system.shutdown();
@@ -109,7 +108,7 @@ public class UntypedActorDocTestBase {
       public UntypedActor create() {
         return new MyAskActor();
       }
-    }));
+    }), "myactor");
 
     //#using-ask
     Future<Object> future = myActor.ask("Hello", 1000);

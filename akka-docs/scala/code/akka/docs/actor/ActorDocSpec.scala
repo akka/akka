@@ -33,7 +33,7 @@ case class Message(s: String)
 
 //#context-actorOf
 class FirstActor extends Actor {
-  val myActor = context.actorOf(Props[MyActor])
+  val myActor = context.actorOf(Props[MyActor], name = "myactor")
   //#context-actorOf
   //#anonymous-actor
   def receive = {
@@ -56,7 +56,7 @@ class FirstActor extends Actor {
 //#system-actorOf
 object Main extends App {
   val system = ActorSystem("MySystem")
-  val myActor = system.actorOf(Props[MyActor])
+  val myActor = system.actorOf(Props[MyActor], name = "myactor")
   //#system-actorOf
 }
 
@@ -98,7 +98,7 @@ class Swapper extends Actor {
 
 object SwapperApp extends App {
   val system = ActorSystem("SwapperSystem")
-  val swap = system.actorOf(Props[Swapper])
+  val swap = system.actorOf(Props[Swapper], name = "swapper")
   swap ! Swap // logs Hi
   swap ! Swap // logs Ho
   swap ! Swap // logs Hi
@@ -138,14 +138,14 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#import-context
     class FirstActor extends Actor {
       import context._
-      val myActor = actorOf(Props[MyActor])
+      val myActor = actorOf(Props[MyActor], name = "myactor")
       def receive = {
         case x ⇒ myActor ! x
       }
     }
     //#import-context
 
-    val first = system.actorOf(Props(new FirstActor))
+    val first = system.actorOf(Props(new FirstActor), name = "first")
     system.stop(first)
 
   }
@@ -182,7 +182,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     //#creating-constructor
     // allows passing in arguments to the MyActor constructor
-    val myActor = system.actorOf(Props(new MyActor("...")))
+    val myActor = system.actorOf(Props(new MyActor("...")), name = "myactor")
     //#creating-constructor
 
     system.stop(myActor)
@@ -224,7 +224,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       }
     }
 
-    val myActor = system.actorOf(Props(new MyActor))
+    val myActor = system.actorOf(Props(new MyActor), name = "myactor")
     implicit val timeout = system.settings.ActorTimeout
     val future = myActor ? "hello"
     for (x ← future) println(x) //Prints "hello"
@@ -270,6 +270,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     }
     //#hot-swap-actor
 
-    val actor = system.actorOf(Props(new HotSwapActor))
+    val actor = system.actorOf(Props(new HotSwapActor), name = "hot")
   }
 }

@@ -78,6 +78,11 @@ a top level actor, that is supervised by the system (internal guardian actor).
 
 .. includecode:: code/akka/docs/actor/FirstUntypedActor.java#context-actorOf
 
+The name parameter is optional, but you should preferably name your actors, since
+that is used in log messages and for identifying actors. The name must not be empty
+or start with ``$``. If the given name is already in use by another child to the
+same parent actor an `InvalidActorNameException` is thrown.
+
 Actors are automatically started asynchronously when created.
 When you create the ``UntypedActor`` then it will automatically call the ``preStart``
 callback method on the ``UntypedActor`` class. This is an excellent place to

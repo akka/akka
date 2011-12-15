@@ -14,7 +14,6 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 
-
 //TODO: everything here for current compatibility - could be limited more
 
 /**
