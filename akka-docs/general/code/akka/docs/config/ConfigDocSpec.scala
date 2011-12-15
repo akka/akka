@@ -6,7 +6,6 @@ import org.scalatest.matchers.MustMatchers
 //#imports
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-
 //#imports
 
 class ConfigDocSpec extends WordSpec with MustMatchers {
@@ -15,7 +14,7 @@ class ConfigDocSpec extends WordSpec with MustMatchers {
     //#custom-config
     val customConf = ConfigFactory.parseString("""
       akka.actor.deployment {
-        /user/my-service {
+        /my-service {
           router = round-robin
           nr-of-instances = 3
         }
@@ -27,7 +26,5 @@ class ConfigDocSpec extends WordSpec with MustMatchers {
     //#custom-config
 
     system.shutdown()
-
   }
-
 }

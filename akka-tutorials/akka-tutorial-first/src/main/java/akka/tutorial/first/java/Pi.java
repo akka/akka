@@ -79,12 +79,11 @@ public class Pi {
         public void onReceive(Object message) {
             if (message instanceof Work) {
                 Work work = (Work) message;
-
                 double result = calculatePiFor(work.getStart(), work.getNrOfElements());
-
                 getSender().tell(new Result(result));
-
-            } else throw new IllegalArgumentException("Unknown message [" + message + "]");
+            } else {
+                throw new IllegalArgumentException("Unknown message [" + message + "]");
+            }
         }
     }
     //#worker
@@ -108,9 +107,9 @@ public class Pi {
             this.latch = latch;
 
             //#create-router
-            router = this.getContext().actorOf(new Props().withCreator(
-                    Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)),
-                    "pi");
+            router = this.getContext().actorOf(
+                new Props(Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)),
+                "pi");
             //#create-router
         }
 
@@ -139,8 +138,8 @@ public class Pi {
         @Override
         public void postStop() {
             System.out.println(String.format(
-                    "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
-                    pi, (System.currentTimeMillis() - start)));
+                "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis",
+                pi, (System.currentTimeMillis() - start)));
             latch.countDown();
         }
     }

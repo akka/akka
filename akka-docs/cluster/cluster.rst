@@ -1,12 +1,15 @@
 
 .. _cluster:
 
-#########
- Cluster
-#########
+######################
+ Cluster Specification
+######################
 
-*This document describes the new clustering coming in Akka 2.1*
+.. sidebar:: Contents
 
+   .. contents:: :local:
+
+*This document describes the new clustering coming in Akka 2.1 (not 2.0)*
 
 Intro
 =====

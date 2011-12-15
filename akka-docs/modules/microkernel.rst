@@ -26,11 +26,11 @@ command (on a unix-based system):
 
    bin/akka sample.kernel.hello.HelloKernel
 
-Use Ctrl-C to interrupt and exit the microkernel.
+Use ``Ctrl-C`` to interrupt and exit the microkernel.
 
 On a Windows machine you can also use the bin/akka.bat script.
 
-The code for the Hello Kernel example (see the HelloKernel class for an example
+The code for the Hello Kernel example (see the ``HelloKernel`` class for an example
 of creating a Bootable):
 
 .. includecode:: ../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala

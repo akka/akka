@@ -12,8 +12,6 @@ Java API
    scheduler
    futures
    dataflow
-   transactors
    fault-tolerance
    dispatchers
    routing
-   guice-integration

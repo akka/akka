@@ -57,45 +57,56 @@ Defining the configuration file
 
 Each Akka module has a reference configuration file with the default values.
 
-*akka-actor:*
+akka-actor
+~~~~~~~~~~
 
 .. literalinclude:: ../../akka-actor/src/main/resources/reference.conf
    :language: none
 
-*akka-remote:*
+akka-remote
+~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
    :language: none
 
-*akka-testkit:*
+akka-testkit
+~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
-*akka-beanstalk-mailbox:*
+akka-beanstalk-mailbox
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/reference.conf
    :language: none
 
-*akka-file-mailbox:*
+akka-file-mailbox
+~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
    :language: none
 
-*akka-mongo-mailbox:*
+akka-mongo-mailbox
+~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
    :language: none
 
-*akka-redis-mailbox:*
+akka-redis-mailbox
+~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/reference.conf
    :language: none
 
-*akka-zookeeper-mailbox:*
+akka-zookeeper-mailbox
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
    :language: none
+
+Custom application.conf
+-----------------------
 
 A custom ``application.conf`` might look like this::
 

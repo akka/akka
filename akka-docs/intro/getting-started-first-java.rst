@@ -117,10 +117,9 @@ modules are:
 
 - ``akka-kernel`` -- Akka microkernel for running a bare-bones mini application server
 
-- ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Zookeeper
+- ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Beanstalk and Zookeeper
 
-- ``akka-amqp`` -- AMQP integration
-
+.. - ``akka-amqp`` -- AMQP integration
 .. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
 .. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
 .. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
