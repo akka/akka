@@ -65,11 +65,15 @@ The "app" in this case refers to the name of the ``ActorSystem``::
 Logical path lookup is supported on the node you are on, i.e. to use the
 actor created above you would do the following::
 
-  val actor = actorFor("/serviceA/retrieval")
+  val actor = context.actorFor("/serviceA/retrieval")
 
-To use an actor on a remote node::
+This will obtain an ``ActorRef`` on a remote node::
 
-  val actor = actorFor("akka://app@10.0.0.1:2552/user/theActor")
+  val actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval")
+
+As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
+
+    akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
 Serialization
 ^^^^^^^^^^^^^

@@ -9,7 +9,7 @@ public class RemoteActorExample extends UntypedActor {
     //#localNodeActor
 
     //#remoteNodeActor
-    ActorRef a2 = getContext().actorFor("akka://app@10.0.0.1:2552/user/theActor");
+    ActorRef a2 = getContext().actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval");
     //#remoteNodeActor
 
     public void onReceive(Object message) throws Exception {

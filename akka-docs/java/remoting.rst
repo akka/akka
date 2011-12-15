@@ -61,11 +61,15 @@ The "app" in this case refers to the name of the ``ActorSystem``::
 Logical path lookup is supported on the node you are on, i.e. to use the
 actor created above you would do the following:
 
-  .. includecode:: code/akka/docs/remoting/RemoteActorExample.java#localNodeActor
+.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#localNodeActor
 
-To use an actor on a remote node:
+This will obtain an ``ActorRef`` on a remote node:
 
-  .. includecode:: code/akka/docs/remoting/RemoteActorExample.java#remoteNodeActor
+.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#remoteNodeActor
+
+As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
+
+    akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
 Serialization
 ^^^^^^^^^^^^^
