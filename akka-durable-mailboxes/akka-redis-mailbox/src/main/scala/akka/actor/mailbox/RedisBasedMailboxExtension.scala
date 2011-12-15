@@ -7,6 +7,7 @@ import com.typesafe.config.Config
 import akka.actor._
 
 object RedisBasedMailboxExtension extends ExtensionId[RedisBasedMailboxSettings] with ExtensionIdProvider {
+  override def get(system: ActorSystem): RedisBasedMailboxSettings = super.get(system)
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new RedisBasedMailboxSettings(system.settings.config)
 }

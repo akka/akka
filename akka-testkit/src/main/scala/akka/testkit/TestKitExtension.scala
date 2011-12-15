@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.{ ExtensionId, ActorSystem, Extension, ActorSystemImpl }
 
 object TestKitExtension extends ExtensionId[TestKitSettings] {
+  override def get(system: ActorSystem): TestKitSettings = super.get(system)
   def createExtension(system: ActorSystemImpl): TestKitSettings = new TestKitSettings(system.settings.config)
 }
 
