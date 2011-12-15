@@ -145,6 +145,14 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
                     sb.append("# ");
                     sb.append(v.origin().description());
                     sb.append("\n");
+
+                    for (String comment : v.origin().comments()) {
+                        indent(sb, indent + 1);
+                        sb.append("# ");
+                        sb.append(comment);
+                        sb.append("\n");
+                    }
+
                     indent(sb, indent + 1);
                 }
                 v.render(sb, indent + 1, formatted);
@@ -352,5 +360,10 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     @Override
     public ConfigValue set(int index, ConfigValue element) {
         throw weAreImmutable("set");
+    }
+
+    @Override
+    protected SimpleConfigList newCopy(boolean ignoresFallbacks, ConfigOrigin newOrigin) {
+        return new SimpleConfigList(newOrigin, value);
     }
 }

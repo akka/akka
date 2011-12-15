@@ -7,16 +7,15 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
-import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
-import akka.dispatch.FutureTimeoutException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
-import java.util.concurrent.LinkedBlockingQueue
 import akka.actor.CreateChild
 import akka.actor.DeadLetter
+import java.util.concurrent.TimeoutException
+import akka.dispatch.{ Await, MessageDispatcher }
 
 object TimingTest extends Tag("timing")
 
@@ -64,9 +63,9 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
-    system.stop()
-    try system.asInstanceOf[ActorSystemImpl].terminationFuture.await(5 seconds) catch {
-      case _: FutureTimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+    system.shutdown()
+    try Await.ready(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
+      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()
   }
@@ -76,7 +75,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   protected def atTermination() {}
 
   def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.self.stop() }).withDispatcher(dispatcher)) ! "go"
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcher)) ! "go"
   }
 }
 
@@ -96,7 +95,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
       spec.ref foreach (_.isTerminated must not be true)
-      system.stop()
+      system.shutdown()
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
@@ -120,7 +119,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         implicit val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter ⇒ locker :+= m
-            case "Die!"        ⇒ sender ! "finally gone"; self.stop()
+            case "Die!"        ⇒ sender ! "finally gone"; context.stop(self)
           }
         }), "davyJones")
 
@@ -139,15 +138,15 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
-        system.stop()
+        system.shutdown()
         latch.await(2 seconds)
-        (davyJones ? "Die!").get must be === "finally gone"
+        Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker must contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        system.stop()
-        otherSystem.stop()
+        system.shutdown()
+        otherSystem.shutdown()
       }
     }
 

@@ -67,7 +67,7 @@ trait ActorContext extends ActorRefFactory {
   def setReceiveTimeout(timeout: Duration): Unit
 
   /**
-   * Resets the current receive timeout.
+   * Clears the receive timeout, i.e. deactivates this feature.
    */
   def resetReceiveTimeout(): Unit
 
@@ -84,16 +84,6 @@ trait ActorContext extends ActorRefFactory {
   def unbecome(): Unit
 
   /**
-   * Returns the current message envelope.
-   */
-  def currentMessage: Envelope
-
-  /**
-   * Returns a stack with the hotswapped behaviors (as Scala PartialFunction).
-   */
-  def hotswap: Stack[PartialFunction[Any, Unit]]
-
-  /**
    * Returns the sender 'ActorRef' of the current message.
    */
   def sender: ActorRef
@@ -108,10 +98,6 @@ trait ActorContext extends ActorRefFactory {
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
   implicit def dispatcher: MessageDispatcher
-
-  def handleFailure(child: ActorRef, cause: Throwable): Unit
-
-  def handleChildTerminated(child: ActorRef): Unit
 
   /**
    * The system that the actor belongs to.
@@ -185,7 +171,7 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  val parent: InternalActorRef,
+  @volatile var parent: InternalActorRef,
   /*no member*/ _receiveTimeout: Option[Duration],
   var hotswap: Stack[PartialFunction[Any, Unit]]) extends UntypedActorContext {
 
@@ -240,6 +226,16 @@ private[akka] class ActorCell(
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
     _actorOf(props, name)
+  }
+
+  final def stop(actor: ActorRef): Unit = {
+    val a = actor.asInstanceOf[InternalActorRef]
+    if (childrenRefs contains actor.path.name) {
+      system.locker ! a
+      childrenRefs -= actor.path.name
+      handleChildTerminated(actor)
+    }
+    a.stop()
   }
 
   final var currentMessage: Envelope = null
@@ -405,7 +401,8 @@ private[akka] class ActorCell(
         // do not process normal messages while waiting for all children to terminate
         dispatcher suspend this
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, "stopping"))
-        for (child ← c) child.stop()
+        // do not use stop(child) because that would dissociate the children from us, but we still want to wait for them
+        for (child ← c) child.asInstanceOf[InternalActorRef].stop()
         stopping = true
       }
     }
@@ -550,15 +547,17 @@ private[akka] class ActorCell(
   }
 
   final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.path.name) match {
-    case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(child, cause, stats, childrenRefs.values)) throw cause
+    case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
     case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.path.toString, "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
     case None                                ⇒ system.eventStream.publish(Warning(self.path.toString, "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
   final def handleChildTerminated(child: ActorRef): Unit = {
-    childrenRefs -= child.path.name
-    props.faultHandler.handleChildTerminated(child, children)
-    if (stopping && childrenRefs.isEmpty) doTerminate()
+    if (childrenRefs contains child.path.name) {
+      childrenRefs -= child.path.name
+      props.faultHandler.handleChildTerminated(this, child, children)
+      if (stopping && childrenRefs.isEmpty) doTerminate()
+    } else system.locker ! ChildTerminated(child)
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

@@ -8,10 +8,10 @@ import com.mongodb.async._
 import com.mongodb.async.futures.RequestFutures
 import org.bson.collection._
 import akka.actor.ActorCell
-import akka.dispatch.Envelope
 import akka.event.Logging
-import akka.dispatch.DefaultPromise
 import akka.actor.ActorRef
+import akka.dispatch.{ Await, Promise, Envelope, DefaultPromise }
+import java.util.concurrent.TimeoutException
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -43,15 +43,14 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
-    val result = new DefaultPromise[Boolean](settings.WriteTimeout)(dispatcher)
+    val result = Promise[Boolean]()(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
-        case Right((oid, wr)) ⇒ result.completeWithResult(true)
-        case Left(t)          ⇒ result.completeWithException(t)
+        case Right((oid, wr)) ⇒ result.success(true)
+        case Left(t)          ⇒ result.failure(t)
       }
     })
-
-    result.as[Boolean].orNull
+    Await.ready(result, settings.WriteTimeout)
   }
 
   def dequeue(): Envelope = withErrorHandling {
@@ -62,29 +61,27 @@ class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
-    val envelopePromise = new DefaultPromise[Envelope](settings.ReadTimeout)(dispatcher)
+    val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
         case Some(msg) ⇒ {
           log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
-          envelopePromise.completeWithResult(msg.envelope())
+          envelopePromise.success(msg.envelope())
           log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
         }
         case None ⇒
-          {
-            log.info("No matching document found. Not an error, just an empty queue.")
-            envelopePromise.completeWithResult(null)
-          }
+          log.info("No matching document found. Not an error, just an empty queue.")
+          envelopePromise.success(null)
           ()
       }
     }
-    envelopePromise.as[Envelope].orNull
+    try { Await.result(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
   }
 
   def numberOfMessages: Int = {
-    val count = new DefaultPromise[Int](settings.ReadTimeout)(dispatcher)
-    mongo.count()(count.completeWithResult)
-    count.as[Int].getOrElse(-1)
+    val count = Promise[Int]()(dispatcher)
+    mongo.count()(count.success)
+    try { Await.result(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
   }
 
   //TODO review find other solution, this will be very expensive

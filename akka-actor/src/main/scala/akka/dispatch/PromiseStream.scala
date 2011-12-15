@@ -166,7 +166,7 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
           } else enqueue(elem)
         } else {
           if (_pendOut.compareAndSet(po, po.tail)) {
-            po.head completeWithResult elem
+            po.head success elem
             if (!po.head.isCompleted) enqueue(elem)
           } else enqueue(elem)
         }
@@ -183,11 +183,11 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
       if (eo eq null) dequeue()
       else {
         if (eo.nonEmpty) {
-          if (_elemOut.compareAndSet(eo, eo.tail)) new KeptPromise(Right(eo.head))
+          if (_elemOut.compareAndSet(eo, eo.tail)) Promise.successful(eo.head)
           else dequeue()
-        } else dequeue(Promise[A](timeout))
+        } else dequeue(Promise[A])
       }
-    } else dequeue(Promise[A](timeout))
+    } else dequeue(Promise[A])
 
   @tailrec
   final def dequeue(promise: Promise[A]): Future[A] = _state.get match {
@@ -227,7 +227,7 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
           } else dequeue(promise)
         } else {
           if (_elemOut.compareAndSet(eo, eo.tail)) {
-            promise completeWithResult eo.head
+            promise success eo.head
           } else dequeue(promise)
         }
       }

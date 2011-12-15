@@ -6,11 +6,13 @@ package com.typesafe.config;
 /**
  * A set of options related to resolving substitutions. Substitutions use the
  * <code>${foo.bar}</code> syntax and are documented in the <a
- * href="https://github.com/havocp/config/blob/master/HOCON.md">HOCON</a> spec.
+ * href="https://github.com/typesafehub/config/blob/master/HOCON.md">HOCON</a>
+ * spec.
  * <p>
  * This object is immutable, so the "setters" return a new object.
  * <p>
  * Here is an example of creating a custom {@code ConfigResolveOptions}:
+ * 
  * <pre>
  *     ConfigResolveOptions options = ConfigResolveOptions.defaults()
  *         .setUseSystemEnvironment(false)

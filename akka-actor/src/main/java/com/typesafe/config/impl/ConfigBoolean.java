@@ -29,4 +29,9 @@ final class ConfigBoolean extends AbstractConfigValue {
     String transformToString() {
         return value ? "true" : "false";
     }
+
+    @Override
+    protected ConfigBoolean newCopy(boolean ignoresFallbacks, ConfigOrigin origin) {
+        return new ConfigBoolean(origin, value);
+    }
 }

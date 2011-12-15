@@ -15,36 +15,60 @@ import akka.event.DeathWatch
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * ActorRef is an immutable and serializable handle to an Actor.
- * <p/>
- * Create an ActorRef for an Actor by using the factory method on the Actor object.
- * <p/>
- * Here is an example on how to create an actor with a default constructor.
- * <pre>
- *   import Actor._
+ * Immutable and serializable handle to an actor, which may or may not reside
+ * on the local host or inside the same [[akka.actor.ActorSystem]]. An ActorRef
+ * can be obtained from an [[akka.actor.ActorRefFactory]], an interface which
+ * is implemented by ActorSystem and [[akka.actor.ActorContext]]. This means
+ * actors can be created top-level in the ActorSystem or as children of an
+ * existing actor, but only from within that actor.
  *
- *   val actor = actorOf(Props[MyActor]
- *   actor ! message
- *   actor.stop()
- * </pre>
+ * ActorRefs can be freely shared among actors by message passing. Message
+ * passing conversely is their only purpose, as demonstrated in the following
+ * examples:
  *
- * You can also create and start actors like this:
- * <pre>
- *   val actor = actorOf(Props[MyActor]
- * </pre>
+ * Scala:
+ * {{{
+ * class ExampleActor extends Actor {
+ *   val other = context.actorOf(Props[OtherActor], "childName") // will be destroyed and re-created upon restart by default
  *
- * Here is an example on how to create an actor with a non-default constructor.
- * <pre>
- *   import Actor._
+ *   def receive {
+ *     case Request1(msg) => other ! refine(msg)     // uses this actor as sender reference, reply goes to us
+ *     case Request2(msg) => other.tell(msg, sender) // forward sender reference, enabling direct reply
+ *     case Request3(msg) => sender ! (other ? msg)  // will reply with a Future for holding other’s reply (implicit timeout from "akka.actor.timeout")
+ *   }
+ * }
+ * }}}
  *
- *   val actor = actorOf(Props(new MyActor(...))
- *   actor ! message
- *   actor.stop()
- * </pre>
+ * Java:
+ * {{{
+ * public class ExampleActor Extends UntypedActor {
+ *   // this child will be destroyed and re-created upon restart by default
+ *   final ActorRef other = getContext().actorOf(new Props(OtherActor.class), "childName");
  *
- * The natural ordering of ActorRef is defined in terms of its [[akka.actor.ActorPath]].
+ *   @Override
+ *   public void onReceive(Object o) {
+ *     if (o instanceof Request1) {
+ *       val msg = ((Request1) o).getMsg();
+ *       other.tell(msg);              // uses this actor as sender reference, reply goes to us
+ *
+ *     } else if (o instanceof Request2) {
+ *       val msg = ((Request2) o).getMsg();
+ *       other.tell(msg, getSender()); // forward sender reference, enabling direct reply
+ *
+ *     } else if (o instanceof Request3) {
+ *       val msg = ((Request3) o).getMsg();
+ *       getSender().tell(other.ask(msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
+ *
+ *     }
+ *   }
+ * }
+ * }}}
+ *
+ * ActorRef does not have a method for terminating the actor it points to, use
+ * [[akka.actor.ActorRefFactory]]`.stop(child)` for this purpose.
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef ⇒
@@ -109,11 +133,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Works with '!' and '?'/'ask'.
    */
   def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender)
-
-  /**
-   * Shuts down the actor its dispatcher and message queue.
-   */
-  def stop(): Unit
 
   /**
    * Is the actor shut down?
@@ -192,6 +211,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
+  def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
   def getParent: InternalActorRef
   /**
@@ -325,7 +345,7 @@ private[akka] class LocalActorRef private[akka] (
         a.result
       case None ⇒
         this.!(message)(null)
-        new DefaultPromise[Any](0)(actorCell.system.dispatcher)
+        Promise[Any]()(actorCell.system.dispatcher)
     }
   }
 
@@ -411,7 +431,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
 
   private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
     _path = rootPath / "deadLetters"
-    brokenPromise = new KeptPromise[Any](Left(new ActorKilledException("In DeadLetterActorRef - promises are always broken.")))(dispatcher)
+    brokenPromise = Promise.failed(new ActorKilledException("In DeadLetterActorRef - promises are always broken."))(dispatcher)
   }
 
   override def isTerminated(): Boolean = true
@@ -470,24 +490,16 @@ class VirtualPathContainer(val path: ActorPath, override val getParent: Internal
 class AskActorRef(
   val path: ActorPath,
   override val getParent: InternalActorRef,
-  deathWatch: DeathWatch,
-  timeout: Timeout,
-  val dispatcher: MessageDispatcher) extends MinimalActorRef {
+  val dispatcher: MessageDispatcher,
+  val deathWatch: DeathWatch) extends MinimalActorRef {
 
-  final val result = new DefaultPromise[Any](timeout)(dispatcher)
+  final val running = new AtomicBoolean(true)
+  final val result = Promise[Any]()(dispatcher)
 
-  {
-    val callback: Future[Any] ⇒ Unit = { _ ⇒ deathWatch.publish(Terminated(AskActorRef.this)); whenDone() }
-    result onComplete callback
-    result onTimeout callback
-  }
-
-  protected def whenDone(): Unit = ()
-
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case Status.Success(r) ⇒ result.completeWithResult(r)
-    case Status.Failure(f) ⇒ result.completeWithException(f)
-    case other             ⇒ result.completeWithResult(other)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = if (running.get) message match {
+    case Status.Success(r) ⇒ result.success(r)
+    case Status.Failure(f) ⇒ result.failure(f)
+    case other             ⇒ result.success(other)
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -496,11 +508,13 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    new KeptPromise[Any](Left(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName))))(dispatcher)
+    Promise.failed(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName)))(dispatcher)
 
-  override def isTerminated = result.isCompleted || result.isExpired
+  override def isTerminated = result.isCompleted
 
-  override def stop(): Unit = if (!isTerminated) result.completeWithException(new ActorKilledException("Stopped"))
+  override def stop(): Unit = if (running.getAndSet(false)) {
+    deathWatch.publish(Terminated(this))
+  }
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path.toString)

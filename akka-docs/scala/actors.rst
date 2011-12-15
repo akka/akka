@@ -40,7 +40,7 @@ along with the implementation of how the messages should be processed.
 
 Here is an example:
 
-.. includecode:: code/ActorDocSpec.scala
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala
    :include: imports1,my-actor
 
 Please note that the Akka Actor ``receive`` message loop is exhaustive, which is
@@ -53,8 +53,8 @@ thrown and the actor is restarted when an unknown message is received.
 Creating Actors with default constructor
 ----------------------------------------
 
-.. includecode:: code/ActorDocSpec.scala
-:include: imports2,system-actorOf
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala
+   :include: imports2,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``Actor`` instance which you can use to interact with the ``Actor``. The
@@ -70,7 +70,7 @@ how the supervisor hierarchy is arranged. When using the context the current act
 will be supervisor of the created child actor. When using the system it will be
 a top level actor, that is supervised by the system (internal guardian actor).
 
-.. includecode:: code/ActorDocSpec.scala#context-actorOf
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#context-actorOf
 
 Actors are automatically started asynchronously when created.
 When you create the ``Actor`` then it will automatically call the ``preStart``
@@ -92,7 +92,7 @@ a call-by-name block in which you can create the Actor in any way you like.
 
 Here is an example:
 
-.. includecode:: code/ActorDocSpec.scala#creating-constructor
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#creating-constructor
 
 
 Creating Actors with Props
@@ -101,7 +101,7 @@ Creating Actors with Props
 ``Props`` is a configuration object to specify additional things for the actor to
 be created, such as the ``MessageDispatcher``.
 
-.. includecode:: code/ActorDocSpec.scala#creating-props
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#creating-props
 
 
 Creating Actors using anonymous classes
@@ -109,7 +109,7 @@ Creating Actors using anonymous classes
 
 When spawning actors for specific sub-tasks from within an actor, it may be convenient to include the code to be executed directly in place, using an anonymous class.
 
-.. includecode:: code/ActorDocSpec.scala#anonymous-actor
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#anonymous-actor
 
 .. warning::
 
@@ -145,13 +145,16 @@ In addition, it offers:
 
 You can import the members in the :obj:`context` to avoid prefixing access with ``context.``
 
-.. includecode:: code/ActorDocSpec.scala#import-context
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#import-context
 
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following::
 
   def preStart() {}
-  def preRestart(reason: Throwable, message: Option[Any]) { postStop() }
+  def preRestart(reason: Throwable, message: Option[Any]) {
+    context.children foreach (context.stop(_))
+    postStop()
+  }
   def postRestart(reason: Throwable) { preStart() }
   def postStop() {}
 
@@ -185,7 +188,7 @@ processing a message. This restart involves the hooks mentioned above:
    message, e.g. when a supervisor does not trap the exception and is restarted
    in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
-   By default it calls :meth:`postStop`.
+   By default it stops all children and calls :meth:`postStop`.
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
@@ -287,7 +290,7 @@ To complete the future with an exception you need send a Failure message to the 
 This is not done automatically when an actor throws an exception while processing a
 message.
 
-.. includecode:: code/ActorDocSpec.scala#reply-exception
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 which is taken from one of the following locations in order of precedence:
@@ -312,7 +315,8 @@ Gives you a way to avoid blocking.
 
 .. warning::
 
-  When using future callbacks, inside actors you need to carefully avoid closing over
+  When using future callbacks, such as ``onComplete``, ``onSuccess``, and ``onFailure``,
+  inside actors you need to carefully avoid closing over
   the containing actor’s reference, i.e. do not call methods or access mutable state
   on the enclosing actor from within the callback. This would break the actor
   encapsulation and may introduce synchronization bugs and race conditions because
@@ -335,7 +339,7 @@ type, it will throw the exception or a :class:`ClassCastException` (if you want
 to get :obj:`None` in the latter case, use :meth:`Future.asSilently[T]`). In
 case of a timeout, :obj:`None` is returned.
 
-.. includecode:: code/ActorDocSpec.scala#using-ask
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-ask
 
 Forward message
 ---------------
@@ -367,7 +371,7 @@ This method should return a ``PartialFunction``, e.g. a ‘match/case’ clause 
 which the message can be matched against the different case clauses using Scala
 pattern matching. Here is an example:
 
-.. includecode:: code/ActorDocSpec.scala
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala
    :include: imports1,my-actor
 
 
@@ -397,19 +401,17 @@ received within a certain time. To receive this timeout you have to set the
 ``receiveTimeout`` property and declare a case handing the ReceiveTimeout
 object.
 
-.. includecode:: code/ActorDocSpec.scala#receive-timeout
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-timeout
 
 
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorRef``.
-The actual termination of the actor is performed asynchronously, i.e.
-``stop`` may return before the actor is stopped.
-
-.. code-block:: scala
-
-  actor.stop()
+Actors are stopped by invoking the :meth:`stop` method of a ``ActorRefFactory``,
+i.e. ``ActorContext`` or ``ActorSystem``. Typically the context is used for stopping
+child actors and the system for stopping top level actors. The actual termination of
+the actor is performed asynchronously, i.e. :meth:`stop` may return before the actor is
+stopped.
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
@@ -463,7 +465,7 @@ pushed and popped.
 
 To hotswap the Actor behavior using ``become``:
 
-.. includecode:: code/ActorDocSpec.scala#hot-swap-actor
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#hot-swap-actor
 
 The ``become`` method is useful for many different things, but a particular nice
 example of it is in example where it is used to implement a Finite State Machine
@@ -473,12 +475,12 @@ example of it is in example where it is used to implement a Finite State Machine
 
 Here is another little cute example of ``become`` and ``unbecome`` in action:
 
-.. includecode:: code/ActorDocSpec.scala#swapper
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#swapper
 
 Encoding Scala Actors nested receives without accidentally leaking memory
 -------------------------------------------------------------------------
 
-See this `Unnested receive example <http://github.com/jboner/akka/blob/master/akka/akka-docs/scala/code/UnnestedReceives.scala>`_.
+See this `Unnested receive example <http://github.com/jboner/akka/blob/master/akka/akka-docs/scala/code/akka/docs/actor/UnnestedReceives.scala>`_.
 
 
 Downgrade
@@ -554,4 +556,4 @@ A bit advanced but very useful way of defining a base message handler and then
 extend that, either through inheritance or delegation, is to use
 ``PartialFunction.orElse`` chaining.
 
-.. includecode:: code/ActorDocSpec.scala#receive-orElse
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse

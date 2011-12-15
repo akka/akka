@@ -34,4 +34,9 @@ final class ConfigString extends AbstractConfigValue {
     protected void render(StringBuilder sb, int indent, boolean formatted) {
         sb.append(ConfigImplUtil.renderJsonString(value));
     }
+
+    @Override
+    protected ConfigString newCopy(boolean ignoresFallbacks, ConfigOrigin origin) {
+        return new ConfigString(origin, value);
+    }
 }

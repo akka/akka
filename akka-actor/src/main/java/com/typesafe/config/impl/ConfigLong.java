@@ -43,4 +43,9 @@ final class ConfigLong extends ConfigNumber {
     protected double doubleValue() {
         return value;
     }
+
+    @Override
+    protected ConfigLong newCopy(boolean ignoresFallbacks, ConfigOrigin origin) {
+        return new ConfigLong(origin, value, originalText);
+    }
 }

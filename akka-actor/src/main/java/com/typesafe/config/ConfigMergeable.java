@@ -24,19 +24,19 @@ public interface ConfigMergeable {
      * method (they need to merge the fallback keys into themselves). All other
      * values just return the original value, since they automatically override
      * any fallback.
-     *
+     * 
      * <p>
      * The semantics of merging are described in the <a
-     * href="https://github.com/havocp/config/blob/master/HOCON.md">spec for
-     * HOCON</a>.
-     *
+     * href="https://github.com/typesafehub/config/blob/master/HOCON.md">spec
+     * for HOCON</a>.
+     * 
      * <p>
      * Note that objects do not merge "across" non-objects; if you write
      * <code>object.withFallback(nonObject).withFallback(otherObject)</code>,
      * then <code>otherObject</code> will simply be ignored. This is an
      * intentional part of how merging works. Both non-objects, and any object
      * which has fallen back to a non-object, block subsequent fallbacks.
-     *
+     * 
      * @param other
      *            an object whose keys should be used if the keys are not
      *            present in this one

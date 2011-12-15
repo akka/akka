@@ -9,10 +9,10 @@ Scala API
    actors
    typed-actors
    logging
+   scheduler
    futures
    dataflow
    agents
-   stm
    transactors
    fault-tolerance
    dispatchers

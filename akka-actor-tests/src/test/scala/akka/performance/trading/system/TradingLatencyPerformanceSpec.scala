@@ -108,7 +108,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
         }
         logMeasurement(numberOfClients, durationNs, stat)
       }
-      clients.foreach(_.stop())
+      clients.foreach(system.stop(_))
     }
   }
 

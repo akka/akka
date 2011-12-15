@@ -37,7 +37,7 @@ public class LoggingDocTestBase {
       }
     }));
     myActor.tell("test");
-    system.stop();
+    system.shutdown();
   }
 
   //#my-actor

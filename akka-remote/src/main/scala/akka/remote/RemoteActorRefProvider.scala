@@ -12,9 +12,9 @@ import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import com.google.protobuf.ByteString
 import akka.event.EventStream
-import akka.serialization.SerializationExtension
-import akka.serialization.Serialization
+import akka.dispatch.Promise
 import akka.config.ConfigurationException
+import java.util.concurrent.{ TimeoutException }
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -199,7 +199,7 @@ private[akka] class RemoteActorRef private[akka] (
         a.result
       case None ⇒
         this.!(message)(null)
-        new DefaultPromise[Any](0)(provider.dispatcher)
+        Promise[Any]()(provider.dispatcher)
     }
   }
 

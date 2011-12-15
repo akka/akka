@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,19 +23,21 @@ final class SimpleConfigOrigin implements ConfigOrigin {
     final private int endLineNumber;
     final private OriginType originType;
     final private String urlOrNull;
+    final private List<String> commentsOrNull;
 
     protected SimpleConfigOrigin(String description, int lineNumber, int endLineNumber,
             OriginType originType,
-            String urlOrNull) {
+ String urlOrNull, List<String> commentsOrNull) {
         this.description = description;
         this.lineNumber = lineNumber;
         this.endLineNumber = endLineNumber;
         this.originType = originType;
         this.urlOrNull = urlOrNull;
+        this.commentsOrNull = commentsOrNull;
     }
 
     static SimpleConfigOrigin newSimple(String description) {
-        return new SimpleConfigOrigin(description, -1, -1, OriginType.GENERIC, null);
+        return new SimpleConfigOrigin(description, -1, -1, OriginType.GENERIC, null, null);
     }
 
     static SimpleConfigOrigin newFile(String filename) {
@@ -44,17 +47,17 @@ final class SimpleConfigOrigin implements ConfigOrigin {
         } catch (MalformedURLException e) {
             url = null;
         }
-        return new SimpleConfigOrigin(filename, -1, -1, OriginType.FILE, url);
+        return new SimpleConfigOrigin(filename, -1, -1, OriginType.FILE, url, null);
     }
 
     static SimpleConfigOrigin newURL(URL url) {
         String u = url.toExternalForm();
-        return new SimpleConfigOrigin(u, -1, -1, OriginType.URL, u);
+        return new SimpleConfigOrigin(u, -1, -1, OriginType.URL, u, null);
     }
 
     static SimpleConfigOrigin newResource(String resource, URL url) {
         return new SimpleConfigOrigin(resource, -1, -1, OriginType.RESOURCE,
-                url != null ? url.toExternalForm() : null);
+                url != null ? url.toExternalForm() : null, null);
     }
 
     static SimpleConfigOrigin newResource(String resource) {
@@ -66,13 +69,22 @@ final class SimpleConfigOrigin implements ConfigOrigin {
             return this;
         } else {
             return new SimpleConfigOrigin(this.description, lineNumber, lineNumber,
-                    this.originType, this.urlOrNull);
+                    this.originType, this.urlOrNull, this.commentsOrNull);
         }
     }
 
     SimpleConfigOrigin addURL(URL url) {
-        return new SimpleConfigOrigin(this.description, this.lineNumber, this.endLineNumber, this.originType,
-                url != null ? url.toExternalForm() : null);
+        return new SimpleConfigOrigin(this.description, this.lineNumber, this.endLineNumber,
+                this.originType, url != null ? url.toExternalForm() : null, this.commentsOrNull);
+    }
+
+    SimpleConfigOrigin setComments(List<String> comments) {
+        if (ConfigImplUtil.equalsHandlingNull(comments, this.commentsOrNull)) {
+            return this;
+        } else {
+            return new SimpleConfigOrigin(this.description, this.lineNumber, this.endLineNumber,
+                    this.originType, this.urlOrNull, comments);
+        }
     }
 
     @Override
@@ -172,12 +184,22 @@ final class SimpleConfigOrigin implements ConfigOrigin {
         return lineNumber;
     }
 
+    @Override
+    public List<String> comments() {
+        if (commentsOrNull != null) {
+            return commentsOrNull;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     static final String MERGE_OF_PREFIX = "merge of ";
 
     private static SimpleConfigOrigin mergeTwo(SimpleConfigOrigin a, SimpleConfigOrigin b) {
         String mergedDesc;
         int mergedStartLine;
         int mergedEndLine;
+        List<String> mergedComments;
 
         OriginType mergedType;
         if (a.originType == b.originType) {
@@ -233,8 +255,18 @@ final class SimpleConfigOrigin implements ConfigOrigin {
             mergedURL = null;
         }
 
+        if (ConfigImplUtil.equalsHandlingNull(a.commentsOrNull, b.commentsOrNull)) {
+            mergedComments = a.commentsOrNull;
+        } else {
+            mergedComments = new ArrayList<String>();
+            if (a.commentsOrNull != null)
+                mergedComments.addAll(a.commentsOrNull);
+            if (b.commentsOrNull != null)
+                mergedComments.addAll(b.commentsOrNull);
+        }
+
         return new SimpleConfigOrigin(mergedDesc, mergedStartLine, mergedEndLine, mergedType,
-                mergedURL);
+                mergedURL, mergedComments);
     }
 
     private static int similarity(SimpleConfigOrigin a, SimpleConfigOrigin b) {

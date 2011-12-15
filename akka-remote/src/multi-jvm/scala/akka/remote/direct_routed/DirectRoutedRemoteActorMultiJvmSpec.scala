@@ -4,6 +4,7 @@ import akka.remote._
 import akka.routing._
 import akka.actor.{ Actor, Props }
 import akka.testkit._
+import akka.dispatch.Await
 
 object DirectRoutedRemoteActorMultiJvmSpec {
   val NrOfNodes = 2
@@ -42,8 +43,7 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTi
       val actor = system.actorOf(Props[SomeActor], "service-hello")
       actor.isInstanceOf[RemoteActorRef] must be(true)
 
-      val result = (actor ? "identify").get
-      result must equal("node1")
+      Await.result(actor ? "identify", timeout.duration) must equal("node1")
 
       barrier("done")
     }
