@@ -14,10 +14,12 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 
+
+//TODO: everything here for current compatibility - could be limited more
+
 /**
  * The actor context - the view of the actor cell from the actor.
  * Exposes contextual information for the actor and the current message.
- * TODO: everything here for current compatibility - could be limited more
  *
  * There are several possibilities for creating actors (see [[akka.actor.Props]]
  * for details on `props`):
