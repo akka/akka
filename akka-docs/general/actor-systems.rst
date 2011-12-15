@@ -1,4 +1,4 @@
-.. _actor_systems:
+.. _actor-systems:
 
 Actor Systems
 =============
@@ -89,7 +89,7 @@ Actor Best Practices
    special-cased thread which sends messages to the actors which shall act on 
    them.
 
-#. Do not pass mutable objects between actors which you actually mutate. In 
+#. Do not pass between actors mutable objects which you actually mutate. In 
    order to ensure that, prefer immutable messages. If the encapsulation of 
    actors is broken by exposing their mutable state to the outside, you are 
    back in normal Java concurrency land with all the drawbacks.
