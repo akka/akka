@@ -19,3 +19,4 @@ Scala API
    routing
    fsm
    testing
+   extending-akka
