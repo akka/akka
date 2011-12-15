@@ -5,7 +5,7 @@ Additional Information
    :maxdepth: 2
 
    benchmarks
-   recipies
+   recipes
    companies-using-akka
    third-party-integrations
    language-bindings

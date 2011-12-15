@@ -1,4 +1,4 @@
-.. _extending-akka:
+.. _extending-akka-java:
 
 Akka Extensions
 ===============

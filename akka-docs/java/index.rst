@@ -18,3 +18,4 @@ Java API
    remoting
    serialization
    extending-akka
+   transactors

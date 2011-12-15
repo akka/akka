@@ -82,7 +82,7 @@ For more information please see :ref:`serialization-java`
 Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is absolutely feasible to combine remoting with :ref:`routers`.
+It is absolutely feasible to combine remoting with :ref:`routing-java`.
 This is also done via configuration::
 
   akka {

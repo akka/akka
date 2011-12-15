@@ -20,3 +20,5 @@ Scala API
    fsm
    testing
    extending-akka
+   agents
+   transactors

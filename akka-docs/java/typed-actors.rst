@@ -1,5 +1,5 @@
-Typed Actors (Scala)
-====================
+Typed Actors (Java)
+===================
 
 .. sidebar:: Contents
 
