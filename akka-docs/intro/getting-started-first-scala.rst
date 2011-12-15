@@ -40,6 +40,24 @@ sent out to each worker actor to be processed. When each worker has processed
 its chunk it sends a result back to the master which aggregates the total
 result.
 
+Tutorial source code
+--------------------
+
+If you want don't want to type in the code and/or set up an SBT project then you can
+check out the full tutorial from the Akka GitHub repository. It is in the
+``akka-tutorials/akka-tutorial-first`` module. You can also browse it online
+`here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
+
+To check out the code using Git invoke the following::
+
+    $ git clone git://github.com/jboner/akka.git
+
+Then you can navigate down to the tutorial::
+
+    $ cd akka/akka-tutorials/akka-tutorial-first
 
 Prerequisites
 =============
@@ -133,19 +151,19 @@ the Scala distribution. If you prefer to use SBT to build and run the sample
 then you can skip this section and jump to the next one.
 
 Scala can be downloaded from http://www.scala-lang.org/downloads. Browse there
-and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip``
+and download the Scala 2.9.1 release. If you pick the ``tgz`` or ``zip``
 distribution then just unzip it where you want it installed. If you pick the
 IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0/bin`` (if that is the
+You also need to make sure that the ``scala-2.9.1/bin`` (if that is the
 directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0/bin
+    $ export PATH=$PATH:scala-2.9.1/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
 the tutorial and put it in the root of the Akka distribution in the ``tutorial``
@@ -221,7 +239,7 @@ Now it's about time to start hacking.
 We start by creating a ``Pi.scala`` file and adding these import statements at
 the top of the file:
 
-.. includecode:: code/tutorials/first/Pi.scala#imports
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#imports
 
 If you are using SBT in this tutorial then create the file in the
 ``src/main/scala`` directory.
@@ -256,7 +274,7 @@ start by creating three messages as case classes.  We also create a common base
 trait for our messages (that we define as being ``sealed`` in order to prevent
 creating messages outside our control):
 
-.. includecode:: code/tutorials/first/Pi.scala#messages
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#messages
 
 
 Creating the worker
@@ -267,67 +285,34 @@ trait and defining the ``receive`` method. The ``receive`` method defines our
 message handler. We expect it to be able to handle the ``Work`` message so we
 need to add a handler for this message:
 
-.. includecode:: code/tutorials/first/Pi.scala#worker
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#worker
    :exclude: calculatePiFor
 
 As you can see we have now created an ``Actor`` with a ``receive`` method as a
 handler for the ``Work`` message. In this handler we invoke the
 ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send
-it back to the original sender using ``self.reply``. In Akka the sender
-reference is implicitly passed along with the message so that the receiver can
-always reply or store away the sender reference for future use.
+it back asynchronously to the original sender using the ``sender`` reference.
+In Akka the sender reference is implicitly passed along with the message so that
+the receiver can always reply or store away the sender reference for future use.
 
 The only thing missing in our ``Worker`` actor is the implementation on the
 ``calculatePiFor(..)`` method. While there are many ways we can implement this
 algorithm in Scala, in this introductory tutorial we have chosen an imperative
 style using a for comprehension and an accumulator:
 
-.. includecode:: code/tutorials/first/Pi.scala#calculatePiFor
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#calculatePiFor
 
 
 Creating the master
 ===================
 
-The master actor is a little bit more involved. In its constructor we need to
-create the workers (the ``Worker`` actors) and start them. We will also wrap
-them in a load-balancing router to make it easier to spread out the work evenly
-between the workers. Let's do that first:
+The master actor is a little bit more involved. In its constructor we create a round-robin router
+to make it easier to spread out the work evenly between the workers. Let's do that first:
 
-.. includecode:: code/tutorials/first/Pi.scala#create-workers
-
-As you can see we are using the ``actorOf`` factory method to create actors,
-this method returns as an ``ActorRef`` which is a reference to our newly created
-actor.  This method is available in the ``Actor`` object but is usually
-imported::
-
-    import akka.actor.Actor.actorOf
-
-There are two versions of ``actorOf``; one of them taking a actor type and the
-other one an instance of an actor. The former one (``actorOf(Props[MyActor]``) is used
-when the actor class has a no-argument constructor while the second one
-(``actorOf(Props(new MyActor(..))``) is used when the actor class has a constructor
-that takes arguments. This is the only way to create an instance of an Actor and
-the ``actorOf`` method ensures this. The latter version is using call-by-name
-and lazily creates the actor within the scope of the ``actorOf`` method. The
-``actorOf`` method instantiates the actor and returns, not an instance to the
-actor, but an instance to an ``ActorRef``. This reference is the handle through
-which you communicate with the actor. It is immutable, serializable and
-location-aware meaning that it "remembers" its original actor even if it is sent
-to other nodes across the network and can be seen as the equivalent to the
-Erlang actor's PID.
-
-The actor's life-cycle is:
-
-- Created & Started -- ``Actor.actorOf(Props[MyActor])`` -- can receive messages
-- Stopped -- ``actorRef.stop()`` -- can **not** receive messages
-
-Once the actor has been stopped it is dead and can not be started again.
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#create-router
 
 Now we have a router that is representing all our workers in a single
-abstraction. If you paid attention to the code above, you saw that we were using
-the ``nrOfWorkers`` variable. This variable and others we have to pass to the
-``Master`` actor in its constructor. So now let's create the master actor. We
-have to pass in three integer variables:
+abstraction. So now let's create the master actor. We pass it three integer variables:
 
 - ``nrOfWorkers`` -- defining how many workers we should start up
 - ``nrOfMessages`` -- defining how many number chunks to send out to the workers
@@ -335,7 +320,7 @@ have to pass in three integer variables:
 
 Here is the master actor:
 
-.. includecode:: code/tutorials/first/Pi.scala#master
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master
    :exclude: handle-messages
 
 A couple of things are worth explaining further.
@@ -343,17 +328,16 @@ A couple of things are worth explaining further.
 First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the
 ``Master`` actor. This latch is only used for plumbing (in this specific
 tutorial), to have a simple way of letting the outside world knowing when the
-master can deliver the result and shut down. In more idiomatic Akka code, as we
-will see in part two of this tutorial series, we would not use a latch but other
-abstractions and functions like ``Channel``, ``Future`` and ``?`` to achieve the
-same thing in a non-blocking way. But for simplicity let's stick to a
-``CountDownLatch`` for now.
+master can deliver the result and shut down. In more idiomatic Akka code
+we would not use a latch but other abstractions and functions like ``Future``
+and ``?`` to achieve the same thing in a non-blocking way.
+But for simplicity let's stick to a ``CountDownLatch`` for now.
 
 Second, we are adding a couple of life-cycle callback methods; ``preStart`` and
 ``postStop``. In the ``preStart`` callback we are recording the time when the
 actor is started and in the ``postStop`` callback we are printing out the result
 (the approximation of Pi) and the time it took to calculate it. In this call we
-also invoke ``latch.countDown`` to tell the outside world that we are done.
+also invoke ``latch.countDown()`` to tell the outside world that we are done.
 
 But we are not done yet. We are missing the message handler for the ``Master``
 actor. This message handler needs to be able to react to two different messages:
@@ -361,22 +345,19 @@ actor. This message handler needs to be able to react to two different messages:
 - ``Calculate`` -- which should start the calculation
 - ``Result`` -- which should aggregate the different results
 
-The ``Calculate`` handler is sending out work to all the ``Worker`` actors and
-after doing that it also sends a ``Broadcast(PoisonPill)`` message to the
-router, which will send out the ``PoisonPill`` message to all the actors it is
-representing (in our case all the ``Worker`` actors). ``PoisonPill`` is a
-special kind of message that tells the receiver to shut itself down using the
-normal shutdown method; ``self.stop``. We also send a ``PoisonPill`` to the
-router itself (since it's also an actor that we want to shut down).
+The ``Calculate`` handler is sending out work to all the ``Worker`` via its router.
 
-The ``Result`` handler is simpler, here we get the value from the ``Result``
-message and aggregate it to our ``pi`` member variable. We also keep track of
-how many results we have received back, and if that matches the number of tasks
-sent out, the ``Master`` actor considers itself done and shuts down.
+The ``Result`` handler gets the value from the ``Result`` message and aggregates it to
+our ``pi`` member variable. We also keep track of how many results we have received back,
+and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and
+invokes the ``self.stop()`` method to stop itself *and* all its supervised actors.
+In this case it has one supervised actor, the router, and this in turn has ``nrOfWorkers`` supervised actors.
+All of them will be stopped automatically as the invocation of any supervisor's ``stop`` method
+will propagate down to all its supervised 'children'.
 
 Let's capture this in code:
 
-.. includecode:: code/tutorials/first/Pi.scala#master-receive
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master-receive
 
 
 Bootstrap the calculation
@@ -391,29 +372,35 @@ The ``Pi`` object is a perfect container module for our actors and messages, so
 let's put them all there. We also create a method ``calculate`` in which we
 start up the ``Master`` actor and wait for it to finish:
 
-.. includecode:: code/tutorials/first/Pi.scala#app
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#app
    :exclude: actors-and-messages
+
+As you can see the *calculate* method above it creates an ActorSystem and this is the Akka container which
+will contain all actors created in that "context". An example of how to create actors in the container
+is the *'system.actorOf(...)'* line in the calculate method. In this case we create a top level actor.
+If you instead where in an actor context, i.e. inside an actor creating other actors, you should use
+*context.actorOf(...)*. This is illustrated in the Master code above.
 
 That's it. Now we are done.
 
 But before we package it up and run it, let's take a look at the full code now,
 with package declaration, imports and all:
 
-.. includecode:: code/tutorials/first/Pi.scala
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
 
 Run it as a command line application
 ====================================
 
-If you have not typed in (or copied) the code for the tutorial as
-``$AKKA_HOME/tutorial/Pi.scala`` then now is the time. When that's done open up
-a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
+If you have not typed in (or copied) the code for the tutorial as in
+``$AKKA_HOME/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala`` then now is the time.
+When that's done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Scala's compiler
 ``scalac``. Our application depends on the ``akka-actor-2.0-SNAPSHOT.jar`` JAR
 file, so let's add that to the compiler classpath when we compile the source::
 
-    $ scalac -cp lib/akka/akka-actor-2.0-SNAPSHOT.jar tutorial/Pi.scala
+    $ scalac -cp lib/akka/akka-actor-2.0-SNAPSHOT.jar Pi.scala
 
 When we have compiled the source file we are ready to run the application. This
 is done with ``java`` but yet again we need to add the
@@ -426,7 +413,7 @@ compiled ourselves::
         akka.tutorial.first.scala.Pi
 
     Pi estimate:        3.1435501812459323
-    Calculation time:   858 millis
+    Calculation time:   553 millis
 
 Yippee! It is working.
 
@@ -445,7 +432,7 @@ When this in done we can run our application directly inside SBT::
     > run
     ...
     Pi estimate:        3.1435501812459323
-    Calculation time:   942 millis
+    Calculation time:   531 millis
 
 Yippee! It is working.
 

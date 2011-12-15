@@ -26,10 +26,8 @@ of concurrency-paradigms, allowing for users to choose the right tool for the
 job.
 
 The integration possibilities for Akka Actors are immense through the Apache
-Camel integration. We provide Software Transactional Memory concurrency control
-through the excellent Multiverse project, and have integrated that with Actors,
-creating Transactors for coordinated concurrent transactions. We have Agents and
-Dataflow concurrency as well.
+Camel integration. We have Transactors for coordinated concurrent transactions,
+as well as Agents and Dataflow concurrency.
 
 
 What's a good use-case for Akka?
@@ -54,14 +52,12 @@ have a commercial product called Akka Atmos which provides the following
 features:
 
 #. Management through Dashboard, JMX and REST
-#. Monitoring through Dashboard, JMX and SNMP
 #. Dapper-style tracing of messages across components and remote nodes
 #. A configurable alert system
 #. Real-time statistics
 #. Very low overhead monitoring agents (should always be on in production)
 #. Consolidation of statistics and logging information to a single node
-#. Data analysis through Hadoop
 #. Storage of statistics data for later processing
-#. Provisioning and rolling upgrades through a dashboard
+#. Provisioning and rolling upgrades
 
 Read more `here <http://typesafe.com/products/typesafe-subscription>`_.
