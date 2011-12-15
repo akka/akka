@@ -54,7 +54,7 @@ class Deployer(val settings: ActorSystem.Settings) {
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
     val router: RouterConfig = deployment.getString("router") match {
-      case "direct"         ⇒ NoRouter
+      case "from-code"      ⇒ NoRouter
       case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, targets)
       case "random"         ⇒ RandomRouter(nrOfInstances, targets)
       case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, targets)

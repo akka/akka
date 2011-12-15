@@ -20,10 +20,10 @@ object DeployerSpec {
           }
         }
         /user/service-direct {
-          router = direct
+          router = from-code
         }
         /user/service-direct2 {
-          router = direct
+          router = from-code
           # nr-of-instances ignored when router = direct
           nr-of-instances = 2
         }
