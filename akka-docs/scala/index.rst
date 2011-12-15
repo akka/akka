@@ -15,6 +15,8 @@ Scala API
    fault-tolerance
    dispatchers
    routing
+   remoting
+   serialization
    fsm
    testing
    extending-akka

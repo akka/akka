@@ -50,13 +50,12 @@ provide truly fault-tolerant systems.
 
 See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
 
-Remote Actors
--------------
+Location Transparency
+---------------------
+Everything in Akka is designed to work in a distributed environment: all
+interactions of actors use purely message passing and everything is asynchronous.
 
-Highly performant distributed actors with remote supervision and error
-management.
-
-See :ref:`remote-actors-scala` and :ref:`remote-actors-java`.
+For an overview of the remoting see :ref:`remoting`
 
 Transactors
 -----------
