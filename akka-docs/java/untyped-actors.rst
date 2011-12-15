@@ -187,7 +187,28 @@ sent to a stopped actor will be redirected to the :obj:`deadLetters` of the
 Identifying Actors
 ==================
 
-FIXME Actor Path documentation
+As described in :ref:`addressing`, each actor has a unique logical path, which
+is obtained by following the chain of actors from child to parent until
+reaching the root of the actor system, and it has a physical path, which may
+differ if the supervision chain includes any remote supervisors. These paths
+are used by the system to look up actors, e.g. when a remote message is
+received and the recipient is searched, but they are also useful more directly:
+actors may look up other actors by specifying absolute or relative
+paths—logical or physical—and receive back an :class:`ActorRef` with the
+result::
+
+  getContext().actorFor("/user/serviceA/aggregator") // will look up this absolute path
+  getContext().actorFor("../joe")                    // will look up sibling beneath same supervisor
+
+It should be noted that the ``..`` in actor paths here always means the logical
+structure, i.e. the supervisor. Remote actor addresses may also be looked up,
+if remoting is enabled::
+
+  getContext().actorFor("akka://app@otherhost:1234/user/serviceB")
+
+These look-ups return a (possibly remote) actor reference immediately, so you
+will have to send to it and await a reply in order to verify that ``serviceB``
+is actually reachable and running.
 
 
 Messages and immutability

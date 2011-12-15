@@ -1,3 +1,5 @@
+.. _addressing:
+
 Actor References, Paths and Addresses
 =====================================
 
