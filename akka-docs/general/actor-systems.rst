@@ -23,7 +23,7 @@ its task into smaller, more manageable pieces. For this purpose it starts child
 actors which it supervises. While the details of supervision are explained 
 :ref:`here <supervision>`, we shall concentrate on the underlying concepts in 
 this section. The only prerequisite is to know that each actor has exactly one 
-supervisor, which is the actor which created it.
+supervisor, which is the actor that created it.
 
 The quintessential feature of actor systems is that tasks are split up and 
 delegated until they become small enough to be handled in one piece. In doing 
@@ -89,10 +89,10 @@ Actor Best Practices
    special-cased thread which sends messages to the actors which shall act on 
    them.
 
-#. Do not pass between actors mutable objects which you actually mutate. In 
-   order to ensure that, prefer immutable messages. If the encapsulation of 
-   actors is broken by exposing their mutable state to the outside, you are 
-   back in normal Java concurrency land with all the drawbacks.
+#. Do not pass mutable objects between actors. In order to ensure that, prefer
+   immutable messages. If the encapsulation of actors is broken by exposing
+   their mutable state to the outside, you are back in normal Java concurrency
+   land with all the drawbacks.
 
 #. Actors are made to be containers for behavior and state, embracing this 
    means to not routinely send behavior within messages (which may be tempting 
