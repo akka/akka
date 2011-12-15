@@ -16,5 +16,4 @@ Java API
    fault-tolerance
    dispatchers
    routing
-   guice-integration
    extending-akka
