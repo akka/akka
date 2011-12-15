@@ -15,6 +15,10 @@ The advantage of Typed Actors vs. Actors is that with TypedActors you have a sta
 
 Typed Actors are implemented using `JDK Proxies <http://docs.oracle.com/javase/6/docs/api/java/lang/reflect/Proxy.html>`_ which provide a pretty easy-worked API to intercept method calls.
 
+.. note::
+
+    Just as with regular Akka Actors, Typed Actors process one call at a time.
+
 
 The tools of the trade
 ----------------------
