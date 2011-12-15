@@ -1,4 +1,4 @@
-package akka.remote.scatter_gather_routed
+package akka.remote
 
 import akka.actor.{ Actor, Props }
 import akka.remote._
@@ -14,9 +14,48 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec {
       case "end" ⇒ context.stop(self)
     }
   }
+
+  import com.typesafe.config.ConfigFactory
+  val commonConfig = ConfigFactory.parseString("""
+    akka {
+      loglevel = "WARNING"
+      actor {
+        provider = "akka.remote.RemoteActorRefProvider"
+        deployment {
+          /service-hello.router = "scatter-gather"
+          /service-hello.nr-of-instances = 3
+          /service-hello.target.nodes = ["akka://AkkaRemoteSpec@localhost:9991","akka://AkkaRemoteSpec@localhost:9992","akka://AkkaRemoteSpec@localhost:9993"]
+        }
+      }
+      remote.server.hostname = "localhost"
+    }""")
+
+  val node1Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9991"
+      cluster.nodename = "node1"
+    }""") withFallback commonConfig
+
+  val node2Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9992"
+      cluster.nodename = "node2"
+    }""") withFallback commonConfig
+
+  val node3Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9993"
+      cluster.nodename = "node3"
+    }""") withFallback commonConfig
+
+  val node4Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9994"
+      cluster.nodename = "node4"
+    }""") withFallback commonConfig
 }
 
-class ScatterGatherRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
+class ScatterGatherRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec.node1Config) {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -29,7 +68,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   }
 }
 
-class ScatterGatherRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
+class ScatterGatherRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec.node2Config) {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -42,7 +81,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec {
   }
 }
 
-class ScatterGatherRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
+class ScatterGatherRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec.node3Config) {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -55,7 +94,8 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec {
   }
 }
 
-class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with DefaultTimeout with ImplicitSender {
+class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec.node4Config)
+  with DefaultTimeout with ImplicitSender {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a ScatterGather router" must {
@@ -64,7 +104,6 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec with De
       barrier("start")
       val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
-      //actor.asInstanceOf[RoutedActorRef].router.isInstanceOf[ScatterGatherFirstCompletedRouter] must be(true)
 
       val connectionCount = NrOfNodes - 1
       val iterationCount = 10

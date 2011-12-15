@@ -1,4 +1,4 @@
-package akka.remote.direct_routed
+package akka.remote
 
 import akka.remote._
 import akka.routing._
@@ -14,12 +14,35 @@ object DirectRoutedRemoteActorMultiJvmSpec {
       case "identify" ⇒ sender ! context.system.nodename
     }
   }
+
+  import com.typesafe.config.ConfigFactory
+  val commonConfig = ConfigFactory.parseString("""
+    akka {
+      loglevel = "WARNING"
+      actor {
+        provider = "akka.remote.RemoteActorRefProvider"
+        deployment {
+          /service-hello.remote = "akka://AkkaRemoteSpec@localhost:9991"
+        }
+      }
+      remote.server.hostname = "localhost"
+    }""")
+
+  val node1Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9991"
+      cluster.nodename = "node1"
+    }""") withFallback commonConfig
+
+  val node2Config = ConfigFactory.parseString("""
+    akka {
+      remote.server.port = "9992"
+      cluster.nodename = "node2"
+    }""") withFallback commonConfig
 }
 
-class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
-
+class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(DirectRoutedRemoteActorMultiJvmSpec.node1Config) {
   import DirectRoutedRemoteActorMultiJvmSpec._
-
   val nodes = NrOfNodes
 
   "___" must {
@@ -30,10 +53,9 @@ class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec {
   }
 }
 
-class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec with DefaultTimeout {
+class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(DirectRoutedRemoteActorMultiJvmSpec.node2Config) with DefaultTimeout {
 
   import DirectRoutedRemoteActorMultiJvmSpec._
-
   val nodes = NrOfNodes
 
   "A new remote actor configured with a Direct router" must {

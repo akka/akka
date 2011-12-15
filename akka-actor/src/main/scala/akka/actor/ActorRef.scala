@@ -363,10 +363,12 @@ case class SerializedActorRef(path: String) {
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
-    case null ⇒ throw new IllegalStateException(
-      "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
-    case someSystem ⇒ someSystem.actorFor(path)
+    case null ⇒
+      throw new IllegalStateException(
+        "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
+          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
+    case someSystem ⇒
+      someSystem.actorFor(path)
   }
 }
 
@@ -382,8 +384,6 @@ trait MinimalActorRef extends InternalActorRef {
     else Nobody
   }
 
-  //FIXME REMOVE THIS, ticket #1416
-  //FIXME REMOVE THIS, ticket #1415
   def suspend(): Unit = ()
   def resume(): Unit = ()
 
@@ -508,7 +508,7 @@ class AskActorRef(
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    Promise.failed(new UnsupportedOperationException("Ask/? is not supported for %s".format(getClass.getName)))(dispatcher)
+    Promise.failed(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName)))(dispatcher)
 
   override def isTerminated = result.isCompleted
 
