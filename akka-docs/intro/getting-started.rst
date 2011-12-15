@@ -58,8 +58,7 @@ external dependencies (apart from the ``scala-library.jar`` JAR).
 Using a release distribution
 ----------------------------
 
-Download the release you need, Akka Actors, Akka Core, or Akka Microkernel, from
-http://akka.io/downloads and unzip it.
+Download the release you need from http://akka.io/downloads and unzip it.
 
 Using a snapshot version
 ------------------------

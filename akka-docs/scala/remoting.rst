@@ -86,7 +86,7 @@ For more information please see :ref:`serialization-scala`
 Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is absolutely feasible to combine remoting with :ref:`routers`.
+It is absolutely feasible to combine remoting with :ref:`routing-scala`.
 This is also done via configuration::
 
   akka {

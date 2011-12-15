@@ -281,6 +281,13 @@ assertions concerning received messages. Here is the full list:
     ``n`` messages must be received within the given time; the received
     messages are returned.
 
+  * :meth:`fishForMessage(max: Duration, hint: String)(pf: PartialFunction[Any, Boolean]): Any`
+
+    Keep receiving messages as long as the time is not used up and the partial
+    function matches and returns ``false``. Returns the message received for
+    which it returned ``true`` or throws an exception, which will include the
+    provided hint for easier debugging.
+
 In addition to message reception assertions there are also methods which help
 with message flows:
 
@@ -290,18 +297,20 @@ with message flows:
     returns ``null`` in case of failure. If the given Duration is zero, the
     call is non-blocking (polling mode).
 
-  * :meth:`receiveWhile[T](max: Duration, idle: Duration)(pf: PartialFunction[Any, T]): Seq[T]`
+  * :meth:`receiveWhile[T](max: Duration, idle: Duration, messages: Int)(pf: PartialFunction[Any, T]): Seq[T]`
 
     Collect messages as long as
 
     * they are matching the given partial function
     * the given time interval is not used up
     * the next message is received within the idle timeout
+    * the number of messages has not yet reached the maximum
 
     All collected messages are returned. The maximum duration defaults to the
     time remaining in the innermost enclosing :ref:`within <TestKit.within>`
     block and the idle duration defaults to infinity (thereby disabling the
-    idle timeout feature).
+    idle timeout feature). The number of expected messages defaults to
+    ``Int.MaxValue``, which effectively disables this limit.
 
   * :meth:`awaitCond(p: => Boolean, max: Duration, interval: Duration)`
 

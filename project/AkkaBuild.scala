@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, amqp, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -92,14 +92,14 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val amqp = Project(
-    id = "akka-amqp",
-    base = file("akka-amqp"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.amqp
-    )
-  )
+  // lazy val amqp = Project(
+  //   id = "akka-amqp",
+  //   base = file("akka-amqp"),
+  //   dependencies = Seq(actor, testkit % "test->test"),
+  //   settings = defaultSettings ++ Seq(
+  //     libraryDependencies ++= Dependencies.amqp
+  //   )
+  // )
 
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
