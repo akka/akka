@@ -169,7 +169,7 @@ Broadcast Messages
 ^^^^^^^^^^^^^^^^^^
 
 There is a special type of message that will be sent to all routees regardless of the router.
-This message is called `Broadcast`` and is used in the following manner:
+This message is called ``Broadcast`` and is used in the following manner:
 
 .. code-block:: scala
 
