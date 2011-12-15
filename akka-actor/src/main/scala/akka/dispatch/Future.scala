@@ -30,11 +30,13 @@ object Await {
   trait Awaitable[+T] {
     /**
      * Should throw java.util.concurrent.TimeoutException if times out
+     * This method should not be called directly.
      */
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
     /**
      * Throws exceptions if cannot produce a T within the specified time
+     * This method should not be called directly.
      */
     def result(atMost: Duration)(implicit permit: CanAwait): T
   }
