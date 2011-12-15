@@ -6,7 +6,7 @@ Dispatchers (Java)
 .. sidebar:: Contents
 
    .. contents:: :local:
-   
+
 The Dispatcher is an important piece that allows you to configure the right semantics and parameters for optimal performance, throughput and scalability. Different Actors have different needs.
 
 Akka supports dispatchers for both event-driven lightweight threads, allowing creation of millions of threads on a single workstation, and thread-based Actors, where each dispatcher is bound to a dedicated OS thread.
@@ -44,7 +44,7 @@ There are 4 different types of message dispatchers:
 
 It is recommended to define the dispatcher in :ref:`configuration` to allow for tuning for different environments.
 
-Example of a custom event-based dispatcher, which can be fetched with ``system.dispatcherFactory().lookup("my-dispatcher")`` 
+Example of a custom event-based dispatcher, which can be fetched with ``system.dispatcherFactory().lookup("my-dispatcher")``
 as in the example above:
 
 .. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
@@ -115,7 +115,7 @@ Priority event-based
 ^^^^^^^^^^^^^^^^^^^^
 
 Sometimes it's useful to be able to specify priority order of messages, that is done by using Dispatcher and supply
-an UnboundedPriorityMailbox or BoundedPriorityMailbox with a ``java.util.Comparator[Envelope]`` or use a 
+an UnboundedPriorityMailbox or BoundedPriorityMailbox with a ``java.util.Comparator[Envelope]`` or use a
 ``akka.dispatch.PriorityGenerator`` (recommended).
 
 Creating a Dispatcher using PriorityGenerator:
@@ -129,9 +129,9 @@ Work-sharing event-based
 
 The ``BalancingDispatcher`` is a variation of the ``Dispatcher`` in which Actors of the same type can be set up to
 share this dispatcher and during execution time the different actors will steal messages from other actors if they
-have less messages to process. 
+have less messages to process.
 Although the technique used in this implementation is commonly known as "work stealing", the actual implementation is probably
-best described as "work donating" because the actor of which work is being stolen takes the initiative. 
+best described as "work donating" because the actor of which work is being stolen takes the initiative.
 This can be a great way to improve throughput at the cost of a little higher latency.
 
 .. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-balancing-config
@@ -154,8 +154,9 @@ if not specified otherwise.
   akka {
     actor {
       default-dispatcher {
-        task-queue-size = 1000   # If negative (or zero) then an unbounded mailbox is used (default)
-                                 # If positive then a bounded mailbox is used and the capacity is set to the number specified
+        # If negative (or zero) then an unbounded mailbox is used (default)
+        # If positive then a bounded mailbox is used and the capacity is set to the number specified
+        task-queue-size = 1000
       }
     }
   }

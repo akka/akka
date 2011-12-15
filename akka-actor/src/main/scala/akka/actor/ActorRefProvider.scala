@@ -6,8 +6,12 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
+import akka.util.Timeout
+import akka.util.Timeout.intToTimeout
+import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
+import akka.util.Timeout
 import akka.AkkaException
 import akka.util.{ Duration, Switch, Helpers }
 import akka.event._
@@ -340,7 +344,7 @@ class LocalActorRefProvider(
   }
 
   /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level 
+   * Guardians can be asked by ActorSystem to create children, i.e. top-level
    * actors. Therefore these need to answer to these requests, forwarding any
    * exceptions which might have occurred.
    */
@@ -352,10 +356,13 @@ class LocalActorRefProvider(
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
   /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level 
+   * Guardians can be asked by ActorSystem to create children, i.e. top-level
    * actors. Therefore these need to answer to these requests, forwarding any
    * exceptions which might have occurred.
    */
@@ -369,6 +376,9 @@ class LocalActorRefProvider(
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
   private val guardianFaultHandlingStrategy = {

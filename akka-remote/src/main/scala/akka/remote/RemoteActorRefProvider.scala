@@ -6,7 +6,10 @@ package akka.remote
 
 import akka.actor._
 import akka.dispatch._
-import akka.event.Logging
+import akka.util.duration._
+import akka.util.Timeout
+import akka.config.ConfigurationException
+import akka.event.{ DeathWatch, Logging }
 import akka.serialization.Compression.LZF
 import akka.remote.RemoteProtocol._
 import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
@@ -62,24 +65,24 @@ class RemoteActorRefProvider(
       /*
        * This needs to deal with “mangled” paths, which are created by remote
        * deployment, also in this method. The scheme is the following:
-       * 
-       * Whenever a remote deployment is found, create a path on that remote 
+       *
+       * Whenever a remote deployment is found, create a path on that remote
        * address below “remote”, including the current system’s identification
        * as “sys@host:port” (typically; it will use whatever the remote
        * transport uses). This means that on a path up an actor tree each node
        * change introduces one layer or “remote/sys@host:port/” within the URI.
-       * 
+       *
        * Example:
-       * 
+       *
        * akka://sys@home:1234/remote/sys@remote:6667/remote/sys@other:3333/user/a/b/c
-       * 
-       * means that the logical parent originates from “sys@other:3333” with 
-       * one child (may be “a” or “b”) being deployed on “sys@remote:6667” and 
-       * finally either “b” or “c” being created on “sys@home:1234”, where 
-       * this whole thing actually resides. Thus, the logical path is 
-       * “/user/a/b/c” and the physical path contains all remote placement 
+       *
+       * means that the logical parent originates from “sys@other:3333” with
+       * one child (may be “a” or “b”) being deployed on “sys@remote:6667” and
+       * finally either “b” or “c” being created on “sys@home:1234”, where
+       * this whole thing actually resides. Thus, the logical path is
+       * “/user/a/b/c” and the physical path contains all remote placement
        * information.
-       * 
+       *
        * Deployments are always looked up using the logical path, which is the
        * purpose of the lookupRemotes internal method.
        */

@@ -61,8 +61,8 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     }
 
     @Override
-    protected ConfigSubstitution newCopy(boolean ignoresFallbacks) {
-        return new ConfigSubstitution(origin(), pieces, prefixLength, ignoresFallbacks);
+    protected ConfigSubstitution newCopy(boolean ignoresFallbacks, ConfigOrigin newOrigin) {
+        return new ConfigSubstitution(newOrigin, pieces, prefixLength, ignoresFallbacks);
     }
 
     @Override

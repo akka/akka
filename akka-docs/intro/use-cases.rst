@@ -1,7 +1,8 @@
 Examples of use-cases for Akka
 ==============================
 
-There is a great discussion on use-cases for Akka with some good write-ups by production users `here <http://stackoverflow.com/questions/4493001/good-use-case-for-akka/4494512#4494512>`_
+There is a great discussion on use-cases for Akka with some good write-ups by production
+users `here <http://stackoverflow.com/questions/4493001/good-use-case-for-akka/4494512#4494512>`_
 
 Here are some of the areas where Akka is being deployed into production
 -----------------------------------------------------------------------

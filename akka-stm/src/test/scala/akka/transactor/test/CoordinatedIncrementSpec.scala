@@ -6,6 +6,7 @@ import akka.actor.ActorSystem
 import akka.actor._
 import akka.stm.{ Ref, TransactionFactory }
 import akka.util.duration._
+import akka.util.Timeout
 import akka.testkit._
 import akka.dispatch.Await
 

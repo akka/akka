@@ -111,12 +111,12 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
         return ConfigValueType.OBJECT;
     }
 
-    protected abstract AbstractConfigObject newCopy(ResolveStatus status,
-            boolean ignoresFallbacks);
+    protected abstract AbstractConfigObject newCopy(ResolveStatus status, boolean ignoresFallbacks,
+            ConfigOrigin origin);
 
     @Override
-    protected AbstractConfigObject newCopy(boolean ignoresFallbacks) {
-            return newCopy(resolveStatus(), ignoresFallbacks);
+    protected AbstractConfigObject newCopy(boolean ignoresFallbacks, ConfigOrigin origin) {
+        return newCopy(resolveStatus(), ignoresFallbacks, origin);
     }
 
     @Override
@@ -173,7 +173,7 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
             return new SimpleConfigObject(mergeOrigins(this, fallback), merged, newResolveStatus,
                     newIgnoresFallbacks);
         else if (newResolveStatus != resolveStatus() || newIgnoresFallbacks != ignoresFallbacks())
-            return newCopy(newResolveStatus, newIgnoresFallbacks);
+            return newCopy(newResolveStatus, newIgnoresFallbacks, origin());
         else
             return this;
     }
@@ -234,7 +234,7 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
             }
         }
         if (changes == null) {
-            return newCopy(newResolveStatus, ignoresFallbacks());
+            return newCopy(newResolveStatus, ignoresFallbacks(), origin());
         } else {
             Map<String, AbstractConfigValue> modified = new HashMap<String, AbstractConfigValue>();
             for (String k : keySet()) {
@@ -306,6 +306,12 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
                     sb.append("# ");
                     sb.append(v.origin().description());
                     sb.append("\n");
+                    for (String comment : v.origin().comments()) {
+                        indent(sb, indent + 1);
+                        sb.append("# ");
+                        sb.append(comment);
+                        sb.append("\n");
+                    }
                     indent(sb, indent + 1);
                 }
                 v.render(sb, indent + 1, k, formatted);

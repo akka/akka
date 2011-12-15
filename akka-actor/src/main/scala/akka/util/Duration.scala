@@ -148,8 +148,6 @@ object Duration {
   trait Infinite {
     this: Duration ⇒
 
-    override def equals(other: Any) = false
-
     def +(other: Duration): Duration =
       other match {
         case _: this.type ⇒ this
@@ -192,7 +190,7 @@ object Duration {
    */
   val Inf: Duration = new Duration with Infinite {
     override def toString = "Duration.Inf"
-    def compare(other: Duration) = 1
+    def compare(other: Duration) = if (other eq this) 0 else 1
     def unary_- : Duration = MinusInf
   }
 
@@ -202,7 +200,7 @@ object Duration {
    */
   val MinusInf: Duration = new Duration with Infinite {
     override def toString = "Duration.MinusInf"
-    def compare(other: Duration) = -1
+    def compare(other: Duration) = if (other eq this) 0 else -1
     def unary_- : Duration = Inf
   }
 
@@ -543,5 +541,31 @@ class DurationDouble(d: Double) {
 
   def days[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, DAYS))
   def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, DAYS))
+}
+
+case class Timeout(duration: Duration) {
+  def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
+  def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
+}
+
+object Timeout {
+  /**
+   * A timeout with zero duration, will cause most requests to always timeout.
+   */
+  val zero = new Timeout(Duration.Zero)
+
+  /**
+   * A Timeout with infinite duration. Will never timeout. Use extreme caution with this
+   * as it may cause memory leaks, blocked threads, or may not even be supported by
+   * the receiver, which would result in an exception.
+   */
+  val never = new Timeout(Duration.Inf)
+
+  def apply(timeout: Long) = new Timeout(timeout)
+  def apply(length: Long, unit: TimeUnit) = new Timeout(length, unit)
+
+  implicit def durationToTimeout(duration: Duration) = new Timeout(duration)
+  implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
+  implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
 }
 

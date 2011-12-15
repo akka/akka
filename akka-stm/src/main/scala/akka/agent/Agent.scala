@@ -9,6 +9,7 @@ import akka.actor._
 import akka.stm._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
 import akka.dispatch._
+import akka.util.Timeout
 
 /**
  * Used internally to send functions.

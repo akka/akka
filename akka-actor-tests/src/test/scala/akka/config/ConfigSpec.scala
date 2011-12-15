@@ -20,7 +20,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       val config = settings.config
       import config._
 
-      getList("akka.boot").asScala.toSeq must equal(Nil)
       getString("akka.version") must equal("2.0-SNAPSHOT")
       settings.ConfigVersion must equal("2.0-SNAPSHOT")
 

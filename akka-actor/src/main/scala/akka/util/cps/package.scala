@@ -1,8 +1,11 @@
+/**
+ *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.util
 
 import scala.util.continuations._
 import akka.dispatch.MessageDispatcher
-import akka.actor.Timeout
 
 package object cps {
   def matchC[A, B, C, D](in: A)(pf: PartialFunction[A, B @cpsParam[C, D]]): B @cpsParam[C, D] = pf(in)

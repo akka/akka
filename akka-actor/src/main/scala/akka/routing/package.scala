@@ -5,7 +5,5 @@
 package akka
 
 package object routing {
-
   type Route = PartialFunction[(akka.actor.ActorRef, Any), Iterable[Destination]]
-
 }

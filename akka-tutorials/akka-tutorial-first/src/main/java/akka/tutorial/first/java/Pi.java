@@ -5,8 +5,17 @@
 package akka.tutorial.first.java;
 
 //#imports
-import akka.actor.*;
-import akka.routing.RoundRobinRouter;
+import akka.actor.Props;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.InternalActorRef;
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
+import akka.japi.Creator;
+import akka.routing.*;
+import akka.util.Timeout;
+
+import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 //#imports
 
@@ -92,13 +101,16 @@ public class Pi {
 
         private ActorRef router;
 
-        public Master(final int nrOfWorkers, int nrOfMessages, int nrOfElements, CountDownLatch latch) {
+        public Master(final int nrOfWorkers, int nrOfMessages,
+                      int nrOfElements, CountDownLatch latch) {
             this.nrOfMessages = nrOfMessages;
             this.nrOfElements = nrOfElements;
             this.latch = latch;
 
             //#create-router
-            router = this.getContext().actorOf(new Props().withCreator(Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)), "pi");
+            router = this.getContext().actorOf(new Props().withCreator(
+                    Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)),
+                    "pi");
             //#create-router
         }
 
@@ -135,8 +147,10 @@ public class Pi {
     //#master
     //#actors-and-messages
 
-    public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages)
-            throws Exception {
+    public void calculate(final int nrOfWorkers,
+                          final int nrOfElements,
+                          final int nrOfMessages)
+                          throws Exception {
         // Create an Akka system
         final ActorSystem system = ActorSystem.create();
 

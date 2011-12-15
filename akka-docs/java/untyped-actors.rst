@@ -39,10 +39,27 @@ Here is an example:
 
 .. includecode:: code/akka/docs/actor/MyUntypedActor.java#my-untyped-actor
 
+Props
+-----
+
+``Props`` is a configuration class to specify options for the creation
+of actors. Here are some examples on how to create a ``Props`` instance.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props-config
+
+
+Creating Actors with Props
+--------------------------
+
+Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
+
+
 Creating Actors with default constructor
 ----------------------------------------
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: imports,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
@@ -62,7 +79,7 @@ a top level actor, that is supervised by the system (internal guardian actor).
 .. includecode:: code/akka/docs/actor/FirstUntypedActor.java#context-actorOf
 
 Actors are automatically started asynchronously when created.
-When you create the ``UntypedActor`` then it will automatically call the ``preStart`` 
+When you create the ``UntypedActor`` then it will automatically call the ``preStart``
 callback method on the ``UntypedActor`` class. This is an excellent place to
 add initialization code for the actor.
 
@@ -76,26 +93,16 @@ add initialization code for the actor.
 Creating Actors with non-default constructor
 --------------------------------------------
 
-If your UntypedActor has a constructor that takes parameters then you can't create it using 'actorOf(clazz)'. 
-Instead you can use a variant of ``actorOf`` that takes an instance of an 'UntypedActorFactory' 
-in which you can create the Actor in any way you like. If you use this method then you to make sure that 
-no one can get a reference to the actor instance. If they can get a reference it then they can 
-touch state directly in bypass the whole actor dispatching mechanism and create race conditions 
-which can lead to corrupt data.
+If your UntypedActor has a constructor that takes parameters then you can't create it using
+'actorOf(new Props(clazz))'. Then you can instead pass in 'new Props(new UntypedActorFactory() {..})'
+in which you can create the Actor in any way you like.
 
 Here is an example:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#creating-constructor
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-constructor
 
-This way of creating the Actor is also great for integrating with Dependency Injection (DI) frameworks like Guice or Spring.
-
-Creating Actors with Props
---------------------------
-
-``Props`` is a configuration object to specify additional things for the actor to 
-be created, such as the ``MessageDispatcher``.
-
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#creating-props
+This way of creating the Actor is also great for integrating with Dependency Injection
+(DI) frameworks like Guice or Spring.
 
 
 UntypedActor API
@@ -119,7 +126,7 @@ In addition, it offers:
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#lifecycle-callbacks
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#lifecycle-callbacks
 
 The implementations shown above are the defaults provided by the :class:`UntypedActor`
 class.
@@ -152,7 +159,7 @@ processing a message. This restart involves the hooks mentioned above:
    message, e.g. when a supervisor does not trap the exception and is restarted
    in turn by its supervisor. This method is the best place for cleaning up,
    preparing hand-over to the fresh actor instance, etc.
-   By default it calls :meth:`postStop`.
+   By default it stops all children and calls :meth:`postStop`.
 2. The initial factory from the ``actorOf`` call is used
    to produce the fresh instance.
 3. The new actor’s :meth:`postRestart` method is invoked with the exception
@@ -162,7 +169,7 @@ processing a message. This restart involves the hooks mentioned above:
 
 An actor restart replaces only the actual actor object; the contents of the
 mailbox and the hotswap stack are unaffected by the restart, so processing of
-messages will resume after the :meth:`postRestart` hook returns. The message 
+messages will resume after the :meth:`postRestart` hook returns. The message
 that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
@@ -172,9 +179,9 @@ Stop Hook
 
 After stopping an actor, its :meth:`postStop` hook is called, which may be used
 e.g. for deregistering this actor from other services. This hook is guaranteed
-to run after message queuing has been disabled for this actor, i.e. messages 
-sent to a stopped actor will be redirected to the :obj:`deadLetters` of the 
-:obj:`ActorSystem`. 
+to run after message queuing has been disabled for this actor, i.e. messages
+sent to a stopped actor will be redirected to the :obj:`deadLetters` of the
+:obj:`ActorSystem`.
 
 
 Identifying Actors
@@ -188,7 +195,7 @@ Messages and immutability
 
 **IMPORTANT**: Messages can be any kind of object but have to be
 immutable. Akka can’t enforce immutability (yet) so this has to be by
-convention. 
+convention.
 
 Here is an example of an immutable message:
 
@@ -207,8 +214,8 @@ Messages are sent to an Actor through one of the following methods.
 
 Message ordering is guaranteed on a per-sender basis.
 
-In all these methods you have the option of passing along your own ``ActorRef``. 
-Make it a practice of doing so because it will allow the receiver actors to be able to respond 
+In all these methods you have the option of passing along your own ``ActorRef``.
+Make it a practice of doing so because it will allow the receiver actors to be able to respond
 to your message, since the sender reference is sent along with the message.
 
 Tell: Fire-forget
@@ -229,7 +236,7 @@ to reply to the original sender, by using ``getSender().tell(replyMsg)``.
 
   actor.tell("Hello", getSelf());
 
-If invoked without the sender parameter the sender will be 
+If invoked without the sender parameter the sender will be
 :obj:`deadLetters` actor reference in the target actor.
 
 Ask: Send-And-Receive-Future
@@ -244,13 +251,13 @@ will immediately return a :class:`Future`:
   Future future = actorRef.ask("Hello", timeoutMillis);
 
 The receiving actor should reply to this message, which will complete the
-future with the reply message as value; ``getSender.tell(result)``. 
+future with the reply message as value; ``getSender.tell(result)``.
 
-To complete the future with an exception you need send a Failure message to the sender. 
-This is not done automatically when an actor throws an exception while processing a 
-message. 
+To complete the future with an exception you need send a Failure message to the sender.
+This is not done automatically when an actor throws an exception while processing a
+message.
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java#reply-exception
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the ``ask`` method.
@@ -258,16 +265,16 @@ specified as parameter to the ``ask`` method.
 See :ref:`futures-java` for more information on how to await or query a
 future.
 
-The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be 
-used to register a callback to get a notification when the Future completes. 
+The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be
+used to register a callback to get a notification when the Future completes.
 Gives you a way to avoid blocking.
 
 .. warning::
 
   When using future callbacks, inside actors you need to carefully avoid closing over
-  the containing actor’s reference, i.e. do not call methods or access mutable state 
-  on the enclosing actor from within the callback. This would break the actor 
-  encapsulation and may introduce synchronization bugs and race conditions because 
+  the containing actor’s reference, i.e. do not call methods or access mutable state
+  on the enclosing actor from within the callback. This would break the actor
+  encapsulation and may introduce synchronization bugs and race conditions because
   the callback will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time. See also:
   :ref:`jmm-shared-state`
@@ -278,7 +285,7 @@ even if that entails waiting for it (but keep in mind that waiting inside an
 actor is prone to dead-locks, e.g. if obtaining the result depends on
 processing another message on this actor).
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-future,using-ask
 
 Forward message
@@ -297,7 +304,7 @@ You need to pass along your context variable as well.
 Receive messages
 ================
 
-When an actor receives a message it is passed into the ``onReceive`` method, this is 
+When an actor receives a message it is passed into the ``onReceive`` method, this is
 an abstract method on the ``UntypedActor`` base class that needs to be defined.
 
 Here is an example:
@@ -340,17 +347,15 @@ message.
 Stopping actors
 ===============
 
-Actors are stopped by invoking the ``stop`` method of the ``ActorRef``. 
-The actual termination of the actor is performed asynchronously, i.e.
-``stop`` may return before the actor is stopped. 
+Actors are stopped by invoking the :meth:`stop` method of a ``ActorRefFactory``,
+i.e. ``ActorContext`` or ``ActorSystem``. Typically the context is used for stopping
+child actors and the system for stopping top level actors. The actual termination of
+the actor is performed asynchronously, i.e. :meth:`stop` may return before the actor is
+stopped.
 
-.. code-block:: java
-
-  actor.stop();
-
-Processing of the current message, if any, will continue before the actor is stopped, 
+Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
-messages are sent to the :obj:`deadLetters` of the :obj:`ActorSystem`, but that 
+messages are sent to the :obj:`deadLetters` of the :obj:`ActorSystem`, but that
 depends on the mailbox implementation.
 
 When stop is called then a call to the ``def postStop`` callback method will
@@ -365,7 +370,7 @@ take place. The ``Actor`` can use this callback to implement shutdown behavior.
 
 All Actors are stopped when the ``ActorSystem`` is stopped.
 Supervised actors are stopped when the supervisor is stopped, i.e. children are stopped
-when parent is stopped. 
+when parent is stopped.
 
 
 PoisonPill
@@ -381,7 +386,7 @@ If the ``PoisonPill`` was sent with ``ask``, the ``Future`` will be completed wi
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,poison-pill
 
 .. _UntypedActor.HotSwap:
@@ -402,10 +407,10 @@ The hotswapped code is kept in a Stack which can be pushed and popped.
 
 To hotswap the Actor using ``getContext().become``:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-procedure,hot-swap-actor
 
-The ``become`` method is useful for many different things, such as to implement 
+The ``become`` method is useful for many different things, such as to implement
 a Finite State Machine (FSM).
 
 Here is another little cute example of ``become`` and ``unbecome`` in action:
@@ -432,7 +437,7 @@ through regular supervisor semantics.
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorTestBase.java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,kill
 
 Actors and exceptions
@@ -462,9 +467,9 @@ messages on that mailbox, will be there as well.
 What happens to the actor
 -------------------------
 
-If an exception is thrown, the actor instance is discarded and a new instance is 
+If an exception is thrown, the actor instance is discarded and a new instance is
 created. This new instance will now be used in the actor references to this actor
-(so this is done invisible to the developer). Note that this means that current 
-state of the failing actor instance is lost if you don't store and restore it in 
-``preRestart`` and ``postRestart`` callbacks. 
+(so this is done invisible to the developer). Note that this means that current
+state of the failing actor instance is lost if you don't store and restore it in
+``preRestart`` and ``postRestart`` callbacks.
 

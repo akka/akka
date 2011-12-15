@@ -9,11 +9,12 @@ Java API
    untyped-actors
    typed-actors
    logging
+   scheduler
    futures
    dataflow
-   stm
    transactors
    fault-tolerance
    dispatchers
    routing
    guice-integration
+   extending-akka

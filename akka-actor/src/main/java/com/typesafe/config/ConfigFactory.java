@@ -295,18 +295,18 @@ public final class ConfigFactory {
     /**
      * Converts a Java {@link java.util.Properties} object to a
      * {@link ConfigObject} using the rules documented in the <a
-     * href="https://github.com/havocp/config/blob/master/HOCON.md">HOCON
+     * href="https://github.com/typesafehub/config/blob/master/HOCON.md">HOCON
      * spec</a>. The keys in the <code>Properties</code> object are split on the
      * period character '.' and treated as paths. The values will all end up as
      * string values. If you have both "a=foo" and "a.b=bar" in your properties
      * file, so "a" is both the object containing "b" and the string "foo", then
      * the string value is dropped.
-     *
+     * 
      * <p>
      * If you want to have <code>System.getProperties()</code> as a
      * ConfigObject, it's better to use the {@link #systemProperties()} method
      * which returns a cached global singleton.
-     *
+     * 
      * @param properties
      *            a Java Properties object
      * @param options

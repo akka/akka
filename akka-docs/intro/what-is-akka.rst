@@ -34,7 +34,7 @@ Actors give you:
 
   - Simple and high-level abstractions for concurrency and parallelism.
   - Asynchronous, non-blocking and highly performant event-driven programming model.
-  - Very lightweight event-driven processes (create ~6.5 million actors on 4GB RAM).
+  - Very lightweight event-driven processes (approximately 2.7 million actors per GB RAM).
 
 See :ref:`actors-scala` and :ref:`untyped-actors-java`
 
@@ -47,16 +47,11 @@ systems that self-heal.
 
 See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
 
-Software Transactional Memory (STM)
------------------------------------
-
-See :ref:`stm-scala` and :ref:`stm-java`
-
 Transactors
 -----------
 
-Transactors combine actors and STM into transactional actors. Allows you to
-compose atomic message flows with automatic retry and rollback.
+Transactors combine actors and STM (Software Transactional Memory) into transactional actors.
+It allows you to compose atomic message flows with automatic retry and rollback.
 
 See :ref:`transactors-scala` and :ref:`transactors-java`
 
@@ -81,7 +76,6 @@ Akka can be used in two different ways
 - As a library: used by a web app, to be put into ‘WEB-INF/lib’ or as a regular
   JAR on your classpath.
 
-- As a microkernel: stand-alone kernel, embedding a servlet container and all
-  the other modules.
+- As a microkernel: stand-alone kernel to drop your application into.
 
 See the :ref:`deployment-scenarios` for details.
