@@ -29,7 +29,7 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
   import sbt._
 
   class MyAkkaProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject with AutoCompilerPlugins {
-    val continuationsPlugin = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.0")
+    val continuationsPlugin = compilerPlugin("org.scala-lang.plugins" % "continuations" % "2.9.1")
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
   }
 
@@ -72,6 +72,7 @@ Dataflow is implemented in Akka using Scala's Delimited Continuations. To use th
 .. code-block:: scala
 
   import Future.flow
+  implicit val dispatcher = ...
 
   val a = Future( ... )
   val b = Future( ... )
@@ -81,13 +82,14 @@ Dataflow is implemented in Akka using Scala's Delimited Continuations. To use th
     c << (a() + b())
   }
 
-  val result = c.get()
+  val result = Await.result(c, timeout)
 
 The ``flow`` method also returns a ``Future`` for the result of the contained expression, so the previous example could also be written like this:
 
 .. code-block:: scala
 
   import Future.flow
+  implicit val dispatcher = ...
 
   val a = Future( ... )
   val b = Future( ... )
@@ -96,7 +98,7 @@ The ``flow`` method also returns a ``Future`` for the result of the contained ex
     a() + b()
   }
 
-  val result = c.get()
+  val result = Await.result(c, timeout)
 
 Examples
 --------
@@ -149,6 +151,7 @@ Example in Akka:
 
   import akka.dispatch._
   import Future.flow
+  implicit val dispatcher = ...
 
   val x, y, z = Promise[Int]()
 
@@ -193,6 +196,7 @@ Example in Akka:
 
   import akka.dispatch._
   import Future.flow
+  implicit val dispatcher = ...
 
   def ints(n: Int, max: Int): List[Int] = {
     if (n == max) Nil
@@ -221,6 +225,7 @@ Example in Akka:
 
   import akka.dispatch._
   import Future.flow
+  implicit val dispatcher = ...
 
   // create four 'Int' data flow variables
   val x, y, z, v = Promise[Int]()
