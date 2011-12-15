@@ -11,7 +11,6 @@ Introduction
 ------------
 
 In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor`` or by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
-Asynchronous usage is strongly recommended.
 
 Use with Actors
 ---------------
@@ -23,7 +22,8 @@ Using the ``ActorRef``\'s ``ask`` method to send a message will return a Future.
 .. includecode:: code/akka/docs/future/FutureDocTestBase.java
    :include: imports1,ask-blocking
 
-This will cause the current thread to block and wait for the ``UntypedActor`` to 'complete' the ``Future`` with it's reply. Blocking is discouraged though as it can cause performance problem. Alternatives to blocking are discussed further within this documentation.
+This will cause the current thread to block and wait for the ``UntypedActor`` to 'complete' the ``Future`` with it's reply. Blocking is discouraged though as it can cause performance problem.
+The blocking operations are located in ``Await.result`` and ``Await.ready`` to make it easy to spot where blocking occurs. Alternatives to blocking are discussed further within this documentation.
 Also note that the ``Future`` returned by an ``UntypedActor`` is a ``Future<Object>`` since an ``UntypedActor`` is dynamic. That is why the cast to ``String`` is used in the above sample.
 
 Use Directly

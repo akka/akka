@@ -9,6 +9,7 @@ import akka.actor.Status.Failure
 import akka.dispatch.Future
 import akka.dispatch.Await
 import akka.util.duration._
+import akka.dispatch.Promise
 
 object FutureDocSpec {
 
@@ -95,9 +96,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Future {
-      3
-    }
+    val f2 = Promise.successful(3)
     val f3 = f1 map { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -112,9 +111,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Future {
-      3
-    }
+    val f2 = Promise.successful(3)
     val f3 = f1 flatMap { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -132,6 +129,9 @@ class FutureDocSpec extends AkkaSpec {
       b ← Future(a + 1) //  5 + 1 = 6
       c ← Future(a - 1) //  5 - 1 = 4
     } yield b * c //  6 * 4 = 24
+
+    // Note that the execution of futures a, b, and c
+    // are not done in parallel.
 
     val result = Await.result(f, 1 second)
     result must be(24)
