@@ -6,32 +6,69 @@ Getting Started Tutorial (Scala with Eclipse): First Chapter
 Introduction
 ------------
 
-Welcome to the first tutorial on how to get started with `Akka <http://akka.io>`_ and `Scala <http://scala-lang.org>`_. We assume that you already know what Akka and Scala are and will now focus on the steps necessary to start your first project. We will be using `Eclipse <http://www.eclipse.org/downloads/>`_, and the `Scala plugin for Eclipse <http://www.scala-ide.org/>`_.
+Welcome to the first tutorial on how to get started with Akka and Scala. We
+assume that you already know what Akka and Scala are and will now focus on the
+steps necessary to start your first project.
 
-The sample application that we will create is using actors to calculate the value of Pi. Calculating Pi is a CPU intensive operation and we will utilize Akka Actors to write a concurrent solution that scales out to multi-core processors. This sample will be extended in future tutorials to use Akka Remote Actors to scale out on multiple machines in a cluster.
+There are two variations of this first tutorial:
 
-We will be using an algorithm that is called "embarrassingly parallel" which just means that each job is completely isolated and not coupled with any other job. Since this algorithm is so parallelizable it suits the actor model very well.
+- creating a standalone project and run it from the command line
+- creating a SBT (Simple Build Tool) project and running it from within SBT
+
+Since they are so similar we will present them both.
+
+The sample application that we will create is using actors to calculate the
+value of Pi. Calculating Pi is a CPU intensive operation and we will utilize
+Akka Actors to write a concurrent solution that scales out to multi-core
+processors. This sample will be extended in future tutorials to use Akka Remote
+Actors to scale out on multiple machines in a cluster.
+
+We will be using an algorithm that is called "embarrassingly parallel" which
+just means that each job is completely isolated and not coupled with any other
+job. Since this algorithm is so parallelizable it suits the actor model very
+well.
 
 Here is the formula for the algorithm we will use:
 
 .. image:: ../images/pi-formula.png
 
-In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
+In this particular algorithm the master splits the series into chunks which are
+sent out to each worker actor to be processed. When each worker has processed
+its chunk it sends a result back to the master which aggregates the total
+result.
+
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+If you want don't want to type in the code and/or set up an SBT project then you can
+check out the full tutorial from the Akka GitHub repository. It is in the
+``akka-tutorials/akka-tutorial-first`` module. You can also browse it online
+`here`__, with the actual source code `here`__.
 
 __ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
 __ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
+To check out the code using Git invoke the following::
+
+    $ git clone git://github.com/jboner/akka.git
+
+Then you can navigate down to the tutorial::
+
+    $ cd akka/akka-tutorials/akka-tutorial-first
+
+
 Prerequisites
 -------------
 
-This tutorial assumes that you have Java 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a recent version of Eclipse (at least `3.6 - Helios <http://www.eclipse.org/downloads/>`_).
+This tutorial assumes that you have Java 1.6 or later installed on you machine
+and ``java`` on your ``PATH``. You also need to know how to run commands in a
+shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala
+code.
 
-If you want to run the example from the command line as well, you need to make sure that ``$JAVA_HOME`` environment variable is set to the root of the Java distribution. You also need to make sure that the ``$JAVA_HOME/bin`` is on your ``PATH``::
+You need to make sure that ``$JAVA_HOME`` environment variable is set to the
+root of the Java distribution. You also need to make sure that the
+``$JAVA_HOME/bin`` is on your ``PATH``::
 
     $ export JAVA_HOME=..root of java distribution..
     $ export PATH=$PATH:$JAVA_HOME/bin
@@ -107,58 +144,85 @@ The Akka Microkernel distribution also includes these jars:
 Downloading and installing the Scala IDE for Eclipse
 ----------------------------------------------------
 
-If you want to use Eclipse for coding your Akka tutorial, you need to install the Scala plugin for Eclipse. This plugin comes with its own version of Scala, so if you don't plan to run the example from the command line, you don't need to download the Scala distribution (and you can skip the next section).
+If you want to use Eclipse for coding your Akka tutorial, you need to install the Scala plugin for Eclipse.
+This plugin comes with its own version of Scala, so if you don't plan to run the example from the command line,
+you don't need to download the Scala distribution (and you can skip the next section).
 
-You can install this plugin using the regular update mechanism. First choose a version of the IDE from `http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.0.x, which comes with Scala 2.9. Copy the corresponding URL and then choose ``Help/Install New Software`` and paste the URL you just copied. You should see  something similar to the following image.
+You can install this plugin using the regular update mechanism. First choose a version of the IDE from
+`http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.0.x, which
+comes with Scala 2.9. Copy the corresponding URL and then choose ``Help/Install New Software`` and paste
+the URL you just copied. You should see something similar to the following image.
 
 .. image:: ../images/install-beta2-updatesite.png
 
-Make sure you select both the ``JDT Weaving for Scala`` and the ``Scala IDE for Eclipse`` plugins. The other plugin is optional, and contains the source code of the plugin itself.
+Make sure you select both the ``JDT Weaving for Scala`` and the ``Scala IDE for Eclipse`` plugins.
+The other plugin is optional, and contains the source code of the plugin itself.
 
-Once the installation is finished, you need to restart Eclipse. The first time the plugin starts it will open a diagnostics window and offer to fix several settings, such as the delay for content assist (code-completion) or the shown completion proposal types.
+Once the installation is finished, you need to restart Eclipse. The first time the plugin starts it will
+open a diagnostics window and offer to fix several settings, such as the delay for content assist (code-completion)
+or the shown completion proposal types.
 
 .. image:: ../images/diagnostics-window.png
 
 Accept the recommended settings, and follow the instructions if you need to increase the heap size of Eclipse.
 
-Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code. You should have content-assist, hyperlinking to definitions, instant error reporting, and so on.
+Check that the installation succeeded by creating a new Scala project (``File/New>Scala Project``), and typing some code.
+You should have content-assist, hyperlinking to definitions, instant error reporting, and so on.
 
 .. image:: ../images/example-code.png
 
 You are ready to code now!
 
+
 Downloading and installing Scala
 --------------------------------
 
-To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use Eclipse to build and run the sample then you can skip this section and jump to the next one.
+To build and run the tutorial sample from the command line, you have to install
+the Scala distribution. If you prefer to use SBT to build and run the sample
+then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from http://www.scala-lang.org/downloads. Browse there
+and download the Scala 2.9.1 release. If you pick the ``tgz`` or ``zip``
+distribution then just unzip it where you want it installed. If you pick the
+IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.1/bin`` (if that is the
+directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0/bin
+    $ export PATH=$PATH:scala-2.9.1/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
-Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
+Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
+the tutorial and put it in the root of the Akka distribution in the ``tutorial``
+directory (you have to create it first).
 
-Some tools require you to set the ``SCALA_HOME`` environment variable to the root of the Scala distribution, however Akka does not require that.
+Some tools require you to set the ``SCALA_HOME`` environment variable to the
+root of the Scala distribution, however Akka does not require that.
+
 
 Creating an Akka project in Eclipse
----------------------------------------
+-----------------------------------
 
-If you have not already done so, now is the time to create an Eclipse project for our tutorial. Use the ``New Scala Project`` wizard and accept the default settings. Once the project is open, we need to add the akka libraries to the *build path*. Right click on the project and choose ``Properties``, then click on ``Java Build Path``. Go to ``Libraries`` and click on ``Add External Jars..``, then navigate to the location where you installed akka and choose ``akka-actor.jar``. You should see something similar to this:
+If you have not already done so, now is the time to create an Eclipse project for our tutorial.
+Use the ``New Scala Project`` wizard and accept the default settings. Once the project is open,
+we need to add the akka libraries to the *build path*. Right click on the project and choose ``Properties``,
+then click on ``Java Build Path``. Go to ``Libraries`` and click on ``Add External Jars..``, then navigate
+to the location where you installed akka and choose ``akka-actor.jar``. You should see something similar to this:
 
 .. image:: ../images/build-path.png
+
 
 Using SBT in Eclipse
 ^^^^^^^^^^^^^^^^^^^^
 
-If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt` instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files from your SBT project.
-You need to install the plugin as described in the `README of sbteclipse <https://github.com/typesafehub/sbteclipse>`_
+If you are an `SBT <https://github.com/harrah/xsbt/wiki>`_ user, you can follow the :ref:`getting-started-first-scala-download-sbt`
+instruction and additionally install the ``sbteclipse`` plugin. This adds support for generating Eclipse project files
+from your SBT project. You need to install the plugin as described in the `README of sbteclipse
+<https://github.com/typesafehub/sbteclipse>`_
 
 Then run the ``eclipse`` target to generate the Eclipse project::
 
@@ -173,11 +237,13 @@ The options `create-src` and `with-sources` are useful::
 * create-src to create the common source directories, e.g. src/main/scala, src/main/test
 * with-sources to create source attachments for the library dependencies
 
-Next you need to import this project in Eclipse, by choosing ``Eclipse/Import.. Existing Projects into Workspace``. Navigate to the directory where you defined your SBT project and choose import:
+Next you need to import this project in Eclipse, by choosing ``Eclipse/Import.. Existing Projects into Workspace``.
+Navigate to the directory where you defined your SBT project and choose import:
 
 .. image:: ../images/import-project.png
 
 Now we have the basis for an Akka Eclipse application, so we can..
+
 
 Start writing the code
 ----------------------
@@ -186,10 +252,14 @@ The design we are aiming for is to have one ``Master`` actor initiating the comp
 
 With this in mind, let's now create the messages that we want to have flowing in the system.
 
+
 Creating the messages
 ---------------------
 
-We start by creating a package for our application, let's call it ``akka.tutorial.first.scala``.  We start by creating case classes for each type of message in our application, so we can place them in a hierarchy, call it ``PiMessage``. Right click on the package and choose ``New Scala Class``, and enter ``PiMessage`` for the name of the class.
+We start by creating a package for our application, let's call it ``akka.tutorial.first.scala``.
+We start by creating case classes for each type of message in our application, so we can place them in a hierarchy,
+call it ``PiMessage``. Right click on the package and choose ``New Scala Class``, and enter ``PiMessage`` as
+the name of the class.
 
 We need three different messages:
 
@@ -197,204 +267,156 @@ We need three different messages:
 - ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing the work assignment
 - ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor containing the result from the worker's calculation
 
-Messages sent to actors should always be immutable to avoid sharing mutable state. In Scala we have 'case classes' which make excellent messages. So let's start by creating three messages as case classes.  We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages outside our control)::
+Messages sent to actors should always be immutable to avoid sharing mutable state.
+In Scala we have 'case classes' which make excellent messages. So let's start by creating three messages as case classes.
+We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages
+outside our control):
 
-    package akka.tutorial.first.scala
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#messages
 
-    sealed trait PiMessage
-
-    case object Calculate extends PiMessage
-
-    case class Work(start: Int, nrOfElements: Int) extends PiMessage
-
-    case class Result(value: Double) extends PiMessage
 
 Creating the worker
 -------------------
 
-Now we can create the worker actor.  Create a new class called ``Worker`` as before. We need to mix in the ``Actor`` trait and defining the ``receive`` method. The ``receive`` method defines our message handler. We expect it to be able to handle the ``Work`` message so we need to add a handler for this message::
+Now we can create the worker actor. This is done by mixing in the ``Actor``
+trait and defining the ``receive`` method. The ``receive`` method defines our
+message handler. We expect it to be able to handle the ``Work`` message so we
+need to add a handler for this message:
 
-    class Worker extends Actor {
-      def receive = {
-        case Work(start, nrOfElements) =>
-          self reply Result(calculatePiFor(start, nrOfElements)) // perform the work
-      }
-    }
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#worker
+   :exclude: calculatePiFor
 
-The ``Actor`` trait is defined in ``akka.actor`` and you can either import it explicitly, or let Eclipse do it for you when it cannot resolve the ``Actor`` trait. The quick fix option (``Ctrl-F1``) will offer two options:
+The ``Actor`` trait is defined in ``akka.actor`` and you can either import it explicitly,
+or let Eclipse do it for you when it cannot resolve the ``Actor`` trait.
+The quick fix option (``Ctrl-F1``) will offer two options:
 
 .. image:: ../images/quickfix.png
 
 Choose the Akka Actor and move on.
 
-As you can see we have now created an ``Actor`` with a ``receive`` method as a handler for the ``Work`` message. In this handler we invoke the ``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send it back to the original sender using ``self.reply``. In Akka the sender reference is implicitly passed along with the message so that the receiver can always reply or store away the sender reference for future use.
+As you can see we have now created an ``Actor`` with a ``receive`` method as a
+handler for the ``Work`` message. In this handler we invoke the
+``calculatePiFor(..)`` method, wrap the result in a ``Result`` message and send
+it back asynchronously to the original sender using the ``sender`` reference.
+In Akka the sender reference is implicitly passed along with the message so that
+the receiver can always reply or store away the sender reference for future use.
 
-The only thing missing in our ``Worker`` actor is the implementation on the ``calculatePiFor(..)`` method. While there are many ways we can implement this algorithm in Scala, in this introductory tutorial we have chosen an imperative style using a for comprehension and an accumulator::
+The only thing missing in our ``Worker`` actor is the implementation on the
+``calculatePiFor(..)`` method. While there are many ways we can implement this
+algorithm in Scala, in this introductory tutorial we have chosen an imperative
+style using a for comprehension and an accumulator:
 
-    def calculatePiFor(start: Int, nrOfElements: Int): Double = {
-      var acc = 0.0
-      for (i <- start until (start + nrOfElements))
-        acc += 4.0 * (1 - (i % 2) * 2) / (2 * i + 1)
-      acc
-    }
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#calculatePiFor
+
 
 Creating the master
 -------------------
 
-Now create a new class for the master actor. The master actor is a little bit more involved. In its constructor we need to create the workers (the ``Worker`` actors) and start them. We will also wrap them in a load-balancing router to make it easier to spread out the work evenly between the workers.  First we need to add some imports::
+Now create a new class for the master actor. The master actor is a little bit
+more involved.  In its constructor we create a round-robin router to make it easier
+to spread out the work evenly between the workers. First we need to add some imports:
 
-    import akka.actor.{Actor, PoisonPill}
-    import akka.routing.{Routing, CyclicIterator}
-    import Routing._
-    import akka.dispatch.Dispatchers
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#imports
 
-    import java.util.concurrent.CountDownLatch
+and then we can create the router:
 
-and then we can create the workers::
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#create-router
 
-    // create the workers
-    val workers = Vector.fill(nrOfWorkers)(actorOf(Props[Worker])
-
-    // wrap them with a load-balancing router
-    val router = Routing.loadBalancerActor(CyclicIterator(workers))
-
-As you can see we are using the ``actorOf`` factory method to create actors, this method returns as an ``ActorRef`` which is a reference to our newly created actor.  This method is available in the ``Actor`` object but is usually imported::
-
-    import akka.actor.Actor.actorOf
-
-There are two versions of ``actorOf``; one of them taking a actor type and the other one an instance of an actor. The former one (``actorOf(Props[MyActor]``) is used when the actor class has a no-argument constructor while the second one (``actorOf(Props(new MyActor(..))``) is used when the actor class has a constructor that takes arguments. This is the only way to create an instance of an Actor and the ``actorOf`` method ensures this. The latter version is using call-by-name and lazily creates the actor within the scope of the ``actorOf`` method. The ``actorOf`` method instantiates the actor and returns, not an instance to the actor, but an instance to an ``ActorRef``. This reference is the handle through which you communicate with the actor. It is immutable, serializable and location-aware meaning that it "remembers" its original actor even if it is sent to other nodes across the network and can be seen as the equivalent to the Erlang actor's PID.
-
-The actor's life-cycle is:
-
-- Created -- ``Actor.actorOf(Props[MyActor]`` -- can **not** receive messages
-- Started -- ``actorRef`` -- can receive messages
-- Stopped -- ``actorRef.stop()`` -- can **not** receive messages
-
-Once the actor has been stopped it is dead and can not be started again.
-
-Now we have a router that is representing all our workers in a single abstraction. If you paid attention to the code above, you saw that we were using the ``nrOfWorkers`` variable. This variable and others we have to pass to the ``Master`` actor in its constructor. So now let's create the master actor. We have to pass in three integer variables:
+Now we have a router that is representing all our workers in a single
+abstraction. So now let's create the master actor. We pass it three integer variables:
 
 - ``nrOfWorkers`` -- defining how many workers we should start up
 - ``nrOfMessages`` -- defining how many number chunks to send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
-Here is the master actor::
+Here is the master actor:
 
-    class Master(
-      nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
-      extends Actor {
-
-      var pi: Double = _
-      var nrOfResults: Int = _
-      var start: Long = _
-
-      // create the workers
-      val workers = Vector.fill(nrOfWorkers)(actorOf(Props[Worker])
-
-      // wrap them with a load-balancing router
-      val router = Routing.loadBalancerActor(CyclicIterator(workers))
-
-      def receive = { ... }
-
-      override def preStart() {
-        start = System.currentTimeMillis
-      }
-
-      override def postStop() {
-        // tell the world that the calculation is complete
-        println(
-          "\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-          .format(pi, (System.currentTimeMillis - start)))
-        latch.countDown()
-      }
-    }
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master
+   :exclude: handle-messages
 
 A couple of things are worth explaining further.
 
-First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the ``Master`` actor. This latch is only used for plumbing (in this specific tutorial), to have a simple way of letting the outside world knowing when the master can deliver the result and shut down. In more idiomatic Akka code, as we will see in part two of this tutorial series, we would not use a latch but other abstractions and functions like ``Channel``, ``Future`` and ``?`` to achieve the same thing in a non-blocking way. But for simplicity let's stick to a ``CountDownLatch`` for now.
+First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the
+``Master`` actor. This latch is only used for plumbing (in this specific
+tutorial), to have a simple way of letting the outside world knowing when the
+master can deliver the result and shut down. In more idiomatic Akka code
+we would not use a latch but other abstractions and functions like ``Future``
+and ``?`` to achieve the same thing in a non-blocking way.
+But for simplicity let's stick to a ``CountDownLatch`` for now.
 
-Second, we are adding a couple of life-cycle callback methods; ``preStart`` and ``postStop``. In the ``preStart`` callback we are recording the time when the actor is started and in the ``postStop`` callback we are printing out the result (the approximation of Pi) and the time it took to calculate it. In this call we also invoke ``latch.countDown`` to tell the outside world that we are done.
+Second, we are adding a couple of life-cycle callback methods; ``preStart`` and
+``postStop``. In the ``preStart`` callback we are recording the time when the
+actor is started and in the ``postStop`` callback we are printing out the result
+(the approximation of Pi) and the time it took to calculate it. In this call we
+also invoke ``latch.countDown()`` to tell the outside world that we are done.
 
-But we are not done yet. We are missing the message handler for the ``Master`` actor. This message handler needs to be able to react to two different messages:
+But we are not done yet. We are missing the message handler for the ``Master``
+actor. This message handler needs to be able to react to two different messages:
 
 - ``Calculate`` -- which should start the calculation
 - ``Result`` -- which should aggregate the different results
 
-The ``Calculate`` handler is sending out work to all the ``Worker`` actors and after doing that it also sends a ``Broadcast(PoisonPill)`` message to the router, which will send out the ``PoisonPill`` message to all the actors it is representing (in our case all the ``Worker`` actors). ``PoisonPill`` is a special kind of message that tells the receiver to shut itself down using the normal shutdown method; ``self.stop``. We also send a ``PoisonPill`` to the router itself (since it's also an actor that we want to shut down).
+The ``Calculate`` handler is sending out work to all the ``Worker`` via its router.
 
-The ``Result`` handler is simpler, here we get the value from the ``Result`` message and aggregate it to our ``pi`` member variable. We also keep track of how many results we have received back, and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and shuts down.
+The ``Result`` handler gets the value from the ``Result`` message and aggregates it to
+our ``pi`` member variable. We also keep track of how many results we have received back,
+and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and
+invokes the ``self.stop()`` method to stop itself *and* all its supervised actors.
+In this case it has one supervised actor, the router, and this in turn has ``nrOfWorkers`` supervised actors.
+All of them will be stopped automatically as the invocation of any supervisor's ``stop`` method
+will propagate down to all its supervised 'children'.
 
-Let's capture this in code::
+Let's capture this in code:
 
-    // message handler
-    def receive = {
-      case Calculate =>
-        // schedule work
-        for (i <- 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master-receive
 
-        // send a PoisonPill to all workers telling them to shut down themselves
-        router ! Broadcast(PoisonPill)
-
-        // send a PoisonPill to the router, telling him to shut himself down
-        router ! PoisonPill
-
-      case Result(value) =>
-        // handle result from the worker
-        pi += value
-        nrOfResults += 1
-        if (nrOfResults == nrOfMessages) self.stop()
-    }
 
 Bootstrap the calculation
 -------------------------
 
-Now the only thing that is left to implement is the runner that should bootstrap and run the calculation for us. We do that by creating an object that we call ``Pi``, here we can extend the ``App`` trait in Scala, which means that we will be able to run this as an application directly from the command line or using the Eclipse Runner.
+Now the only thing that is left to implement is the runner that should bootstrap and run the calculation for us.
+We do that by creating an object that we call ``Pi``, here we can extend the ``App`` trait in Scala,
+which means that we will be able to run this as an application directly from the command line or using the Eclipse Runner.
 
-The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there. We also create a method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish::
+The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there.
+We also create a method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish:
 
-    object Pi extends App {
-
-      calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-
-      ... // actors and messages
-
-      def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-
-        // this latch is only plumbing to know when the calculation is completed
-        val latch = new CountDownLatch(1)
-
-        // create the master
-        val master = actorOf(Props(new Master(nrOfWorkers, nrOfMessages, nrOfElements, latch)))
-
-        // start the calculation
-        master ! Calculate
-
-        // wait for master to shut down
-        latch.await()
-      }
-    }
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#app
+   :exclude: actors-and-messages
 
 That's it. Now we are done.
 
 Run it from Eclipse
 -------------------
 
-Eclipse builds your project on every save when ``Project/Build Automatically`` is set. If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors, you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``. If everything works fine, you should see::
+Eclipse builds your project on every save when ``Project/Build Automatically`` is set.
+If not, bring you project up to date by clicking ``Project/Build Project``. If there are no compilation errors,
+you can right-click in the editor where ``Pi`` is defined, and choose ``Run as.. /Scala application``.
+If everything works fine, you should see::
 
     Pi estimate:        3.1435501812459323
-    Calculation time:   858 millis
+    Calculation time:   632 millis
 
-You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application`` and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line arguments to the JVM on the ``Arguments`` page, for instance to define where :ref:`configuration` is:
+You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application``
+and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line
+arguments to the JVM on the ``Arguments`` page, for instance to define where :ref:`configuration` is:
 
 .. image:: ../images/run-config.png
 
-Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window. You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
+Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window.
+You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
 
 Conclusion
 ----------
 
-We have learned how to create our first Akka project using Akka's actors to speed up a computation-intensive problem by scaling out on multi-core processors (also known as scaling up). We have also learned to compile and run an Akka project using Eclipse.
+We have learned how to create our first Akka project using Akka's actors to
+speed up a computation-intensive problem by scaling out on multi-core processors
+(also known as scaling up). We have also learned to compile and run an Akka
+project using either the tools on the command line or the SBT build system.
 
-If you have a multi-core machine then I encourage you to try out different number of workers (number of working actors) by tweaking the ``nrOfWorkers`` variable to for example; 2, 4, 6, 8 etc. to see performance improvement by scaling up.
+If you have a multi-core machine then I encourage you to try out different
+number of workers (number of working actors) by tweaking the ``nrOfWorkers``
+variable to for example; 2, 4, 6, 8 etc. to see performance improvement by
+scaling up.
 
 Happy hakking.
