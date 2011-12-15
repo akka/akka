@@ -30,7 +30,7 @@ it's located in ``akka.actor.TypedActor``.
     Same as not exposing ``this`` of an Akka Actor, it's important not to expose ``this`` of a Typed Actor,
     instead you should pass the external proxy reference, which is obtained from within your Typed Actor as
     ``TypedActor.self``, this is your external identity, as the ``ActorRef`` is the external identity of
-    and Akka Actor.
+    an Akka Actor.
 
 Creating Typed Actors
 ---------------------
@@ -72,7 +72,7 @@ Alright, now we've got some methods we can call, but we need to implement those 
 .. includecode:: code/TypedActorDocSpec.scala
    :include: imports,typed-actor-impl
 
-Alright, now we have an interface and an implementation of that interface,
+Excellent, now we have an interface and an implementation of that interface,
 and we know how to create a Typed Actor from that, so let's look at calling these methods.
 
 Method dispatch semantics
@@ -82,10 +82,10 @@ Methods returning:
 
   * ``Unit`` will be dispatched with ``fire-and-forget`` semantics, exactly like ``Actor.tell``
   * ``akka.dispatch.Future[_]`` will use ``send-request-reply`` semantics, exactly like ``Actor.ask``
-  * ``scala.Option[_]`` or akka.japi.Option[_] will use ``send-request-reply`` semantics, but _will_ block to wait for an answer,
+  * ``scala.Option[_]`` or ``akka.japi.Option<?>`` will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
     and return None if no answer was produced within the timout, or scala.Some/akka.japi.Some containing the result otherwise.
     Any exception that was thrown during this call will be rethrown.
-  * Any other type of value will use ``send-request-reply`` semantics, but _will_ block to wait for an answer,
+  * Any other type of value will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
     throwing ``java.util.concurrent.TimeoutException`` if there was a timeout or rethrow any exception that was thrown during this call.
 
 Messages and immutability
@@ -159,5 +159,6 @@ Supercharging
 
 Here's an example on how you can use traits to mix in behavior in your Typed Actors.
 
-.. includecode:: code/TypedActorDocSpec.scala
-   :include: typed-actor-supercharge,typed-actor-supercharge-usage
+.. includecode:: code/TypedActorDocSpec.scala#typed-actor-supercharge
+
+.. includecode:: code/TypedActorDocSpec.scala#typed-actor-supercharge-usage
