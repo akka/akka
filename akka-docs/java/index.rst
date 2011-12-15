@@ -15,3 +15,4 @@ Java API
    fault-tolerance
    dispatchers
    routing
+   extending-akka
