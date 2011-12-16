@@ -288,6 +288,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     override def bndImportPackage = "*" :: Nil
     val cont = compilerPlugin("org.scala-lang.plugins" % "continuations" % buildScalaVersion)
     override def compileOptions = super.compileOptions ++ compileOptions("-P:continuations:enable")
+
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -372,6 +373,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     val protobuf   = Dependencies.protobuf
     val zeromq     = Dependencies.zeromq
     val scalatest  = Dependencies.scalatest
+
   }
 
   // -------------------------------------------------------------------------------------------------------------------
