@@ -28,8 +28,6 @@ Links
 
 * :ref:`other-doc`
 
-* `Akka Modules Documentation <http://akka.io/docs/akka-modules/snapshot/>`_
-
 * :ref:`issue_tracking`
 
 * :ref:`support`

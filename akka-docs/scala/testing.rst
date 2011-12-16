@@ -12,10 +12,6 @@ Testing Actor Systems
 
    .. contents:: :local:
 
-.. module:: akka-testkit
-   :synopsis: Tools for Testing Actor Systems
-.. moduleauthor:: Roland Kuhn
-
 As with any piece of software, automated tests are a very important part of the
 development cycle. The actor model presents a different view on how units of
 code are delimited and how they interact, which has an influence on how to

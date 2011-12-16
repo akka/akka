@@ -8,14 +8,6 @@ FSM
 
    .. contents:: :local:
 
-.. module:: FSM
-   :platform: Scala
-   :synopsis: Finite State Machine DSL on top of Actors
-.. moduleauthor:: Irmo Manie, Roland Kuhn
-.. versionadded:: 1.0
-.. versionchanged:: 1.2
-   added Tracing and Logging
-
 Overview
 ========
 

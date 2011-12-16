@@ -3,7 +3,7 @@
 Issue Tracking
 ==============
 
-Akka is using ``Assembla`` as issue tracking system.
+Akka is using ``Assembla`` as its issue tracking system.
 
 Browsing
 --------
@@ -13,14 +13,11 @@ Tickets
 
 `You can find the Akka tickets here <http://www.assembla.com/spaces/akka/tickets>`_
 
-`You can find the Akka Modules tickets here <https://www.assembla.com/spaces/akka-modules/tickets>`_
-
 Roadmaps
 ^^^^^^^^
 
 `The roadmap for each Akka milestone is here <https://www.assembla.com/spaces/akka/milestones>`_
 
-`The roadmap for each Akka Modules milestone is here <https://www.assembla.com/spaces/akka-modules/milestones>`_
 
 Creating tickets
 ----------------
@@ -31,13 +28,10 @@ In order to create tickets you need to do the following:
 
 Then you also need to become a "Watcher" of the Akka space.
 
-For Akka tickets:
-`Link to create new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
-
-For Akka Modules tickets:
-`Link to create new ticket <https://www.assembla.com/spaces/akka-modules/tickets/new>`__
+`Link to create a new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
 
 Thanks a lot for reporting bugs and suggesting features.
+
 
 Failing test
 ------------

@@ -57,7 +57,7 @@ http://repo.typesafe.com/typesafe/snapshots/ as both ``SNAPSHOT`` and
 timestamped versions.
 
 For timestamped versions, pick a timestamp from
-http://repo.typesafe.com/typesafe/akka-snapshots/com/typesafe/akka/akka-actor/.
+http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-actor/.
 All Akka modules that belong to the same build have the same timestamp.
 
 Make sure that you add the repository to the sbt resolvers or maven repositories::
