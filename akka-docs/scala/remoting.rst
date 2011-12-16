@@ -16,7 +16,7 @@ The Akka remoting is a separate jar file. Make sure that you have a dependency f
 
 In you SBT project you should add the following as a dependency::
 
-  "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
+  "com.typesafe.akka" % "akka-remote" % "2.0-M1"
 
 First of all you have to change the actor provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``::
 
