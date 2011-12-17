@@ -50,5 +50,14 @@ trait Future[+T] { self: akka.dispatch.Future[T] ⇒
    */
   private[japi] final def filter[A >: T](p: JFunc[A, java.lang.Boolean]): akka.dispatch.Future[A] =
     self.filter((a: Any) ⇒ p(a.asInstanceOf[A])).asInstanceOf[akka.dispatch.Future[A]]
+
+  /**
+   * Returns a new Future whose value will be of the specified type if it really is
+   * Or a failure with a ClassCastException if it wasn't.
+   */
+  private[japi] final def mapTo[A](clazz: Class[A]): akka.dispatch.Future[A] = {
+    implicit val manifest: Manifest[A] = Manifest.classType(clazz)
+    self.mapTo[A]
+  }
 }
 
