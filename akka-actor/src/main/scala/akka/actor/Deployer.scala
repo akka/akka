@@ -49,16 +49,16 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val deployment = config.withFallback(default)
 
-    val targets = deployment.getStringList("target.paths").asScala.toSeq
+    val routees = deployment.getStringList("routees.paths").asScala.toSeq
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, targets)
-      case "random"         ⇒ RandomRouter(nrOfInstances, targets)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, targets)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, targets)
+      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees)
+      case "random"         ⇒ RandomRouter(nrOfInstances, routees)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees)
+      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees)
       case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 

@@ -45,7 +45,7 @@ depending on the configuration of the actor system:
     the purpose of being completed by the response from an actor; it is created 
     by the :meth:`ActorRef.ask` invocation.
   - :class:`DeadLetterActorRef` is the default implementation of the dead 
-    letters service, where all messages are re-routed whose targets are shut 
+    letters service, where all messages are re-routed whose routees are shut
     down or non-existent.
 
 - And then there are some one-off internal implementations which you should 

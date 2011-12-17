@@ -95,7 +95,7 @@ This is also done via configuration::
         /serviceA/aggregation {
           router = “round-robin”
           nr-of-instances = 10
-          target {
+          routees {
             nodes = [“akka://app@10.0.0.2:2552”, “akka://app@10.0.0.3:2552”]
           }
         }
