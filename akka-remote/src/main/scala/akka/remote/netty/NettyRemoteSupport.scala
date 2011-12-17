@@ -459,7 +459,7 @@ class NettyRemoteSupport(_system: ActorSystemImpl, val remote: Remote, val addre
 
   def name = currentServer.get match {
     case Some(server) ⇒ server.name
-    case None         ⇒ "Non-running NettyRemoteServer@" + remote.remoteAddress
+    case None         ⇒ remote.remoteAddress.toString
   }
 
   private val _isRunning = new Switch(false)

@@ -10,8 +10,6 @@ import akka.util.Duration
 import java.util.concurrent._
 
 object ThreadPoolConfig {
-  type Bounds = Int
-  type FlowHandler = Either[SaneRejectedExecutionHandler, Bounds]
   type QueueFactory = () ⇒ BlockingQueue[Runnable]
 
   val defaultAllowCoreThreadTimeout: Boolean = false

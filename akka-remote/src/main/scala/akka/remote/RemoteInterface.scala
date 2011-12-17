@@ -32,6 +32,8 @@ trait ParsedTransportAddress extends RemoteTransportAddress
 
 case class RemoteNettyAddress(host: String, ip: Option[InetAddress], port: Int) extends ParsedTransportAddress {
   def protocol = "akka"
+
+  override def toString(): String = "akka://" + host + ":" + port
 }
 
 object RemoteNettyAddress {
@@ -145,29 +147,57 @@ trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
 case class RemoteClientError[T <: ParsedTransportAddress](
   @BeanProperty cause: Throwable,
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientError@" +
+      remoteAddress +
+      ": ErrorMessage[" +
+      (if (cause ne null) cause.getMessage else "no message") +
+      "]"
+}
 
 case class RemoteClientDisconnected[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientDisconnected@" + remoteAddress
+}
 
 case class RemoteClientConnected[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientConnected@" + remoteAddress
+}
 
 case class RemoteClientStarted[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientStarted@" + remoteAddress
+}
 
 case class RemoteClientShutdown[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientShutdown@" + remoteAddress
+}
 
 case class RemoteClientWriteFailed[T <: ParsedTransportAddress](
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent
+  @BeanProperty remoteAddress: T) extends RemoteClientLifeCycleEvent {
+  override def toString =
+    "RemoteClientWriteFailed@" +
+      remoteAddress +
+      ": MessageClass[" +
+      (if (request ne null) request.getClass.getName else "no message") +
+      "] ErrorMessage[" +
+      (if (cause ne null) cause.getMessage else "no message") +
+      "]"
+}
 
 /**
  *  Life-cycle events for RemoteServer.
@@ -175,26 +205,77 @@ case class RemoteClientWriteFailed[T <: ParsedTransportAddress](
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
 
 case class RemoteServerStarted[T <: ParsedTransportAddress](
-  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerStarted@" + remote.name
+}
+
 case class RemoteServerShutdown[T <: ParsedTransportAddress](
-  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerShutdown@" + remote.name
+}
+
 case class RemoteServerError[T <: ParsedTransportAddress](
   @BeanProperty val cause: Throwable,
-  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerError@" +
+      remote.name +
+      ": ErrorMessage[" +
+      (if (cause ne null) cause.getMessage else "no message") +
+      "]"
+}
+
 case class RemoteServerClientConnected[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerClientConnected@" +
+      remote.name +
+      ": Client[" +
+      (if (clientAddress.isDefined) clientAddress.get else "no address") +
+      "]"
+}
+
 case class RemoteServerClientDisconnected[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerClientDisconnected@" +
+      remote.name +
+      ": Client[" +
+      (if (clientAddress.isDefined) clientAddress.get else "no address") +
+      "]"
+}
+
 case class RemoteServerClientClosed[T <: ParsedTransportAddress](
   @BeanProperty remote: RemoteSupport[T],
-  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty val clientAddress: Option[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerClientClosed@" +
+      remote.name +
+      ": Client[" +
+      (if (clientAddress.isDefined) clientAddress.get else "no address") +
+      "]"
+}
+
 case class RemoteServerWriteFailed[T <: ParsedTransportAddress](
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty server: RemoteSupport[T],
-  @BeanProperty remoteAddress: Option[T]) extends RemoteServerLifeCycleEvent
+  @BeanProperty remote: RemoteSupport[T],
+  @BeanProperty remoteAddress: Option[T]) extends RemoteServerLifeCycleEvent {
+  override def toString =
+    "RemoteServerWriteFailed@" +
+      remote +
+      ": ClientAddress[" +
+      remoteAddress +
+      "] MessageClass[" +
+      (if (request ne null) request.getClass.getName else "no message") +
+      "] ErrorMessage[" +
+      (if (cause ne null) cause.getMessage else "no message") +
+      "]"
+}
 
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
@@ -203,22 +284,6 @@ class RemoteClientException[T <: ParsedTransportAddress] private[akka] (
   message: String,
   @BeanProperty val client: RemoteSupport[T],
   val remoteAddress: T, cause: Throwable = null) extends AkkaException(message, cause)
-
-/**
- * Thrown when the remote server actor dispatching fails for some reason.
- */
-class RemoteServerException private[akka] (message: String) extends AkkaException(message)
-
-/**
- * Thrown when a remote exception sent over the wire cannot be loaded and instantiated
- */
-case class CannotInstantiateRemoteExceptionDueToRemoteProtocolParsingErrorException private[akka] (cause: Throwable, originalClassName: String, originalMessage: String)
-  extends AkkaException("\nParsingError[%s]\nOriginalException[%s]\nOriginalMessage[%s]"
-    .format(cause.toString, originalClassName, originalMessage)) {
-  override def printStackTrace = cause.printStackTrace
-  override def printStackTrace(printStream: PrintStream) = cause.printStackTrace(printStream)
-  override def printStackTrace(printWriter: PrintWriter) = cause.printStackTrace(printWriter)
-}
 
 abstract class RemoteSupport[-T <: ParsedTransportAddress](val system: ActorSystemImpl) {
   /**
@@ -253,7 +318,10 @@ abstract class RemoteSupport[-T <: ParsedTransportAddress](val system: ActorSyst
                            recipient: RemoteActorRef,
                            loader: Option[ClassLoader]): Unit
 
-  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = system.eventStream.publish(message)
+  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
+    system.eventStream.publish(message)
+    system.log.debug("REMOTE: {}", message)
+  }
 
   override def toString = name
 }
