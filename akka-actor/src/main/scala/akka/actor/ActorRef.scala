@@ -466,14 +466,13 @@ class AskTimeoutException(message: String, cause: Throwable) extends TimeoutExce
   def this(message: String) = this(message, null: Throwable)
 }
 
-class AskActorRef(
+private[akka] final class PromiseActorRef(
   val path: ActorPath,
   override val getParent: InternalActorRef,
-  val dispatcher: MessageDispatcher,
+  private final val result: Promise[Any],
   val deathWatch: DeathWatch) extends MinimalActorRef {
 
   final val running = new AtomicBoolean(true)
-  final val result = Promise[Any]()(dispatcher)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = if (running.get) message match {
     case Status.Success(r) ⇒ result.success(r)

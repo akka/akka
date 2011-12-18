@@ -56,14 +56,14 @@ object Futures {
 
   def ask(actor: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = {
     val provider = actor.asInstanceOf[InternalActorRef].provider
-    provider.ask(timeout) match {
+    val promise = Promise[Any]()(provider.dispatcher)
+    provider.ask(promise, timeout) match {
       case Some(a) ⇒
         actor.!(message)(a)
-        a.result
       case None ⇒
         actor.!(message)(null)
-        Promise[Any]()(provider.dispatcher)
     }
+    promise
   }
 
   def ask(actor: ActorRef, message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] =

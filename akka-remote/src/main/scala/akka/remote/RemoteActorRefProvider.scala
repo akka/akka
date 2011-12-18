@@ -138,7 +138,7 @@ class RemoteActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
-  def ask(within: Timeout): Option[AskActorRef] = local.ask(within)
+  def ask(result: Promise[Any], within: Timeout): Option[ActorRef] = local.ask(result, within)
 
   /**
    * Using (checking out) actor on a specific node.
