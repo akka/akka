@@ -56,6 +56,8 @@ trait ActorRefProvider {
 
   def settings: ActorSystem.Settings
 
+  def dispatcher: MessageDispatcher
+
   /**
    * Initialization of an ActorRefProvider happens in two steps: first
    * construction of the object with settings, eventStream, scheduler, etc.

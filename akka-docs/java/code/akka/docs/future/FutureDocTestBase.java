@@ -53,7 +53,6 @@ import akka.actor.Status.Failure;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
-import akka.docs.actor.MyUntypedActor;
 import akka.actor.Props;
 import akka.dispatch.Futures;
 
@@ -79,7 +78,7 @@ public class FutureDocTestBase {
     String msg = "hello";
     //#ask-blocking
     Timeout timeout = system.settings().ActorTimeout();
-    Future<Object> future = actor.ask(msg, timeout);
+    Future<Object> future = Futures.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
     assertEquals("HELLO", result);

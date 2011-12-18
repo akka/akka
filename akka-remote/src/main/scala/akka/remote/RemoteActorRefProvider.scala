@@ -160,7 +160,7 @@ trait RemoteRef extends ActorRefScope {
  * This reference is network-aware (remembers its origin) and immutable.
  */
 private[akka] class RemoteActorRef private[akka] (
-  provider: RemoteActorRefProvider,
+  override val provider: RemoteActorRefProvider,
   remote: RemoteSupport[ParsedTransportAddress],
   val path: ActorPath,
   val getParent: InternalActorRef,
@@ -184,17 +184,6 @@ private[akka] class RemoteActorRef private[akka] (
   def sendSystemMessage(message: SystemMessage): Unit = remote.send(message, None, this, loader)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
-
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    provider.ask(timeout) match {
-      case Some(a) ⇒
-        this.!(message)(a)
-        a.result
-      case None ⇒
-        this.!(message)(null)
-        Promise[Any]()(provider.dispatcher)
-    }
-  }
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

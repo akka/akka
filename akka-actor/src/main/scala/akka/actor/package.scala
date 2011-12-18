@@ -8,6 +8,9 @@ package object actor {
   implicit def actorRef2Scala(ref: ActorRef): ScalaActorRef = ref.asInstanceOf[ScalaActorRef]
   implicit def scala2ActorRef(ref: ScalaActorRef): ActorRef = ref.asInstanceOf[ActorRef]
 
+  implicit def actorRef2Askable(actorRef: ActorRef) = new dispatch.AskableActorRef(actorRef)
+  implicit def askable2ActorRef(askable: dispatch.AskableActorRef) = askable.actorRef
+
   type Uuid = com.eaio.uuid.UUID
 
   def newUuid(): Uuid = new Uuid()

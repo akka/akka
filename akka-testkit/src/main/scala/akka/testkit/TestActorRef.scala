@@ -71,7 +71,7 @@ class TestActorRef[T <: Actor](
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
         val t = underlying.system.settings.ActorTimeout
-        Await.result(?(InternalGetActor)(t), t.duration).asInstanceOf[T]
+        Await.result(this.?(InternalGetActor)(t), t.duration).asInstanceOf[T]
       case ref ⇒ ref
     }
   }

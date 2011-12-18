@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._
 import akka.actor.ActorSystem
+import akka.actor.{ ActorRef, InternalActorRef }
 
 object Await {
   sealed trait CanAwait
@@ -52,6 +53,24 @@ object Await {
  * Futures is the Java API for Futures and Promises
  */
 object Futures {
+
+  def ask(actor: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = {
+    val provider = actor.asInstanceOf[InternalActorRef].provider
+    provider.ask(timeout) match {
+      case Some(a) ⇒
+        actor.!(message)(a)
+        a.result
+      case None ⇒
+        actor.!(message)(null)
+        Promise[Any]()(provider.dispatcher)
+    }
+  }
+
+  def ask(actor: ActorRef, message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] =
+    ask(actor, message)(timeout)
+
+  def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[Any] =
+    ask(actor, message)(new Timeout(timeoutMillis))
 
   /**
    * Java API, equivalent to Future.apply
@@ -132,6 +151,66 @@ object Futures {
       for (r ← fr; b ← fb) yield { r add b; r }
     }
   }
+}
+
+final class AskableActorRef(val actorRef: ActorRef) {
+
+  /**
+   * Akka Java API.
+   *
+   * Sends a message asynchronously returns a future holding the eventual reply message.
+   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
+   * timeout has expired.
+   *
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use 'tell' together with the sender
+   * parameter to implement non-blocking request/response message exchanges.
+   *
+   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
+   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
+   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
+   * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   */
+  def ask(message: AnyRef, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
+
+  def ask(message: AnyRef, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
+
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
+   * timeout has expired.
+   *
+   * <b>NOTE:</b>
+   * Use this method with care. In most cases it is better to use '!' together with implicit or explicit
+   * sender parameter to implement non-blocking request/response message exchanges.
+   *
+   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
+   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
+   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
+   * otherwise the sender will block until the timeout expires.
+   *
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s reference, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   */
+  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = Futures.ask(actorRef, message)
+
+  /**
+   * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
+   * implicit timeout
+   */
+  def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
 }
 
 object Future {

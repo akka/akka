@@ -13,6 +13,7 @@ import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.dispatch.Await;
+import static akka.dispatch.Futures.ask;
 import akka.util.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
@@ -126,19 +127,19 @@ public class FaultHandlingTestBase {
     //#create
     Props superprops = new Props(Supervisor.class).withFaultHandler(strategy);
     ActorRef supervisor = system.actorOf(superprops, "supervisor");
-    ActorRef child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
+    ActorRef child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
     //#create
     
     //#resume
     child.tell(42);
-    assert Await.result(child.ask("get", 5000), timeout).equals(42);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(42);
     child.tell(new ArithmeticException());
-    assert Await.result(child.ask("get", 5000), timeout).equals(42);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(42);
     //#resume
     
     //#restart
     child.tell(new NullPointerException());
-    assert Await.result(child.ask("get", 5000), timeout).equals(0);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#restart
     
     //#stop
@@ -149,9 +150,9 @@ public class FaultHandlingTestBase {
     //#stop
     
     //#escalate-kill
-    child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
+    child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
     probe.watch(child);
-    assert Await.result(child.ask("get", 5000), timeout).equals(0);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     child.tell(new Exception());
     probe.expectMsg(new Terminated(child));
     //#escalate-kill
@@ -159,11 +160,11 @@ public class FaultHandlingTestBase {
     //#escalate-restart
     superprops = new Props(Supervisor2.class).withFaultHandler(strategy);
     supervisor = system.actorOf(superprops, "supervisor2");
-    child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
+    child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
     child.tell(23);
-    assert Await.result(child.ask("get", 5000), timeout).equals(23);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(23);
     child.tell(new Exception());
-    assert Await.result(child.ask("get", 5000), timeout).equals(0);
+    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#escalate-restart
     //#testkit
   }
