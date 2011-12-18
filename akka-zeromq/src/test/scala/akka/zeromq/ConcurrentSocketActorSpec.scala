@@ -11,6 +11,8 @@ import akka.util.duration._
 import java.util.Arrays
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import java.util.concurrent.CountDownLatch
+import collection.mutable.ListBuffer
 
 class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit {
   val endpoint = "tcp://127.0.0.1:10000"
@@ -28,23 +30,23 @@ class ConcurrentSocketActorSpec extends WordSpec with MustMatchers with TestKit 
         subscriber = newSubscriber(context.get, subscriberProbe.ref)
         msgGenerator = newMessageGenerator(publisher)
         subscriberProbe.expectMsg(Connecting)
-        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) { 
-          case msg: ZMQMessage => msg 
+        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
+          case msg: ZMQMessage => msg
         }.map(_.firstFrameAsString.toInt)
-        msgNumbers.length must be > 0 
+        msgNumbers.length must be > 0
         msgNumbers must equal(for (i <- msgNumbers.head to msgNumbers.last) yield i)
       } finally {
         context.foreach { context =>
-          msgGenerator.foreach { msgGenerator => 
+          msgGenerator.foreach { msgGenerator =>
             msgGenerator.stop
-            within(2 seconds) { 
-              awaitCond(msgGenerator.isShutdown) 
+            within(2 seconds) {
+              awaitCond(msgGenerator.isShutdown)
             }
           }
           subscriber.foreach(_.stop)
           publisher.foreach(_.stop)
-          subscriberProbe.receiveWhile(1 seconds) { 
-            case msg => msg 
+          subscriberProbe.receiveWhile(1 seconds) {
+            case msg => msg
           }.last must equal(Closed)
           context.term
         }
