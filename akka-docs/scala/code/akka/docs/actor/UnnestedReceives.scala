@@ -1,7 +1,9 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.docs.actor
 
 import akka.actor._
-import akka.actor.Actor._
 import scala.collection.mutable.ListBuffer
 
 /**

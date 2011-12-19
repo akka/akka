@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.docs.actor;
 
 import static akka.docs.actor.UntypedActorSwapper.Swap.SWAP;

@@ -1,6 +1,8 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.docs.event
 
-import akka.actor.ActorSystem
 import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.Props
