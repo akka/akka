@@ -1,8 +1,8 @@
-.. _agents-scala:
+.. _agents-java:
 
-################
- Agents (Scala)
-################
+##############
+ Agents (Java)
+##############
 
 .. sidebar:: Contents
 
@@ -19,8 +19,8 @@ functions that are asynchronously applied to the Agent's state and whose return
 value becomes the Agent's new state. The state of an Agent should be immutable.
 
 While updates to Agents are asynchronous, the state of an Agent is always
-immediately available for reading by any thread (using ``get`` or ``apply``)
-without any messages.
+immediately available for reading by any thread (using ``get``) without any
+messages.
 
 Agents are reactive. The update actions of all Agents get interleaved amongst
 threads in a thread pool. At any point in time, at most one ``send`` action for
@@ -29,7 +29,7 @@ will occur in the order they were sent, potentially interleaved with actions
 dispatched to the same agent from other sources.
 
 If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. Agents are integrated with Scala STM - any dispatches made in
+that transaction. Agents are integrated with the STM - any dispatches made in
 a transaction are held until that transaction commits, and are discarded if it
 is retried or aborted.
 
@@ -37,25 +37,25 @@ is retried or aborted.
 Creating and stopping Agents
 ============================
 
-Agents are created by invoking ``Agent(value)`` passing in the Agent's initial
-value:
+Agents are created by invoking ``new Agent(value, system)`` passing in the
+Agent's initial value and a reference to the ``ActorSystem`` for your
+application. An ``ActorSystem`` is required to create the underlying Actors. See
+:ref:`actor-systems` for more information about actor systems.
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create
+Here is an example of creating an Agent:
 
-Note that creating an Agent requires an implicit ``ActorSystem`` (for creating
-the underlying actors). See :ref:`actor-systems` for more information about
-actor systems. An ActorSystem can be in implicit scope when creating an Agent:
+.. includecode:: code/akka/docs/agent/AgentDocTest.java
+   :include: import-system,import-agent
+   :language: java
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create-implicit-system
-
-Or the ActorSystem can be passed explicitly when creating an Agent:
-
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create-explicit-system
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#create
+   :language: java
 
 An Agent will be running until you invoke ``close`` on it. Then it will be
 eligible for garbage collection (unless you hold on to it in some way).
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#close
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#close
+   :language: java
 
 
 Updating Agents
@@ -69,7 +69,11 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the ``send``
 function.
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#send
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#import-function
+   :language: java
+
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#send
+   :language: java
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -77,20 +81,18 @@ long-running or blocking operations. You do this with the ``sendOff``
 method. Dispatches using either ``sendOff`` or ``send`` will still be executed
 in order.
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#send-off
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#send-off
+   :language: java
 
 
 Reading an Agent's value
 ========================
 
-Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
-with parentheses like this:
+Agents can be dereferenced (you can get an Agent's value) by calling the get
+method:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-apply
-
-Or by using the get method:
-
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-get
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#read-get
+   :language: java
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
@@ -103,33 +105,8 @@ Awaiting an Agent's value
 It is also possible to read the value after all currently queued sends have
 completed. You can do this with ``await``:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-await
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#import-timeout
+   :language: java
 
-You can also get a ``Future`` to this value, that will be completed after the
-currently queued updates have completed:
-
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-future
-
-
-Transactional Agents
-====================
-
-If an Agent is used within an enclosing transaction, then it will participate in
-that transaction. If you send to an Agent within a transaction then the dispatch
-to the Agent will be held until that transaction commits, and discarded if the
-transaction is aborted. Here's an example:
-
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#transfer-example
-
-
-Monadic usage
-=============
-
-Agents are also monadic, allowing you to compose operations using
-for-comprehensions. In monadic usage, new Agents are created leaving the
-original Agents untouched. So the old values (Agents) are still available
-as-is. They are so-called 'persistent'.
-
-Example of monadic usage:
-
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#monadic-example
+.. includecode:: code/akka/docs/agent/AgentDocTest.java#read-await
+   :language: java
