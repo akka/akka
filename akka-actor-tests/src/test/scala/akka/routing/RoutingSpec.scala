@@ -59,6 +59,34 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       expectMsg(Terminated(router))
     }
 
+    "be able to send their routees" in {
+      val doneLatch = new CountDownLatch(1)
+
+      class TheActor extends Actor {
+        val routee1 = context.actorOf(Props[TestActor], "routee1")
+        val routee2 = context.actorOf(Props[TestActor], "routee2")
+        val routee3 = context.actorOf(Props[TestActor], "routee3")
+        val router = context.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(routee1, routee2, routee3))))
+
+        // Stop one of the routees - which should exclude it from the router's list of active routees
+        routee3 ! PoisonPill
+
+        def receive = {
+          case RouterRoutees(iterable) ⇒
+            iterable.exists(_ == "routee1") must be(true)
+            iterable.exists(_ == "routee2") must be(true)
+            iterable.exists(_ == "routee3") must be(false)
+            doneLatch.countDown()
+          case "doIt" ⇒
+            router ! CurrentRoutees
+        }
+      }
+
+      val theActor = system.actorOf(Props(new TheActor), "theActor")
+      theActor ! "doIt"
+      doneLatch.await(1, TimeUnit.SECONDS) must be(true)
+    }
+
   }
 
   "no router" must {
