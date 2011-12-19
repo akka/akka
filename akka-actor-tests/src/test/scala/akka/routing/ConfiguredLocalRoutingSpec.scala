@@ -3,7 +3,6 @@ package akka.routing
 import akka.actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
@@ -30,8 +29,8 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
   "round robin router" must {
 
     "be able to shut down its instance" in {
-      val helloLatch = new CountDownLatch(5)
-      val stopLatch = new CountDownLatch(5)
+      val helloLatch = new TestLatch(5)
+      val stopLatch = new TestLatch(5)
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
@@ -48,16 +47,16 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       actor ! "hello"
       actor ! "hello"
       actor ! "hello"
-      helloLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(helloLatch, 5 seconds)
 
       system.stop(actor)
-      stopLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(stopLatch, 5 seconds)
     }
 
     "deliver messages in a round robin fashion" in {
       val connectionCount = 10
       val iterationCount = 10
-      val doneLatch = new CountDownLatch(connectionCount)
+      val doneLatch = new TestLatch(connectionCount)
 
       val counter = new AtomicInteger
       var replies = Map.empty[Int, Int]
@@ -83,14 +82,14 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       counter.get must be(connectionCount)
 
       actor ! Broadcast("end")
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       replies.values foreach { _ must be(iterationCount) }
     }
 
     "deliver a broadcast message using the !" in {
-      val helloLatch = new CountDownLatch(5)
-      val stopLatch = new CountDownLatch(5)
+      val helloLatch = new TestLatch(5)
+      val stopLatch = new TestLatch(5)
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
@@ -103,17 +102,17 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       }).withRouter(RoundRobinRouter(5)), "round-robin-broadcast")
 
       actor ! Broadcast("hello")
-      helloLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(helloLatch, 5 seconds)
 
       system.stop(actor)
-      stopLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(stopLatch, 5 seconds)
     }
   }
 
   "random router" must {
 
     "be able to shut down its instance" in {
-      val stopLatch = new CountDownLatch(7)
+      val stopLatch = new TestLatch(7)
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
@@ -136,13 +135,13 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       }
 
       system.stop(actor)
-      stopLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(stopLatch, 5 seconds)
     }
 
     "deliver messages in a random fashion" in {
       val connectionCount = 10
       val iterationCount = 10
-      val doneLatch = new CountDownLatch(connectionCount)
+      val doneLatch = new TestLatch(connectionCount)
 
       val counter = new AtomicInteger
       var replies = Map.empty[Int, Int]
@@ -168,15 +167,15 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       counter.get must be(connectionCount)
 
       actor ! Broadcast("end")
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       replies.values foreach { _ must be > (0) }
       replies.values.sum must be === iterationCount * connectionCount
     }
 
     "deliver a broadcast message using the !" in {
-      val helloLatch = new CountDownLatch(6)
-      val stopLatch = new CountDownLatch(6)
+      val helloLatch = new TestLatch(6)
+      val stopLatch = new TestLatch(6)
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {
@@ -189,10 +188,10 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
       }).withRouter(RandomRouter(6)), "random-broadcast")
 
       actor ! Broadcast("hello")
-      helloLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(helloLatch, 5 seconds)
 
       system.stop(actor)
-      stopLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(stopLatch, 5 seconds)
     }
   }
 }
