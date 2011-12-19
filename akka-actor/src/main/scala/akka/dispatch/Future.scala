@@ -55,14 +55,10 @@ object Await {
 object Futures {
 
   def ask(actor: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = {
-    val provider = actor.asInstanceOf[InternalActorRef].provider
-    val promise = Promise[Any]()(provider.dispatcher)
-    provider.ask(promise, timeout) match {
-      case Some(a) ⇒
-        actor.!(message)(a)
-      case None ⇒
-        actor.!(message)(null)
-    }
+    implicit val dispatcher = actor.asInstanceOf[InternalActorRef].provider.dispatcher
+    implicit val actorRefContext = actor // for promise2actor implicit conversion
+    val promise = Promise[Any]()
+    actor.!(message)(promise)
     promise
   }
 

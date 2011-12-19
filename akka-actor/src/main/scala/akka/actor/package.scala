@@ -41,4 +41,26 @@ package object actor {
     }
   }
 
+  // Implicit for converting a Promise to an actor.
+  // Symmetric to the future2actor conversion, which allows
+  // piping a Future result (read side) to an Actor's mailbox, this
+  // conversion allows using an Actor to complete a Promise (write side)
+  //
+  // Future.ask / actor ? message is now a trivial implementation that can
+  // also be done in user code (assuming actorRef, timeout and dispatcher implicits):
+  //
+  // Future.ask(actor, message) = {
+  //   val promise = Promise[Any]()
+  //   actor ! (message, promise)
+  //   promise
+  // }
+
+  @inline implicit def promise2actor(promise: akka.dispatch.Promise[Any])(implicit actorRef: ActorRef, timeout: akka.util.Timeout) = {
+    val provider = actorRef.asInstanceOf[InternalActorRef].provider
+    provider.ask(promise, timeout) match {
+      case Some(ref) ⇒ ref
+      case None      ⇒ null
+    }
+  }
+
 }
