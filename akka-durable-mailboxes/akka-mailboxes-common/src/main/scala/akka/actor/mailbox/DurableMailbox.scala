@@ -6,13 +6,13 @@ package akka.actor.mailbox
 import akka.util.ReflectiveAccess
 import java.lang.reflect.InvocationTargetException
 import akka.AkkaException
-import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.SerializedActorRef
 import akka.dispatch.Envelope
 import akka.dispatch.DefaultSystemMessageQueue
 import akka.dispatch.Dispatcher
-import akka.dispatch.Mailbox
+import akka.dispatch.CustomMailbox
 import akka.dispatch.MailboxType
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MessageQueue
@@ -34,7 +34,7 @@ class DurableMailboxException private[akka] (message: String, cause: Throwable) 
   def this(message: String) = this(message, null)
 }
 
-abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with DefaultSystemMessageQueue {
+abstract class DurableMailbox(owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system = owner.system
@@ -46,7 +46,7 @@ abstract class DurableMailbox(owner: ActorCell) extends Mailbox(owner) with Defa
 
 trait DurableMessageSerialization {
 
-  def owner: ActorCell
+  def owner: ActorContext
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 

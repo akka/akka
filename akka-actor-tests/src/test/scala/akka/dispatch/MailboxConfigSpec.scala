@@ -1,12 +1,13 @@
 package akka.dispatch
+
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
+import java.util.concurrent.ConcurrentLinkedQueue
 import akka.util._
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 import akka.actor.ActorRef
-import akka.actor.ActorCell
-import java.util.concurrent.ConcurrentLinkedQueue
+import akka.actor.ActorContext
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -155,7 +156,7 @@ object CustomMailboxSpec {
     }
     """
 
-  class MyMailbox(owner: ActorCell) extends Mailbox(owner)
+  class MyMailbox(owner: ActorContext) extends CustomMailbox(owner)
     with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
