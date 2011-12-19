@@ -1,15 +1,16 @@
 package akka.actor.mailbox
 
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CountDownLatch
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
 import akka.actor._
 import akka.actor.Actor._
-import java.util.concurrent.CountDownLatch
 import akka.dispatch.MessageDispatcher
-import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
+import akka.dispatch.MailboxType
+import akka.testkit.AkkaSpec
 
 object DurableMailboxSpecActorFactory {
 
@@ -23,7 +24,7 @@ object DurableMailboxSpecActorFactory {
 
 }
 
-abstract class DurableMailboxSpec(val backendName: String, val mailboxType: DurableMailboxType) extends AkkaSpec with BeforeAndAfterEach {
+abstract class DurableMailboxSpec(val backendName: String, val mailboxType: MailboxType) extends AkkaSpec with BeforeAndAfterEach {
   import DurableMailboxSpecActorFactory._
 
   implicit val dispatcher = system.dispatcherFactory.newDispatcher(backendName, throughput = 1, mailboxType = mailboxType).build

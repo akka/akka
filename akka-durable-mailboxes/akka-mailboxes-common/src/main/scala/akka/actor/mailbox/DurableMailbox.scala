@@ -24,6 +24,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.netty.NettyRemoteServer
 import akka.serialization.Serialization
 import com.typesafe.config.Config
+import akka.dispatch.CustomMailboxType
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -73,39 +74,11 @@ trait DurableMessageSerialization {
 
 }
 
-abstract class DurableMailboxType(mailboxFQN: String) extends MailboxType {
-  val constructorSignature = Array[Class[_]](classOf[ActorCell])
-
-  val mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[ActorCell].getClassLoader) match {
-    case Right(clazz) ⇒ clazz
-    case Left(exception) ⇒
-      val cause = exception match {
-        case i: InvocationTargetException ⇒ i.getTargetException
-        case _                            ⇒ exception
-      }
-      throw new DurableMailboxException("Cannot find class [%s] due to: %s".format(mailboxFQN, cause.toString))
-  }
-
-  //TODO take into consideration a mailboxConfig parameter so one can have bounded mboxes and capacity etc
-  def create(receiver: ActorCell): Mailbox = {
-    ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](receiver)) match {
-      case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
-      case Left(exception) ⇒
-        val cause = exception match {
-          case i: InvocationTargetException ⇒ i.getTargetException
-          case _                            ⇒ exception
-        }
-        throw new DurableMailboxException("Cannot instantiate [%s] due to: %s".format(mailboxClass.getName, cause.toString))
-    }
-  }
-}
-
-case object RedisDurableMailboxType extends DurableMailboxType("akka.actor.mailbox.RedisBasedMailbox")
-case object MongoDurableMailboxType extends DurableMailboxType("akka.actor.mailbox.MongoBasedMailbox")
-case object BeanstalkDurableMailboxType extends DurableMailboxType("akka.actor.mailbox.BeanstalkBasedMailbox")
-case object FileDurableMailboxType extends DurableMailboxType("akka.actor.mailbox.FileBasedMailbox")
-case object ZooKeeperDurableMailboxType extends DurableMailboxType("akka.actor.mailbox.ZooKeeperBasedMailbox")
-case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(mailboxFQN)
+case object RedisDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.RedisBasedMailbox")
+case object MongoDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.MongoBasedMailbox")
+case object BeanstalkDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.BeanstalkBasedMailbox")
+case object FileDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.FileBasedMailbox")
+case object ZooKeeperDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.ZooKeeperBasedMailbox")
 
 /**
  * Java API for the mailbox types. Usage:
@@ -115,31 +88,9 @@ case class FqnDurableMailboxType(mailboxFQN: String) extends DurableMailboxType(
  * </code></pre>
  */
 object DurableMailboxType {
-  def redisDurableMailboxType(): DurableMailboxType = RedisDurableMailboxType
-  def mongoDurableMailboxType(): DurableMailboxType = MongoDurableMailboxType
-  def beanstalkDurableMailboxType(): DurableMailboxType = BeanstalkDurableMailboxType
-  def fileDurableMailboxType(): DurableMailboxType = FileDurableMailboxType
-  def zooKeeperDurableMailboxType(): DurableMailboxType = ZooKeeperDurableMailboxType
-  def fqnDurableMailboxType(mailboxFQN: String): DurableMailboxType = FqnDurableMailboxType(mailboxFQN)
-}
-
-/**
- * Configurator for the DurableMailbox
- * Do not forget to specify the "storage", valid values are "redis", "beanstalkd", "zookeeper", "mongodb", "file",
- * or a full class name of the Mailbox implementation.
- */
-class DurableMailboxConfigurator {
-  // TODO PN #896: when and how is this class supposed to be used? Can we remove it?
-
-  def mailboxType(config: Config): MailboxType = {
-    if (!config.hasPath("storage")) throw new DurableMailboxException("No 'storage' defined for durable mailbox")
-    config.getString("storage") match {
-      case "redis"     ⇒ RedisDurableMailboxType
-      case "mongodb"   ⇒ MongoDurableMailboxType
-      case "beanstalk" ⇒ BeanstalkDurableMailboxType
-      case "zookeeper" ⇒ ZooKeeperDurableMailboxType
-      case "file"      ⇒ FileDurableMailboxType
-      case fqn         ⇒ FqnDurableMailboxType(fqn)
-    }
-  }
+  def redisDurableMailboxType(): MailboxType = RedisDurableMailboxType
+  def mongoDurableMailboxType(): MailboxType = MongoDurableMailboxType
+  def beanstalkDurableMailboxType(): MailboxType = BeanstalkDurableMailboxType
+  def fileDurableMailboxType(): MailboxType = FileDurableMailboxType
+  def zooKeeperDurableMailboxType(): MailboxType = ZooKeeperDurableMailboxType
 }

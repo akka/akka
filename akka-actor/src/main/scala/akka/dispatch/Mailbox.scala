@@ -10,6 +10,8 @@ import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
+import com.typesafe.config.Config
+import java.lang.reflect.InvocationTargetException
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -359,5 +361,33 @@ case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final va
       final val queue = new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
       final val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut
     }
+}
+
+class CustomMailboxType(mailboxFQN: String) extends MailboxType {
+
+  def create(receiver: ActorCell): Mailbox = {
+    val constructorSignature = Array[Class[_]](classOf[ActorCell])
+    ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](receiver)) match {
+      case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
+      case Left(exception) ⇒
+        val cause = exception match {
+          case i: InvocationTargetException ⇒ i.getTargetException
+          case _                            ⇒ exception
+        }
+        throw new IllegalArgumentException("Cannot instantiate mailbox [%s] due to: %s".
+          format(mailboxClass.getName, cause.toString))
+    }
+  }
+
+  private def mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[ActorCell].getClassLoader) match {
+    case Right(clazz) ⇒ clazz
+    case Left(exception) ⇒
+      val cause = exception match {
+        case i: InvocationTargetException ⇒ i.getTargetException
+        case _                            ⇒ exception
+      }
+      throw new IllegalArgumentException("Cannot find mailbox class [%s] due to: %s".
+        format(mailboxFQN, cause.toString))
+  }
 }
 

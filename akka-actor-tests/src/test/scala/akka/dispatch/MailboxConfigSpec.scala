@@ -4,6 +4,9 @@ import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import akka.util._
 import akka.util.duration._
 import akka.testkit.AkkaSpec
+import akka.actor.ActorRef
+import akka.actor.ActorCell
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -142,5 +145,28 @@ class PriorityMailboxSpec extends MailboxSpec {
   def factory = {
     case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
     case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
+  }
+}
+
+object CustomMailboxSpec {
+  val config = """
+    my-dispatcher {
+       mailboxType = "akka.dispatch.CustomMailboxSpec$MyMailbox"
+    }
+    """
+
+  class MyMailbox(owner: ActorCell) extends Mailbox(owner)
+    with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
+    final val queue = new ConcurrentLinkedQueue[Envelope]()
+  }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
+  "Dispatcher configuration" must {
+    "support custom mailboxType" in {
+      val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher")
+      dispatcher.createMailbox(null).getClass must be(classOf[CustomMailboxSpec.MyMailbox])
+    }
   }
 }
