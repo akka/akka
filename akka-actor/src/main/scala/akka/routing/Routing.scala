@@ -30,7 +30,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     case _: AutoReceivedMessage ⇒ Nil
     case Terminated(_)          ⇒ Nil
     case CurrentRoutees ⇒
-      sender ! RouterRoutees(_routees map (_.path.name))
+      sender ! RouterRoutees(_routees)
       Nil
     case _ ⇒
       if (route.isDefinedAt(sender, message)) route(sender, message)
@@ -149,14 +149,15 @@ case class Broadcast(message: Any)
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
- * The routees will be sent as a RouterRoutees message to the "requester".
+ * A RouterRoutees message is sent asynchronously to the "requester" containing information
+ * about what routees the router is routing over.
  */
 case object CurrentRoutees
 
 /**
  * Message used to carry information about what routees the router is currently using.
  */
-case class RouterRoutees(routees: Iterable[String])
+case class RouterRoutees(routees: Iterable[ActorRef])
 
 /**
  * For every message sent to a router, its route determines a set of destinations,

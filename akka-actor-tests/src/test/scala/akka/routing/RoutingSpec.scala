@@ -73,9 +73,9 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
         def receive = {
           case RouterRoutees(iterable) ⇒
-            iterable.exists(_ == "routee1") must be(true)
-            iterable.exists(_ == "routee2") must be(true)
-            iterable.exists(_ == "routee3") must be(false)
+            iterable.exists(_.path.name == "routee1") must be(true)
+            iterable.exists(_.path.name == "routee2") must be(true)
+            iterable.exists(_.path.name == "routee3") must be(false)
             doneLatch.countDown()
           case "doIt" ⇒
             router ! CurrentRoutees
