@@ -12,11 +12,9 @@ import akka.util.ReentrantGuard
 import akka.util.duration._
 import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.ActorRefProvider
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
-import annotation.switch
 
 object LoggingBus {
   implicit def fromActorSystem(system: ActorSystem): LoggingBus = system.eventStream
