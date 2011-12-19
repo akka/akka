@@ -10,6 +10,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
+import com.typesafe.config.ConfigFactory
 
 object RoutingSpec {
 
@@ -29,7 +30,18 @@ object RoutingSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
+      akka {
+        actor {
+          deployment {
+            /a1 {
+              router = round-robin
+              nr-of-instances = 3
+            }
+          }
+        }
+      }
+      """)) with DefaultTimeout with ImplicitSender {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 
@@ -68,14 +80,11 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         val routee3 = context.actorOf(Props[TestActor], "routee3")
         val router = context.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(routee1, routee2, routee3))))
 
-        // Stop one of the routees - which should exclude it from the router's list of active routees
-        routee3 ! PoisonPill
-
         def receive = {
           case RouterRoutees(iterable) ⇒
             iterable.exists(_.path.name == "routee1") must be(true)
             iterable.exists(_.path.name == "routee2") must be(true)
-            iterable.exists(_.path.name == "routee3") must be(false)
+            iterable.exists(_.path.name == "routee3") must be(true)
             doneLatch.countDown()
           case "doIt" ⇒
             router ! CurrentRoutees
