@@ -4,17 +4,17 @@
 
 package akka.agent
 
-import akka.actor.ActorSystem
 import akka.actor._
-import akka.stm._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
 import akka.dispatch._
 import akka.util.Timeout
+import scala.concurrent.stm._
 
 /**
  * Used internally to send functions.
  */
 private[akka] case class Update[T](function: T ⇒ T)
+private[akka] case class Alter[T](function: T ⇒ T)
 private[akka] case object Get
 
 /**
@@ -101,7 +101,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Read the internal state of the agent.
    */
-  def get() = ref.get
+  def get() = ref.single.get
 
   /**
    * Read the internal state of the agent.
@@ -111,9 +111,10 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Dispatch a function to update the internal state.
    */
-  def send(f: T ⇒ T) {
+  def send(f: T ⇒ T): Unit = {
     def dispatch = updater ! Update(f)
-    if (Stm.activeTransaction) { get; deferred(dispatch) }
+    val txn = Txn.findCurrent
+    if (txn.isDefined) Txn.afterCommit(status ⇒ dispatch)(txn.get)
     else dispatch
   }
 
@@ -122,11 +123,11 @@ class Agent[T](initialValue: T, system: ActorSystem) {
    * that new state can be obtained within the given timeout.
    */
   def alter(f: T ⇒ T)(timeout: Timeout): Future[T] = {
-    def dispatch = updater.?(Update(f), timeout).asInstanceOf[Future[T]]
-    if (Stm.activeTransaction) {
+    def dispatch = updater.?(Alter(f), timeout).asInstanceOf[Future[T]]
+    val txn = Txn.findCurrent
+    if (txn.isDefined) {
       val result = Promise[T]()(system.dispatcher)
-      get //Join xa
-      deferred { result completeWith dispatch } //Attach deferred-block to current transaction
+      Txn.afterCommit(status ⇒ result completeWith dispatch)(txn.get)
       result
     } else dispatch
   }
@@ -172,7 +173,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
       suspend()
       val pinnedDispatcher = new PinnedDispatcher(system.dispatcherFactory.prerequisites, null, "agent-alter-off", UnboundedMailbox(), system.settings.ActorTimeout.duration)
       val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher(pinnedDispatcher))
-      result completeWith threadBased.?(Update(f), timeout).asInstanceOf[Future[T]]
+      result completeWith threadBased.?(Alter(f), timeout).asInstanceOf[Future[T]]
       value
     })
     result
@@ -283,28 +284,35 @@ class Agent[T](initialValue: T, system: ActorSystem) {
  * Agent updater actor. Used internally for `send` actions.
  */
 class AgentUpdater[T](agent: Agent[T]) extends Actor {
-  val txFactory = TransactionFactory(familyName = "AgentUpdater", readonly = false)
-
   def receive = {
-    case update: Update[_] ⇒ sender.tell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
-    case Get               ⇒ sender.tell(agent.get)
-    case _                 ⇒
+    case u: Update[_] ⇒ update(u.function.asInstanceOf[T ⇒ T])
+    case a: Alter[_]  ⇒ sender ! update(a.function.asInstanceOf[T ⇒ T])
+    case Get          ⇒ sender ! agent.get
+    case _            ⇒
   }
+
+  def update(function: T ⇒ T): T = agent.ref.single.transformAndGet(function)
 }
 
 /**
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
  */
 class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
-  val txFactory = TransactionFactory(familyName = "ThreadBasedAgentUpdater", readonly = false)
-
   def receive = {
-    case update: Update[_] ⇒ try {
-      sender.tell(atomic(txFactory) { agent.ref alter update.function.asInstanceOf[T ⇒ T] })
+    case u: Update[_] ⇒ try {
+      update(u.function.asInstanceOf[T ⇒ T])
+    } finally {
+      agent.resume()
+      context.stop(self)
+    }
+    case a: Alter[_] ⇒ try {
+      sender ! update(a.function.asInstanceOf[T ⇒ T])
     } finally {
       agent.resume()
       context.stop(self)
     }
     case _ ⇒ context.stop(self)
   }
+
+  def update(function: T ⇒ T): T = agent.ref.single.transformAndGet(function)
 }

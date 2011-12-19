@@ -1,17 +1,12 @@
-package akka.agent.test
+package akka.agent
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
-import akka.util.Timeout
-import akka.agent.Agent
-import akka.stm._
+import akka.dispatch.Await
 import akka.util.Duration
 import akka.util.duration._
-import java.util.concurrent.CountDownLatch
-import akka.testkit.AkkaSpec
+import akka.util.Timeout
 import akka.testkit._
-import akka.dispatch.Await
+import scala.concurrent.stm._
+import java.util.concurrent.CountDownLatch
 
 class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   val latch = new CountDownLatch(num)
@@ -96,7 +91,7 @@ class AgentSpec extends AkkaSpec {
 
     "be readable within a transaction" in {
       val agent = Agent(5)
-      val value = atomic { agent() }
+      val value = atomic { t ⇒ agent() }
       value must be(5)
       agent.close()
     }
@@ -105,7 +100,7 @@ class AgentSpec extends AkkaSpec {
       val countDown = new CountDownFunction[Int]
 
       val agent = Agent(5)
-      atomic {
+      atomic { t ⇒
         agent send (_ * 2)
       }
       agent send countDown
@@ -122,7 +117,7 @@ class AgentSpec extends AkkaSpec {
       val agent = Agent(5)
 
       try {
-        atomic(DefaultTransactionFactory) {
+        atomic { t ⇒
           agent send (_ * 2)
           throw new RuntimeException("Expected failure")
         }
