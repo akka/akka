@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
-      parallelExecution in GlobalScope := false,
+      parallelExecution in GlobalScope := true,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
@@ -72,6 +72,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
+      // disable parallel tests
+      parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
@@ -291,8 +293,7 @@ object AkkaBuild extends Build {
     unmanagedClasspath in Runtime <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
     unmanagedClasspath in Test    <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
 
-    // disable parallel tests
-    parallelExecution in Test := false,
+    parallelExecution in Test := true,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
     excludeTestNames := {

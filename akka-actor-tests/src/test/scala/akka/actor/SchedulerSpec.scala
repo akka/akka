@@ -124,7 +124,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       assert(restartLatch.await(2 seconds))
       // should be enough time for the ping countdown to recover and reach 6 pings
-      assert(pingLatch.await(4, TimeUnit.SECONDS))
+      assert(pingLatch.await(5, TimeUnit.SECONDS))
     }
 
     "never fire prematurely" in {
@@ -162,12 +162,12 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       }))
 
       val startTime = System.nanoTime()
-      val cancellable = system.scheduler.schedule(1 second, 100 milliseconds, actor, Msg)
+      val cancellable = system.scheduler.schedule(1000 milliseconds, 300 milliseconds, actor, Msg)
       ticks.await(3, TimeUnit.SECONDS)
       val elapsedTimeMs = (System.nanoTime() - startTime) / 1000000
 
-      assert(elapsedTimeMs > 1200)
-      assert(elapsedTimeMs < 1500) // the precision is not ms exact
+      assert(elapsedTimeMs > 1600)
+      assert(elapsedTimeMs < 2000) // the precision is not ms exact
       cancellable.cancel()
     }
   }
