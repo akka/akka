@@ -32,7 +32,7 @@ class IncludeCode(Directive):
         document = self.state.document
         arg0 = self.arguments[0]
         (filename, sep, section) = arg0.partition('#')
-        
+
         if not document.settings.file_insertion_enabled:
             return [document.reporter.warning('File insertion disabled',
                                               line=self.lineno)]
@@ -126,8 +126,9 @@ class IncludeCode(Directive):
         retnode = nodes.literal_block(text, text, source=fn)
         retnode.line = 1
         retnode.attributes['line_number'] = self.lineno
-        if self.options.get('language', ''):
-            retnode['language'] = self.options['language']
+        language = self.options.get('language')
+        if language:
+            retnode['language'] = language
         if 'linenos' in self.options:
             retnode['linenos'] = True
         document.settings.env.note_dependency(rel_fn)
