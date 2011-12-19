@@ -41,7 +41,7 @@ object Await {
     def result(atMost: Duration)(implicit permit: CanAwait): T
   }
 
-  private implicit val permit = new CanAwait {}
+  private[this] implicit final val permit = new CanAwait {}
 
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)

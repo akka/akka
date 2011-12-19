@@ -334,7 +334,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       clientRef ! "simple"
       clientRef ! "simple"
 
-      latch.await
+      Await.ready(latch, timeout.duration)
 
       latch.reset
 
@@ -343,7 +343,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       clientRef ! "simple"
       clientRef ! "simple"
 
-      latch.await
+      Await.ready(latch, timeout.duration)
 
       system.stop(clientRef)
       system.stop(serverRef)
@@ -370,7 +370,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "restart when Kill:ed" in {
       filterException[ActorKilledException] {
-        val latch = new CountDownLatch(2)
+        val latch = TestLatch(2)
 
         val boss = system.actorOf(Props(new Actor {
 
@@ -385,7 +385,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
 
         boss ! "sendKill"
-        latch.await(5, TimeUnit.SECONDS) must be === true
+        Await.ready(latch, 5 seconds)
       }
     }
   }
