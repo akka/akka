@@ -6,12 +6,34 @@ package akka.testkit
 import akka.actor.dispatch.ActorModelSpec
 import java.util.concurrent.CountDownLatch
 import org.junit.{ After, Test }
+import com.typesafe.config.Config
+import akka.dispatch.DispatcherPrerequisites
+import akka.dispatch.MessageDispatcher
+import akka.dispatch.MessageDispatcherConfigurator
+
+object CallingThreadDispatcherModelSpec {
+  val config = """
+    boss {
+      type = PinnedDispatcher
+    }
+    """
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CallingThreadDispatcherModelSpec extends ActorModelSpec {
+class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispatcherModelSpec.config) {
   import ActorModelSpec._
 
-  def newInterceptedDispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites, "test") with MessageDispatcherInterceptor
-  def dispatcherType = "Calling Thread Dispatcher"
+  val confKey = "test-calling-thread"
+  override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+      val instance = new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
+        override def key: String = confKey
+      }
+      override def dispatcher(): MessageDispatcher = instance
+    }
+    system.dispatcherFactory.register(confKey, dispatcherConfigurator)
+    system.dispatcherFactory.lookup(confKey).asInstanceOf[MessageDispatcherInterceptor]
+  }
+  override def dispatcherType = "Calling Thread Dispatcher"
 
 }

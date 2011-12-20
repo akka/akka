@@ -24,6 +24,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       settings.ConfigVersion must equal("2.0-SNAPSHOT")
 
       getString("akka.actor.default-dispatcher.type") must equal("Dispatcher")
+      getString("akka.actor.default-dispatcher.name") must equal("default-dispatcher")
       getMilliseconds("akka.actor.default-dispatcher.keep-alive-time") must equal(60 * 1000)
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(8.0)
       getDouble("akka.actor.default-dispatcher.max-pool-size-factor") must equal(8.0)

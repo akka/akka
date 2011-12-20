@@ -166,7 +166,7 @@ object CustomMailboxSpec {
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
   "Dispatcher configuration" must {
     "support custom mailboxType" in {
-      val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher")
+      val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
       dispatcher.createMailbox(null).getClass must be(classOf[CustomMailboxSpec.MyMailbox])
     }
   }

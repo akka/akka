@@ -75,7 +75,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
 
     _provider = provider
     _serialization = SerializationExtension(system)
-    _computeGridDispatcher = system.dispatcherFactory.newFromConfig("akka.remote.compute-grid-dispatcher")
+    _computeGridDispatcher = system.dispatcherFactory.lookup("akka.remote.compute-grid-dispatcher")
     _remoteDaemon = new RemoteSystemDaemon(system, this, system.provider.rootPath / "remote", system.provider.rootGuardian, log)
     _eventStream = new NetworkEventStream(system)
     _server = {

@@ -14,6 +14,9 @@ import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.duration._
 import akka.actor.PoisonPill
+import akka.dispatch.MessageDispatcherConfigurator
+import akka.dispatch.MessageDispatcher
+import akka.dispatch.DispatcherPrerequisites
 
 object DispatcherDocSpec {
   val config = """
@@ -69,9 +72,8 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   "defining dispatcher" in {
     //#defining-dispatcher
     import akka.actor.Props
-    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
-    val myActor1 = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor1")
-    val myActor2 = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor2")
+    val myActor1 = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor1")
+    val myActor2 = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor2")
     //#defining-dispatcher
   }
 
@@ -82,8 +84,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   "defining pinned dispatcher" in {
     //#defining-pinned-dispatcher
     val name = "myactor"
-    val dispatcher = system.dispatcherFactory.newPinnedDispatcher(name)
-    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name)
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name)
     //#defining-pinned-dispatcher
   }
 
@@ -96,8 +97,14 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       case otherwise     ⇒ 50 // We default to 50
     }
 
+    // FIXME #1458: how should we make it easy to configure prio mailbox?
     // We create a new Priority dispatcher and seed it with the priority generator
-    val dispatcher = system.dispatcherFactory.newDispatcher("foo", 5, UnboundedPriorityMailbox(gen)).build
+    val dispatcherKey = "prio-dispatcher"
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+      val instance = system.dispatcherFactory.newDispatcher(dispatcherKey, 5, UnboundedPriorityMailbox(gen)).build
+      override def dispatcher(): MessageDispatcher = instance
+    }
+    system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
 
     val a = system.actorOf( // We create a new Actor that just prints out what it processes
       Props(new Actor {
@@ -115,7 +122,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         def receive = {
           case x ⇒ log.info(x.toString)
         }
-      }).withDispatcher(dispatcher))
+      }).withDispatcher(dispatcherKey))
 
     /*
     Logs:

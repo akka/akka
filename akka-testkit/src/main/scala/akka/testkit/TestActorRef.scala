@@ -30,7 +30,7 @@ class TestActorRef[T <: Actor](
   name: String)
   extends LocalActorRef(
     _system,
-    _props.withDispatcher(new CallingThreadDispatcher(_prerequisites)),
+    _props.withDispatcher(CallingThreadDispatcher.ConfigKey),
     _supervisor,
     _supervisor.path / name,
     false) {

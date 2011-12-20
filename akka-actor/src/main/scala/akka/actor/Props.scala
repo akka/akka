@@ -21,7 +21,7 @@ object Props {
   import FaultHandlingStrategy._
 
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDispatcher: MessageDispatcher = null
+  final val defaultDispatcherKey: String = null
   final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
@@ -125,7 +125,7 @@ object Props {
  */
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
-  @transient dispatcher: MessageDispatcher = Props.defaultDispatcher,
+  dispatcher: String = Props.defaultDispatcherKey,
   timeout: Timeout = Props.defaultTimeout,
   faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
   routerConfig: RouterConfig = Props.defaultRoutedProps) {
@@ -135,7 +135,7 @@ case class Props(
    */
   def this() = this(
     creator = Props.defaultCreator,
-    dispatcher = Props.defaultDispatcher,
+    dispatcher = Props.defaultDispatcherKey,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
@@ -144,7 +144,7 @@ case class Props(
    */
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
-    dispatcher = Props.defaultDispatcher,
+    dispatcher = Props.defaultDispatcherKey,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
@@ -153,7 +153,7 @@ case class Props(
    */
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = () ⇒ actorClass.newInstance,
-    dispatcher = Props.defaultDispatcher,
+    dispatcher = Props.defaultDispatcherKey,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler,
     routerConfig = Props.defaultRoutedProps)
@@ -182,7 +182,7 @@ case class Props(
   /**
    * Returns a new Props with the specified dispatcher set.
    */
-  def withDispatcher(d: MessageDispatcher) = copy(dispatcher = d)
+  def withDispatcher(d: String) = copy(dispatcher = d)
 
   /**
    * Returns a new Props with the specified timeout set.

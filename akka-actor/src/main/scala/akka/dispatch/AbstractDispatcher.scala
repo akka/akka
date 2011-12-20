@@ -16,6 +16,7 @@ import scala.annotation.tailrec
 import akka.event.EventStream
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
+import java.util.concurrent.atomic.AtomicReference
 
 final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
@@ -99,6 +100,11 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * Name of this dispatcher.
    */
   def name: String
+
+  /**
+   * Configuration key of this dispatcher
+   */
+  def key: String
 
   /**
    * Attaches the specified actor instance to this dispatcher
@@ -262,15 +268,22 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 }
 
 /**
- * Trait to be used for hooking in new dispatchers into Dispatchers.from(cfg: Config)
+ * Trait to be used for hooking in new dispatchers into Dispatchers factory.
  */
-abstract class MessageDispatcherConfigurator() {
-  /**
-   * Returns an instance of MessageDispatcher given a Configuration
-   */
-  def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher
+abstract class MessageDispatcherConfigurator(val config: Config, val prerequisites: DispatcherPrerequisites) {
 
-  def mailboxType(config: Config, settings: Settings): MailboxType = {
+  /**
+   * Returns an instance of MessageDispatcher given the configuration.
+   */
+  def dispatcher(): MessageDispatcher
+
+  /**
+   * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
+   * Default implementation use [[akka.dispatch.CustomMailboxType]] if
+   * mailboxType config property is specified, otherwise [[akka.dispatch.UnboundedMailbox]]
+   * when capacity is < 1, otherwise [[akka.dispatch.BoundedMailbox]].
+   */
+  def mailboxType(): MailboxType = {
     config.getString("mailboxType") match {
       case "" ⇒
         val capacity = config.getInt("mailbox-capacity")
@@ -285,7 +298,6 @@ abstract class MessageDispatcherConfigurator() {
 
   def configureThreadPool(
     config: Config,
-    settings: Settings,
     createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 

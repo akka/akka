@@ -12,16 +12,6 @@ import akka.util.duration._
 class TellThroughputPerformanceSpec extends PerformanceSpec {
   import TellThroughputPerformanceSpec._
 
-  def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(system.dispatcherFactory.prerequisites, name, 5,
-      Duration.Zero, UnboundedMailbox(), config, 1 seconds), ThreadPoolConfig())
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(maxClients)
-    .build
-
-  val clientDispatcher = createDispatcher("client-dispatcher")
-  val destinationDispatcher = createDispatcher("destination-dispatcher")
-
   val repeat = 30000L * repeatFactor
 
   "Tell" must {
@@ -61,6 +51,9 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
+
+        val clientDispatcher = "benchmark.client-dispatcher"
+        val destinationDispatcher = "benchmark.destination-dispatcher"
 
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients

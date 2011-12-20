@@ -16,6 +16,8 @@ import akka.actor.UntypedActorFactory;
 import akka.actor.Actors;
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
+import akka.dispatch.MessageDispatcherConfigurator;
+import akka.dispatch.DispatcherPrerequisites;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -52,10 +54,9 @@ public class DispatcherDocTestBase {
   @Test
   public void defineDispatcher() {
     //#defining-dispatcher
-    MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
-    ActorRef myActor1 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+    ActorRef myActor1 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor1");
-    ActorRef myActor2 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+    ActorRef myActor2 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor2");
     //#defining-dispatcher
   }
@@ -64,15 +65,15 @@ public class DispatcherDocTestBase {
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
     String name = "myactor";
-    MessageDispatcher dispatcher = system.dispatcherFactory().newPinnedDispatcher(name);
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher), name);
+    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class)
+        .withDispatcher("myactor-dispatcher"), name);
     //#defining-pinned-dispatcher
   }
 
   @Test
   public void priorityDispatcher() throws Exception {
     //#prio-dispatcher
-    PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
+    final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
       @Override
       public int gen(Object message) {
         if (message.equals("highpriority"))
@@ -86,9 +87,20 @@ public class DispatcherDocTestBase {
       }
     };
 
+    // FIXME #1458: how should we make it easy to configure prio mailbox?
     // We create a new Priority dispatcher and seed it with the priority generator
-    MessageDispatcher dispatcher = system.dispatcherFactory()
-        .newDispatcher("foo", 5, new UnboundedPriorityMailbox(generator)).build();
+    final String dispatcherKey = "prio-dispatcher";
+    MessageDispatcherConfigurator dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory()
+        .defaultDispatcherConfig(), system.dispatcherFactory().prerequisites()) {
+      private final MessageDispatcher instance = system.dispatcherFactory()
+          .newDispatcher(dispatcherKey, 5, new UnboundedPriorityMailbox(generator)).build();
+
+      @Override
+      public MessageDispatcher dispatcher() {
+        return instance;
+      }
+    };
+    system.dispatcherFactory().register(dispatcherKey, dispatcherConfigurator);
 
     ActorRef myActor = system.actorOf( // We create a new Actor that just prints out what it processes
         new Props().withCreator(new UntypedActorFactory() {
@@ -111,7 +123,7 @@ public class DispatcherDocTestBase {
               }
             };
           }
-        }).withDispatcher(dispatcher));
+        }).withDispatcher(dispatcherKey));
 
     /*
     Logs:

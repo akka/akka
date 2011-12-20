@@ -33,8 +33,7 @@ class DurableMailboxDocSpec extends AkkaSpec(DurableMailboxDocSpec.config) {
 
   "configuration of dispatcher with durable mailbox" in {
     //#dispatcher-config-use
-    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
-    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor")
     //#dispatcher-config-use
   }
 

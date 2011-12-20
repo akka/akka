@@ -74,8 +74,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   protected def atTermination() {}
 
-  def spawn(body: ⇒ Unit)(implicit dispatcher: MessageDispatcher) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcher)) ! "go"
+  def spawn(dispatcherKey: String = system.dispatcherFactory.defaultGlobalDispatcher.key)(body: ⇒ Unit) {
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcherKey)) ! "go"
   }
 }
 
@@ -129,7 +129,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         probe.ref ! 42
         /*
        * this will ensure that the message is actually received, otherwise it
-       * may happen that the system.stop() suspends the testActor before it had 
+       * may happen that the system.stop() suspends the testActor before it had
        * a chance to put the message into its private queue
        */
         probe.receiveWhile(1 second) {

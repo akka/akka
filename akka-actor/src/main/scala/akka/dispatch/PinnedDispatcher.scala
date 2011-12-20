@@ -19,10 +19,12 @@ class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _actor: ActorCell,
   _name: String,
+  _key: String,
   _mailboxType: MailboxType,
   _shutdownTimeout: Duration)
   extends Dispatcher(_prerequisites,
     _name,
+    _key,
     Int.MaxValue,
     Duration.Zero,
     _mailboxType,

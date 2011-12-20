@@ -10,22 +10,49 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
 
   "A PriorityDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
-      testOrdering(UnboundedPriorityMailbox(PriorityGenerator({
-        case i: Int  ⇒ i //Reverse order
-        case 'Result ⇒ Int.MaxValue
-      }: Any ⇒ Int)))
+
+      // FIXME #1458: how should we make it easy to configure prio mailbox?
+      val dispatcherKey = "unbounded-prio-dispatcher"
+      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+        val instance = {
+          val mailboxType = UnboundedPriorityMailbox(PriorityGenerator({
+            case i: Int  ⇒ i //Reverse order
+            case 'Result ⇒ Int.MaxValue
+          }: Any ⇒ Int))
+
+          system.dispatcherFactory.newDispatcher(dispatcherKey, 5, mailboxType).build
+        }
+
+        override def dispatcher(): MessageDispatcher = instance
+      }
+      system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
+
+      testOrdering(dispatcherKey)
     }
 
     "Order it's messages according to the specified comparator using a bounded mailbox" in {
-      testOrdering(BoundedPriorityMailbox(PriorityGenerator({
-        case i: Int  ⇒ i //Reverse order
-        case 'Result ⇒ Int.MaxValue
-      }: Any ⇒ Int), 1000, system.settings.MailboxPushTimeout))
+
+      // FIXME #1458: how should we make it easy to configure prio mailbox?
+      val dispatcherKey = "bounded-prio-dispatcher"
+      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+        val instance = {
+          val mailboxType = BoundedPriorityMailbox(PriorityGenerator({
+            case i: Int  ⇒ i //Reverse order
+            case 'Result ⇒ Int.MaxValue
+          }: Any ⇒ Int), 1000, system.settings.MailboxPushTimeout)
+
+          system.dispatcherFactory.newDispatcher(dispatcherKey, 5, mailboxType).build
+        }
+
+        override def dispatcher(): MessageDispatcher = instance
+      }
+      system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
+
+      testOrdering(dispatcherKey)
     }
   }
 
-  def testOrdering(mboxType: MailboxType) {
-    val dispatcher = system.dispatcherFactory.newDispatcher("Test", 1, Duration.Zero, mboxType).build
+  def testOrdering(dispatcherKey: String) {
 
     val actor = system.actorOf(Props(new Actor {
       var acc: List[Int] = Nil
@@ -34,7 +61,7 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
         case i: Int  ⇒ acc = i :: acc
         case 'Result ⇒ sender.tell(acc)
       }
-    }).withDispatcher(dispatcher)).asInstanceOf[LocalActorRef]
+    }).withDispatcher(dispatcherKey)).asInstanceOf[LocalActorRef]
 
     actor.suspend //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 

@@ -194,7 +194,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   }
 
   "creating a Props config" in {
-    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
     //#creating-props-config
     import akka.actor.Props
     val props1 = Props()
@@ -202,10 +201,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val props3 = Props(new MyActor)
     val props4 = Props(
       creator = { () ⇒ new MyActor },
-      dispatcher = dispatcher,
+      dispatcher = "my-dispatcher",
       timeout = Timeout(100))
     val props5 = props1.withCreator(new MyActor)
-    val props6 = props5.withDispatcher(dispatcher)
+    val props6 = props5.withDispatcher("my-dispatcher")
     val props7 = props6.withTimeout(Timeout(100))
     //#creating-props-config
   }
@@ -213,8 +212,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating actor with Props" in {
     //#creating-props
     import akka.actor.Props
-    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
-    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor")
     //#creating-props
 
     system.stop(myActor)

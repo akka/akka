@@ -20,11 +20,6 @@ import akka.performance.trading.domain.Orderbook
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TradingThroughputPerformanceSpec extends PerformanceSpec {
 
-  val clientDispatcher = system.dispatcherFactory.newDispatcher("client-dispatcher")
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(maxClients)
-    .build
-
   var tradingSystem: AkkaTradingSystem = _
 
   override def beforeEach() {
@@ -82,6 +77,8 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
         i ← 1 to 4
       } yield Bid(s + i, 100 - i, 1000)
       val orders = askOrders.zip(bidOrders).map(x ⇒ Seq(x._1, x._2)).flatten
+
+      val clientDispatcher = "benchmark.client-dispatcher"
 
       val ordersPerClient = repeat * orders.size / numberOfClients
       val totalNumberOfOrders = ordersPerClient * numberOfClients

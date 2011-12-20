@@ -13,18 +13,8 @@ import akka.util.duration._
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TellThroughputSeparateDispatchersPerformanceSpec extends PerformanceSpec {
-  import TellThroughputSeparateDispatchersPerformanceSpec._
-
-  def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(system.dispatcherFactory.prerequisites, name, 5,
-      Duration.Zero, UnboundedMailbox(), config, Duration(1, TimeUnit.SECONDS)), ThreadPoolConfig())
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(1)
-    .build
-
-  //val clientDispatcher = createDispatcher("client-dispatcher")
-  //val destinationDispatcher = createDispatcher("destination-dispatcher")
+class TellThroughputPinnedDispatchersPerformanceSpec extends PerformanceSpec {
+  import TellThroughputPinnedDispatchersPerformanceSpec._
 
   val repeat = 30000L * repeatFactor
 
@@ -114,46 +104,20 @@ class TellThroughputSeparateDispatchersPerformanceSpec extends PerformanceSpec {
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
 
+        val pinnedDispatcher = "benchmark.pinned-dispatcher"
+
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
 
         val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(createDispatcher("destination-" + i)))
+          yield system.actorOf(Props(new Destination).withDispatcher(pinnedDispatcher))
         val clients = for ((dest, j) ← destinations.zipWithIndex)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(createDispatcher("client-" + j)))
-
-        /*
-        val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(clientDispatcher))
-        val clients = for ((dest, j) ← destinations.zipWithIndex)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
-        */
+          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(pinnedDispatcher))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
         val ok = latch.await(maxRunDuration.toMillis, TimeUnit.MILLISECONDS)
         val durationNs = (System.nanoTime - start)
-
-        if (!ok) {
-          System.err.println("Destinations: ")
-          destinations.foreach {
-            case l: LocalActorRef ⇒
-              val m = l.underlying.mailbox
-              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
-          }
-          System.err.println("")
-          System.err.println("Clients: ")
-
-          clients.foreach {
-            case l: LocalActorRef ⇒
-              val m = l.underlying.mailbox
-              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
-          }
-
-          //val e = clientDispatcher.asInstanceOf[Dispatcher].executorService.get().asInstanceOf[ExecutorServiceDelegate].executor.asInstanceOf[ThreadPoolExecutor]
-          //val q = e.getQueue
-          //System.err.println("Client Dispatcher: " + e.getActiveCount + " " + Stream.continually(q.poll()).takeWhile(_ != null).mkString(", "))
-        }
 
         if (!warmup) {
           ok must be(true)
@@ -167,7 +131,7 @@ class TellThroughputSeparateDispatchersPerformanceSpec extends PerformanceSpec {
   }
 }
 
-object TellThroughputSeparateDispatchersPerformanceSpec {
+object TellThroughputPinnedDispatchersPerformanceSpec {
 
   case object Run
   case object Msg

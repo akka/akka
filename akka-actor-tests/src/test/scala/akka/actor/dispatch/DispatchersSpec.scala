@@ -31,61 +31,57 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
   val corepoolsizefactor = "core-pool-size-factor"
   val maxpoolsizefactor = "max-pool-size-factor"
   val allowcoretimeout = "allow-core-timeout"
-  val throughput = "throughput" // Throughput for Dispatcher
+  val throughput = "throughput"
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher
   def ofType[T <: MessageDispatcher: Manifest]: (MessageDispatcher) ⇒ Boolean = _.getClass == manifest[T].erasure
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
     "BalancingDispatcher" -> ofType[BalancingDispatcher],
+    "PinnedDispatcher" -> ofType[PinnedDispatcher],
     "Dispatcher" -> ofType[Dispatcher])
 
   def validTypes = typesAndValidators.keys.toList
 
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
-  lazy val allDispatchers: Map[String, Option[MessageDispatcher]] = {
-    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t).asJava).withFallback(defaultDispatcherConfig)))).toMap
+  lazy val allDispatchers: Map[String, MessageDispatcher] = {
+    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t, "key" -> t).asJava).
+      withFallback(defaultDispatcherConfig)))).toMap
   }
 
   "Dispatchers" must {
 
-    "use default dispatcher if type is missing" in {
-      val dispatcher = from(ConfigFactory.empty.withFallback(defaultDispatcherConfig))
-      dispatcher.map(_.name) must be(Some("DefaultDispatcher"))
-    }
-
     "use defined properties" in {
-      val dispatcher = from(ConfigFactory.parseMap(Map("throughput" -> 17).asJava).withFallback(defaultDispatcherConfig))
-      dispatcher.map(_.throughput) must be(Some(17))
-    }
-
-    "use defined properties when newFromConfig" in {
-      val dispatcher = newFromConfig("myapp.mydispatcher")
+      val dispatcher = lookup("myapp.mydispatcher")
       dispatcher.throughput must be(17)
     }
 
-    "use specific name when newFromConfig" in {
-      val dispatcher = newFromConfig("myapp.mydispatcher")
+    "use specific name" in {
+      val dispatcher = lookup("myapp.mydispatcher")
       dispatcher.name must be("mydispatcher")
     }
 
-    "use default dispatcher when not configured" in {
-      val dispatcher = newFromConfig("myapp.other-dispatcher")
+    "use specific key" in {
+      val dispatcher = lookup("myapp.mydispatcher")
+      dispatcher.key must be("myapp.mydispatcher")
+    }
+
+    "use default dispatcher" in {
+      val dispatcher = lookup("myapp.other-dispatcher")
       dispatcher must be === defaultGlobalDispatcher
     }
 
     "throw IllegalArgumentException if type does not exist" in {
       intercept[IllegalArgumentException] {
-        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist").asJava).withFallback(defaultDispatcherConfig))
+        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", "key" -> "invalid-dispatcher").asJava).
+          withFallback(defaultDispatcherConfig))
       }
     }
 
     "get the correct types of dispatchers" in {
-      //It can create/obtain all defined types
-      assert(allDispatchers.values.forall(_.isDefined))
       //All created/obtained dispatchers are of the expeced type/instance
-      assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1).get)))
+      assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1))))
     }
 
     "provide lookup of dispatchers by key" in {
