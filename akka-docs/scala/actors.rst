@@ -328,16 +328,13 @@ message.
 If the actor does not complete the future, it will expire after the timeout period,
 which is taken from one of the following locations in order of precedence:
 
-#. explicitly given timeout as in ``actor.?("hello")(timeout = 12 millis)``
-#. implicit argument of type :class:`akka.actor.Timeout`, e.g.
+1. explicitly given timeout as in:
 
-   ::
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-explicit-timeout
 
-     import akka.actor.Timeout
-     import akka.util.duration._
+2. implicit argument of type :class:`akka.util.Timeout`, e.g.
 
-     implicit val timeout = Timeout(12 millis)
-     val future = actor ? "hello"
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-implicit-timeout
 
 See :ref:`futures-scala` for more information on how to await or query a
 future.
