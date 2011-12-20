@@ -5,7 +5,6 @@ package akka.docs.actor;
 
 //#my-untyped-actor
 import akka.actor.UntypedActor;
-import akka.actor.UnhandledMessageException;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 

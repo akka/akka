@@ -88,21 +88,6 @@ case class ActorInterruptedException private[akka] (cause: Throwable)
   with NoStackTrace
 
 /**
- * This message is thrown by default when an Actors behavior doesn't match a message
- */
-case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends RuntimeException {
-
-  def this(msg: String) = this(msg, null)
-
-  // constructor with 'null' ActorRef needed to work with client instantiation of remote exception
-  override def getMessage =
-    if (ref ne null) "Actor [%s] does not handle [%s]".format(ref, msg)
-    else "Actor does not handle [%s]".format(msg)
-
-  override def fillInStackTrace() = this //Don't waste cycles generating stack trace
-}
-
-/**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
  */
 case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)

@@ -5,20 +5,14 @@ package akka.docs.testkit
 
 //#imports-test-probe
 import akka.testkit.TestProbe
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
 import akka.util.duration._
+import akka.actor._
 
 //#imports-test-probe
 
 import akka.testkit.AkkaSpec
-import akka.actor.Actor
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.actor.ActorRef
-import akka.actor.Props
-
 object TestkitDocSpec {
   case object Say42
   case object Unknown
@@ -136,10 +130,10 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate unhandled message" in {
     //#test-unhandled
     import akka.testkit.TestActorRef
-    import akka.actor.UnhandledMessageException
-
+    system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
     val ref = TestActorRef[MyActor]
-    intercept[UnhandledMessageException] { ref(Unknown) }
+    ref(Unknown)
+    expectMsg(1 second, UnhandledMessage(Unknown, system.deadLetters, ref))
     //#test-unhandled
   }
 

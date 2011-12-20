@@ -11,15 +11,7 @@ import akka.util.Duration
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import java.util.Properties
-import akka.actor.Actor
-import akka.actor.ActorSystem
-import akka.actor.UnhandledMessageException
-import akka.actor.PoisonPill
-import akka.actor.ActorSystemImpl
-import akka.actor.Props
-import akka.actor.OneForOneStrategy
-import akka.actor.ActorKilledException
-import akka.actor.Kill
+import akka.actor._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -75,7 +67,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
       new TestKit(appLogging) with ImplicitSender {
         ignoreMute(this)
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
-        system.eventStream.subscribe(testActor, classOf[Logging.Error])
+        system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
 
         val r: Actor.Receive = {
           case null ⇒
@@ -97,12 +89,11 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
         actor ! "becomenull"
 
-        EventFilter[UnhandledMessageException](pattern = "does not handle", occurrences = 1) intercept {
-          within(500 millis) {
-            actor ! "bah"
-            expectMsgPF() {
-              case Logging.Error(_: UnhandledMessageException, `name`, _) ⇒ true
-            }
+        within(500 millis) {
+          actor ! "bah"
+          val deadletters = system.deadLetters
+          expectMsgPF() {
+            case UnhandledMessage("bah", testActor, `actor`) ⇒ true
           }
         }
       }

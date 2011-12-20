@@ -124,16 +124,6 @@ abstract class UntypedActor extends Actor {
    */
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
-  /**
-   * User overridable callback.
-   * <p/>
-   * Is called when a message isn't handled by the current behavior of the actor
-   * by default it throws an UnhandledMessageException
-   */
-  override def unhandled(msg: Any) {
-    throw new UnhandledMessageException(msg, self)
-  }
-
   final protected def receive = {
     case msg ⇒ onReceive(msg)
   }

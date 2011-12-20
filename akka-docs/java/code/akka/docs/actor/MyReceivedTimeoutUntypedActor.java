@@ -6,7 +6,6 @@ package akka.docs.actor;
 //#receive-timeout
 import akka.actor.Actors;
 import akka.actor.ReceiveTimeout;
-import akka.actor.UnhandledMessageException;
 import akka.actor.UntypedActor;
 import akka.util.Duration;
 
