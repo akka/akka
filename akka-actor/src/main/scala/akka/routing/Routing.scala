@@ -4,11 +4,8 @@
 package akka.routing
 
 import akka.actor._
-import akka.japi.Creator
-import akka.config.ConfigurationException
 import java.util.concurrent.atomic.AtomicInteger
-import akka.util.{ ReflectiveAccess, Timeout }
-import akka.AkkaException
+import akka.util.Timeout
 import scala.collection.JavaConversions._
 import java.util.concurrent.TimeUnit
 
@@ -32,6 +29,9 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
     case _: AutoReceivedMessage ⇒ Nil
     case Terminated(_)          ⇒ Nil
+    case CurrentRoutees ⇒
+      sender ! RouterRoutees(_routees)
+      Nil
     case _ ⇒
       if (route.isDefinedAt(sender, message)) route(sender, message)
       else Nil
@@ -146,6 +146,18 @@ trait Router extends Actor {
  * Router implementations may choose to handle this message differently.
  */
 case class Broadcast(message: Any)
+
+/**
+ * Sending this message to a router will make it send back its currently used routees.
+ * A RouterRoutees message is sent asynchronously to the "requester" containing information
+ * about what routees the router is routing over.
+ */
+case object CurrentRoutees
+
+/**
+ * Message used to carry information about what routees the router is currently using.
+ */
+case class RouterRoutees(routees: Iterable[ActorRef])
 
 /**
  * For every message sent to a router, its route determines a set of destinations,
