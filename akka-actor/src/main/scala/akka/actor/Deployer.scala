@@ -5,7 +5,6 @@
 package akka.actor
 
 import collection.immutable.Seq
-import java.util.concurrent.ConcurrentHashMap
 import akka.event.Logging
 import akka.AkkaException
 import akka.config.ConfigurationException
@@ -13,6 +12,7 @@ import akka.util.Duration
 import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._
+import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
 
 case class Deploy(path: String, config: Config, recipe: Option[ActorRecipe] = None, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
 
@@ -53,11 +53,13 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
+    val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
+
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"      ⇒ NoRouter
       case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees)
       case "random"         ⇒ RandomRouter(nrOfInstances, routees)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within)
       case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees)
       case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }

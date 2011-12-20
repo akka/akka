@@ -5,9 +5,8 @@ package akka.routing
 
 import akka.actor._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.util.Timeout
 import scala.collection.JavaConversions._
-import java.util.concurrent.TimeUnit
+import akka.util.{ Duration, Timeout }
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -83,6 +82,8 @@ trait RouterConfig {
   def nrOfInstances: Int
 
   def routees: Iterable[String]
+
+  def within: Duration
 
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route
 
@@ -172,8 +173,9 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def nrOfInstances: Int = 0
-  def routees: Iterable[String] = Nil
+  def nrOfInstances = 0
+  def routees = Nil
+  def within = Duration.Zero
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
 }
 
@@ -191,7 +193,7 @@ object RoundRobinRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with RoundRobinLike {
+case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with RoundRobinLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -244,7 +246,7 @@ object RandomRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with RandomLike {
+case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with RandomLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -302,7 +304,7 @@ object BroadcastRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with BroadcastLike {
+case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with BroadcastLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -335,7 +337,7 @@ trait BroadcastLike { this: RouterConfig ⇒
 }
 
 object ScatterGatherFirstCompletedRouter {
-  def apply(routees: Iterable[ActorRef]) = new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString))
+  def apply(routees: Iterable[ActorRef], within: Duration) = new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 }
 /**
  * Simple router that broadcasts the message to all routees, and replies with the first response.
@@ -348,23 +350,23 @@ object ScatterGatherFirstCompletedRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil)
+case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
+  def this(nr: Int, w: Duration) = {
+    this(nrOfInstances = nr, within = w)
   }
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(t: java.util.Collection[String]) = {
-    this(routees = collectionAsScalaIterable(t))
+  def this(t: java.util.Collection[String], w: Duration) = {
+    this(routees = collectionAsScalaIterable(t), within = w)
   }
 }
 
@@ -374,7 +376,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
     {
       case (sender, message) ⇒
-        val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(5, TimeUnit.SECONDS)).get // FIXME, NO REALLY FIXME!
+        val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
         asker.result.pipeTo(sender)
         message match {
           case _ ⇒ toAll(asker, ref.routees)

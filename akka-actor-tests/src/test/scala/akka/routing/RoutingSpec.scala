@@ -6,11 +6,10 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import collection.mutable.LinkedList
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
-import com.typesafe.config.ConfigFactory
+import akka.util.Duration
 
 object RoutingSpec {
 
@@ -30,18 +29,7 @@ object RoutingSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
-      akka {
-        actor {
-          deployment {
-            /a1 {
-              router = round-robin
-              nr-of-instances = 3
-            }
-          }
-        }
-      }
-      """)) with DefaultTimeout with ImplicitSender {
+class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 
@@ -72,13 +60,16 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
     }
 
     "be able to send their routees" in {
-      val doneLatch = new CountDownLatch(1)
+      val doneLatch = new TestLatch(1)
 
       class TheActor extends Actor {
         val routee1 = context.actorOf(Props[TestActor], "routee1")
         val routee2 = context.actorOf(Props[TestActor], "routee2")
         val routee3 = context.actorOf(Props[TestActor], "routee3")
-        val router = context.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(routee1, routee2, routee3))))
+        val router = context.actorOf(Props[TestActor].withRouter(
+          ScatterGatherFirstCompletedRouter(
+            routees = List(routee1, routee2, routee3),
+            within = 5 seconds)))
 
         def receive = {
           case RouterRoutees(iterable) ⇒
@@ -93,7 +84,7 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
 
       val theActor = system.actorOf(Props(new TheActor), "theActor")
       theActor ! "doIt"
-      doneLatch.await(1, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 1 seconds)
     }
 
   }
@@ -314,7 +305,8 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
   "Scatter-gather router" must {
 
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(newActor(0)))))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(
+        ScatterGatherFirstCompletedRouter(routees = List(newActor(0)), within = 1 seconds)))
       routedActor.isTerminated must be(false)
     }
 
@@ -337,7 +329,8 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
         }
       }))
 
-      val routedActor = system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(actor1, actor2))))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(
+        ScatterGatherFirstCompletedRouter(routees = List(actor1, actor2), within = 1 seconds)))
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
@@ -350,12 +343,13 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
     "return response, even if one of the actors has stopped" in {
       val shutdownLatch = new TestLatch(1)
       val actor1 = newActor(1, Some(shutdownLatch))
-      val actor2 = newActor(22, Some(shutdownLatch))
-      val routedActor = system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(actor1, actor2))))
+      val actor2 = newActor(14, Some(shutdownLatch))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(
+        ScatterGatherFirstCompletedRouter(routees = List(actor1, actor2), within = 3 seconds)))
 
       routedActor ! Broadcast(Stop(Some(1)))
       Await.ready(shutdownLatch, TestLatch.DefaultTimeout)
-      Await.result(routedActor ? Broadcast(0), timeout.duration) must be(22)
+      Await.result(routedActor ? Broadcast(0), timeout.duration) must be(14)
     }
 
     case class Stop(id: Option[Int] = None)
@@ -428,7 +422,10 @@ class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
     //#crActors
 
     //#crRouter
-    case class VoteCountRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil)
+    case class VoteCountRouter(
+      nrOfInstances: Int = 0,
+      routees: Iterable[String] = Nil,
+      within: Duration = Duration.Zero)
       extends RouterConfig {
 
       //#crRoute
