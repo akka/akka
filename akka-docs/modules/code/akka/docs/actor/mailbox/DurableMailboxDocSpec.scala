@@ -4,15 +4,14 @@
 package akka.docs.actor.mailbox
 
 //#imports
-import akka.actor.Actor
 import akka.actor.Props
-import akka.actor.mailbox.FileDurableMailboxType
 
 //#imports
 
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
+import akka.actor.Actor
 
 class MyActor extends Actor {
   def receive = {
@@ -20,15 +19,23 @@ class MyActor extends Actor {
   }
 }
 
-class DurableMailboxDocSpec extends AkkaSpec {
+object DurableMailboxDocSpec {
+  val config = """
+    //#dispatcher-config
+    my-dispatcher {
+      mailboxType = akka.actor.mailbox.FileBasedMailbox
+    }
+    //#dispatcher-config
+    """
+}
 
-  "define dispatcher with durable mailbox" in {
-    //#define-dispatcher
-    val dispatcher = system.dispatcherFactory.newDispatcher(
-      "my-dispatcher", throughput = 1, mailboxType = FileDurableMailboxType).build
+class DurableMailboxDocSpec extends AkkaSpec(DurableMailboxDocSpec.config) {
+
+  "configuration of dispatcher with durable mailbox" in {
+    //#dispatcher-config-use
+    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
     val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
-    //#define-dispatcher
-    myActor ! "hello"
+    //#dispatcher-config-use
   }
 
 }

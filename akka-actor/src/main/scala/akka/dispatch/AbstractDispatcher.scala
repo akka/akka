@@ -271,11 +271,15 @@ abstract class MessageDispatcherConfigurator() {
   def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher
 
   def mailboxType(config: Config, settings: Settings): MailboxType = {
-    val capacity = config.getInt("mailbox-capacity")
-    if (capacity < 1) UnboundedMailbox()
-    else {
-      val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
-      BoundedMailbox(capacity, duration)
+    config.getString("mailboxType") match {
+      case "" ⇒
+        val capacity = config.getInt("mailbox-capacity")
+        if (capacity < 1) UnboundedMailbox()
+        else {
+          val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
+          BoundedMailbox(capacity, duration)
+        }
+      case fqn ⇒ new CustomMailboxType(fqn)
     }
   }
 
