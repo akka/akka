@@ -374,11 +374,23 @@ case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final va
     }
 }
 
+/**
+ * Mailbox factory that creates instantiates the implementation from a
+ * fully qualified class name. The implementation class must have
+ * a constructor with a [[akka.actor.ActorContext]] parameter.
+ * E.g.
+ * <pre<code>
+ * class MyMailbox(owner: ActorContext) extends CustomMailbox(owner)
+ *   with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
+ *   val queue = new ConcurrentLinkedQueue[Envelope]()
+ * }
+ * </code></pre>
+ */
 class CustomMailboxType(mailboxFQN: String) extends MailboxType {
 
   override def create(receiver: ActorContext): Mailbox = {
     val constructorSignature = Array[Class[_]](classOf[ActorContext])
-    ReflectiveAccess.createInstance[AnyRef](mailboxClass, constructorSignature, Array[AnyRef](receiver)) match {
+    ReflectiveAccess.createInstance[AnyRef](mailboxFQN, constructorSignature, Array[AnyRef](receiver)) match {
       case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
       case Left(exception) ⇒
         val cause = exception match {
@@ -386,19 +398,9 @@ class CustomMailboxType(mailboxFQN: String) extends MailboxType {
           case _                            ⇒ exception
         }
         throw new IllegalArgumentException("Cannot instantiate mailbox [%s] due to: %s".
-          format(mailboxClass.getName, cause.toString))
+          format(mailboxFQN, cause.toString))
     }
   }
 
-  private def mailboxClass: Class[_] = ReflectiveAccess.getClassFor(mailboxFQN, classOf[ActorContext].getClassLoader) match {
-    case Right(clazz) ⇒ clazz
-    case Left(exception) ⇒
-      val cause = exception match {
-        case i: InvocationTargetException ⇒ i.getTargetException
-        case _                            ⇒ exception
-      }
-      throw new IllegalArgumentException("Cannot find mailbox class [%s] due to: %s".
-        format(mailboxFQN, cause.toString))
-  }
 }
 

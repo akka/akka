@@ -8,10 +8,6 @@ import akka.actor.Props
 
 //#imports
 
-//#imports2
-import akka.actor.mailbox.FileDurableMailboxType
-//#imports2
-
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
@@ -40,15 +36,6 @@ class DurableMailboxDocSpec extends AkkaSpec(DurableMailboxDocSpec.config) {
     val dispatcher = system.dispatcherFactory.lookup("my-dispatcher")
     val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher), name = "myactor")
     //#dispatcher-config-use
-  }
-
-  "programatically define dispatcher with durable mailbox" in {
-    //#prog-define-dispatcher
-    val dispatcher = system.dispatcherFactory.newDispatcher(
-      "my-dispatcher", throughput = 1, mailboxType = FileDurableMailboxType).build
-    val myActor = system.actorOf(Props[MyActor].withDispatcher(dispatcher))
-    //#prog-define-dispatcher
-    myActor ! "hello"
   }
 
 }

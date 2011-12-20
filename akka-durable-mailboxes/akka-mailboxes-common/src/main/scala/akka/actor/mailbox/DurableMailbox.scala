@@ -74,23 +74,3 @@ trait DurableMessageSerialization {
 
 }
 
-case object RedisDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.RedisBasedMailbox")
-case object MongoDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.MongoBasedMailbox")
-case object BeanstalkDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.BeanstalkBasedMailbox")
-case object FileDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.FileBasedMailbox")
-case object ZooKeeperDurableMailboxType extends CustomMailboxType("akka.actor.mailbox.ZooKeeperBasedMailbox")
-
-/**
- * Java API for the mailbox types. Usage:
- * <pre><code>
- * MessageDispatcher dispatcher = system.dispatcherFactory()
- *   .newDispatcher("my-dispatcher", 1, DurableMailboxType.redisDurableMailboxType()).build();
- * </code></pre>
- */
-object DurableMailboxType {
-  def redisDurableMailboxType(): MailboxType = RedisDurableMailboxType
-  def mongoDurableMailboxType(): MailboxType = MongoDurableMailboxType
-  def beanstalkDurableMailboxType(): MailboxType = BeanstalkDurableMailboxType
-  def fileDurableMailboxType(): MailboxType = FileDurableMailboxType
-  def zooKeeperDurableMailboxType(): MailboxType = ZooKeeperDurableMailboxType
-}
