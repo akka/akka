@@ -5,6 +5,7 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ListenerSpec extends AkkaSpec {
@@ -45,10 +46,10 @@ class ListenerSpec extends AkkaSpec {
       broadcast ! WithListeners(_ ! "foo")
       broadcast ! "foo"
 
-      barLatch.await
+      Await.ready(barLatch, TestLatch.DefaultTimeout)
       barCount.get must be(2)
 
-      fooLatch.await
+      Await.ready(fooLatch, TestLatch.DefaultTimeout)
 
       for (a ← List(broadcast, a1, a2, a3)) system.stop(a)
     }

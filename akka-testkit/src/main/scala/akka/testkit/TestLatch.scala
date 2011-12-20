@@ -5,11 +5,9 @@
 package akka.testkit
 
 import akka.util.Duration
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.actor.ActorSystem
-
-class TestLatchTimeoutException(message: String) extends RuntimeException(message)
-class TestLatchNoTimeoutException(message: String) extends RuntimeException(message)
+import akka.dispatch.Await.{ CanAwait, Awaitable }
+import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 
 /**
  * A count down latch wrapper for use in testing.
@@ -24,34 +22,23 @@ object TestLatch {
   def apply(count: Int = 1)(implicit system: ActorSystem) = new TestLatch(count)
 }
 
-class TestLatch(count: Int = 1)(implicit system: ActorSystem) {
+class TestLatch(count: Int = 1)(implicit system: ActorSystem) extends Awaitable[Unit] {
   private var latch = new CountDownLatch(count)
 
   def countDown() = latch.countDown()
-
   def isOpen: Boolean = latch.getCount == 0
-
   def open() = while (!isOpen) countDown()
-
-  def await(): Boolean = await(TestLatch.DefaultTimeout)
-
-  def await(timeout: Duration): Boolean = {
-    val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
-    if (!opened) throw new TestLatchTimeoutException(
-      "Timeout of %s with time factor of %s" format (timeout.toString, TestKitExtension(system).TestTimeFactor))
-    opened
-  }
-
-  /**
-   * Timeout is expected. Throws exception if latch is opened before timeout.
-   */
-  def awaitTimeout(timeout: Duration = TestLatch.DefaultTimeout) = {
-    val opened = latch.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
-    if (opened) throw new TestLatchNoTimeoutException(
-      "Latch opened before timeout of %s with time factor of %s" format (timeout.toString, TestKitExtension(system).TestTimeFactor))
-    opened
-  }
-
   def reset() = latch = new CountDownLatch(count)
+
+  def ready(atMost: Duration)(implicit permit: CanAwait) = {
+    val opened = latch.await(atMost.dilated.toNanos, TimeUnit.NANOSECONDS)
+    if (!opened) throw new TimeoutException(
+      "Timeout of %s with time factor of %s" format (atMost.toString, TestKitExtension(system).TestTimeFactor))
+    this
+  }
+
+  def result(atMost: Duration)(implicit permit: CanAwait): Unit = {
+    ready(atMost)
+  }
 }
 

@@ -94,7 +94,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
 
         case Right(remote) ⇒
 
-          remote.start(None) //TODO Any application loader here?
+          remote.start(Option(Thread.currentThread().getContextClassLoader)) //TODO Any application loader here?
 
           val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
             def receive = {

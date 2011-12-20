@@ -92,8 +92,8 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       pool ! "a"
       pool ! "b"
 
-      latch.await
-      successes.await
+      Await.ready(latch, TestLatch.DefaultTimeout)
+      Await.ready(successes, TestLatch.DefaultTimeout)
 
       count.get must be(2)
 
@@ -180,7 +180,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       loops = 2
 
       loop(500)
-      latch.await
+      Await.ready(latch, TestLatch.DefaultTimeout)
       count.get must be(loops)
 
       Await.result((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
@@ -189,7 +189,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
 
       loops = 10
       loop(500)
-      latch.await
+      Await.ready(latch, TestLatch.DefaultTimeout)
       count.get must be(loops)
 
       Await.result((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(4)
@@ -236,7 +236,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       // send a few messages and observe pool at its lower bound
       loops = 3
       loop(500)
-      latch.await
+      Await.ready(latch, TestLatch.DefaultTimeout)
       count.get must be(loops)
 
       Await.result((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be(2)
@@ -245,7 +245,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       loops = 15
       loop(500)
 
-      latch.await(10 seconds)
+      Await.ready(latch, 10 seconds)
       count.get must be(loops)
 
       Await.result((pool ? ActorPool.Stat).mapTo[ActorPool.Stats], timeout.duration).size must be >= (3)
@@ -278,7 +278,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       pool1 ! "a"
       pool1 ! "b"
 
-      latch1.await
+      Await.ready(latch1, TestLatch.DefaultTimeout)
       delegates.size must be(1)
 
       system.stop(pool1)
@@ -306,7 +306,7 @@ class ActorPoolSpec extends AkkaSpec with DefaultTimeout {
       pool2 ! "a"
       pool2 ! "b"
 
-      latch2.await
+      Await.ready(latch2, TestLatch.DefaultTimeout)
       delegates.size must be(2)
 
       system.stop(pool2)

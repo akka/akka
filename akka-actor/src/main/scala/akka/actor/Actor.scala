@@ -16,7 +16,6 @@ import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import com.eaio.uuid.UUID
-import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.TimeUnit
 import java.util.{ Collection ⇒ JCollection }
 import java.util.regex.Pattern

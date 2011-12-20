@@ -8,7 +8,7 @@ import akka.actor.LocalActorRef
 import akka.util.Duration
 import akka.AkkaException
 import org.I0Itec.zkclient.serialize._
-import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.cluster.zookeeper.AkkaZkClient
 import akka.dispatch.Envelope
 import akka.event.Logging
@@ -17,7 +17,7 @@ import akka.actor.ActorRef
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
-class ZooKeeperBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
+class ZooKeeperBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   private val settings = ZooKeeperBasedMailboxExtension(owner.system)
   val queueNode = "/queues"

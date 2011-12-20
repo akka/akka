@@ -5,12 +5,12 @@
 package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
-import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.dispatch.Envelope
 import akka.event.Logging
 import akka.actor.ActorRef
 
-class FileBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) with DurableMessageSerialization {
+class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
 
   val log = Logging(system, "FileBasedMailbox")
 
