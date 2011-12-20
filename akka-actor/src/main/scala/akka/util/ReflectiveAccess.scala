@@ -100,7 +100,8 @@ object ReflectiveAccess {
    * Unwraps `InvocationTargetException` if its getTargetException is an `Exception`.
    * Other `Throwable`, such as `Error` is thrown.
    */
-  private def withErrorHandling[T](body: ⇒ Either[Exception, T]): Either[Exception, T] = {
+  @inline
+  private final def withErrorHandling[T](body: ⇒ Either[Exception, T]): Either[Exception, T] = {
     try {
       body
     } catch {

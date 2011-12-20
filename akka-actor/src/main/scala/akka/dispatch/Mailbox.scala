@@ -389,8 +389,8 @@ class CustomMailboxType(mailboxFQN: String) extends MailboxType {
 
   override def create(receiver: ActorContext): Mailbox = {
     val constructorSignature = Array[Class[_]](classOf[ActorContext])
-    ReflectiveAccess.createInstance[AnyRef](mailboxFQN, constructorSignature, Array[AnyRef](receiver)) match {
-      case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
+    ReflectiveAccess.createInstance[Mailbox](mailboxFQN, constructorSignature, Array[AnyRef](receiver)) match {
+      case Right(instance) ⇒ instance
       case Left(exception) ⇒
         throw new IllegalArgumentException("Cannot instantiate mailbox [%s] due to: %s".
           format(mailboxFQN, exception.toString))
