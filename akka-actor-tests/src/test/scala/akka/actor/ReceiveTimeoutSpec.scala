@@ -8,6 +8,8 @@ import akka.testkit._
 import akka.util.duration._
 
 import java.util.concurrent.atomic.AtomicInteger
+import akka.dispatch.Await
+import java.util.concurrent.TimeoutException
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReceiveTimeoutSpec extends AkkaSpec {
@@ -25,7 +27,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         }
       }))
 
-      timeoutLatch.await
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       system.stop(timeoutActor)
     }
 
@@ -44,7 +46,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       timeoutActor ! Tick
 
-      timeoutLatch.await
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       system.stop(timeoutActor)
     }
 
@@ -67,7 +69,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       timeoutActor ! Tick
 
-      timeoutLatch.await
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       count.get must be(1)
       system.stop(timeoutActor)
     }
@@ -81,7 +83,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         }
       }))
 
-      timeoutLatch.awaitTimeout(1 second) // timeout expected
+      intercept[TimeoutException] { Await.ready(timeoutLatch, 1 second) }
       system.stop(timeoutActor)
     }
 

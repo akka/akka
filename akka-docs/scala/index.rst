@@ -18,7 +18,7 @@ Scala API
    remoting
    serialization
    fsm
+   agents
    testing
    extending-akka
-   agents
    transactors

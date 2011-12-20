@@ -25,12 +25,12 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
-      parallelExecution in GlobalScope := false,
+      parallelExecution in GlobalScope := true,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -72,6 +72,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
+      // disable parallel tests
+      parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
@@ -89,6 +91,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
+    )
+  )
+
+  lazy val agent = Project(
+    id = "akka-agent",
+    base = file("akka-agent"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.agent
     )
   )
 
@@ -254,7 +265,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, slf4j, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
+    dependencies = Seq(actor, testkit % "test->test", remote, slf4j, agent, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -291,8 +302,7 @@ object AkkaBuild extends Build {
     unmanagedClasspath in Runtime <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
     unmanagedClasspath in Test    <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
 
-    // disable parallel tests
-    parallelExecution in Test := false,
+    parallelExecution in Test := true,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
     excludeTestNames := {
@@ -368,6 +378,8 @@ object Dependencies {
 
   val slf4j = Seq(slf4jApi)
 
+  val agent = Seq(scalaStm, Test.scalatest, Test.junit)
+
   val amqp = Seq(rabbit, commonsIo, protobuf)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
@@ -408,11 +420,12 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
+    val Rabbit       = "2.3.1"
+    val ScalaStm     = "0.4"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
-    val Rabbit       = "2.3.1"
   }
 
   // Compile
@@ -437,6 +450,7 @@ object Dependency {
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
   val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
+  val scalaStm      = "org.scala-tools"             %% "scala-stm"             % V.ScalaStm   // Modified BSD (Scala)
   val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2

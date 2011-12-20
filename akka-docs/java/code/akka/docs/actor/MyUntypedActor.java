@@ -5,7 +5,6 @@ package akka.docs.actor;
 
 //#my-untyped-actor
 import akka.actor.UntypedActor;
-import akka.actor.UnhandledMessageException;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -16,7 +15,7 @@ public class MyUntypedActor extends UntypedActor {
     if (message instanceof String)
       log.info("Received String message: {}", message);
     else
-      throw new UnhandledMessageException(message, getSelf());
+      unhandled(message);
   }
 }
 //#my-untyped-actor

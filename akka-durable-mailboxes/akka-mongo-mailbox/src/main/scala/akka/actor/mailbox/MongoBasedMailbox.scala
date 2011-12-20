@@ -7,7 +7,7 @@ import akka.AkkaException
 import com.mongodb.async._
 import com.mongodb.async.futures.RequestFutures
 import org.bson.collection._
-import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.{ Await, Promise, Envelope, DefaultPromise }
@@ -26,7 +26,7 @@ class MongoBasedMailboxException(message: String) extends AkkaException(message)
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMailbox(val owner: ActorCell) extends DurableMailbox(owner) {
+class MongoBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!

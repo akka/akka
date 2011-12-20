@@ -10,6 +10,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
+import com.typesafe.config.ConfigFactory
 
 object RoutingSpec {
 
@@ -29,7 +30,18 @@ object RoutingSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+class RoutingSpec extends AkkaSpec(ConfigFactory.parseString("""
+      akka {
+        actor {
+          deployment {
+            /a1 {
+              router = round-robin
+              nr-of-instances = 3
+            }
+          }
+        }
+      }
+      """)) with DefaultTimeout with ImplicitSender {
 
   val impl = system.asInstanceOf[ActorSystemImpl]
 
@@ -59,6 +71,31 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       expectMsg(Terminated(router))
     }
 
+    "be able to send their routees" in {
+      val doneLatch = new CountDownLatch(1)
+
+      class TheActor extends Actor {
+        val routee1 = context.actorOf(Props[TestActor], "routee1")
+        val routee2 = context.actorOf(Props[TestActor], "routee2")
+        val routee3 = context.actorOf(Props[TestActor], "routee3")
+        val router = context.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(routee1, routee2, routee3))))
+
+        def receive = {
+          case RouterRoutees(iterable) ⇒
+            iterable.exists(_.path.name == "routee1") must be(true)
+            iterable.exists(_.path.name == "routee2") must be(true)
+            iterable.exists(_.path.name == "routee3") must be(true)
+            doneLatch.countDown()
+          case "doIt" ⇒
+            router ! CurrentRoutees
+        }
+      }
+
+      val theActor = system.actorOf(Props(new TheActor), "theActor")
+      theActor ! "doIt"
+      doneLatch.await(1, TimeUnit.SECONDS) must be(true)
+    }
+
   }
 
   "no router" must {
@@ -68,7 +105,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "send message to connection" in {
-      val doneLatch = new CountDownLatch(1)
+      val doneLatch = new TestLatch(1)
 
       val counter = new AtomicInteger(0)
 
@@ -83,7 +120,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ! "hello"
       routedActor ! "end"
 
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       counter.get must be(1)
     }
@@ -102,7 +139,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     "deliver messages in a round robin fashion" in {
       val connectionCount = 10
       val iterationCount = 10
-      val doneLatch = new CountDownLatch(connectionCount)
+      val doneLatch = new TestLatch(connectionCount)
 
       //lets create some connections.
       var actors = new LinkedList[ActorRef]
@@ -130,7 +167,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       routedActor ! Broadcast("end")
       //now wait some and do validations.
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       for (i ← 0 until connectionCount) {
         val counter = counters.get(i).get
@@ -139,7 +176,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "deliver a broadcast message using the !" in {
-      val doneLatch = new CountDownLatch(2)
+      val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
@@ -162,7 +199,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -177,7 +214,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "deliver a broadcast message" in {
-      val doneLatch = new CountDownLatch(2)
+      val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
@@ -200,7 +237,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -214,7 +251,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "broadcast message using !" in {
-      val doneLatch = new CountDownLatch(2)
+      val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
@@ -236,14 +273,14 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ! 1
       routedActor ! "end"
 
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       counter1.get must be(1)
       counter2.get must be(1)
     }
 
     "broadcast message using ?" in {
-      val doneLatch = new CountDownLatch(2)
+      val doneLatch = new TestLatch(2)
 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
@@ -267,7 +304,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ? 1
       routedActor ! "end"
 
-      doneLatch.await(5, TimeUnit.SECONDS) must be(true)
+      Await.ready(doneLatch, 5 seconds)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -304,7 +341,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      doneLatch.await
+      Await.ready(doneLatch, TestLatch.DefaultTimeout)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -317,7 +354,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val routedActor = system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(routees = List(actor1, actor2))))
 
       routedActor ! Broadcast(Stop(Some(1)))
-      shutdownLatch.await
+      Await.ready(shutdownLatch, TestLatch.DefaultTimeout)
       Await.result(routedActor ? Broadcast(0), timeout.duration) must be(22)
     }
 

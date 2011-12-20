@@ -19,7 +19,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigResolveOptions
 import com.typesafe.config.ConfigException
-import java.lang.reflect.InvocationTargetException
 import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ CountDownLatch, Executors, ConcurrentHashMap }
@@ -90,7 +89,7 @@ object ActorSystem {
     val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
     val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
-    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.dispatcher-shutdown-timeout"), MILLISECONDS)
+    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout"), MILLISECONDS)
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
     val MailboxPushTimeout = Duration(getNanoseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time"), NANOSECONDS)
     val DispatcherThroughputDeadlineTime = Duration(getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), NANOSECONDS)
@@ -409,9 +408,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     val values: Array[AnyRef] = arguments map (_._2) toArray
 
     ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
-      case Left(e: InvocationTargetException) ⇒ throw e.getTargetException
-      case Left(e)                            ⇒ throw e
-      case Right(p)                           ⇒ p
+      case Left(e)  ⇒ throw e
+      case Right(p) ⇒ p
     }
   }
 

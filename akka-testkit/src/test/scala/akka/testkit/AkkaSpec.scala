@@ -107,7 +107,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
       system.actorFor("/") ! PoisonPill
 
-      latch.await(2 seconds)
+      Await.ready(latch, 2 seconds)
     }
 
     "must enqueue unread messages from testActor to deadLetters" in {
@@ -139,7 +139,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
         system.shutdown()
-        latch.await(2 seconds)
+        Await.ready(latch, 2 seconds)
         Await.result(davyJones ? "Die!", timeout.duration) must be === "finally gone"
 
         // this will typically also contain log messages which were sent after the logger shutdown

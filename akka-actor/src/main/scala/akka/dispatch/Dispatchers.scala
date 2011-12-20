@@ -86,7 +86,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     dispatchers.get(key) match {
       case null ⇒
         // It doesn't matter if we create a dispatcher that isn't used due to concurrent lookup.
-        // That shouldn't happen often and in case it does the actual ExecutorService isn't 
+        // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
         val newDispatcher = newFromConfig(key)
         dispatchers.putIfAbsent(key, newDispatcher) match {
@@ -260,7 +260,7 @@ class DispatcherConfigurator() extends MessageDispatcherConfigurator() {
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType(config, settings),
         threadPoolConfig,
-        settings.DispatcherDefaultShutdown)).build
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
   }
 }
 
@@ -274,6 +274,6 @@ class BalancingDispatcherConfigurator() extends MessageDispatcherConfigurator() 
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType(config, settings),
         threadPoolConfig,
-        settings.DispatcherDefaultShutdown)).build
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
   }
 }

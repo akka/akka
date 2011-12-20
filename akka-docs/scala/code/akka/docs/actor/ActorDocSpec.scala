@@ -20,6 +20,8 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.util._
 import akka.util.duration._
+import akka.actor.Actor.Receive
+import akka.dispatch.Await
 
 //#my-actor
 class MyActor extends Actor {
@@ -236,6 +238,27 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#using-ask
 
     system.stop(myActor)
+  }
+
+  "using implicit timeout" in {
+    val myActor = system.actorOf(Props(new FirstActor))
+    //#using-implicit-timeout
+    import akka.util.duration._
+    import akka.util.Timeout
+    implicit val timeout = Timeout(500 millis)
+    val future = myActor ? "hello"
+    //#using-implicit-timeout
+    Await.result(future, timeout.duration) must be("hello")
+
+  }
+
+  "using explicit timeout" in {
+    val myActor = system.actorOf(Props(new FirstActor))
+    //#using-explicit-timeout
+    import akka.util.duration._
+    val future = myActor ? ("hello", timeout = 500 millis)
+    //#using-explicit-timeout
+    Await.result(future, 500 millis) must be("hello")
   }
 
   "using receiveTimeout" in {

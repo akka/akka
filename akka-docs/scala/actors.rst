@@ -47,8 +47,8 @@ Please note that the Akka Actor ``receive`` message loop is exhaustive, which is
 different compared to Erlang and Scala Actors. This means that you need to
 provide a pattern match for all messages that it can accept and if you want to
 be able to handle unknown messages then you need to have a default case as in
-the example above. Otherwise an ``UnhandledMessageException`` will be
-thrown and the actor is restarted when an unknown message is received.
+the example above. Otherwise an ``akka.actor.UnhandledMessage(message, sender, recipient)`` will be
+published to the ``ActorSystem``'s ``EventStream``.
 
 Creating Actors with default constructor
 ----------------------------------------
@@ -142,7 +142,7 @@ The :class:`Actor` trait defines only one abstract method, the above mentioned
 :meth:`receive`, which implements the behavior of the actor.
 
 If the current actor behavior does not match a received message, :meth:`unhandled`
-is called, which by default throws an :class:`UnhandledMessageException`.
+is called, which by default publishes an ``akka.actor.UnhandledMessage(message, sender, recipient)``
 
 In addition, it offers:
 
@@ -328,16 +328,13 @@ message.
 If the actor does not complete the future, it will expire after the timeout period,
 which is taken from one of the following locations in order of precedence:
 
-#. explicitly given timeout as in ``actor.?("hello")(timeout = 12 millis)``
-#. implicit argument of type :class:`akka.actor.Timeout`, e.g.
+1. explicitly given timeout as in:
 
-   ::
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-explicit-timeout
 
-     import akka.actor.Timeout
-     import akka.util.duration._
+2. implicit argument of type :class:`akka.util.Timeout`, e.g.
 
-     implicit val timeout = Timeout(12 millis)
-     val future = actor ? "hello"
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-implicit-timeout
 
 See :ref:`futures-scala` for more information on how to await or query a
 future.
