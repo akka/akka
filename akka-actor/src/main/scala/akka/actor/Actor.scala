@@ -106,7 +106,7 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Run
 /**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
  */
-case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty recipient: ActorRef)
+case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
 
 /**
  * Classes for passing status back to the sender.
@@ -271,13 +271,13 @@ trait Actor {
    * <p/>
    * Is called when a message isn't handled by the current behavior of the actor
    * by default it fails with either a [[akka.actor.DeathPactException]] (in
-   * case of an unhandled [[akka.actor.Terminated]] message) or a
-   * [[akka.actor.UnhandledMessageException]].
+   * case of an unhandled [[akka.actor.Terminated]] message) or publishes an [[akka.actor.UnhandledMessage]]
+   * to the actor's system's [[akka.event.EventStream]]
    */
   def unhandled(message: Any) {
     message match {
       case Terminated(dead) ⇒ throw new DeathPactException(dead)
-      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, self))
+      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
     }
   }
 

@@ -22,7 +22,7 @@ public class MyReceivedTimeoutUntypedActor extends UntypedActor {
     } else if (message == Actors.receiveTimeout()) {
       throw new RuntimeException("received timeout");
     } else {
-      throw new UnhandledMessageException(message, getSelf());
+      unhandled(message);
     }
   }
 }

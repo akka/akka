@@ -16,7 +16,7 @@ public class MyUntypedActor extends UntypedActor {
     if (message instanceof String)
       log.info("Received String message: {}", message);
     else
-      throw new UnhandledMessageException(message, getSelf());
+      unhandled(message);
   }
 }
 //#my-untyped-actor

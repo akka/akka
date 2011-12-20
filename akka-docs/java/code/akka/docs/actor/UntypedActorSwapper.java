@@ -37,7 +37,7 @@ public class UntypedActorSwapper {
           }
         });
       } else {
-        throw new UnhandledMessageException(message, getSelf());
+        unhandled(message);
       }
     }
   }

@@ -142,7 +142,7 @@ The :class:`Actor` trait defines only one abstract method, the above mentioned
 :meth:`receive`, which implements the behavior of the actor.
 
 If the current actor behavior does not match a received message, :meth:`unhandled`
-is called, which by default throws an :class:`UnhandledMessageException`.
+is called, which by default publishes an ``akka.actor.UnhandledMessage(message, sender, recipient)``
 
 In addition, it offers:
 
