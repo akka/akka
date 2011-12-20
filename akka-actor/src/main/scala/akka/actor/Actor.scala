@@ -104,6 +104,11 @@ case class UnhandledMessageException(msg: Any, ref: ActorRef = null) extends Run
 }
 
 /**
+ * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
+ */
+case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty recipient: ActorRef)
+
+/**
  * Classes for passing status back to the sender.
  * Used for internal ACKing protocol. But exposed as utility class for user-specific ACKing protocols as well.
  */
@@ -272,7 +277,7 @@ trait Actor {
   def unhandled(message: Any) {
     message match {
       case Terminated(dead) ⇒ throw new DeathPactException(dead)
-      case _                ⇒ throw new UnhandledMessageException(message, self)
+      case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, self))
     }
   }
 

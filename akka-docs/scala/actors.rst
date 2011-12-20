@@ -47,8 +47,8 @@ Please note that the Akka Actor ``receive`` message loop is exhaustive, which is
 different compared to Erlang and Scala Actors. This means that you need to
 provide a pattern match for all messages that it can accept and if you want to
 be able to handle unknown messages then you need to have a default case as in
-the example above. Otherwise an ``UnhandledMessageException`` will be
-thrown and the actor is restarted when an unknown message is received.
+the example above. Otherwise an ``akka.actor.UnhandledMessage(message, actor)`` will be
+published to the ``ActorSystem``'s ``EventStream``.
 
 Creating Actors with default constructor
 ----------------------------------------
