@@ -188,7 +188,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val started = TestLatch(1)
       val ioManager = system.actorOf(Props(new IOManager(2))) // teeny tiny buffer
       val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064, ioManager, started)))
-      started.await
+      Await.ready(started, timeout.duration)
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064, ioManager)))
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
@@ -205,7 +205,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val started = TestLatch(1)
       val ioManager = system.actorOf(Props(new IOManager()))
       val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065, ioManager, started)))
-      started.await
+      Await.ready(started, timeout.duration)
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065, ioManager)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
@@ -219,7 +219,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val started = TestLatch(1)
       val ioManager = system.actorOf(Props(new IOManager(2)))
       val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8066, ioManager, started)))
-      started.await
+      Await.ready(started, timeout.duration)
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8066, ioManager)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
@@ -233,7 +233,7 @@ class IOActorSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
       val started = TestLatch(1)
       val ioManager = system.actorOf(Props(new IOManager(2))) // teeny tiny buffer
       val server = system.actorOf(Props(new KVStore("localhost", 8067, ioManager, started)))
-      started.await
+      Await.ready(started, timeout.duration)
       val client1 = system.actorOf(Props(new KVClient("localhost", 8067, ioManager)))
       val client2 = system.actorOf(Props(new KVClient("localhost", 8067, ioManager)))
       val f1 = client1 ? (('set, "hello", ByteString("World")))
