@@ -89,7 +89,7 @@ object ActorSystem {
     val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
     val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
-    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.dispatcher-shutdown-timeout"), MILLISECONDS)
+    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout"), MILLISECONDS)
     val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
     val MailboxPushTimeout = Duration(getNanoseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time"), NANOSECONDS)
     val DispatcherThroughputDeadlineTime = Duration(getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), NANOSECONDS)
