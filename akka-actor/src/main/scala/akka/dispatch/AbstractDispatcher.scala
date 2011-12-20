@@ -195,7 +195,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   /**
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down,
-   * defaulting to your akka configs "akka.actor.dispatcher-shutdown-timeout" or default specified in
+   * defaulting to your akka configs "akka.actor.default-dispatcher.shutdown-timeout" or default specified in
    * reference.conf
    */
   protected[akka] def shutdownTimeout: Duration
