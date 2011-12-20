@@ -1,18 +1,19 @@
 package akka.actor.mailbox
 
 import java.util.concurrent.TimeUnit
-
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
-
 import akka.actor._
 import akka.actor.Actor._
 import java.util.concurrent.CountDownLatch
 import akka.dispatch.MessageDispatcher
+import akka.dispatch.CustomMailboxType
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoDurableMailboxType) {
+class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb",
+  new CustomMailboxType("akka.actor.mailbox.MongoBasedMailbox")) {
+
   import org.apache.log4j.{ Logger, Level }
   import com.mongodb.async._
 

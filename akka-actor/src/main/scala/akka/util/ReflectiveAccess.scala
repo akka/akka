@@ -5,6 +5,7 @@
 package akka.util
 
 import akka.actor._
+import java.lang.reflect.InvocationTargetException
 
 object ReflectiveAccess {
 
@@ -14,22 +15,19 @@ object ReflectiveAccess {
 
   def createInstance[T](clazz: Class[_],
                         params: Array[Class[_]],
-                        args: Array[AnyRef]): Either[Exception, T] = try {
+                        args: Array[AnyRef]): Either[Exception, T] = withErrorHandling {
     assert(clazz ne null)
     assert(params ne null)
     assert(args ne null)
     val ctor = clazz.getDeclaredConstructor(params: _*)
     ctor.setAccessible(true)
     Right(ctor.newInstance(args: _*).asInstanceOf[T])
-  } catch {
-    case e: Exception ⇒
-      Left(e)
   }
 
   def createInstance[T](fqn: String,
                         params: Array[Class[_]],
                         args: Array[AnyRef],
-                        classloader: ClassLoader = loader): Either[Exception, T] = try {
+                        classloader: ClassLoader = loader): Either[Exception, T] = withErrorHandling {
     assert(params ne null)
     assert(args ne null)
     getClassFor(fqn, classloader) match {
@@ -39,9 +37,6 @@ object ReflectiveAccess {
         Right(ctor.newInstance(args: _*).asInstanceOf[T])
       case Left(exception) ⇒ Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
-  } catch {
-    case e: Exception ⇒
-      Left(e)
   }
 
   //Obtains a reference to fqn.MODULE$
@@ -98,6 +93,25 @@ object ReflectiveAccess {
     }
   } catch {
     case e: Exception ⇒ Left(e)
+  }
+
+  /**
+   * Caught exception is returned as Left(exception).
+   * Unwraps `InvocationTargetException` if its getTargetException is an `Exception`.
+   * Other `Throwable`, such as `Error` is thrown.
+   */
+  @inline
+  private final def withErrorHandling[T](body: ⇒ Either[Exception, T]): Either[Exception, T] = {
+    try {
+      body
+    } catch {
+      case e: InvocationTargetException ⇒ e.getTargetException match {
+        case t: Exception ⇒ Left(t)
+        case t            ⇒ throw t
+      }
+      case e: Exception ⇒
+        Left(e)
+    }
   }
 
 }

@@ -1,9 +1,11 @@
 package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
+import akka.dispatch.CustomMailboxType
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileDurableMailboxType) {
+class FileBasedMailboxSpec extends DurableMailboxSpec("File",
+  new CustomMailboxType("akka.actor.mailbox.FileBasedMailbox")) {
 
   def clean {
     val queuePath = FileBasedMailboxExtension(system).QueuePath
