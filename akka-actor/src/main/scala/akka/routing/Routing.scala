@@ -5,7 +5,6 @@ package akka.routing
 
 import akka.actor._
 import akka.japi.Creator
-import java.lang.reflect.InvocationTargetException
 import akka.config.ConfigurationException
 import java.util.concurrent.atomic.AtomicInteger
 import akka.util.{ ReflectiveAccess, Timeout }

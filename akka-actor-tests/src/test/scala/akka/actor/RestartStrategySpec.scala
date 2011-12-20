@@ -32,7 +32,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
-      val countDownLatch = new CountDownLatch(3)
+      val countDownLatch = new TestLatch(3)
       val stopLatch = new TestLatch
 
       val slaveProps = Props(new Actor {
@@ -60,23 +60,23 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.await(10 seconds))
+      Await.ready(restartLatch, 10 seconds)
 
       // now crash again... should not restart
       slave ! Crash
       slave ! Ping
 
-      assert(secondRestartLatch.await(10 seconds))
-      assert(countDownLatch.await(10, TimeUnit.SECONDS))
+      Await.ready(secondRestartLatch, 10 seconds)
+      Await.ready(countDownLatch, 10 seconds)
 
       slave ! Crash
-      assert(stopLatch.await(10 seconds))
+      Await.ready(stopLatch, 10 seconds)
     }
 
     "ensure that slave is immortal without max restarts and time range" in {
       val boss = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
 
-      val countDownLatch = new CountDownLatch(100)
+      val countDownLatch = new TestLatch(100)
 
       val slaveProps = Props(new Actor {
 
@@ -91,7 +91,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
       (1 to 100) foreach { _ ⇒ slave ! Crash }
-      assert(countDownLatch.await(120, TimeUnit.SECONDS))
+      Await.ready(countDownLatch, 2 minutes)
       assert(!slave.isTerminated)
     }
 
@@ -131,14 +131,14 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Ping
       slave ! Crash
 
-      assert(restartLatch.await(10 seconds))
-      assert(pingLatch.await(10 seconds))
+      Await.ready(restartLatch, 10 seconds)
+      Await.ready(pingLatch, 10 seconds)
 
       slave ! Ping
       slave ! Crash
 
-      assert(secondRestartLatch.await(10 seconds))
-      assert(secondPingLatch.await(10 seconds))
+      Await.ready(secondRestartLatch, 10 seconds)
+      Await.ready(secondPingLatch, 10 seconds)
 
       // sleep to go out of the restart strategy's time range
       sleep(700L)
@@ -147,7 +147,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Crash
       slave ! Ping
 
-      assert(thirdRestartLatch.await(1 second))
+      Await.ready(thirdRestartLatch, 1 second)
 
       assert(!slave.isTerminated)
     }
@@ -157,7 +157,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
-      val countDownLatch = new CountDownLatch(3)
+      val countDownLatch = new TestLatch(3)
       val stopLatch = new TestLatch
 
       val slaveProps = Props(new Actor {
@@ -184,7 +184,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.await(10 seconds))
+      Await.ready(restartLatch, 10 seconds)
 
       assert(!slave.isTerminated)
 
@@ -192,20 +192,20 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Crash
       slave ! Ping
 
-      assert(secondRestartLatch.await(10 seconds))
-      assert(countDownLatch.await(10, TimeUnit.SECONDS))
+      Await.ready(secondRestartLatch, 10 seconds)
+      Await.ready(countDownLatch, 10 seconds)
 
       sleep(700L)
 
       slave ! Crash
-      assert(stopLatch.await(10 seconds))
+      Await.ready(stopLatch, 10 seconds)
       sleep(500L)
       assert(slave.isTerminated)
     }
 
     "ensure that slave is not restarted within time range" in {
       val restartLatch, stopLatch, maxNoOfRestartsLatch = new TestLatch
-      val countDownLatch = new CountDownLatch(2)
+      val countDownLatch = new TestLatch(2)
 
       val boss = system.actorOf(Props(new Actor {
         def receive = {
@@ -236,7 +236,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Ping
 
       // test restart and post restart ping
-      assert(restartLatch.await(10 seconds))
+      Await.ready(restartLatch, 10 seconds)
 
       assert(!slave.isTerminated)
 
@@ -245,14 +245,14 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       // may not be running
       slave ! Ping
-      assert(countDownLatch.await(10, TimeUnit.SECONDS))
+      Await.ready(countDownLatch, 10 seconds)
 
       // may not be running
       slave ! Crash
 
-      assert(stopLatch.await(10 seconds))
+      Await.ready(stopLatch, 10 seconds)
 
-      assert(maxNoOfRestartsLatch.await(10 seconds))
+      Await.ready(maxNoOfRestartsLatch, 10 seconds)
       sleep(500L)
       assert(slave.isTerminated)
     }

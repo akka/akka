@@ -8,12 +8,14 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute
 import FSM._
-import akka.util.Duration
 import akka.util.duration._
 import akka.event._
 import com.typesafe.config.ConfigFactory
+import akka.dispatch.Await
+import akka.util.{ Timeout, Duration }
 
 object FSMActorSpec {
+  val timeout = Timeout(2 seconds)
 
   class Latches(implicit system: ActorSystem) {
     val unlockedLatch = TestLatch()
@@ -122,7 +124,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       }))
 
       lock ! SubscribeTransitionCallBack(transitionTester)
-      initialStateLatch.await
+      Await.ready(initialStateLatch, timeout.duration)
 
       lock ! '3'
       lock ! '3'
@@ -130,14 +132,14 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       lock ! '2'
       lock ! '1'
 
-      unlockedLatch.await
-      transitionLatch.await
-      transitionCallBackLatch.await
-      lockedLatch.await
+      Await.ready(unlockedLatch, timeout.duration)
+      Await.ready(transitionLatch, timeout.duration)
+      Await.ready(transitionCallBackLatch, timeout.duration)
+      Await.ready(lockedLatch, timeout.duration)
 
       EventFilter.warning(start = "unhandled event", occurrences = 1) intercept {
         lock ! "not_handled"
-        unhandledLatch.await
+        Await.ready(unhandledLatch, timeout.duration)
       }
 
       val answerLatch = TestLatch()
@@ -151,10 +153,10 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         }
       }))
       tester ! Hello
-      answerLatch.await
+      Await.ready(answerLatch, timeout.duration)
 
       tester ! Bye
-      terminatedLatch.await
+      Await.ready(terminatedLatch, timeout.duration)
     }
 
     "log termination" in {
@@ -186,7 +188,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         }
       }
       val ref = system.actorOf(Props(fsm))
-      started.await
+      Await.ready(started, timeout.duration)
       system.stop(ref)
       expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
     }
