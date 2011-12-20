@@ -4,7 +4,6 @@
 package akka.actor.mailbox
 
 import akka.util.ReflectiveAccess
-import java.lang.reflect.InvocationTargetException
 import akka.AkkaException
 import akka.actor.ActorContext
 import akka.actor.ActorRef

@@ -11,7 +11,6 @@ import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
 import com.typesafe.config.Config
-import java.lang.reflect.InvocationTargetException
 import akka.actor.ActorContext
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
@@ -393,12 +392,8 @@ class CustomMailboxType(mailboxFQN: String) extends MailboxType {
     ReflectiveAccess.createInstance[AnyRef](mailboxFQN, constructorSignature, Array[AnyRef](receiver)) match {
       case Right(instance) ⇒ instance.asInstanceOf[Mailbox]
       case Left(exception) ⇒
-        val cause = exception match {
-          case i: InvocationTargetException ⇒ i.getTargetException
-          case _                            ⇒ exception
-        }
         throw new IllegalArgumentException("Cannot instantiate mailbox [%s] due to: %s".
-          format(mailboxFQN, cause.toString))
+          format(mailboxFQN, exception.toString))
     }
   }
 
