@@ -118,7 +118,19 @@ Sometimes it's useful to be able to specify priority order of messages, that is 
 an UnboundedPriorityMailbox or BoundedPriorityMailbox with a ``java.util.Comparator[Envelope]`` or use a
 ``akka.dispatch.PriorityGenerator`` (recommended).
 
-Creating a Dispatcher using PriorityGenerator:
+Creating a Dispatcher with a mailbox using PriorityGenerator:
+
+Config:
+
+.. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala
+   :include: prio-dispatcher-config-java
+
+Priority mailbox:
+
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocTestBase.java
+   :include: imports-prio-mailbox,prio-mailbox
+
+Usage:
 
 .. includecode:: code/akka/docs/dispatcher/DispatcherDocTestBase.java
    :include: imports-prio,prio-dispatcher

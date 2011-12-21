@@ -112,8 +112,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     }
   }
 
-  // FIXME #1458: Not sure if we should have this, but needed it temporary for PriorityDispatcherSpec, ActorModelSpec and DispatcherDocSpec
-  def register(id: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
+  // FIXME #1458: Not sure if we should have this, but needed it temporary for ActorModelSpec and DispatcherDocSpec
+  private[akka] def register(id: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
     dispatcherConfigurators.putIfAbsent(id, dispatcherConfigurator)
   }
 
@@ -130,35 +130,6 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
-
-  // FIXME #1458: Remove these newDispatcher methods, but still need them temporary for PriorityDispatcherSpec, ActorModelSpec and DispatcherDocSpec
-  /**
-   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
-   * <p/>
-   * Has a fluent builder interface for configuring its semantics.
-   */
-  def newDispatcher(name: String) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒ new Dispatcher(prerequisites, name, name, settings.DispatcherThroughput,
-      settings.DispatcherThroughputDeadlineTime, MailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
-
-  /**
-   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
-   * <p/>
-   * Has a fluent builder interface for configuring its semantics.
-   */
-  def newDispatcher(name: String, throughput: Int, mailboxType: MailboxType) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(prerequisites, name, name, throughput, settings.DispatcherThroughputDeadlineTime, mailboxType,
-        config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
-
-  /**
-   * Creates a executor-based event-driven dispatcher serving multiple (millions) of actors through a thread pool.
-   * <p/>
-   * Has a fluent builder interface for configuring its semantics.
-   */
-  def newDispatcher(name: String, throughput: Int, throughputDeadline: Duration, mailboxType: MailboxType) =
-    ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(prerequisites, name, name, throughput, throughputDeadline, mailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
   val MailboxType: MailboxType =
     if (settings.MailboxCapacity < 1) UnboundedMailbox()

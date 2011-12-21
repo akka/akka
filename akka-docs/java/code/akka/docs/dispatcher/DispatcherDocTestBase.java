@@ -14,14 +14,17 @@ import akka.dispatch.MessageDispatcher;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.actor.Actors;
-import akka.dispatch.PriorityGenerator;
-import akka.dispatch.UnboundedPriorityMailbox;
-import akka.dispatch.MessageDispatcherConfigurator;
-import akka.dispatch.DispatcherPrerequisites;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 //#imports-prio
+
+//#imports-prio-mailbox
+import akka.dispatch.PriorityGenerator;
+import akka.dispatch.UnboundedPriorityMailbox;
+import com.typesafe.config.Config;
+
+//#imports-prio-mailbox
 
 import org.junit.After;
 import org.junit.Before;
@@ -73,34 +76,6 @@ public class DispatcherDocTestBase {
   @Test
   public void priorityDispatcher() throws Exception {
     //#prio-dispatcher
-    final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
-      @Override
-      public int gen(Object message) {
-        if (message.equals("highpriority"))
-          return 0; // 'highpriority messages should be treated first if possible
-        else if (message.equals("lowpriority"))
-          return 100; // 'lowpriority messages should be treated last if possible
-        else if (message.equals(Actors.poisonPill()))
-          return 1000; // PoisonPill when no other left
-        else
-          return 50; // We default to 50
-      }
-    };
-
-    // FIXME #1458: how should we make it easy to configure prio mailbox?
-    // We create a new Priority dispatcher and seed it with the priority generator
-    final String dispatcherKey = "prio-dispatcher";
-    MessageDispatcherConfigurator dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers()
-        .defaultDispatcherConfig(), system.dispatchers().prerequisites()) {
-      private final MessageDispatcher instance = system.dispatchers()
-          .newDispatcher(dispatcherKey, 5, new UnboundedPriorityMailbox(generator)).build();
-
-      @Override
-      public MessageDispatcher dispatcher() {
-        return instance;
-      }
-    };
-    system.dispatchers().register(dispatcherKey, dispatcherConfigurator);
 
     ActorRef myActor = system.actorOf( // We create a new Actor that just prints out what it processes
         new Props().withCreator(new UntypedActorFactory() {
@@ -123,7 +98,7 @@ public class DispatcherDocTestBase {
               }
             };
           }
-        }).withDispatcher(dispatcherKey));
+        }).withDispatcher("prio-dispatcher-java"));
 
     /*
     Logs:
@@ -143,4 +118,27 @@ public class DispatcherDocTestBase {
       Thread.sleep(100);
     }
   }
+
+  //#prio-mailbox
+  public static class PrioMailbox extends UnboundedPriorityMailbox {
+
+    static final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
+      @Override
+      public int gen(Object message) {
+        if (message.equals("highpriority"))
+          return 0; // 'highpriority messages should be treated first if possible
+        else if (message.equals("lowpriority"))
+          return 100; // 'lowpriority messages should be treated last if possible
+        else if (message.equals(Actors.poisonPill()))
+          return 1000; // PoisonPill when no other left
+        else
+          return 50; // We default to 50
+      }
+    };
+
+    public PrioMailbox(Config config) {
+      super(generator);
+    }
+  }
+  //#prio-mailbox
 }
