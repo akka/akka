@@ -23,8 +23,8 @@ import akka.util.Duration
  * Although the technique used in this implementation is commonly known as "work stealing", the actual implementation is probably
  * best described as "work donating" because the actor of which work is being stolen takes the initiative.
  * <p/>
- * The preferred way of creating dispatchers is to use
- * the {@link akka.dispatch.Dispatchers} factory object.
+ * The preferred way of creating dispatchers is to define configuration of it and use the
+ * the `lookup` method in [[akka.dispatch.Dispatchers]].
  *
  * @see akka.dispatch.BalancingDispatcher
  * @see akka.dispatch.Dispatchers
@@ -32,12 +32,13 @@ import akka.util.Duration
 class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _name: String,
+  _id: String,
   throughput: Int,
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   config: ThreadPoolConfig,
   _shutdownTimeout: Duration)
-  extends Dispatcher(_prerequisites, _name, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
+  extends Dispatcher(_prerequisites, _name, _id, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
   val rebalance = new AtomicBoolean(false)

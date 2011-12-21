@@ -12,8 +12,14 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.{ Await, Promise, Envelope, DefaultPromise }
 import java.util.concurrent.TimeoutException
+import akka.dispatch.MailboxType
+import com.typesafe.config.Config
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
+
+class MongoBasedMailboxType(config: Config) extends MailboxType {
+  override def create(owner: ActorContext) = new MongoBasedMailbox(owner)
+}
 
 /**
  * A "naive" durable mailbox which uses findAndRemove; it's possible if the actor crashes

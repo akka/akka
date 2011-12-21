@@ -8,11 +8,18 @@ import akka.actor._
 import akka.actor.Actor._
 import java.util.concurrent.CountDownLatch
 import akka.dispatch.MessageDispatcher
-import akka.dispatch.CustomMailboxType
+
+object MongoBasedMailboxSpec {
+  val config = """
+    mongodb-dispatcher {
+      mailboxType = akka.actor.mailbox.MongoBasedMailboxType
+      throughput = 1
+    }
+    """
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb",
-  new CustomMailboxType("akka.actor.mailbox.MongoBasedMailbox")) {
+class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoBasedMailboxSpec.config) {
 
   import org.apache.log4j.{ Logger, Level }
   import com.mongodb.async._

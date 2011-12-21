@@ -14,8 +14,14 @@ import akka.dispatch.Envelope
 import akka.event.Logging
 import akka.cluster.zookeeper.ZooKeeperQueue
 import akka.actor.ActorRef
+import akka.dispatch.MailboxType
+import com.typesafe.config.Config
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
+
+class ZooKeeperBasedMailboxType(config: Config) extends MailboxType {
+  override def create(owner: ActorContext) = new ZooKeeperBasedMailbox(owner)
+}
 
 class ZooKeeperBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
 

@@ -104,7 +104,7 @@ class TestKit(_system: ActorSystem) {
   lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl] //FIXME should we rely on this cast to work here?
     impl.systemActorOf(Props(new TestActor(queue))
-      .copy(dispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites)),
+      .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
   }
 

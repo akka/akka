@@ -14,12 +14,17 @@ import akka.dispatch.MessageDispatcher;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.actor.Actors;
-import akka.dispatch.PriorityGenerator;
-import akka.dispatch.UnboundedPriorityMailbox;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 //#imports-prio
+
+//#imports-prio-mailbox
+import akka.dispatch.PriorityGenerator;
+import akka.dispatch.UnboundedPriorityMailbox;
+import com.typesafe.config.Config;
+
+//#imports-prio-mailbox
 
 import org.junit.After;
 import org.junit.Before;
@@ -52,10 +57,9 @@ public class DispatcherDocTestBase {
   @Test
   public void defineDispatcher() {
     //#defining-dispatcher
-    MessageDispatcher dispatcher = system.dispatcherFactory().lookup("my-dispatcher");
-    ActorRef myActor1 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+    ActorRef myActor1 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor1");
-    ActorRef myActor2 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher),
+    ActorRef myActor2 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor2");
     //#defining-dispatcher
   }
@@ -64,31 +68,14 @@ public class DispatcherDocTestBase {
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
     String name = "myactor";
-    MessageDispatcher dispatcher = system.dispatcherFactory().newPinnedDispatcher(name);
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher(dispatcher), name);
+    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class)
+        .withDispatcher("myactor-dispatcher"), name);
     //#defining-pinned-dispatcher
   }
 
   @Test
   public void priorityDispatcher() throws Exception {
     //#prio-dispatcher
-    PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
-      @Override
-      public int gen(Object message) {
-        if (message.equals("highpriority"))
-          return 0; // 'highpriority messages should be treated first if possible
-        else if (message.equals("lowpriority"))
-          return 100; // 'lowpriority messages should be treated last if possible
-        else if (message.equals(Actors.poisonPill()))
-          return 1000; // PoisonPill when no other left
-        else
-          return 50; // We default to 50
-      }
-    };
-
-    // We create a new Priority dispatcher and seed it with the priority generator
-    MessageDispatcher dispatcher = system.dispatcherFactory()
-        .newDispatcher("foo", 5, new UnboundedPriorityMailbox(generator)).build();
 
     ActorRef myActor = system.actorOf( // We create a new Actor that just prints out what it processes
         new Props().withCreator(new UntypedActorFactory() {
@@ -111,7 +98,7 @@ public class DispatcherDocTestBase {
               }
             };
           }
-        }).withDispatcher(dispatcher));
+        }).withDispatcher("prio-dispatcher-java"));
 
     /*
     Logs:
@@ -131,4 +118,27 @@ public class DispatcherDocTestBase {
       Thread.sleep(100);
     }
   }
+
+  //#prio-mailbox
+  public static class PrioMailbox extends UnboundedPriorityMailbox {
+
+    static final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
+      @Override
+      public int gen(Object message) {
+        if (message.equals("highpriority"))
+          return 0; // 'highpriority messages should be treated first if possible
+        else if (message.equals("lowpriority"))
+          return 100; // 'lowpriority messages should be treated last if possible
+        else if (message.equals(Actors.poisonPill()))
+          return 1000; // PoisonPill when no other left
+        else
+          return 50; // We default to 50
+      }
+    };
+
+    public PrioMailbox(Config config) {
+      super(generator);
+    }
+  }
+  //#prio-mailbox
 }

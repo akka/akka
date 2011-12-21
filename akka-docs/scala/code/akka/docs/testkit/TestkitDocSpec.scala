@@ -181,8 +181,8 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val actor = system.actorOf(Props[MyDoubleEcho])
     actor ! (probe1.ref, probe2.ref)
     actor ! "hello"
-    probe1.expectMsg(50 millis, "hello")
-    probe2.expectMsg(50 millis, "hello")
+    probe1.expectMsg(500 millis, "hello")
+    probe2.expectMsg(500 millis, "hello")
     //#test-probe
 
     //#test-special-probe
@@ -227,8 +227,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate " in {
     //#calling-thread-dispatcher
     import akka.testkit.CallingThreadDispatcher
-    val dispatcher = new CallingThreadDispatcher(system.dispatcherFactory.prerequisites)
-    val ref = system.actorOf(Props[MyActor].withDispatcher(dispatcher))
+    val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.Id))
     //#calling-thread-dispatcher
   }
 
