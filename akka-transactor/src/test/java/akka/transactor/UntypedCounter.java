@@ -1,13 +1,18 @@
-package akka.transactor.test;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 
+package akka.transactor;
+
+import akka.actor.ActorRef;
 import akka.transactor.UntypedTransactor;
 import akka.transactor.SendTo;
-import akka.actor.ActorRef;
-import akka.stm.*;
 import akka.util.FiniteDuration;
-
-import org.multiverse.api.StmUtils;
-
+import scala.Function1;
+import scala.concurrent.stm.*;
+import scala.reflect.*;
+import scala.runtime.AbstractFunction1;
+import scala.runtime.BoxedUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -15,21 +20,16 @@ import java.util.concurrent.TimeUnit;
 
 public class UntypedCounter extends UntypedTransactor {
     private String name;
-    private Ref<Integer> count = new Ref<Integer>(0);
+    private Manifest<Integer> manifest = Manifest$.MODULE$.classType(Integer.class);
+    private Ref<Integer> count = Ref$.MODULE$.apply(0, manifest);
 
     public UntypedCounter(String name) {
         this.name = name;
     }
 
-    @Override public TransactionFactory transactionFactory() {
-        return new TransactionFactoryBuilder()
-            .setTimeout(new FiniteDuration(3, TimeUnit.SECONDS))
-            .build();
-    }
-
-    private void increment() {
-        //System.out.println(name + ": incrementing");
-        count.set(count.get() + 1);
+    private void increment(InTxn txn) {
+        Integer newValue = count.get(txn) + 1;
+        count.set(newValue, txn);
     }
 
     @Override public Set<SendTo> coordinate(Object message) {
@@ -47,30 +47,22 @@ public class UntypedCounter extends UntypedTransactor {
         }
     }
 
-    @Override public void before(Object message) {
-        //System.out.println(name + ": before transaction");
-    }
-
-    public void atomically(Object message) {
+    public void atomically(InTxn txn, Object message) {
         if (message instanceof Increment) {
-            increment();
+            increment(txn);
             final Increment increment = (Increment) message;
-            StmUtils.scheduleDeferredTask(new Runnable() {
-                public void run() { increment.getLatch().countDown(); }
-            });
-            StmUtils.scheduleCompensatingTask(new Runnable() {
-                public void run() { increment.getLatch().countDown(); }
-            });
+            final Function1<Txn.Status, BoxedUnit> countDown = new AbstractFunction1<Txn.Status, BoxedUnit>() {
+                public BoxedUnit apply(Txn.Status status) {
+                    increment.getLatch().countDown(); return null;
+                }
+            };
+            Txn.afterCompletion(countDown, txn);
         }
-    }
-
-    @Override public void after(Object message) {
-        //System.out.println(name + ": after transaction");
     }
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.get());
+            getSender().tell(count.single().get());
             return true;
         } else return false;
     }

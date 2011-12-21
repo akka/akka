@@ -1,9 +1,11 @@
-package akka.transactor.test;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.transactor;
 
 import static org.junit.Assert.*;
 
-import akka.dispatch.Await;
-import akka.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,11 +16,15 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
+import akka.dispatch.Await;
 import akka.dispatch.Future;
+import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
 import akka.transactor.CoordinatedTransactionException;
+import akka.util.Duration;
+import akka.util.Timeout;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -28,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
-import akka.testkit.AkkaSpec;
 
 public class UntypedTransactorTest {
 
@@ -49,8 +54,9 @@ public class UntypedTransactorTest {
   ActorRef failer;
 
   int numCounters = 3;
-  int timeout = 5;
-  int askTimeout = 5000;
+  int timeoutSeconds = 5;
+
+  Timeout timeout = new Timeout(Duration.create(timeoutSeconds, TimeUnit.SECONDS));
 
   @Before
   public void initialise() {
@@ -73,12 +79,12 @@ public class UntypedTransactorTest {
     Increment message = new Increment(counters.subList(1, counters.size()), incrementLatch);
     counters.get(0).tell(message);
     try {
-      incrementLatch.await(timeout, TimeUnit.SECONDS);
+      incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future<Object> future = counter.ask("GetCount", askTimeout);
-      int count = (Integer) Await.result(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      Future<Object> future = counter.ask("GetCount", timeout);
+      int count = (Integer) Await.result(future, timeout.duration());
       assertEquals(1, count);
     }
   }
@@ -95,12 +101,12 @@ public class UntypedTransactorTest {
     Increment message = new Increment(actors.subList(1, actors.size()), incrementLatch);
     actors.get(0).tell(message);
     try {
-      incrementLatch.await(timeout, TimeUnit.SECONDS);
+      incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future<Object> future = counter.ask("GetCount", askTimeout);
-      int count = (Integer) Await.result(future, Duration.create(askTimeout, TimeUnit.MILLISECONDS));
+      Future<Object> future = counter.ask("GetCount", timeout);
+      int count = (Integer) Await.result(future, timeout.duration());
       assertEquals(0, count);
     }
   }

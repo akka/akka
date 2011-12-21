@@ -1,21 +1,23 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.transactor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
-import akka.actor.ActorSystem
+
 import akka.actor._
-import akka.util.Timeout
-import akka.stm._
+import akka.dispatch.Await
 import akka.util.duration._
+import akka.util.Timeout
 import akka.testkit._
+import akka.testkit.TestEvent.Mute
+import scala.concurrent.stm._
 import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
-import akka.testkit.TestEvent.Mute
-import akka.dispatch.Await
 
 object FickleFriends {
-  case class FriendlyIncrement(friends: Seq[ActorRef], latch: CountDownLatch)
+  case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
   case class Increment(friends: Seq[ActorRef])
   case object GetCount
 
@@ -25,24 +27,22 @@ object FickleFriends {
   class Coordinator(name: String) extends Actor {
     val count = Ref(0)
 
-    implicit val txFactory = TransactionFactory(timeout = 3 seconds)
-
-    def increment = {
-      count alter (_ + 1)
+    def increment(implicit txn: InTxn) = {
+      count transform (_ + 1)
     }
 
     def receive = {
-      case FriendlyIncrement(friends, latch) ⇒ {
+      case FriendlyIncrement(friends, timeout, latch) ⇒ {
         var success = false
         while (!success) {
           try {
-            val coordinated = Coordinated()
+            val coordinated = Coordinated()(timeout)
             if (friends.nonEmpty) {
               friends.head ! coordinated(Increment(friends.tail))
             }
-            coordinated atomic {
+            coordinated.atomic { implicit t ⇒
               increment
-              deferred {
+              Txn.afterCommit { status ⇒
                 success = true
                 latch.countDown()
               }
@@ -53,7 +53,7 @@ object FickleFriends {
         }
       }
 
-      case GetCount ⇒ sender ! count.get
+      case GetCount ⇒ sender ! count.single.get
     }
   }
 
@@ -65,14 +65,18 @@ object FickleFriends {
   class FickleCounter(name: String) extends Actor {
     val count = Ref(0)
 
-    implicit val txFactory = TransactionFactory(timeout = 3 seconds)
+    val maxFailures = 3
+    var failures = 0
 
-    def increment = {
-      count alter (_ + 1)
+    def increment(implicit txn: InTxn) = {
+      count transform (_ + 1)
     }
 
     def failIf(x: Int, y: Int) = {
-      if (x == y) throw new ExpectedFailureException("Random fail at position " + x)
+      if (x == y && failures < maxFailures) {
+        failures += 1
+        throw new ExpectedFailureException("Random fail at position " + x)
+      }
     }
 
     def receive = {
@@ -83,14 +87,14 @@ object FickleFriends {
           friends.head ! coordinated(Increment(friends.tail))
         }
         failIf(failAt, 1)
-        coordinated atomic {
+        coordinated.atomic { implicit t ⇒
           failIf(failAt, 2)
           increment
           failIf(failAt, 3)
         }
       }
 
-      case GetCount ⇒ sender ! count.get
+      case GetCount ⇒ sender ! count.single.get
     }
   }
 }
@@ -119,7 +123,7 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
       system.eventStream.publish(Mute(ignoreExceptions))
       val (counters, coordinator) = actorOfs
       val latch = new CountDownLatch(1)
-      coordinator ! FriendlyIncrement(counters, latch)
+      coordinator ! FriendlyIncrement(counters, timeout, latch)
       latch.await // this could take a while
       Await.result(coordinator ? GetCount, timeout.duration) must be === 1
       for (counter ← counters) {

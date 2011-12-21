@@ -5,23 +5,14 @@
 package akka.transactor
 
 import akka.actor.{ UntypedActor, ActorRef }
-import akka.stm.{ DefaultTransactionConfig, TransactionFactory }
-
-import java.util.{ Set ⇒ JSet }
-
 import scala.collection.JavaConversions._
+import scala.concurrent.stm.InTxn
+import java.util.{ Set ⇒ JSet }
 
 /**
  * An UntypedActor version of transactor for using from Java.
  */
 abstract class UntypedTransactor extends UntypedActor {
-  private lazy val txFactory = transactionFactory
-
-  /**
-   * Create default transaction factory. Override to provide custom configuration.
-   */
-  def transactionFactory = TransactionFactory(DefaultTransactionConfig)
-
   /**
    * Implement a general pattern for using coordinated transactions.
    */
@@ -34,12 +25,12 @@ abstract class UntypedTransactor extends UntypedActor {
           sendTo.actor.tell(coordinated(sendTo.message.getOrElse(message)))
         }
         before(message)
-        coordinated.atomic(txFactory) { atomically(message) }
+        coordinated.atomic { txn ⇒ atomically(txn, message) }
         after(message)
       }
       case message ⇒ {
         val normal = normally(message)
-        if (!normal) onReceive(Coordinated(message))
+        if (!normal) onReceive(Coordinated(message)(context.system.settings.ActorTimeout))
       }
     }
   }
@@ -93,7 +84,7 @@ abstract class UntypedTransactor extends UntypedActor {
    * The Receive block to run inside the coordinated transaction.
    */
   @throws(classOf[Exception])
-  def atomically(message: Any) {}
+  def atomically(txn: InTxn, message: Any) {}
 
   /**
    * A Receive block that runs after the coordinated transaction.

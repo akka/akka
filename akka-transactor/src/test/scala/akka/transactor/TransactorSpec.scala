@@ -1,15 +1,15 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.transactor
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
-import akka.actor.ActorSystem
 import akka.actor._
-import akka.util.Timeout
-import akka.stm._
-import akka.util.duration._
-import akka.testkit._
 import akka.dispatch.Await
+import akka.util.duration._
+import akka.util.Timeout
+import akka.testkit._
+import scala.concurrent.stm._
 
 object TransactorIncrement {
   case class Increment(friends: Seq[ActorRef], latch: TestLatch)
@@ -18,10 +18,8 @@ object TransactorIncrement {
   class Counter(name: String) extends Transactor {
     val count = Ref(0)
 
-    override def transactionFactory = TransactionFactory(timeout = 3 seconds)
-
-    def increment = {
-      count alter (_ + 1)
+    def increment(implicit txn: InTxn) = {
+      count transform (_ + 1)
     }
 
     override def coordinate = {
@@ -35,11 +33,10 @@ object TransactorIncrement {
       case i: Increment ⇒
     }
 
-    def atomically = {
+    def atomically = implicit txn ⇒ {
       case Increment(friends, latch) ⇒ {
         increment
-        deferred { latch.countDown() }
-        compensating { latch.countDown() }
+        Txn.afterCompletion { status ⇒ latch.countDown() }
       }
     }
 
@@ -48,14 +45,14 @@ object TransactorIncrement {
     }
 
     override def normally = {
-      case GetCount ⇒ sender ! count.get
+      case GetCount ⇒ sender ! count.single.get
     }
   }
 
   class ExpectedFailureException extends RuntimeException("Expected failure")
 
   class Failer extends Transactor {
-    def atomically = {
+    def atomically = implicit txn ⇒ {
       case _ ⇒ throw new ExpectedFailureException
     }
   }
@@ -65,10 +62,10 @@ object SimpleTransactor {
   case class Set(ref: Ref[Int], value: Int, latch: TestLatch)
 
   class Setter extends Transactor {
-    def atomically = {
+    def atomically = implicit txn ⇒ {
       case Set(ref, value, latch) ⇒ {
-        ref.set(value)
-        deferred { latch.countDown() }
+        ref() = value
+        Txn.afterCompletion { status ⇒ latch.countDown() }
       }
     }
   }
@@ -129,7 +126,7 @@ class TransactorSpec extends AkkaSpec {
       val latch = TestLatch(1)
       transactor ! Set(ref, 5, latch)
       latch.await
-      val value = atomic { ref.get }
+      val value = ref.single.get
       value must be === 5
       system.stop(transactor)
     }

@@ -1,14 +1,17 @@
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.transactor
 
 import org.scalatest.BeforeAndAfterAll
 
-import akka.actor.ActorSystem
 import akka.actor._
-import akka.stm.{ Ref, TransactionFactory }
+import akka.dispatch.Await
 import akka.util.duration._
 import akka.util.Timeout
 import akka.testkit._
-import akka.dispatch.Await
+import scala.concurrent.stm._
 
 object CoordinatedIncrement {
   case class Increment(friends: Seq[ActorRef])
@@ -17,34 +20,27 @@ object CoordinatedIncrement {
   class Counter(name: String) extends Actor {
     val count = Ref(0)
 
-    implicit val txFactory = TransactionFactory(timeout = 3 seconds)
-
-    def increment = {
-      count alter (_ + 1)
-    }
-
     def receive = {
       case coordinated @ Coordinated(Increment(friends)) ⇒ {
         if (friends.nonEmpty) {
           friends.head ! coordinated(Increment(friends.tail))
         }
-        coordinated atomic {
-          increment
+        coordinated.atomic { implicit t ⇒
+          count transform (_ + 1)
         }
       }
 
-      case GetCount ⇒ sender ! count.get
+      case GetCount ⇒ sender ! count.single.get
     }
   }
 
   class ExpectedFailureException extends RuntimeException("Expected failure")
 
   class Failer extends Actor {
-    val txFactory = TransactionFactory(timeout = 3 seconds)
 
     def receive = {
       case coordinated @ Coordinated(Increment(friends)) ⇒ {
-        coordinated.atomic(txFactory) {
+        coordinated.atomic { t ⇒
           throw new ExpectedFailureException
         }
       }

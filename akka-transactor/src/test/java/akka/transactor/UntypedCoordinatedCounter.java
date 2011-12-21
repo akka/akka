@@ -1,33 +1,34 @@
-package akka.transactor.test;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 
-import akka.transactor.Coordinated;
-import akka.transactor.Atomically;
+package akka.transactor;
+
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.UntypedActor;
-import akka.stm.*;
 import akka.util.FiniteDuration;
-
-import org.multiverse.api.StmUtils;
-
+import scala.Function1;
+import scala.concurrent.stm.*;
+import scala.reflect.*;
+import scala.runtime.AbstractFunction1;
+import scala.runtime.BoxedUnit;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
-    private Ref<Integer> count = new Ref<Integer>(0);
-    private TransactionFactory txFactory = new TransactionFactoryBuilder()
-        .setTimeout(new FiniteDuration(3, TimeUnit.SECONDS))
-        .build();
+    private Manifest<Integer> manifest = Manifest$.MODULE$.classType(Integer.class);
+    private Ref<Integer> count = Ref$.MODULE$.apply(0, manifest);
 
     public UntypedCoordinatedCounter(String name) {
         this.name = name;
     }
 
-    private void increment() {
-        //System.out.println(name + ": incrementing");
-        count.set(count.get() + 1);
+    private void increment(InTxn txn) {
+        Integer newValue = count.get(txn) + 1;
+        count.set(newValue, txn);
     }
 
     public void onReceive(Object incoming) throws Exception {
@@ -38,20 +39,24 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 Increment increment = (Increment) message;
                 List<ActorRef> friends = increment.getFriends();
                 final CountDownLatch latch = increment.getLatch();
+                final Function1<Txn.Status, BoxedUnit> countDown = new AbstractFunction1<Txn.Status, BoxedUnit>() {
+                    public BoxedUnit apply(Txn.Status status) {
+                        latch.countDown(); return null;
+                    }
+                };
                 if (!friends.isEmpty()) {
                     Increment coordMessage = new Increment(friends.subList(1, friends.size()), latch);
                     friends.get(0).tell(coordinated.coordinate(coordMessage));
                 }
-                coordinated.atomic(new Atomically(txFactory) {
-                    public void atomically() {
-                        increment();
-                        StmUtils.scheduleDeferredTask(new Runnable() { public void run() { latch.countDown(); } });
-                        StmUtils.scheduleCompensatingTask(new Runnable() { public void run() { latch.countDown(); } });
+                coordinated.atomic(new Atomically() {
+                    public void atomically(InTxn txn) {
+                        increment(txn);
+                        Txn.afterCompletion(countDown, txn);
                     }
                 });
             }
         } else if ("GetCount".equals(incoming)) {
-            getSender().tell(count.get());
+            getSender().tell(count.single().get());
         }
     }
 }

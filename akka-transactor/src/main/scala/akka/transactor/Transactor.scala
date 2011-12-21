@@ -5,7 +5,7 @@
 package akka.transactor
 
 import akka.actor.{ Actor, ActorRef }
-import akka.stm.{ DefaultTransactionConfig, TransactionFactory }
+import scala.concurrent.stm.InTxn
 
 /**
  * Used for specifying actor refs and messages to send to during coordination.
@@ -15,10 +15,9 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
 /**
  * An actor with built-in support for coordinated transactions.
  *
- * Transactors implement the general pattern for using [[akka.stm.Coordinated]] where
- * first any coordination messages are sent to other transactors, then the coordinated
- * transaction is entered.
- * Transactors can also accept explicitly sent `Coordinated` messages.
+ * Transactors implement the general pattern for using [[akka.transactor.Coordinated]] where
+ * coordination messages are sent to other transactors then the coordinated transaction is
+ * entered. Transactors can also accept explicitly sent `Coordinated` messages.
  * <br/><br/>
  *
  * Simple transactors will just implement the `atomically` method which is similar to
@@ -30,16 +29,16 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * class Counter extends Transactor {
  *   val count = Ref(0)
  *
- *   def atomically = {
- *     case Increment => count alter (_ + 1)
+ *   def atomically = implicit txn => {
+ *     case Increment => count transform (_ + 1)
  *   }
  * }
  * }}}
  * <br/>
  *
  * To coordinate with other transactors override the `coordinate` method.
- * The `coordinate` method maps a message to a set
- * of [[akka.actor.Transactor.SendTo]] objects, pairs of `ActorRef` and a message.
+ * The `coordinate` method maps a message to a set of [[akka.actor.Transactor.SendTo]]
+ * objects, pairs of `ActorRef` and a message.
  * You can use the `include` and `sendTo` methods to easily coordinate with other transactors.
  * The `include` method will send on the same message that was received to other transactors.
  * The `sendTo` method allows you to specify both the actor to send to, and message to send.
@@ -54,8 +53,8 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  *     case Increment => include(friend)
  *   }
  *
- *   def atomically = {
- *     case Increment => count alter (_ + 1)
+ *   def atomically = implicit txn => {
+ *     case Increment => count transform (_ + 1)
  *   }
  * }
  * }}}
@@ -91,16 +90,9 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * can implement normal actor behavior, or use the normal STM atomic for
  * local transactions.
  *
- * @see [[akka.stm.Coordinated]] for more information about the underlying mechanism
+ * @see [[akka.transactor.Coordinated]] for more information about the underlying mechanism
  */
 trait Transactor extends Actor {
-  private lazy val txFactory = transactionFactory
-
-  /**
-   * Create default transaction factory. Override to provide custom configuration.
-   */
-  def transactionFactory = TransactionFactory(DefaultTransactionConfig)
-
   /**
    * Implement a general pattern for using coordinated transactions.
    */
@@ -111,12 +103,12 @@ trait Transactor extends Actor {
         sendTo.actor ! coordinated(sendTo.message.getOrElse(message))
       }
       (before orElse doNothing)(message)
-      coordinated.atomic(txFactory) { (atomically orElse doNothing)(message) }
+      coordinated.atomic { txn ⇒ (atomically(txn) orElse doNothing)(message) }
       (after orElse doNothing)(message)
     }
     case message ⇒ {
       if (normally.isDefinedAt(message)) normally(message)
-      else receive(Coordinated(message))
+      else receive(Coordinated(message)(context.system.settings.ActorTimeout))
     }
   }
 
@@ -158,8 +150,16 @@ trait Transactor extends Actor {
 
   /**
    * The Receive block to run inside the coordinated transaction.
+   * This is a function from InTxn to Receive block.
+   *
+   * For example:
+   * {{{
+   * def atomically = implicit txn => {
+   *   case Increment => count transform (_ + 1)
+   * }
+   * }}}
    */
-  def atomically: Receive
+  def atomically: InTxn ⇒ Receive
 
   /**
    * A Receive block that runs after the coordinated transaction.
