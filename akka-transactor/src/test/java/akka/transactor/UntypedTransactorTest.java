@@ -61,14 +61,14 @@ public class UntypedTransactorTest {
     counters = new ArrayList<ActorRef>();
     for (int i = 1; i <= numCounters; i++) {
       final String name = "counter" + i;
-      ActorRef counter = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
+      ActorRef counter = system.actorOf(new Props(new UntypedActorFactory() {
         public UntypedActor create() {
           return new UntypedCounter(name);
         }
       }));
       counters.add(counter);
     }
-    failer = system.actorOf(new Props().withCreator(UntypedFailer.class));
+    failer = system.actorOf(new Props(UntypedFailer.class));
   }
 
   @Test
