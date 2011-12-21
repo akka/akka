@@ -8,6 +8,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import akka.routing._
+import akka.util.duration._
 
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -35,6 +36,7 @@ object DeployerSpec {
         }
         /user/service-scatter-gather {
           router = scatter-gather
+          within = 2 seconds
         }
       }
       """, ConfigParseOptions.defaults)
@@ -116,7 +118,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting(ScatterGatherFirstCompletedRouter(1), "/user/service-scatter-gather")
+      assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/user/service-scatter-gather")
     }
 
     def assertRouting(expected: RouterConfig, service: String) {
