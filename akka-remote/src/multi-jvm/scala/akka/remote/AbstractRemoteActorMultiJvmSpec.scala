@@ -6,9 +6,9 @@ trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
   def commonConfig: Config
 
-  def remotes: List[String] = {
-    val listOpt = Option(System.getProperty("test.hosts")).map(_.split(",").toList)
-    listOpt getOrElse List.fill(NrOfNodes)("localhost")
+  def remotes: Array[String] = {
+    val arrayOpt = Option(System.getProperty("test.hosts")).map(_ split ",")
+    arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")
   }
 
   def specString(count: Int): String = {

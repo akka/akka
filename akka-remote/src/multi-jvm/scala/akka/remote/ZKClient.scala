@@ -44,7 +44,7 @@ class ZKClient(config: Config) extends Watcher {
       zk.delete(root + "/" + name, -1)
       while (true) {
         ZKClient.this.synchronized {
-          if (zk.getChildren(root, true).size > 0) {
+          if (!zk.getChildren(root, true).isEmpty) {
             ZKClient.this.wait()
           }
         }
