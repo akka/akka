@@ -112,7 +112,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     }
   }
 
-  // FIXME #1458: Not sure if we should have this, but needed it temporary for ActorModelSpec and DispatcherDocSpec
+  // FIXME #1563: Remove this method when dispatcher usage is rewritten in ActorModelSpec and CallingThreadDispatcherModelSpec
   private[akka] def register(id: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
     dispatcherConfigurators.putIfAbsent(id, dispatcherConfigurator)
   }
@@ -130,10 +130,6 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
-
-  val MailboxType: MailboxType =
-    if (settings.MailboxCapacity < 1) UnboundedMailbox()
-    else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
 
   /*
    * Creates of obtains a dispatcher from a Config according to the format below.

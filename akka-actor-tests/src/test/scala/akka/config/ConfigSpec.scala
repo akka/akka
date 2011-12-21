@@ -35,11 +35,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       getMilliseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time") must equal(10 * 1000)
       getString("akka.actor.default-dispatcher.mailboxType") must be("")
       getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout") must equal(1 * 1000)
-      settings.DispatcherDefaultShutdown must equal(1 second)
       getInt("akka.actor.default-dispatcher.throughput") must equal(5)
-      settings.DispatcherThroughput must equal(5)
       getMilliseconds("akka.actor.default-dispatcher.throughput-deadline-time") must equal(0)
-      settings.DispatcherThroughputDeadlineTime must equal(Duration.Zero)
       getBoolean("akka.actor.serialize-messages") must equal(false)
       settings.SerializeAllMessages must equal(false)
 

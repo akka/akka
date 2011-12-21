@@ -88,12 +88,6 @@ object ActorSystem {
     val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
     val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
-    val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
-    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout"), MILLISECONDS)
-    val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
-    val MailboxPushTimeout = Duration(getNanoseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time"), NANOSECONDS)
-    val DispatcherThroughputDeadlineTime = Duration(getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), NANOSECONDS)
-
     val Home = config.getString("akka.home") match {
       case "" ⇒ None
       case x  ⇒ Some(x)

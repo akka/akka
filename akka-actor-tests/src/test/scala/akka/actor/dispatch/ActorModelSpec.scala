@@ -19,6 +19,7 @@ import akka.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
 import java.util.concurrent.atomic.AtomicInteger
+import akka.util.Duration
 
 object ActorModelSpec {
 
@@ -229,6 +230,11 @@ object ActorModelSpec {
 abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with DefaultTimeout {
 
   import ActorModelSpec._
+
+  // FIXME Remove these settings as part of ticket #1563
+  val DispatcherThroughput = system.settings.config.getInt("akka.actor.default-dispatcher.throughput")
+  val DispatcherDefaultShutdown = Duration(system.settings.config.getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout"), TimeUnit.MILLISECONDS)
+  val DispatcherThroughputDeadlineTime = Duration(system.settings.config.getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), TimeUnit.NANOSECONDS)
 
   def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
 
@@ -447,9 +453,9 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
     val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatchers.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
-          new Dispatcher(system.dispatchers.prerequisites, id, id, system.settings.DispatcherThroughput,
-            system.settings.DispatcherThroughputDeadlineTime, system.dispatchers.MailboxType,
-            config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
+          new Dispatcher(system.dispatchers.prerequisites, id, id, DispatcherThroughput,
+            DispatcherThroughputDeadlineTime, UnboundedMailbox(), config,
+            DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
       }
       override def dispatcher(): MessageDispatcher = instance
@@ -509,8 +515,8 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
           new BalancingDispatcher(system.dispatchers.prerequisites, id, id, 1, // TODO check why 1 here? (came from old test)
-            system.settings.DispatcherThroughputDeadlineTime, system.dispatchers.MailboxType,
-            config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
+            DispatcherThroughputDeadlineTime, UnboundedMailbox(),
+            config, DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
       }
 
