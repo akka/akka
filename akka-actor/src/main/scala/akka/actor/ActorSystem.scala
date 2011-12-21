@@ -271,7 +271,7 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * Helper object for looking up configured dispatchers.
    */
-  def dispatcherFactory: Dispatchers
+  def dispatchers: Dispatchers
 
   /**
    * Default dispatcher as configured. This dispatcher is used for all actors
@@ -412,8 +412,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
-  val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
-  val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  val dispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian

@@ -13,19 +13,19 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
 
       // FIXME #1458: how should we make it easy to configure prio mailbox?
       val dispatcherKey = "unbounded-prio-dispatcher"
-      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers.defaultDispatcherConfig, system.dispatchers.prerequisites) {
         val instance = {
           val mailboxType = UnboundedPriorityMailbox(PriorityGenerator({
             case i: Int  ⇒ i //Reverse order
             case 'Result ⇒ Int.MaxValue
           }: Any ⇒ Int))
 
-          system.dispatcherFactory.newDispatcher(dispatcherKey, 5, mailboxType).build
+          system.dispatchers.newDispatcher(dispatcherKey, 5, mailboxType).build
         }
 
         override def dispatcher(): MessageDispatcher = instance
       }
-      system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
+      system.dispatchers.register(dispatcherKey, dispatcherConfigurator)
 
       testOrdering(dispatcherKey)
     }
@@ -34,19 +34,19 @@ class PriorityDispatcherSpec extends AkkaSpec with DefaultTimeout {
 
       // FIXME #1458: how should we make it easy to configure prio mailbox?
       val dispatcherKey = "bounded-prio-dispatcher"
-      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+      val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers.defaultDispatcherConfig, system.dispatchers.prerequisites) {
         val instance = {
           val mailboxType = BoundedPriorityMailbox(PriorityGenerator({
             case i: Int  ⇒ i //Reverse order
             case 'Result ⇒ Int.MaxValue
           }: Any ⇒ Int), 1000, system.settings.MailboxPushTimeout)
 
-          system.dispatcherFactory.newDispatcher(dispatcherKey, 5, mailboxType).build
+          system.dispatchers.newDispatcher(dispatcherKey, 5, mailboxType).build
         }
 
         override def dispatcher(): MessageDispatcher = instance
       }
-      system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
+      system.dispatchers.register(dispatcherKey, dispatcherConfigurator)
 
       testOrdering(dispatcherKey)
     }

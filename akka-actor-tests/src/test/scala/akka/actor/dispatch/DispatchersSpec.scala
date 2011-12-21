@@ -23,7 +23,7 @@ object DispatchersSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
 
-  val df = system.dispatcherFactory
+  val df = system.dispatchers
   import df._
 
   val tipe = "type"

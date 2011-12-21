@@ -90,9 +90,9 @@ public class DispatcherDocTestBase {
     // FIXME #1458: how should we make it easy to configure prio mailbox?
     // We create a new Priority dispatcher and seed it with the priority generator
     final String dispatcherKey = "prio-dispatcher";
-    MessageDispatcherConfigurator dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory()
-        .defaultDispatcherConfig(), system.dispatcherFactory().prerequisites()) {
-      private final MessageDispatcher instance = system.dispatcherFactory()
+    MessageDispatcherConfigurator dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers()
+        .defaultDispatcherConfig(), system.dispatchers().prerequisites()) {
+      private final MessageDispatcher instance = system.dispatchers()
           .newDispatcher(dispatcherKey, 5, new UnboundedPriorityMailbox(generator)).build();
 
       @Override
@@ -100,7 +100,7 @@ public class DispatcherDocTestBase {
         return instance;
       }
     };
-    system.dispatcherFactory().register(dispatcherKey, dispatcherConfigurator);
+    system.dispatchers().register(dispatcherKey, dispatcherConfigurator);
 
     ActorRef myActor = system.actorOf( // We create a new Actor that just prints out what it processes
         new Props().withCreator(new UntypedActorFactory() {

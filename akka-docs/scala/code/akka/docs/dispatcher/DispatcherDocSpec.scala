@@ -78,7 +78,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   }
 
   "defining dispatcher with bounded queue" in {
-    val dispatcher = system.dispatcherFactory.lookup("my-dispatcher-bounded-queue")
+    val dispatcher = system.dispatchers.lookup("my-dispatcher-bounded-queue")
   }
 
   "defining pinned dispatcher" in {
@@ -100,11 +100,11 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     // FIXME #1458: how should we make it easy to configure prio mailbox?
     // We create a new Priority dispatcher and seed it with the priority generator
     val dispatcherKey = "prio-dispatcher"
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
-      val instance = system.dispatcherFactory.newDispatcher(dispatcherKey, 5, UnboundedPriorityMailbox(gen)).build
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers.defaultDispatcherConfig, system.dispatchers.prerequisites) {
+      val instance = system.dispatchers.newDispatcher(dispatcherKey, 5, UnboundedPriorityMailbox(gen)).build
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(dispatcherKey, dispatcherConfigurator)
+    system.dispatchers.register(dispatcherKey, dispatcherConfigurator)
 
     val a = system.actorOf( // We create a new Actor that just prints out what it processes
       Props(new Actor {
@@ -140,7 +140,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   }
 
   "defining balancing dispatcher" in {
-    val dispatcher = system.dispatcherFactory.lookup("my-balancing-dispatcher")
+    val dispatcher = system.dispatchers.lookup("my-balancing-dispatcher")
   }
 
 }

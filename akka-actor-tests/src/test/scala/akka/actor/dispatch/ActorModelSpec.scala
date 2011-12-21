@@ -444,18 +444,18 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
     // use new id for each invocation, since the MessageDispatcherInterceptor holds state
     val id = "dispatcher-" + dispatcherCount.incrementAndGet()
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatchers.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
-          new Dispatcher(system.dispatcherFactory.prerequisites, id, id, system.settings.DispatcherThroughput,
-            system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
+          new Dispatcher(system.dispatchers.prerequisites, id, id, system.settings.DispatcherThroughput,
+            system.settings.DispatcherThroughputDeadlineTime, system.dispatchers.MailboxType,
             config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
       }
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(id, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatchers.register(id, dispatcherConfigurator)
+    system.dispatchers.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
   }
 
   override def dispatcherType = "Dispatcher"
@@ -505,19 +505,19 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
     // use new id for each invocation, since the MessageDispatcherInterceptor holds state
     val id = "dispatcher-" + dispatcherCount.incrementAndGet()
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatchers.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
-          new BalancingDispatcher(system.dispatcherFactory.prerequisites, id, id, 1, // TODO check why 1 here? (came from old test)
-            system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
+          new BalancingDispatcher(system.dispatchers.prerequisites, id, id, 1, // TODO check why 1 here? (came from old test)
+            system.settings.DispatcherThroughputDeadlineTime, system.dispatchers.MailboxType,
             config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
       }
 
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(id, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatchers.register(id, dispatcherConfigurator)
+    system.dispatchers.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
   }
 
   override def dispatcherType = "Balancing Dispatcher"

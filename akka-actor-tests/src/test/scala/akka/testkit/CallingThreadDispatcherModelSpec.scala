@@ -29,14 +29,14 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispa
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
     // use new id for each invocation, since the MessageDispatcherInterceptor holds state
     val dispatcherId = "test-calling-thread" + dispatcherCount.incrementAndGet()
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers.defaultDispatcherConfig, system.dispatchers.prerequisites) {
       val instance = new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
         override def id: String = dispatcherId
       }
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(dispatcherId, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(dispatcherId).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatchers.register(dispatcherId, dispatcherConfigurator)
+    system.dispatchers.lookup(dispatcherId).asInstanceOf[MessageDispatcherInterceptor]
   }
   override def dispatcherType = "Calling Thread Dispatcher"
 
