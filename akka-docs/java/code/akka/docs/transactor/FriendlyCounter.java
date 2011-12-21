@@ -1,13 +1,17 @@
-package akka.transactor.example;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 
-import akka.transactor.UntypedTransactor;
-import akka.transactor.SendTo;
-import akka.stm.Ref;
+package akka.docs.transactor;
 
+//#class
+import akka.actor.*;
+import akka.transactor.*;
 import java.util.Set;
+import scala.concurrent.stm.*;
 
-public class UntypedCounter extends UntypedTransactor {
-    Ref<Integer> count = new Ref<Integer>(0);
+public class FriendlyCounter extends UntypedTransactor {
+    Ref<Integer> count = Stm.ref(0);
 
     @Override public Set<SendTo> coordinate(Object message) {
         if (message instanceof Increment) {
@@ -18,16 +22,18 @@ public class UntypedCounter extends UntypedTransactor {
         return nobody();
     }
 
-    public void atomically(Object message) {
+    public void atomically(InTxn txn, Object message) {
         if (message instanceof Increment) {
-            count.set(count.get() + 1);
+            Integer newValue = count.get(txn) + 1;
+            count.set(newValue, txn);
         }
     }
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.get());
+            getSender().tell(count.single().get());
             return true;
         } else return false;
     }
 }
+//#class

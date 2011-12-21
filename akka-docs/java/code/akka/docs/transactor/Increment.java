@@ -1,5 +1,10 @@
-package akka.transactor.example;
+/**
+ * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ */
 
+package akka.docs.transactor;
+
+//#class
 import akka.actor.ActorRef;
 
 public class Increment {
@@ -19,3 +24,4 @@ public class Increment {
         return friend;
     }
 }
+//#class

@@ -19,6 +19,6 @@ Scala API
    serialization
    fsm
    agents
+   transactors
    testing
    extending-akka
-   transactors

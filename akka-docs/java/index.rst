@@ -18,5 +18,5 @@ Java API
    remoting
    serialization
    agents
-   extending-akka
    transactors
+   extending-akka
