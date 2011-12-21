@@ -16,32 +16,6 @@ import akka.util.duration._
 class TellThroughput10000PerformanceSpec extends PerformanceSpec {
   import TellThroughput10000PerformanceSpec._
 
-  /* Experiment with java 7 LinkedTransferQueue
-  def linkedTransferQueue(): () ⇒ BlockingQueue[Runnable] =
-    () ⇒ new java.util.concurrent.LinkedTransferQueue[Runnable]()
-
-  def createDispatcher(name: String) = {
-    val threadPoolConfig = ThreadPoolConfig()
-    ThreadPoolConfigDispatcherBuilder(config ⇒
-      new Dispatcher(system.dispatcherFactory.prerequisites, name, 5,
-        0, UnboundedMailbox(), config, 60000), threadPoolConfig)
-      //.withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-      .copy(config = threadPoolConfig.copy(queueFactory = linkedTransferQueue()))
-      .setCorePoolSize(maxClients * 2)
-      .build
-  }
-*/
-
-  def createDispatcher(name: String) = ThreadPoolConfigDispatcherBuilder(config ⇒
-    new Dispatcher(system.dispatcherFactory.prerequisites, name, 10000,
-      Duration.Zero, UnboundedMailbox(), config, Duration(1, TimeUnit.SECONDS)), ThreadPoolConfig())
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(maxClients * 2)
-    .build
-
-  val clientDispatcher = createDispatcher("client-dispatcher")
-  //val destinationDispatcher = createDispatcher("destination-dispatcher")
-
   val repeat = 30000L * repeatFactor
 
   "Tell" must {
@@ -130,44 +104,18 @@ class TellThroughput10000PerformanceSpec extends PerformanceSpec {
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
 
+        val dispatcherKey = "benchmark.high-throughput-dispatcher"
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
-        /*
         val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(createDispatcher("destination-" + i)))
+          yield system.actorOf(Props(new Destination).withDispatcher(dispatcherKey))
         val clients = for ((dest, j) ← destinations.zipWithIndex)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(createDispatcher("client-" + j)))
-        */
-        val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(clientDispatcher))
-        val clients = for ((dest, j) ← destinations.zipWithIndex)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
+          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(dispatcherKey))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)
         val ok = latch.await(maxRunDuration.toMillis, TimeUnit.MILLISECONDS)
         val durationNs = (System.nanoTime - start)
-
-        if (!ok) {
-          System.err.println("Destinations: ")
-          destinations.foreach {
-            case l: LocalActorRef ⇒
-              val m = l.underlying.mailbox
-              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
-          }
-          System.err.println("")
-          System.err.println("Clients: ")
-
-          clients.foreach {
-            case l: LocalActorRef ⇒
-              val m = l.underlying.mailbox
-              System.err.println("   -" + l + " mbox(" + m.status + ")" + " containing [" + Stream.continually(m.dequeue()).takeWhile(_ != null).mkString(", ") + "] and has systemMsgs: " + m.hasSystemMessages)
-          }
-
-          //val e = clientDispatcher.asInstanceOf[Dispatcher].executorService.get().asInstanceOf[ExecutorServiceDelegate].executor.asInstanceOf[ThreadPoolExecutor]
-          //val q = e.getQueue
-          //System.err.println("Client Dispatcher: " + e.getActiveCount + " " + Stream.continually(q.poll()).takeWhile(_ != null).mkString(", "))
-        }
 
         if (!warmup) {
           ok must be(true)

@@ -38,14 +38,14 @@ class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {
   type ME = ActorRef
   type OR = ActorRef
 
-  val orDispatcher = createOrderReceiverDispatcher
-  val meDispatcher = createMatchingEngineDispatcher
+  val orDispatcher = orderReceiverDispatcher
+  val meDispatcher = matchingEngineDispatcher
 
-  // by default we use default-dispatcher that is defined in akka.conf
-  def createOrderReceiverDispatcher: Option[MessageDispatcher] = None
+  // by default we use default-dispatcher
+  def orderReceiverDispatcher: Option[String] = None
 
-  // by default we use default-dispatcher that is defined in akka.conf
-  def createMatchingEngineDispatcher: Option[MessageDispatcher] = None
+  // by default we use default-dispatcher
+  def matchingEngineDispatcher: Option[String] = None
 
   var matchingEngineForOrderbook: Map[String, ActorRef] = Map()
 

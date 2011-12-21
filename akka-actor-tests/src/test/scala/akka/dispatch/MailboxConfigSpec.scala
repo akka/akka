@@ -8,6 +8,7 @@ import akka.util.duration._
 import akka.testkit.AkkaSpec
 import akka.actor.ActorRef
 import akka.actor.ActorContext
+import com.typesafe.config.Config
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -152,9 +153,13 @@ class PriorityMailboxSpec extends MailboxSpec {
 object CustomMailboxSpec {
   val config = """
     my-dispatcher {
-       mailboxType = "akka.dispatch.CustomMailboxSpec$MyMailbox"
+       mailboxType = "akka.dispatch.CustomMailboxSpec$MyMailboxType"
     }
     """
+
+  class MyMailboxType(config: Config) extends MailboxType {
+    override def create(owner: ActorContext) = new MyMailbox(owner)
+  }
 
   class MyMailbox(owner: ActorContext) extends CustomMailbox(owner)
     with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
@@ -166,7 +171,7 @@ object CustomMailboxSpec {
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
   "Dispatcher configuration" must {
     "support custom mailboxType" in {
-      val dispatcher = system.dispatcherFactory.newFromConfig("my-dispatcher")
+      val dispatcher = system.dispatchers.lookup("my-dispatcher")
       dispatcher.createMailbox(null).getClass must be(classOf[CustomMailboxSpec.MyMailbox])
     }
   }

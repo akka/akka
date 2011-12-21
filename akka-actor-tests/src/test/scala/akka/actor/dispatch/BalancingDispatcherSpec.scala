@@ -5,12 +5,19 @@ import akka.dispatch.{ Mailbox, Dispatchers }
 import akka.actor.{ LocalActorRef, IllegalActorStateException, Actor, Props }
 import akka.testkit.AkkaSpec
 
+object BalancingDispatcherSpec {
+  val config = """
+    pooled-dispatcher {
+      type = BalancingDispatcher
+      throughput = 1
+    }
+    """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class BalancingDispatcherSpec extends AkkaSpec {
+class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
 
-  def newWorkStealer() = system.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher", 1).build
-
-  val delayableActorDispatcher, sharedActorDispatcher, parentActorDispatcher = newWorkStealer()
+  val delayableActorDispatcher = "pooled-dispatcher"
 
   class DelayableActor(delay: Int, finishedCounter: CountDownLatch) extends Actor {
     @volatile

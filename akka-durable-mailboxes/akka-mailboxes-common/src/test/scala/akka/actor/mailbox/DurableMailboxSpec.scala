@@ -24,13 +24,15 @@ object DurableMailboxSpecActorFactory {
 
 }
 
-abstract class DurableMailboxSpec(val backendName: String, val mailboxType: MailboxType) extends AkkaSpec with BeforeAndAfterEach {
+/**
+ * Subclass must define dispatcher in the supplied config for the specific backend.
+ * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
+ */
+abstract class DurableMailboxSpec(val backendName: String, config: String) extends AkkaSpec(config) with BeforeAndAfterEach {
   import DurableMailboxSpecActorFactory._
 
-  implicit val dispatcher = system.dispatcherFactory.newDispatcher(backendName, throughput = 1, mailboxType = mailboxType).build
-
-  def createMailboxTestActor(id: String)(implicit dispatcher: MessageDispatcher): ActorRef =
-    system.actorOf(Props(new MailboxTestActor).withDispatcher(dispatcher))
+  def createMailboxTestActor(id: String): ActorRef =
+    system.actorOf(Props(new MailboxTestActor).withDispatcher(backendName + "-dispatcher"))
 
   "A " + backendName + " based mailbox backed actor" must {
 
