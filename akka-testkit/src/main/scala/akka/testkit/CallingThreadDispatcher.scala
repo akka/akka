@@ -94,7 +94,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
 }
 
 object CallingThreadDispatcher {
-  val ConfigKey = "akka.test.calling-thread-dispatcher"
+  val Id = "akka.test.calling-thread-dispatcher"
 }
 
 /**
@@ -129,7 +129,7 @@ class CallingThreadDispatcher(
 
   val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
 
-  def key: String = ConfigKey
+  override def id: String = Id
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
 

@@ -16,8 +16,8 @@ import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.config.ConfigurationException
-import akka.event.Logging
-import akka.event.Logging.Debug
+import akka.event.Logging.Warning
+import akka.actor.Props
 
 trait DispatcherPrerequisites {
   def eventStream: EventStream
@@ -29,6 +29,10 @@ case class DefaultDispatcherPrerequisites(
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler) extends DispatcherPrerequisites
+
+object Dispatchers {
+  final val DefaultDispatcherId = "akka.actor.default-dispatcher"
+}
 
 /**
  * It is recommended to define the dispatcher in configuration to allow for tuning
@@ -64,19 +68,12 @@ case class DefaultDispatcherPrerequisites(
  */
 class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
 
-  val MailboxType: MailboxType =
-    if (settings.MailboxCapacity < 1) UnboundedMailbox()
-    else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
+  import Dispatchers._
 
-  val defaultDispatcherConfig = {
-    val key = "akka.actor.default-dispatcher"
-    keyConfig(key).withFallback(settings.config.getConfig(key))
-  }
+  val defaultDispatcherConfig: Config =
+    idConfig(DefaultDispatcherId).withFallback(settings.config.getConfig(DefaultDispatcherId))
 
-  private lazy val defaultDispatcherConfigurator: MessageDispatcherConfigurator =
-    configuratorFrom(defaultDispatcherConfig)
-
-  lazy val defaultGlobalDispatcher: MessageDispatcher = defaultDispatcherConfigurator.dispatcher()
+  def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
   // FIXME: Dispatchers registered here are are not removed, see ticket #1494
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
@@ -86,50 +83,52 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * the default dispatcher. The same dispatcher instance is returned for subsequent
    * lookups.
    */
-  def lookup(key: String): MessageDispatcher = {
-    val configurator = dispatcherConfigurators.get(key) match {
+  def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
+
+  private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
+    val lookupId = if (id == Props.defaultDispatcherId) DefaultDispatcherId else id
+    dispatcherConfigurators.get(lookupId) match {
       case null ⇒
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
-        // That shouldn't happen often and in case it does the actual dispatcher isn't
+        // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
         val newConfigurator =
-          if (settings.config.hasPath(key)) {
-            configuratorFrom(config(key))
+          if (settings.config.hasPath(lookupId)) {
+            configuratorFrom(config(lookupId))
           } else {
-            // FIXME Remove println
-            println("#### Dispatcher [%s] not configured, using default-dispatcher".format(key))
-            prerequisites.eventStream.publish(Debug("Dispatchers",
-              "Dispatcher [%s] not configured, using default-dispatcher".format(key)))
-            defaultDispatcherConfigurator
+            // Note that the configurator of the default dispatcher will be registered for this id,
+            // so this will only be logged once, which is crucial.
+            prerequisites.eventStream.publish(Warning("Dispatchers",
+              "Dispatcher [%s] not configured, using default-dispatcher".format(lookupId)))
+            lookupConfigurator(DefaultDispatcherId)
           }
 
-        dispatcherConfigurators.putIfAbsent(key, newConfigurator) match {
+        dispatcherConfigurators.putIfAbsent(lookupId, newConfigurator) match {
           case null     ⇒ newConfigurator
           case existing ⇒ existing
         }
 
       case existing ⇒ existing
     }
-    configurator.dispatcher()
   }
 
   // FIXME #1458: Not sure if we should have this, but needed it temporary for PriorityDispatcherSpec, ActorModelSpec and DispatcherDocSpec
-  def register(key: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
-    dispatcherConfigurators.putIfAbsent(key, dispatcherConfigurator)
+  def register(id: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
+    dispatcherConfigurators.putIfAbsent(id, dispatcherConfigurator)
   }
 
-  private def config(key: String): Config = {
+  private def config(id: String): Config = {
     import scala.collection.JavaConverters._
-    def simpleName = key.substring(key.lastIndexOf('.') + 1)
-    keyConfig(key)
-      .withFallback(settings.config.getConfig(key))
+    def simpleName = id.substring(id.lastIndexOf('.') + 1)
+    idConfig(id)
+      .withFallback(settings.config.getConfig(id))
       .withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
       .withFallback(defaultDispatcherConfig)
   }
 
-  private def keyConfig(key: String): Config = {
+  private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("key" -> key).asJava)
+    ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
 
   // FIXME #1458: Remove these newDispatcher methods, but still need them temporary for PriorityDispatcherSpec, ActorModelSpec and DispatcherDocSpec
@@ -161,6 +160,10 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     ThreadPoolConfigDispatcherBuilder(config ⇒
       new Dispatcher(prerequisites, name, name, throughput, throughputDeadline, mailboxType, config, settings.DispatcherDefaultShutdown), ThreadPoolConfig())
 
+  val MailboxType: MailboxType =
+    if (settings.MailboxCapacity < 1) UnboundedMailbox()
+    else BoundedMailbox(settings.MailboxCapacity, settings.MailboxPushTimeout)
+
   /*
    * Creates of obtains a dispatcher from a Config according to the format below.
    *
@@ -175,9 +178,9 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *   allow-core-timeout = on     # Allow core threads to time out
    *   throughput = 5              # Throughput for Dispatcher
    * }
-   * ex: from(config.getConfig(key))
+   * ex: from(config.getConfig(id))
    *
-   * The Config must also contain a `key` property, which is the identifying key of the dispatcher.
+   * The Config must also contain a `id` property, which is the identifier of the dispatcher.
    *
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
@@ -187,7 +190,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 
   private def configuratorFrom(cfg: Config): MessageDispatcherConfigurator = {
-    if (!cfg.hasPath("key")) throw new IllegalArgumentException("Missing dispatcher 'key' property in config: " + cfg.root.render)
+    if (!cfg.hasPath("id")) throw new IllegalArgumentException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
     cfg.getString("type") match {
       case "Dispatcher"          ⇒ new DispatcherConfigurator(cfg, prerequisites)
@@ -202,7 +205,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
               ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
                 "[akka.dispatch.DispatcherPrerequisites] parameters")
-                .format(fqn, cfg.getString("key")), exception)
+                .format(fqn, cfg.getString("id")), exception)
         }
     }
   }
@@ -215,7 +218,7 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
     configureThreadPool(config,
       threadPoolConfig ⇒ new Dispatcher(prerequisites,
         config.getString("name"),
-        config.getString("key"),
+        config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
@@ -235,7 +238,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
     configureThreadPool(config,
       threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
         config.getString("name"),
-        config.getString("key"),
+        config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
@@ -254,7 +257,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
    * Creates new dispatcher for each invocation.
    */
   override def dispatcher(): MessageDispatcher =
-    new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("key"), mailboxType,
+    new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
       Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
 }

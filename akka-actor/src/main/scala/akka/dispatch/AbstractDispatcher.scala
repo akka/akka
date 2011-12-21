@@ -102,9 +102,10 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def name: String
 
   /**
-   * Configuration key of this dispatcher
+   * Identfier of this dispatcher, corresponds to the full key
+   * of the dispatcher configuration.
    */
-  def key: String
+  def id: String
 
   /**
    * Attaches the specified actor instance to this dispatcher
@@ -274,6 +275,8 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
   /**
    * Returns an instance of MessageDispatcher given the configuration.
+   * Depending on the needs the implementation may return a new instance for
+   * each invocation or return the same instance every time.
    */
   def dispatcher(): MessageDispatcher
 

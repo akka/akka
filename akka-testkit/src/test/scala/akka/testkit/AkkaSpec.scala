@@ -16,6 +16,7 @@ import akka.actor.CreateChild
 import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
+import akka.dispatch.Dispatchers
 
 object TimingTest extends Tag("timing")
 
@@ -74,8 +75,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   protected def atTermination() {}
 
-  def spawn(dispatcherKey: String = system.dispatcherFactory.defaultGlobalDispatcher.key)(body: ⇒ Unit) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcherKey)) ! "go"
+  def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit) {
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcherId)) ! "go"
   }
 }
 

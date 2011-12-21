@@ -26,7 +26,7 @@ object DurableMailboxSpecActorFactory {
 
 /**
  * Subclass must define dispatcher in the supplied config for the specific backend.
- * The key of the dispatcher must be the same as the `<backendName>-dispatcher`.
+ * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
  */
 abstract class DurableMailboxSpec(val backendName: String, config: String) extends AkkaSpec(config) with BeforeAndAfterEach {
   import DurableMailboxSpecActorFactory._

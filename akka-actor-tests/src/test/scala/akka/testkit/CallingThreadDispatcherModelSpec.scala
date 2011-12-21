@@ -5,6 +5,7 @@ package akka.testkit
 
 import akka.actor.dispatch.ActorModelSpec
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.{ After, Test }
 import com.typesafe.config.Config
 import akka.dispatch.DispatcherPrerequisites
@@ -23,20 +24,19 @@ object CallingThreadDispatcherModelSpec {
 class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispatcherModelSpec.config) {
   import ActorModelSpec._
 
-  var dispatcherCount = 0
+  val dispatcherCount = new AtomicInteger()
 
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
-    dispatcherCount += 1
-    val confKey = "test-calling-thread" + dispatcherCount
+    // use new id for each invocation, since the MessageDispatcherInterceptor holds state
+    val dispatcherId = "test-calling-thread" + dispatcherCount.incrementAndGet()
     val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
       val instance = new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
-        override def key: String = confKey
+        override def id: String = dispatcherId
       }
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(confKey, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(confKey).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatcherFactory.register(dispatcherId, dispatcherConfigurator)
+    system.dispatcherFactory.lookup(dispatcherId).asInstanceOf[MessageDispatcherInterceptor]
   }
   override def dispatcherType = "Calling Thread Dispatcher"
 

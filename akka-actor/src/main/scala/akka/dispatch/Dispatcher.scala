@@ -63,7 +63,7 @@ import java.util.concurrent._
 class Dispatcher(
   _prerequisites: DispatcherPrerequisites,
   val name: String,
-  val key: String,
+  val id: String,
   val throughput: Int,
   val throughputDeadlineTime: Duration,
   val mailboxType: MailboxType,

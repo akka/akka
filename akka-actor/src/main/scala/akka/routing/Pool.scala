@@ -93,7 +93,7 @@ trait DefaultActorPool extends ActorPool { this: Actor ⇒
 
   protected[akka] var _delegates = Vector[ActorRef]()
 
-  val defaultProps: Props = Props.default.withDispatcher(this.context.dispatcher.key)
+  val defaultProps: Props = Props.default.withDispatcher(this.context.dispatcher.id)
 
   override def preStart() {
     resizeIfAppropriate()

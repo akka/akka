@@ -32,6 +32,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
   val maxpoolsizefactor = "max-pool-size-factor"
   val allowcoretimeout = "allow-core-timeout"
   val throughput = "throughput"
+  val id = "id"
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher
   def ofType[T <: MessageDispatcher: Manifest]: (MessageDispatcher) ⇒ Boolean = _.getClass == manifest[T].erasure
@@ -46,7 +47,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
   val defaultDispatcherConfig = settings.config.getConfig("akka.actor.default-dispatcher")
 
   lazy val allDispatchers: Map[String, MessageDispatcher] = {
-    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t, "key" -> t).asJava).
+    validTypes.map(t ⇒ (t, from(ConfigFactory.parseMap(Map(tipe -> t, id -> t).asJava).
       withFallback(defaultDispatcherConfig)))).toMap
   }
 
@@ -62,19 +63,25 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
       dispatcher.name must be("mydispatcher")
     }
 
-    "use specific key" in {
+    "use specific id" in {
       val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.key must be("myapp.mydispatcher")
+      dispatcher.id must be("myapp.mydispatcher")
     }
 
-    "use default dispatcher" in {
+    "use default dispatcher for missing config" in {
       val dispatcher = lookup("myapp.other-dispatcher")
       dispatcher must be === defaultGlobalDispatcher
     }
 
+    "have only one default dispatcher" in {
+      val dispatcher = lookup(Dispatchers.DefaultDispatcherId)
+      dispatcher must be === defaultGlobalDispatcher
+      dispatcher must be === system.dispatcher
+    }
+
     "throw IllegalArgumentException if type does not exist" in {
       intercept[IllegalArgumentException] {
-        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", "key" -> "invalid-dispatcher").asJava).
+        from(ConfigFactory.parseMap(Map(tipe -> "typedoesntexist", id -> "invalid-dispatcher").asJava).
           withFallback(defaultDispatcherConfig))
       }
     }
@@ -84,7 +91,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
       assert(typesAndValidators.forall(tuple ⇒ tuple._2(allDispatchers(tuple._1))))
     }
 
-    "provide lookup of dispatchers by key" in {
+    "provide lookup of dispatchers by id" in {
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
       d1 must be === d2

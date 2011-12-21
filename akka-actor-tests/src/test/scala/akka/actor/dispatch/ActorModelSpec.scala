@@ -18,6 +18,7 @@ import akka.actor.ActorSystem
 import akka.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
+import java.util.concurrent.atomic.AtomicInteger
 
 object ActorModelSpec {
 
@@ -239,7 +240,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     "must dynamically handle its own life cycle" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       assertDispatcher(dispatcher)(stops = 0)
-      val a = newTestActor(dispatcher.key)
+      val a = newTestActor(dispatcher.id)
       assertDispatcher(dispatcher)(stops = 0)
       system.stop(a)
       assertDispatcher(dispatcher)(stops = 1)
@@ -257,7 +258,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       }
       assertDispatcher(dispatcher)(stops = 2)
 
-      val a2 = newTestActor(dispatcher.key)
+      val a2 = newTestActor(dispatcher.id)
       val futures2 = for (i ← 1 to 10) yield Future { i }
 
       assertDispatcher(dispatcher)(stops = 2)
@@ -269,7 +270,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     "process messages one at a time" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val start, oneAtATime = new CountDownLatch(1)
-      val a = newTestActor(dispatcher.key)
+      val a = newTestActor(dispatcher.id)
 
       a ! CountDown(start)
       assertCountDown(start, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
@@ -288,7 +289,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     "handle queueing from multiple threads" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val counter = new CountDownLatch(200)
-      val a = newTestActor(dispatcher.key)
+      val a = newTestActor(dispatcher.id)
 
       for (i ← 1 to 10) {
         spawn {
@@ -318,7 +319,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "not process messages for a suspended actor" in {
       implicit val dispatcher = registerInterceptedDispatcher()
-      val a = newTestActor(dispatcher.key).asInstanceOf[LocalActorRef]
+      val a = newTestActor(dispatcher.id).asInstanceOf[LocalActorRef]
       val done = new CountDownLatch(1)
       a.suspend
       a ! CountDown(done)
@@ -337,7 +338,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "handle waves of actors" in {
       val dispatcher = registerInterceptedDispatcher()
-      val props = Props[DispatcherActor].withDispatcher(dispatcher.key)
+      val props = Props[DispatcherActor].withDispatcher(dispatcher.id)
 
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
@@ -384,7 +385,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       filterEvents(EventFilter[InterruptedException](), EventFilter[akka.event.Logging.EventHandlerException]()) {
         implicit val dispatcher = registerInterceptedDispatcher()
         implicit val timeout = Timeout(5 seconds)
-        val a = newTestActor(dispatcher.key)
+        val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
         val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
@@ -404,7 +405,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     "continue to process messages when exception is thrown" in {
       filterEvents(EventFilter[IndexOutOfBoundsException](), EventFilter[RemoteException]()) {
         implicit val dispatcher = registerInterceptedDispatcher()
-        val a = newTestActor(dispatcher.key)
+        val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
         val f3 = a ? ThrowException(new IndexOutOfBoundsException("IndexOutOfBoundsException"))
@@ -438,24 +439,23 @@ object DispatcherModelSpec {
 class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   import ActorModelSpec._
 
-  var dispatcherCount = 0
+  val dispatcherCount = new AtomicInteger()
 
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
-    dispatcherCount += 1
-    val key = "dispatcher-" + dispatcherCount
+    // use new id for each invocation, since the MessageDispatcherInterceptor holds state
+    val id = "dispatcher-" + dispatcherCount.incrementAndGet()
     val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
-          new Dispatcher(system.dispatcherFactory.prerequisites, key, key, system.settings.DispatcherThroughput,
+          new Dispatcher(system.dispatcherFactory.prerequisites, id, id, system.settings.DispatcherThroughput,
             system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
             config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
       }
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(key, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(key).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatcherFactory.register(id, dispatcherConfigurator)
+    system.dispatcherFactory.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
   }
 
   override def dispatcherType = "Dispatcher"
@@ -464,7 +464,7 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
     "process messages in parallel" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
-      val a, b = newTestActor(dispatcher.key)
+      val a, b = newTestActor(dispatcher.id)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
@@ -500,16 +500,15 @@ object BalancingDispatcherModelSpec {
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 
-  var dispatcherCount = 0
+  val dispatcherCount = new AtomicInteger()
 
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
-    dispatcherCount += 1
-    val key = "dispatcher-" + dispatcherCount
+    // use new id for each invocation, since the MessageDispatcherInterceptor holds state
+    val id = "dispatcher-" + dispatcherCount.incrementAndGet()
     val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
-          new BalancingDispatcher(system.dispatcherFactory.prerequisites, key, key, 1, // TODO check why 1 here? (came from old test)
+          new BalancingDispatcher(system.dispatcherFactory.prerequisites, id, id, 1, // TODO check why 1 here? (came from old test)
             system.settings.DispatcherThroughputDeadlineTime, system.dispatcherFactory.MailboxType,
             config, system.settings.DispatcherDefaultShutdown) with MessageDispatcherInterceptor,
           ThreadPoolConfig()).build
@@ -517,8 +516,8 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
 
       override def dispatcher(): MessageDispatcher = instance
     }
-    system.dispatcherFactory.register(key, dispatcherConfigurator)
-    system.dispatcherFactory.lookup(key).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatcherFactory.register(id, dispatcherConfigurator)
+    system.dispatcherFactory.lookup(id).asInstanceOf[MessageDispatcherInterceptor]
   }
 
   override def dispatcherType = "Balancing Dispatcher"
@@ -527,7 +526,7 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
     "process messages in parallel" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
-      val a, b = newTestActor(dispatcher.key)
+      val a, b = newTestActor(dispatcher.id)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")

@@ -258,9 +258,7 @@ private[akka] class ActorCell(
   }
 
   @inline
-  final def dispatcher: MessageDispatcher =
-    if (props.dispatcher == Props.defaultDispatcherKey) system.dispatcher
-    else system.dispatcherFactory.lookup(props.dispatcher)
+  final def dispatcher: MessageDispatcher = system.dispatcherFactory.lookup(props.dispatcher)
 
   /**
    * UntypedActorContext impl

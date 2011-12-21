@@ -269,8 +269,7 @@ abstract class ActorSystem extends ActorRefFactory {
   //#scheduler
 
   /**
-   * Helper object for creating new dispatchers and passing in all required
-   * information.
+   * Helper object for looking up configured dispatchers.
    */
   def dispatcherFactory: Dispatchers
 
