@@ -23,8 +23,12 @@ object CallingThreadDispatcherModelSpec {
 class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispatcherModelSpec.config) {
   import ActorModelSpec._
 
-  val confKey = "test-calling-thread"
+  var dispatcherCount = 0
+
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
+    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
+    dispatcherCount += 1
+    val confKey = "test-calling-thread" + dispatcherCount
     val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatcherFactory.defaultDispatcherConfig, system.dispatcherFactory.prerequisites) {
       val instance = new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
         override def key: String = confKey

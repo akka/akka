@@ -335,8 +335,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         suspensions = 1, resumes = 1)
     }
 
-    //FIXME #1458 ignored test
-    "handle waves of actors" ignore {
+    "handle waves of actors" in {
       val dispatcher = registerInterceptedDispatcher()
       val props = Props[DispatcherActor].withDispatcher(dispatcher.key)
 
@@ -439,9 +438,13 @@ object DispatcherModelSpec {
 class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   import ActorModelSpec._
 
+  var dispatcherCount = 0
+
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    val key = "dispatcher"
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig(key), system.dispatcherFactory.prerequisites) {
+    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
+    dispatcherCount += 1
+    val key = "dispatcher-" + dispatcherCount
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
           new Dispatcher(system.dispatcherFactory.prerequisites, key, key, system.settings.DispatcherThroughput,
@@ -458,8 +461,7 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   override def dispatcherType = "Dispatcher"
 
   "A " + dispatcherType must {
-    // FIXME #1458 ignored test
-    "process messages in parallel" ignore {
+    "process messages in parallel" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
       val a, b = newTestActor(dispatcher.key)
@@ -498,9 +500,13 @@ object BalancingDispatcherModelSpec {
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 
+  var dispatcherCount = 0
+
   override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    val key = "dispatcher"
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig(key), system.dispatcherFactory.prerequisites) {
+    // use new key for each invocation, since the MessageDispatcherInterceptor holds state
+    dispatcherCount += 1
+    val key = "dispatcher-" + dispatcherCount
+    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.settings.config.getConfig("dispatcher"), system.dispatcherFactory.prerequisites) {
       val instance = {
         ThreadPoolConfigDispatcherBuilder(config ⇒
           new BalancingDispatcher(system.dispatcherFactory.prerequisites, key, key, 1, // TODO check why 1 here? (came from old test)
@@ -518,8 +524,7 @@ class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherMod
   override def dispatcherType = "Balancing Dispatcher"
 
   "A " + dispatcherType must {
-    // FIXME #1458 ignored test
-    "process messages in parallel" ignore {
+    "process messages in parallel" in {
       implicit val dispatcher = registerInterceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
       val a, b = newTestActor(dispatcher.key)
