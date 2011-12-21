@@ -21,7 +21,6 @@ object Props {
   import FaultHandlingStrategy._
 
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDispatcherId: String = null
   final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
@@ -125,7 +124,7 @@ object Props {
  */
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
-  dispatcher: String = Props.defaultDispatcherId,
+  dispatcher: String = Dispatchers.DefaultDispatcherId,
   timeout: Timeout = Props.defaultTimeout,
   faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
   routerConfig: RouterConfig = Props.defaultRoutedProps) {
@@ -135,7 +134,7 @@ case class Props(
    */
   def this() = this(
     creator = Props.defaultCreator,
-    dispatcher = Props.defaultDispatcherId,
+    dispatcher = Dispatchers.DefaultDispatcherId,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
@@ -144,7 +143,7 @@ case class Props(
    */
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
-    dispatcher = Props.defaultDispatcherId,
+    dispatcher = Dispatchers.DefaultDispatcherId,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
@@ -153,7 +152,7 @@ case class Props(
    */
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = () ⇒ actorClass.newInstance,
-    dispatcher = Props.defaultDispatcherId,
+    dispatcher = Dispatchers.DefaultDispatcherId,
     timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler,
     routerConfig = Props.defaultRoutedProps)

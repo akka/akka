@@ -14,7 +14,7 @@ object BenchmarkConfig {
       maxClients = 4
       repeatFactor = 2
       timeDilation = 1
-      maxRunDuration = 10 seconds
+      maxRunDuration = 20 seconds
       clientDelay = 250000 nanoseconds
       logResult = true
       resultDir = "target/benchmark"

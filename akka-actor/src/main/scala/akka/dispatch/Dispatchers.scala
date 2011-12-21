@@ -69,24 +69,23 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
 
   private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
-    val lookupId = if (id == Props.defaultDispatcherId) DefaultDispatcherId else id
-    dispatcherConfigurators.get(lookupId) match {
+    dispatcherConfigurators.get(id) match {
       case null ⇒
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
         val newConfigurator =
-          if (settings.config.hasPath(lookupId)) {
-            configuratorFrom(config(lookupId))
+          if (settings.config.hasPath(id)) {
+            configuratorFrom(config(id))
           } else {
             // Note that the configurator of the default dispatcher will be registered for this id,
             // so this will only be logged once, which is crucial.
             prerequisites.eventStream.publish(Warning("Dispatchers",
-              "Dispatcher [%s] not configured, using default-dispatcher".format(lookupId)))
+              "Dispatcher [%s] not configured, using default-dispatcher".format(id)))
             lookupConfigurator(DefaultDispatcherId)
           }
 
-        dispatcherConfigurators.putIfAbsent(lookupId, newConfigurator) match {
+        dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
           case null     ⇒ newConfigurator
           case existing ⇒ existing
         }
