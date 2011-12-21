@@ -31,40 +31,20 @@ case class DefaultDispatcherPrerequisites(
   val scheduler: Scheduler) extends DispatcherPrerequisites
 
 object Dispatchers {
+  /**
+   * The id of the default dispatcher, also the full key of the
+   * configuration of the default dispatcher.
+   */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
 }
 
 /**
- * It is recommended to define the dispatcher in configuration to allow for tuning
+ * Dispatchers are to be defined in configuration to allow for tuning
  * for different environments. Use the `lookup` method to create
  * a dispatcher as specified in configuration.
  *
- * Scala API. Dispatcher factory.
- * <p/>
- * Example usage:
- * <pre/>
- *   val dispatcher = Dispatchers.newDispatcher("name")
- *   dispatcher
- *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
- *     .setCorePoolSize(16)
- *     .setMaxPoolSize(128)
- *     .setKeepAliveTime(60 seconds)
- *     .build
- * </pre>
- * <p/>
- * Java API. Dispatcher factory.
- * <p/>
- * Example usage:
- * <pre/>
- *   MessageDispatcher dispatcher = Dispatchers.newDispatcher("name");
- *   dispatcher
- *     .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
- *     .setCorePoolSize(16)
- *     .setMaxPoolSize(128)
- *     .setKeepAliveTime(60 seconds)
- *     .build();
- * </pre>
- * <p/>
+ * Look in `akka.actor.default-dispatcher` section of the reference.conf
+ * for documentation of dispatcher options.
  */
 class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
 
@@ -73,9 +53,12 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   val defaultDispatcherConfig: Config =
     idConfig(DefaultDispatcherId).withFallback(settings.config.getConfig(DefaultDispatcherId))
 
+  /**
+   * The one and only default dispatcher.
+   */
   def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
-  // FIXME: Dispatchers registered here are are not removed, see ticket #1494
+  // FIXME: Configurators registered here are are not removed, see ticket #1494
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
   /**
@@ -132,19 +115,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 
   /*
-   * Creates of obtains a dispatcher from a Config according to the format below.
+   * Creates a dispatcher from a Config. Internal test purpose only.
    *
-   * my-dispatcher {
-   *   type = "Dispatcher"         # Must be one of the following
-   *                               # Dispatcher, (BalancingDispatcher, only valid when all actors using it are of the same type),
-   *                               # A FQCN to a class inheriting MessageDispatcherConfigurator with a no-arg visible constructor
-   *   name = "MyDispatcher"       # Optional, will be a generated UUID if omitted
-   *   keep-alive-time = 60        # Keep alive time for threads in akka.time-unit
-   *   core-pool-size-factor = 1.0 # No of core threads ... ceil(available processors * factor)
-   *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
-   *   allow-core-timeout = on     # Allow core threads to time out
-   *   throughput = 5              # Throughput for Dispatcher
-   * }
    * ex: from(config.getConfig(id))
    *
    * The Config must also contain a `id` property, which is the identifier of the dispatcher.
@@ -156,6 +128,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     configuratorFrom(cfg).dispatcher()
   }
 
+  /*
+   * Creates a MessageDispatcherConfigurator from a Config.
+   *
+   * The Config must also contain a `id` property, which is the identifier of the dispatcher.
+   *
+   * Throws: IllegalArgumentException if the value of "type" is not valid
+   *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
+   */
   private def configuratorFrom(cfg: Config): MessageDispatcherConfigurator = {
     if (!cfg.hasPath("id")) throw new IllegalArgumentException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
@@ -178,6 +158,11 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 }
 
+/**
+ * Configurator for creating [[akka.dispatch.Dispatcher]].
+ * Returns the same dispatcher instance for for each invocation
+ * of the `dispatcher()` method.
+ */
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
@@ -198,6 +183,11 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   override def dispatcher(): MessageDispatcher = instance
 }
 
+/**
+ * Configurator for creating [[akka.dispatch.BalancingDispatcher]].
+ * Returns the same dispatcher instance for for each invocation
+ * of the `dispatcher()` method.
+ */
 class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
@@ -218,6 +208,11 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
   override def dispatcher(): MessageDispatcher = instance
 }
 
+/**
+ * Configurator for creating [[akka.dispatch.PinnedDispatcher]].
+ * Returns new dispatcher instance for for each invocation
+ * of the `dispatcher()` method.
+ */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
   /**

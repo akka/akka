@@ -27,7 +27,8 @@ See below for details on which ones are available and how they can be configured
 Setting the dispatcher
 ----------------------
 
-You specify the dispatcher to use when creating an actor.
+You specify the id of the dispatcher to use when creating an actor. The id corresponds to the :ref:`configuration` key
+of the dispatcher settings.
 
 .. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala
    :include: imports,defining-dispatcher
@@ -44,18 +45,14 @@ There are 4 different types of message dispatchers:
 
 It is recommended to define the dispatcher in :ref:`configuration` to allow for tuning for different environments.
 
-Example of a custom event-based dispatcher, which can be fetched with ``system.dispatchers.lookup("my-dispatcher")``
+Example of a custom event-based dispatcher, which can be used with ``Props[MyActor].withDispatcher("my-dispatcher")``
 as in the example above:
 
 .. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
 
-Default values are taken from ``default-dispatcher``, i.e. all options doesn't need to be defined.
-
-.. warning::
-
-  Factory methods for creating dispatchers programmatically are available in ``akka.dispatch.Dispatchers``, i.e.
-  ``dispatchers`` of the ``ActorSystem``. These methods will probably be changed or removed before
-  2.0 final release, because dispatchers need to be defined by configuration to work in a clustered setup.
+Default values are taken from ``default-dispatcher``, i.e. all options doesn't need to be defined. See
+:ref:`configuration` for the default values of the ``default-dispatcher``. You can also override
+the values for the ``default-dispatcher`` in your configuration.
 
 Let's now walk through the different dispatchers in more detail.
 

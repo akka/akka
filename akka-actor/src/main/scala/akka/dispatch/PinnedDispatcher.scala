@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
+ *
+ * The preferred way of creating dispatchers is to define configuration of it and use the
+ * the `lookup` method in [[akka.dispatch.Dispatchers]].
  */
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,

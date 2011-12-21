@@ -270,7 +270,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 }
 
 /**
- * Trait to be used for hooking in new dispatchers into Dispatchers factory.
+ * Base class to be used for hooking in new dispatchers into Dispatchers.
  */
 abstract class MessageDispatcherConfigurator(val config: Config, val prerequisites: DispatcherPrerequisites) {
 

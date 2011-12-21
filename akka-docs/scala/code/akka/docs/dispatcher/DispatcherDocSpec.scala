@@ -109,8 +109,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
 
   "defining pinned dispatcher" in {
     //#defining-pinned-dispatcher
-    val name = "myactor"
-    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name)
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor")
     //#defining-pinned-dispatcher
   }
 
