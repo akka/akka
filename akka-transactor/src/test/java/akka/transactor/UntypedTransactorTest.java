@@ -22,7 +22,6 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
-import akka.transactor.CoordinatedTransactionException;
 import akka.util.Duration;
 import akka.util.Timeout;
 

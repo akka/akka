@@ -7,20 +7,14 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.UntypedActor;
-import akka.util.FiniteDuration;
-import scala.Function1;
 import scala.concurrent.stm.*;
-import scala.reflect.*;
-import scala.runtime.AbstractFunction1;
-import scala.runtime.BoxedUnit;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
-    private Manifest<Integer> manifest = Manifest$.MODULE$.classType(Integer.class);
-    private Ref<Integer> count = Ref$.MODULE$.apply(0, manifest);
+    private Ref<Integer> count = Stm.ref(0);
 
     public UntypedCoordinatedCounter(String name) {
         this.name = name;
@@ -39,9 +33,9 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 Increment increment = (Increment) message;
                 List<ActorRef> friends = increment.getFriends();
                 final CountDownLatch latch = increment.getLatch();
-                final Function1<Txn.Status, BoxedUnit> countDown = new AbstractFunction1<Txn.Status, BoxedUnit>() {
-                    public BoxedUnit apply(Txn.Status status) {
-                        latch.countDown(); return null;
+                final CompletionHandler countDown = new CompletionHandler() {
+                    public void handle(Txn.Status status) {
+                        latch.countDown();
                     }
                 };
                 if (!friends.isEmpty()) {
@@ -51,7 +45,7 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 coordinated.atomic(new Atomically() {
                     public void atomically(InTxn txn) {
                         increment(txn);
-                        Txn.afterCompletion(countDown, txn);
+                        Stm.afterCompletion(countDown);
                     }
                 });
             }

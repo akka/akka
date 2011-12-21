@@ -22,8 +22,6 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
-import akka.transactor.Coordinated;
-import akka.transactor.CoordinatedTransactionException;
 import akka.util.Duration;
 import akka.util.Timeout;
 
@@ -41,7 +39,7 @@ public class UntypedCoordinatedIncrementTest {
 
   @BeforeClass
   public static void beforeAll() {
-    system = ActorSystem.create("UntypedTransactorTest", AkkaSpec.testConf());
+    system = ActorSystem.create("UntypedCoordinatedIncrementTest", AkkaSpec.testConf());
   }
 
   @AfterClass

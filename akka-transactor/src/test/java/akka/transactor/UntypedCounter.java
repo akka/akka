@@ -7,12 +7,7 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.transactor.UntypedTransactor;
 import akka.transactor.SendTo;
-import akka.util.FiniteDuration;
-import scala.Function1;
 import scala.concurrent.stm.*;
-import scala.reflect.*;
-import scala.runtime.AbstractFunction1;
-import scala.runtime.BoxedUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -20,8 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 public class UntypedCounter extends UntypedTransactor {
     private String name;
-    private Manifest<Integer> manifest = Manifest$.MODULE$.classType(Integer.class);
-    private Ref<Integer> count = Ref$.MODULE$.apply(0, manifest);
+    private Ref<Integer> count = Stm.ref(0);
 
     public UntypedCounter(String name) {
         this.name = name;
@@ -51,12 +45,12 @@ public class UntypedCounter extends UntypedTransactor {
         if (message instanceof Increment) {
             increment(txn);
             final Increment increment = (Increment) message;
-            final Function1<Txn.Status, BoxedUnit> countDown = new AbstractFunction1<Txn.Status, BoxedUnit>() {
-                public BoxedUnit apply(Txn.Status status) {
-                    increment.getLatch().countDown(); return null;
+            CompletionHandler countDown = new CompletionHandler() {
+                public void handle(Txn.Status status) {
+                    increment.getLatch().countDown();
                 }
             };
-            Txn.afterCompletion(countDown, txn);
+            Stm.afterCompletion(countDown);
         }
     }
 

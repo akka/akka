@@ -4,7 +4,6 @@
 
 package akka.transactor;
 
-import akka.transactor.UntypedTransactor;
 import scala.concurrent.stm.InTxn;
 
 public class UntypedFailer extends UntypedTransactor {
