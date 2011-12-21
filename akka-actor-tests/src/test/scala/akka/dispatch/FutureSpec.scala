@@ -532,7 +532,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         assert(Await.result(y, timeout.duration) === 5)
         assert(Await.result(z, timeout.duration) === 5)
-        assert(lz.isOpen)
+        Await.ready(lz, timeout.duration)
         assert(Await.result(result, timeout.duration) === 10)
 
         val a, b, c = Promise[Int]()
