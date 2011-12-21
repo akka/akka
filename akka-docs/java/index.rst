@@ -17,6 +17,7 @@ Java API
    routing
    remoting
    serialization
+   stm
    agents
    transactors
    extending-akka
