@@ -167,8 +167,6 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def nrOfInstances: Int = 0
-  def routees: Iterable[String] = Nil
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
 }
 
@@ -207,9 +205,9 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
 
 trait RoundRobinLike { this: RouterConfig ⇒
 
-  val nrOfInstances: Int
+  def nrOfInstances: Int
 
-  val routees: Iterable[String]
+  def routees: Iterable[String]
 
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
@@ -267,9 +265,9 @@ trait RandomLike { this: RouterConfig ⇒
 
   import java.security.SecureRandom
 
-  val nrOfInstances: Int
+  def nrOfInstances: Int
 
-  val routees: Iterable[String]
+  def routees: Iterable[String]
 
   private val random = new ThreadLocal[SecureRandom] {
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
@@ -327,9 +325,9 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
 
 trait BroadcastLike { this: RouterConfig ⇒
 
-  val nrOfInstances: Int
+  def nrOfInstances: Int
 
-  val routees: Iterable[String]
+  def routees: Iterable[String]
 
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
@@ -379,11 +377,11 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
 
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
-  val nrOfInstances: Int
+  def nrOfInstances: Int
 
-  val routees: Iterable[String]
+  def routees: Iterable[String]
 
-  val within: Duration
+  def within: Duration
 
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)

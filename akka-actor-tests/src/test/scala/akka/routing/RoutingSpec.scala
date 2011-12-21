@@ -373,12 +373,12 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "custom router" must {
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props[TestActor].withRouter(new VoteCountRouter))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter))
       routedActor.isTerminated must be(false)
     }
 
     "count votes as intended - not as in Florida" in {
-      val routedActor = system.actorOf(Props[TestActor].withRouter(new VoteCountRouter))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter))
       routedActor ! DemocratVote
       routedActor ! DemocratVote
       routedActor ! RepublicanVote
@@ -422,7 +422,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#crActors
 
     //#crRouter
-    class VoteCountRouter extends RouterConfig {
+    object VoteCountRouter extends RouterConfig {
 
       //#crRoute
       def createRoute(props: Props,
