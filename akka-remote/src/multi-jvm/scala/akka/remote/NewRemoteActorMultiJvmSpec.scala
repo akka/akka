@@ -23,10 +23,10 @@ object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
       actor {
         provider = "akka.remote.RemoteActorRefProvider"
         deployment {
-          /service-hello.remote = "akka://AkkaRemoteSpec@localhost:9991"
+          /service-hello.remote = %s
         }
       }
-    }""")
+    }""" format specString(1))
 }
 
 class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(NewRemoteActorMultiJvmSpec.nodeConfigs(0)) {

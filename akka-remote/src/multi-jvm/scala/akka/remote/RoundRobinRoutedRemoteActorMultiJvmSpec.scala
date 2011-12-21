@@ -24,11 +24,11 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJ
         provider = "akka.remote.RemoteActorRefProvider"
         deployment {
           /service-hello.router = "round-robin"
-          /service-hello.nr-of-instances = 3
-          /service-hello.target.nodes = ["akka://AkkaRemoteSpec@localhost:9991","akka://AkkaRemoteSpec@localhost:9992","akka://AkkaRemoteSpec@localhost:9993"]
+          /service-hello.nr-of-instances = %d
+          /service-hello.target.nodes = [%s]
         }
       }
-    }""")
+    }""" format (3, specString(3)))
 }
 
 class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {

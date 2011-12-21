@@ -11,6 +11,12 @@ trait AbstractRemoteActorMultiJvmSpec {
     listOpt getOrElse List.fill(NrOfNodes)("localhost")
   }
 
+  def specString(count: Int): String = {
+    val specs = for ((host, idx) <- remotes.take(count).zipWithIndex) yield
+      "\"akka://AkkaRemoteSpec@%s:%d\"".format(host, 9991+idx)
+    specs.mkString(",")
+  }
+
   val nodeConfigs = ((1 to NrOfNodes).toList zip remotes) map {
     case (idx, host) =>
       ConfigFactory.parseString("""
