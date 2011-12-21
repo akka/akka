@@ -1,11 +1,9 @@
 package akka.actor.mailbox
 
-import akka.dispatch.CustomMailboxType
-
 object BeanstalkBasedMailboxSpec {
   val config = """
     Beanstalkd-dispatcher {
-      mailboxType = akka.actor.mailbox.BeanstalkBasedMailbox
+      mailboxType = akka.actor.mailbox.BeanstalkBasedMailboxType
       throughput = 1
     }
     """

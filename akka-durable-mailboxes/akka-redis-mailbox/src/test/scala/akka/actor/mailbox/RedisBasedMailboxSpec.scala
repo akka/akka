@@ -1,10 +1,9 @@
 package akka.actor.mailbox
-import akka.dispatch.CustomMailboxType
 
 object RedisBasedMailboxSpec {
   val config = """
     Redis-dispatcher {
-      mailboxType = akka.actor.mailbox.RedisBasedMailbox
+      mailboxType = akka.actor.mailbox.RedisBasedMailboxType
       throughput = 1
     }
     """

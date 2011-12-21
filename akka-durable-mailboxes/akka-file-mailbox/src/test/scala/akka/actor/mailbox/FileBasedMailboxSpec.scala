@@ -1,12 +1,11 @@
 package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
-import akka.dispatch.CustomMailboxType
 
 object FileBasedMailboxSpec {
   val config = """
     File-dispatcher {
-      mailboxType = akka.actor.mailbox.FileBasedMailbox
+      mailboxType = akka.actor.mailbox.FileBasedMailboxType
       throughput = 1
     }
     """

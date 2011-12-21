@@ -17,6 +17,7 @@ import akka.event.EventStream
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import java.util.concurrent.atomic.AtomicReference
+import akka.util.ReflectiveAccess
 
 final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
@@ -282,9 +283,10 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
   /**
    * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
-   * Default implementation use [[akka.dispatch.CustomMailboxType]] if
-   * mailboxType config property is specified, otherwise [[akka.dispatch.UnboundedMailbox]]
-   * when capacity is < 1, otherwise [[akka.dispatch.BoundedMailbox]].
+   * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
+   * as FQCN in mailboxType config property. If mailboxType is unspecified (empty)
+   * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
+   * otherwise [[akka.dispatch.BoundedMailbox]].
    */
   def mailboxType(): MailboxType = {
     config.getString("mailboxType") match {
@@ -295,7 +297,16 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
           val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
           BoundedMailbox(capacity, duration)
         }
-      case fqn ⇒ new CustomMailboxType(fqn)
+      case fqcn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config])
+        ReflectiveAccess.createInstance[MailboxType](fqcn, constructorSignature, Array[AnyRef](config)) match {
+          case Right(instance) ⇒ instance
+          case Left(exception) ⇒
+            throw new IllegalArgumentException(
+              ("Cannot instantiate MailboxType [%s], defined in [%s], " +
+                "make sure it has constructor with a [com.typesafe.config.Config] parameter")
+                .format(fqcn, config.getString("id")), exception)
+        }
     }
   }
 

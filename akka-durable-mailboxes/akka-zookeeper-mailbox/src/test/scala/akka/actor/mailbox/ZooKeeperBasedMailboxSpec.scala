@@ -4,13 +4,12 @@ import akka.actor.{ Actor, LocalActorRef }
 import akka.cluster.zookeeper._
 import org.I0Itec.zkclient._
 import akka.dispatch.MessageDispatcher
-import akka.dispatch.CustomMailboxType
 import akka.actor.ActorRef
 
 object ZooKeeperBasedMailboxSpec {
   val config = """
     ZooKeeper-dispatcher {
-      mailboxType = akka.actor.mailbox.ZooKeeperBasedMailbox
+      mailboxType = akka.actor.mailbox.ZooKeeperBasedMailboxType
       throughput = 1
     }
     """

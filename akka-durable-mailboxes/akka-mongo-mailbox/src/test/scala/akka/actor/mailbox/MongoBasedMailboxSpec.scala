@@ -8,12 +8,11 @@ import akka.actor._
 import akka.actor.Actor._
 import java.util.concurrent.CountDownLatch
 import akka.dispatch.MessageDispatcher
-import akka.dispatch.CustomMailboxType
 
 object MongoBasedMailboxSpec {
   val config = """
     mongodb-dispatcher {
-      mailboxType = akka.actor.mailbox.MongoBasedMailbox
+      mailboxType = akka.actor.mailbox.MongoBasedMailboxType
       throughput = 1
     }
     """
