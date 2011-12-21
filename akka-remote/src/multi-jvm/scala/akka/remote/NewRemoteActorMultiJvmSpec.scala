@@ -7,8 +7,8 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 
-object NewRemoteActorMultiJvmSpec {
-  val NrOfNodes = 2
+object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
+  override def NrOfNodes = 2
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -17,7 +17,7 @@ object NewRemoteActorMultiJvmSpec {
   }
 
   import com.typesafe.config.ConfigFactory
-  val commonConfig = ConfigFactory.parseString("""
+  override def commonConfig = ConfigFactory.parseString("""
     akka {
       loglevel = "WARNING"
       actor {
@@ -26,23 +26,10 @@ object NewRemoteActorMultiJvmSpec {
           /service-hello.remote = "akka://AkkaRemoteSpec@localhost:9991"
         }
       }
-      remote.server.hostname = "localhost"
     }""")
-
-  val node1Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9991"
-      cluster.nodename = "node1"
-    }""") withFallback commonConfig
-
-  val node2Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9992"
-      cluster.nodename = "node2"
-    }""") withFallback commonConfig
 }
 
-class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(NewRemoteActorMultiJvmSpec.node1Config) {
+class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(NewRemoteActorMultiJvmSpec.nodeConfigs(0)) {
 
   import NewRemoteActorMultiJvmSpec._
 
@@ -57,7 +44,7 @@ class NewRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(NewRemoteActorMultiJvmS
   }
 }
 
-class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(NewRemoteActorMultiJvmSpec.node2Config) with DefaultTimeout {
+class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(NewRemoteActorMultiJvmSpec.nodeConfigs(1)) with DefaultTimeout {
 
   import NewRemoteActorMultiJvmSpec._
 

@@ -6,8 +6,8 @@ import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
 
-object RandomRoutedRemoteActorMultiJvmSpec {
-  val NrOfNodes = 4
+object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
+  override def NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "hit" ⇒ sender ! context.system.nodename
@@ -16,7 +16,7 @@ object RandomRoutedRemoteActorMultiJvmSpec {
   }
 
   import com.typesafe.config.ConfigFactory
-  val commonConfig = ConfigFactory.parseString("""
+  override def commonConfig = ConfigFactory.parseString("""
     akka {
       loglevel = "WARNING"
       actor {
@@ -27,35 +27,10 @@ object RandomRoutedRemoteActorMultiJvmSpec {
           /service-hello.target.nodes = ["akka://AkkaRemoteSpec@localhost:9991","akka://AkkaRemoteSpec@localhost:9992","akka://AkkaRemoteSpec@localhost:9993"]
         }
       }
-      remote.server.hostname = "localhost"
     }""")
-
-  val node1Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9991"
-      cluster.nodename = "node1"
-    }""") withFallback commonConfig
-
-  val node2Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9992"
-      cluster.nodename = "node2"
-    }""") withFallback commonConfig
-
-  val node3Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9993"
-      cluster.nodename = "node3"
-    }""") withFallback commonConfig
-
-  val node4Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9994"
-      cluster.nodename = "node4"
-    }""") withFallback commonConfig
 }
 
-class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.node1Config) {
+class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -68,7 +43,7 @@ class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RandomRoutedRe
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.node2Config) {
+class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.nodeConfigs(1)) {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -81,7 +56,7 @@ class RandomRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RandomRoutedRe
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.node3Config) {
+class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.nodeConfigs(2)) {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -94,7 +69,7 @@ class RandomRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RandomRoutedRe
   }
 }
 
-class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.node4Config) with DefaultTimeout {
+class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.nodeConfigs(3)) with DefaultTimeout {
   import RandomRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a Random router" must {
