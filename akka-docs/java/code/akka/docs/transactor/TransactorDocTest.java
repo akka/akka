@@ -13,7 +13,7 @@ import akka.dispatch.Await;
 import akka.transactor.Coordinated;
 import akka.util.Duration;
 import akka.util.Timeout;
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.SECONDS;
 //#imports
 
 public class TransactorDocTest {
@@ -26,7 +26,7 @@ public class TransactorDocTest {
         ActorRef counter1 = system.actorOf(new Props().withCreator(CoordinatedCounter.class));
         ActorRef counter2 = system.actorOf(new Props().withCreator(CoordinatedCounter.class));
 
-        Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout timeout = new Timeout(5, SECONDS);
 
         counter1.tell(new Coordinated(new Increment(counter2), timeout));
 
@@ -41,7 +41,7 @@ public class TransactorDocTest {
     @Test
     public void coordinatedApi() {
         //#create-coordinated
-        Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
         //#create-coordinated
 
@@ -66,7 +66,7 @@ public class TransactorDocTest {
         ActorSystem system = ActorSystem.create("CounterTransactor");
         ActorRef counter = system.actorOf(new Props().withCreator(Counter.class));
 
-        Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
         counter.tell(coordinated.coordinate(new Increment()));
         coordinated.await();
@@ -83,7 +83,7 @@ public class TransactorDocTest {
         ActorRef friend = system.actorOf(new Props().withCreator(Counter.class));
         ActorRef friendlyCounter = system.actorOf(new Props().withCreator(FriendlyCounter.class));
 
-        Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
         friendlyCounter.tell(coordinated.coordinate(new Increment(friend)));
         coordinated.await();

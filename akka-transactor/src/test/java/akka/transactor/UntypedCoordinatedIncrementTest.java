@@ -22,7 +22,6 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
-import akka.util.Duration;
 import akka.util.Timeout;
 
 import java.util.Arrays;
@@ -54,7 +53,7 @@ public class UntypedCoordinatedIncrementTest {
   int numCounters = 3;
   int timeoutSeconds = 5;
 
-  Timeout timeout = new Timeout(Duration.create(timeoutSeconds, TimeUnit.SECONDS));
+  Timeout timeout = new Timeout(timeoutSeconds, TimeUnit.SECONDS);
 
   @Before
   public void initialise() {

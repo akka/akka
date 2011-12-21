@@ -23,7 +23,6 @@ import akka.japi.Function;
 //#import-function
 
 //#import-timeout
-import akka.util.Duration;
 import akka.util.Timeout;
 import static java.util.concurrent.TimeUnit.SECONDS;
 //#import-timeout
@@ -86,7 +85,7 @@ public class AgentDocTest {
     //#send-off
 
     //#read-await
-    Integer result = agent.await(new Timeout(Duration.create(5, SECONDS)));
+    Integer result = agent.await(new Timeout(5, SECONDS));
     //#read-await
 
     assertEquals(result, new Integer(14));
