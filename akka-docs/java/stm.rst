@@ -12,11 +12,13 @@ Overview of STM
 An `STM <http://en.wikipedia.org/wiki/Software_transactional_memory>`_ turns the
 Java heap into a transactional data set with begin/commit/rollback
 semantics. Very much like a regular database. It implements the first three
-letters in ACID; ACI:
+letters in `ACID`_; ACI:
 
 * Atomic
 * Consistent
 * Isolated
+
+.. _ACID: http://en.wikipedia.org/wiki/ACID
 
 Generally, the STM is not needed very often when working with Akka. Some
 use-cases (that we can think of) are:
@@ -49,18 +51,6 @@ The STM is based on Transactional References (referred to as Refs). Refs are
 memory cells, holding an (arbitrary) immutable value, that implement CAS
 (Compare-And-Swap) semantics and are managed and enforced by the STM for
 coordinated changes across many Refs.
-
-
-Persistent Datastructures
-=========================
-
-Working with immutable collections can sometimes give bad performance due to
-extensive copying. Scala provides so-called persistent datastructures which
-makes working with immutable collections fast. They are immutable but with
-constant time access and modification. They use structural sharing and an insert
-or update does not ruin the old structure, hence "persistent". Makes working
-with immutable composite types fast. The persistent datastructures currently
-consist of a Map and Vector.
 
 
 Integration with Actors
