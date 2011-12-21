@@ -39,13 +39,13 @@ trait RemoteRouterConfig extends RouterConfig {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration) extends RemoteRouterConfig with RoundRobinLike {
+case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with RoundRobinLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String], w: Duration) = this(n, t.asScala, w)
+  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
 }
 
 /**
@@ -59,13 +59,13 @@ case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String],
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration) extends RemoteRouterConfig with RandomLike {
+case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with RandomLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String], w: Duration) = this(n, t.asScala, w)
+  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
 }
 
 /**
@@ -79,13 +79,13 @@ case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String], wit
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration) extends RemoteRouterConfig with BroadcastLike {
+case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with BroadcastLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String], w: Duration) = this(n, t.asScala, w)
+  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
 }
 
 /**

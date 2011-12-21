@@ -79,12 +79,6 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
  */
 trait RouterConfig {
 
-  def nrOfInstances: Int
-
-  def routees: Iterable[String]
-
-  def within: Duration
-
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route
 
   def createActor(): Router = new Router {}
@@ -173,9 +167,8 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def nrOfInstances = 0
-  def routees = Nil
-  def within = Duration.Zero
+  def nrOfInstances: Int = 0
+  def routees: Iterable[String] = Nil
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
 }
 
@@ -193,7 +186,7 @@ object RoundRobinRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with RoundRobinLike {
+case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with RoundRobinLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -213,6 +206,11 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
+
+  val nrOfInstances: Int
+
+  val routees: Iterable[String]
+
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
@@ -246,7 +244,7 @@ object RandomRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with RandomLike {
+case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with RandomLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -268,6 +266,10 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
 trait RandomLike { this: RouterConfig ⇒
 
   import java.security.SecureRandom
+
+  val nrOfInstances: Int
+
+  val routees: Iterable[String]
 
   private val random = new ThreadLocal[SecureRandom] {
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
@@ -304,7 +306,7 @@ object BroadcastRouter {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration = Duration.Zero) extends RouterConfig with BroadcastLike {
+case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil) extends RouterConfig with BroadcastLike {
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -324,6 +326,11 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
+
+  val nrOfInstances: Int
+
+  val routees: Iterable[String]
+
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
@@ -371,6 +378,13 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
 }
 
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
+
+  val nrOfInstances: Int
+
+  val routees: Iterable[String]
+
+  val within: Duration
+
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
