@@ -92,7 +92,7 @@ class TransactorSpec extends AkkaSpec {
       val (counters, failer) = createTransactors
       val incrementLatch = TestLatch(numCounters)
       counters(0) ! Increment(counters.tail, incrementLatch)
-      incrementLatch.await
+      Await.ready(incrementLatch, 5 seconds)
       for (counter ← counters) {
         Await.result(counter ? GetCount, timeout.duration) must be === 1
       }
@@ -109,7 +109,7 @@ class TransactorSpec extends AkkaSpec {
         val (counters, failer) = createTransactors
         val failLatch = TestLatch(numCounters)
         counters(0) ! Increment(counters.tail :+ failer, failLatch)
-        failLatch.await
+        Await.ready(failLatch, 5 seconds)
         for (counter ← counters) {
           Await.result(counter ? GetCount, timeout.duration) must be === 0
         }
@@ -125,7 +125,7 @@ class TransactorSpec extends AkkaSpec {
       val ref = Ref(0)
       val latch = TestLatch(1)
       transactor ! Set(ref, 5, latch)
-      latch.await
+      Await.ready(latch, 5 seconds)
       val value = ref.single.get
       value must be === 5
       system.stop(transactor)
