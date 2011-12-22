@@ -26,6 +26,8 @@ object TypedActorSpec {
       type = BalancingDispatcher
       core-pool-size-min = 60
       core-pool-size-max = 60
+      max-pool-size-min = 60
+      max-pool-size-max = 60
     }
     """
 
