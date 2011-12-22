@@ -9,6 +9,11 @@ distributed actor system. It ties into the central idea that
 communication between actors is transparent with respect to their placement
 across multiple network nodes.
 
+.. image:: ActorPath.png
+
+The above image displays the relationship between the most important entities
+within an actor system, please read on for the details.
+
 What is an Actor Reference?
 ---------------------------
 
