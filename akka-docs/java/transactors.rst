@@ -110,6 +110,14 @@ object, passing in an ``akka.transactor.Atomically`` object.
 The coordinated transaction will wait for the other transactions before
 committing. If any of the coordinated transactions fail then they all fail.
 
+.. note::
+
+   The same actor should not be added to a coordinated transaction more than
+   once. The transaction will not be able to complete as an actor only processes
+   a single message at a time. When processing the first message the coordinated
+   transaction will wait for the commit barrier, which in turn needs the second
+   message to be received to proceed.
+
 
 UntypedTransactor
 =================
