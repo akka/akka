@@ -14,7 +14,7 @@ class LookupApplication extends Bootable {
   val remoteActor = system.actorFor("akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator")
 
   def doSomething(op: MathOp) = {
-    actor ! Tuple2(remoteActor, op)
+    actor ! (remoteActor, op)
   }
 
   def startup() {

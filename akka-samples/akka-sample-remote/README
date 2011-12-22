@@ -11,8 +11,8 @@ The Sample Explained
 
 In order to showcase the remote capabilities of Akka 2.0 we thought a remote calculator could do the trick.
 
-There are three actor systems (AS) used in the sample:
-* CalculatorApplication : the AS performing the number crunching
+There are three actor systems used in the sample:
+* CalculatorApplication : the actor system performing the number crunching
 * LookupApplication     : illustrates how to look up an actor on a remote node and and how communicate with that actor
 * CreationApplication   : illustrates how to create an actor on a remote node and how to communicate with that actor
 
