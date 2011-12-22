@@ -81,6 +81,14 @@ where all but one involve some translation which decouples part of the path
 from the actor’s actual supervision ancestor line; these specialities are 
 described in the sub-sections to follow.
 
+An actor path consists of an anchor, which identifies the actor system,
+followed by the concatenation of the path elements, from root guardian to the
+designated actor; the path elements are the names of the traversed actors and
+are separated by slashes.
+
+Actor Path Anchors
+^^^^^^^^^^^^^^^^^^
+
 Each actor path has an address component, describing the protocol and location 
 by which the corresponding actor is reachable, followed by the names of the 
 actors in the hierarchy from the root up. Examples are::
@@ -220,18 +228,20 @@ release.
 The Interplay with Remote Deployment
 ------------------------------------
 
-When an actor creates a child, the actor system’s deployer will decide whether 
-the new actor resides in the same JVM or on another node. In the second case, 
-creation of the actor will be triggered via a network connection to happen in a 
-different JVM and consequently within a different actor system. The remote 
-system will place the new actor below a special path reserved for this purpose 
-and the supervisor of the new actor will be a remote actor reference 
-(representing that actor which triggered its creation). In this case, 
-:meth:`parent` (the supervisor reference) and :meth:`context.path.parent` (the 
-parent node in the actor’s path) do not represent the same actor. However, 
-looking up the child’s name within the supervisor will find it on the remote 
-node, preserving logical structure e.g. when sending to an unresolved actor 
-reference.
+When an actor creates a child, the actor system’s deployer will decide whether
+the new actor resides in the same JVM or on another node. In the second case,
+creation of the actor will be triggered via a network connection to happen in a
+different JVM and consequently within a different actor system. The remote
+system will place the new actor below a special path reserved for this purpose
+and the supervisor of the new actor will be a remote actor reference
+(representing that actor which triggered its creation). In this case,
+:meth:`context.parent` (the supervisor reference) and
+:meth:`context.path.parent` (the parent node in the actor’s path) do not
+represent the same actor. However, looking up the child’s name within the
+supervisor will find it on the remote node, preserving logical structure e.g.
+when sending to an unresolved actor reference.
+
+.. image:: RemoteDeployment.png
 
 The Interplay with Clustering **(Future Extension)**
 ----------------------------------------------------
