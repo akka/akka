@@ -7,10 +7,10 @@ import com.typesafe.config.Config
 import org.apache.zookeeper._
 import ZooDefs.Ids
 
-class ZKClient(config: Config) extends Watcher {
+object ZKClient extends Watcher {
   // Don't forget to close!
   lazy val zk: ZooKeeper = {
-    val remoteNodes = config.getString("akka.test.remote.nodes") split ',' map {
+    val remoteNodes = AkkaRemoteSpec.testConf.getString("akka.test.remote.nodes") split ',' map {
       case hostport => hostport.split(":")(0)
     }
   
