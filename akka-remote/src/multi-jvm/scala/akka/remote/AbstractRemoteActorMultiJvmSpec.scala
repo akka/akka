@@ -6,9 +6,9 @@ trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
   def commonConfig: Config
 
-  def remotes: Array[String] = {
+  def remotes: Seq[String] = {
     val arrayOpt = Option(System.getProperty("test.hosts")).map(_ split ",")
-    arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")
+    (arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")).toSeq
   }
 
   def specString(count: Int): String = {
@@ -22,8 +22,8 @@ trait AbstractRemoteActorMultiJvmSpec {
       ConfigFactory.parseString("""
         akka {
           remote.server.hostname="%s"
-          remote.server.port = "999%d"
+          remote.server.port = "%d"
           cluster.nodename = "node%d"
-        }""".format(host, idx, idx)) withFallback commonConfig
+        }""".format(host, 9990+idx, idx)) withFallback commonConfig
   }
 }
