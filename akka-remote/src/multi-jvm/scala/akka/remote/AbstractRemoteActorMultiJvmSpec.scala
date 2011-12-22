@@ -7,7 +7,7 @@ trait AbstractRemoteActorMultiJvmSpec {
   def commonConfig: Config
 
   def remotes: Seq[String] = {
-    val arrayOpt = Option(System.getProperty("test.hosts")).map(_ split ",")
+    val arrayOpt = Option(AkkaRemoteSpec.testNodes).map(_ split ",")
     (arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")).toSeq
   }
 

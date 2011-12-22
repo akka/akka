@@ -7,12 +7,10 @@ import com.typesafe.config.Config
 import org.apache.zookeeper._
 import ZooDefs.Ids
 
-object ZKClient extends Watcher {
+object ZkClient extends Watcher {
   // Don't forget to close!
   lazy val zk: ZooKeeper = {
-    val remoteNodes = AkkaRemoteSpec.testConf.getString("akka.test.remote.nodes") split ',' map {
-      case hostport => hostport.split(":")(0)
-    }
+    val remoteNodes = AkkaRemoteSpec.testNodes split ','
   
     // ZkServers are configured to listen on a specific port.
     val connectString = remoteNodes map (_+":2181") mkString ","
@@ -32,9 +30,9 @@ object ZKClient extends Watcher {
       zk.create(root + "/" + name, Array[Byte](), Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL)
       while (true) {
-        ZKClient.this.synchronized {
+        ZkClient.this.synchronized {
           if (zk.getChildren(root, true).size < count) {
-            ZKClient.this.wait()
+            ZkClient.this.wait()
           }
         }
       }
@@ -43,9 +41,9 @@ object ZKClient extends Watcher {
     def leave() {
       zk.delete(root + "/" + name, -1)
       while (true) {
-        ZKClient.this.synchronized {
+        ZkClient.this.synchronized {
           if (!zk.getChildren(root, true).isEmpty) {
-            ZKClient.this.wait()
+            ZkClient.this.wait()
           }
         }
       }
