@@ -224,7 +224,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample, helloSample, helloKernelSample)
+    aggregate = Seq(fsmSample, helloSample, helloKernelSample, remoteSample)
   )
 
   lazy val fsmSample = Project(
@@ -245,6 +245,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
+    settings = defaultSettings
+  )
+
+  lazy val remoteSample = Project(
+    id = "akka-sample-remote",
+    base = file("akka-samples/akka-sample-remote"),
+    dependencies = Seq(actor, remote, kernel),
     settings = defaultSettings
   )
 
