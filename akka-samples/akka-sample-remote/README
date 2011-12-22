@@ -22,10 +22,10 @@ addition and subtraction. This actor is looked up and used from the LookupApplic
 The CreationApplication wants to use more "advanced" mathematical operations, such as multiplication and division,
 but as the CalculatorApplication does not have any actor that can perform those type of calculations the
 CreationApplication has to remote deploy an actor that can (which in our case is AdvancedCalculatorActor).
-So this actor is deployed, over the network, onto the CalculatorApplication AS and thereafter the CreationApplication
-will send messages to it.
+So this actor is deployed, over the network, onto the CalculatorApplication actor system and thereafter the
+CreationApplication will send messages to it.
 
-It is important to point out that as the AS run on different ports it is possible to run all three in parallel.
+It is important to point out that as the actor system run on different ports it is possible to run all three in parallel.
 See the next section for more information of how to run the sample application.
 
 Running
