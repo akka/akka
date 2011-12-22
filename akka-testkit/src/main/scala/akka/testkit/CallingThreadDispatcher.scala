@@ -21,6 +21,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ActorSystemImpl
 import akka.actor.Extension
+import com.typesafe.config.Config
 
 /*
  * Locking rules:
@@ -92,6 +93,10 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
   }
 }
 
+object CallingThreadDispatcher {
+  val Id = "akka.test.calling-thread-dispatcher"
+}
+
 /**
  * Dispatcher which runs invocations on the current thread only. This
  * dispatcher does not create any new threads, but it can be used from
@@ -123,6 +128,8 @@ class CallingThreadDispatcher(
   import CallingThreadDispatcher._
 
   val log = akka.event.Logging(prerequisites.eventStream, "CallingThreadDispatcher")
+
+  override def id: String = Id
 
   protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor)
 
@@ -256,6 +263,13 @@ class CallingThreadDispatcher(
       }
     }
   }
+}
+
+class CallingThreadDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+  extends MessageDispatcherConfigurator(config, prerequisites) {
+  private val instance = new CallingThreadDispatcher(prerequisites)
+
+  override def dispatcher(): MessageDispatcher = instance
 }
 
 class NestingQueue {

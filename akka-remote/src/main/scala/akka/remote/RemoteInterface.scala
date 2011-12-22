@@ -155,8 +155,8 @@ case class RemoteClientError[T <: ParsedTransportAddress](
   override def toString =
     "RemoteClientError@" +
       remoteAddress +
-      ": ErrorMessage[" +
-      (if (cause ne null) cause.getMessage else "no message") +
+      ": Error[" +
+      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
       "]"
 }
 
@@ -203,8 +203,8 @@ case class RemoteClientWriteFailed[T <: ParsedTransportAddress](
       remoteAddress +
       ": MessageClass[" +
       (if (request ne null) request.getClass.getName else "no message") +
-      "] ErrorMessage[" +
-      (if (cause ne null) cause.getMessage else "no message") +
+      "] Error[" +
+      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
       "]"
 }
 
@@ -234,8 +234,8 @@ case class RemoteServerError[T <: ParsedTransportAddress](
   override def toString =
     "RemoteServerError@" +
       remote.name +
-      ": ErrorMessage[" +
-      (if (cause ne null) cause.getMessage else "no message") +
+      ": Error[" +
+      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
       "]"
 }
 
@@ -288,8 +288,8 @@ case class RemoteServerWriteFailed[T <: ParsedTransportAddress](
       remoteAddress +
       "] MessageClass[" +
       (if (request ne null) request.getClass.getName else "no message") +
-      "] ErrorMessage[" +
-      (if (cause ne null) cause.getMessage else "no message") +
+      "] Error[" +
+      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
       "]"
 }
 

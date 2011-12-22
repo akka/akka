@@ -16,11 +16,6 @@ import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistic
 class TellLatencyPerformanceSpec extends PerformanceSpec {
   import TellLatencyPerformanceSpec._
 
-  val clientDispatcher = system.dispatcherFactory.newDispatcher("client-dispatcher")
-    .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-    .setCorePoolSize(8)
-    .build
-
   val repeat = 200L * repeatFactor
 
   var stat: DescriptiveStatistics = _
@@ -55,15 +50,16 @@ class TellLatencyPerformanceSpec extends PerformanceSpec {
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
 
+        val dispatcherKey = "benchmark.latency-dispatcher"
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val clients = (for (i ← 0 until numberOfClients) yield {
-          val destination = system.actorOf(Props[Destination])
-          val w4 = system.actorOf(Props(new Waypoint(destination)))
-          val w3 = system.actorOf(Props(new Waypoint(w4)))
-          val w2 = system.actorOf(Props(new Waypoint(w3)))
-          val w1 = system.actorOf(Props(new Waypoint(w2)))
-          Props(new Client(w1, latch, repeatsPerClient, clientDelay.toMicros.intValue, stat)).withDispatcher(clientDispatcher)
+          val destination = system.actorOf(Props[Destination].withDispatcher(dispatcherKey))
+          val w4 = system.actorOf(Props(new Waypoint(destination)).withDispatcher(dispatcherKey))
+          val w3 = system.actorOf(Props(new Waypoint(w4)).withDispatcher(dispatcherKey))
+          val w2 = system.actorOf(Props(new Waypoint(w3)).withDispatcher(dispatcherKey))
+          val w1 = system.actorOf(Props(new Waypoint(w2)).withDispatcher(dispatcherKey))
+          Props(new Client(w1, latch, repeatsPerClient, clientDelay.toMicros.intValue, stat)).withDispatcher(dispatcherKey)
         }).toList.map(system.actorOf(_))
 
         val start = System.nanoTime

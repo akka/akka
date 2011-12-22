@@ -5,6 +5,18 @@ import akka.dispatch.UnboundedMailbox
 import akka.util.duration._
 
 object ConsistencySpec {
+  val config = """
+      consistency-dispatcher {
+        throughput = 1
+        keep-alive-time = 1 ms
+        core-pool-size-min = 10
+        core-pool-size-max = 10
+        max-pool-size-min = 10
+        max-pool-size-max = 10
+        task-queue-type = array
+        task-queue-size = 7
+      }
+    """
   class CacheMisaligned(var value: Long, var padding1: Long, var padding2: Long, var padding3: Int) //Vars, no final fences
 
   class ConsistencyCheckingActor extends Actor {
@@ -31,22 +43,12 @@ object ConsistencySpec {
   }
 }
 
-class ConsistencySpec extends AkkaSpec {
+class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
   import ConsistencySpec._
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
       val noOfActors = 7
-      val dispatcher = system
-        .dispatcherFactory
-        .newDispatcher("consistency-dispatcher", 1, UnboundedMailbox())
-        .withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(noOfActors, true)
-        .setCorePoolSize(10)
-        .setMaxPoolSize(10)
-        .setKeepAliveTimeInMillis(1)
-        .setAllowCoreThreadTimeout(true)
-        .build
-
-      val props = Props[ConsistencyCheckingActor].withDispatcher(dispatcher)
+      val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
       for (i ← 0L until 600000L) {

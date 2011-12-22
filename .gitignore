@@ -11,6 +11,7 @@ lib_managed
 etags
 tags
 .tags
+.tags_sorted_by_file
 TAGS
 akka.tmproj
 reports

@@ -88,12 +88,6 @@ object ActorSystem {
     val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
     val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
-    val DispatcherThroughput = getInt("akka.actor.default-dispatcher.throughput")
-    val DispatcherDefaultShutdown = Duration(getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout"), MILLISECONDS)
-    val MailboxCapacity = getInt("akka.actor.default-dispatcher.mailbox-capacity")
-    val MailboxPushTimeout = Duration(getNanoseconds("akka.actor.default-dispatcher.mailbox-push-timeout-time"), NANOSECONDS)
-    val DispatcherThroughputDeadlineTime = Duration(getNanoseconds("akka.actor.default-dispatcher.throughput-deadline-time"), NANOSECONDS)
-
     val Home = config.getString("akka.home") match {
       case "" ⇒ None
       case x  ⇒ Some(x)
@@ -269,10 +263,9 @@ abstract class ActorSystem extends ActorRefFactory {
   //#scheduler
 
   /**
-   * Helper object for creating new dispatchers and passing in all required
-   * information.
+   * Helper object for looking up configured dispatchers.
    */
-  def dispatcherFactory: Dispatchers
+  def dispatchers: Dispatchers
 
   /**
    * Default dispatcher as configured. This dispatcher is used for all actors
@@ -413,8 +406,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
-  val dispatcherFactory = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
-  val dispatcher = dispatcherFactory.defaultGlobalDispatcher
+  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  val dispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian

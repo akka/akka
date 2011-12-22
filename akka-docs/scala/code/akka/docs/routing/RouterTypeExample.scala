@@ -68,7 +68,7 @@ class ParentActor extends Actor {
     case "sgfcr" ⇒
       //#scatterGatherFirstCompletedRouter
       val scatterGatherFirstCompletedRouter = context.actorOf(
-        Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter()),
+        Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter(within = 2 seconds)),
         "router")
       implicit val timeout = context.system.settings.ActorTimeout
       val futureResult = scatterGatherFirstCompletedRouter ? FibonacciNumber(10)

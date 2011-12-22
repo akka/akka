@@ -23,7 +23,6 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.netty.NettyRemoteServer
 import akka.serialization.Serialization
 import com.typesafe.config.Config
-import akka.dispatch.CustomMailboxType
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r

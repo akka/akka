@@ -1,4 +1,3 @@
-
 .. _remoting-java:
 
 #####################
@@ -25,14 +24,16 @@ First of all you have to change the actor provider from ``LocalActorRefProvider`
 After that you must also add the following settings::
 
   akka {
-    server {
-      # The hostname or ip to bind the remoting to,
-      # InetAddress.getLocalHost.getHostAddress is used if empty
-      hostname = ""
+    remote {
+      server {
+        # The hostname or ip to bind the remoting to,
+        # InetAddress.getLocalHost.getHostAddress is used if empty
+        hostname = ""
 
-      # The default remote server port clients should connect to.
-      # Default is 2552 (AKKA)
-      port = 2552
+        # The default remote server port clients should connect to.
+        # Default is 2552 (AKKA)
+        port = 2552
+      }
     }
   }
 
@@ -42,8 +43,19 @@ reference file for more information:
 
 * `reference.conf of akka-remote <https://github.com/jboner/akka/blob/master/akka-remote/src/main/resources/reference.conf#L39>`_
 
-Using Remote Actors
-^^^^^^^^^^^^^^^^^^^
+Looking up Remote Actors
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node::
+
+  ActorRef actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval");
+
+As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
+
+    akka://<actorsystemname>@<hostname>:<port>/<actor path>
+
+Creating Actors Remotely
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The configuration below instructs the system to deploy the actor "retrieval” on the specific host "app@10.0.0.1".
 The "app" in this case refers to the name of the ``ActorSystem``::

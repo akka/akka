@@ -6,9 +6,9 @@ package akka.routing
 import akka.actor._
 import akka.remote._
 import scala.collection.JavaConverters._
-import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.ConfigFactory
 import akka.config.ConfigurationException
+import akka.util.Duration
 
 trait RemoteRouterConfig extends RouterConfig {
   override protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): Vector[ActorRef] = (nrOfInstances, routees) match {
@@ -99,12 +99,12 @@ case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String]) 
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteScatterGatherFirstCompletedRouter(nrOfInstances: Int, routees: Iterable[String])
+case class RemoteScatterGatherFirstCompletedRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration)
   extends RemoteRouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
+  def this(n: Int, t: java.util.Collection[String], w: Duration) = this(n, t.asScala, w)
 }

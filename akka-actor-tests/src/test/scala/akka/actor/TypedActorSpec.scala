@@ -21,6 +21,16 @@ import akka.dispatch.{ Await, Dispatchers, Future, Promise }
 
 object TypedActorSpec {
 
+  val config = """
+    pooled-dispatcher {
+      type = BalancingDispatcher
+      core-pool-size-min = 60
+      core-pool-size-max = 60
+      max-pool-size-min = 60
+      max-pool-size-max = 60
+    }
+    """
+
   class CyclicIterator[T](val items: Seq[T]) extends Iterator[T] {
 
     private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
@@ -161,7 +171,8 @@ object TypedActorSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
+class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
+  with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
   import TypedActorSpec._
 
@@ -336,13 +347,7 @@ class TypedActorSpec extends AkkaSpec with BeforeAndAfterEach with BeforeAndAfte
     }
 
     "be able to use balancing dispatcher" in {
-      val props = Props(
-        timeout = Timeout(6600),
-        dispatcher = system.dispatcherFactory.newBalancingDispatcher("pooled-dispatcher")
-          .withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
-          .setCorePoolSize(60)
-          .setMaxPoolSize(60)
-          .build)
+      val props = Props(timeout = Timeout(6600), dispatcher = "pooled-dispatcher")
 
       val thais = for (i ← 1 to 60) yield newFooBar(props)
       val iterator = new CyclicIterator(thais)

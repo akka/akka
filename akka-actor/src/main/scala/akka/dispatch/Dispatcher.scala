@@ -11,49 +11,11 @@ import akka.util.Duration
 import java.util.concurrent._
 
 /**
- * Default settings are:
- * <pre/>
- *   - withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity
- *   - NR_START_THREADS = 16
- *   - NR_MAX_THREADS = 128
- *   - KEEP_ALIVE_TIME = 60000L // one minute
- * </pre>
- * <p/>
+ * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
+ * `BlockingQueue`.
  *
- * The dispatcher has a fluent builder interface to build up a thread pool to suite your use-case.
- * There is a default thread pool defined but make use of the builder if you need it. Here are some examples.
- * <p/>
- *
- * Scala API.
- * <p/>
- * Example usage:
- * <pre/>
- *   val dispatcher = new Dispatcher("name")
- *   dispatcher
- *     .withNewThreadPoolWithBoundedBlockingQueue(100)
- *     .setCorePoolSize(16)
- *     .setMaxPoolSize(128)
- *     .setKeepAliveTime(60 seconds)
- *     .buildThreadPool
- * </pre>
- * <p/>
- *
- * Java API.
- * <p/>
- * Example usage:
- * <pre/>
- *   Dispatcher dispatcher = new Dispatcher("name");
- *   dispatcher
- *     .withNewThreadPoolWithBoundedBlockingQueue(100)
- *     .setCorePoolSize(16)
- *     .setMaxPoolSize(128)
- *     .setKeepAliveTime(60 seconds)
- *     .buildThreadPool();
- * </pre>
- * <p/>
- *
- * But the preferred way of creating dispatchers is to use
- * the {@link akka.dispatch.Dispatchers} factory object.
+ * The preferred way of creating dispatchers is to define configuration of it and use the
+ * the `lookup` method in [[akka.dispatch.Dispatchers]].
  *
  * @param throughput positive integer indicates the dispatcher will only process so much messages at a time from the
  *                   mailbox, without checking the mailboxes of other actors. Zero or negative means the dispatcher
@@ -63,6 +25,7 @@ import java.util.concurrent._
 class Dispatcher(
   _prerequisites: DispatcherPrerequisites,
   val name: String,
+  val id: String,
   val throughput: Int,
   val throughputDeadlineTime: Duration,
   val mailboxType: MailboxType,

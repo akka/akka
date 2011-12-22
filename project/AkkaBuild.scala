@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -100,6 +100,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.agent
+    )
+  )
+
+  lazy val transactor = Project(
+    id = "akka-transactor",
+    base = file("akka-transactor"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.transactor
     )
   )
 
@@ -265,7 +274,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, slf4j, agent, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
+    dependencies = Seq(actor, testkit % "test->test", remote, slf4j, agent, transactor, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -379,6 +388,8 @@ object Dependencies {
   val slf4j = Seq(slf4jApi)
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
+
+  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val amqp = Seq(rabbit, commonsIo, protobuf)
 

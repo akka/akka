@@ -16,6 +16,8 @@ import scala.annotation.tailrec
 import akka.event.EventStream
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
+import java.util.concurrent.atomic.AtomicReference
+import akka.util.ReflectiveAccess
 
 final case class Envelope(val message: Any, val sender: ActorRef) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
@@ -99,6 +101,12 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * Name of this dispatcher.
    */
   def name: String
+
+  /**
+   * Identfier of this dispatcher, corresponds to the full key
+   * of the dispatcher configuration.
+   */
+  def id: String
 
   /**
    * Attaches the specified actor instance to this dispatcher
@@ -262,15 +270,25 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 }
 
 /**
- * Trait to be used for hooking in new dispatchers into Dispatchers.from(cfg: Config)
+ * Base class to be used for hooking in new dispatchers into Dispatchers.
  */
-abstract class MessageDispatcherConfigurator() {
-  /**
-   * Returns an instance of MessageDispatcher given a Configuration
-   */
-  def configure(config: Config, settings: Settings, prerequisites: DispatcherPrerequisites): MessageDispatcher
+abstract class MessageDispatcherConfigurator(val config: Config, val prerequisites: DispatcherPrerequisites) {
 
-  def mailboxType(config: Config, settings: Settings): MailboxType = {
+  /**
+   * Returns an instance of MessageDispatcher given the configuration.
+   * Depending on the needs the implementation may return a new instance for
+   * each invocation or return the same instance every time.
+   */
+  def dispatcher(): MessageDispatcher
+
+  /**
+   * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
+   * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
+   * as FQCN in mailboxType config property. If mailboxType is unspecified (empty)
+   * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
+   * otherwise [[akka.dispatch.BoundedMailbox]].
+   */
+  def mailboxType(): MailboxType = {
     config.getString("mailboxType") match {
       case "" ⇒
         val capacity = config.getInt("mailbox-capacity")
@@ -279,13 +297,21 @@ abstract class MessageDispatcherConfigurator() {
           val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
           BoundedMailbox(capacity, duration)
         }
-      case fqn ⇒ new CustomMailboxType(fqn)
+      case fqcn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config])
+        ReflectiveAccess.createInstance[MailboxType](fqcn, constructorSignature, Array[AnyRef](config)) match {
+          case Right(instance) ⇒ instance
+          case Left(exception) ⇒
+            throw new IllegalArgumentException(
+              ("Cannot instantiate MailboxType [%s], defined in [%s], " +
+                "make sure it has constructor with a [com.typesafe.config.Config] parameter")
+                .format(fqcn, config.getString("id")), exception)
+        }
     }
   }
 
   def configureThreadPool(
     config: Config,
-    settings: Settings,
     createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 

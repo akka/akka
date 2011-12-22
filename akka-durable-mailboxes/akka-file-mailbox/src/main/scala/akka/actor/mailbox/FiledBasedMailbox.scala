@@ -9,6 +9,12 @@ import akka.actor.ActorContext
 import akka.dispatch.Envelope
 import akka.event.Logging
 import akka.actor.ActorRef
+import akka.dispatch.MailboxType
+import com.typesafe.config.Config
+
+class FileBasedMailboxType(config: Config) extends MailboxType {
+  override def create(owner: ActorContext) = new FileBasedMailbox(owner)
+}
 
 class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
 
