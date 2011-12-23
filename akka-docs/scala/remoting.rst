@@ -36,7 +36,7 @@ to your ``application.conf`` file::
 
 As you can see in the example above there are four things you need to add to get started:
 
-* Change provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``
+* Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
 * Add host name - the machine you want to run the actor system on
 * Add port number - the port the actor system should listen on
 * Add cluster node name - must be a unique name in the cluster
@@ -52,8 +52,8 @@ Types of Remote Interaction
 
 Akka has two ways of using remoting:
 
-* Lookup    : used to look up an actor on a remote node
-* Creation  : used to create an actor on a remote node
+* Lookup    : used to look up an actor on a remote node with ``actorFor(path)``
+* Creation  : used to create an actor on a remote node with ``actorOf(Props(...), actorName)``
 
 In the next sections the two alternatives are described in detail.
 
