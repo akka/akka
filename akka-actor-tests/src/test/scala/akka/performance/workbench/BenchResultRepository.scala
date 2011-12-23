@@ -50,25 +50,25 @@ class FileBenchResultRepository extends BenchResultRepository {
 
   case class Key(name: String, load: Int)
 
-  def add(stats: Stats) {
+  def add(stats: Stats): Unit = synchronized {
     val values = statsByName.getOrElseUpdate(stats.name, IndexedSeq.empty)
     statsByName(stats.name) = values :+ stats
     save(stats)
   }
 
-  def get(name: String): Seq[Stats] = {
+  def get(name: String): Seq[Stats] = synchronized {
     statsByName.getOrElse(name, IndexedSeq.empty)
   }
 
-  def get(name: String, load: Int): Option[Stats] = {
+  def get(name: String, load: Int): Option[Stats] = synchronized {
     get(name).find(_.load == load)
   }
 
-  def isBaseline(stats: Stats): Boolean = {
+  def isBaseline(stats: Stats): Boolean = synchronized {
     baselineStats.get(Key(stats.name, stats.load)) == Some(stats)
   }
 
-  def getWithHistorical(name: String, load: Int): Seq[Stats] = {
+  def getWithHistorical(name: String, load: Int): Seq[Stats] = synchronized {
     val key = Key(name, load)
     val historical = historicalStats.getOrElse(key, IndexedSeq.empty)
     val baseline = baselineStats.get(key)

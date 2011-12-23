@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
-      parallelExecution in GlobalScope := true,
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "true").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
@@ -224,7 +224,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample, helloSample, helloKernelSample)
+    aggregate = Seq(fsmSample, helloSample, helloKernelSample, remoteSample)
   )
 
   lazy val fsmSample = Project(
@@ -245,6 +245,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
+    settings = defaultSettings
+  )
+
+  lazy val remoteSample = Project(
+    id = "akka-sample-remote",
+    base = file("akka-samples/akka-sample-remote"),
+    dependencies = Seq(actor, remote, kernel),
     settings = defaultSettings
   )
 
@@ -311,7 +318,7 @@ object AkkaBuild extends Build {
     unmanagedClasspath in Runtime <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
     unmanagedClasspath in Test    <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
 
-    parallelExecution in Test := true,
+    parallelExecution in Test := System.getProperty("akka.parallelExecution", "true").toBoolean,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
     excludeTestNames := {
