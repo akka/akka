@@ -597,7 +597,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
     lazy val akkaActorsDist = project("actors", "akka-dist-actors", new AkkaActorsDistProject(_), akka_actor)
 
     lazy val akkaCoreDist = project("core", "akka-dist-core", new AkkaCoreDistProject(_),
-                                    akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests, akka_durable_mailboxes)
+                                    akkaActorsDist, akka_remote, akka_http, akka_slf4j, akka_testkit, akka_actor_tests, akka_durable_mailboxes, akka_zeromq)
 
     def doNothing = task { None }
     override def publishLocalAction = doNothing
