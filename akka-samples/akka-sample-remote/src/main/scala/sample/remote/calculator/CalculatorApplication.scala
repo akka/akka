@@ -3,10 +3,15 @@
  */
 package sample.remote.calculator
 
+/*
+ * comments like //#<tag> are there for inclusion into docs, please don’t remove
+ */
+
 import akka.kernel.Bootable
 import akka.actor.{ Props, Actor, ActorSystem }
 import com.typesafe.config.ConfigFactory
 
+//#actor
 class SimpleCalculatorActor extends Actor {
   def receive = {
     case Add(n1, n2) ⇒
@@ -17,10 +22,13 @@ class SimpleCalculatorActor extends Actor {
       sender ! SubtractResult(n1, n2, n1 - n2)
   }
 }
+//#actor
 
 class CalculatorApplication extends Bootable {
+  //#setup
   val system = ActorSystem("CalculatorApplication", ConfigFactory.load.getConfig("calculator"))
   val actor = system.actorOf(Props[SimpleCalculatorActor], "simpleCalculator")
+  //#setup
 
   def startup() {
   }
