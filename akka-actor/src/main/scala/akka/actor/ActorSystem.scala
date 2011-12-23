@@ -426,6 +426,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     deadLetters.init(dispatcher, provider.rootPath)
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
+    registerOnTermination(dispatchers.close())
     _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()

@@ -18,6 +18,7 @@ import com.typesafe.config.ConfigFactory
 import akka.config.ConfigurationException
 import akka.event.Logging.Warning
 import akka.actor.Props
+import java.io.Closeable
 
 trait DispatcherPrerequisites {
   def eventStream: EventStream
@@ -46,7 +47,8 @@ object Dispatchers {
  * Look in `akka.actor.default-dispatcher` section of the reference.conf
  * for documentation of dispatcher options.
  */
-class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
+class Dispatchers(val settings: ActorSystem.Settings,
+                  val prerequisites: DispatcherPrerequisites) extends Closeable {
 
   import Dispatchers._
 
@@ -60,6 +62,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   // FIXME: Configurators registered here are are not removed, see ticket #1494
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
+
+  /**
+   * Will be called by Akka to clean this up, do not call this in userland
+   */
+  def close(): Unit = {
+    dispatcherConfigurators.clear()
+    //TODO FIXME shouldthis forcibly close the dispatchers as well?
+  }
 
   /**
    * Returns a dispatcher as specified in configuration, or if not defined it uses
