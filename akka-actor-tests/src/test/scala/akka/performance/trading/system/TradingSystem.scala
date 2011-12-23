@@ -13,9 +13,7 @@ trait TradingSystem {
 
   val allOrderbookSymbols: List[String] = OrderbookRepository.allOrderbookSymbols
 
-  val orderbooksGroupedByMatchingEngine: List[List[Orderbook]] =
-    for (groupOfSymbols: List[String] ← OrderbookRepository.orderbookSymbolsGroupedByMatchingEngine)
-      yield groupOfSymbols map (s ⇒ Orderbook(s, false))
+  def orderbooksGroupedByMatchingEngine: List[List[Orderbook]]
 
   def useStandByEngines: Boolean = true
 
@@ -47,6 +45,10 @@ class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {
   // by default we use default-dispatcher
   def matchingEngineDispatcher: Option[String] = None
 
+  override val orderbooksGroupedByMatchingEngine: List[List[Orderbook]] =
+    for (groupOfSymbols: List[String] ← OrderbookRepository.orderbookSymbolsGroupedByMatchingEngine)
+      yield groupOfSymbols map (s ⇒ Orderbook(s, false, system))
+
   var matchingEngineForOrderbook: Map[String, ActorRef] = Map()
 
   override def createMatchingEngines: List[MatchingEngineInfo] = {
@@ -55,7 +57,7 @@ class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {
       n = i + 1
     } yield {
       val me = createMatchingEngine("ME" + n, orderbooks)
-      val orderbooksCopy = orderbooks map (o ⇒ Orderbook(o.symbol, true))
+      val orderbooksCopy = orderbooks map (o ⇒ Orderbook(o.symbol, true, system))
       val standbyOption =
         if (useStandByEngines) {
           val meStandby = createMatchingEngine("ME" + n + "s", orderbooksCopy)
