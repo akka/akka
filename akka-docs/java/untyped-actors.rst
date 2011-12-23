@@ -116,6 +116,11 @@ UntypedActor API
 The :class:`UntypedActor` class defines only one abstract method, the above mentioned
 :meth:`onReceive(Object message)`, which implements the behavior of the actor.
 
+If the current actor behavior does not match a received message,
+:meth:`unhandled` is called, which by default publishes a ``new
+akka.actor.UnhandledMessage(message, sender, recipient)`` on the actor system’s
+event stream.
+
 In addition, it offers:
 
 * :obj:`getSelf()` reference to the :class:`ActorRef` of the actor
@@ -205,9 +210,16 @@ result::
   getContext().actorFor("/user/serviceA/aggregator") // will look up this absolute path
   getContext().actorFor("../joe")                    // will look up sibling beneath same supervisor
 
+The supplied path is parsed as a :class:`java.net.URI`, which basically means
+that it is split on ``/`` into path elements. If the path starts with ``/``, it
+is absolute and the look-up starts at the root guardian (which is the parent of
+``"/user"``); otherwise it starts at the current actor. If a path element equals
+``..``, the look-up will take a step “up” towards the supervisor of the
+currently traversed actor, otherwise it will step “down” to the named child.
 It should be noted that the ``..`` in actor paths here always means the logical
-structure, i.e. the supervisor. Remote actor addresses may also be looked up,
-if remoting is enabled::
+structure, i.e. the supervisor.
+
+Remote actor addresses may also be looked up, if remoting is enabled::
 
   getContext().actorFor("akka://app@otherhost:1234/user/serviceB")
 
