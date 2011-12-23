@@ -55,18 +55,18 @@ Akka has two ways of using remoting:
 * Lookup    : used to look up an actor on a remote node
 * Creation  : used to create an actor on a remote node
 
-In the next sections these ways are described in detail.
+In the next sections the two alternatives are described in detail.
 
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node, e.g.::
 
-  val actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval")
+  val actor = context.actorFor("akka://actorSystemName@10.0.0.1:2552/user/actorName")
 
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
-  akka://<actorsystemname>@<hostname>:<port>/<actor path>
+  akka://<actor system>@<hostname>:<port>/<actor path>
 
 Once you a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
 
@@ -87,10 +87,10 @@ If you want to use the creation functionality in Akka remoting you have to furth
     }
     ...
 
-The configuration above instructs Akka to react specially once when an actor at path /actorName is created, i.e.
-using system.actorOf(Props(...), "sampleActor"). This specific actor will not only be instantiated,
-but instead the remote daemon of the remote system will be asked to create the actor instead,
-which is at sampleActorSystem@127.0.0.1:2553 in this sample.
+The configuration above instructs Akka to react when an actor with path /sampleActor is created, i.e.
+using ``system.actorOf(Props(...)`, sampleActor)``. This specific actor will not be directly instantiated,
+but instead the remote daemon of the remote system will be asked to create the actor,
+which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
 Once you have configured the properties above you would do the following in code::
 
