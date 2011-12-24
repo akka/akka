@@ -52,10 +52,7 @@ object Dist {
     (baseDirectory, distSources, distUnzipped, version, distFile, streams) map {
       (projectBase, allSources, unzipped, version, zipFile, s) => {
         val base = unzipped / ("akka-" + version)
-        val scripts = (projectBase / "akka-kernel" / "src" / "main" / "scripts" * "*").get
-        val bin = base / "bin"
-        val configSources = projectBase / "config"
-        val config = base / "config"
+        val distBase = projectBase / "akka-kernel" / "src" / "main" / "dist"
         val deploy = base / "deploy"
         val deployReadme = deploy / "readme"
         val doc = base / "doc" / "akka"
@@ -68,30 +65,49 @@ object Dist {
         val libAkka = lib / "akka"
         val src = base / "src" / "akka"
         IO.delete(unzipped)
-        copyFilesTo(scripts, bin, setExecutable = true)
-        IO.copyDirectory(configSources, config)
-        IO.createDirectory(deploy)
-        IO.write(deployReadme, "Place application jars in this directory")
-        IO.copyDirectory(allSources.api, api)
-        IO.copyDirectory(allSources.docs, docs)
-        copyFilesTo(allSources.docJars, docJars)
-        copyFilesTo(scalaLibs, lib)
-        copyFilesTo(akkaLibs, libAkka)
-        copyFilesTo(allSources.srcJars, src)
-        val files = unzipped ** -DirectoryFilter
-        val sources = files x relativeTo(unzipped)
-        IO.zip(sources, zipFile)
-        zipFile
+        copyDirectory(distBase, base, setExecutable = true)
+        copyDirectory(allSources.api, api)
+        copyDirectory(allSources.docs, docs)
+        copyFlat(allSources.docJars, docJars)
+        copyFlat(scalaLibs, lib)
+        copyFlat(akkaLibs, libAkka)
+        copyFlat(allSources.srcJars, src)
+        zip(unzipped, zipFile)
       }
     }
   }
 
-  def copyFilesTo(files: Seq[File], dir: File, setExecutable: Boolean = false): Unit = {
-    IO.createDirectory(dir)
-    for (file <- files) {
-      val target = dir / file.name
-      IO.copyFile(file, target)
-      if (setExecutable) target.setExecutable(file.canExecute, false)
+  def copyDirectory(source: File, target: File, overwrite: Boolean = false, preserveLastModified: Boolean = false, setExecutable: Boolean = false): Set[File] = {
+    val sources = (source ***) x rebase(source, target)
+    copyMapped(sources, overwrite, preserveLastModified, setExecutable)
+  }
+
+  def copyFlat(files: Seq[File], target: File, overwrite: Boolean = false, preserveLastModified: Boolean = false, setExecutable: Boolean = false): Set[File] = {
+    IO.createDirectory(target)
+    val sources = files map { f => (f, target / f.name) }
+    copyMapped(sources, overwrite, preserveLastModified, setExecutable)
+  }
+
+  def copyMapped(sources: Traversable[(File, File)], overwrite: Boolean, preserveLastModified: Boolean, setExecutable: Boolean): Set[File] = {
+    sources map { Function.tupled(copy(overwrite, preserveLastModified, setExecutable)) } toSet
+  }
+
+  def copy(overwrite: Boolean, preserveLastModified: Boolean, setExecutable: Boolean)(source: File, target: File): File = {
+    if (overwrite || !target.exists || source.lastModified > target.lastModified) {
+      if (source.isDirectory) IO.createDirectory(target)
+      else {
+        IO.createDirectory(target.getParentFile)
+        IO.copyFile(source, target, preserveLastModified)
+        if (setExecutable) target.setExecutable(source.canExecute, false)
+      }
     }
+    target
+  }
+
+  def zip(source: File, target: File): File = {
+    val files = source ** -DirectoryFilter
+    val sources = files x relativeTo(source)
+    IO.zip(sources, target)
+    target
   }
 }

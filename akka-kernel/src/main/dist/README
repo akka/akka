@@ -1,0 +1,34 @@
+
+Akka
+====
+
+This is the Akka 2.0-SNAPSHOT download.
+
+Included are all libraries, documentation, and sources for Akka.
+
+This download can also be used for running the Akka Microkernel.
+
+
+Contents
+--------
+
+- README    - this document
+- bin       - start scripts for the Akka Microkernel
+- config    - config files for microkernel applications
+- deploy    - deploy dir for microkernel applications
+- doc       - Akka documentation and Scaladoc API
+- lib       - all Akka jars and dependencies
+- src       - source jars for Akka
+
+
+Microkernel
+-----------
+
+This download includes everything needed for a self-contained Akka
+Microkernel. See the documentation for more information about the
+microkernel (see `doc/akka/docs/modules/microkernel.html`).
+
+There is a sample microkernel application included in this download.
+Start this application with the following command:
+
+    bin/akka sample.kernel.hello.HelloKernel

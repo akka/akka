@@ -38,7 +38,7 @@ echolog "$find_expr --> $replace_expr"
 
 # exclude directories from search
 
-declare exclude_dirs=".git dist deploy embedded-repo lib_managed project/boot project/scripts src_managed target"
+declare exclude_dirs=".git project/project project/scripts src_managed target"
 
 echolog "excluding directories: $exclude_dirs"
 

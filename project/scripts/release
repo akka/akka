@@ -10,9 +10,10 @@ declare -r default_path="/akka/www"
 declare -r release_dir="target/release"
 declare release_server=${default_server}
 declare release_path=${default_path}
+declare -r unzipped_dir="target/dist/unzipped"
 
 # flags
-unset run_tests
+unset run_tests dry_run
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -32,10 +33,11 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 function usage {
   cat <<EOM
 Usage: ${script_name} [options] VERSION
-  -h | --help                   Print this usage message
-  -t | --run-tests              Run all tests before releasing
-  -s | --server SERVER          Set the release server (default ${default_server})
-  -p | --path PATH              Set the path on the release server (default ${default_path})
+  -h | --help            Print this usage message
+  -t | --run-tests       Run all tests before releasing
+  -s | --server SERVER   Set the release server (default ${default_server})
+  -p | --path PATH       Set the path on the release server (default ${default_path})
+  -n | --dry-run         Build everything but do not push the release
 EOM
 }
 
@@ -47,6 +49,11 @@ function echolog {
 # echo an error message
 function echoerr {
   echo "[${script_name}] $@" 1>&2
+}
+
+# echo a dry run log message
+function echodry {
+  echolog "(dry run) $@"
 }
 
 # fail the script with an error message
@@ -62,6 +69,7 @@ while true; do
     -t | --run-tests ) run_tests=true; shift ;;
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
+    -n | --dry-run) dry_run=true; shift ;;
     * ) break ;;
   esac
 done
@@ -79,6 +87,12 @@ type -P git &> /dev/null || fail "git command not found"
 
 # check for an sbt command
 type -P sbt &> /dev/null || fail "sbt command not found"
+
+# check for an rsync command
+type -P rsync &> /dev/null || fail "rsync command not found"
+
+# check for a tar command
+type -P tar &> /dev/null || fail "tar command not found"
 
 # get the current git branch
 function get_current_branch {
@@ -124,17 +138,17 @@ function git_cleanup {
   safely git clean -f
   if [ "${branch}" == "${release_branch}" ]; then
     safely git checkout ${initial_branch}
-    safely git branch -d ${release_branch}
+    safely git branch -D ${release_branch}
     local tags=$(git tag -l)
     [[ "${tags}" == *v${version}* ]] && safely git tag -d v${version}
   fi
-  echoerr "Cleaned up failed release"
 }
 
 # clean up and fail the script with an error message
 function bail_out {
   echoerr "Bailing out!"
   git_cleanup
+  echoerr "Cleaned up failed release"
   fail "$@"
 }
 
@@ -153,7 +167,13 @@ function try {
 }
 
 echolog "Creating release ${version} ..."
-echolog "Publishing to ${publish_path}"
+
+if [ $dry_run ]; then
+  echodry "Building everything but not pushing release"
+else
+  echolog "Publishing to ${publish_path}"
+fi
+
 [[ $run_tests ]] && echolog "All tests will be run"
 
 # try ssh'ing to the release server
@@ -184,6 +204,8 @@ fi
 echolog "Building the release..."
 try sbt build-release
 try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
+echolog "Creating gzipped tar download..."
+try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"
 
 # commit and tag this release
@@ -222,14 +244,30 @@ trap arrgh_interrupt SIGHUP SIGINT SIGTERM
 
 # push the commits and tags to git origin
 echolog "Pushing to git origin..."
-important git push origin ${release_branch}
-important git push origin --tags
+if [ $dry_run ]; then
+  echodry "Not actually pushing to git origin. Commands:"
+  echodry "  git push origin ${release_branch}"
+  echodry "  git push origin --tags"
+else
+  important git push origin ${release_branch}
+  important git push origin --tags
+fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
-important rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/
+if [ $dry_run ]; then
+  echodry "Not actually pushing to server. Command:"
+  echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/"
+else
+  important rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/
+fi
 
-echolog "Switching back to initial branch"
-git checkout ${initial_branch}
-
-echolog "Successfully created release ${version}"
+if [ $dry_run ]; then
+  git_cleanup
+  echodry "Successfully created release ${version}"
+  echodry "See ${release_dir}"
+else
+  echolog "Switching back to initial branch"
+  git checkout ${initial_branch}
+  echolog "Successfully created release ${version}"
+fi

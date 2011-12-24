@@ -15,7 +15,6 @@ tags
 TAGS
 akka.tmproj
 reports
-dist
 target
 deploy/*.jar
 .history
