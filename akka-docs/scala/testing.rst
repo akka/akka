@@ -71,6 +71,15 @@ Since :class:`TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
 any unit testing tool to bear on your actor as usual.
 
+Expecting Exceptions
+--------------------
+
+Testing that an expected exception is thrown while processing a message sent to
+the actor under test can be done by using a :class:`TestActorRef` :meth:`apply` based
+invocation:
+
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-expecting-exceptions
+
 .. _TestFSMRef:
 
 Testing Finite State Machines
@@ -98,9 +107,8 @@ Testing the Actor's Behavior
 When the dispatcher invokes the processing behavior of an actor on a message,
 it actually calls :meth:`apply` on the current behavior registered for the
 actor. This starts out with the return value of the declared :meth:`receive`
-method, but it may also be changed using :meth:`become` and :meth:`unbecome`,
-both of which have corresponding message equivalents, meaning that the behavior
-may be changed from the outside. All of this contributes to the overall actor
+method, but it may also be changed using :meth:`become` and :meth:`unbecome` in
+response to external messages. All of this contributes to the overall actor
 behavior and it does not lend itself to easy testing on the :class:`Actor`
 itself. Therefore the :class:`TestActorRef` offers a different mode of
 operation to complement the :class:`Actor` testing: it supports all operations
@@ -113,12 +121,12 @@ into a :class:`TestActorRef`.
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-behavior
 
 As the :class:`TestActorRef` is a subclass of :class:`LocalActorRef` with a few
-special extras, also aspects like linking to a supervisor and restarting work
-properly, as long as all actors involved use the
-:class:`CallingThreadDispatcher`. As soon as you add elements which include
-more sophisticated scheduling you leave the realm of unit testing as you then
-need to think about proper synchronization again (in most cases the problem of
-waiting until the desired effect had a chance to happen).
+special extras, also aspects like supervision and restarting work properly, but
+beware that execution is only strictly synchronous as long as all actors
+involved use the :class:`CallingThreadDispatcher`. As soon as you add elements
+which include more sophisticated scheduling you leave the realm of unit testing
+as you then need to think about asynchronicity again (in most cases the problem
+will be to wait until the desired effect had a chance to happen).
 
 One more special aspect which is overridden for single-threaded tests is the
 :meth:`receiveTimeout`, as including that would entail asynchronous queuing of
@@ -180,23 +188,18 @@ common task easy.
 
 .. includecode:: code/akka/docs/testkit/PlainWordSpec.scala#plain-spec
 
-When using ``with ImplicitSender`` the :class:`TestKit` contains an actor named :obj:`testActor`
-which is implicitly used as sender reference when dispatching messages from the test
-procedure. This enables replies to be received by this internal actor, whose
-only function is to queue them so that interrogation methods like
-:meth:`expectMsg` can examine them. The :obj:`testActor` may also be passed to
+The :class:`TestKit` contains an actor named :obj:`testActor` which is the
+entry point for messages to be examined with the various ``expectMsg...``
+assertions detailed below. When mixing in the trait ``ImplicitSender`` this
+test actor is implicitly used as sender reference when dispatching messages
+from the test procedure. The :obj:`testActor` may also be passed to
 other actors as usual, usually subscribing it as notification listener. There
 is a whole set of examination methods, e.g. receiving all consecutive messages
 matching certain criteria, receiving a whole sequence of fixed messages or
 classes, receiving nothing for some time, etc.
 
-To avoid memory leaks it is important that you shutdown the :class:`ActorSystem`
-when the test is finished, as illustrated in the :meth:`afterAll` method above.
-
-.. note::
-
-   The test actor shuts itself down by default after 5 seconds (configurable)
-   of inactivity, relieving you of the duty of explicitly managing it.
+Remember to shut down the actor system after the test is finished (also in case
+of failure) so that all actors—including the test actor—are stopped.
 
 Built-In Assertions
 -------------------
@@ -331,11 +334,14 @@ with message flows:
 Expecting Exceptions
 --------------------
 
-Testing that an expected exception is thrown while processing a message sent to
-the actor under test can be done by using a :class:`TestActorRef` :meth:`apply` based
-invocation:
+Since an integration test does not allow to the internal processing of the
+participating actors, verifying expected exceptions cannot be done directly.
+Instead, use the logging system for this purpose: replacing the normal event
+handler with the :class:`TestEventListener` and using an :class:`EventFilter`
+allows assertions on log messages, including those which are generated by
+exceptions:
 
-.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-expecting-exceptions
+.. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#event-filter
 
 .. _TestKit.within:
 

@@ -231,4 +231,23 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#calling-thread-dispatcher
   }
 
+  "demonstrate EventFilter" in {
+    //#event-filter
+    import akka.testkit.EventFilter
+    import com.typesafe.config.ConfigFactory
+
+    implicit val system = ActorSystem("testsystem", ConfigFactory.parseString("""
+      akka.event-handlers = ["akka.testkit.TestEventListener"]
+      """))
+    try {
+      val actor = system.actorOf(Props.empty)
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
+        actor ! Kill
+      }
+    } finally {
+      system.shutdown()
+    }
+    //#event-filter
+  }
+
 }
