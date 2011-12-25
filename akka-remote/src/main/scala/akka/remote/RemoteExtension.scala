@@ -31,7 +31,7 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
   }
 
   val NodeName: String = config.getString("akka.cluster.nodename") match {
-    case ""    ⇒ "undefined"
+    case ""    ⇒ throw new ConfigurationException("Configuration option 'akka.cluster.nodename' must be non-empty.")
     case value ⇒ value
   }
 
