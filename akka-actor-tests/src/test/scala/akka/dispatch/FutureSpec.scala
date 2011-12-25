@@ -15,6 +15,7 @@ import java.lang.ArithmeticException
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
+import scala.runtime.NonLocalReturnControl
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -62,6 +63,16 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       val message = "Expected Exception"
       val future = Promise[String]().complete(Left(new RuntimeException(message)))
       behave like futureWithException[RuntimeException](_(future, message))
+    }
+    "completed with a j.u.c.TimeoutException" must {
+      val message = "Boxed TimeoutException"
+      val future = Promise[String]().complete(Left(new TimeoutException(message)))
+      behave like futureWithException[RuntimeException](_(future, message))
+    }
+    "completed with a NonLocalReturnControl" must {
+      val result = "test value"
+      val future = Promise[String]().complete(Left(new NonLocalReturnControl[String]("test", result)))
+      behave like futureWithResult(_(future, result))
     }
   }
 

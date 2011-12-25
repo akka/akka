@@ -305,6 +305,9 @@ object Future {
     override def initialValue = None
   }
 
+  /**
+   * Internal API, do not call
+   */
   private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit dispatcher: MessageDispatcher): Unit =
     _taskStack.get match {
       case Some(taskStack) if !force ⇒ taskStack push task
@@ -331,6 +334,12 @@ object Future {
 sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   implicit def dispatcher: MessageDispatcher
+
+  protected final def resolve[X](source: Either[Throwable, X]): Either[Throwable, X] = source match {
+    case Left(t: scala.runtime.NonLocalReturnControl[_]) ⇒ Right(t.value.asInstanceOf[X])
+    case Left(t: TimeoutException) ⇒ Left(new RuntimeException("Boxed TimeoutException", t))
+    case _ ⇒ source
+  }
 
   /**
    * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
@@ -708,17 +717,15 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
     val callbacks: List[Either[Throwable, T] ⇒ Unit] = {
       try {
         @tailrec
-        def tryComplete: List[Either[Throwable, T] ⇒ Unit] = {
-          val cur = getState
-
-          cur match {
-            case Pending(listeners) ⇒
-              if (updateState(cur, if (value.isLeft) Failure(Some(value)) else Success(Some(value)))) listeners
-              else tryComplete
+        def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] ⇒ Unit] = {
+          getState match {
+            case cur @ Pending(listeners) ⇒
+              if (updateState(cur, if (v.isLeft) Failure(Some(v)) else Success(Some(v)))) listeners
+              else tryComplete(v)
             case _ ⇒ null
           }
         }
-        tryComplete
+        tryComplete(resolve(value))
       } finally {
         synchronized { notifyAll() } //Notify any evil blockers
       }
@@ -761,7 +768,7 @@ class DefaultPromise[T](implicit val dispatcher: MessageDispatcher) extends Abst
  * a Future-composition but you already have a value to contribute.
  */
 final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val dispatcher: MessageDispatcher) extends Promise[T] {
-  val value = Some(suppliedValue)
+  val value = Some(resolve(suppliedValue))
 
   def tryComplete(value: Either[Throwable, T]): Boolean = true
   def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
