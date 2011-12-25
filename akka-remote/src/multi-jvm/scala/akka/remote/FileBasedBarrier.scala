@@ -26,7 +26,7 @@ class FileBasedBarrier(
   group: String,
   node: String,
   timeout: Duration = FileBasedBarrier.DefaultTimeout,
-  sleep: Duration = FileBasedBarrier.DefaultSleep) {
+  sleep: Duration = FileBasedBarrier.DefaultSleep) extends Barrier {
 
   val barrierDir = {
     val dir = new File(new File(new File(FileBasedBarrier.HomeDir), group), name)
@@ -37,14 +37,6 @@ class FileBasedBarrier(
   val nodeFile = new File(barrierDir, node)
 
   val readyFile = new File(barrierDir, "ready")
-
-  def await() = { enter(); leave() }
-
-  def apply(body: ⇒ Unit) {
-    enter()
-    body
-    leave()
-  }
 
   def enter() = {
     createNode()
