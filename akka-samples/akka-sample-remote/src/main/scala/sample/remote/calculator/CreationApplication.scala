@@ -3,12 +3,17 @@
  */
 package sample.remote.calculator
 
+/*
+ * comments like //#<tag> are there for inclusion into docs, please don’t remove
+ */
+
 import akka.kernel.Bootable
 import com.typesafe.config.ConfigFactory
 import scala.util.Random
 import akka.actor._
 
 class CreationApplication extends Bootable {
+  //#setup
   val system = ActorSystem("RemoteCreation", ConfigFactory.load.getConfig("remotecreation"))
   val localActor = system.actorOf(Props[CreationActor], "creationActor")
   val remoteActor = system.actorOf(Props[AdvancedCalculatorActor], "advancedCalculator")
@@ -16,6 +21,7 @@ class CreationApplication extends Bootable {
   def doSomething(op: MathOp) = {
     localActor ! (remoteActor, op)
   }
+  //#setup
 
   def startup() {
   }
@@ -25,6 +31,7 @@ class CreationApplication extends Bootable {
   }
 }
 
+//#actor
 class CreationActor extends Actor {
   def receive = {
     case (actor: ActorRef, op: MathOp) ⇒ actor ! op
@@ -34,6 +41,7 @@ class CreationActor extends Actor {
     }
   }
 }
+//#actor
 
 object CreationApp {
   def main(args: Array[String]) {
