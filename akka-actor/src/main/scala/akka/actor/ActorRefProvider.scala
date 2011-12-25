@@ -6,14 +6,12 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
-import akka.util.Timeout
 import akka.util.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
-import akka.util.Timeout
 import akka.AkkaException
-import akka.util.{ Duration, Switch, Helpers }
+import akka.util.{ Duration, Switch, Helpers, Timeout }
 import akka.event._
 import java.io.Closeable
 
@@ -485,15 +483,15 @@ class LocalActorRefProvider(
 
   def ask(within: Timeout): Option[AskActorRef] = {
     (if (within == null) settings.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒
-        None
+      case t if t.duration.length <= 0 ⇒ None
       case t ⇒
         val path = tempPath()
         val name = path.name
         val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
         tempContainer.addChild(name, a)
-        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.removeChild(name); a.stop() }
-        a.result onComplete { _ ⇒
+        val result = a.result
+        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
+        result onComplete { _ ⇒
           try { a.stop(); f.cancel() }
           finally { tempContainer.removeChild(name) }
         }

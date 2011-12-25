@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
 import akka.event.LoggingAdapter
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -487,6 +487,14 @@ class VirtualPathContainer(val path: ActorPath, override val getParent: Internal
       }
     }
   }
+}
+
+/**
+ * This is what is used to complete a Future that is returned from an ask/? call,
+ * when it times out.
+ */
+class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException {
+  def this(message: String) = this(message, null: Throwable)
 }
 
 class AskActorRef(
