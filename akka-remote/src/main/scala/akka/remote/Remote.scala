@@ -142,9 +142,9 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
 
     val full = Vector() ++ names
     rec(full.mkString("/"), 0) match {
-      case (Nobody, _)        ⇒ Nobody
-      case (ref, n) if n == 0 ⇒ ref
-      case (ref, n)           ⇒ ref.getChild(full.takeRight(n).iterator)
+      case (Nobody, _) ⇒ Nobody
+      case (ref, 0)    ⇒ ref
+      case (ref, n)    ⇒ ref.getChild(full.takeRight(n).iterator)
     }
   }
 
