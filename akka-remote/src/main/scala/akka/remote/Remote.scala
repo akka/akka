@@ -111,7 +111,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
       }
     }
 
-    log.info("Starting remote server on [{}]", remoteAddress)
+    log.info("Starting remote server on [{}] with node name [{}]", remoteAddress, provider.nodename)
   }
 }
 
