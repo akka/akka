@@ -24,6 +24,8 @@ object AkkaRemoteSpec {
           .withFallback(ConfigFactory.defaultReference).resolve(ConfigResolveOptions.defaults)
     }
   }
+
+  val testNodes = System.getProperty("test.hosts")
 }
 
 abstract class AkkaRemoteSpec(config: Config)

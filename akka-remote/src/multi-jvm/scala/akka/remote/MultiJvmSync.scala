@@ -38,17 +38,12 @@ object MultiJvmSync {
 
   def end(className: String, count: Int) = barrier(EndBarrier, count, className)
 
-  def testName(className: String) = {
-    val i = className.indexOf(TestMarker)
-    if (i >= 0) className.substring(0, i) else className
-  }
-
-  def nodeName(className: String) = {
-    val i = className.indexOf(TestMarker)
-    if (i >= 0) className.substring(i + TestMarker.length) else className
-  }
-
   def barrier(name: String, count: Int, className: String, timeout: Duration = FileBasedBarrier.DefaultTimeout) = {
-    new FileBasedBarrier(name, count, testName(className), nodeName(className), timeout).await()
+    val Array(testName, nodeName) = className split TestMarker
+    val barrier = if (AkkaRemoteSpec.testNodes eq null)
+      new FileBasedBarrier(name, count, testName, nodeName, timeout)
+    else
+      new ZkClient.ZkBarrier(name + "_" + nodeName, count, testName)
+    barrier.await()
   }
 }

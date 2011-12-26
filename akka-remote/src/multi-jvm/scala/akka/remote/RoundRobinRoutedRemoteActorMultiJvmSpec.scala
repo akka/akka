@@ -6,8 +6,9 @@ import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
 
-object RoundRobinRoutedRemoteActorMultiJvmSpec {
-  val NrOfNodes = 4
+object RoundRobinRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
+  override def NrOfNodes = 4
+
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "hit" ⇒ sender ! context.system.nodename
@@ -16,46 +17,21 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec {
   }
 
   import com.typesafe.config.ConfigFactory
-  val commonConfig = ConfigFactory.parseString("""
+  override def commonConfig = ConfigFactory.parseString("""
     akka {
       loglevel = "WARNING"
       actor {
         provider = "akka.remote.RemoteActorRefProvider"
         deployment {
           /service-hello.router = "round-robin"
-          /service-hello.nr-of-instances = 3
-          /service-hello.target.nodes = ["akka://AkkaRemoteSpec@localhost:9991","akka://AkkaRemoteSpec@localhost:9992","akka://AkkaRemoteSpec@localhost:9993"]
+          /service-hello.nr-of-instances = %d
+          /service-hello.target.nodes = [%s]
         }
       }
-      remote.server.hostname = "localhost"
-    }""")
-
-  val node1Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9991"
-      cluster.nodename = "node1"
-    }""") withFallback commonConfig
-
-  val node2Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9992"
-      cluster.nodename = "node2"
-    }""") withFallback commonConfig
-
-  val node3Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9993"
-      cluster.nodename = "node3"
-    }""") withFallback commonConfig
-
-  val node4Config = ConfigFactory.parseString("""
-    akka {
-      remote.server.port = "9994"
-      cluster.nodename = "node4"
-    }""") withFallback commonConfig
+    }""" format (3, specString(3)))
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.node1Config) {
+class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -68,7 +44,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RoundRobin
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.node2Config) {
+class RoundRobinRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(1)) {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -81,7 +57,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(RoundRobin
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.node3Config) {
+class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(2)) {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "___" must {
@@ -94,7 +70,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends AkkaRemoteSpec(RoundRobin
   }
 }
 
-class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.node4Config) with DefaultTimeout {
+class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(3)) with DefaultTimeout {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
   val nodes = NrOfNodes
   "A new remote actor configured with a RoundRobin router" must {
