@@ -258,7 +258,8 @@ Remote actor addresses may also be looked up, if remoting is enabled::
 
 These look-ups return a (possibly remote) actor reference immediately, so you
 will have to send to it and await a reply in order to verify that ``serviceB``
-is actually reachable and running.
+is actually reachable and running. An example demonstrating actor look-up is
+given in :ref:`remote-lookup-sample`.
 
 Messages and immutability
 =========================

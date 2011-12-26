@@ -58,6 +58,8 @@ As you can see from the example above the following pattern is used to find an `
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
+For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -122,6 +124,8 @@ common setup for both scenarios (this is ``common.conf``):
 This enables the remoting by installing the :class:`RemoteActorRefProvider` and
 chooses the default remote transport. All other options will be set
 specifically for each show case.
+
+.. _remote-lookup-sample:
 
 Remote Lookup
 -------------
