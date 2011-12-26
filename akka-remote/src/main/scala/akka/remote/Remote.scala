@@ -11,8 +11,6 @@ import akka.util._
 import akka.util.duration._
 import akka.util.Helpers._
 import akka.serialization.Compression.LZF
-import akka.remote.RemoteProtocol._
-import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import java.net.InetSocketAddress
 import com.eaio.uuid.UUID
 import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression, SerializationExtension }
@@ -21,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.dispatch.SystemMessage
 import scala.annotation.tailrec
+import akka.remote.RemoteProtocol.{ ActorRefProtocol, AkkaRemoteProtocol, RemoteControlProtocol, RemoteMessageProtocol }
 
 /**
  * Remote module - contains remote client and server config, remote server instance, remote daemon, remote dispatchers etc.
@@ -115,6 +114,11 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
   }
 }
 
+sealed trait DaemonMsg
+case class DaemonMsgCreate(factory: () ⇒ Actor, path: String, supervisor: ActorRef) extends DaemonMsg
+case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
+case class DaemonMsgTerminated(deceased: ActorRef) extends DaemonMsg
+
 /**
  * Internal system "daemon" actor for remote internal communication.
  *
@@ -149,23 +153,32 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
   }
 
   override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
-    case message: RemoteSystemDaemonMessageProtocol ⇒
-      log.debug("Received command [\n{}] to RemoteSystemDaemon on [{}]", message.getMessageType, remote.remoteSettings.NodeName)
+    case message: DaemonMsg ⇒
+      log.debug("Received command [\n{}] to RemoteSystemDaemon on [{}]", message, remote.remoteSettings.NodeName)
+      message match {
+        case DaemonMsgCreate(factory, path, supervisor) ⇒
+          import remote.remoteAddress
+          implicit val t = remote.transports
 
-      message.getMessageType match {
-        case USE     ⇒ handleUse(message)
-        case RELEASE ⇒ handleRelease(message)
-        // case STOP                   ⇒ cluster.shutdown()
-        // case DISCONNECT             ⇒ cluster.disconnect()
-        // case RECONNECT              ⇒ cluster.reconnect()
-        // case RESIGN                 ⇒ cluster.resign()
-        // case FAIL_OVER_CONNECTIONS  ⇒ handleFailover(message)
-        case GOSSIP  ⇒ handleGossip(message)
-        //        case FUNCTION_FUN0_UNIT     ⇒ handle_fun0_unit(message)
-        //        case FUNCTION_FUN0_ANY      ⇒ handle_fun0_any(message, sender)
-        //        case FUNCTION_FUN1_ARG_UNIT ⇒ handle_fun1_arg_unit(message)
-        //        case FUNCTION_FUN1_ARG_ANY  ⇒ handle_fun1_arg_any(message, sender)
-        case unknown ⇒ log.warning("Unknown message type {} received by {}", unknown, this)
+          path match {
+            case ParsedActorPath(`remoteAddress`, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+              // TODO RK canonicalize path so as not to duplicate it always #1446
+              val subpath = elems.drop(1)
+              val path = remote.remoteDaemon.path / subpath
+              val actor = system.provider.actorOf(system,
+                Props(creator = factory),
+                supervisor.asInstanceOf[InternalActorRef],
+                path, true, None)
+              addChild(subpath.mkString("/"), actor)
+              system.deathWatch.subscribe(this, actor)
+            case _ ⇒
+              log.error("remote path does not match path from message [{}]", message)
+          }
+        case DaemonMsgWatch(watcher, watched) ⇒
+          val other = system.actorFor(watcher.path.root / "remote")
+          system.deathWatch.subscribe(other, watched)
+        case DaemonMsgTerminated(deceased) ⇒
+          system.deathWatch.publish(Terminated(deceased))
       }
 
     case Terminated(child) ⇒ removeChild(child.path.elements.drop(1).mkString("/"))
@@ -173,116 +186,6 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
     case unknown           ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
 
-  def handleUse(message: RemoteSystemDaemonMessageProtocol) {
-
-    if (!message.hasActorPath || !message.hasSupervisor) log.error("Ignoring incomplete USE command [{}]", message)
-    else {
-
-      val actorFactoryBytes =
-        if (remote.remoteSettings.ShouldCompressData) LZF.uncompress(message.getPayload.toByteArray)
-        else message.getPayload.toByteArray
-
-      val actorFactory =
-        remote.serialization.deserialize(actorFactoryBytes, classOf[() ⇒ Actor], None) match {
-          case Left(error)     ⇒ throw error
-          case Right(instance) ⇒ instance.asInstanceOf[() ⇒ Actor]
-        }
-
-      import remote.remoteAddress
-      implicit val t = remote.transports
-
-      message.getActorPath match {
-        case ParsedActorPath(`remoteAddress`, elems) if elems.nonEmpty && elems.head == "remote" ⇒
-          // TODO RK canonicalize path so as not to duplicate it always #1446
-          val subpath = elems.drop(1)
-          val path = remote.remoteDaemon.path / subpath
-          val supervisor = system.actorFor(message.getSupervisor).asInstanceOf[InternalActorRef]
-          val actor = system.provider.actorOf(system, Props(creator = actorFactory), supervisor, path, true, None)
-          addChild(subpath.mkString("/"), actor)
-          system.deathWatch.subscribe(this, actor)
-        case _ ⇒
-          log.error("remote path does not match path from message [{}]", message)
-      }
-    }
-  }
-
-  // FIXME implement handleRelease
-  def handleRelease(message: RemoteSystemDaemonMessageProtocol) {
-  }
-
-  def handleGossip(message: RemoteSystemDaemonMessageProtocol) {
-    // try {
-    //   val gossip = serialization.deserialize(message.getPayload.toByteArray, classOf[Gossip], None) match {
-    //     case Left(error)     ⇒ throw error
-    //     case Right(instance) ⇒ instance.asInstanceOf[Gossip]
-    //   }
-
-    //   gossiper tell gossip
-
-    //   sender ! Success(address.toString)
-    // } catch {
-    //   case error: Throwable ⇒
-    //     sender ! Failure(error)
-    //     throw error
-    // }
-  }
-
-  /*
-   * generate name for temporary actor refs
-   */
-  //  private val tempNumber = new AtomicLong
-  //  def tempName = "$_" + Helpers.base64(tempNumber.getAndIncrement())
-  //  def tempPath = remote.remoteDaemon.path / tempName
-  //
-  //  // FIXME: handle real remote supervision, ticket #1408
-  //  def handle_fun0_unit(message: RemoteSystemDaemonMessageProtocol) {
-  //    new LocalActorRef(remote.system,
-  //      Props(
-  //        context ⇒ {
-  //          case f: Function0[_] ⇒ try { f() } finally { context.self.stop() }
-  //        }).copy(dispatcher = remote.computeGridDispatcher), remote.remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Function0[Unit]])
-  //  }
-  //
-  //  // FIXME: handle real remote supervision, ticket #1408
-  //  def handle_fun0_any(message: RemoteSystemDaemonMessageProtocol, sender: ActorRef) {
-  //    implicit val s = sender
-  //    new LocalActorRef(remote.system,
-  //      Props(
-  //        context ⇒ {
-  //          case f: Function0[_] ⇒ try { context.sender ! f() } finally { context.self.stop() }
-  //        }).copy(dispatcher = remote.computeGridDispatcher), remote.remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Function0[Any]])
-  //  }
-  //
-  //  // FIXME: handle real remote supervision, ticket #1408
-  //  def handle_fun1_arg_unit(message: RemoteSystemDaemonMessageProtocol) {
-  //    new LocalActorRef(remote.system,
-  //      Props(
-  //        context ⇒ {
-  //          case (fun: Function[_, _], param: Any) ⇒ try { fun.asInstanceOf[Any ⇒ Unit].apply(param) } finally { context.self.stop() }
-  //        }).copy(dispatcher = remote.computeGridDispatcher), remote.remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Unit], Any]])
-  //  }
-  //
-  //  // FIXME: handle real remote supervision, ticket #1408
-  //  def handle_fun1_arg_any(message: RemoteSystemDaemonMessageProtocol, sender: ActorRef) {
-  //    implicit val s = sender
-  //    new LocalActorRef(remote.system,
-  //      Props(
-  //        context ⇒ {
-  //          case (fun: Function[_, _], param: Any) ⇒ try { context.sender ! fun.asInstanceOf[Any ⇒ Any](param) } finally { context.self.stop() }
-  //        }).copy(dispatcher = remote.computeGridDispatcher), remote.remoteDaemon, tempPath, systemService = true) ! payloadFor(message, classOf[Tuple2[Function1[Any, Any], Any]])
-  //  }
-
-  def handleFailover(message: RemoteSystemDaemonMessageProtocol) {
-    // val (from, to) = payloadFor(message, classOf[(InetSocketremoteDaemonServiceName, InetSocketremoteDaemonServiceName)])
-    // cluster.failOverClusterActorRefConnections(from, to)
-  }
-
-  private def payloadFor[T](message: RemoteSystemDaemonMessageProtocol, clazz: Class[T]): T = {
-    remote.serialization.deserialize(message.getPayload.toByteArray, clazz, None) match {
-      case Left(error)     ⇒ throw error
-      case Right(instance) ⇒ instance.asInstanceOf[T]
-    }
-  }
 }
 
 class RemoteMessage(input: RemoteMessageProtocol, system: ActorSystemImpl, classLoader: Option[ClassLoader] = None) {
@@ -350,10 +253,9 @@ trait RemoteMarshallingOps {
     remoteMessage.recipient match {
       case `remoteDaemon` ⇒
         remoteMessage.payload match {
-          case m: RemoteSystemDaemonMessageProtocol ⇒
-            implicit val timeout = system.settings.ActorTimeout
+          case m: DaemonMsg ⇒
             try remoteDaemon ! m catch {
-              case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m.getMessageType(), remoteMessage.sender)
+              case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m, remoteMessage.sender)
             }
           case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
         }
