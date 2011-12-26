@@ -180,3 +180,40 @@ Logging of Configuration
 If the system or config property ``akka.logConfigOnStart`` is set to ``on``, then the
 complete configuration at INFO level when the actor system is started. This is useful
 when you are uncertain of what configuration is used.
+
+If in doubt, you can also easily and nicely inspect configuration objects
+before or after using them to construct an actor system:
+
+.. code-block:: scala
+
+  Welcome to Scala version 2.9.1.final (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
+  Type in expressions to have them evaluated.
+  Type :help for more information.
+  
+  scala> import com.typesafe.config._
+  import com.typesafe.config._
+  
+  scala> ConfigFactory.parseString("a.b=12")
+  res0: com.typesafe.config.Config = Config(SimpleConfigObject({"a" : {"b" : 12}}))
+  
+  scala> res0.root.render
+  res1: java.lang.String = 
+  {
+      # String: 1
+      "a" : {
+          # String: 1
+          "b" : 12
+      }
+  }
+
+The comments preceding every item give detailed information about the origin of
+the setting (file & line number) plus possible comments which were present,
+e.g. in the reference configuration. The settings as merged with the reference
+and parsed by the actor system can be displayed like this:
+
+.. code-block:: java
+
+  final ActorSystem system = ActorSystem.create();
+  println(system.settings());
+  // this is a shortcut for system.settings().config().root().render()
+
