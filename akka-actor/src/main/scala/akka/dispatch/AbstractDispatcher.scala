@@ -257,16 +257,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * Must be idempotent
    */
   protected[akka] def shutdown(): Unit
-
-  /**
-   * Returns the size of the mailbox for the specified actor
-   */
-  def mailboxSize(actor: ActorCell): Int = actor.mailbox.numberOfMessages
-
-  /**
-   * Returns the "current" emptiness status of the mailbox for the specified actor
-   */
-  def mailboxIsEmpty(actor: ActorCell): Boolean = !actor.mailbox.hasMessages
 }
 
 /**

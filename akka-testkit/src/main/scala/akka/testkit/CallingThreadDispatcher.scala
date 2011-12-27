@@ -165,10 +165,6 @@ class CallingThreadDispatcher(
     }
   }
 
-  override def mailboxSize(actor: ActorCell) = getMailbox(actor) map (_.queue.size) getOrElse 0
-
-  override def mailboxIsEmpty(actor: ActorCell): Boolean = getMailbox(actor) map (_.queue.isEmpty) getOrElse true
-
   protected[akka] override def systemDispatch(receiver: ActorCell, message: SystemMessage) {
     receiver.mailbox match {
       case mbox: CallingThreadMailbox ⇒
@@ -304,6 +300,6 @@ class CallingThreadMailbox(_receiver: ActorCell) extends Mailbox(_receiver) with
 
   override def enqueue(receiver: ActorRef, msg: Envelope) {}
   override def dequeue() = null
-  override def hasMessages = true
-  override def numberOfMessages = 0
+  override def hasMessages = queue.isEmpty
+  override def numberOfMessages = queue.size
 }

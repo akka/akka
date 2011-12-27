@@ -182,7 +182,7 @@ object FSMTimingSpec {
     when(TestCancelTimer) {
       case Ev(Tick) ⇒
         setTimer("hallo", Tock, 1 milli, false)
-        TestKit.awaitCond(!context.dispatcher.mailboxIsEmpty(context.asInstanceOf[ActorCell]), 1 second)
+        TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1 second)
         cancelTimer("hallo")
         sender ! Tick
         setTimer("hallo", Tock, 500 millis, false)
@@ -209,7 +209,7 @@ object FSMTimingSpec {
       case Ev(Tick) ⇒
         suspend(self)
         setTimer("named", Tock, 1 millis, false)
-        TestKit.awaitCond(!context.dispatcher.mailboxIsEmpty(context.asInstanceOf[ActorCell]), 1 second)
+        TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1 second)
         stay forMax (1 millis) replying Tick
       case Ev(Tock) ⇒
         goto(TestCancelStateTimerInNamedTimerMessage2)
