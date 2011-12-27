@@ -89,7 +89,7 @@ object Futures {
 
   /**
    * Java API
-   * A non-blocking fold over the specified futures.
+   * A non-blocking fold over the specified futures, with the start value of the given zero.
    * The fold is performed on the thread where the last future is completed,
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
@@ -201,13 +201,13 @@ object Future {
   }
 
   /**
-   * A non-blocking fold over the specified futures.
+   * A non-blocking fold over the specified futures, with the start value of the given zero.
    * The fold is performed on the thread where the last future is completed,
    * the result will be the first failure of any of the futures, or any failure in the actual fold,
    * or the result of the fold.
    * Example:
    * <pre>
-   *   val result = Await.result(Futures.fold(0)(futures)(_ + _), 5 seconds)
+   *   val result = Await.result(Future.fold(futures)(0)(_ + _), 5 seconds)
    * </pre>
    */
   def fold[T, R](futures: Traversable[Future[T]])(zero: R)(foldFun: (R, T) ⇒ R)(implicit dispatcher: MessageDispatcher): Future[R] = {
@@ -231,7 +231,7 @@ object Future {
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel:
    * <pre>
-   * val myFutureList = Futures.traverse(myList)(x ⇒ Future(myFunc(x)))
+   * val myFutureList = Future.traverse(myList)(x ⇒ Future(myFunc(x)))
    * </pre>
    */
   def traverse[A, B, M[_] <: Traversable[_]](in: M[A])(fn: A ⇒ Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], dispatcher: MessageDispatcher): Future[M[B]] =
