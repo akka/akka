@@ -110,6 +110,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 }
 
 final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
+  if (name.indexOf('/') != -1) throw new IllegalArgumentException("/ is a path separator and is not legal in ActorPath names: [%s]" format name)
 
   def address: Address = root.address
 
