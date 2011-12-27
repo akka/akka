@@ -31,7 +31,6 @@ to your ``application.conf`` file::
         port = 2552
       }
    }
-   cluster.nodename = "someUniqueNameInTheCluster1"
   }
 
 As you can see in the example above there are four things you need to add to get started:
@@ -39,7 +38,6 @@ As you can see in the example above there are four things you need to add to get
 * Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
 * Add host name - the machine you want to run the actor system on
 * Add port number - the port the actor system should listen on
-* Add cluster node name - must be a unique name in the cluster
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 There are lots of more properties that are related to remoting in Akka. We refer to the following
