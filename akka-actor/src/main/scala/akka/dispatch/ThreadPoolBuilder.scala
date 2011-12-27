@@ -111,10 +111,16 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
     this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair)))
 
   def setCorePoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(corePoolSize = size))
+    if (config.maxPoolSize < size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(corePoolSize = size))
 
   def setMaxPoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(maxPoolSize = size))
+    if (config.corePoolSize > size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(maxPoolSize = size))
 
   def setCorePoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigDispatcherBuilder =
     setCorePoolSize(scaledPoolSize(min, multiplier, max))
