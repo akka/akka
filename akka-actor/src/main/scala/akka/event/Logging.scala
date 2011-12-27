@@ -363,7 +363,7 @@ object Logging {
    * message. This is necessary to ensure that additional subscriptions are in
    * effect when the logging system finished starting.
    */
-  case class InitializeLogger(bus: LoggingBus)
+  case class InitializeLogger(bus: LoggingBus) extends NoSerializationVerificationNeeded
 
   /**
    * Response message each logger must send within 1 second after receiving the

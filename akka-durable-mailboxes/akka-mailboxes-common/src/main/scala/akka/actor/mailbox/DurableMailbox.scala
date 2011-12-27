@@ -67,7 +67,7 @@ trait DurableMessageSerialization {
     val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
-    new Envelope(message, sender)
+    new Envelope(message, sender)(owner.system)
   }
 
 }
