@@ -172,19 +172,27 @@ object VerifySerializabilitySpec {
 
 class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf) {
   import VerifySerializabilitySpec._
+  implicit val timeout = Timeout(5 seconds)
 
-  "verify creators and messages" in {
-    implicit val timeout = Timeout(5 seconds)
+  "verify config" in {
     system.settings.SerializeAllCreators must be(true)
     system.settings.SerializeAllMessages must be(true)
+  }
 
+  "verify creators" in {
     val a = system.actorOf(Props[FooActor])
-    Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
     intercept[NotSerializableException] {
       Await.result(a ? new AnyRef, timeout.duration)
     }
+    system stop a
+  }
+
+  "verify messages" in {
+    val a = system.actorOf(Props[FooActor])
+    Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
     intercept[java.io.NotSerializableException] {
       val b = system.actorOf(Props(new NonSerializableActor(system)))
     }
+    system stop a
   }
 }
