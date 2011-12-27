@@ -13,6 +13,7 @@ import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
+import akka.serialization.SerializationExtension
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -214,6 +215,16 @@ private[akka] class ActorCell(
   final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
+    if (system.settings.SerializeAllCreators) {
+      val ser = SerializationExtension(system)
+      ser.serialize(props.creator) match {
+        case Left(t) ⇒ throw t
+        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass, None) match {
+          case Left(t) ⇒ throw t
+          case _       ⇒ //All good
+        }
+      }
+    }
     val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
