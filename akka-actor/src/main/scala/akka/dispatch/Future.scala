@@ -337,7 +337,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   protected final def resolve[X](source: Either[Throwable, X]): Either[Throwable, X] = source match {
     case Left(t: scala.runtime.NonLocalReturnControl[_]) ⇒ Right(t.value.asInstanceOf[X])
-    case Left(t: TimeoutException) ⇒ Left(new RuntimeException("Boxed TimeoutException", t))
+    case Left(t: InterruptedException) ⇒ Left(new RuntimeException("Boxed InterruptedException", t))
     case _ ⇒ source
   }
 
