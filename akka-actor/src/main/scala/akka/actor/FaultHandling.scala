@@ -64,7 +64,8 @@ object FaultHandlingStrategy {
   case object Stop extends Action
 
   /**
-   * Escalates the failure to the supervisor of the supervisor
+   * Escalates the failure to the supervisor of the supervisor,
+   * by rethrowing the cause of the failure.
    */
   case object Escalate extends Action
 
@@ -88,7 +89,8 @@ object FaultHandlingStrategy {
   def stop = Stop
 
   /**
-   * Escalates the failure to the supervisor of the supervisor
+   * Escalates the failure to the supervisor of the supervisor,
+   * by rethrowing the cause of the failure.
    * Java API
    */
   def escalate = Escalate
