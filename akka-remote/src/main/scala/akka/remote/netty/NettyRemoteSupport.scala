@@ -669,7 +669,7 @@ class RemoteServerHandler(
 
   private def getClientAddress(c: Channel): Option[RemoteNettyAddress] =
     c.getRemoteAddress match {
-      case inet: InetSocketAddress ⇒ Some(RemoteNettyAddress(inet.getHostName, inet.getPort))
+      case inet: InetSocketAddress ⇒ Some(RemoteNettyAddress(inet.getHostName, Some(inet.getAddress), inet.getPort))
       case _                       ⇒ None
     }
 }
