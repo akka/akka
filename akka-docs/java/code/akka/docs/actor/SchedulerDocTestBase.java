@@ -34,7 +34,7 @@ public class SchedulerDocTestBase {
   @Before
   public void setUp() {
     system = ActorSystem.create("MySystem", AkkaSpec.testConf());
-    testActor = system.actorOf(new Props().withCreator(MyUntypedActor.class));
+    testActor = system.actorOf(new Props(MyUntypedActor.class));
   }
 
   @After
