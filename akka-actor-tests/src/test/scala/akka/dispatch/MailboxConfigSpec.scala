@@ -75,7 +75,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters)
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters)(system)
 
   def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
     q must not be null

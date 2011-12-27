@@ -58,9 +58,9 @@ object ActorSystem {
   def create(): ActorSystem = apply()
   def apply(): ActorSystem = apply("default")
 
-  class Settings(cfg: Config, val name: String) {
+  class Settings(cfg: Config, final val name: String) {
 
-    val config: Config = {
+    final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference)
       config.checkValid(ConfigFactory.defaultReference, "akka")
       config
@@ -69,80 +69,37 @@ object ActorSystem {
     import scala.collection.JavaConverters._
     import config._
 
-    val ConfigVersion = getString("akka.version")
+    final val ConfigVersion = getString("akka.version")
 
-    val ProviderClass = getString("akka.actor.provider")
+    final val ProviderClass = getString("akka.actor.provider")
 
-    val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
-    val ReaperInterval = Duration(getMilliseconds("akka.actor.reaper-interval"), MILLISECONDS)
-    val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
-    val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
+    final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    final val ReaperInterval = Duration(getMilliseconds("akka.actor.reaper-interval"), MILLISECONDS)
+    final val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
+    final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
 
-    val LogLevel = getString("akka.loglevel")
-    val StdoutLogLevel = getString("akka.stdout-loglevel")
-    val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
-    val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
-    val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
-    val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
-    val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
-    val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
-    val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
+    final val LogLevel = getString("akka.loglevel")
+    final val StdoutLogLevel = getString("akka.stdout-loglevel")
+    final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    final val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
+    final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
+    final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
+    final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
+    final val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
+    final val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
 
-    val Home = config.getString("akka.home") match {
+    final val Home = config.getString("akka.home") match {
       case "" ⇒ None
       case x  ⇒ Some(x)
     }
 
-    val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
-    val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
+    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
     override def toString: String = config.root.render
-  }
-
-  // TODO move to migration kit
-  object OldConfigurationLoader {
-
-    val defaultConfig: Config = {
-      val cfg = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
-      cfg.withFallback(ConfigFactory.defaultReference).resolve(ConfigResolveOptions.defaults)
-    }
-
-    // file extensions (.conf, .json, .properties), are handled by parseFileAnySyntax
-    val defaultLocation: String = (systemMode orElse envMode).map("akka." + _).getOrElse("akka")
-
-    private def envMode = System.getenv("AKKA_MODE") match {
-      case null | "" ⇒ None
-      case value     ⇒ Some(value)
-    }
-
-    private def systemMode = System.getProperty("akka.mode") match {
-      case null | "" ⇒ None
-      case value     ⇒ Some(value)
-    }
-
-    private def configParseOptions = ConfigParseOptions.defaults.setAllowMissing(false)
-
-    private def fromProperties = try {
-      val property = Option(System.getProperty("akka.config"))
-      property.map(p ⇒
-        ConfigFactory.systemProperties.withFallback(
-          ConfigFactory.parseFileAnySyntax(new File(p), configParseOptions)))
-    } catch { case _ ⇒ None }
-
-    private def fromClasspath = try {
-      Option(ConfigFactory.systemProperties.withFallback(
-        ConfigFactory.parseResourcesAnySyntax(ActorSystem.getClass, "/" + defaultLocation, configParseOptions)))
-    } catch { case _ ⇒ None }
-
-    private def fromHome = try {
-      Option(ConfigFactory.systemProperties.withFallback(
-        ConfigFactory.parseFileAnySyntax(new File(GlobalHome.get + "/config/" + defaultLocation), configParseOptions)))
-    } catch { case _ ⇒ None }
-
-    private def emptyConfig = ConfigFactory.systemProperties
   }
 }
 
@@ -323,7 +280,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   import ActorSystem._
 
-  val settings = new Settings(applicationConfig, name)
+  final val settings = new Settings(applicationConfig, name)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 

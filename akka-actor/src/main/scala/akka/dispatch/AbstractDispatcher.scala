@@ -6,21 +6,21 @@ package akka.dispatch
 
 import java.util.concurrent._
 import akka.event.Logging.Error
-import akka.util.{ Duration, Switch, ReentrantGuard }
-import atomic.{ AtomicInteger, AtomicLong }
-import java.util.concurrent.ThreadPoolExecutor.{ AbortPolicy, CallerRunsPolicy, DiscardOldestPolicy, DiscardPolicy }
+import akka.util.Duration
 import akka.actor._
 import akka.actor.ActorSystem
-import locks.ReentrantLock
 import scala.annotation.tailrec
 import akka.event.EventStream
-import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
-import java.util.concurrent.atomic.AtomicReference
 import akka.util.ReflectiveAccess
+import akka.serialization.SerializationExtension
 
-final case class Envelope(val message: Any, val sender: ActorRef) {
+final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
+  else if (system.settings.SerializeAllMessages) SerializationExtension(system).serialize(message.asInstanceOf[AnyRef]) match {
+    case Left(t)  ⇒ throw t
+    case Right(_) ⇒ //Just verify that it works to serialize it
+  }
 }
 
 object SystemMessage {
@@ -103,7 +103,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def name: String
 
   /**
-   * Identfier of this dispatcher, corresponds to the full key
+   * Identifier of this dispatcher, corresponds to the full key
    * of the dispatcher configuration.
    */
   def id: String

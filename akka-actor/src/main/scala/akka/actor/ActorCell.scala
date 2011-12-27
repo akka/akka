@@ -308,7 +308,7 @@ private[akka] class ActorCell(
   }
 
   final def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender)(system))
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
