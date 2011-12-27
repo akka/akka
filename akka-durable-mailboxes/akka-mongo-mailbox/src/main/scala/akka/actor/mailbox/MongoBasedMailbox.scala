@@ -72,7 +72,7 @@ class MongoBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) {
       doc match {
         case Some(msg) ⇒ {
           log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
-          envelopePromise.success(msg.envelope())
+          envelopePromise.success(msg.envelope(system))
           log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
         }
         case None ⇒

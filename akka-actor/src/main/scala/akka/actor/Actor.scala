@@ -25,7 +25,16 @@ import java.util.regex.Pattern
  */
 trait AutoReceivedMessage extends Serializable
 
+/**
+ * Marker trait to indicate that a message might be potentially harmful,
+ * this is used to block messages coming in over remoting.
+ */
 trait PossiblyHarmful
+
+/**
+ * Marker trait to signal that this class should not be verified for serializability.
+ */
+trait NoSerializationVerificationNeeded
 
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
