@@ -215,7 +215,7 @@ private[akka] class ActorCell(
   final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
-    if (system.settings.SerializeAllCreators) {
+    if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
       ser.serialize(props.creator) match {
         case Left(t) ⇒ throw t

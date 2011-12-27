@@ -19,7 +19,7 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
   if (message.isInstanceOf[AnyRef]) {
     val msg = message.asInstanceOf[AnyRef]
     if (msg eq null) throw new InvalidMessageException("Message is null")
-    if (system.settings.SerializeAllMessages) {
+    if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
       ser.serialize(msg) match { //Verify serializability
         case Left(t) ⇒ throw t
