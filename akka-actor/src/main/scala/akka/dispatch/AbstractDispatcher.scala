@@ -16,10 +16,19 @@ import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
-  if (message.isInstanceOf[AnyRef] && (message.asInstanceOf[AnyRef] eq null)) throw new InvalidMessageException("Message is null")
-  else if (system.settings.SerializeAllMessages) SerializationExtension(system).serialize(message.asInstanceOf[AnyRef]) match {
-    case Left(t)  ⇒ throw t
-    case Right(_) ⇒ //Just verify that it works to serialize it
+  if (message.isInstanceOf[AnyRef]) {
+    val msg = message.asInstanceOf[AnyRef]
+    if (msg eq null) throw new InvalidMessageException("Message is null")
+    if (system.settings.SerializeAllMessages) {
+      val ser = SerializationExtension(system)
+      ser.serialize(msg) match { //Verify serializability
+        case Left(t) ⇒ throw t
+        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass, None) match { //Verify deserializability
+          case Left(t) ⇒ throw t
+          case _       ⇒ //All good
+        }
+      }
+    }
   }
 }
 
