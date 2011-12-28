@@ -10,6 +10,9 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import java.io._
+import akka.dispatch.Await
+import akka.util.Timeout
+import akka.util.duration._
 
 object SerializeSpec {
 
@@ -127,5 +130,69 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         a.shutdown()
       }
     }
+  }
+}
+
+object VerifySerializabilitySpec {
+  val conf = ConfigFactory.parseString("""
+    akka {
+      actor {
+        serialize-messages = on
+
+        serialize-creators = on
+
+        serializers {
+          java = "akka.serialization.JavaSerializer"
+          proto = "akka.testing.ProtobufSerializer"
+          sjson = "akka.testing.SJSONSerializer"
+          default = "akka.serialization.JavaSerializer"
+        }
+
+        serialization-bindings {
+          java = ["akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
+          sjson = ["akka.serialization.SerializeSpec$Person"]
+          proto = ["com.google.protobuf.Message", "akka.actor.ProtobufProtocol$MyMessage"]
+        }
+      }
+    }
+  """)
+
+  class FooActor extends Actor {
+    def receive = {
+      case s: String ⇒ sender ! s
+    }
+  }
+
+  class NonSerializableActor(system: ActorSystem) extends Actor {
+    def receive = {
+      case s: String ⇒ sender ! s
+    }
+  }
+}
+
+class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf) {
+  import VerifySerializabilitySpec._
+  implicit val timeout = Timeout(5 seconds)
+
+  "verify config" in {
+    system.settings.SerializeAllCreators must be(true)
+    system.settings.SerializeAllMessages must be(true)
+  }
+
+  "verify creators" in {
+    val a = system.actorOf(Props[FooActor])
+    intercept[NotSerializableException] {
+      Await.result(a ? new AnyRef, timeout.duration)
+    }
+    system stop a
+  }
+
+  "verify messages" in {
+    val a = system.actorOf(Props[FooActor])
+    Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
+    intercept[java.io.NotSerializableException] {
+      val b = system.actorOf(Props(new NonSerializableActor(system)))
+    }
+    system stop a
   }
 }

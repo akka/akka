@@ -13,7 +13,7 @@ case class Subtract(nbr1: Int, nbr2: Int) extends MathOp
 
 case class Multiply(nbr1: Int, nbr2: Int) extends MathOp
 
-case class Divide(nbr1: Int, nbr2: Int) extends MathOp
+case class Divide(nbr1: Double, nbr2: Int) extends MathOp
 
 trait MathResult
 
@@ -31,7 +31,7 @@ class AdvancedCalculatorActor extends Actor {
       println("Calculating %d * %d".format(n1, n2))
       sender ! MultiplicationResult(n1, n2, n1 * n2)
     case Divide(n1, n2) ⇒
-      println("Calculating %d / %d".format(n1, n2))
+      println("Calculating %.0f / %d".format(n1, n2))
       sender ! DivisionResult(n1, n2, n1 / n2)
   }
 }

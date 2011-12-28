@@ -100,7 +100,7 @@ public class UntypedActorDocTestBase {
   public void propsActorOf() {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor");
     //#creating-props
     myActor.tell("test");

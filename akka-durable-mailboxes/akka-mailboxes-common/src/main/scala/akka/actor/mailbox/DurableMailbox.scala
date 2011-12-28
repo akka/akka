@@ -3,33 +3,17 @@
  */
 package akka.actor.mailbox
 
-import akka.util.ReflectiveAccess
-import akka.AkkaException
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.SerializedActorRef
 import akka.dispatch.Envelope
 import akka.dispatch.DefaultSystemMessageQueue
-import akka.dispatch.Dispatcher
 import akka.dispatch.CustomMailbox
-import akka.dispatch.MailboxType
-import akka.dispatch.MessageDispatcher
-import akka.dispatch.MessageQueue
 import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.RemoteProtocol.RemoteMessageProtocol
-import akka.remote.RemoteActorRefProvider
-import akka.remote.netty.NettyRemoteServer
-import akka.serialization.Serialization
-import com.typesafe.config.Config
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
-}
-
-class DurableMailboxException private[akka] (message: String, cause: Throwable) extends AkkaException(message, cause) {
-  def this(message: String) = this(message, null)
 }
 
 abstract class DurableMailbox(owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
@@ -67,7 +51,7 @@ trait DurableMessageSerialization {
     val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
-    new Envelope(message, sender)
+    new Envelope(message, sender)(owner.system)
   }
 
 }

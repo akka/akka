@@ -11,7 +11,12 @@ The Sample Explained
 
 In order to showcase the remote capabilities of Akka 2.0 we thought a remote calculator could do the trick.
 
+There are two implementations of the sample; one in Scala and one in Java.
+The explanation below is for Scala, but everything is similar in Java except that the class names begin with a ``J``,
+e.g. ``JCalcApp`` instead of ``CalcApp``, and that the Java classes reside in another package structure.
+
 There are three actor systems used in the sample:
+
 * CalculatorApplication : the actor system performing the number crunching
 * LookupApplication     : illustrates how to look up an actor on a remote node and and how communicate with that actor
 * CreationApplication   : illustrates how to create an actor on a remote node and how to communicate with that actor
@@ -70,7 +75,7 @@ Open up a new terminal window and run SBT once more:
 
 > run
 
-Select to run "sample.remote.calculator.LookupApp" which in the case below is number 1:
+Select to run "sample.remote.calculator.LookupApp" which in the case below is number 1::
 
     Multiple main classes detected, select one to run:
 
@@ -80,7 +85,7 @@ Select to run "sample.remote.calculator.LookupApp" which in the case below is nu
 
     Enter number: 1
 
-Now you should see something like this:
+Now you should see something like this::
 
     [info] Running sample.remote.calculator.LookupApp
     [INFO] [12/22/2011 14:54:38.630] [run-main] [ActorSystem] REMOTE: RemoteServerStarted@akka://LookupApplication@127.0.0.1:2553
@@ -102,7 +107,7 @@ Once more you should open a new terminal window and run SBT:
 
 > run
 
-Select to run "sample.remote.calculator.CreationApp" which in the case below is number 2:
+Select to run "sample.remote.calculator.CreationApp" which in the case below is number 2::
 
     Multiple main classes detected, select one to run:
 
@@ -112,7 +117,7 @@ Select to run "sample.remote.calculator.CreationApp" which in the case below is 
 
     Enter number: 2
 
-Now you should see something like this:
+Now you should see something like this::
 
     [info] Running sample.remote.calculator.CreationApp
     [INFO] [12/22/2011 14:57:02.150] [run-main] [ActorSystem] REMOTE: RemoteServerStarted@akka://RemoteCreation@127.0.0.1:2554
@@ -134,5 +139,5 @@ The sample application is just that, i.e. a sample. Parts of it are not the way 
 Some improvements are to remove all hard coded addresses from the code as they reduce the flexibility of how and
 where the application can be run. We leave this to the astute reader to refine the sample into a real-world app.
 
-[akka]: http://akka.io
-[sbt]: http://code.google.com/p/simple-build-tool/
+* `Akka <http://akka.io/>`_
+* `SBT <http://https://github.com/harrah/xsbt/wiki/>`_

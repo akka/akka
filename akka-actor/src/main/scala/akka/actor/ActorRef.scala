@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 import akka.event.EventStream
 import akka.event.DeathWatch
 import scala.annotation.tailrec
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
 import akka.event.LoggingAdapter
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -106,6 +106,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Akka Java API.
    *
    * Sends a message asynchronously returns a future holding the eventual reply message.
+   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
+   * timeout has expired.
    *
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use 'tell' together with the sender
@@ -177,6 +179,9 @@ trait ScalaActorRef { ref: ActorRef ⇒
 
   /**
    * Sends a message asynchronously, returning a future which may eventually hold the reply.
+   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
+   * timeout has expired.
+   *
    * <b>NOTE:</b>
    * Use this method with care. In most cases it is better to use '!' together with implicit or explicit
    * sender parameter to implement non-blocking request/response message exchanges.
@@ -487,6 +492,14 @@ class VirtualPathContainer(val path: ActorPath, override val getParent: Internal
       }
     }
   }
+}
+
+/**
+ * This is what is used to complete a Future that is returned from an ask/? call,
+ * when it times out.
+ */
+class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException {
+  def this(message: String) = this(message, null: Throwable)
 }
 
 class AskActorRef(

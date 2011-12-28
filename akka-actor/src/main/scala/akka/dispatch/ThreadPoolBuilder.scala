@@ -111,10 +111,16 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
     this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair)))
 
   def setCorePoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(corePoolSize = size))
+    if (config.maxPoolSize < size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(corePoolSize = size))
 
   def setMaxPoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(maxPoolSize = size))
+    if (config.corePoolSize > size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(maxPoolSize = size))
 
   def setCorePoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigDispatcherBuilder =
     setCorePoolSize(scaledPoolSize(min, multiplier, max))
@@ -206,6 +212,11 @@ trait ExecutorServiceDelegate extends ExecutorService {
   def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
 }
 
+/**
+ * The RejectedExecutionHandler used by Akka, it improves on CallerRunsPolicy
+ * by throwing a RejectedExecutionException if the executor isShutdown.
+ * (CallerRunsPolicy silently discards the runnable in this case, which is arguably broken)
+ */
 class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
   def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor): Unit = {
     if (threadPoolExecutor.isShutdown) throw new RejectedExecutionException("Shutdown")

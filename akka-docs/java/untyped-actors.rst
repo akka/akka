@@ -317,8 +317,9 @@ If invoked without the sender parameter the sender will be
 Ask: Send-And-Receive-Future
 ----------------------------
 
-Using ``ask`` will send a message to the receiving Actor asynchronously and
-will immediately return a :class:`Future`:
+Using ``?`` will send a message to the receiving Actor asynchronously and
+will immediately return a :class:`Future` which will be completed with
+an ``akka.actor.AskTimeoutException`` after the specified timeout:
 
 .. code-block:: java
 
