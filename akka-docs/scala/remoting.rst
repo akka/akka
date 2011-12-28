@@ -125,6 +125,11 @@ This enables the remoting by installing the :class:`RemoteActorRefProvider` and
 chooses the default remote transport. All other options will be set
 specifically for each show case.
 
+.. note::
+
+  Be sure to replace the default IP 127.0.0.1 with the real address the system
+  is reachable by if you deploy onto multiple machines!
+
 .. _remote-lookup-sample:
 
 Remote Lookup

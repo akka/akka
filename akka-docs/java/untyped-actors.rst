@@ -28,6 +28,10 @@ its syntax from Erlang.
 Creating Actors
 ===============
 
+Since Akka enforces parental supervision every actor is supervised and
+(potentially) the supervisor of its children; it is advisable that you
+familiarize yourself with :ref:`actor-systems` and :ref:`supervision` and it
+may also help to read :ref:`actorOf-vs-actorFor`.
 
 Defining an Actor class
 -----------------------
@@ -131,6 +135,7 @@ In addition, it offers:
   * system that the actor belongs to
   * parent supervisor
   * supervised children
+  * lifecycle monitoring
   * hotswap behavior stack as described in :ref:`UntypedActor.HotSwap`
 
 The remaining visible methods are user-overridable life-cycle hooks which are
@@ -141,6 +146,36 @@ described in the following:
 The implementations shown above are the defaults provided by the :class:`UntypedActor`
 class.
 
+.. _deathwatch-java:
+
+Lifecycle Monitoring aka DeathWatch
+-----------------------------------
+
+In order to be notified when another actor terminates (i.e. stops permanently,
+not temporary failure and restart), an actor may register itself for reception
+of the :class:`Terminated` message dispatched by the other actor upon
+termination (see `Stopping Actors`_). This service is provided by the
+:class:`DeathWatch` component of the actor system.
+
+Registering a monitor is easy (see fourth line, the rest is for demonstrating
+the whole functionality):
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#watch
+
+It should be noted that the :class:`Terminated` message is generated
+independent of the order in which registration and termination occur.
+Registering multiple times does not necessarily lead to multiple messages being
+generated, but there is no guarantee that only exactly one such message is
+received: if termination of the watched actor has generated and queued the
+message, and another registration is done before this message has been
+processed, then a second message will be queued, because registering for
+monitoring of an already terminated actor leads to the immediate generation of
+the :class:`Terminated` message.
+
+It is also possible to deregister from watching another actor’s liveliness
+using ``context.unwatch(target)``, but obviously this cannot guarantee
+non-reception of the :class:`Terminated` message because that may already have
+been queued.
 
 Start Hook
 ----------
@@ -398,19 +433,42 @@ but additional messages in the mailbox will not be processed. By default these
 messages are sent to the :obj:`deadLetters` of the :obj:`ActorSystem`, but that
 depends on the mailbox implementation.
 
-When stop is called then a call to the ``def postStop`` callback method will
-take place. The ``Actor`` can use this callback to implement shutdown behavior.
+Termination of an actor proceeds in two steps: first the actor suspends its
+mailbox processing and sends a stop command to all its children, then it keeps
+processing the termination messages from its children until the last one is
+gone, finally terminating itself (invoking :meth:`postStop`, dumping mailbox,
+publishing :class:`Terminated` on the :ref:`DeathWatch <deathwatch-java>`, telling
+its supervisor). This procedure ensures that actor system sub-trees terminate
+in an orderly fashion, propagating the stop command to the leaves and
+collecting their confirmation back to the stopped supervisor. If one of the
+actors does not respond (i.e. processing a message for extended periods of time
+and therefore not receiving the stop command), this whole process will be
+stuck.
+
+It is possible to disregard specific children with respect to shutdown
+confirmation by stopping them explicitly before issuing the
+``context.stop(self)``::
+
+  context.stop(someChild);
+  context.stop(self);
+
+In this case ``someChild`` will be stopped asynchronously and re-parented to
+the :class:`Locker`, where :class:`DavyJones` will keep tabs and dispose of it
+eventually.
+
+Upon :meth:`ActorSystem.shutdown()`, the system guardian actors will be
+stopped, and the aforementioned process will ensure proper termination of the
+whole system.
+
+The :meth:`postStop()` hook is invoked after an actor is fully stopped. This
+enables cleaning up of resources:
 
 .. code-block:: java
 
+  @Override
   public void postStop() {
-    ... // clean up resources
+    // close some file or database connection
   }
-
-
-All Actors are stopped when the ``ActorSystem`` is stopped.
-Supervised actors are stopped when the supervisor is stopped, i.e. children are stopped
-when parent is stopped.
 
 
 PoisonPill
@@ -420,9 +478,6 @@ You can also send an actor the ``akka.actor.PoisonPill`` message, which will
 stop the actor when the message is processed. ``PoisonPill`` is enqueued as
 ordinary messages and will be handled after messages that were already queued
 in the mailbox.
-
-If the ``PoisonPill`` was sent with ``ask``, the ``Future`` will be completed with an
-``akka.actor.ActorKilledException("PoisonPill")``.
 
 Use it like this:
 
