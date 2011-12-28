@@ -123,7 +123,7 @@ object ActorSystem {
  * system.actorOf(Props(new MyActor(...))
  *
  * // Java
- * system.actorOf(classOf[MyActor]);
+ * system.actorOf(MyActor.class);
  * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
