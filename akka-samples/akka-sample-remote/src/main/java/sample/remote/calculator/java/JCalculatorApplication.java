@@ -14,7 +14,7 @@ public class JCalculatorApplication implements Bootable {
 
     public JCalculatorApplication() {
         system = ActorSystem.create("CalculatorApplication", ConfigFactory.load().getConfig("calculator"));
-        ActorRef actor = system.actorOf(new Props().withCreator(JSimpleCalculatorActor.class), "simpleCalculator");
+        ActorRef actor = system.actorOf(new Props(JSimpleCalculatorActor.class), "simpleCalculator");
     }
 
     @Override

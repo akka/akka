@@ -7,8 +7,8 @@ import akka.actor.ActorRef;
 
 public class InternalMsg {
    static class MathOpMsg {
-       private ActorRef actor;
-       private Op.MathOp mathOp;
+       private final ActorRef actor;
+       private final Op.MathOp mathOp;
 
        MathOpMsg(ActorRef actor, Op.MathOp mathOp) {
            this.actor = actor;

@@ -16,7 +16,7 @@ public class JLookupApplication implements Bootable {
 
     public JLookupApplication() {
         system = ActorSystem.create("LookupApplication", ConfigFactory.load().getConfig("remotelookup"));
-        actor = system.actorOf(new Props().withCreator(JLookupActor.class));
+        actor = system.actorOf(new Props(JLookupActor.class));
         remoteActor = system.actorFor("akka://CalculatorApplication@127.0.0.1:2552/user/simpleCalculator");
     }
 

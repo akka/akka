@@ -16,8 +16,8 @@ public class JCreationApplication implements Bootable {
 
     public JCreationApplication() {
         system = ActorSystem.create("CreationApplication", ConfigFactory.load().getConfig("remotecreation"));
-        actor = system.actorOf(new Props().withCreator(JCreationActor.class));
-        remoteActor = system.actorOf(new Props().withCreator(JAdvancedCalculatorActor.class), "advancedCalculator");
+        actor = system.actorOf(new Props(JCreationActor.class));
+        remoteActor = system.actorOf(new Props(JAdvancedCalculatorActor.class), "advancedCalculator");
     }
 
     public void doSomething(Op.MathOp mathOp) {
