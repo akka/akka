@@ -236,7 +236,7 @@ class AkkaParentProject(info: ProjectInfo) extends ParentProject(info) with Exec
   // -------------------------------------------------------------------------------------------------------------------
 
   val localReleasePath = outputPath / "release" / version.toString
-  val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "repository" asFile)
+  val localReleaseRepository = Resolver.file("Local Release", localReleasePath / "releases" asFile)
 
   override def otherRepositories = super.otherRepositories ++ Seq(localReleaseRepository)
 
