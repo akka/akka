@@ -16,6 +16,8 @@ public class JSimpleCalculatorActor extends UntypedActor {
             Op.Subtract subtract = (Op.Subtract) message;
             System.out.println("Calculating " + subtract.getN1() + " - " + subtract.getN2());
             getSender().tell(new Op.SubtractResult(subtract.getN1(), subtract.getN2(), subtract.getN1() - subtract.getN2()));
+        } else {
+            unhandled(message);
         }
     }
 }

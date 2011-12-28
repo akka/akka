@@ -16,6 +16,8 @@ public class JAdvancedCalculatorActor extends UntypedActor {
             Op.Divide divide = (Op.Divide) message;
             System.out.println("Calculating " + divide.getN1() + " / " + divide.getN2());
             getSender().tell(new Op.DivisionResult(divide.getN1(), divide.getN2(), divide.getN1() / divide.getN2()));
+        } else {
+            unhandled(message);
         }
     }
 }
