@@ -9,6 +9,7 @@ import akka.actor.Props;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 
+//#setup
 public class JCalculatorApplication implements Bootable {
     private ActorSystem system;
 
@@ -26,3 +27,4 @@ public class JCalculatorApplication implements Bootable {
         system.shutdown();
     }
 }
+//#setup

@@ -158,7 +158,7 @@ specifically for each show case.
   Be sure to replace the default IP 127.0.0.1 with the real address the system
   is reachable by if you deploy onto multiple machines!
 
-.. _remote-lookup-sample:
+.. _remote-lookup-sample-scala:
 
 Remote Lookup
 -------------

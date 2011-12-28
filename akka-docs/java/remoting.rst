@@ -115,3 +115,108 @@ This is also done via configuration::
 
 This configuration setting will clone the actor “aggregation” 10 times and deploy it evenly distributed across
 the two given target nodes.
+
+Description of the Remoting Sample
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The sample application included with the Akka sources demonstrates both, remote
+deployment and look-up of remote actors. First, let us have a look at the
+common setup for both scenarios (this is ``common.conf``):
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/resources/common.conf
+
+This enables the remoting by installing the :class:`RemoteActorRefProvider` and
+chooses the default remote transport. All other options will be set
+specifically for each show case.
+
+.. note::
+
+  Be sure to replace the default IP 127.0.0.1 with the real address the system
+  is reachable by if you deploy onto multiple machines!
+
+.. _remote-lookup-sample-java:
+
+Remote Lookup
+-------------
+
+In order to look up a remote actor, that one must be created first. For this
+purpose, we configure an actor system to listen on port 2552 (this is a snippet
+from ``application.conf``):
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/resources/application.conf
+   :include: calculator
+
+Then the actor must be created. For all code which follows, assume these imports:
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupApplication.java
+   :include: imports
+
+The actor doing the work will be this one:
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JSimpleCalculatorActor.java
+   :include: actor
+
+and we start it within an actor system using the above configuration
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JCalculatorApplication.java
+   :include: setup
+
+With the service actor up and running, we may look it up from another actor
+system, which will be configured to use port 2553 (this is a snippet from
+``application.conf``).
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/resources/application.conf
+   :include: remotelookup
+
+The actor which will query the calculator is a quite simple one for demonstration purposes
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupActor.java
+   :include: actor
+
+and it is created from an actor system using the aforementioned client’s config.
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupApplication.java
+   :include: setup
+
+Requests which come in via ``doSomething`` will be sent to the client actor
+along with the reference which was looked up earlier. Observe how the actor
+system name using in ``actorFor`` matches the remote system’s name, as do IP
+and port number. Top-level actors are always created below the ``"/user"``
+guardian, which supervises them.
+
+Remote Deployment
+-----------------
+
+Creating remote actors instead of looking them up is not visible in the source
+code, only in the configuration file. This section is used in this scenario
+(this is a snippet from ``application.conf``):
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/resources/application.conf
+   :include: remotecreation
+
+For all code which follows, assume these imports:
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JLookupApplication.java
+   :include: imports
+
+The server actor can multiply or divide numbers:
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JAdvancedCalculatorActor.java
+   :include: actor
+
+The client actor looks like in the previous example
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JCreationActor.java
+   :include: actor
+
+but the setup uses only ``actorOf``:
+
+.. includecode:: ../../akka-samples/akka-sample-remote/src/main/java/sample/remote/calculator/java/JCreationApplication.java
+   :include: setup
+
+Observe how the name of the server actor matches the deployment given in the
+configuration file, which will transparently delegate the actor creation to the
+remote node.
+
+
+
