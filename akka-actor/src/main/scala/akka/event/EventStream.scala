@@ -15,7 +15,7 @@ object EventStream {
 class A(x: Int = 0) extends Exception("x=" + x)
 class B extends A
 
-class EventStream(debug: Boolean = false) extends LoggingBus with SubchannelClassification {
+class EventStream(val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]
