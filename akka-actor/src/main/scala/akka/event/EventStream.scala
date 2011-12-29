@@ -3,19 +3,10 @@
  */
 package akka.event
 
-import akka.actor.{ ActorRef, Actor, Props, ActorSystemImpl, Terminated, ActorSystem, simpleName }
+import akka.actor.{ ActorRef, simpleName }
 import akka.util.Subclassification
-import java.util.concurrent.atomic.AtomicInteger
 
-object EventStream {
-  implicit def fromActorSystem(system: ActorSystem) = system.eventStream
-  val generation = new AtomicInteger
-}
-
-class A(x: Int = 0) extends Exception("x=" + x)
-class B extends A
-
-class EventStream(val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
+class EventStream(private val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]
