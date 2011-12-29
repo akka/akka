@@ -54,7 +54,7 @@ trait LoggingBus extends ActorEventBus {
    * will not participate in the automatic management of log level
    * subscriptions!
    */
-  def logLevel_=(level: LogLevel): Unit = guard.withGuard {
+  def setLogLevel(level: LogLevel): Unit = guard.withGuard {
     for {
       l ← AllLogLevels
       // subscribe if previously ignored and now requested

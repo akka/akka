@@ -62,6 +62,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  *       val msg = ((Request3) o).getMsg();
  *       getSender().tell(other.ask(msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
  *
+ *     } else {
+ *       unhandled(o);
  *     }
  *   }
  * }

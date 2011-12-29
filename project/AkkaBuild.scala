@@ -314,10 +314,6 @@ object AkkaBuild extends Build {
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
-    // add config dir to classpaths
-    unmanagedClasspath in Runtime <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
-    unmanagedClasspath in Test    <+= (baseDirectory in LocalProject("akka")) map { base => Attributed.blank(base / "config") },
-
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "true").toBoolean,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)

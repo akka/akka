@@ -9,6 +9,7 @@ Scala API
    actors
    typed-actors
    logging
+   event-bus
    scheduler
    futures
    dataflow

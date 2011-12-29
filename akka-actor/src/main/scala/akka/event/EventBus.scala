@@ -124,8 +124,6 @@ trait SubchannelClassification { this: EventBus ⇒
   @volatile
   private var cache = Map.empty[Classifier, Set[Subscriber]]
 
-  protected def subscribers = cache.values.flatten
-
   /**
    * Returns the Classifier associated with the given Event
    */

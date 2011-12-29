@@ -9,6 +9,7 @@ import akka.actor.Props;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
 
+//#setup
 public class JCreationApplication implements Bootable {
     private ActorSystem system;
     private ActorRef actor;
@@ -33,3 +34,4 @@ public class JCreationApplication implements Bootable {
         system.shutdown();
     }
 }
+//#setup

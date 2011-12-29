@@ -69,11 +69,11 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       within(2 seconds) {
         import Logging._
         verifyLevel(bus, InfoLevel)
-        bus.logLevel = WarningLevel
+        bus.setLogLevel(WarningLevel)
         verifyLevel(bus, WarningLevel)
-        bus.logLevel = DebugLevel
+        bus.setLogLevel(DebugLevel)
         verifyLevel(bus, DebugLevel)
-        bus.logLevel = ErrorLevel
+        bus.setLogLevel(ErrorLevel)
         verifyLevel(bus, ErrorLevel)
       }
     }

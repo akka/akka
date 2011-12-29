@@ -296,4 +296,25 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     val actor = system.actorOf(Props(new HotSwapActor), name = "hot")
   }
+
+  "using watch" in {
+    //#watch
+    import akka.actor.{ Actor, Props, Terminated }
+
+    class WatchActor extends Actor {
+      val child = context.actorOf(Props.empty, "child")
+      context.watch(child) // <-- this is the only call needed for registration
+      var lastSender = system.deadLetters
+
+      def receive = {
+        case "kill"              ⇒ context.stop(child); lastSender = sender
+        case Terminated(`child`) ⇒ lastSender ! "finished"
+      }
+    }
+    //#watch
+    val a = system.actorOf(Props(new WatchActor))
+    implicit val sender = testActor
+    a ! "kill"
+    expectMsg("finished")
+  }
 }

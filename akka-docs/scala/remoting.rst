@@ -70,6 +70,8 @@ Once you a reference to the actor you can interact with it they same way you wou
 
   actor ! "Pretty awesome feature"
 
+For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -150,6 +152,13 @@ common setup for both scenarios (this is ``common.conf``):
 This enables the remoting by installing the :class:`RemoteActorRefProvider` and
 chooses the default remote transport. All other options will be set
 specifically for each show case.
+
+.. note::
+
+  Be sure to replace the default IP 127.0.0.1 with the real address the system
+  is reachable by if you deploy onto multiple machines!
+
+.. _remote-lookup-sample-scala:
 
 Remote Lookup
 -------------

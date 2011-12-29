@@ -69,6 +69,8 @@ public class SchedulerDocTestBase {
           public void onReceive(Object message) {
             if (message.equals("Tick")) {
               // Do someting
+            } else {
+              unhandled(message);
             }
           }
         };

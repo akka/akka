@@ -34,6 +34,8 @@ public class CoordinatedCounter extends UntypedActor {
             }
         } else if ("GetCount".equals(incoming)) {
             getSender().tell(count.single().get());
+        } else {
+          unhandled(incoming);
         }
     }
 }
