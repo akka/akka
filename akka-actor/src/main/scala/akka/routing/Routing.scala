@@ -7,6 +7,7 @@ import akka.actor._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConversions._
 import akka.util.{ Duration, Timeout }
+import akka.config.ConfigurationException
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -168,6 +169,14 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  */
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
+}
+
+/**
+ * Router configuration which has no default, i.e. external configuration is required.
+ */
+case object FromConfig extends RouterConfig {
+  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
+    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
 }
 
 object RoundRobinRouter {

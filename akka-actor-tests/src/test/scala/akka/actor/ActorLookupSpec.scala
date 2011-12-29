@@ -215,7 +215,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       def check(looker: ActorRef) {
         val lookname = looker.path.elements.mkString("", "/", "/")
         for (
-          (l, r) ← Seq(LookupString("a/b/c") -> empty(lookname + "a/b/c"),
+          (l, r) ← Seq(
+            LookupString("a/b/c") -> empty(lookname + "a/b/c"),
             LookupString("") -> system.deadLetters,
             LookupString("akka://all-systems/Nobody") -> system.deadLetters,
             LookupPath(system / "hallo") -> empty("user/hallo"),
