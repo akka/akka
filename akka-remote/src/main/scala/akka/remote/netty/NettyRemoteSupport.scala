@@ -71,7 +71,7 @@ abstract class RemoteClient private[akka] (
   /**
    * Sends the message across the wire
    */
-  def send(request: RemoteMessageProtocol): Unit = {
+  private def send(request: RemoteMessageProtocol): Unit = {
     try {
       val payload = remoteSupport.createMessageSendEnvelope(request)
       currentChannel.write(payload).addListener(

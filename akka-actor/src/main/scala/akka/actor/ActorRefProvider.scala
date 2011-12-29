@@ -478,7 +478,7 @@ class LocalActorRefProvider(
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
         log.debug("look-up of path sequence '{}' failed", path)
-        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path.filterNot(_.isEmpty))
+        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path)
       case x ⇒ x
     }
 

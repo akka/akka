@@ -179,6 +179,14 @@ case object FromConfig extends RouterConfig {
     throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
 }
 
+/**
+ * Java API: Router configuration which has no default, i.e. external configuration is required.
+ */
+case class FromConfig() extends RouterConfig {
+  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
+    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
+}
+
 object RoundRobinRouter {
   def apply(routees: Iterable[ActorRef]) = new RoundRobinRouter(routees = routees map (_.path.toString))
 }
