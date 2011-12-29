@@ -15,6 +15,8 @@ object ActorPath {
     }
     rec(s.length, Nil)
   }
+
+  val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
 }
 
 /**
