@@ -76,6 +76,23 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
 
     val Backlog = config.getInt("akka.remote.server.backlog")
 
+    val ExecutionPoolKeepAlive = Duration(config.getMilliseconds("akka.remote.server.execution-pool-keepalive"), MILLISECONDS)
+
+    val ExecutionPoolSize = config.getInt("akka.remote.server.execution-pool-size") match {
+      case sz if sz < 1 ⇒ throw new IllegalArgumentException("akka.remote.server.execution-pool-size is less than 1")
+      case sz           ⇒ sz
+    }
+
+    val MaxChannelMemorySize = config.getInt("akka.remote.server.max-channel-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0")
+      case sz           ⇒ sz
+    }
+
+    val MaxTotalMemorySize = config.getInt("akka.remote.server.max-total-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0")
+      case sz           ⇒ sz
+    }
+
     // TODO handle the system name right and move this to config file syntax
     val URI = "akka://sys@" + Hostname + ":" + Port
   }

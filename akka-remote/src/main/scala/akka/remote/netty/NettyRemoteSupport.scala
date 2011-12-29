@@ -16,12 +16,12 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, Lengt
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder }
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
+import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
 import scala.collection.mutable.HashMap
 import java.net.InetSocketAddress
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
-import akka.actor.ActorSystem
 import akka.event.Logging
 import locks.ReentrantReadWriteLock
 import org.jboss.netty.channel._
@@ -507,10 +507,18 @@ class NettyRemoteServer(
 
   private val bootstrap = new ServerBootstrap(factory)
 
+  private val executor = new ExecutionHandler(
+    new OrderedMemoryAwareThreadPoolExecutor(
+      ExecutionPoolSize,
+      MaxChannelMemorySize,
+      MaxTotalMemorySize,
+      ExecutionPoolKeepAlive.length,
+      ExecutionPoolKeepAlive.unit))
+
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
-  val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, loader, remoteSupport)
+  val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, executor, loader, remoteSupport)
   bootstrap.setPipelineFactory(pipelineFactory)
   bootstrap.setOption("backlog", Backlog)
   bootstrap.setOption("child.tcpNoDelay", true)
@@ -538,6 +546,7 @@ class NettyRemoteServer(
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()
+      executor.releaseExternalResources()
       remoteSupport.notifyListeners(RemoteServerShutdown(remoteSupport))
     } catch {
       case e: Exception ⇒ remoteSupport.notifyListeners(RemoteServerError(e, remoteSupport))
@@ -548,6 +557,7 @@ class NettyRemoteServer(
 class RemoteServerPipelineFactory(
   val name: String,
   val openChannels: ChannelGroup,
+  val executor: ExecutionHandler,
   val loader: Option[ClassLoader],
   val remoteSupport: NettyRemoteSupport) extends ChannelPipelineFactory {
 
@@ -561,7 +571,7 @@ class RemoteServerPipelineFactory(
 
     val authenticator = if (RequireCookie) new RemoteServerAuthenticationHandler(SecureCookie) :: Nil else Nil
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, remoteSupport)
-    val stages: List[ChannelHandler] = lenDec :: protobufDec :: lenPrep :: protobufEnc :: authenticator ::: remoteServer :: Nil
+    val stages: List[ChannelHandler] = lenDec :: protobufDec :: lenPrep :: protobufEnc :: executor :: authenticator ::: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
 }
