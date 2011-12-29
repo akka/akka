@@ -447,7 +447,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1119,7 +1119,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2115,7 +2115,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2665,7 +2665,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2842,7 +2842,11 @@ public final class RemoteProtocol {
     boolean hasMessage();
     com.google.protobuf.ByteString getMessage();
     
-    // optional bytes messageManifest = 2;
+    // required int32 serializerId = 2;
+    boolean hasSerializerId();
+    int getSerializerId();
+    
+    // optional bytes messageManifest = 3;
     boolean hasMessageManifest();
     com.google.protobuf.ByteString getMessageManifest();
   }
@@ -2885,11 +2889,21 @@ public final class RemoteProtocol {
       return message_;
     }
     
-    // optional bytes messageManifest = 2;
-    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 2;
+    // required int32 serializerId = 2;
+    public static final int SERIALIZERID_FIELD_NUMBER = 2;
+    private int serializerId_;
+    public boolean hasSerializerId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public int getSerializerId() {
+      return serializerId_;
+    }
+    
+    // optional bytes messageManifest = 3;
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
     private com.google.protobuf.ByteString messageManifest_;
     public boolean hasMessageManifest() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     public com.google.protobuf.ByteString getMessageManifest() {
       return messageManifest_;
@@ -2897,6 +2911,7 @@ public final class RemoteProtocol {
     
     private void initFields() {
       message_ = com.google.protobuf.ByteString.EMPTY;
+      serializerId_ = 0;
       messageManifest_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
@@ -2905,6 +2920,10 @@ public final class RemoteProtocol {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasSerializerId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -2919,7 +2938,10 @@ public final class RemoteProtocol {
         output.writeBytes(1, message_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, messageManifest_);
+        output.writeInt32(2, serializerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, messageManifest_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -2936,7 +2958,11 @@ public final class RemoteProtocol {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, messageManifest_);
+          .computeInt32Size(2, serializerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, messageManifest_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3048,7 +3074,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3064,8 +3090,10 @@ public final class RemoteProtocol {
         super.clear();
         message_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
-        messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
       
@@ -3111,6 +3139,10 @@ public final class RemoteProtocol {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
+        result.serializerId_ = serializerId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
         result.messageManifest_ = messageManifest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -3131,6 +3163,9 @@ public final class RemoteProtocol {
         if (other.hasMessage()) {
           setMessage(other.getMessage());
         }
+        if (other.hasSerializerId()) {
+          setSerializerId(other.getSerializerId());
+        }
         if (other.hasMessageManifest()) {
           setMessageManifest(other.getMessageManifest());
         }
@@ -3140,6 +3175,10 @@ public final class RemoteProtocol {
       
       public final boolean isInitialized() {
         if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!hasSerializerId()) {
           
           return false;
         }
@@ -3174,8 +3213,13 @@ public final class RemoteProtocol {
               message_ = input.readBytes();
               break;
             }
-            case 18: {
+            case 16: {
               bitField0_ |= 0x00000002;
+              serializerId_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
               messageManifest_ = input.readBytes();
               break;
             }
@@ -3209,10 +3253,31 @@ public final class RemoteProtocol {
         return this;
       }
       
-      // optional bytes messageManifest = 2;
+      // required int32 serializerId = 2;
+      private int serializerId_ ;
+      public boolean hasSerializerId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public int getSerializerId() {
+        return serializerId_;
+      }
+      public Builder setSerializerId(int value) {
+        bitField0_ |= 0x00000002;
+        serializerId_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearSerializerId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        serializerId_ = 0;
+        onChanged();
+        return this;
+      }
+      
+      // optional bytes messageManifest = 3;
       private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
       public boolean hasMessageManifest() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       public com.google.protobuf.ByteString getMessageManifest() {
         return messageManifest_;
@@ -3221,13 +3286,13 @@ public final class RemoteProtocol {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000004;
         messageManifest_ = value;
         onChanged();
         return this;
       }
       public Builder clearMessageManifest() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         messageManifest_ = getDefaultInstance().getMessageManifest();
         onChanged();
         return this;
@@ -3483,7 +3548,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3982,7 +4047,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4506,7 +4571,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4987,7 +5052,7 @@ public final class RemoteProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -5447,32 +5512,32 @@ public final class RemoteProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\035protocol/RemoteProtocol.proto\"j\n\022AkkaR" +
-      "emoteProtocol\022\'\n\007message\030\001 \001(\0132\026.RemoteM" +
-      "essageProtocol\022+\n\013instruction\030\002 \001(\0132\026.Re" +
-      "moteControlProtocol\"\255\001\n\025RemoteMessagePro" +
-      "tocol\022$\n\trecipient\030\001 \002(\0132\021.ActorRefProto" +
-      "col\022!\n\007message\030\002 \002(\0132\020.MessageProtocol\022!" +
-      "\n\006sender\030\004 \001(\0132\021.ActorRefProtocol\022(\n\010met" +
-      "adata\030\005 \003(\0132\026.MetadataEntryProtocol\"l\n\025R" +
-      "emoteControlProtocol\022!\n\013commandType\030\001 \002(" +
-      "\0162\014.CommandType\022\016\n\006cookie\030\002 \001(\t\022 \n\006origi",
-      "n\030\003 \001(\0132\020.AddressProtocol\" \n\020ActorRefPro" +
-      "tocol\022\014\n\004path\030\001 \002(\t\";\n\017MessageProtocol\022\017" +
-      "\n\007message\030\001 \002(\014\022\027\n\017messageManifest\030\002 \001(\014" +
-      "\"3\n\025MetadataEntryProtocol\022\013\n\003key\030\001 \002(\t\022\r" +
-      "\n\005value\030\002 \002(\014\"A\n\017AddressProtocol\022\016\n\006syst" +
-      "em\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r" +
-      "\"7\n\021ExceptionProtocol\022\021\n\tclassname\030\001 \002(\t" +
-      "\022\017\n\007message\030\002 \002(\t\"y\n\035DurableMailboxMessa" +
-      "geProtocol\022$\n\trecipient\030\001 \002(\0132\021.ActorRef" +
-      "Protocol\022!\n\006sender\030\002 \001(\0132\021.ActorRefProto",
-      "col\022\017\n\007message\030\003 \002(\014*(\n\013CommandType\022\013\n\007C" +
-      "ONNECT\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026ReplicationSto" +
-      "rageType\022\r\n\tTRANSIENT\020\001\022\023\n\017TRANSACTION_L" +
-      "OG\020\002\022\r\n\tDATA_GRID\020\003*>\n\027ReplicationStrate" +
-      "gyType\022\021\n\rWRITE_THROUGH\020\001\022\020\n\014WRITE_BEHIN" +
-      "D\020\002B\017\n\013akka.remoteH\001"
+      "\n\024RemoteProtocol.proto\"j\n\022AkkaRemoteProt" +
+      "ocol\022\'\n\007message\030\001 \001(\0132\026.RemoteMessagePro" +
+      "tocol\022+\n\013instruction\030\002 \001(\0132\026.RemoteContr" +
+      "olProtocol\"\255\001\n\025RemoteMessageProtocol\022$\n\t" +
+      "recipient\030\001 \002(\0132\021.ActorRefProtocol\022!\n\007me" +
+      "ssage\030\002 \002(\0132\020.MessageProtocol\022!\n\006sender\030" +
+      "\004 \001(\0132\021.ActorRefProtocol\022(\n\010metadata\030\005 \003" +
+      "(\0132\026.MetadataEntryProtocol\"l\n\025RemoteCont" +
+      "rolProtocol\022!\n\013commandType\030\001 \002(\0162\014.Comma" +
+      "ndType\022\016\n\006cookie\030\002 \001(\t\022 \n\006origin\030\003 \001(\0132\020",
+      ".AddressProtocol\" \n\020ActorRefProtocol\022\014\n\004" +
+      "path\030\001 \002(\t\"Q\n\017MessageProtocol\022\017\n\007message" +
+      "\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageM" +
+      "anifest\030\003 \001(\014\"3\n\025MetadataEntryProtocol\022\013" +
+      "\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"A\n\017AddressPro" +
+      "tocol\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022" +
+      "\014\n\004port\030\003 \002(\r\"7\n\021ExceptionProtocol\022\021\n\tcl" +
+      "assname\030\001 \002(\t\022\017\n\007message\030\002 \002(\t\"y\n\035Durabl" +
+      "eMailboxMessageProtocol\022$\n\trecipient\030\001 \002" +
+      "(\0132\021.ActorRefProtocol\022!\n\006sender\030\002 \001(\0132\021.",
+      "ActorRefProtocol\022\017\n\007message\030\003 \002(\014*(\n\013Com" +
+      "mandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002*K\n\026R" +
+      "eplicationStorageType\022\r\n\tTRANSIENT\020\001\022\023\n\017" +
+      "TRANSACTION_LOG\020\002\022\r\n\tDATA_GRID\020\003*>\n\027Repl" +
+      "icationStrategyType\022\021\n\rWRITE_THROUGH\020\001\022\020" +
+      "\n\014WRITE_BEHIND\020\002B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5516,7 +5581,7 @@ public final class RemoteProtocol {
           internal_static_MessageProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_MessageProtocol_descriptor,
-              new java.lang.String[] { "Message", "MessageManifest", },
+              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", },
               akka.remote.RemoteProtocol.MessageProtocol.class,
               akka.remote.RemoteProtocol.MessageProtocol.Builder.class);
           internal_static_MetadataEntryProtocol_descriptor =

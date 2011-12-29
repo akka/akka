@@ -14,7 +14,6 @@ import akka.actor.{ Extension, ActorSystem, ActorSystemImpl }
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
 object Serialization {
-
   // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
   val currentSystem = new DynamicVariable[ActorSystemImpl](null)
 
@@ -23,9 +22,8 @@ object Serialization {
     import scala.collection.JavaConverters._
     import config._
 
-    val Serializers: Map[String, String] = {
-      toStringMap(getConfig("akka.actor.serializers"))
-    }
+    val Serializers: Map[String, String] =
+      getConfig("akka.actor.serializers").root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
 
     val SerializationBindings: Map[String, Seq[String]] = {
       val configPath = "akka.actor.serialization-bindings"
@@ -40,9 +38,6 @@ object Serialization {
 
       }
     }
-
-    private def toStringMap(mapConfig: Config): Map[String, String] =
-      mapConfig.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
   }
 }
 
@@ -55,27 +50,52 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
 
   val settings = new Settings(system.settings.config)
 
-  //TODO document me
+  /**
+   * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
+   * to either an Array of Bytes or an Exception if one was thrown.
+   */
   def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
     try { Right(findSerializerFor(o).toBinary(o)) } catch { case e: Exception ⇒ Left(e) }
 
-  //TODO document me
+  /**
+   * Deserializes the given array of bytes using the specified serializer id,
+   * using the optional type hint to the Serializer and the optional ClassLoader ot load it into.
+   * Returns either the resulting object or an Exception if one was thrown.
+   */
+  def deserialize(bytes: Array[Byte],
+                  serializerId: Serializer.Identifier,
+                  clazz: Option[Class[_]],
+                  classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
+    try {
+      currentSystem.withValue(system) {
+        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, classLoader))
+      }
+    } catch { case e: Exception ⇒ Left(e) }
+
+  /**
+   * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
+   * You can specify an optional ClassLoader to load the object into.
+   * Returns either the resulting object or an Exception if one was thrown.
+   */
   def deserialize(
     bytes: Array[Byte],
     clazz: Class[_],
     classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
     try {
-      currentSystem.withValue(system) {
-        Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader))
-      }
+      currentSystem.withValue(system) { Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader)) }
     } catch { case e: Exception ⇒ Left(e) }
 
+  /**
+   *
+   */
   def findSerializerFor(o: AnyRef): Serializer = o match {
     case null  ⇒ NullSerializer
     case other ⇒ serializerFor(other.getClass)
   }
 
-  //TODO document me
+  /**
+   *
+   */
   def serializerFor(clazz: Class[_]): Serializer = //TODO fall back on BestMatchClass THEN default AND memoize the lookups
     serializerMap.get(clazz.getName).getOrElse(serializers("default"))
 
@@ -85,6 +105,9 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
     ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs)
 
+  /**
+   * FIXME implement support for this
+   */
   private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
     if (bindings.isEmpty)
       Left(NoSerializerFoundException("No mapping serializer found for " + cl))

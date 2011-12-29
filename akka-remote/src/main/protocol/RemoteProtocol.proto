@@ -73,7 +73,8 @@ message ActorRefProtocol {
  */
 message MessageProtocol {
   required bytes message = 1;
-  optional bytes messageManifest = 2;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 3;
 }
 
 /**

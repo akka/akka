@@ -8,8 +8,7 @@ import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, B
 import akka.util.ClassLoaderObjectInputStream
 
 object Serializer {
-  val defaultSerializerName = classOf[JavaSerializer].getName
-  type Identifier = Byte
+  type Identifier = Int
 }
 
 /**
@@ -17,7 +16,7 @@ object Serializer {
  */
 trait Serializer extends scala.Serializable {
   /**
-   * Completely unique Byte value to identify this implementation of Serializer, used to optimize network traffic
+   * Completely unique value to identify this implementation of Serializer, used to optimize network traffic
    * Values from 0 to 16 is reserved for Akka internal usage
    */
   def identifier: Serializer.Identifier
@@ -28,9 +27,14 @@ trait Serializer extends scala.Serializable {
   def toBinary(o: AnyRef): Array[Byte]
 
   /**
+   * Returns whether this serializer needs a manifest in the fromBinary method
+   */
+  def includeManifest: Boolean
+
+  /**
    *  Produces an object from an array of bytes, with an optional type-hint and a classloader to load the class into
    */
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef
 }
 
 object JavaSerializer extends JavaSerializer
@@ -38,7 +42,9 @@ object NullSerializer extends NullSerializer
 
 class JavaSerializer extends Serializer {
 
-  def identifier = 1: Byte
+  def includeManifest: Boolean = false
+
+  def identifier = 1: Serializer.Identifier
 
   def toBinary(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
@@ -60,10 +66,9 @@ class JavaSerializer extends Serializer {
 }
 
 class NullSerializer extends Serializer {
-
   val nullAsBytes = Array[Byte]()
-
-  def identifier = 0: Byte
+  def includeManifest: Boolean = false
+  def identifier = 0: Serializer.Identifier
   def toBinary(o: AnyRef) = nullAsBytes
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef = null
 }
