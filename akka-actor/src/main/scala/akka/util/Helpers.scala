@@ -26,7 +26,7 @@ object Helpers {
     def compare(a: AnyRef, b: AnyRef): Int = compareIdentityHash(a, b)
   }
 
-  final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+%"
+  final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+~"
 
   @tailrec
   def base64(l: Long, sb: StringBuilder = new StringBuilder("$")): String = {
