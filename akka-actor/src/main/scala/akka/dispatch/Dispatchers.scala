@@ -6,7 +6,6 @@ package akka.dispatch
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
-import akka.actor.LocalActorRef
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.actor.ActorSystem

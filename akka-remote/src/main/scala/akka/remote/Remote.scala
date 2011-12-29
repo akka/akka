@@ -117,7 +117,6 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
 sealed trait DaemonMsg
 case class DaemonMsgCreate(factory: () ⇒ Actor, path: String, supervisor: ActorRef) extends DaemonMsg
 case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
-case class DaemonMsgTerminated(deceased: ActorRef) extends DaemonMsg
 
 /**
  * Internal system "daemon" actor for remote internal communication.
@@ -177,13 +176,13 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
         case DaemonMsgWatch(watcher, watched) ⇒
           val other = system.actorFor(watcher.path.root / "remote")
           system.deathWatch.subscribe(other, watched)
-        case DaemonMsgTerminated(deceased) ⇒
-          system.deathWatch.publish(Terminated(deceased))
       }
 
-    case Terminated(child) ⇒ removeChild(child.path.elements.drop(1).mkString("/"))
+    case Terminated(child: LocalActorRef) ⇒ removeChild(child.path.elements.drop(1).mkString("/"))
 
-    case unknown           ⇒ log.warning("Unknown message {} received by {}", unknown, this)
+    case t: Terminated                    ⇒ system.deathWatch.publish(t)
+
+    case unknown                          ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
 
 }
@@ -253,13 +252,13 @@ trait RemoteMarshallingOps {
     remoteMessage.recipient match {
       case `remoteDaemon` ⇒
         remoteMessage.payload match {
-          case m: DaemonMsg ⇒
+          case m @ (_: DaemonMsg | _: Terminated) ⇒
             try remoteDaemon ! m catch {
               case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m, remoteMessage.sender)
             }
           case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
         }
-      case l @ (_: LocalActorRef | _: MinimalActorRef) ⇒
+      case l: LocalRef ⇒
         remoteMessage.payload match {
           case msg: SystemMessage ⇒
             if (useUntrustedMode)

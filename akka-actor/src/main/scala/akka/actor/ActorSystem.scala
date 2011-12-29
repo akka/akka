@@ -423,7 +423,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
-    deadLetters.init(dispatcher, provider.rootPath)
+    deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
     _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)

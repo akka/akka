@@ -43,6 +43,10 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
   val syst = system.asInstanceOf[ActorSystemImpl].systemGuardian
   val root = system.asInstanceOf[ActorSystemImpl].lookupRoot
 
+  def empty(path: String) = new EmptyLocalActorRef(system.eventStream, system.dispatcher, path match {
+    case RelativeActorPath(elems) ⇒ system.actorFor("/").path / elems
+  })
+
   "An ActorSystem" must {
 
     "find actors by looking up their path" in {
@@ -101,14 +105,18 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor("system/") must be === syst
     }
 
-    "return deadLetters for non-existing paths" in {
-      system.actorFor("a/b/c") must be === system.deadLetters
-      system.actorFor("") must be === system.deadLetters
-      system.actorFor("akka://all-systems/Nobody") must be === system.deadLetters
-      system.actorFor("akka://all-systems/user") must be === system.deadLetters
-      system.actorFor(system / "hallo") must be === system.deadLetters
-      system.actorFor(Seq()) must be === system.deadLetters
-      system.actorFor(Seq("a")) must be === system.deadLetters
+    "return deadLetters or EmptyLocalActorRef, respectively, for non-existing paths" in {
+      def check(lookup: ActorRef, result: ActorRef) = {
+        lookup.getClass must be === result.getClass
+        lookup must be === result
+      }
+      check(system.actorFor("a/b/c"), empty("a/b/c"))
+      check(system.actorFor(""), system.deadLetters)
+      check(system.actorFor("akka://all-systems/Nobody"), system.deadLetters)
+      check(system.actorFor("akka://all-systems/user"), system.deadLetters)
+      check(system.actorFor(system / "hallo"), empty("user/hallo"))
+      check(system.actorFor(Seq()), system.deadLetters)
+      check(system.actorFor(Seq("a")), empty("a"))
     }
 
     "find temporary actors" in {
@@ -119,13 +127,14 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(a.path.toString) must be === a
       system.actorFor(a.path.elements) must be === a
       system.actorFor(a.path.toString + "/") must be === a
-      system.actorFor(a.path.toString + "/hallo") must be === system.deadLetters
+      system.actorFor(a.path.toString + "/hallo").isTerminated must be === true
       f.isCompleted must be === false
+      a.isTerminated must be === false
       a ! 42
       f.isCompleted must be === true
       Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
-      awaitCond(system.actorFor(a.path) == system.deadLetters, 1 second)
+      awaitCond(system.actorFor(a.path).isTerminated, 1 second)
     }
 
   }
@@ -195,21 +204,26 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       for (target ← Seq(root, syst, user, system.deadLetters)) check(target)
     }
 
-    "return deadLetters for non-existing paths" in {
+    "return deadLetters or EmptyLocalActorRef, respectively, for non-existing paths" in {
       import scala.collection.JavaConverters._
 
-      def checkOne(looker: ActorRef, query: Query) {
-        Await.result(looker ? query, timeout.duration) must be === system.deadLetters
+      def checkOne(looker: ActorRef, query: Query, result: ActorRef) {
+        val lookup = Await.result(looker ? query, timeout.duration)
+        lookup.getClass must be === result.getClass
+        lookup must be === result
       }
       def check(looker: ActorRef) {
-        Seq(LookupString("a/b/c"),
-          LookupString(""),
-          LookupString("akka://all-systems/Nobody"),
-          LookupPath(system / "hallo"),
-          LookupPath(looker.path child "hallo"), // test Java API
-          LookupPath(looker.path descendant Seq("a", "b").asJava), // test Java API
-          LookupElems(Seq()),
-          LookupElems(Seq("a"))) foreach (checkOne(looker, _))
+        val lookname = looker.path.elements.mkString("", "/", "/")
+        for (
+          (l, r) ← Seq(LookupString("a/b/c") -> empty(lookname + "a/b/c"),
+            LookupString("") -> system.deadLetters,
+            LookupString("akka://all-systems/Nobody") -> system.deadLetters,
+            LookupPath(system / "hallo") -> empty("user/hallo"),
+            LookupPath(looker.path child "hallo") -> empty(lookname + "hallo"), // test Java API
+            LookupPath(looker.path descendant Seq("a", "b").asJava) -> empty(lookname + "a/b"), // test Java API
+            LookupElems(Seq()) -> system.deadLetters,
+            LookupElems(Seq("a")) -> empty(lookname + "a"))
+        ) checkOne(looker, l, r)
       }
       for (looker ← all) check(looker)
     }
@@ -228,11 +242,12 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements), timeout.duration) must be === a
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ ""), timeout.duration) must be === a
       f.isCompleted must be === false
+      a.isTerminated must be === false
       a ! 42
       f.isCompleted must be === true
       Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
-      awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration) == system.deadLetters, 1 second)
+      awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration).asInstanceOf[ActorRef].isTerminated, 1 second)
     }
 
   }

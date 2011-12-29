@@ -467,7 +467,7 @@ class LocalActorRefProvider(
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) deadLetters
     else ref.getChild(path.iterator) match {
-      case Nobody ⇒ deadLetters
+      case Nobody ⇒ new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path.filterNot(_.isEmpty))
       case x      ⇒ x
     }
 

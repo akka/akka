@@ -18,8 +18,8 @@ class Locker(scheduler: Scheduler, period: Duration, val path: ActorPath, val de
         val soul = iter.next()
         deathWatch.subscribe(Locker.this, soul.getKey) // in case Terminated got lost somewhere
         soul.getKey match {
-          case _: LocalActorRef ⇒ // nothing to do, they know what they signed up for
-          case nonlocal         ⇒ nonlocal.stop() // try again in case it was due to a communications failure
+          case _: LocalRef ⇒ // nothing to do, they know what they signed up for
+          case nonlocal    ⇒ nonlocal.stop() // try again in case it was due to a communications failure
         }
       }
     }
