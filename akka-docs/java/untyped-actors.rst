@@ -418,6 +418,8 @@ message.
 
 .. includecode:: code/akka/docs/actor/MyReceivedTimeoutUntypedActor.java#receive-timeout
 
+.. _stopping-actors-java:
+
 Stopping actors
 ===============
 

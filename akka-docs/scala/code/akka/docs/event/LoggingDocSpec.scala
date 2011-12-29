@@ -58,4 +58,17 @@ class LoggingDocSpec extends AkkaSpec {
     myActor ! "test"
   }
 
+  "allow registration to dead letters" in {
+    //#deadletters
+    import akka.actor.{ Actor, DeadLetter, Props }
+
+    val listener = system.actorOf(Props(new Actor {
+      def receive = {
+        case d: DeadLetter ⇒ println(d)
+      }
+    }))
+    system.eventStream.subscribe(listener, classOf[DeadLetter])
+    //#deadletters
+  }
+
 }

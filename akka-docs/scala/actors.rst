@@ -477,6 +477,7 @@ object.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-timeout
 
+.. _stopping-actors-scala:
 
 Stopping actors
 ===============
