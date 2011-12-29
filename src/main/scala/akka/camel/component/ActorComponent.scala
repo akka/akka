@@ -13,11 +13,12 @@ import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import akka.actor._
-import akka.camel.{Ack, Failure, Message}
 import akka.camel.CamelMessageConversion.toExchangeAdapter
-import akka.dispatch.{CompletableFuture, MessageInvocation, MessageDispatcher}
 
 import scala.reflect.BeanProperty
+import akka.camel.{CamelServiceManager, Ack, Failure, Message}
+import akka.util.{Timeout, Duration}
+import akka.dispatch.{Future, Await}
 
 /**
  * @author Martin Krasser
@@ -146,7 +147,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
         true
       }
       case (true, false, _) => {
-        sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
+        sendAsync(exchange, callback)
         false
       }
       case (false, false, true) => {
@@ -155,7 +156,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
         true
       }
       case (false, false, false) => {
-        sendAsync(exchange, Some(AsyncCallbackAdapter(exchange, callback)))
+        sendAsync(exchange, callback)
         false
       }
       case (false, true, false) => {
@@ -169,23 +170,29 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     }
   }
 
+  import akka.util.duration._
+  import Await._
+  val timeout = 10 seconds
+  implicit val timeout2 = new Timeout(timeout)
+
   private def sendSync(exchange: Exchange) = {
-    import akka.camel.Consumer._
 
     val actor = target(exchange)
-    val result: Any = try { actor !! requestFor(exchange) } catch { case e => Some(Failure(e)) }
+    val result: Any = try { Await.result(actor.ask(requestFor(exchange), timeout2),timeout) } catch { case e => Some(Failure(e)) }
 
     result match {
       case Some(Ack)          => { /* no response message to set */ }
       case Some(msg: Failure) => exchange.fromFailureMessage(msg)
       case Some(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
       case None               => throw new TimeoutException("timeout (%d ms) while waiting response from %s"
-                                                            format (actor.timeout, ep.getEndpointUri))
+        format (timeout, ep.getEndpointUri))
     }
   }
 
-  private def sendAsync(exchange: Exchange, sender: Option[ActorRef] = None) =
-    target(exchange).!(requestFor(exchange))(sender)
+  private def sendAsync(exchange: Exchange) = target(exchange) ! requestFor(exchange)
+  
+  private def sendAsync(exchange: Exchange, callback: AsyncCallback) =
+    target(exchange).ask(requestFor(exchange), timeout2).onComplete(AsyncCallbackAdapter(exchange, callback ))
 
   private def target(exchange: Exchange) =
     targetOption(exchange) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
@@ -206,12 +213,8 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     case null         => uuid
   }
 
-  private def targetById(id: String) = Actor.registry.actorsFor(id) match {
-    case actors if actors.length == 0 => None
-    case actors                       => Some(actors(0))
-  }
-
-  private def targetByUuid(uuid: Uuid) = Actor.registry.actorFor(uuid)
+  private def targetById(id: String) = CamelServiceManager.findConsumer(id)
+  private def targetByUuid(uuid: Uuid) = CamelServiceManager.findConsumer(uuid)
 }
 
 /**
@@ -245,88 +248,23 @@ class ActorIdentifierNotSetException extends RuntimeException {
  * @author Martin Krasser
  */
 private[akka] object AsyncCallbackAdapter {
+  import akka.actor.{Props, ActorSystem, ActorRef, Actor}
+
+  lazy val system = ActorSystem("AsyncCallbackAdapter")
   /**
    * Creates and starts an <code>AsyncCallbackAdapter</code>.
    *
    * @param exchange message exchange to write results to.
    * @param callback callback object to generate completion notifications.
    */
-  def apply(exchange: Exchange, callback: AsyncCallback) =
-    new AsyncCallbackAdapter(exchange, callback).start
+  def apply(exchange: Exchange, callback: AsyncCallback) =  (msg:Any) => {
+      msg match {
+        case Ack          => { /* no response message to set */ }
+        case msg: Failure => exchange.fromFailureMessage(msg)
+        case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
+      }
+      callback.done(false)
+  }
 }
 
-/**
- * Adapts an <code>ActorRef</code> to a Camel <code>AsyncCallback</code>. Used by receiving actors to reply
- * asynchronously to Camel routes with <code>ActorRef.reply</code>.
- * <p>
- * <em>Please note</em> that this adapter can only be used locally at the moment which should not
- * be a problem is most situations since Camel endpoints are only activated for local actor references,
- * never for remote references.
- *
- * @author Martin Krasser
- */
-private[akka] class AsyncCallbackAdapter(exchange: Exchange, callback: AsyncCallback) extends ActorRef with ScalaActorRef {
-  import akka.camel.Consumer._
-
-  def start = {
-    _status = ActorRefInternals.RUNNING
-    this
-  }
-
-  def stop() = {
-    _status = ActorRefInternals.SHUTDOWN
-  }
-
-  /**
-   * Populates the initial <code>exchange</code> with the reply <code>message</code> and uses the
-   * <code>callback</code> handler to notify Camel about the asynchronous completion of the message
-   * exchange.
-   *
-   * @param message reply message
-   * @param sender ignored
-   */
-  protected[akka] def postMessageToMailbox(message: Any, channel: UntypedChannel) = {
-    message match {
-      case Ack          => { /* no response message to set */ }
-      case msg: Failure => exchange.fromFailureMessage(msg)
-      case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
-    }
-    callback.done(false)
-  }
-
-  def actorClass: Class[_ <: Actor] = unsupported
-  def actorClassName = unsupported
-  def dispatcher_=(md: MessageDispatcher): Unit = unsupported
-  def dispatcher: MessageDispatcher = unsupported
-  def makeRemote(hostname: String, port: Int): Unit = unsupported
-  def makeRemote(address: InetSocketAddress): Unit = unsupported
-  def homeAddress_=(address: InetSocketAddress): Unit = unsupported
-  def remoteAddress: Option[InetSocketAddress] = unsupported
-  def link(actorRef: ActorRef): Unit = unsupported
-  def unlink(actorRef: ActorRef): Unit = unsupported
-  def startLink(actorRef: ActorRef): Unit = unsupported
-  def startLinkRemote(actorRef: ActorRef, hostname: String, port: Int): Unit = unsupported
-  def spawn(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
-  def spawnLink(clazz: Class[_ <: Actor]): ActorRef = unsupported
-  def spawnLinkRemote(clazz: Class[_ <: Actor], hostname: String, port: Int, timeout: Long): ActorRef = unsupported
-  def shutdownLinkedActors: Unit = unsupported
-  def supervisor: Option[ActorRef] = unsupported
-  def homeAddress: Option[InetSocketAddress] = None
-  protected[akka] def postMessageToMailboxAndCreateFutureResultWithTimeout(message: Any, timeout: Long, channel: UntypedChannel) = unsupported
-  protected[akka] def mailbox: AnyRef = unsupported
-  protected[akka] def mailbox_=(msg: AnyRef):AnyRef = unsupported
-  protected[akka] def restart(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def restartLinkedActors(reason: Throwable, maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Unit = unsupported
-  protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable): Unit = unsupported
-  def linkedActors: JMap[Uuid, ActorRef] = unsupported
-  protected[akka] def linkedActorsAsList: List[ActorRef] = unsupported
-  protected[akka] def invoke(messageHandle: MessageInvocation): Unit = unsupported
-  protected[akka] def remoteAddress_=(addr: Option[InetSocketAddress]): Unit = unsupported
-  protected[akka] def registerSupervisorAsRemoteActor = unsupported
-  protected[akka] def supervisor_=(sup: Option[ActorRef]): Unit = unsupported
-  protected[akka] def actorInstance: AtomicReference[Actor] = unsupported
-
-  private def unsupported = throw new UnsupportedOperationException("Not supported for %s" format classOf[AsyncCallbackAdapter].getName)
-}
 

@@ -9,7 +9,7 @@ import org.apache.camel.CamelContext
 import akka.japi.{Option => JOption}
 
 import TypedCamelAccess._
-import akka.actor.{Actor, ActorSystem}
+import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 
 /**
  * Publishes consumer actors at their Camel endpoints. Consumer actors are published asynchronously when
@@ -24,9 +24,9 @@ import akka.actor.{Actor, ActorSystem}
 trait CamelService extends Bootable {
 
 
+
   implicit val actorSystem  = ActorSystem("Camel")
-//  private[camel] val activationTracker = actorOf(new ActivationTracker)
-  private[camel] val consumerPublisher = actorOf(new ConsumerPublisher(/*activationTracker*/))
+  private[camel] val consumerPublisher = actorSystem.actorOf(Props[ConsumerPublisher])
 
   private val serviceEnabled = config.isModuleEnabled("camel")
 
@@ -82,6 +82,7 @@ trait CamelService extends Bootable {
   }
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
+  def findConsumer(id: Any) : Option[ActorRef] = unsupported
 }
 
 
@@ -92,6 +93,8 @@ trait CamelService extends Bootable {
  * @author Martin Krasser
  */
 object CamelServiceManager {
+  def findConsumer(id: Any) = mandatoryService.findConsumer(id)
+
 
   /**
    * The current CamelService which is defined when a CamelService has been started.

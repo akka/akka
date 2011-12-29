@@ -16,17 +16,17 @@ import akka.actor._
 trait Consumer { this: Actor =>
   import RouteDefinitionHandler._
 
+  val camel : CamelService = CamelServiceManager.mandatoryService
+
   /**
    * The default route definition handler is the identity function
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
-  val camel : CamelService = CamelServiceManager.mandatoryService
-
   /**
-   * Registers consumer
+   * Registers consumer with camel service.
    */
-  def from(route : String) = camel.registerConsumer(route, this)
+  def from(route : String) { camel.registerConsumer(route, this) }
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
