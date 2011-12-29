@@ -7,7 +7,7 @@ package akka.camel
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
 
-import akka.event.EventHandler
+import akka.camel.Migration._
 import akka.japi.{Option => JOption}
 
 import TypedCamelAccess._

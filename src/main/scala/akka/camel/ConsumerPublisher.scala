@@ -10,20 +10,8 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
 
 import akka.actor._
-import akka.event.EventHandler
+import akka.camel.Migration._
 
-/**
- * Concrete publish requestor that requests publication of consumer actors on <code>ActorRegistered</code>
- * events and unpublication of consumer actors on <code>ActorUnregistered</code> events.
- *
- * @author Martin Krasser
- */
-private[camel] class ConsumerPublishRequestor extends PublishRequestor {
-  def receiveActorRegistryEvent = {
-    case ActorRegistered(actor)   => for (event <- ConsumerActorRegistered.eventFor(actor)) deliverCurrentEvent(event)
-    case ActorUnregistered(actor) => for (event <- ConsumerActorUnregistered.eventFor(actor)) deliverCurrentEvent(event)
-  }
-}
 
 /**
  * Publishes consumer actors on <code>ConsumerActorRegistered</code> events and unpublishes
@@ -33,17 +21,17 @@ private[camel] class ConsumerPublishRequestor extends PublishRequestor {
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerPublisher(activationTracker: ActorRef) extends Actor {
+private[camel] class ConsumerPublisher(/*activationTracker: ActorRef*/) extends Actor {
   import ConsumerPublisher._
 
   def receive = {
     case r: ConsumerActorRegistered => {
       handleConsumerActorRegistered(r)
-      activationTracker ! EndpointActivated
+//      activationTracker ! EndpointActivated
     }
     case u: ConsumerActorUnregistered => {
       handleConsumerActorUnregistered(u)
-      activationTracker ! EndpointDeactivated
+//      activationTracker ! EndpointDeactivated
     }
     case _ => { /* ignore */}
   }
@@ -111,52 +99,6 @@ private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) e
   protected def targetUri = "actor:uuid:%s?blocking=%s&autoack=%s" format (event.uuid, event.blocking, event.autoack)
 }
 
-/**
- * Tracks <code>EndpointActivated</code> and <code>EndpointDectivated</code> events. Used to wait for a
- * certain number of endpoints activations and de-activations to occur.
- *
- * @see SetExpectedActivationCount
- * @see SetExpectedDeactivationCount
- *
- * @author Martin Krasser
- */
-private[camel] class ActivationTracker extends Actor {
-  private var activationLatch = new CountDownLatch(0)
-  private var deactivationLatch = new CountDownLatch(0)
-
-  def receive = {
-    case SetExpectedActivationCount(num) => {
-      activationLatch = new CountDownLatch(num)
-      self.reply(activationLatch)
-    }
-    case SetExpectedDeactivationCount(num) => {
-      deactivationLatch = new CountDownLatch(num)
-      self.reply(deactivationLatch)
-    }
-    case EndpointActivated =>   activationLatch.countDown
-    case EndpointDeactivated => deactivationLatch.countDown
-  }
-}
-
-/**
- * Command message that sets the number of expected endpoint activations on <code>ActivationTracker</code>.
- */
-private[camel] case class SetExpectedActivationCount(num: Int)
-
-/**
- * Command message that sets the number of expected endpoint de-activations on <code>ActivationTracker</code>.
- */
-private[camel] case class SetExpectedDeactivationCount(num: Int)
-
-/**
- * Event message indicating that a single endpoint has been activated.
- */
-private[camel] case class EndpointActivated()
-
-/**
- * Event message indicating that a single endpoint has been de-activated.
- */
-private[camel] case class EndpointDeactivated()
 
 /**
  * A consumer (un)registration event.
@@ -171,9 +113,9 @@ private[camel] trait ConsumerEvent {
 private[camel] trait ConsumerActorEvent extends ConsumerEvent {
   val actorRef: ActorRef
   val actor: Consumer
+  val endpointUri : String
 
-  val uuid                   = actorRef.uuid.toString
-  val endpointUri            = actor.endpointUri
+  val uuid                   = actorRef.path.toString
   val blocking               = actor.blocking
   val autoack                = actor.autoack
   val routeDefinitionHandler = actor.routeDefinitionHandler
@@ -182,40 +124,9 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */
-private[camel] case class ConsumerActorRegistered(actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
+private[camel] case class ConsumerActorRegistered(endpointUri:String, actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
-private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
-
-/**
- * @author Martin Krasser
- */
-private[camel] object ConsumerActorRegistered {
-  /**
-   * Creates an ConsumerActorRegistered event message for a consumer actor or None if
-   * <code>actorRef</code> is not a consumer actor.
-   */
-  def eventFor(actorRef: ActorRef): Option[ConsumerActorRegistered] = {
-    Consumer.withConsumer[ConsumerActorRegistered](actorRef) {
-      actor => ConsumerActorRegistered(actorRef, actor)
-    }
-  }
-}
-
-/**
- * @author Martin Krasser
- */
-private[camel] object ConsumerActorUnregistered {
-  /**
-   * Creates an ConsumerActorUnregistered event message for a consumer actor or None if
-   * <code>actorRef</code> is not a consumer actor.
-   */
-  def eventFor(actorRef: ActorRef): Option[ConsumerActorUnregistered] = {
-    Consumer.withConsumer[ConsumerActorUnregistered](actorRef) {
-      actor => ConsumerActorUnregistered(actorRef, actor)
-    }
-  }
-}
-
+private[camel] case class ConsumerActorUnregistered(endpointUri:String, actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent

@@ -21,10 +21,12 @@ trait Consumer { this: Actor =>
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
+  val camel : CamelService = CamelServiceManager.mandatoryService
+
   /**
-   * Returns the Camel endpoint URI to consume messages from.
+   * Registers consumer
    */
-  def endpointUri: String
+  def from(route : String) = camel.registerConsumer(route, this)
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
@@ -42,7 +44,7 @@ trait Consumer { this: Actor =>
   /**
    * Sets the route definition handler for creating a custom route to this consumer instance.
    */
-  def onRouteDefinition(h: RouteDefinition => ProcessorDefinition[_]): Unit = onRouteDefinition(from(h))
+  def onRouteDefinition(h: RouteDefinition => ProcessorDefinition[_]): Unit = onRouteDefinition(RouteDefinitionHandler.from(h))
 
   /**
    * Sets the route definition handler for creating a custom route to this consumer instance.
@@ -61,7 +63,7 @@ trait Consumer { this: Actor =>
  * @author Martin Krasser
  */
 trait UntypedConsumer extends Consumer { self: UntypedActor =>
-  final override def endpointUri = getEndpointUri
+  final def endpointUri = getEndpointUri
   final override def blocking = isBlocking
   final override def autoack = isAutoack
 
@@ -123,25 +125,5 @@ object RouteDefinitionHandler {
    */
   def from(f: RouteDefinition => ProcessorDefinition[_]) = new RouteDefinitionHandler {
     def onRouteDefinition(rd: RouteDefinition) = f(rd)
-  }
-}
-
-/**
- * @author Martin Krasser
- */
-private[camel] object Consumer {
-  /**
-   * Applies a function <code>f</code> to <code>actorRef</code> if <code>actorRef</code>
-   * references a consumer actor. A valid reference to a consumer actor is a local actor
-   * reference with a target actor that implements the <code>Consumer</code> trait. The
-   * target <code>Consumer</code> instance is passed as argument to <code>f</code>. This
-   * method returns <code>None</code> if <code>actorRef</code> is not a valid reference
-   * to a consumer actor, <code>Some</code> contained the return value of <code>f</code>
-   * otherwise.
-   */
-  def withConsumer[T](actorRef: ActorRef)(f: Consumer => T): Option[T] = {
-    if (!actorRef.actor.isInstanceOf[Consumer]) None
-    else if (actorRef.homeAddress.isDefined) None
-    else Some(f(actorRef.actor.asInstanceOf[Consumer]))
   }
 }

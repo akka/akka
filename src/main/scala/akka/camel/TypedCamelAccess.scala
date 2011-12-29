@@ -5,7 +5,7 @@
 package akka.camel
 
 import org.apache.camel.CamelContext
-import akka.event.EventHandler
+import akka.camel.Migration._
 
 import akka.util.ReflectiveAccess.getObjectFor
 
