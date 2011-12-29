@@ -5,6 +5,7 @@ package akka.camel
 import akka.camel.Migration._
 
 
+import component.Path
 import org.apache.camel.CamelContext
 import akka.japi.{Option => JOption}
 
@@ -21,11 +22,9 @@ import akka.actor.{ActorRef, Props, Actor, ActorSystem}
  *
  * @author Martin Krasser
  */
-trait CamelService extends Bootable {
+trait CamelService extends Bootable with ConsumerRegistry{
 
-
-
-  implicit val actorSystem  = ActorSystem("Camel")
+  val actorSystem  = ActorSystem("Camel")
   private[camel] val consumerPublisher = actorSystem.actorOf(Props[ConsumerPublisher])
 
   private val serviceEnabled = config.isModuleEnabled("camel")
@@ -80,9 +79,18 @@ trait CamelService extends Bootable {
     actorSystem.shutdown()
     CamelContextManager.stop
   }
+}
 
-  def registerConsumer(route: String, consumer: Consumer with Actor) = consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
-  def findConsumer(id: Any) : Option[ActorRef] = unsupported
+trait ConsumerRegistry{ self:CamelService =>
+  //TODO: kill less kittens and use less blocking collection
+  val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())
+
+  def registerConsumer(route: String, consumer: Consumer with Actor) = {
+    consumers.put(Path(consumer.self.path.toString), consumer.self)
+    consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
+  }
+
+  def findConsumer(path: Path) : Option[ActorRef] = consumers.get(path)
 }
 
 
@@ -93,7 +101,7 @@ trait CamelService extends Bootable {
  * @author Martin Krasser
  */
 object CamelServiceManager {
-  def findConsumer(id: Any) = mandatoryService.findConsumer(id)
+  def findConsumer(path: Path) = mandatoryService.findConsumer(path)
 
 
   /**

@@ -30,6 +30,9 @@ object ActorComponent {
   val ActorIdentifier = "CamelActorIdentifier"
 }
 
+case class Path(value:String)
+
+
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
@@ -39,16 +42,19 @@ object ActorComponent {
  * @author Martin Krasser
  */
 class ActorComponent extends DefaultComponent {
+
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
-    val (idType, idValue) = parsePath(remaining)
-    new ActorEndpoint(uri, this, idType, idValue)
+    val path = parsePath(remaining)
+    new ActorEndpoint(uri, this, path)
   }
 
-  private def parsePath(remaining: String): Tuple2[String, Option[String]] = remaining match {
-    case null | "" => throw new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format remaining)
-    case   id if id   startsWith "id:"   => ("id",   parseIdentifier(id substring 3))
-    case uuid if uuid startsWith "uuid:" => ("uuid", parseIdentifier(uuid substring 5))
-    case   id                            => ("id",   parseIdentifier(id))
+  def invalidPath(id: String): scala.IllegalArgumentException = {
+    new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format id)
+  }
+
+  private def parsePath(remaining: String): Path = remaining match {
+    case null | "" => throw invalidPath(remaining)
+    case   id if id   startsWith "path:"   => Path(parseIdentifier(id substring 5).getOrElse(throw invalidPath(remaining)))
   }
 
   private def parseIdentifier(identifier: String): Option[String] =
@@ -76,8 +82,7 @@ class ActorComponent extends DefaultComponent {
  */
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
-                    val idType: String,
-                    val idValue: Option[String]) extends DefaultEndpoint(uri, comp) {
+                    val path: Path) extends DefaultEndpoint(uri, comp) {
 
   /**
    * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
@@ -134,7 +139,7 @@ class ActorEndpoint(uri: String,
 class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with AsyncProcessor {
   import ActorProducer._
 
-  private lazy val uuid = uuidFrom(ep.idValue.getOrElse(throw new ActorIdentifierNotSetException))
+  private lazy val path = ep.path
 
   def process(exchange: Exchange) =
     if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
@@ -177,7 +182,7 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
 
   private def sendSync(exchange: Exchange) = {
 
-    val actor = target(exchange)
+    val actor = target(path)
     val result: Any = try { Await.result(actor.ask(requestFor(exchange), timeout2),timeout) } catch { case e => Some(Failure(e)) }
 
     result match {
@@ -189,32 +194,14 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
     }
   }
 
-  private def sendAsync(exchange: Exchange) = target(exchange) ! requestFor(exchange)
-  
+  private def sendAsync(exchange: Exchange) = target(path) ! requestFor(exchange)
   private def sendAsync(exchange: Exchange, callback: AsyncCallback) =
-    target(exchange).ask(requestFor(exchange), timeout2).onComplete(AsyncCallbackAdapter(exchange, callback ))
+    target(path).ask(requestFor(exchange), timeout2).onComplete(AsyncCallbackAdapter(exchange, callback ))
 
-  private def target(exchange: Exchange) =
-    targetOption(exchange) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+  private def target(path:Path) =
+    targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private def targetOption(exchange: Exchange): Option[ActorRef] = ep.idType match {
-    case "id"   => targetById(targetId(exchange))
-    case "uuid" => targetByUuid(targetUuid(exchange))
-  }
-
-  private def targetId(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
-    case id: String  => id
-    case null        => ep.idValue.getOrElse(throw new ActorIdentifierNotSetException)
-  }
-
-  private def targetUuid(exchange: Exchange) = exchange.getIn.getHeader(ActorComponent.ActorIdentifier) match {
-    case uuid: Uuid   => uuid
-    case uuid: String => uuidFrom(uuid)
-    case null         => uuid
-  }
-
-  private def targetById(id: String) = CamelServiceManager.findConsumer(id)
-  private def targetByUuid(uuid: Uuid) = CamelServiceManager.findConsumer(uuid)
+  private def targetById(path: Path) = CamelServiceManager.findConsumer(path)
 }
 
 /**
@@ -248,9 +235,7 @@ class ActorIdentifierNotSetException extends RuntimeException {
  * @author Martin Krasser
  */
 private[akka] object AsyncCallbackAdapter {
-  import akka.actor.{Props, ActorSystem, ActorRef, Actor}
 
-  lazy val system = ActorSystem("AsyncCallbackAdapter")
   /**
    * Creates and starts an <code>AsyncCallbackAdapter</code>.
    *

@@ -53,7 +53,7 @@ private[camel] object ConsumerPublisher {
    * Stops the route to the already un-registered consumer actor.
    */
   def handleConsumerActorUnregistered(event: ConsumerActorUnregistered) {
-    CamelContextManager.mandatoryContext.stopRoute(event.uuid)
+    CamelContextManager.mandatoryContext.stopRoute(event.path)
     EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
   }
 }
@@ -94,9 +94,9 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.uuid) {
+private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
-  protected def targetUri = "actor:uuid:%s?blocking=%s&autoack=%s" format (event.uuid, event.blocking, event.autoack)
+  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s" format (event.path, event.blocking, event.autoack)
 }
 
 
@@ -104,7 +104,7 @@ private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) e
  * A consumer (un)registration event.
  */
 private[camel] trait ConsumerEvent {
-  val uuid: String
+  val path: String
 }
 
 /**
@@ -115,7 +115,7 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
   val actor: Consumer
   val endpointUri : String
 
-  val uuid                   = actorRef.path.toString
+  val path                   = actorRef.path.toString
   val blocking               = actor.blocking
   val autoack                = actor.autoack
   val routeDefinitionHandler = actor.routeDefinitionHandler
