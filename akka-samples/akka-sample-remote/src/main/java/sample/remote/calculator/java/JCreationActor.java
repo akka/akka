@@ -34,6 +34,8 @@ public class JCreationActor extends UntypedActor {
                 System.out.println("Div result: " + result.getN1() + " / " +
                         result.getN2() + " = " + formatter.format(result.getResult()));
             }
+        } else {
+          unhandled(message);
         }
     }
 }

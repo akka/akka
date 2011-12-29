@@ -31,6 +31,8 @@ public class JLookupActor extends UntypedActor {
                 System.out.println("Sub result: " + result.getN1() + " - " +
                         result.getN2() + " = " + result.getResult());
             }
+        } else {
+          unhandled(message);
         }
     }
 }

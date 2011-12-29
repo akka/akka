@@ -259,6 +259,8 @@ public class UntypedActorDocTestBase {
         getContext().become(angry);
       } else if (message.equals("foo")) {
         getContext().become(happy);
+      } else {
+        unhandled(message);
       }
     }
   }
@@ -282,6 +284,8 @@ public class UntypedActorDocTestBase {
         if (t.getActor() == child) {
           lastSender.tell("finished");
         }
+      } else {
+        unhandled(message);
       }
     }
   }
