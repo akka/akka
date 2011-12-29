@@ -11,12 +11,21 @@ object EventStream {
   implicit def fromActorSystem(system: ActorSystem) = system.eventStream
 }
 
+/**
+ * An Akka EventStream is a pub-sub stream of events both system and user generated,
+ * where subscribers are ActorRefs and the channels are Classes and Events are any java.lang.Object.
+ * EventStreams employ SubchannelClassification, which means that if you listen to a Class,
+ * you'll receive any message that is of that type or a subtype.
+ *
+ * The debug flag in the constructor toggles if operations on this EventStream should also be published
+ * as Debug-Events
+ */
 class EventStream(private val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
   type Event = AnyRef
   type Classifier = Class[_]
 
-  val subclassification = new Subclassification[Class[_]] {
+  protected implicit val subclassification = new Subclassification[Class[_]] {
     def isEqual(x: Class[_], y: Class[_]) = x == y
     def isSubclass(x: Class[_], y: Class[_]) = y isAssignableFrom x
   }
