@@ -16,7 +16,7 @@ import com.google.protobuf.Message
 
 class ProtobufSerializer extends Serializer {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-  def includeManifest: Boolean = false
+  def includeManifest: Boolean = true
   def identifier = 2: Serializer.Identifier
 
   def toBinary(obj: AnyRef): Array[Byte] = {

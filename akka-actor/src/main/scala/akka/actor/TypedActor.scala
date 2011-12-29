@@ -184,7 +184,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * @throws the underlying exception if there's an InvocationTargetException thrown on the invocation
      */
     def apply(instance: AnyRef): AnyRef = try {
-      parameters match { //TODO: We do not yet obey Actor.SERIALIZE_MESSAGES
+      parameters match {
         case null                     ⇒ method.invoke(instance)
         case args if args.length == 0 ⇒ method.invoke(instance)
         case args                     ⇒ method.invoke(instance, args: _*)

@@ -14,8 +14,18 @@ import akka.actor.{ Extension, ActorSystem, ActorSystemImpl }
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
 object Serialization {
-  // TODO ensure that these are always set (i.e. withValue()) when doing deserialization
-  val currentSystem = new DynamicVariable[ActorSystemImpl](null)
+  /**
+   * This holds a reference to the current ActorSystem (the surrounding context)
+   * during serialization and deserialization.
+   *
+   * If you are using Serializers yourself, outside of SerializationExtension,
+   * you'll need to surround the serialization/deserialization with:
+   *
+   * currentSystem.withValue(system) {
+   *   ...code...
+   * }
+   */
+  val currentSystem = new DynamicVariable[ActorSystem](null)
 
   class Settings(val config: Config) {
 
@@ -139,14 +149,11 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
    *  bindings is a Map whose keys = FQN of class that is serializable and values = the alias of the serializer to be used
    */
   lazy val bindings: Map[String, String] = {
-    val configBindings = settings.SerializationBindings
-    configBindings.foldLeft(Map[String, String]()) {
-      case (result, (k: String, vs: Seq[_])) ⇒
-        //All keys which are lists, take the Strings from them and Map them
-        result ++ (vs collect { case v: String ⇒ (v, k) })
-      case (result, x) ⇒
-        //For any other values, just skip them
-        result
+    settings.SerializationBindings.foldLeft(Map[String, String]()) {
+      //All keys which are lists, take the Strings from them and Map them
+      case (result, (k: String, vs: Seq[_])) ⇒ result ++ (vs collect { case v: String ⇒ (v, k) })
+      //For any other values, just skip them
+      case (result, _)                       ⇒ result
     }
   }
 

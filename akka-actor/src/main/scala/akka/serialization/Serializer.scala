@@ -40,6 +40,9 @@ trait Serializer extends scala.Serializable {
 object JavaSerializer extends JavaSerializer
 object NullSerializer extends NullSerializer
 
+/**
+ * This Serializer uses standard Java Serialization
+ */
 class JavaSerializer extends Serializer {
 
   def includeManifest: Boolean = false
@@ -65,6 +68,9 @@ class JavaSerializer extends Serializer {
   }
 }
 
+/**
+ * This is a special Serializer that Serializes and deserializes nulls only
+ */
 class NullSerializer extends Serializer {
   val nullAsBytes = Array[Byte]()
   def includeManifest: Boolean = false
