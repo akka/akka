@@ -60,6 +60,7 @@ abstract class RemoteClient private[akka] (
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
+    log.debug("Sending message: {}", message)
     send(remoteSupport.createRemoteMessageProtocolBuilder(recipient, message, senderOption).build)
   } else {
     val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", remoteSupport, remoteAddress)
@@ -70,9 +71,7 @@ abstract class RemoteClient private[akka] (
   /**
    * Sends the message across the wire
    */
-  def send(request: RemoteMessageProtocol): Unit = {
-    log.debug("Sending message: {}", new RemoteMessage(request, remoteSupport.system))
-
+  private def send(request: RemoteMessageProtocol): Unit = {
     try {
       val payload = remoteSupport.createMessageSendEnvelope(request)
       currentChannel.write(payload).addListener(

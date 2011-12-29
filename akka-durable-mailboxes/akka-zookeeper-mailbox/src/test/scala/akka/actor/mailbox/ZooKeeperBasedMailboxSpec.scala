@@ -1,6 +1,6 @@
 package akka.actor.mailbox
 
-import akka.actor.{ Actor, LocalActorRef }
+import akka.actor.Actor
 import akka.cluster.zookeeper._
 import org.I0Itec.zkclient._
 import akka.dispatch.MessageDispatcher

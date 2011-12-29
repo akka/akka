@@ -8,8 +8,6 @@ import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
 import akka.util.Duration
-import akka.remote.RemoteProtocol._
-import akka.remote.RemoteProtocol.RemoteSystemDaemonMessageType._
 import akka.config.ConfigurationException
 import akka.serialization.SerializationExtension
 
@@ -253,7 +251,7 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
     try {
       val t = remoteSettings.RemoteSystemDaemonAckTimeout
-      Await.result(connection ? (toRemoteMessage(newGossip), t), t) match {
+      Await.result(connection ? (newGossip, t), t) match {
         case Success(receiver) ⇒ log.debug("Gossip sent to [{}] was successfully received", receiver)
         case Failure(cause)    ⇒ log.error(cause, cause.toString)
       }
@@ -306,19 +304,6 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
   private def incrementVersionForGossip(from: Gossip): Gossip = {
     val newVersion = from.version.increment(nodeFingerprint, newTimestamp)
     from copy (version = newVersion)
-  }
-
-  private def toRemoteMessage(gossip: Gossip): RemoteProtocol.RemoteSystemDaemonMessageProtocol = {
-    val gossipAsBytes = serialization.serialize(gossip) match {
-      case Left(error)  ⇒ throw error
-      case Right(bytes) ⇒ bytes
-    }
-
-    RemoteSystemDaemonMessageProtocol.newBuilder
-      .setMessageType(GOSSIP)
-      .setActorPath(remote.remoteDaemon.path.toString)
-      .setPayload(ByteString.copyFrom(gossipAsBytes))
-      .build()
   }
 
   private def latestVersionOf(newGossip: Gossip, oldGossip: Gossip): Gossip = {

@@ -209,12 +209,25 @@ trait ScalaActorRef { ref: ActorRef ⇒
 }
 
 /**
+ * All ActorRefs have a scope which describes where they live. Since it is
+ * often necessary to distinguish between local and non-local references, this
+ * is the only method provided on the scope.
+ */
+trait ActorRefScope {
+  def isLocal: Boolean
+}
+
+trait LocalRef extends ActorRefScope {
+  final def isLocal = true
+}
+
+/**
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  *
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
-private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef {
+private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope ⇒
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
@@ -230,6 +243,11 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * exist, return Nobody.
    */
   def getChild(name: Iterator[String]): InternalActorRef
+  /**
+   * Scope: if this ref points to an actor which resides within the same JVM,
+   * i.e. whose mailbox is directly reachable etc.
+   */
+  def isLocal: Boolean
 }
 
 private[akka] case object Nobody extends MinimalActorRef {
@@ -247,7 +265,7 @@ private[akka] class LocalActorRef private[akka] (
   val systemService: Boolean = false,
   _receiveTimeout: Option[Duration] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends InternalActorRef {
+  extends InternalActorRef with LocalRef {
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -359,7 +377,7 @@ private[akka] class LocalActorRef private[akka] (
   def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
+  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }
 
 /**
@@ -382,7 +400,7 @@ case class SerializedActorRef(path: String) {
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends InternalActorRef {
+trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def getParent: InternalActorRef = Nobody
   def getChild(names: Iterator[String]): InternalActorRef = {
@@ -405,6 +423,9 @@ trait MinimalActorRef extends InternalActorRef {
 
   def sendSystemMessage(message: SystemMessage): Unit = ()
   def restart(cause: Throwable): Unit = ()
+
+  @throws(classOf[java.io.ObjectStreamException])
+  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }
 
 object MinimalActorRef {
@@ -436,8 +457,8 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
     _path
   }
 
-  private[akka] def init(dispatcher: MessageDispatcher, rootPath: ActorPath) {
-    _path = rootPath / "deadLetters"
+  private[akka] def init(dispatcher: MessageDispatcher, path: ActorPath) {
+    _path = path
     brokenPromise = Promise.failed(new ActorKilledException("In DeadLetterActorRef - promises are always broken."))(dispatcher)
   }
 
@@ -456,7 +477,20 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
   }
 
   @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+  override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
+}
+
+/**
+ * This special dead letter reference has a name: it is that which is returned
+ * by a local look-up which is unsuccessful.
+ */
+class EmptyLocalActorRef(_eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
+  extends DeadLetterActorRef(_eventStream) {
+  init(_dispatcher, _path)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+    case d: DeadLetter ⇒ // do NOT form endless loops
+    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+  }
 }
 
 class VirtualPathContainer(val path: ActorPath, override val getParent: InternalActorRef, val log: LoggingAdapter) extends MinimalActorRef {
@@ -530,7 +564,4 @@ class AskActorRef(
   override def stop(): Unit = if (running.getAndSet(false)) {
     deathWatch.publish(Terminated(this))
   }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }

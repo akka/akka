@@ -4,7 +4,6 @@
 package akka.actor.mailbox
 
 import com.redis._
-import akka.actor.LocalActorRef
 import akka.AkkaException
 import akka.actor.ActorContext
 import akka.dispatch.Envelope

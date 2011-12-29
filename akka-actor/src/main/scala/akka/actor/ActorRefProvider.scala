@@ -451,22 +451,33 @@ class LocalActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
-      if (elems.isEmpty) deadLetters
-      else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
+      if (elems.isEmpty) {
+        log.debug("look-up of empty path string '{}' fails (per definition)", path)
+        deadLetters
+      } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
       else actorFor(ref, elems)
     case LocalActorPath(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
-    case _ ⇒ deadLetters
+    case _ ⇒
+      log.debug("look-up of unknown path '{}' failed", path)
+      deadLetters
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
-    else deadLetters
+    else {
+      log.debug("look-up of foreign ActorPath '{}' failed", path)
+      deadLetters
+    }
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    if (path.isEmpty) deadLetters
-    else ref.getChild(path.iterator) match {
-      case Nobody ⇒ deadLetters
-      case x      ⇒ x
+    if (path.isEmpty) {
+      log.debug("look-up of empty path sequence fails (per definition)")
+      deadLetters
+    } else ref.getChild(path.iterator) match {
+      case Nobody ⇒
+        log.debug("look-up of path sequence '{}' failed", path)
+        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path)
+      case x ⇒ x
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {

@@ -10,8 +10,8 @@ import org.bson.io.OutputBuffer
 import org.bson.types.ObjectId
 import java.io.InputStream
 import org.bson.collection._
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.dispatch.Envelope
-import akka.actor.{ ActorSystem, LocalActorRef, ActorRef }
 
 /**
  * A container message for durable mailbox messages, which can be easily stuffed into

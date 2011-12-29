@@ -233,8 +233,13 @@ private[akka] class ActorCell(
   def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
 
   def actorOf(props: Props, name: String): ActorRef = {
-    if (name == null || name == "" || name.charAt(0) == '$')
-      throw new InvalidActorNameException("actor name must not be null, empty or start with $")
+    import ActorPath.ElementRegex
+    name match {
+      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
+      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
+      case ElementRegex() ⇒ // this is fine
+      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
+    }
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
     _actorOf(props, name)
