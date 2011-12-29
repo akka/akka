@@ -116,7 +116,7 @@ trait LookupClassification { this: EventBus ⇒
  */
 trait SubchannelClassification { this: EventBus ⇒
 
-  implicit val subclassification: Subclassification[Classifier]
+  protected implicit def subclassification: Subclassification[Classifier]
 
   // must be lazy to avoid initialization order problem with subclassification
   private lazy val subscriptions = new SubclassifiedIndex[Classifier, Subscriber]()
