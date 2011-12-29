@@ -458,14 +458,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
     val future = Promise[A]()
     onComplete {
       case l: Left[_, _] ⇒ future complete l.asInstanceOf[Either[Throwable, A]]
-      case Right(res) ⇒
-        future complete (try {
-          Right(f(res))
-        } catch {
-          case e: Exception ⇒
-            dispatcher.prerequisites.eventStream.publish(Error(e, "Future.map", e.getMessage))
-            Left(e)
-        })
+      case Right(res)    ⇒ future complete (try { Right(f(res)) } catch { case e: Exception ⇒ Left(e) } )
     }
     future
   }
@@ -507,14 +500,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
     onComplete {
       case l: Left[_, _] ⇒ p complete l.asInstanceOf[Either[Throwable, A]]
-      case Right(r) ⇒
-        try {
-          p completeWith f(r)
-        } catch {
-          case e: Exception ⇒
-            p complete Left(e)
-            dispatcher.prerequisites.eventStream.publish(Error(e, "Future.flatMap", e.getMessage))
-        }
+      case Right(r)      ⇒ try { p completeWith f(r) } catch { case e: Exception ⇒ p complete Left(e) }
     }
     p
   }
@@ -539,11 +525,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
       case l: Left[_, _] ⇒ p complete l.asInstanceOf[Either[Throwable, T]]
       case r @ Right(res) ⇒ p complete (try {
         if (pred(res)) r else Left(new MatchError(res))
-      } catch {
-        case e: Exception ⇒
-          dispatcher.prerequisites.eventStream.publish(Error(e, "Future.filter", e.getMessage))
-          Left(e)
-      })
+      } catch { case e: Exception ⇒ Left(e) })
     }
     p
   }
@@ -618,13 +600,7 @@ trait Promise[T] extends Future[T] {
     val fr = Promise[Any]()
     val thisPromise = this
     thisPromise completeWith other onComplete { v ⇒
-      try {
-        fr completeWith cont(thisPromise)
-      } catch {
-        case e: Exception ⇒
-          dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
-          fr failure e
-      }
+      try { fr completeWith cont(thisPromise) } catch { case e: Exception ⇒ fr failure e }
     }
     fr
   }
@@ -633,13 +609,7 @@ trait Promise[T] extends Future[T] {
     val fr = Promise[Any]()
     val f = stream.dequeue(this)
     f.onComplete { _ ⇒
-      try {
-        fr completeWith cont(f)
-      } catch {
-        case e: Exception ⇒
-          dispatcher.prerequisites.eventStream.publish(Error(e, "Promise.completeWith", e.getMessage))
-          fr failure e
-      }
+      try { fr completeWith cont(f) } catch { case e: Exception ⇒ fr failure e }
     }
     fr
   }
