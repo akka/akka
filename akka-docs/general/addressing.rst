@@ -3,6 +3,10 @@
 Actor References, Paths and Addresses
 =====================================
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 This chapter describes how actors are identified and located within a possibly
 distributed actor system. It ties into the central idea that
 :ref:`actor-systems` form intrinsic supervision hierarchies as well as that
@@ -224,6 +228,23 @@ that, resolve the uncertainty by sending a request and gathering all answers,
 extracting the sender references, and then watch all discovered concrete 
 actors. This scheme of resolving a selection may be improved upon in a future 
 release.
+
+.. _actorOf-vs-actorFor:
+
+Summary: ``actorOf`` vs. ``actorFor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+  What the above sections described in some detail can be summarized and
+  memorized easily as follows:
+
+  - ``actorOf`` only ever creates a new actor, and it creates it as a direct
+    child of the context on which this method is invoked (which may be any
+    actor or actor system).
+
+  - ``actorFor`` only ever looks up an existing actor, i.e. does not create
+    one.
 
 The Interplay with Remote Deployment
 ------------------------------------

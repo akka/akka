@@ -3,12 +3,16 @@
  */
 package sample.remote.calculator.java;
 
+//#imports
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.UntypedActor;
 import akka.kernel.Bootable;
 import com.typesafe.config.ConfigFactory;
+//#imports
 
+//#setup
 public class JLookupApplication implements Bootable {
     private ActorSystem system;
     private ActorRef actor;
@@ -33,3 +37,4 @@ public class JLookupApplication implements Bootable {
         system.shutdown();
     }
 }
+//#setup
