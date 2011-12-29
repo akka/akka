@@ -3,8 +3,13 @@
  */
 package akka.event
 
-import akka.actor.{ ActorRef, simpleName }
+import akka.actor.{ ActorRef, ActorSystem, simpleName }
 import akka.util.Subclassification
+
+object EventStream {
+  //Why is this here and why isn't there a failing test if it is removed?
+  implicit def fromActorSystem(system: ActorSystem) = system.eventStream
+}
 
 class EventStream(private val debug: Boolean = false) extends LoggingBus with SubchannelClassification {
 
