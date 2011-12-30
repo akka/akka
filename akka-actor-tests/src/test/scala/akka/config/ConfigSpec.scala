@@ -20,8 +20,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       val config = settings.config
       import config._
 
-      getString("akka.version") must equal("2.0-SNAPSHOT")
-      settings.ConfigVersion must equal("2.0-SNAPSHOT")
+      getString("akka.version") must equal("2.0-M2")
+      settings.ConfigVersion must equal("2.0-M2")
 
       getString("akka.actor.default-dispatcher.type") must equal("Dispatcher")
       getString("akka.actor.default-dispatcher.name") must equal("default-dispatcher")

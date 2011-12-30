@@ -28,7 +28,7 @@ import java.io.Closeable
 
 object ActorSystem {
 
-  val Version = "2.0-SNAPSHOT"
+  val Version = "2.0-M2"
 
   val EnvHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None

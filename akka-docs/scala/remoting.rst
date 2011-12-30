@@ -15,7 +15,7 @@ The Akka remoting is a separate jar file. Make sure that you have a dependency f
 
 In you SBT project you should add the following as a dependency::
 
-  "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
+  "com.typesafe.akka" % "akka-remote" % "2.0-M2"
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your ``application.conf`` file::
