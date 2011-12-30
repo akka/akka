@@ -131,4 +131,32 @@ class SerializationDocSpec extends AkkaSpec {
     SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass.getName must equal("akka.docs.serialization.MyOwnSerializer")
     a.shutdown()
   }
+
+  "demonstrate the programmatic API" in {
+    //#programmatic
+    val system = ActorSystem("example")
+
+    // Get the Serialization Extension
+    val serialization = SerializationExtension(system)
+
+    // Have something to serialize
+    val original = "woohoo"
+
+    // Find the Serializer for it
+    val serializer = serialization.findSerializerFor(original)
+
+    // Turn it into bytes
+    val bytes = serializer.toBinary(original)
+
+    // Turn it back into an object
+    val back = serializer.fromBinary(bytes,
+      manifest = None,
+      classLoader = None)
+
+    // Voilá!
+    back must equal(original)
+
+    //#programmatic
+    system.shutdown()
+  }
 }

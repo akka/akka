@@ -66,6 +66,14 @@ If you want to verify that your ``Props`` are serializable you can enable the fo
 Programmatic
 ------------
 
+If you want to programmatically serialize/deserialize using Akka Serialization,
+here's some examples:
+
+.. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala
+   :include: imports,programmatic
+
+For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
+
 Customization
 =============
 
