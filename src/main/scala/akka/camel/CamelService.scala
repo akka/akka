@@ -2,15 +2,15 @@
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 package akka.camel
-import akka.camel.Migration._
 
 
 import component.Path
-import org.apache.camel.CamelContext
-import akka.japi.{Option => JOption}
+import _root_.org.apache.camel.CamelContext
+import _root_.akka.japi.{Option => JOption}
 
+import migration.Migration._
 import TypedCamelAccess._
-import akka.actor.{ActorRef, Props, Actor, ActorSystem}
+import _root_.akka.actor.{ActorRef, Props, Actor, ActorSystem}
 
 /**
  * Publishes consumer actors at their Camel endpoints. Consumer actors are published asynchronously when
@@ -81,6 +81,10 @@ trait CamelService extends Bootable with ConsumerRegistry{
   }
 }
 
+/**
+ * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
+ * ActorEndpoint uses it to lookup an actor by its path.
+ */
 trait ConsumerRegistry{ self:CamelService =>
   //TODO: save some kittens and use less blocking collection
   val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())

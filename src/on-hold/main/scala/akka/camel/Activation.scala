@@ -4,14 +4,14 @@ package akka.camel
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-import akka.camel.Migration._
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import _root_.._
+import _root_.java.util.concurrent.CountDownLatch
+import _root_.java.util.concurrent.TimeUnit
 
 
-import akka.japi.{SideEffect, Option => JOption}
-import akka.actor.Actor
+import _root_.akka.japi.{SideEffect, Option => JOption}
+import _root_.akka.actor.Actor
 
 
 /**

@@ -5,9 +5,9 @@
 package akka.camel
 
 import org.apache.camel.CamelContext
-import akka.camel.Migration._
 
 import akka.util.ReflectiveAccess.getObjectFor
+import akka.camel.migration.Migration._
 
 /**
  * Module for reflective access to akka-camel-typed. 

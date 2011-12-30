@@ -1,3 +1,5 @@
+package akka.camel.migration
+
 import java.io.FileWriter
 
 object RichString{

@@ -1,11 +1,9 @@
-package akka.camel
+package akka.camel.migration
 
 import akka.actor.{Props, ActorSystem, ActorRef, Actor}
 
 
 object Migration{
-
-  def actorOf(actor: Actor)(implicit as: ActorSystem) : ActorRef = as.actorOf(Props(actor))
 
   trait Bootable {
     def onLoad = {}

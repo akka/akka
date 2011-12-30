@@ -8,9 +8,9 @@ import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
+import akka.camel.migration.Migration._
 
 import akka.actor._
-import akka.camel.Migration._
 
 
 /**
