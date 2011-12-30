@@ -5,12 +5,12 @@ package akka.camel
 
 
 import component.Path
-import _root_.org.apache.camel.CamelContext
-import _root_.akka.japi.{Option => JOption}
+import org.apache.camel.CamelContext
+import akka.japi.{Option => JOption}
 
 import migration.Migration._
 import TypedCamelAccess._
-import _root_.akka.actor.{ActorRef, Props, Actor, ActorSystem}
+import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 
 /**
  * Publishes consumer actors at their Camel endpoints. Consumer actors are published asynchronously when

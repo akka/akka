@@ -5,13 +5,12 @@ package akka.camel
  */
 
 
-import _root_.._
-import _root_.java.util.concurrent.CountDownLatch
-import _root_.java.util.concurrent.TimeUnit
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 
-import _root_.akka.japi.{SideEffect, Option => JOption}
-import _root_.akka.actor.Actor
+import akka.japi.{SideEffect, Option => JOption}
+import akka.actor.Actor
 
 
 /**
