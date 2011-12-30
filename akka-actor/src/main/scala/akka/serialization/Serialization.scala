@@ -73,7 +73,7 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize(bytes: Array[Byte],
-                  serializerId: Serializer.Identifier,
+                  serializerId: Int,
                   clazz: Option[Class[_]],
                   classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
     try {
@@ -164,9 +164,9 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   lazy val serializerMap: Map[String, Serializer] = bindings mapValues serializers
 
   /**
-   * Maps from a Serializer.Identifier (Byte) to a Serializer instance (optimization)
+   * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
-  lazy val serializerByIdentity: Map[Serializer.Identifier, Serializer] =
+  lazy val serializerByIdentity: Map[Int, Serializer] =
     Map(NullSerializer.identifier -> NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
 }
 

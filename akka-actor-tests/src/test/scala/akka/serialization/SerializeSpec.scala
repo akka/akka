@@ -17,7 +17,7 @@ import com.google.protobuf.Message
 class ProtobufSerializer extends Serializer {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
   def includeManifest: Boolean = true
-  def identifier = 2: Serializer.Identifier
+  def identifier = 2
 
   def toBinary(obj: AnyRef): Array[Byte] = {
     if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException(

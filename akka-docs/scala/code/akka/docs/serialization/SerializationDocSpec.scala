@@ -5,17 +5,12 @@ package akka.docs.serialization
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
+//#imports
 import akka.actor.ActorSystem
+import akka.serialization._
 import com.typesafe.config.ConfigFactory
 
 //#imports
-import akka.serialization._
-
-//#imports
-
-object SerializationDocSpec {
-
-}
 
 //#my-own-serializer
 class MyOwnSerializer extends Serializer {
@@ -26,7 +21,7 @@ class MyOwnSerializer extends Serializer {
   // Pick a unique identifier for your Serializer,
   // you've got a couple of billions to choose from,
   // 0 - 16 is reserved by Akka itself
-  def identifier = 1234567: Serializer.Identifier
+  def identifier = 1234567
 
   // "toBinary" serializes the given object to an Array of Bytes
   def toBinary(obj: AnyRef): Array[Byte] = {
