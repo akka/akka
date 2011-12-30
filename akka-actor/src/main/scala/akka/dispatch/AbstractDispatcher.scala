@@ -89,6 +89,22 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
 
 object ExecutionContext {
   implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
+
+  /**
+   * Creates an ExecutionContext from the given ExecutorService
+   */
+  def fromExecutorService(e: ExecutorService): ExecutionContext = new WrappedExecutorService(e)
+
+  /**
+   * Creates an ExecutionContext from the given Executor
+   */
+  def fromExecutor(e: ExecutorService): ExecutionContext = new WrappedExecutor(e)
+
+  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
+
+  private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+    override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
+  }
 }
 
 /**
