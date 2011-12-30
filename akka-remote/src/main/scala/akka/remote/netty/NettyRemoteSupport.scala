@@ -18,14 +18,14 @@ import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutExceptio
 import org.jboss.netty.util.{ TimerTask, Timeout, HashedWheelTimer }
 import scala.collection.mutable.HashMap
 import java.net.InetSocketAddress
-import java.util.concurrent._
 import java.util.concurrent.atomic._
 import akka.AkkaException
 import akka.event.Logging
-import locks.ReentrantReadWriteLock
 import org.jboss.netty.channel._
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
+import java.util.concurrent._
+import locks.ReentrantReadWriteLock
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -73,7 +73,9 @@ abstract class RemoteClient private[akka] (
    */
   private def send(request: (Any, Option[ActorRef], ActorRef)): Unit = {
     try {
-      currentChannel.write(request).addListener(
+      val channel = currentChannel
+      val f = channel.write(request)
+      f.addListener(
         new ChannelFutureListener {
           def operationComplete(future: ChannelFuture) {
             if (future.isCancelled) {
@@ -83,6 +85,12 @@ abstract class RemoteClient private[akka] (
             }
           }
         })
+      // Check if we should back off
+      if (!channel.isWritable) {
+        val backoff = remoteSupport.remote.remoteSettings.BackoffTimeout
+        if (backoff.length > 0 && !f.await(backoff.length, backoff.unit))
+          f.setFailure(new TimeoutException("akka.remote.backoff-timeout occurred, overpressure on RemoteTransport or nonresponsive server"))
+      }
     } catch {
       case e: Exception ⇒ remoteSupport.notifyListeners(RemoteClientError(e, remoteSupport, remoteAddress))
     }

@@ -23,6 +23,7 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
   val RemoteSystemDaemonAckTimeout = Duration(config.getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
   val InitalDelayForGossip = Duration(config.getMilliseconds("akka.remote.gossip.initialDelay"), MILLISECONDS)
   val GossipFrequency = Duration(config.getMilliseconds("akka.remote.gossip.frequency"), MILLISECONDS)
+  val BackoffTimeout = Duration(config.getMilliseconds("akka.remote.backoff-timeout"), MILLISECONDS)
 
   // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
   val ClusterName = getString("akka.cluster.name")
