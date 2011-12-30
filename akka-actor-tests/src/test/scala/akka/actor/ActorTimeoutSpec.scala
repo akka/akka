@@ -52,7 +52,7 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
         val echo = actorWithTimeout(Props.defaultTimeout)
         val f = echo.?("hallo", testTimeout)
         try {
-          intercept[AskTimeoutException] { Await.result(f, testTimeout + testTimeout) }
+          intercept[AskTimeoutException] { Await.result(f, testTimeout + 300.millis) }
         } finally { system.stop(echo) }
       }
     }

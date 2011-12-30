@@ -638,17 +638,6 @@ class RemoteServerHandler(
 
   import remoteSupport.serverSettings._
 
-  //Writes the specified message to the specified channel and propagates write errors to listeners
-  private def write(channel: Channel, payload: AkkaRemoteProtocol) {
-    channel.write(payload).addListener(
-      new ChannelFutureListener {
-        def operationComplete(future: ChannelFuture) {
-          if (!future.isCancelled && !future.isSuccess)
-            remoteSupport.notifyListeners(RemoteServerWriteFailed(payload, future.getCause, remoteSupport, getClientAddress(channel)))
-        }
-      })
-  }
-
   /**
    * ChannelOpen overridden to store open channels for a clean postStop of a node.
    * If a channel is closed before, it is automatically removed from the open channels group.
