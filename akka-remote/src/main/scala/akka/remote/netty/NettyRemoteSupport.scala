@@ -78,9 +78,7 @@ abstract class RemoteClient private[akka] (
       f.addListener(
         new ChannelFutureListener {
           def operationComplete(future: ChannelFuture) {
-            if (future.isCancelled) {
-              //Not interesting at the moment
-            } else if (!future.isSuccess) {
+            if (future.isCancelled || !future.isSuccess) {
               remoteSupport.notifyListeners(RemoteClientWriteFailed(request, future.getCause, remoteSupport, remoteAddress))
             }
           }
@@ -88,8 +86,7 @@ abstract class RemoteClient private[akka] (
       // Check if we should back off
       if (!channel.isWritable) {
         val backoff = remoteSupport.remote.remoteSettings.BackoffTimeout
-        if (backoff.length > 0 && !f.await(backoff.length, backoff.unit))
-          f.setFailure(new TimeoutException("akka.remote.backoff-timeout occurred, overpressure on RemoteTransport or nonresponsive server"))
+        if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
       }
     } catch {
       case e: Exception ⇒ remoteSupport.notifyListeners(RemoteClientError(e, remoteSupport, remoteAddress))
