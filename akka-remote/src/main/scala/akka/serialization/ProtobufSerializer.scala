@@ -4,7 +4,6 @@
 
 package akka.serialization
 
-import akka.serialization.Serializer
 import com.google.protobuf.Message
 
 /**
