@@ -98,7 +98,7 @@ object ExecutionContext {
   /**
    * Creates an ExecutionContext from the given Executor
    */
-  def fromExecutor(e: ExecutorService): ExecutionContext = new WrappedExecutor(e)
+  def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
 
   private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
 
