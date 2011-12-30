@@ -157,14 +157,12 @@ object VerifySerializabilitySpec {
 
         serializers {
           java = "akka.serialization.JavaSerializer"
-          proto = "akka.testing.ProtobufSerializer"
-          sjson = "akka.testing.SJSONSerializer"
+          proto = "akka.serialization.ProtobufSerializer"
           default = "akka.serialization.JavaSerializer"
         }
 
         serialization-bindings {
           java = ["akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
-          sjson = ["akka.serialization.SerializeSpec$Person"]
           proto = ["com.google.protobuf.Message", "akka.actor.ProtobufProtocol$MyMessage"]
         }
       }
