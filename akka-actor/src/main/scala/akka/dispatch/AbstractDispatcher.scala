@@ -91,7 +91,16 @@ object ExecutionContext {
   implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
 }
 
+/**
+ * An ExecutionContext is essentially the same thing as a java.util.concurrent.Executor
+ * This interface/trait exists to decouple the concept of execution from Actors & MessageDispatchers
+ * It is also needed to provide a fallback implicit default instance (in the companion object).
+ */
 trait ExecutionContext {
+
+  /**
+   * Submits the runnable for execution
+   */
   def execute(runnable: Runnable): Unit
 }
 
