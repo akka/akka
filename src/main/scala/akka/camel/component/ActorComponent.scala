@@ -4,10 +4,8 @@
 
 package akka.camel.component
 
-import java.net.InetSocketAddress
 import java.util.{Map => JMap}
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicReference
 
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
@@ -17,8 +15,8 @@ import akka.camel.CamelMessageConversion.toExchangeAdapter
 
 import scala.reflect.BeanProperty
 import akka.camel.{CamelServiceManager, Ack, Failure, Message}
-import akka.util.{Timeout, Duration}
-import akka.dispatch.{Future, Await}
+import akka.util.Timeout
+import akka.dispatch.Await
 
 /**
  * @author Martin Krasser
@@ -48,17 +46,17 @@ class ActorComponent extends DefaultComponent {
     new ActorEndpoint(uri, this, path)
   }
 
-  def invalidPath(id: String): scala.IllegalArgumentException = {
-    new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format id)
-  }
 
   private def parsePath(remaining: String): Path = remaining match {
     case null | "" => throw invalidPath(remaining)
     case   id if id   startsWith "path:"   => Path(parseIdentifier(id substring 5).getOrElse(throw invalidPath(remaining)))
   }
 
-  private def parseIdentifier(identifier: String): Option[String] =
-    if (identifier.length > 0) Some(identifier) else None
+  private def parseIdentifier(identifier: String): Option[String] = if (identifier.length > 0) Some(identifier) else None
+
+  private[this] def invalidPath(id: String): scala.IllegalArgumentException = {
+    new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format id)
+  }
 }
 
 /**
@@ -176,7 +174,6 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   import akka.util.duration._
-  import Await._
   val timeout = 10 seconds
   implicit val timeout2 = new Timeout(timeout)
 
@@ -195,13 +192,23 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   }
 
   private def sendAsync(exchange: Exchange) = target(path) ! requestFor(exchange)
+
   private def sendAsync(exchange: Exchange, callback: AsyncCallback) =
-    target(path).ask(requestFor(exchange), timeout2).onComplete(AsyncCallbackAdapter(exchange, callback ))
+    target(path).ask(requestFor(exchange), timeout2).onComplete{ msg: Any =>
+        msg match {
+          case Ack          => { /* no response message to set */ }
+          case msg: Failure => exchange.fromFailureMessage(msg)
+          case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
+        }
+        callback.done(false)
+      }
+
 
   private def target(path:Path) =
     targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
   private def targetById(path: Path) = CamelServiceManager.findConsumer(path)
+
 }
 
 /**
@@ -231,25 +238,5 @@ class ActorIdentifierNotSetException extends RuntimeException {
   override def getMessage = "actor identifier not set"
 }
 
-/**
- * @author Martin Krasser
- */
-private[akka] object AsyncCallbackAdapter {
-
-  /**
-   * Creates and starts an <code>AsyncCallbackAdapter</code>.
-   *
-   * @param exchange message exchange to write results to.
-   * @param callback callback object to generate completion notifications.
-   */
-  def apply(exchange: Exchange, callback: AsyncCallback) =  (msg:Any) => {
-      msg match {
-        case Ack          => { /* no response message to set */ }
-        case msg: Failure => exchange.fromFailureMessage(msg)
-        case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
-      }
-      callback.done(false)
-  }
-}
 
 

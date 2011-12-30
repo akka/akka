@@ -82,7 +82,7 @@ trait CamelService extends Bootable with ConsumerRegistry{
 }
 
 trait ConsumerRegistry{ self:CamelService =>
-  //TODO: kill less kittens and use less blocking collection
+  //TODO: save some kittens and use less blocking collection
   val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
