@@ -175,7 +175,7 @@ Looking up Actors by Concrete Path
 In addition, actor references may be looked up using the
 :meth:`ActorSystem.actorFor` method, which returns an (unverified) local,
 remote or clustered actor reference. Sending messages to such a reference or
-attempting to observe its livelyhood will traverse the actor hierarchy of the
+attempting to observe its liveness will traverse the actor hierarchy of the
 actor system from top to bottom by passing messages from parent to child until
 either the target is reached or failure is certain, i.e. a name in the path
 does not exist (in practice this process will be optimized using caches, but it
