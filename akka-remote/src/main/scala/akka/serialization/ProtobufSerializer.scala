@@ -14,15 +14,14 @@ class ProtobufSerializer extends Serializer {
   def includeManifest: Boolean = true
   def identifier = 2: Serializer.Identifier
 
-  def toBinary(obj: AnyRef): Array[Byte] = {
-    if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException(
-      "Can't serialize a non-protobuf message using protobuf [" + obj + "]")
-    obj.asInstanceOf[Message].toByteArray
+  def toBinary(obj: AnyRef): Array[Byte] = obj match {
+    case m: Message ⇒ m.toByteArray
+    case _          ⇒ throw new IllegalArgumentException("Can't serialize a non-protobuf message using protobuf [" + obj + "]")
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef = {
-    if (!clazz.isDefined) throw new IllegalArgumentException(
-      "Need a protobuf message class to be able to serialize bytes using protobuf")
-    clazz.get.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
-  }
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef =
+    clazz match {
+      case None    ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
+      case Some(c) ⇒ c.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
+    }
 }
