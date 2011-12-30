@@ -8,6 +8,7 @@ import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
 import akka.serialization.Serializer;
 import org.junit.Test;
+import static org.junit.Assert.*;
 //#imports
 
 import akka.serialization.*;
