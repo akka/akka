@@ -96,7 +96,8 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
     } catch { case e: Exception ⇒ Left(e) }
 
   /**
-   *
+   * Returns the Serializer configured for the given object, returns the NullSerializer if it's null,
+   * falls back to the Serializer named "default"
    */
   def findSerializerFor(o: AnyRef): Serializer = o match {
     case null  ⇒ NullSerializer
@@ -104,7 +105,7 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   }
 
   /**
-   *
+   * Returns the configured Serializer for the given Class, falls back to the Serializer named "default"
    */
   def serializerFor(clazz: Class[_]): Serializer = //TODO fall back on BestMatchClass THEN default AND memoize the lookups
     serializerMap.get(clazz.getName).getOrElse(serializers("default"))
