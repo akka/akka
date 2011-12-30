@@ -74,10 +74,10 @@ case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to sup
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
 
-final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
-      function()
+      runnable.run()
     } catch {
       // FIXME catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
@@ -87,15 +87,23 @@ final case class TaskInvocation(eventStream: EventStream, function: () ⇒ Unit,
   }
 }
 
+object ExecutionContext {
+  implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
+}
+
+trait ExecutionContext {
+  def execute(runnable: Runnable): Unit
+}
+
 object MessageDispatcher {
   val UNSCHEDULED = 0 //WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
-  implicit def defaultDispatcher(implicit system: ActorSystem) = system.dispatcher
+  implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable with Executor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsUpdater, shutdownScheduleUpdater }
@@ -131,8 +139,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     ifSensibleToDoSoThenScheduleShutdown()
   }
 
-  protected[akka] final def dispatchTask(block: () ⇒ Unit) {
-    val invocation = TaskInvocation(eventStream, block, taskCleanup)
+  final def execute(runnable: Runnable) {
+    val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
     inhabitantsUpdater.incrementAndGet(this)
     try {
       executeTask(invocation)

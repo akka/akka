@@ -70,8 +70,6 @@ class FutureDocSpec extends AkkaSpec {
     import akka.dispatch.Future
     import akka.util.duration._
 
-    implicit def dispatcher = system.dispatcher
-
     val future = Future {
       "Hello" + "World"
     }
