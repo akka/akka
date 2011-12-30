@@ -77,14 +77,6 @@ message MessageProtocol {
 }
 
 /**
- * Defines a UUID.
- */
-message UuidProtocol {
-  required uint64 high = 1;
-  required uint64 low = 2;
-}
-
-/**
  * Defines a meta data entry.
  */
 message MetadataEntryProtocol {
@@ -107,37 +99,6 @@ message AddressProtocol {
 message ExceptionProtocol {
   required string classname  = 1;
   required string message = 2;
-}
-
-/**
- * Defines the remote system daemon message.
- */
-message RemoteSystemDaemonMessageProtocol {
-  required RemoteSystemDaemonMessageType messageType = 1;
-  optional string actorPath = 2;
-  optional bytes payload = 3;
-  optional UuidProtocol replicateActorFromUuid = 4;
-  optional string supervisor = 5;
-}
-
-/**
- * Defines the remote system daemon message type.
- */
-enum RemoteSystemDaemonMessageType {
-  STOP = 1;
-  USE = 2;
-  RELEASE = 3;
-  MAKE_AVAILABLE = 4;
-  MAKE_UNAVAILABLE = 5;
-  DISCONNECT = 6;
-  RECONNECT = 7;
-  RESIGN = 8;
-  GOSSIP = 9;
-  FAIL_OVER_CONNECTIONS = 20;
-  FUNCTION_FUN0_UNIT = 21;
-  FUNCTION_FUN0_ANY = 22;
-  FUNCTION_FUN1_ARG_UNIT = 23;
-  FUNCTION_FUN1_ARG_ANY = 24;
 }
 
 /**

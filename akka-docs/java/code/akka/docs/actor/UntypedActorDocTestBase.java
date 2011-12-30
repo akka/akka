@@ -24,6 +24,10 @@ import static akka.actor.Actors.*;
 import akka.japi.Procedure;
 //#import-procedure
 
+//#import-watch
+import akka.actor.Terminated;
+//#import-watch
+
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -96,7 +100,7 @@ public class UntypedActorDocTestBase {
   public void propsActorOf() {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor");
     //#creating-props
     myActor.tell("test");
@@ -158,6 +162,15 @@ public class UntypedActorDocTestBase {
     myActor.tell("foo");
     myActor.tell("bar");
     myActor.tell("bar");
+    system.shutdown();
+  }
+
+  @Test
+  public void useWatch() {
+    ActorSystem system = ActorSystem.create("MySystem");
+    ActorRef myActor = system.actorOf(new Props(WatchActor.class));
+    Future<Object> future = myActor.ask("kill", 1000);
+    assert Await.result(future, Duration.parse("1 second")).equals("finished");
     system.shutdown();
   }
 
@@ -246,9 +259,36 @@ public class UntypedActorDocTestBase {
         getContext().become(angry);
       } else if (message.equals("foo")) {
         getContext().become(happy);
+      } else {
+        unhandled(message);
       }
     }
   }
   //#hot-swap-actor
+
+  //#watch
+  public static class WatchActor extends UntypedActor {
+    final ActorRef child = this.getContext().actorOf(Props.empty(), "child");
+    {
+      this.getContext().watch(child); // <-- this is the only call needed for registration
+    }
+    ActorRef lastSender = getContext().system().deadLetters();
+
+    @Override
+    public void onReceive(Object message) {
+      if (message.equals("kill")) {
+        getContext().stop(child);
+        lastSender = getSender();
+      } else if (message instanceof Terminated) {
+        final Terminated t = (Terminated) message;
+        if (t.getActor() == child) {
+          lastSender.tell("finished");
+        }
+      } else {
+        unhandled(message);
+      }
+    }
+  }
+  //#watch
 
 }

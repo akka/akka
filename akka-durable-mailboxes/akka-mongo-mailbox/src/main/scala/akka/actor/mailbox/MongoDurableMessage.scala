@@ -10,8 +10,7 @@ import org.bson.io.OutputBuffer
 import org.bson.types.ObjectId
 import java.io.InputStream
 import org.bson.collection._
-import akka.actor.LocalActorRef
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.dispatch.Envelope
 
 /**
@@ -32,7 +31,7 @@ case class MongoDurableMessage(
   val sender: ActorRef,
   val _id: ObjectId = new ObjectId) {
 
-  def envelope() = Envelope(message, sender)
+  def envelope(system: ActorSystem) = Envelope(message, sender)(system)
 }
 
 // vim: set ts=2 sw=2 sts=2 et:

@@ -15,6 +15,8 @@ object ActorPath {
     }
     rec(s.length, Nil)
   }
+
+  val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
 }
 
 /**
@@ -57,7 +59,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Recursively create a descendant’s path by appending all child names.
    */
-  def /(child: Iterable[String]): ActorPath = (this /: child)(_ / _)
+  def /(child: Iterable[String]): ActorPath = (this /: child)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
 
   /**
    * ''Java API'': Recursively create a descendant’s path by appending all child names.
@@ -110,6 +112,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 }
 
 final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
+  if (name.indexOf('/') != -1) throw new IllegalArgumentException("/ is a path separator and is not legal in ActorPath names: [%s]" format name)
 
   def address: Address = root.address
 

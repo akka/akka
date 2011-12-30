@@ -17,67 +17,97 @@ In you SBT project you should add the following as a dependency::
 
   "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
 
-First of all you have to change the actor provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``::
+To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+to your ``application.conf`` file::
 
   akka {
     actor {
-     provider = "akka.remote.RemoteActorRefProvider"
+      provider = "akka.remote.RemoteActorRefProvider"
     }
-  }
-
-After that you must also add the following settings::
-
-  akka {
     remote {
+      transport = "akka.remote.netty.NettyRemoteSupport"
       server {
-        # The hostname or ip to bind the remoting to,
-        # InetAddress.getLocalHost.getHostAddress is used if empty
-        hostname = ""
-
-        # The default remote server port clients should connect to.
-        # Default is 2552 (AKKA)
+        hostname = "127.0.0.1"
         port = 2552
       }
-    }
+   }
   }
 
-These are the bare minimal settings that must exist in order to get started with remoting.
-There are, of course, more properties that can be tweaked. We refer to the following
+As you can see in the example above there are four things you need to add to get started:
+
+* Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
+* Add host name - the machine you want to run the actor system on
+* Add port number - the port the actor system should listen on
+
+The example above only illustrates the bare minimum of properties you have to add to enable remoting.
+There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
 
 * `reference.conf of akka-remote <https://github.com/jboner/akka/blob/master/akka-remote/src/main/resources/reference.conf#L39>`_
 
+Types of Remote Interaction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Akka has two ways of using remoting:
+
+* Lookup    : used to look up an actor on a remote node with ``actorFor(path)``
+* Creation  : used to create an actor on a remote node with ``actorOf(Props(...), actorName)``
+
+In the next sections the two alternatives are described in detail.
+
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node::
+``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node, e.g.::
 
-  val actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval")
+  val actor = context.actorFor("akka://actorSystemName@10.0.0.1:2552/user/actorName")
 
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
-    akka://<actorsystemname>@<hostname>:<port>/<actor path>
+  akka://<actor system>@<hostname>:<port>/<actor path>
+
+Once you a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
+
+  actor ! "Pretty awesome feature"
+
+For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The configuration below instructs the system to deploy the actor "retrieval” on the specific host "app@10.0.0.1".
-The "app" in this case refers to the name of the ``ActorSystem``::
+If you want to use the creation functionality in Akka remoting you have to further amend the
+``application.conf`` file in the following way::
 
   akka {
     actor {
-      deployment {
-        /serviceA/retrieval {
-          remote = “akka://app@10.0.0.1:2552”
-        }
-      }
+      provider = "akka.remote.RemoteActorRefProvider"
+      deployment { /sampleActor {
+        remote = "akka://sampleActorSystem@127.0.0.1:2553"
+      }}
     }
-  }
+    ...
 
-Logical path lookup is supported on the node you are on, i.e. to use the
-actor created above you would do the following::
+The configuration above instructs Akka to react when an actor with path /sampleActor is created, i.e.
+using ``system.actorOf(Props(...)`, sampleActor)``. This specific actor will not be directly instantiated,
+but instead the remote daemon of the remote system will be asked to create the actor,
+which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
-  val actor = context.actorFor("/serviceA/retrieval")
+Once you have configured the properties above you would do the following in code::
+
+  class SampleActor extends Actor { def receive = { case _ => println("Got something") } }
+
+  val actor = context.actorOf(Props[SampleActor], "sampleActor")
+  actor ! "Pretty slick"
+
+``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
+actor systems has to have a JAR containing the class.
+
+Remote Sample Code
+^^^^^^^^^^^^^^^^^^
+
+There is a more extensive remote example that comes with the Akka distribution.
+Please have a look here for more information:
+`Remote Sample <https://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote>`_
 
 Serialization
 ^^^^^^^^^^^^^
@@ -122,6 +152,13 @@ common setup for both scenarios (this is ``common.conf``):
 This enables the remoting by installing the :class:`RemoteActorRefProvider` and
 chooses the default remote transport. All other options will be set
 specifically for each show case.
+
+.. note::
+
+  Be sure to replace the default IP 127.0.0.1 with the real address the system
+  is reachable by if you deploy onto multiple machines!
+
+.. _remote-lookup-sample-scala:
 
 Remote Lookup
 -------------

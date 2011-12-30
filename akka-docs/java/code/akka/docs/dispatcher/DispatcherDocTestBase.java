@@ -57,9 +57,9 @@ public class DispatcherDocTestBase {
   @Test
   public void defineDispatcher() {
     //#defining-dispatcher
-    ActorRef myActor1 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+    ActorRef myActor1 = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor1");
-    ActorRef myActor2 = system.actorOf(new Props().withCreator(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+    ActorRef myActor2 = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
         "myactor2");
     //#defining-dispatcher
   }
@@ -68,7 +68,7 @@ public class DispatcherDocTestBase {
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
     String name = "myactor";
-    ActorRef myActor = system.actorOf(new Props().withCreator(MyUntypedActor.class)
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class)
         .withDispatcher("myactor-dispatcher"), name);
     //#defining-pinned-dispatcher
   }

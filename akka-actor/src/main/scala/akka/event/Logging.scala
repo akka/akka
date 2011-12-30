@@ -54,7 +54,7 @@ trait LoggingBus extends ActorEventBus {
    * will not participate in the automatic management of log level
    * subscriptions!
    */
-  def logLevel_=(level: LogLevel): Unit = guard.withGuard {
+  def setLogLevel(level: LogLevel): Unit = guard.withGuard {
     for {
       l ← AllLogLevels
       // subscribe if previously ignored and now requested
@@ -70,6 +70,9 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
+  /**
+   * Internal Akka use only
+   */
   private[akka] def startStdoutLogger(config: Settings) {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
@@ -83,6 +86,9 @@ trait LoggingBus extends ActorEventBus {
     publish(Debug(simpleName(this), "StandardOutLogger started"))
   }
 
+  /**
+   * Internal Akka use only
+   */
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
     val level = levelFor(system.settings.LogLevel) getOrElse {
       StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), "unknown akka.stdout-loglevel " + system.settings.LogLevel))
@@ -125,6 +131,9 @@ trait LoggingBus extends ActorEventBus {
     }
   }
 
+  /**
+   * Internal Akka use only
+   */
   private[akka] def stopDefaultLoggers() {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
@@ -251,6 +260,11 @@ object Logging {
   final val InfoLevel = 3.asInstanceOf[Int with LogLevelType]
   final val DebugLevel = 4.asInstanceOf[Int with LogLevelType]
 
+  /**
+   * Returns the LogLevel associated with the given string,
+   * valid inputs are upper or lowercase (not mixed) versions of:
+   * "error", "warning", "info" and "debug"
+   */
   def levelFor(s: String): Option[LogLevel] = s match {
     case "ERROR" | "error"     ⇒ Some(ErrorLevel)
     case "WARNING" | "warning" ⇒ Some(WarningLevel)
@@ -259,7 +273,11 @@ object Logging {
     case unknown               ⇒ None
   }
 
-  def levelFor(eventClass: Class[_ <: LogEvent]) = {
+  /**
+   * Returns the LogLevel associated with the given event class.
+   * Defaults to DebugLevel.
+   */
+  def levelFor(eventClass: Class[_ <: LogEvent]): LogLevel = {
     if (classOf[Error].isAssignableFrom(eventClass)) ErrorLevel
     else if (classOf[Warning].isAssignableFrom(eventClass)) WarningLevel
     else if (classOf[Info].isAssignableFrom(eventClass)) InfoLevel
@@ -267,6 +285,9 @@ object Logging {
     else DebugLevel
   }
 
+  /**
+   * Returns the event class associated with the given LogLevel
+   */
   def classFor(level: LogLevel): Class[_ <: LogEvent] = level match {
     case ErrorLevel   ⇒ classOf[Error]
     case WarningLevel ⇒ classOf[Warning]
@@ -327,15 +348,31 @@ object Logging {
    */
   class EventHandlerException extends AkkaException
 
+  /**
+   * Base type of LogEvents
+   */
   sealed trait LogEvent {
+    /**
+     * The thread that created this log event
+     */
     @transient
     val thread: Thread = Thread.currentThread
+
+    /**
+     * The LogLevel of this LogEvent
+     */
     def level: LogLevel
   }
 
+  /**
+   * For ERROR Logging
+   */
   case class Error(cause: Throwable, logSource: String, message: Any = "") extends LogEvent {
-    def level = ErrorLevel
+    def this(logSource: String, message: Any) = this(Error.NoCause, logSource, message)
+
+    override def level = ErrorLevel
   }
+
   object Error {
     def apply(logSource: String, message: Any) = new Error(NoCause, logSource, message)
 
@@ -343,16 +380,25 @@ object Logging {
     object NoCause extends NoStackTrace
   }
 
+  /**
+   * For WARNING Logging
+   */
   case class Warning(logSource: String, message: Any = "") extends LogEvent {
-    def level = WarningLevel
+    override def level = WarningLevel
   }
 
+  /**
+   * For INFO Logging
+   */
   case class Info(logSource: String, message: Any = "") extends LogEvent {
-    def level = InfoLevel
+    override def level = InfoLevel
   }
 
+  /**
+   * For DEBUG Logging
+   */
   case class Debug(logSource: String, message: Any = "") extends LogEvent {
-    def level = DebugLevel
+    override def level = DebugLevel
   }
 
   /**
@@ -363,7 +409,7 @@ object Logging {
    * message. This is necessary to ensure that additional subscriptions are in
    * effect when the logging system finished starting.
    */
-  case class InitializeLogger(bus: LoggingBus)
+  case class InitializeLogger(bus: LoggingBus) extends NoSerializationVerificationNeeded
 
   /**
    * Response message each logger must send within 1 second after receiving the
@@ -456,16 +502,16 @@ object Logging {
     }
   }
 
-  def stackTraceFor(e: Throwable) = {
-    if ((e eq null) || e == Error.NoCause) {
-      ""
-    } else {
-      import java.io.{ StringWriter, PrintWriter }
-      val sw = new StringWriter
-      val pw = new PrintWriter(sw)
-      e.printStackTrace(pw)
+  /**
+   * Returns the StackTrace for the given Throwable as a String
+   */
+  def stackTraceFor(e: Throwable): String = e match {
+    case null | Error.NoCause ⇒ ""
+    case other ⇒
+      val sw = new java.io.StringWriter
+      val pw = new java.io.PrintWriter(sw)
+      other.printStackTrace(pw)
       sw.toString
-    }
   }
 
 }

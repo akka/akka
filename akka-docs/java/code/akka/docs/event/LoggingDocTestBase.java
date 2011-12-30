@@ -23,11 +23,14 @@ import org.junit.Test;
 import scala.Option;
 import static org.junit.Assert.*;
 
+import akka.actor.UntypedActorFactory;
+//#imports-deadletter
 import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
+import akka.actor.DeadLetter;
+//#imports-deadletter
 
 public class LoggingDocTestBase {
 
@@ -40,6 +43,16 @@ public class LoggingDocTestBase {
       }
     }));
     myActor.tell("test");
+    system.shutdown();
+  }
+
+  @Test
+  public void subscribeToDeadLetters() {
+    //#deadletters
+    final ActorSystem system = ActorSystem.create("DeadLetters");
+    final ActorRef actor = system.actorOf(new Props(DeadLetterActor.class));
+    system.eventStream().subscribe(actor, DeadLetter.class);
+    //#deadletters
     system.shutdown();
   }
 
@@ -86,5 +99,15 @@ public class LoggingDocTestBase {
     }
   }
   //#my-event-listener
+
+  //#deadletter-actor
+  public static class DeadLetterActor extends UntypedActor {
+    public void onReceive(Object message) {
+      if (message instanceof DeadLetter) {
+        System.out.println(message);
+      }
+    }
+  }
+  //#deadletter-actor
 
 }

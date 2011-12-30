@@ -6,7 +6,6 @@ package akka.actor.mailbox
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.LocalActorRef
 import akka.util.Duration
 import akka.AkkaException
 import akka.actor.ActorContext

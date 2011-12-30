@@ -281,7 +281,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'"
     }
 
-    "must return deadLetters on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
+    "must return EmptyLocalActorRef on deserialize if not present in actor hierarchy (and remoting is not enabled)" in {
       import java.io._
 
       val baos = new ByteArrayOutputStream(8192 * 32)
@@ -297,7 +297,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === system.deadLetters
+        in.readObject must be === new EmptyLocalActorRef(system.eventStream, system.dispatcher, system.actorFor("/").path / "non-existing")
       }
     }
 

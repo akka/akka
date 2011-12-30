@@ -64,9 +64,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       val future = Promise[String]().complete(Left(new RuntimeException(message)))
       behave like futureWithException[RuntimeException](_(future, message))
     }
-    "completed with a j.u.c.TimeoutException" must {
-      val message = "Boxed TimeoutException"
-      val future = Promise[String]().complete(Left(new TimeoutException(message)))
+    "completed with an InterruptedException" must {
+      val message = "Boxed InterruptedException"
+      val future = Promise[String]().complete(Left(new InterruptedException(message)))
       behave like futureWithException[RuntimeException](_(future, message))
     }
     "completed with a NonLocalReturnControl" must {

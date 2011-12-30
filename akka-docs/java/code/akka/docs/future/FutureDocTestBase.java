@@ -290,6 +290,8 @@ public class FutureDocTestBase {
         } else {
           getSender().tell(i);
         }
+      } else {
+        unhandled(message);
       }
     }
   }

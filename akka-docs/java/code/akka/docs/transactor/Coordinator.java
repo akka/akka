@@ -22,6 +22,8 @@ public class Coordinator extends UntypedActor {
                 });
                 //#coordinated-atomic
             }
+        } else {
+          unhandled(incoming);
         }
     }
 }

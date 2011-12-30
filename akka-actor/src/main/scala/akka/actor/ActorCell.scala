@@ -13,6 +13,7 @@ import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
+import akka.serialization.SerializationExtension
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -214,6 +215,16 @@ private[akka] class ActorCell(
   final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
+    if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
+      val ser = SerializationExtension(system)
+      ser.serialize(props.creator) match {
+        case Left(t) ⇒ throw t
+        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass, None) match {
+          case Left(t) ⇒ throw t
+          case _       ⇒ //All good
+        }
+      }
+    }
     val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
@@ -222,8 +233,13 @@ private[akka] class ActorCell(
   def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
 
   def actorOf(props: Props, name: String): ActorRef = {
-    if (name == null || name == "" || name.charAt(0) == '$')
-      throw new InvalidActorNameException("actor name must not be null, empty or start with $")
+    import ActorPath.ElementRegex
+    name match {
+      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
+      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
+      case ElementRegex() ⇒ // this is fine
+      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
+    }
     if (childrenRefs contains name)
       throw new InvalidActorNameException("actor name " + name + " is not unique!")
     _actorOf(props, name)
@@ -308,7 +324,7 @@ private[akka] class ActorCell(
   }
 
   final def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender))
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender)(system))
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
@@ -566,7 +582,7 @@ private[akka] class ActorCell(
 
   final def checkReceiveTimeout() {
     val recvtimeout = receiveTimeoutData
-    if (recvtimeout._1 > 0 && dispatcher.mailboxIsEmpty(this)) {
+    if (recvtimeout._1 > 0 && !mailbox.hasMessages) {
       recvtimeout._2.cancel() //Cancel any ongoing future
       //Only reschedule if desired and there are currently no more messages to be processed
       receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(Duration(recvtimeout._1, TimeUnit.MILLISECONDS), self, ReceiveTimeout))

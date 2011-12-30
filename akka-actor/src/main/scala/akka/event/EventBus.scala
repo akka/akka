@@ -116,15 +116,13 @@ trait LookupClassification { this: EventBus ⇒
  */
 trait SubchannelClassification { this: EventBus ⇒
 
-  implicit val subclassification: Subclassification[Classifier]
+  protected implicit def subclassification: Subclassification[Classifier]
 
   // must be lazy to avoid initialization order problem with subclassification
   private lazy val subscriptions = new SubclassifiedIndex[Classifier, Subscriber]()
 
   @volatile
   private var cache = Map.empty[Classifier, Set[Subscriber]]
-
-  protected def subscribers = cache.values.flatten
 
   /**
    * Returns the Classifier associated with the given Event

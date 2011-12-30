@@ -10,6 +10,8 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 import akka.util.Duration
+import akka.config.ConfigurationException
+import com.typesafe.config.ConfigFactory
 
 object RoutingSpec {
 
@@ -369,6 +371,25 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         shudownLatch foreach (_.countDown())
       }
     }), "Actor:" + id)
+  }
+
+  "router FromConfig" must {
+    "throw suitable exception when not configured" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props.empty.withRouter(FromConfig))
+      }.getMessage.contains("application.conf") must be(true)
+    }
+
+    "allow external configuration" in {
+      val sys = ActorSystem("FromConfig", ConfigFactory
+        .parseString("akka.actor.deployment./routed.router=round-robin")
+        .withFallback(system.settings.config))
+      try {
+        sys.actorOf(Props.empty.withRouter(FromConfig), "routed")
+      } finally {
+        sys.shutdown()
+      }
+    }
   }
 
   "custom router" must {

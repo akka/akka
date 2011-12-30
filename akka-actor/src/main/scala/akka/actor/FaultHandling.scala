@@ -46,15 +46,53 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
 
 object FaultHandlingStrategy {
   sealed trait Action
+
+  /**
+   * Resumes message processing for the failed Actor
+   */
   case object Resume extends Action
+
+  /**
+   * Discards the old Actor instance and replaces it with a new,
+   * then resumes message processing.
+   */
   case object Restart extends Action
+
+  /**
+   * Stops the Actor
+   */
   case object Stop extends Action
+
+  /**
+   * Escalates the failure to the supervisor of the supervisor,
+   * by rethrowing the cause of the failure.
+   */
   case object Escalate extends Action
 
-  // Java API
+  /**
+   * Resumes message processing for the failed Actor
+   * Java API
+   */
   def resume = Resume
+
+  /**
+   * Discards the old Actor instance and replaces it with a new,
+   * then resumes message processing.
+   * Java API
+   */
   def restart = Restart
+
+  /**
+   * Stops the Actor
+   * Java API
+   */
   def stop = Stop
+
+  /**
+   * Escalates the failure to the supervisor of the supervisor,
+   * by rethrowing the cause of the failure.
+   * Java API
+   */
   def escalate = Escalate
 
   type Decider = PartialFunction[Throwable, Action]

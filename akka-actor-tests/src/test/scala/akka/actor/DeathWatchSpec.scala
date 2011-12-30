@@ -4,18 +4,28 @@
 
 package akka.actor
 
-import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DeathWatchSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
-  def startWatching(target: ActorRef) = system.actorOf(Props(new Actor {
+class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
+
+object DeathWatchSpec {
+  def props(target: ActorRef, testActor: ActorRef) = Props(new Actor {
     context.watch(target)
     def receive = { case x ⇒ testActor forward x }
-  }))
+  })
+}
+
+trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout ⇒
+
+  import DeathWatchSpec._
+
+  lazy val supervisor = system.actorOf(Props[Supervisor], "watchers")
+
+  def startWatching(target: ActorRef) = Await.result((supervisor ? props(target, testActor)).mapTo[ActorRef], 3 seconds)
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) = expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {

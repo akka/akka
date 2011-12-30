@@ -31,7 +31,7 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
   }
 
   val NodeName: String = config.getString("akka.cluster.nodename") match {
-    case ""    ⇒ throw new ConfigurationException("akka.cluster.nodename configuration property must be defined")
+    case ""    ⇒ throw new ConfigurationException("Configuration option 'akka.cluster.nodename' must be non-empty.")
     case value ⇒ value
   }
 
@@ -75,6 +75,23 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
     val ConnectionTimeout = Duration(config.getMilliseconds("akka.remote.server.connection-timeout"), MILLISECONDS)
 
     val Backlog = config.getInt("akka.remote.server.backlog")
+
+    val ExecutionPoolKeepAlive = Duration(config.getMilliseconds("akka.remote.server.execution-pool-keepalive"), MILLISECONDS)
+
+    val ExecutionPoolSize = config.getInt("akka.remote.server.execution-pool-size") match {
+      case sz if sz < 1 ⇒ throw new IllegalArgumentException("akka.remote.server.execution-pool-size is less than 1")
+      case sz           ⇒ sz
+    }
+
+    val MaxChannelMemorySize = config.getBytes("akka.remote.server.max-channel-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0 bytes")
+      case sz           ⇒ sz
+    }
+
+    val MaxTotalMemorySize = config.getBytes("akka.remote.server.max-total-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0 bytes")
+      case sz           ⇒ sz
+    }
 
     // TODO handle the system name right and move this to config file syntax
     val URI = "akka://sys@" + Hostname + ":" + Port

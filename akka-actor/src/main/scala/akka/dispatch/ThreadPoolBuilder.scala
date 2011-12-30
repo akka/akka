@@ -111,10 +111,16 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
     this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair)))
 
   def setCorePoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(corePoolSize = size))
+    if (config.maxPoolSize < size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(corePoolSize = size))
 
   def setMaxPoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(maxPoolSize = size))
+    if (config.corePoolSize > size)
+      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else
+      this.copy(config = config.copy(maxPoolSize = size))
 
   def setCorePoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigDispatcherBuilder =
     setCorePoolSize(scaledPoolSize(min, multiplier, max))
@@ -139,36 +145,16 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
 
 class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) extends ThreadFactory {
   protected val counter = new AtomicLong
+  protected val doNothing: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() {
+      def uncaughtException(thread: Thread, cause: Throwable) = {}
+    }
 
   def newThread(runnable: Runnable) = {
-    val t = new MonitorableThread(runnable, name)
+    val t = new Thread(runnable, name + counter.incrementAndGet())
+    t.setUncaughtExceptionHandler(doNothing)
     t.setDaemon(daemonic)
     t
-  }
-}
-
-object MonitorableThread {
-  val DEFAULT_NAME = "MonitorableThread".intern
-
-  // FIXME use MonitorableThread.created and MonitorableThread.alive in monitoring
-  val created = new AtomicInteger
-  val alive = new AtomicInteger
-}
-
-class MonitorableThread(runnable: Runnable, name: String)
-  extends Thread(runnable, name + "-" + MonitorableThread.created.incrementAndGet) {
-
-  setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-    def uncaughtException(thread: Thread, cause: Throwable) = {}
-  })
-
-  override def run = {
-    try {
-      MonitorableThread.alive.incrementAndGet
-      super.run
-    } finally {
-      MonitorableThread.alive.decrementAndGet
-    }
   }
 }
 
@@ -206,6 +192,11 @@ trait ExecutorServiceDelegate extends ExecutorService {
   def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
 }
 
+/**
+ * The RejectedExecutionHandler used by Akka, it improves on CallerRunsPolicy
+ * by throwing a RejectedExecutionException if the executor isShutdown.
+ * (CallerRunsPolicy silently discards the runnable in this case, which is arguably broken)
+ */
 class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
   def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor): Unit = {
     if (threadPoolExecutor.isShutdown) throw new RejectedExecutionException("Shutdown")

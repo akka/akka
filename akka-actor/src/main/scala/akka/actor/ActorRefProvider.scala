@@ -6,14 +6,12 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
-import akka.util.Timeout
 import akka.util.Timeout.intToTimeout
 import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
-import akka.util.Timeout
 import akka.AkkaException
-import akka.util.{ Duration, Switch, Helpers }
+import akka.util.{ Duration, Switch, Helpers, Timeout }
 import akka.event._
 import java.io.Closeable
 
@@ -453,22 +451,33 @@ class LocalActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
-      if (elems.isEmpty) deadLetters
-      else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
+      if (elems.isEmpty) {
+        log.debug("look-up of empty path string '{}' fails (per definition)", path)
+        deadLetters
+      } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
       else actorFor(ref, elems)
     case LocalActorPath(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
-    case _ ⇒ deadLetters
+    case _ ⇒
+      log.debug("look-up of unknown path '{}' failed", path)
+      deadLetters
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
-    else deadLetters
+    else {
+      log.debug("look-up of foreign ActorPath '{}' failed", path)
+      deadLetters
+    }
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    if (path.isEmpty) deadLetters
-    else ref.getChild(path.iterator) match {
-      case Nobody ⇒ deadLetters
-      case x      ⇒ x
+    if (path.isEmpty) {
+      log.debug("look-up of empty path sequence fails (per definition)")
+      deadLetters
+    } else ref.getChild(path.iterator) match {
+      case Nobody ⇒
+        log.debug("look-up of path sequence '{}' failed", path)
+        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path)
+      case x ⇒ x
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
@@ -485,15 +494,15 @@ class LocalActorRefProvider(
 
   def ask(within: Timeout): Option[AskActorRef] = {
     (if (within == null) settings.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒
-        None
+      case t if t.duration.length <= 0 ⇒ None
       case t ⇒
         val path = tempPath()
         val name = path.name
         val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
         tempContainer.addChild(name, a)
-        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { tempContainer.removeChild(name); a.stop() }
-        a.result onComplete { _ ⇒
+        val result = a.result
+        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
+        result onComplete { _ ⇒
           try { a.stop(); f.cancel() }
           finally { tempContainer.removeChild(name) }
         }
