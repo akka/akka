@@ -527,11 +527,17 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
     p
   }
 
+  /**
+   * Same as onSuccess { case r => f(r) } but is also used in for-comprehensions
+   */
   final def foreach(f: T ⇒ Unit): Unit = onComplete {
     case Right(r) ⇒ f(r)
     case _        ⇒
   }
 
+  /**
+   * Used by for-comprehensions
+   */
   final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
 
   final class FutureWithFilter[+A](self: Future[A], p: A ⇒ Boolean) {
@@ -541,6 +547,11 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
     def withFilter(q: A ⇒ Boolean): FutureWithFilter[A] = new FutureWithFilter[A](self, x ⇒ p(x) && q(x))
   }
 
+  /**
+   * Returns a new Future that will hold the successful result of this Future if it matches
+   * the given predicate, if it doesn't match, the resulting Future will be a failed Future
+   * with a MatchError, of if this Future fails, that failure will be propagated to the returned Future
+   */
   final def filter(pred: T ⇒ Boolean): Future[T] = {
     val p = Promise[T]()
     onComplete {
