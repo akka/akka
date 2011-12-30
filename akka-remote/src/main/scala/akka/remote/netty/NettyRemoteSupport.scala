@@ -61,7 +61,7 @@ abstract class RemoteClient private[akka] (
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
     log.debug("Sending message: {}", message)
-    send(remoteSupport.createRemoteMessageProtocolBuilder(recipient, message, senderOption).build)
+    send((message, senderOption, recipient))
   } else {
     val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", remoteSupport, remoteAddress)
     remoteSupport.notifyListeners(RemoteClientError(exception, remoteSupport, remoteAddress))
@@ -71,16 +71,15 @@ abstract class RemoteClient private[akka] (
   /**
    * Sends the message across the wire
    */
-  private def send(request: RemoteMessageProtocol): Unit = {
+  private def send(request: (Any, Option[ActorRef], ActorRef)): Unit = {
     try {
-      val payload = remoteSupport.createMessageSendEnvelope(request)
-      currentChannel.write(payload).addListener(
+      currentChannel.write(request).addListener(
         new ChannelFutureListener {
           def operationComplete(future: ChannelFuture) {
             if (future.isCancelled) {
               //Not interesting at the moment
             } else if (!future.isSuccess) {
-              remoteSupport.notifyListeners(RemoteClientWriteFailed(payload, future.getCause, remoteSupport, remoteAddress))
+              remoteSupport.notifyListeners(RemoteClientWriteFailed(request, future.getCause, remoteSupport, remoteAddress))
             }
           }
         })
@@ -260,13 +259,30 @@ class ActiveRemoteClientPipelineFactory(
     val timeout = new ReadTimeoutHandler(client.remoteSupport.timer, ReadTimeout.length, ReadTimeout.unit)
     val lenDec = new LengthFieldBasedFrameDecoder(MessageFrameSize, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
-    val protobufEnc = new ProtobufEncoder
+    val messageDec = new RemoteMessageDecoder
+    val messageEnc = new RemoteMessageEncoder(client.remoteSupport)
     val remoteClient = new ActiveRemoteClientHandler(name, bootstrap, remoteAddress, client.remoteSupport.timer, client)
 
-    new StaticChannelPipeline(timeout, lenDec, protobufDec, lenPrep, protobufEnc, executionHandler, remoteClient)
+    new StaticChannelPipeline(timeout, lenDec, messageDec, lenPrep, messageEnc, executionHandler, remoteClient)
   }
 }
+
+class RemoteMessageEncoder(remoteSupport: NettyRemoteSupport) extends ProtobufEncoder {
+  override def encode(ctx: ChannelHandlerContext, channel: Channel, msg: AnyRef): AnyRef = {
+    msg match {
+      case (message: Any, sender: Option[_], recipient: ActorRef) ⇒
+        super.encode(ctx, channel,
+          remoteSupport.createMessageSendEnvelope(
+            remoteSupport.createRemoteMessageProtocolBuilder(
+              recipient,
+              message,
+              sender.asInstanceOf[Option[ActorRef]]).build))
+      case _ ⇒ super.encode(ctx, channel, msg)
+    }
+  }
+}
+
+class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
 
 @ChannelHandler.Sharable
 class ActiveRemoteClientHandler(
@@ -574,12 +590,12 @@ class RemoteServerPipelineFactory(
   def getPipeline: ChannelPipeline = {
     val lenDec = new LengthFieldBasedFrameDecoder(MessageFrameSize, 0, 4, 0, 4)
     val lenPrep = new LengthFieldPrepender(4)
-    val protobufDec = new ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
-    val protobufEnc = new ProtobufEncoder
+    val messageDec = new RemoteMessageDecoder
+    val messageEnc = new RemoteMessageEncoder(remoteSupport)
 
     val authenticator = if (RequireCookie) new RemoteServerAuthenticationHandler(SecureCookie) :: Nil else Nil
     val remoteServer = new RemoteServerHandler(name, openChannels, loader, remoteSupport)
-    val stages: List[ChannelHandler] = lenDec :: protobufDec :: lenPrep :: protobufEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
+    val stages: List[ChannelHandler] = lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
 }
