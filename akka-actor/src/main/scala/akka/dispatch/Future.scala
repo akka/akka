@@ -458,7 +458,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
     val future = Promise[A]()
     onComplete {
       case l: Left[_, _] ⇒ future complete l.asInstanceOf[Either[Throwable, A]]
-      case Right(res)    ⇒ future complete (try { Right(f(res)) } catch { case e: Exception ⇒ Left(e) } )
+      case Right(res)    ⇒ future complete (try { Right(f(res)) } catch { case e: Exception ⇒ Left(e) })
     }
     future
   }
