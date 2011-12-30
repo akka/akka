@@ -83,13 +83,13 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
       case sz           ⇒ sz
     }
 
-    val MaxChannelMemorySize = config.getInt("akka.remote.server.max-channel-memory-size") match {
-      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0")
+    val MaxChannelMemorySize = config.getBytes("akka.remote.server.max-channel-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-channel-memory-size is less than 0 bytes")
       case sz           ⇒ sz
     }
 
-    val MaxTotalMemorySize = config.getInt("akka.remote.server.max-total-memory-size") match {
-      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0")
+    val MaxTotalMemorySize = config.getBytes("akka.remote.server.max-total-memory-size") match {
+      case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.server.max-total-memory-size is less than 0 bytes")
       case sz           ⇒ sz
     }
 

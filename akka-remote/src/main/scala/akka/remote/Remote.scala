@@ -61,8 +61,8 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
   def eventStream = _eventStream
 
   @volatile
-  private var _server: RemoteSupport[ParsedTransportAddress] = _
-  def server = _server
+  private var _transport: RemoteSupport[ParsedTransportAddress] = _
+  def transport = _transport
 
   @volatile
   private var _provider: RemoteActorRefProvider = _
@@ -77,7 +77,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
     _computeGridDispatcher = system.dispatchers.lookup("akka.remote.compute-grid-dispatcher")
     _remoteDaemon = new RemoteSystemDaemon(system, this, system.provider.rootPath / "remote", system.provider.rootGuardian, log)
     _eventStream = new NetworkEventStream(system)
-    _server = {
+    _transport = {
       val arguments = Seq(
         classOf[ActorSystemImpl] -> system,
         classOf[Remote] -> this,

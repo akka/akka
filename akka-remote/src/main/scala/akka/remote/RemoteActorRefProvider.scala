@@ -54,7 +54,7 @@ class RemoteActorRefProvider(
     local.init(system)
     remote.init(system, this)
     local.registerExtraNames(Map(("remote", remote.remoteDaemon)))
-    terminationFuture.onComplete(_ ⇒ remote.server.shutdown())
+    terminationFuture.onComplete(_ ⇒ remote.transport.shutdown())
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
@@ -114,7 +114,7 @@ class RemoteActorRefProvider(
               else {
                 val rpath = RootActorPath(addr) / "remote" / rootPath.address.hostPort / path.elements
                 useActorOnNode(rpath, props.creator, supervisor)
-                new RemoteActorRef(this, remote.server, rpath, supervisor, None)
+                new RemoteActorRef(this, remote.transport, rpath, supervisor, None)
               }
           }
 
@@ -125,14 +125,14 @@ class RemoteActorRefProvider(
 
   def actorFor(path: ActorPath): InternalActorRef = path.root match {
     case `rootPath` ⇒ actorFor(rootGuardian, path.elements)
-    case RootActorPath(_: RemoteSystemAddress[_], _) ⇒ new RemoteActorRef(this, remote.server, path, Nobody, None)
+    case RootActorPath(_: RemoteSystemAddress[_], _) ⇒ new RemoteActorRef(this, remote.transport, path, Nobody, None)
     case _ ⇒ local.actorFor(path)
   }
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ParsedActorPath(address, elems) ⇒
       if (address == rootPath.address) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, remote.server, new RootActorPath(address) / elems, Nobody, None)
+      else new RemoteActorRef(this, remote.transport, new RootActorPath(address) / elems, Nobody, None)
     case _ ⇒ local.actorFor(ref, path)
   }
 
