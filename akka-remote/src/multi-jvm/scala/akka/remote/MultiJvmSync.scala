@@ -43,7 +43,7 @@ object MultiJvmSync {
     val barrier = if (AkkaRemoteSpec.testNodes eq null)
       new FileBasedBarrier(name, count, testName, nodeName, timeout)
     else
-      new ZkClient.ZkBarrier(name + "_" + nodeName, count, testName)
+      new ZkClient.ZkBarrier(name + "_" + nodeName, count, "/" + testName)
     barrier.await()
   }
 }
