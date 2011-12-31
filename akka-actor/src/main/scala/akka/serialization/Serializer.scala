@@ -7,20 +7,15 @@ package akka.serialization
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 import akka.util.ClassLoaderObjectInputStream
 
-object Serializer {
-  val defaultSerializerName = classOf[JavaSerializer].getName
-  type Identifier = Byte
-}
-
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object
  */
 trait Serializer extends scala.Serializable {
   /**
-   * Completely unique Byte value to identify this implementation of Serializer, used to optimize network traffic
+   * Completely unique value to identify this implementation of Serializer, used to optimize network traffic
    * Values from 0 to 16 is reserved for Akka internal usage
    */
-  def identifier: Serializer.Identifier
+  def identifier: Int
 
   /**
    * Serializes the given object into an Array of Byte
@@ -28,17 +23,51 @@ trait Serializer extends scala.Serializable {
   def toBinary(o: AnyRef): Array[Byte]
 
   /**
+   * Returns whether this serializer needs a manifest in the fromBinary method
+   */
+  def includeManifest: Boolean
+
+  /**
+   * Deserializes the given Array of Bytes into an AnyRef
+   */
+  def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None, None)
+
+  /**
+   * Deserializes the given Array of Bytes into an AnyRef with an optional type hint
+   */
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = fromBinary(bytes, manifest, None)
+
+  /**
    *  Produces an object from an array of bytes, with an optional type-hint and a classloader to load the class into
    */
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef
+}
+
+/**
+ * Java API for creating a Serializer
+ */
+abstract class JSerializer extends Serializer {
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef =
+    fromBinary(bytes, manifest.orNull, classLoader.orNull)
+
+  /**
+   * This method should be overridden,
+   * manifest and classLoader may be null.
+   */
+  def fromBinary(bytes: Array[Byte], manifest: Class[_], classLoader: ClassLoader): AnyRef
 }
 
 object JavaSerializer extends JavaSerializer
 object NullSerializer extends NullSerializer
 
+/**
+ * This Serializer uses standard Java Serialization
+ */
 class JavaSerializer extends Serializer {
 
-  def identifier = 1: Byte
+  def includeManifest: Boolean = false
+
+  def identifier = 1
 
   def toBinary(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
@@ -59,11 +88,13 @@ class JavaSerializer extends Serializer {
   }
 }
 
+/**
+ * This is a special Serializer that Serializes and deserializes nulls only
+ */
 class NullSerializer extends Serializer {
-
   val nullAsBytes = Array[Byte]()
-
-  def identifier = 0: Byte
+  def includeManifest: Boolean = false
+  def identifier = 0
   def toBinary(o: AnyRef) = nullAsBytes
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef = null
 }

@@ -560,9 +560,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
 
   private def createSingleTask(runnable: Runnable): TimerTask =
     new TimerTask() {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.dispatchTask(() ⇒ runnable.run())
-      }
+      def run(timeout: org.jboss.netty.akka.util.Timeout) { dispatcher.execute(runnable) }
     }
 
   private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
@@ -575,7 +573,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   private def createSingleTask(f: ⇒ Unit): TimerTask =
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.dispatchTask(() ⇒ f)
+        dispatcher.execute(new Runnable { def run = f })
       }
     }
 
@@ -598,7 +596,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   private def createContinuousTask(delay: Duration, f: ⇒ Unit): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.dispatchTask(() ⇒ f)
+        dispatcher.execute(new Runnable { def run = f })
         try timeout.getTimer.newTimeout(this, delay) catch {
           case _: IllegalStateException ⇒ // stop recurring if timer is stopped
         }
@@ -609,7 +607,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   private def createContinuousTask(delay: Duration, runnable: Runnable): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.dispatchTask(() ⇒ runnable.run())
+        dispatcher.execute(runnable)
         try timeout.getTimer.newTimeout(this, delay) catch {
           case _: IllegalStateException ⇒ // stop recurring if timer is stopped
         }

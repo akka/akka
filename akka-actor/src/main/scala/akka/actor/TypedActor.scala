@@ -184,7 +184,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * @throws the underlying exception if there's an InvocationTargetException thrown on the invocation
      */
     def apply(instance: AnyRef): AnyRef = try {
-      parameters match { //TODO: We do not yet obey Actor.SERIALIZE_MESSAGES
+      parameters match {
         case null                     ⇒ method.invoke(instance)
         case args if args.length == 0 ⇒ method.invoke(instance)
         case args                     ⇒ method.invoke(instance, args: _*)
@@ -193,7 +193,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
     private def writeReplace(): AnyRef = parameters match {
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
-      case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Serializer.Identifier](), Array[Array[Byte]]())
+      case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Int](), Array[Array[Byte]]())
       case ps ⇒
         val serializers: Array[Serializer] = ps map SerializationExtension(Serialization.currentSystem.value).findSerializerFor
         val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
@@ -207,7 +207,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Serializer.Identifier], serializedParameters: Array[Array[Byte]]) {
+  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Int], serializedParameters: Array[Array[Byte]]) {
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
@@ -390,6 +390,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   private[akka] class TypedActorInvocationHandler(val extension: TypedActorExtension, val actorVar: AtomVar[ActorRef], val timeout: Timeout) extends InvocationHandler {
     def actor = actorVar.get
 
+    @throws(classOf[Throwable])
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
