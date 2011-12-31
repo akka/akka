@@ -19,7 +19,7 @@ import akka.util.{Timeout, Duration}
 trait Consumer { this: Actor =>
   import RouteDefinitionHandler._
 
-  val camel : ConsumerRegistry = Camel
+  val camel : ConsumerRegistry = Camel.instance
 
   /**
    * The default route definition handler is the identity function

@@ -210,8 +210,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
   private def target(path:Path) =
     targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  //TODO: investigate why it doesn't work with camel instance
-  private def targetById(path: Path) = Camel.findConsumer(path)
+  private def targetById(path: Path) = camel.findConsumer(path)
 
 }
 

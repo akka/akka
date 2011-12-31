@@ -20,7 +20,8 @@ trait Camel{
   def stop : Unit
 }
 
-object Camel extends Camel with ConsumerRegistry{
+//TODO: Get rid of the singleton!
+object Camel{
   
   class CamelInstance extends Camel with ConsumerRegistry{
     val context = {
@@ -52,18 +53,18 @@ object Camel extends Camel with ConsumerRegistry{
   }
   
   private[this] var _instance : Option[Camel with ConsumerRegistry] = None
-  private[this] def instance = _instance.getOrElse(throw new IllegalStateException("Camel not started")) 
+  def instance = _instance.getOrElse(throw new IllegalStateException("Camel not started"))
 
   def start = _instance match{
     case None => {_instance = Some(new CamelInstance().start); instance}
     case _ => throw new IllegalStateException("Camel alerady started!")
   }
-  override def stop {instance.stop; _instance = None}
+  def stop {instance.stop; _instance = None}
 
   def context = instance.context
   def template = instance.template
-  def addRoutes(routeBuilder: RouteBuilder) = instance.addRoutes(routeBuilder)
-  def stopRoute(routeId: String) = instance.stopRoute(routeId)
+//  def addRoutes(routeBuilder: RouteBuilder) = instance.addRoutes(routeBuilder)
+//  def stopRoute(routeId: String) = instance.stopRoute(routeId)
 
 }
 
