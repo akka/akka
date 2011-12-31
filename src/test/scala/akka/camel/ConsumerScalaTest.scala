@@ -22,12 +22,11 @@ import akka.util.duration._
  * @author Martin Krasser
  */
 class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
-  import CamelContextManager.mandatoryTemplate
 
-  var service: CamelService = _
+  var service: Camel = _
 
   val system = ActorSystem("test")
-  CamelServiceManager.startCamelService
+  Camel.start
 
   def activatedConsumerWithUri(uri : String) ={
     val consumer = system.actorOf(Props(new TestConsumer(uri)))

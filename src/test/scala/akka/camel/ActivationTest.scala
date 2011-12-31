@@ -1,7 +1,6 @@
 package akka.camel
 
 import org.scalatest.matchers.ShouldMatchers
-import akka.dispatch.Await
 import akka.util.duration._
 import java.util.concurrent.TimeoutException
 import org.apache.camel.ProducerTemplate
@@ -15,15 +14,16 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
   var template : ProducerTemplate = _
 
   //TODO: handle camel service lifecycle
-  CamelServiceManager.startCamelService
+
   override protected def beforeEach() {
+    Camel.start
     system = ActorSystem("test")
-    template = CamelContextManager.getMandatoryTemplate
+    template = Camel.template
   }
 
   override protected def afterEach {
     system.shutdown()
-//    CamelServiceManager.stopCamelService
+    Camel.stop
   }
 
   def testActorWithEndpoint(uri: String): ActorRef = { system.actorOf(Props(new TestConsumer(uri)))}
@@ -31,7 +31,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
   "ActivationAware" should "be notified when activated" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     try{
-      ActivationAware.awaitActivation(actor, 1 second)
+      ActivationAware.awaitActivation(actor, 3 second)
     } catch {
       case e : TimeoutException => fail("Failed to get notification within 1 second")
     }

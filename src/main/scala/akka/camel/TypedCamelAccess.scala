@@ -21,8 +21,8 @@ private[camel] object TypedCamelAccess {
 
     type TypedCamelObject = {
       def onCamelContextInit(context: CamelContext): Unit
-      def onCamelServiceStart(service: CamelService): Unit
-      def onCamelServiceStop(service: CamelService): Unit
+      def onCamelServiceStart(service: Camel): Unit
+      def onCamelServiceStop(service: Camel): Unit
     }
 
     val typedCamelObject: Option[TypedCamelObject] =

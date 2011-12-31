@@ -1,8 +1,8 @@
+package akka.camel
+
 /**
  *  Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-
-package akka.camel
 
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import org.apache.camel.impl.DefaultCamelContext
@@ -19,6 +19,7 @@ import TypedCamelAccess._
  *
  * @author Martin Krasser
  */
+@deprecated
 trait CamelContextLifecycle {
   // TODO: enforce correct state transitions
   // valid: init -> start -> stop -> init ...
@@ -149,6 +150,7 @@ trait CamelContextLifecycle {
 /**
  * Manages a global CamelContext and an associated ProducerTemplate.
  */
+@deprecated
 object CamelContextManager extends CamelContextLifecycle {
 
   // -----------------------------------------------------

@@ -52,7 +52,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * @see CamelContextManager.
    */
   def getBodyAs[T](clazz: Class[T]): T =
-    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+    Camel.context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -105,7 +105,7 @@ case class Message(val body: Any, val headers: Map[String, Any] = Map.empty) {
    * Java API
    */
   def getHeaderAs[T](name: String, clazz: Class[T]): T =
-    CamelContextManager.mandatoryContext.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
+    Camel.context.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.

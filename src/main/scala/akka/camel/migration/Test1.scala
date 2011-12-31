@@ -3,7 +3,7 @@ package akka.camel.migration
 import akka.actor.{Props, ActorSystem}
 
 import RichString._
-import akka.camel.CamelServiceManager._
+import akka.camel.Camel
 
 object Test1 extends App{
   import akka.actor.Actor
@@ -15,7 +15,7 @@ object Test1 extends App{
   val killer = system.actorOf(Props(new Actor{
     protected def receive = {
       case "stop" => {
-        stopCamelService
+        Camel.stop
         system.shutdown()
       }
     }
@@ -33,10 +33,9 @@ object Test1 extends App{
   }
 
 
-  startCamelService
+  Camel.start
 
   system.actorOf(Props[CamelConsumer])
 
   "data/input/CamelConsumer/file1.txt" << "test data "+math.random
-
 }

@@ -1,8 +1,8 @@
+package akka.camel
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package akka.camel
-
 
 import component.Path
 import org.apache.camel.CamelContext
@@ -22,7 +22,8 @@ import akka.actor.{ActorRef, Props, Actor, ActorSystem}
  *
  * @author Martin Krasser
  */
-trait CamelService extends Bootable with ConsumerRegistry{
+@deprecated
+trait CamelService extends Bootable{
 
   val actorSystem  = ActorSystem("Camel")
   private[camel] val consumerPublisher = actorSystem.actorOf(Props[ConsumerPublisher])
@@ -81,31 +82,15 @@ trait CamelService extends Bootable with ConsumerRegistry{
   }
 }
 
-/**
- * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
- * ActorEndpoint uses it to lookup an actor by its path.
- */
-trait ConsumerRegistry{ self:CamelService =>
-  //TODO: save some kittens and use less blocking collection
-  val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())
-
-  def registerConsumer(route: String, consumer: Consumer with Actor) = {
-    consumers.put(Path(consumer.self.path.toString), consumer.self)
-    consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
-  }
-
-  def findConsumer(path: Path) : Option[ActorRef] = consumers.get(path)
-}
-
-
 
 /**
  * Manages a CamelService (the 'current' CamelService).
  *
  * @author Martin Krasser
  */
+@deprecated
 object CamelServiceManager {
-  def findConsumer(path: Path) = mandatoryService.findConsumer(path)
+//  def findConsumer(path: Path) = mandatoryService.findConsumer(path)
 
 
   /**
@@ -171,6 +156,7 @@ object CamelServiceManager {
 /**
  * @author Martin Krasser
  */
+@deprecated
 object CamelServiceFactory {
   /**
    * Creates a new CamelService instance.

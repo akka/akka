@@ -14,7 +14,7 @@ import akka.actor._
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 
 import scala.reflect.BeanProperty
-import akka.camel.{CamelServiceManager, Ack, Failure, Message}
+import akka.camel.{Camel, ConsumerRegistry, Ack, Failure, Message}
 import akka.util.Timeout
 import akka.dispatch.Await
 
@@ -39,11 +39,11 @@ case class Path(value:String)
  *
  * @author Martin Krasser
  */
-class ActorComponent extends DefaultComponent {
-
+class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultComponent {
+  printf("Starting component '%s' with camel '%s'\n", this, camel)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = parsePath(remaining)
-    new ActorEndpoint(uri, this, path)
+    new ActorEndpoint(uri, this, path, camel)
   }
 
 
@@ -80,7 +80,8 @@ class ActorComponent extends DefaultComponent {
  */
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
-                    val path: Path) extends DefaultEndpoint(uri, comp) {
+                    val path: Path,
+                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp) {
 
   /**
    * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
@@ -100,13 +101,13 @@ class ActorEndpoint(uri: String,
   /**
    * @throws UnsupportedOperationException
    */
-  def createConsumer(processor: Processor): Consumer =
+  def createConsumer(processor: Processor): org.apache.camel.Consumer =
     throw new UnsupportedOperationException("actor consumer not supported yet")
 
   /**
    * Creates a new ActorProducer instance initialized with this endpoint.
    */
-  def createProducer: ActorProducer = new ActorProducer(this)
+  def createProducer: ActorProducer = new ActorProducer(this, camel)
 
   /**
    * Returns true.
@@ -134,7 +135,7 @@ class ActorEndpoint(uri: String,
  *
  * @author Martin Krasser
  */
-class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with AsyncProcessor {
+class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends DefaultProducer(ep) with AsyncProcessor {
   import ActorProducer._
 
   private lazy val path = ep.path
@@ -209,7 +210,8 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   private def target(path:Path) =
     targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private def targetById(path: Path) = CamelServiceManager.findConsumer(path)
+  //TODO: investigate why it doesn't work with camel instance
+  private def targetById(path: Path) = Camel.findConsumer(path)
 
 }
 

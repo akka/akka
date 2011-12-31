@@ -21,8 +21,7 @@ import akka.actor._
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerPublisher(/*activationTracker: ActorRef*/) extends Actor {
-  import ConsumerPublisher._
+private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
 
   def receive = {
     case r: ConsumerActorRegistered => {
@@ -36,17 +35,12 @@ private[camel] class ConsumerPublisher(/*activationTracker: ActorRef*/) extends 
     }
     case _ => { /* ignore */}
   }
-}
 
-/**
- * @author Martin Krasser
- */
-private[camel] object ConsumerPublisher {
   /**
    * Creates a route to the registered consumer actor.
    */
   def handleConsumerActorRegistered(event: ConsumerActorRegistered) {
-    CamelContextManager.mandatoryContext.addRoutes(new ConsumerActorRouteBuilder(event))
+    camel.addRoutes(new ConsumerActorRouteBuilder(event))
     EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (event.actorRef, event.endpointUri))
   }
 
@@ -54,7 +48,7 @@ private[camel] object ConsumerPublisher {
    * Stops the route to the already un-registered consumer actor.
    */
   def handleConsumerActorUnregistered(event: ConsumerActorUnregistered) {
-    CamelContextManager.mandatoryContext.stopRoute(event.path)
+    camel.stopRoute(event.path)
     EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
   }
 }
