@@ -317,7 +317,8 @@ object Future {
         new Runnable {
           def run =
             try {
-              val taskStack = Stack[() ⇒ Unit](task)
+              val taskStack = Stack.empty[() ⇒ Unit]
+              taskStack push task
               _taskStack set Some(taskStack)
               while (taskStack.nonEmpty) {
                 val next = taskStack.pop()
