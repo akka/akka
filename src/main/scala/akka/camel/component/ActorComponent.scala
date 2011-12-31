@@ -194,11 +194,13 @@ class ActorProducer(val ep: ActorEndpoint) extends DefaultProducer(ep) with Asyn
   private def sendAsync(exchange: Exchange) = target(path) ! requestFor(exchange)
 
   private def sendAsync(exchange: Exchange, callback: AsyncCallback) =
+  //TODO: cleanup and decide on timeouts
     target(path).ask(requestFor(exchange), timeout2).onComplete{ msg: Any =>
         msg match {
-          case Ack          => { /* no response message to set */ }
-          case msg: Failure => exchange.fromFailureMessage(msg)
-          case msg          => exchange.fromResponseMessage(Message.canonicalize(msg))
+          case Right(Ack)          => { /* no response message to set */ }
+          case Right(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
+          case Left(msg: Failure)  => exchange.fromFailureMessage(msg)
+            //TODO:handle future timeout here
         }
         callback.done(false)
       }

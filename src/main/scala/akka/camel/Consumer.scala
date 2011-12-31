@@ -7,6 +7,9 @@ package akka.camel
 import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
 
 import akka.actor._
+import akka.util.Timeout._
+import akka.dispatch.Await
+import akka.util.{Timeout, Duration}
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -125,5 +128,37 @@ object RouteDefinitionHandler {
    */
   def from(f: RouteDefinition => ProcessorDefinition[_]) = new RouteDefinitionHandler {
     def onRouteDefinition(rd: RouteDefinition) = f(rd)
+  }
+}
+
+object ActivationAware{
+
+  /**
+   * Awaits for actor to be activated.
+   */
+  def awaitActivation(actor: ActorRef, timeout: Duration) = {
+    implicit val timeout2 = Timeout(timeout)
+    Await.ready(actor ? AwaitActivation, timeout)
+  }
+
+}
+
+trait ActivationAware{ self: Actor =>
+  private[this] var awaiting : List[ActorRef] = Nil
+  private[this] var activated = false
+
+
+  override def preStart {
+    context.become(receive orElse activation, true)
+  }
+
+  def activation : Receive = {
+    case AwaitActivation => if (activated) sender ! EndpointActivated else awaiting ::= sender
+    case EndpointActivated => {
+      migration.Migration.EventHandler.debug(this+" activated")
+      activated = true
+      awaiting.foreach(_ ! EndpointActivated)
+      awaiting = Nil
+    }
   }
 }

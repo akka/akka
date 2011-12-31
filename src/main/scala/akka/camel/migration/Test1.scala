@@ -32,7 +32,9 @@ object Test1 extends App{
     }
   }
 
+
   startCamelService
+
   system.actorOf(Props[CamelConsumer])
 
   "data/input/CamelConsumer/file1.txt" << "test data "+math.random

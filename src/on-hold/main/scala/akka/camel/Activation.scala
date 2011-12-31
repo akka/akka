@@ -136,10 +136,6 @@ private[camel] case class SetExpectedActivationCount(num: Int)
  */
 private[camel] case class SetExpectedDeactivationCount(num: Int)
 
-/**
- * Event message indicating that a single endpoint has been activated.
- */
-private[camel] case class EndpointActivated()
 
 /**
  * Event message indicating that a single endpoint has been de-activated.

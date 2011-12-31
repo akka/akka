@@ -27,6 +27,7 @@ private[camel] class ConsumerPublisher(/*activationTracker: ActorRef*/) extends 
   def receive = {
     case r: ConsumerActorRegistered => {
       handleConsumerActorRegistered(r)
+      r.actorRef ! EndpointActivated
 //      activationTracker ! EndpointActivated
     }
     case u: ConsumerActorUnregistered => {
@@ -130,3 +131,14 @@ private[camel] case class ConsumerActorRegistered(endpointUri:String, actorRef: 
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
 private[camel] case class ConsumerActorUnregistered(endpointUri:String, actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
+
+/**
+ * Event message indicating that a single endpoint has been activated.
+ */
+private[camel] case class EndpointActivated(actorRef : ActorRef)
+
+/**
+ * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
+ */
+case class AwaitActivation
+
