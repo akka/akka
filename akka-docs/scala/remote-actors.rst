@@ -344,6 +344,7 @@ Client side usage
 .. code-block:: scala
 
   val actor = remote.actorFor("hello-service", "localhost", 2552)
+  remote.start("localhost", 2553);
   val result = (actor ? "Hello").as[String]
 
 There are many variations on the 'remote#actorFor' method. Here are some of them:
