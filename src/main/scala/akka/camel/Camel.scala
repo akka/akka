@@ -63,9 +63,6 @@ object Camel{
 
   def context = instance.context
   def template = instance.template
-//  def addRoutes(routeBuilder: RouteBuilder) = instance.addRoutes(routeBuilder)
-//  def stopRoute(routeId: String) = instance.stopRoute(routeId)
-
 }
 
 /**

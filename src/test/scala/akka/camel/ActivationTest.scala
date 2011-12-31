@@ -13,8 +13,6 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
   implicit val timeout = Timeout(10 seconds)
   var template : ProducerTemplate = _
 
-  //TODO: handle camel service lifecycle
-
   override protected def beforeEach() {
     Camel.start
     system = ActorSystem("test")
@@ -28,7 +26,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
 
   def testActorWithEndpoint(uri: String): ActorRef = { system.actorOf(Props(new TestConsumer(uri)))}
 
-  "ActivationAware" should "be notified when activated" in {
+  "ActivationAware" should "be notified when endpoint is activated" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     try{
       ActivationAware.awaitActivation(actor, 3 second)
@@ -39,7 +37,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
     template.requestBody("direct:actor-1", "test") should be ("received test")
   }
 
-  it should "fail if notification timeout is too short and activation is not complete yet" in {
+  "awaitActivation" should "fail if notification timeout is too short and activation is not complete yet" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     intercept[TimeoutException]{
       ActivationAware.awaitActivation(actor, 0 seconds)

@@ -181,6 +181,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
   private def sendSync(exchange: Exchange) = {
 
     val actor = target(path)
+    //TODO: cleanup and decide on timeouts
     val result: Any = try { Await.result(actor.ask(requestFor(exchange), timeout2),timeout) } catch { case e => Some(Failure(e)) }
 
     result match {
