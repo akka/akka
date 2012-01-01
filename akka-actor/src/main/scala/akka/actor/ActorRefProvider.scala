@@ -520,7 +520,7 @@ class LocalActorRefProvider(
       //    case other             ⇒ result.success(other)
       //  }
       //}), systemGuardian, systemGuardian.path / "promise" / tempName(), false, None)
-      //val ff = system.scheduler.scheduleOnce(t.duration) { b.stop() }
+      //val ff = system.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
       //result onComplete { _ ⇒
       //  b.stop()
       //  ff.cancel()

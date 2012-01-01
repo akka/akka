@@ -7,6 +7,7 @@ import akka.config.ConfigurationException
 import akka.actor._
 import akka.event._
 import akka.dispatch._
+import akka.patterns.ask
 import akka.util.duration._
 import akka.util.Timeout
 import akka.util.Timeout._
@@ -287,13 +288,9 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   protected def systemImpl = this
 
-  @inline private def askAndAwait(actorRef: ActorRef, message: Any)(implicit timeout: akka.util.Timeout): Any = {
-    Await.result(Futures.ask(actorRef, message), timeout.duration)
-  }
-
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    askAndAwait(systemGuardian, CreateChild(props, name)) match {
+    Await.result(systemGuardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -301,7 +298,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    askAndAwait(guardian, CreateChild(props, name)) match {
+    Await.result(guardian ? CreateChild(props, name), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -309,7 +306,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def actorOf(props: Props): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    askAndAwait(guardian, CreateRandomNameChild(props)) match {
+    Await.result(guardian ? CreateRandomNameChild(props), timeout.duration) match {
       case ref: ActorRef ⇒ ref
       case ex: Exception ⇒ throw ex
     }
@@ -321,8 +318,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     val guard = guardian.path
     val sys = systemGuardian.path
     path.parent match {
-      case `guard` ⇒ askAndAwait(guardian, StopChild(actor))
-      case `sys`   ⇒ askAndAwait(systemGuardian, StopChild(actor))
+      case `guard` ⇒ Await.result(guardian ? StopChild(actor), timeout.duration)
+      case `sys`   ⇒ Await.result(systemGuardian ? StopChild(actor), timeout.duration)
       case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
