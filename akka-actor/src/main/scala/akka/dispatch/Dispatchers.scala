@@ -57,13 +57,11 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
-  // FIXME: Configurators registered here are are not removed, see ticket #1494
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
   /**
    * Returns a dispatcher as specified in configuration, or if not defined it uses
-   * the default dispatcher. The same dispatcher instance is returned for subsequent
-   * lookups.
+   * the default dispatcher.
    */
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
 
@@ -91,11 +89,6 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
       case existing ⇒ existing
     }
-  }
-
-  // FIXME #1563: Remove this method when dispatcher usage is rewritten in ActorModelSpec and CallingThreadDispatcherModelSpec
-  private[akka] def register(id: String, dispatcherConfigurator: MessageDispatcherConfigurator): Unit = {
-    dispatcherConfigurators.putIfAbsent(id, dispatcherConfigurator)
   }
 
   private def config(id: String): Config = {
