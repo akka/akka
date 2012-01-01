@@ -11,6 +11,7 @@ import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.dispatch.Await
+import akka.patterns.ask
 
 object SupervisorSpec {
   val Timeout = 5 seconds

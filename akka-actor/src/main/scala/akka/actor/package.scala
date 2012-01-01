@@ -149,10 +149,13 @@ object Patterns {
 
   import akka.actor.ActorRef
   import akka.dispatch.Future
-  import akka.patterns.{ ask => actorRef2Askable }
+  import akka.patterns.{ ask ⇒ actorRef2Askable }
   import akka.util.Timeout
 
-  def ask(actor: ActorRef, message: Any, timeout: Timeout): Future[Any] =
+  def ask(actor: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
+    actorRef2Askable(actor).?(message)
+
+  def ask(actor: ActorRef, message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] =
     actorRef2Askable(actor).?(message)(timeout)
 
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[Any] =

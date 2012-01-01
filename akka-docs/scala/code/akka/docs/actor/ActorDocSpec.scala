@@ -8,7 +8,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
 import akka.dispatch.Future
-import akka.dispatch.Futures
+import akka.Patterns
 
 //#imports1
 
@@ -230,10 +230,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     val myActor = system.actorOf(Props(new MyActor), name = "myactor")
     implicit val timeout = system.settings.ActorTimeout
-    val future = Futures.ask(myActor, "hello")
+    val future = Patterns.ask(myActor, "hello")
     for (x ← future) println(x) //Prints "hello"
 
-    val result: Future[Int] = for (x ← Futures.ask(myActor, 3).mapTo[Int]) yield { 2 * x }
+    val result: Future[Int] = for (x ← Patterns.ask(myActor, 3).mapTo[Int]) yield { 2 * x }
     //#using-ask
 
     system.stop(myActor)
@@ -244,6 +244,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#using-implicit-timeout
     import akka.util.duration._
     import akka.util.Timeout
+    import akka.patterns.ask
     implicit val timeout = Timeout(500 millis)
     val future = myActor ? "hello"
     //#using-implicit-timeout
@@ -255,6 +256,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
     import akka.util.duration._
+    import akka.patterns.ask
     val future = myActor ? ("hello", timeout = 500 millis)
     //#using-explicit-timeout
     Await.result(future, 500 millis) must be("hello")

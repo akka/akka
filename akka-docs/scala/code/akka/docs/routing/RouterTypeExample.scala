@@ -7,7 +7,8 @@ import akka.routing.{ ScatterGatherFirstCompletedRouter, BroadcastRouter, Random
 import annotation.tailrec
 import akka.actor.{ Props, Actor }
 import akka.util.duration._
-import akka.dispatch.{ Futures, Await }
+import akka.dispatch.Await
+import akka.patterns.ask
 
 case class FibonacciNumber(nbr: Int)
 
@@ -71,7 +72,7 @@ class ParentActor extends Actor {
         Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter(within = 2 seconds)),
         "router")
       implicit val timeout = context.system.settings.ActorTimeout
-      val futureResult = Futures.ask(scatterGatherFirstCompletedRouter, FibonacciNumber(10))
+      val futureResult = scatterGatherFirstCompletedRouter ? FibonacciNumber(10)
       val result = Await.result(futureResult, timeout.duration)
       //#scatterGatherFirstCompletedRouter
       println("The result of calculating Fibonacci for 10 is %d".format(result))

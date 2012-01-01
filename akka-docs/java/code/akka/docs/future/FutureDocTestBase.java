@@ -55,6 +55,7 @@ import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.dispatch.Futures;
+import akka.Patterns;
 
 import static org.junit.Assert.*;
 
@@ -78,7 +79,7 @@ public class FutureDocTestBase {
     String msg = "hello";
     //#ask-blocking
     Timeout timeout = system.settings().ActorTimeout();
-    Future<Object> future = Futures.ask(actor, msg, timeout);
+    Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
     assertEquals("HELLO", result);

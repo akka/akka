@@ -38,6 +38,7 @@ import org.junit.Test;
 import scala.Option;
 import java.lang.Object;
 import java.util.concurrent.TimeUnit;
+import akka.Patterns;
 
 import static org.junit.Assert.*;
 
@@ -118,7 +119,7 @@ public class UntypedActorDocTestBase {
     }), "myactor");
 
     //#using-ask
-    Future<Object> future = Futures.ask(myActor, "Hello", 1000);
+    Future<Object> future = Patterns.ask(myActor, "Hello", 1000);
     Object result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     //#using-ask
     system.shutdown();
@@ -170,7 +171,7 @@ public class UntypedActorDocTestBase {
   public void useWatch() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
-    Future<Object> future = myActor.ask("kill", 1000);
+    Future<Object> future = Patterns.ask(myActor, "kill", 1000);
     assert Await.result(future, Duration.parse("1 second")).equals("finished");
     system.shutdown();
   }

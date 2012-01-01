@@ -12,6 +12,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
+import akka.patterns.ask
 
 object RoutingSpec {
 

@@ -5,6 +5,7 @@ import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
+import akka.patterns.ask
 
 object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 4

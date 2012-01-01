@@ -120,6 +120,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestActorRef
     import akka.util.duration._
     import akka.dispatch.Await
+    import akka.patterns.ask
 
     val actorRef = TestActorRef(new MyActor)
     // hypothetical message stimulating a '42' answer
@@ -203,9 +204,10 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
     import akka.util.duration._
+    import akka.patterns.ask
     //#test-probe-reply
     val probe = TestProbe()
-    val future = Futures.ask(probe.ref, "hello")
+    val future = probe.ref ? "hello"
     probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
     probe.sender ! "world"
     assert(future.isCompleted && future.value == Some(Right("world")))
