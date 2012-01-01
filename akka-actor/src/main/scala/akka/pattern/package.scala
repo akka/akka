@@ -32,9 +32,9 @@ package object pattern {
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) {
-      Promise.successful(true)(system.dispatcher)
+      Promise.successful(true)
     } else {
-      val result = Promise[Boolean]()(system.dispatcher)
+      val result = Promise[Boolean]()
       system.actorOf(Props(new Actor {
         // Terminated will be received when target has been stopped
         context watch target
@@ -43,13 +43,13 @@ package object pattern {
         context setReceiveTimeout timeout
 
         def receive = {
-          case Terminated(a) ⇒
-            result.complete(Right(true))
-            system.stop(self)
+          case Terminated(a) if a == target ⇒
+            result success true
+            context.stop(self)
           case ReceiveTimeout ⇒
-            result.complete(Left(
-              new ActorTimeoutException("Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))))
-            system.stop(self)
+            result failure new ActorTimeoutException(
+              "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))
+            context.stop(self)
         }
       }))
       result
