@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "true").toBoolean,
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
@@ -314,7 +314,7 @@ object AkkaBuild extends Build {
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
-    parallelExecution in Test := System.getProperty("akka.parallelExecution", "true").toBoolean,
+    parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
     excludeTestNames := {
