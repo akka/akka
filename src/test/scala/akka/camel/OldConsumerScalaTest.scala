@@ -31,7 +31,7 @@ class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMa
   var service: Camel = _
 
   val system = ActorSystem("test")
-  Camel.start
+//  Camel.start
 
   def activatedConsumerWithUri(uri : String) ={
     val consumer = system.actorOf(Props(new TestConsumer(uri)))

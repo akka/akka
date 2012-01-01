@@ -31,6 +31,8 @@ trait Consumer { this: Actor =>
    */
   def from(route : String) { camel.registerConsumer(route, this) }
 
+  override def postStop{ camel.unregisterConsumer(this) }
+
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
    * should be done in blocking or non-blocking mode (default is non-blocking). This method
@@ -149,7 +151,7 @@ trait ActivationAware{ self: Actor =>
 
 
   override def preStart {
-    context.become(receive orElse activation, true)
+    context.become(activation orElse receive, true)
   }
 
   def activation : Receive = {

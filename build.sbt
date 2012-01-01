@@ -18,3 +18,5 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.9.0" % "test",
  	"junit" % "junit" % "4.10" % "test"
 )
+
+parallelExecution in Test := false

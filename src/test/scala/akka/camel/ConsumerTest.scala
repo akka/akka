@@ -6,26 +6,57 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
+import org.mockito.Mockito
+import java.util.concurrent.{TimeUnit, CountDownLatch}
+import java.util.concurrent.TimeUnit._
+import akka.util.duration._
 
 class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
-
   val system = ActorSystem("test")
+
+  class TestActor(_camel : ConsumerRegistry,  uri:String) extends Actor with Consumer with ActivationAware{
+    def this() = this(Camel.instance, "file://abcde")
+    override lazy val camel = _camel
+    from(uri)
+    protected def receive = { case _ =>  println("foooo..")}
+  }
+
+  def start(actor: => Actor) = {
+    system.actorOf(Props(actor))
+  }
 
   "Consumer" should "register itself with Camel during initialization" in{
     val mockCamel = mock[ConsumerRegistry]
 
-    class TestActor extends Actor with Consumer {
-          override lazy val camel = mockCamel
-          from("file://abc")
-          protected def receive = { case _ =>  println("foooo..")}
-        }
-    system.actorOf(Props(new TestActor()))
+    start(new TestActor(mockCamel, "file://abc"))
 
     verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor])
   }
-  
-  it should "fail if camel not started"
+
+  it should "fail if camel is not started" in {
+    //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
+  }
+
   it should "fail if endpoint is invalid"
   it should  "verify that from(...) was called"
   it should  "support in-out messaging"
+
+
+  it should  "unregister itself when stopped - integration test" in {
+    Camel.start
+    try{
+      val actorRef = start(new TestActor())
+      ActivationAware.awaitActivation(actorRef, 1 second)
+
+      Camel.context.getRoutes().size() should be >(0)
+      system.stop(actorRef)
+
+      Thread.sleep(500)
+
+      Camel.context.getRoutes.size() should be (0)
+    }
+    finally {
+      Camel.stop
+    }
+  }
 }

@@ -36,6 +36,15 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
 
     template.requestBody("direct:actor-1", "test") should be ("received test")
   }
+  
+  it should "consumes activation messages first, so even if actor uses a _ wildcard, activation works fine" in {
+    class Actor1 extends Actor with ActivationAware{
+      protected def receive = { case _ => /* consumes all*/ }      
+    }
+    val actor = system.actorOf(Props(new Actor1))
+    actor ! EndpointActivated
+    ActivationAware.awaitActivation(actor, 10 millis)
+  } 
 
   "awaitActivation" should "fail if notification timeout is too short and activation is not complete yet" in {
     val actor = testActorWithEndpoint("direct:actor-1")
@@ -50,4 +59,6 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
       case msg:Message => sender ! "received " + msg.body
     }
   }
+
+
 }

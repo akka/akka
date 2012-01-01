@@ -69,7 +69,8 @@ object Camel{
  * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
  * ActorEndpoint uses it to lookup an actor by its path.
  */
-trait ConsumerRegistry{ self:Camel =>
+trait ConsumerRegistry{
+  self:Camel =>
   val actorSystem  = ActorSystem("Camel")
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
   //TODO: save some kittens and use less blocking collection
@@ -79,6 +80,13 @@ trait ConsumerRegistry{ self:Camel =>
     consumers.put(Path(consumer.self.path.toString), consumer.self)
     consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
   }
+
+  def unregisterConsumer(consumer: Consumer with Actor) = {
+    val path = Path(consumer.self.path.toString)
+    consumers.remove(path)
+    consumerPublisher ! ConsumerActorUnregistered(path, consumer.self)
+  }
+
 
   def findConsumer(path: Path) : Option[ActorRef] = consumers.get(path)
 

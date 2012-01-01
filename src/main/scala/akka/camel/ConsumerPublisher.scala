@@ -3,6 +3,7 @@
  */
 package akka.camel
 
+import component.Path
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
 
@@ -27,7 +28,6 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
     case r: ConsumerActorRegistered => {
       handleConsumerActorRegistered(r)
       r.actorRef ! EndpointActivated
-//      activationTracker ! EndpointActivated
     }
     case u: ConsumerActorUnregistered => {
       handleConsumerActorUnregistered(u)
@@ -48,8 +48,8 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
    * Stops the route to the already un-registered consumer actor.
    */
   def handleConsumerActorUnregistered(event: ConsumerActorUnregistered) {
-    camel.stopRoute(event.path)
-    EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.endpointUri))
+    camel.stopRoute(event.path.value)
+    EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.path.value))
   }
 }
 
@@ -124,7 +124,7 @@ private[camel] case class ConsumerActorRegistered(endpointUri:String, actorRef: 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
-private[camel] case class ConsumerActorUnregistered(endpointUri:String, actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
+private[camel] case class ConsumerActorUnregistered(path: Path, actorRef: ActorRef)
 
 /**
  * Event message indicating that a single endpoint has been activated.
