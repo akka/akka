@@ -6,9 +6,6 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
-import org.mockito.Mockito
-import java.util.concurrent.{TimeUnit, CountDownLatch}
-import java.util.concurrent.TimeUnit._
 import akka.util.duration._
 
 class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
@@ -40,6 +37,10 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   it should "fail if endpoint is invalid"
   it should  "verify that from(...) was called"
   it should  "support in-out messaging"
+  
+  //TODO: slow consumer case for out-capable
+  //TODO: when consumer throws while processing
+  //TODO: what about actor restarts?
 
 
   it should  "unregister itself when stopped - integration test" in {
