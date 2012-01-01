@@ -30,9 +30,8 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
     verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor])
   }
 
-  it should "fail if camel is not started" in {
-    //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
-  }
+  //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
+  it should "fail if camel is not started"
 
   it should "fail if endpoint is invalid"
   it should  "verify that from(...) was called"
