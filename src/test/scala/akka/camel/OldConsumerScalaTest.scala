@@ -6,8 +6,6 @@ import org.apache.camel.{AsyncProcessor, AsyncCallback, CamelExecutionException}
 import org.apache.camel.builder.Builder
 import org.apache.camel.component.direct.DirectEndpoint
 import org.apache.camel.model.RouteDefinition
-import org.scalatest.{BeforeAndAfterAll, WordSpec}
-import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.actor._
@@ -15,13 +13,20 @@ import akka.actor.Props._
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
+import org.scalatest.{FlatSpec, BeforeAndAfterAll, WordSpec}
+import org.scalatest.matchers.{ShouldMatchers, MustMatchers}
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
+import org.mockito.Matchers.{eq => the, any}
+import akka.camel.Consumer
+import org.mockito.Matchers
 
 //import akka.config.Supervision._
 
 /**
  * @author Martin Krasser
  */
-class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatchers {
+class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMatchers with MockitoSugar{
 
   var service: Camel = _
 
@@ -54,15 +59,9 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     //    registry.shutdownAll
   }
 
-  def waitForStart(consumer: ActorRef) {
-    Thread.sleep(100)
-    //    service.awaitEndpointActivation(1) {
-    //      consumer.start
-    //    } must be(true)
-  }
 
-  "A responding consumer" when {
-    val consumer = system.actorOf(Props(new TestConsumer("direct:publish-test-2")))
+//  "A responding consumer" when {
+//    val consumer = system.actorOf(Props(new TestConsumer("direct:publish-test-2")))
 //    "started before starting the CamelService" must {
 //      "support an in-out message exchange via its endpoint" in {
 //        mandatoryTemplate.requestBody("direct:publish-test-1", "msg1") must equal ("received msg1")
@@ -213,12 +212,12 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
   //      latch.await(5, TimeUnit.SECONDS) must be (true)
   //    }
   //  }
-}
+//}
 
 
 class TestConsumer(uri: String) extends Actor with Consumer with ActivationAware{
   from(uri)
-  override protected def receive = activation orElse {
+  override protected def receive = {
     case msg: Message => sender ! ("received %s" format msg.body)
   }
 }

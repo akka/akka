@@ -18,18 +18,7 @@ import akka.camel.{Camel, ConsumerRegistry, Ack, Failure, Message}
 import akka.util.Timeout
 import akka.dispatch.Await
 
-/**
- * @author Martin Krasser
- */
-object ActorComponent {
-  /**
-   * Name of the message header containing the actor id or uuid.
-   */
-  val ActorIdentifier = "CamelActorIdentifier"
-}
-
 case class Path(value:String)
-
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -241,6 +230,3 @@ class ActorNotRegisteredException(uri: String) extends RuntimeException {
 class ActorIdentifierNotSetException extends RuntimeException {
   override def getMessage = "actor identifier not set"
 }
-
-
-
