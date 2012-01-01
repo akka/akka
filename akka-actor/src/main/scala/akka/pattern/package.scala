@@ -45,11 +45,11 @@ package object pattern {
         def receive = {
           case Terminated(a) if a == target ⇒
             result success true
-            context.stop(self)
+            context stop self
           case ReceiveTimeout ⇒
             result failure new ActorTimeoutException(
               "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))
-            context.stop(self)
+            context stop self
         }
       }))
       result
