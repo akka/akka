@@ -14,16 +14,7 @@ package object camel{
     }
 
   }
-//  def withCamel(block: => Unit) = {
-//    Camel.start
-//    try{
-//      block
-//    }
-//    finally {
-//      Camel.stop
-//    }
-//
-//  }
+
 
   def start(actor: => Actor)(implicit system : ActorSystem) = {
     val actorRef = system.actorOf(Props(actor))

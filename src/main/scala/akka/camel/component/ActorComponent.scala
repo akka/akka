@@ -145,7 +145,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
       }
       case (false, false, true) => {
         sendAsync(exchange)
-        callback.done(true)
+        callback.done(true) //TODO: is this right? I think that done should be called from onCompler
         true
       }
       case (false, false, false) => {
@@ -188,9 +188,9 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
   //TODO: cleanup and decide on timeouts
     target(path).ask(requestFor(exchange), timeout2).onComplete{ msg: Any =>
         msg match {
-          case Right(Ack)          => { /* no response message to set */ }
-          case Right(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
-          case Left(msg: Failure)  => exchange.fromFailureMessage(msg)
+          case Right(Ack)            => { /* no response message to set */ }
+          case Right(msg)            => exchange.fromResponseMessage(Message.canonicalize(msg))
+          case Left(msg: Throwable)  => exchange.fromFailureMessage(Failure(msg))
             //TODO:handle future timeout here
         }
         callback.done(false)
