@@ -9,6 +9,10 @@ import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.{Timeout, Duration}
+import java.util.concurrent.TimeoutException
+import util.matching.Regex
+import org.apache.camel.{Exchange, TypeConverter}
+import akka.util.duration._
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -28,14 +32,20 @@ trait Consumer extends Actor{
 
   override def postStop(){ camel.unregisterConsumer(this) }
   override def preStart(){ camel.registerConsumer(endpointUri, this) }
-  
+
+  /**
+   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
+   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
+   * It can be overwritten by setting @see blocking property
+   */
+  def outTimeout : Duration = Int.MaxValue seconds
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
    * should be done in blocking or non-blocking mode (default is non-blocking). This method
    * doesn't have any effect on one-way communications (they'll never block).
    */
-  def blocking = false
+  def blocking : BlockingOrNot = NonBlocking
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
@@ -54,6 +64,29 @@ trait Consumer extends Actor{
    * Java API.
    */
   def onRouteDefinition(h: RouteDefinitionHandler): Unit = routeDefinitionHandler = h
+}
+
+sealed trait BlockingOrNot
+case object NonBlocking extends BlockingOrNot
+case class Blocking(timeout : Duration) extends BlockingOrNot{
+  override def toString = "Blocking(%d nanos)".format(timeout.toNanos)
+}
+
+object BlockingOrNot{
+  def typeConverter = new TypeConverter{
+    import akka.util.duration._
+    val blocking = new Regex("Blocking\\((\\d+) nanos\\)")
+    def convertTo[T](`type`: Class[T], value: AnyRef) = `type` match{
+      case c: Class[BlockingOrNot] => value.toString match  {
+        case blocking(timeout) => Blocking(timeout.toLong nanos).asInstanceOf[T]
+        case "NonBlocking" => NonBlocking.asInstanceOf[T]
+      }
+    }
+
+    def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+    def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
+    def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+  }
 }
 
 /**
@@ -137,10 +170,15 @@ object ActivationAware{
    */
   def awaitActivation(actor: ActorRef, timeout: Duration) = {
     implicit val timeout2 = Timeout(timeout)
-    Await.ready(actor ? AwaitActivation, timeout)
+    try{
+      Await.ready(actor ? AwaitActivation, timeout)
+    }catch {
+      case e: TimeoutException => throw new ActivationTimeoutException
+    }
   }
-
 }
+
+class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation. Please make sure your actor extends ActivationAware trait.")
 
 trait ActivationAware extends Actor{
   private[this] var awaiting : List[ActorRef] = Nil

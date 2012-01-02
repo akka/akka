@@ -1,15 +1,13 @@
 package akka.camel
 
-import component.Path._
 import component.{ActorComponent, Path}
 import migration.Migration
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
-import akka.actor.Props._
 import akka.actor.{Props, ActorSystem, Actor, ActorRef}
-import akka.camel.Camel
-import org.apache.camel.{ProducerTemplate, CamelContext}
-import java.lang.{IllegalStateException, String}
+import java.lang.{Class, IllegalStateException, String}
+import org.apache.camel.{Exchange, TypeConverter, ProducerTemplate, CamelContext}
+import akka.util.Duration
 
 trait Camel{
   def context : CamelContext
@@ -22,14 +20,20 @@ trait Camel{
 
 //TODO: Get rid of the singleton!
 object Camel{
-  
+
   class CamelInstance extends Camel with ConsumerRegistry{
     val context = {
       val ctx = new DefaultCamelContext
       ctx.setStreamCaching(true)
       ctx.addComponent("actor", new ActorComponent(this))
+      ctx.getTypeConverterRegistry.addTypeConverter(classOf[BlockingOrNot], classOf[String], BlockingOrNot.typeConverter)
+      ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], new TypeConverter {
+        def convertTo[T](`type`: Class[T], value: AnyRef) = Duration.fromNanos(value.toString.toLong).asInstanceOf[T]
+        def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
+        def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+        def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+      })
       ctx
-
     }
 
     val template = context.createProducerTemplate()
@@ -51,7 +55,7 @@ object Camel{
       Migration.EventHandler.Info("Stoped Camel instance "+this)
     }
   }
-  
+
   private[this] var _instance : Option[Camel with ConsumerRegistry] = None
   def instance = _instance.getOrElse(throw new IllegalStateException("Camel not started"))
 

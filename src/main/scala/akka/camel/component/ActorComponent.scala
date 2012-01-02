@@ -14,9 +14,10 @@ import akka.actor._
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 
 import scala.reflect.BeanProperty
-import akka.camel.{Camel, ConsumerRegistry, Ack, Failure, Message}
-import akka.util.Timeout
+import akka.camel.{Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 import akka.dispatch.Await
+import akka.util.{Duration, Timeout}
+import akka.util.duration._
 
 case class Path(value:String)
 
@@ -73,11 +74,19 @@ class ActorEndpoint(uri: String,
                     camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp) {
 
   /**
+   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
+   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
+   * It can be overwritten by setting @see blocking property
+   */
+  @BeanProperty var outTimeout: Duration = Int.MaxValue seconds
+
+
+  /**
    * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
    * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
    * <code>false</code>.
    */
-  @BeanProperty var blocking: Boolean = false
+  @BeanProperty var blocking: BlockingOrNot = NonBlocking
 
   /**
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
@@ -130,48 +139,48 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
   private lazy val path = ep.path
 
   def process(exchange: Exchange) =
-    if (exchange.getPattern.isOutCapable) sendSync(exchange) else sendAsync(exchange)
+    if (exchange.getPattern.isOutCapable) sendSync(exchange, ep.outTimeout) else sendAsync(exchange)
 
   def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
     (exchange.getPattern.isOutCapable, ep.blocking, ep.autoack) match {
-      case (true, true, _) => {
-        sendSync(exchange)
+      case (true, Blocking(timeout), _) => {
+        sendSync(exchange, timeout)
         callback.done(true)
         true
       }
-      case (true, false, _) => {
-        sendAsync(exchange, callback)
+      case (true, NonBlocking, _) => {
+        sendAsync(exchange, callback, ep.outTimeout)
         false
       }
-      case (false, false, true) => {
+      case (false, NonBlocking, true) => {
         sendAsync(exchange)
         callback.done(true) //TODO: is this right? I think that done should be called from onCompler
         true
       }
-      case (false, false, false) => {
-        sendAsync(exchange, callback)
+      case (false, NonBlocking, false) => {
+        sendAsync(exchange, callback, ep.outTimeout)
         false
       }
-      case (false, true, false) => {
-        sendSync(exchange)
+      case (false, Blocking(timeout), false) => {
+        sendSync(exchange, timeout)
         callback.done(true)
         true
       }
-      case (false, true, true) => {
+      case (false, Blocking(_), true) => {
         throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
       }
     }
   }
 
-  import akka.util.duration._
-  val timeout = 10 seconds
-  implicit val timeout2 = new Timeout(timeout)
+//  import akka.util.duration._
+//  val timeout = 10 seconds
+//  implicit val timeout2 = new Timeout(timeout)
 
-  private def sendSync(exchange: Exchange) = {
+  private def sendSync(exchange: Exchange, timeout : Duration) = {
 
     val actor = target(path)
     //TODO: cleanup and decide on timeouts
-    val result: Any = try { Await.result(actor.ask(requestFor(exchange), timeout2),timeout) } catch { case e => Some(Failure(e)) }
+    val result: Any = try { Await.result(actor.ask(requestFor(exchange), new Timeout(timeout)),timeout) } catch { case e => Some(Failure(e)) }
 
     result match {
       case Some(Ack)          => { /* no response message to set */ }
@@ -184,9 +193,9 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
 
   private def sendAsync(exchange: Exchange) = target(path) ! requestFor(exchange)
 
-  private def sendAsync(exchange: Exchange, callback: AsyncCallback) =
+  private def sendAsync(exchange: Exchange, callback: AsyncCallback, timeout : Duration) =
   //TODO: cleanup and decide on timeouts
-    target(path).ask(requestFor(exchange), timeout2).onComplete{ msg: Any =>
+    target(path).ask(requestFor(exchange), new Timeout(timeout)).onComplete{ msg: Any =>
         msg match {
           case Right(Ack)            => { /* no response message to set */ }
           case Right(msg)            => exchange.fromResponseMessage(Message.canonicalize(msg))

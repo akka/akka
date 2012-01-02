@@ -6,7 +6,9 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
-import java.util.concurrent.{TimeUnit, TimeoutException}
+import java.util.concurrent.TimeUnit
+import akka.util.duration._
+import org.apache.camel.CamelExecutionException
 
 class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   implicit val system = ActorSystem("test")
@@ -31,7 +33,7 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
   it should "never get activation message, if endpoint is invalid" in {
     withCamel{ camel =>
-      intercept[TimeoutException]{
+      intercept[ActivationTimeoutException]{
         start(new TestActor(uri="some invalid uri"))
       }
     }
@@ -48,6 +50,26 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   }
 
   //TODO: slow consumer case for out-capable
+  it should "time-out if consumer is slow" in {
+    val SHORT_TIMEOUT = 10 millis
+    val LONG_WAIT = 200
+
+    withCamel{ camel =>
+      start(new Consumer with ActivationAware{
+        override def outTimeout = SHORT_TIMEOUT
+
+        def endpointUri = "direct:a3"
+        protected def receive = {
+          case _ => {
+            Thread.sleep(LONG_WAIT); sender ! "done" }
+        }
+      })
+
+      intercept[CamelExecutionException]{
+        camel.template.requestBody("direct:a3", "some msg") should be("done")
+      }
+    }
+  }
   //TODO: when consumer throws while processing
 
   it should "process messages even after actor restart" in {

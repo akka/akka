@@ -2,13 +2,12 @@ package akka.camel
 
 import org.scalatest.matchers.ShouldMatchers
 import akka.util.duration._
-import java.util.concurrent.TimeoutException
 import org.apache.camel.ProducerTemplate
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import akka.actor._
 import akka.util.Timeout
 
-class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
+class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
   var system :ActorSystem = _
   implicit val timeout = Timeout(10 seconds)
   var template : ProducerTemplate = _
@@ -31,7 +30,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
     try{
       ActivationAware.awaitActivation(actor, 3 second)
     } catch {
-      case e : TimeoutException => fail("Failed to get notification within 1 second")
+      case e : ActivationTimeoutException => fail("Failed to get notification within 1 second")
     }
 
     template.requestBody("direct:actor-1", "test") should be ("received test")
@@ -48,7 +47,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
 
   "awaitActivation" should "fail if notification timeout is too short and activation is not complete yet" in {
     val actor = testActorWithEndpoint("direct:actor-1")
-    intercept[TimeoutException]{
+    intercept[ActivationTimeoutException]{
       ActivationAware.awaitActivation(actor, 0 seconds)
     }
   }

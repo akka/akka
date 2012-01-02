@@ -5,7 +5,6 @@ package akka.camel
 
 import component.Path
 import java.io.InputStream
-import java.util.concurrent.CountDownLatch
 
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.model.RouteDefinition
@@ -91,7 +90,7 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  */
 private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
-  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s" format (event.path, event.blocking, event.autoack)
+  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (event.path, event.blocking, event.autoack, event.outTimeout.toNanos)
 }
 
 
@@ -111,6 +110,7 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
   val endpointUri : String
 
   val path                   = actorRef.path.toString
+  val outTimeout             = actor.outTimeout
   val blocking               = actor.blocking
   val autoack                = actor.autoack
   val routeDefinitionHandler = actor.routeDefinitionHandler
