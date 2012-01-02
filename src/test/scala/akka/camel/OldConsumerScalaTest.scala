@@ -1,25 +1,12 @@
 package akka.camel
 
-import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
-import org.apache.camel.{AsyncProcessor, AsyncCallback, CamelExecutionException}
-import org.apache.camel.builder.Builder
-import org.apache.camel.component.direct.DirectEndpoint
-import org.apache.camel.model.RouteDefinition
-
-import akka.actor.Actor._
 import akka.actor._
-import akka.actor.Props._
-import akka.dispatch.Await
-import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import org.scalatest.{FlatSpec, BeforeAndAfterAll, WordSpec}
-import org.scalatest.matchers.{ShouldMatchers, MustMatchers}
+import org.scalatest.{FlatSpec, BeforeAndAfterAll}
+import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers.{eq => the, any}
-import akka.camel.Consumer
-import org.mockito.Matchers
+import org.mockito.Matchers.{eq => the}
 
 //import akka.config.Supervision._
 
@@ -216,7 +203,7 @@ class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMa
 
 
 class TestConsumer(uri: String) extends Actor with Consumer with ActivationAware{
-  from(uri)
+  def endpointUri = uri
   override protected def receive = {
     case msg: Message => sender ! ("received %s" format msg.body)
   }

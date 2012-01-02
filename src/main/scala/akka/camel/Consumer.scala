@@ -7,7 +7,6 @@ package akka.camel
 import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
 
 import akka.actor._
-import akka.util.Timeout._
 import akka.dispatch.Await
 import akka.util.{Timeout, Duration}
 
@@ -16,22 +15,20 @@ import akka.util.{Timeout, Duration}
  *
  * @author Martin Krasser
  */
-trait Consumer { this: Actor =>
+trait Consumer extends Actor{
   import RouteDefinitionHandler._
 
-  lazy val camel : ConsumerRegistry = Camel.instance
+  protected[this] lazy val camel : ConsumerRegistry = Camel.instance
+  def endpointUri : String
 
   /**
    * The default route definition handler is the identity function
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
-  /**
-   * Registers consumer with camel service.
-   */
-  def from(route : String) { camel.registerConsumer(route, this) }
-
-  override def postStop{ camel.unregisterConsumer(this) }
+  override def postStop(){ camel.unregisterConsumer(this) }
+  override def preStart(){ camel.registerConsumer(endpointUri, this) }
+  
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
@@ -145,12 +142,13 @@ object ActivationAware{
 
 }
 
-trait ActivationAware{ self: Actor =>
+trait ActivationAware extends Actor{
   private[this] var awaiting : List[ActorRef] = Nil
   private[this] var activated = false
 
 
   override def preStart {
+    super.preStart()
     context.become(activation orElse receive, true)
   }
 
@@ -164,3 +162,5 @@ trait ActivationAware{ self: Actor =>
     }
   }
 }
+
+class ConsumerRequiresFromEndpointException extends RuntimeException("Consumer needs to provide from endpoint. Please make sure the consumer calls method from(\"some uri\") in the body of constructor.")

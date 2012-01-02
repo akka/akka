@@ -22,7 +22,7 @@ object Test1 extends App{
   }))
 
   class CamelConsumer extends Actor with akka.camel.Consumer{
-    from("file://data/input/CamelConsumer")
+    def endpointUri = "file://data/input/CamelConsumer"
 
     protected def receive = {
       case msg : Message =>{

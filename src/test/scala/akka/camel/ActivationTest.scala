@@ -54,7 +54,7 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
   }
 
   class TestConsumer(uri:String) extends Actor with Consumer with ActivationAware{
-    from(uri)
+    def endpointUri = uri
     override def receive = {
       case msg:Message => sender ! "received " + msg.body
     }

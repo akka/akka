@@ -1,16 +1,12 @@
 package akka.camel;
 
 import akka.japi.SideEffect;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static akka.actor.Actors.*;
 import static akka.camel.CamelContextManager.*;
 import static akka.camel.CamelServiceManager.*;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Martin Krasser
