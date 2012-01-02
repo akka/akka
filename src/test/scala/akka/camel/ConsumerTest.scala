@@ -11,21 +11,22 @@ import akka.util.duration._
 class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   val system = ActorSystem("test")
 
-  class TestActor(_camel : ConsumerRegistry,  uri:String) extends Actor with Consumer with ActivationAware{
-    def this() = this(Camel.instance, "file://abcde")
+  class TestActor(_camel : ConsumerRegistry = Camel.instance,  uri:String = "file://abcde") extends Actor with Consumer with ActivationAware{
     override lazy val camel = _camel
     from(uri)
     protected def receive = { case _ =>  println("foooo..")}
   }
 
   def start(actor: => Actor) = {
-    system.actorOf(Props(actor))
+    val actorRef = system.actorOf(Props(actor))
+    ActivationAware.awaitActivation(actorRef, 1 second)
+    actorRef
   }
 
   "Consumer" should "register itself with Camel during initialization" in{
     val mockCamel = mock[ConsumerRegistry]
 
-    start(new TestActor(mockCamel, "file://abc"))
+    system.actorOf(Props(new TestActor(mockCamel, "file://abc")))
 
     verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor])
   }
@@ -35,7 +36,21 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
   it should "fail if endpoint is invalid"
   it should  "verify that from(...) was called"
-  it should  "support in-out messaging"
+  it should  "support in-out messaging" in  {
+    withCamel{
+      start(new Actor with Consumer with ActivationAware{
+        from("direct:a1")
+
+        protected def receive = {
+          case m : Message => sender ! "received "+m.bodyAs[String]
+        }
+      })
+      Camel.template.requestBody("direct:a1", "some message") should be ("received some message")
+    }
+
+  }
+  
+  
   
   //TODO: slow consumer case for out-capable
   //TODO: when consumer throws while processing
@@ -43,10 +58,8 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
 
   it should  "unregister itself when stopped - integration test" in {
-    Camel.start
-    try{
+    withCamel{
       val actorRef = start(new TestActor())
-      ActivationAware.awaitActivation(actorRef, 1 second)
 
       Camel.context.getRoutes().size() should be >(0)
       system.stop(actorRef)
@@ -55,8 +68,16 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
       Camel.context.getRoutes.size() should be (0)
     }
+  }
+
+  def withCamel(block: => Unit) = {
+    Camel.start
+    try{
+      block
+    }
     finally {
       Camel.stop
     }
+
   }
 }
