@@ -76,7 +76,7 @@ object IO {
   case class Write(handle: WriteHandle, bytes: ByteString) extends IOMessage
 
   def listen(address: InetSocketAddress)(implicit system: ActorSystem, owner: ActorRef): ServerHandle = {
-    val ioManager = IOManager.start()(system)
+    val ioManager = IOManager(system).actor
     val server = ServerHandle(owner, ioManager)
     ioManager ! Listen(server, address)
     server
@@ -92,7 +92,7 @@ object IO {
     listen(new InetSocketAddress(host, port))(system, owner)
 
   def connect(address: InetSocketAddress)(implicit system: ActorSystem, owner: ActorRef): SocketHandle = {
-    val ioManager = IOManager.start()(system)
+    val ioManager = IOManager(system).actor
     val socket = SocketHandle(owner, ioManager)
     ioManager ! Connect(socket, address)
     socket
@@ -408,75 +408,17 @@ object IO {
 
 }
 
-object IOManager {
-  def start()(implicit system: ActorSystem): ActorRef = {
-    // TODO: Replace with better "get or create" if/when available
-    val ref = system.actorFor(system / "io-manager")
-    if (!ref.isInstanceOf[EmptyLocalActorRef]) ref else try {
-      system.actorOf(Props[IOManager], "io-manager")
-    } catch {
-      case _: InvalidActorNameException ⇒ ref
-    }
-  }
-  def stop()(implicit system: ActorSystem): Unit = {
-    // TODO: send shutdown message to IOManager
-  }
+final class IOManager(system: ActorSystem) extends Extension {
+  val actor = system.actorOf(Props[IOManagerActor], "io-manager")
 }
 
-final class WriteBuffer(bufferSize: Int) {
-  private val _queue = new java.util.ArrayDeque[ByteString]
-  private val _buffer = ByteBuffer.allocate(bufferSize)
-  private var _length = 0
-
-  private def fillBuffer(): Boolean = {
-    while (!_queue.isEmpty && _buffer.hasRemaining) {
-      val next = _queue.pollFirst
-      val rest = next.drop(next.copyToBuffer(_buffer))
-      if (rest.nonEmpty) _queue.offerFirst(rest)
-    }
-    !_buffer.hasRemaining
-  }
-
-  def enqueue(elem: ByteString): this.type = {
-    _length += elem.length
-    val rest = elem.drop(elem.copyToBuffer(_buffer))
-    if (rest.nonEmpty) _queue.offerLast(rest)
-    this
-  }
-
-  def length = _length
-
-  def isEmpty = _length == 0
-
-  def write(channel: WritableByteChannel with SelectableChannel): Int = {
-    @tailrec
-    def run(total: Int): Int = {
-      if (this.isEmpty) total
-      else {
-        val written = try {
-          _buffer.flip()
-          channel write _buffer
-        } finally {
-          // don't leave buffer in wrong state
-          _buffer.compact()
-          fillBuffer()
-        }
-        _length -= written
-        if (_buffer.position > 0) {
-          total + written
-        } else {
-          run(total + written)
-        }
-      }
-    }
-
-    run(0)
-  }
-
+object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
+  override def lookup = this
+  override def createExtension(system: ActorSystemImpl) = new IOManager(system)
 }
 
 // TODO: Support a pool of workers
-final class IOManager extends Actor {
+final class IOManagerActor extends Actor {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
 
   val bufferSize = 8192 // TODO: make buffer size configurable
@@ -500,10 +442,6 @@ final class IOManager extends Actor {
 
   val selectAt = 100 // TODO: determine best value, perhaps based on throughput? Other triggers (like write queue size)?
 
-  //val selectEveryNanos = 1000000 // nanos
-
-  //var lastSelectNanos = System.nanoTime
-
   var running = false
 
   var selectSent = false
@@ -521,7 +459,7 @@ final class IOManager extends Actor {
       }
     }
     lastSelect += 1
-    if (lastSelect >= selectAt /* || (lastSelectNanos + selectEveryNanos) < System.nanoTime */ ) select()
+    if (lastSelect >= selectAt) select()
   }
 
   def select() {
@@ -540,7 +478,6 @@ final class IOManager extends Actor {
     } else {
       running = false
     }
-    //lastSelectNanos = System.nanoTime
     lastSelect = 0
   }
 
@@ -718,6 +655,58 @@ final class IOManager extends Actor {
         removeOps(handle, OP_WRITE)
       }
     }
+  }
+
+}
+
+final class WriteBuffer(bufferSize: Int) {
+  private val _queue = new java.util.ArrayDeque[ByteString]
+  private val _buffer = ByteBuffer.allocate(bufferSize)
+  private var _length = 0
+
+  private def fillBuffer(): Boolean = {
+    while (!_queue.isEmpty && _buffer.hasRemaining) {
+      val next = _queue.pollFirst
+      val rest = next.drop(next.copyToBuffer(_buffer))
+      if (rest.nonEmpty) _queue.offerFirst(rest)
+    }
+    !_buffer.hasRemaining
+  }
+
+  def enqueue(elem: ByteString): this.type = {
+    _length += elem.length
+    val rest = elem.drop(elem.copyToBuffer(_buffer))
+    if (rest.nonEmpty) _queue.offerLast(rest)
+    this
+  }
+
+  def length = _length
+
+  def isEmpty = _length == 0
+
+  def write(channel: WritableByteChannel with SelectableChannel): Int = {
+    @tailrec
+    def run(total: Int): Int = {
+      if (this.isEmpty) total
+      else {
+        val written = try {
+          _buffer.flip()
+          channel write _buffer
+        } finally {
+          // don't leave buffer in wrong state
+          _buffer.compact()
+          fillBuffer()
+        }
+        _length -= written
+        if (_buffer.position > 0) {
+          total + written
+        } else {
+          run(total + written)
+        }
+      }
+    }
+
+    run(0)
   }
 
 }
