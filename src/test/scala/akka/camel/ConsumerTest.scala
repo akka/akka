@@ -6,9 +6,9 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
-import java.util.concurrent.TimeUnit
 import akka.util.duration._
 import org.apache.camel.CamelExecutionException
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   implicit val system = ActorSystem("test")
@@ -24,7 +24,7 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
     val mockCamel = mock[ConsumerRegistry]
 
     system.actorOf(Props(new TestActor(mockCamel, "file://abc")))
-
+    Thread.sleep(300)
     verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor])
   }
 
@@ -59,14 +59,11 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
         override def outTimeout = SHORT_TIMEOUT
 
         def endpointUri = "direct:a3"
-        protected def receive = {
-          case _ => {
-            Thread.sleep(LONG_WAIT); sender ! "done" }
-        }
+        protected def receive = { case _ => { Thread.sleep(LONG_WAIT); sender ! "done" } }
       })
 
       intercept[CamelExecutionException]{
-        camel.template.requestBody("direct:a3", "some msg") should be("done")
+        camel.template.requestBody("direct:a3", "some msg 3")
       }
     }
   }
@@ -74,21 +71,22 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
   it should "process messages even after actor restart" in {
     withCamel{ camel =>
-      var restarted = false
+      val restarted = new CountDownLatch(1)
       val consumer = start(new Consumer with ActivationAware{
         def endpointUri = "direct:a2"
 
         protected def receive = {
           case "throw" => throw new Exception
-          case m:Message => sender ! "received "+m.bodyAs[String]          
+          case m:Message => sender ! "received "+m.bodyAs[String]
         }
 
-        override def preRestart(reason: Throwable, message: Option[Any]) {restarted = true}
+        override def preRestart(reason: Throwable, message: Option[Any]) {restarted.countDown()}
       })
       consumer ! "throw"
-      val response = camel.template.asyncRequestBody("direct:a2", "xyz").get(1L, TimeUnit.SECONDS)
+      if(!restarted.await(5, TimeUnit.SECONDS)) fail("Actor failed to restart!")
+
+      val response = camel.template.requestBody("direct:a2", "xyz")
       response should be ("received xyz")
-      restarted should be (true)
     }
   }
 

@@ -1,12 +1,12 @@
 package akka.camel
 
-import component.{ActorComponent, Path}
+import component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
 import migration.Migration
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import akka.actor.{Props, ActorSystem, Actor, ActorRef}
-import java.lang.{Class, IllegalStateException, String}
-import org.apache.camel.{Exchange, TypeConverter, ProducerTemplate, CamelContext}
+import java.lang.{IllegalStateException, String}
+import org.apache.camel.{ProducerTemplate, CamelContext}
 import akka.util.Duration
 
 trait Camel{
@@ -26,13 +26,8 @@ object Camel{
       val ctx = new DefaultCamelContext
       ctx.setStreamCaching(true)
       ctx.addComponent("actor", new ActorComponent(this))
-      ctx.getTypeConverterRegistry.addTypeConverter(classOf[BlockingOrNot], classOf[String], BlockingOrNot.typeConverter)
-      ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], new TypeConverter {
-        def convertTo[T](`type`: Class[T], value: AnyRef) = Duration.fromNanos(value.toString.toLong).asInstanceOf[T]
-        def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
-        def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-        def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-      })
+      ctx.getTypeConverterRegistry.addTypeConverter(classOf[BlockingOrNot], classOf[String], BlockingOrNotTypeConverter)
+      ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)
       ctx
     }
 

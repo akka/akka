@@ -5,7 +5,6 @@
 package akka.camel.component
 
 import java.util.{Map => JMap}
-import java.util.concurrent.TimeoutException
 
 import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
@@ -139,72 +138,84 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
   private lazy val path = ep.path
 
   def process(exchange: Exchange) =
-    if (exchange.getPattern.isOutCapable) sendSync(exchange, ep.outTimeout) else sendAsync(exchange)
+    if (exchange.getPattern.isOutCapable) sendSync(exchange, ep.outTimeout) else fireAndForget(exchange)
 
   def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
+    def notifyDoneSynchronously { callback.done(true)}
+    def notifyDoneAsynchronously { callback.done(false)}
+    val OutCapable = true
+    val InOnly = false
+    val AutoAck = true
+    val ManualAck = false
+    val DoneAsync = false
+    val DoneSync = true
+
     (exchange.getPattern.isOutCapable, ep.blocking, ep.autoack) match {
-      case (true, Blocking(timeout), _) => {
+
+      case (OutCapable, Blocking(timeout), _) => {
         sendSync(exchange, timeout)
-        callback.done(true)
-        true
+        notifyDoneSynchronously
+        DoneSync
       }
-      case (true, NonBlocking, _) => {
-        sendAsync(exchange, callback, ep.outTimeout)
-        false
+      case  (OutCapable, NonBlocking, _) => {
+        sendAsync(exchange, ep.outTimeout, notifyDoneAsynchronously)
+        DoneAsync
       }
-      case (false, NonBlocking, true) => {
-        sendAsync(exchange)
-        callback.done(true) //TODO: is this right? I think that done should be called from onCompler
-        true
+
+      case (InOnly, NonBlocking, AutoAck) => {
+        fireAndForget(exchange)
+        notifyDoneAsynchronously
+        DoneAsync
       }
-      case (false, NonBlocking, false) => {
-        sendAsync(exchange, callback, ep.outTimeout)
-        false
+      case (InOnly, NonBlocking, ManualAck) => {
+        sendAsync(exchange, ep.outTimeout, notifyDoneAsynchronously)
+        DoneAsync
       }
-      case (false, Blocking(timeout), false) => {
+      case (InOnly, Blocking(timeout), ManualAck) => {
         sendSync(exchange, timeout)
-        callback.done(true)
-        true
+        notifyDoneSynchronously
+        DoneSync
       }
-      case (false, Blocking(_), true) => {
+      case (InOnly, Blocking(_), AutoAck) => {
         throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
       }
     }
   }
 
-//  import akka.util.duration._
-//  val timeout = 10 seconds
-//  implicit val timeout2 = new Timeout(timeout)
+  def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
-  private def sendSync(exchange: Exchange, timeout : Duration) = {
+  def forwardResponseTo(exchange:Exchange) : PartialFunction[Either[Throwable,Any], Unit] = {
+    case Right(Ack) => { /* no response message to set */}
+    case Right(failure : Failure) => {exchange.fromFailureMessage(failure)}
+    case Right(msg) =>{
+      println("======> OK "+msg)
+      exchange.fromResponseMessage(Message.canonicalize(msg))
+    }
+    case Left(throwable) => {
+      System.err.println("======> FAILED "+throwable)
 
-    val actor = target(path)
-    //TODO: cleanup and decide on timeouts
-    val result: Any = try { Await.result(actor.ask(requestFor(exchange), new Timeout(timeout)),timeout) } catch { case e => Some(Failure(e)) }
-
-    result match {
-      case Some(Ack)          => { /* no response message to set */ }
-      case Some(msg: Failure) => exchange.fromFailureMessage(msg)
-      case Some(msg)          => exchange.fromResponseMessage(Message.canonicalize(msg))
-      case None               => throw new TimeoutException("timeout (%d ms) while waiting response from %s"
-        format (timeout, ep.getEndpointUri))
+      exchange.fromFailureMessage(Failure(throwable))
     }
   }
 
-  private def sendAsync(exchange: Exchange) = target(path) ! requestFor(exchange)
+  def futureFor(exchange: Exchange, timeout : Duration) = {
+    val actor = target(path)
+    val message = requestFor(exchange)
+    actor.ask(message, new Timeout(timeout))
+  }
 
-  private def sendAsync(exchange: Exchange, callback: AsyncCallback, timeout : Duration) =
-  //TODO: cleanup and decide on timeouts
-    target(path).ask(requestFor(exchange), new Timeout(timeout)).onComplete{ msg: Any =>
-        msg match {
-          case Right(Ack)            => { /* no response message to set */ }
-          case Right(msg)            => exchange.fromResponseMessage(Message.canonicalize(msg))
-          case Left(msg: Throwable)  => exchange.fromFailureMessage(Failure(msg))
-            //TODO:handle future timeout here
-        }
-        callback.done(false)
-      }
+  private def sendSync(exchange: Exchange, timeout : Duration) {
+    val future = futureFor(exchange, timeout)
+    val response = either(Await.result(future, timeout))
+    forwardResponseTo(exchange)(response)
+  }
 
+  private def fireAndForget(exchange: Exchange) { target(path) ! requestFor(exchange) }
+
+  private def sendAsync(exchange: Exchange, timeout : Duration, callback : => Unit) {
+    val future = futureFor(exchange, timeout)
+    future.onComplete(forwardResponseTo(exchange) andThen {_ => callback})
+  }
 
   private def target(path:Path) =
     targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
@@ -239,3 +250,27 @@ class ActorNotRegisteredException(uri: String) extends RuntimeException {
 class ActorIdentifierNotSetException extends RuntimeException {
   override def getMessage = "actor identifier not set"
 }
+
+
+object DurationTypeConverter extends CamelTypeConverter {
+  def convertTo[T](`type`: Class[T], value: AnyRef) = Duration.fromNanos(value.toString.toLong).asInstanceOf[T]
+}
+
+object BlockingOrNotTypeConverter extends CamelTypeConverter{
+  import akka.util.duration._
+  val blocking = """Blocking\((\d+) nanos\)""".r
+  def convertTo[T](`type`: Class[T], value: AnyRef) = `type` match{
+    case c: Class[BlockingOrNot] => value.toString match  {
+      case blocking(timeout) => Blocking(timeout.toLong nanos).asInstanceOf[T]
+      case "NonBlocking" => NonBlocking.asInstanceOf[T]
+    }
+  }
+
+}
+
+abstract class CamelTypeConverter extends TypeConverter{
+  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
+  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+}
+
