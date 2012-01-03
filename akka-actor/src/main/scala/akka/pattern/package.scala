@@ -21,14 +21,14 @@ import akka.util.Duration
 package object pattern {
 
   /**
-   * Returns a [[akka.dispatch.Future]] that will be completed with `Right` `true` when
+   * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when
    * existing messages of the target actor has been processed and the actor has been
    * terminated.
    *
    * Useful when you need to wait for termination or compose ordered termination of several actors.
    *
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
-   * is completed with `Left` [[akka.actor.ActorTimeoutException]].
+   * is completed with failure [[akka.actor.ActorTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) {

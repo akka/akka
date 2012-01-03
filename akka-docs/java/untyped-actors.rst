@@ -485,6 +485,16 @@ Use it like this:
 .. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,poison-pill
 
+Graceful Stop
+-------------
+
+:meth:`gracefulStop` is useful if you need to wait for termination or compose ordered
+termination of several actors:
+
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+   :include: import-gracefulStop,gracefulStop
+
+
 .. _UntypedActor.HotSwap:
 
 HotSwap
