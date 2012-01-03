@@ -14,7 +14,7 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, started: TestLatch) extends Actor {
 
-    implicit val system = context.system
+    import context.system
 
     IO listen (host, port)
 
@@ -26,13 +26,7 @@ object IOActorSpec {
 
       case IO.NewClient(server) ⇒
         val socket = server.accept()
-        state(socket) flatMap { _ ⇒
-          IO repeat {
-            IO.takeAny map { bytes ⇒
-              socket write bytes
-            }
-          }
-        }
+        state(socket) flatMap (_ ⇒ IO repeat (IO.takeAny map socket.write))
 
       case IO.Read(socket, bytes) ⇒
         state(socket)(IO Chunk bytes)
@@ -46,7 +40,7 @@ object IOActorSpec {
 
   class SimpleEchoClient(host: String, port: Int) extends Actor {
 
-    implicit val system = context.system
+    import context.system
 
     val socket = IO connect (host, port)
 
@@ -91,7 +85,7 @@ object IOActorSpec {
   // Basic Redis-style protocol
   class KVStore(host: String, port: Int, started: TestLatch) extends Actor {
 
-    implicit val system = context.system
+    import context.system
 
     val state = IO.IterateeRef.Map.sync[IO.Handle]()
 
@@ -157,7 +151,7 @@ object IOActorSpec {
 
   class KVClient(host: String, port: Int) extends Actor {
 
-    implicit val system = context.system
+    import context.system
 
     val socket = IO connect (host, port)
 
