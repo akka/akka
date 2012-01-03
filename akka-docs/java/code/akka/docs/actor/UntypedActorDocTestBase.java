@@ -28,6 +28,14 @@ import akka.japi.Procedure;
 import akka.actor.Terminated;
 //#import-watch
 
+//#import-gracefulStop
+import static akka.pattern.Patterns.gracefulStop;
+import akka.dispatch.Future;
+import akka.dispatch.Await;
+import akka.util.Duration;
+import akka.actor.ActorTimeoutException;
+//#import-gracefulStop
+
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -100,8 +108,7 @@ public class UntypedActorDocTestBase {
   public void propsActorOf() {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"),
-        "myactor");
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor");
     //#creating-props
     myActor.tell("test");
     system.shutdown();
@@ -171,6 +178,23 @@ public class UntypedActorDocTestBase {
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
     Future<Object> future = myActor.ask("kill", 1000);
     assert Await.result(future, Duration.parse("1 second")).equals("finished");
+    system.shutdown();
+  }
+
+  @Test
+  public void usePatternsGracefulStop() {
+    ActorSystem system = ActorSystem.create("MySystem");
+    ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
+    //#gracefulStop
+
+    try {
+      Future<Boolean> stopped = gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
+      Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
+      // the actor has been stopped
+    } catch (ActorTimeoutException e) {
+      // the actor wasn't stopped within 5 seconds
+    }
+    //#gracefulStop
     system.shutdown();
   }
 
@@ -264,6 +288,7 @@ public class UntypedActorDocTestBase {
       }
     }
   }
+
   //#hot-swap-actor
 
   //#watch

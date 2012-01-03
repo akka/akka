@@ -8,13 +8,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
 import akka.dispatch.Future
-
-//#imports1
-
-//#imports2
 import akka.actor.ActorSystem
-//#imports2
-
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
@@ -114,7 +108,6 @@ object SwapperApp extends App {
 //#swapper
 
 //#receive-orElse
-import akka.actor.Actor.Receive
 
 abstract class GenericActor extends Actor {
   // to be defined in subclassing actor
@@ -316,5 +309,23 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     implicit val sender = testActor
     a ! "kill"
     expectMsg("finished")
+  }
+
+  "using pattern gracefulStop" in {
+    val actorRef = system.actorOf(Props[MyActor])
+    //#gracefulStop
+    import akka.pattern.gracefulStop
+    import akka.dispatch.Await
+    import akka.actor.ActorTimeoutException
+
+    try {
+      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)
+      Await.result(stopped, 6 seconds)
+      // the actor has been stopped
+    } catch {
+      case e: ActorTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
+    }
+    //#gracefulStop
+
   }
 }
