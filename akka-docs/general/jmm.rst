@@ -1,3 +1,5 @@
+.. _jmm:
+
 Akka and the Java Memory Model
 ================================
 

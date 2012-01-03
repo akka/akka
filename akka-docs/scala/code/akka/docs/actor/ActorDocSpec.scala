@@ -7,6 +7,9 @@ package akka.docs.actor
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
+
+//#imports1
+
 import akka.dispatch.Future
 import akka.actor.ActorSystem
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
