@@ -137,66 +137,78 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
 
   private lazy val path = ep.path
 
-  def process(exchange: Exchange) =
-    if (exchange.getPattern.isOutCapable) sendSync(exchange, ep.outTimeout) else fireAndForget(exchange)
+  def process(exchange: Exchange) {
+    if (exchange.getPattern.isOutCapable)
+      sendSync(exchange, ep.outTimeout, forwardResponseTo(exchange))
+    else
+      fireAndForget(exchange)
+  }
+
+  def forwardResponseTo(exchange:Exchange) : PartialFunction[Either[Throwable,Any], Unit] = {
+    case Right(msg) => exchange.fromResponseMessage(Message.canonicalize(msg))
+    case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+  }
 
   def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
     def notifyDoneSynchronously { callback.done(true)}
     def notifyDoneAsynchronously { callback.done(false)}
-    val OutCapable = true
-    val InOnly = false
-    val AutoAck = true
-    val ManualAck = false
-    val DoneAsync = false
     val DoneSync = true
+    val DoneAsync = false
 
-    (exchange.getPattern.isOutCapable, ep.blocking, ep.autoack) match {
+    def processAck : PartialFunction[Either[Throwable,Any], Unit] = {
+      case Right(Ack) => { /* no response message to set */}
+      case Right(failure : Failure) => exchange.fromFailureMessage(failure)
+      case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+    }
 
-      case (OutCapable, Blocking(timeout), _) => {
-        sendSync(exchange, timeout)
-        notifyDoneSynchronously
-        DoneSync
+    def outCapable: Boolean = {
+      ep.blocking match {
+        case Blocking(timeout) => {
+          sendSync(exchange, timeout, forwardResponseTo(exchange))
+          notifyDoneSynchronously
+          DoneSync
+        }
+        case NonBlocking => {
+          sendAsync(exchange, ep.outTimeout, forwardResponseTo(exchange) andThen { _ => notifyDoneAsynchronously})
+          DoneAsync
+        }
       }
-      case  (OutCapable, NonBlocking, _) => {
-        sendAsync(exchange, ep.outTimeout, notifyDoneAsynchronously)
-        DoneAsync
-      }
+    }
 
-      case (InOnly, NonBlocking, AutoAck) => {
-        fireAndForget(exchange)
-        notifyDoneAsynchronously
-        DoneAsync
+    def inOnlyAutoAck: Boolean = {
+      ep.blocking match {
+        case NonBlocking => {
+          fireAndForget(exchange)
+          notifyDoneAsynchronously
+          DoneAsync
+        }
+        case Blocking(_) => throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
       }
-      case (InOnly, NonBlocking, ManualAck) => {
-        sendAsync(exchange, ep.outTimeout, notifyDoneAsynchronously)
-        DoneAsync
+    }
+
+    def inOnlyManualAck: Boolean = {
+      ep.blocking match {
+        case NonBlocking => {
+          sendAsync(exchange, ep.outTimeout, processAck andThen { _ => notifyDoneAsynchronously})
+          DoneAsync
+        }
+        case Blocking(timeout) => {
+          sendSync(exchange, timeout, processAck)
+          notifyDoneSynchronously
+          DoneSync
+        }
       }
-      case (InOnly, Blocking(timeout), ManualAck) => {
-        sendSync(exchange, timeout)
-        notifyDoneSynchronously
-        DoneSync
-      }
-      case (InOnly, Blocking(_), AutoAck) => {
-        throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
-      }
+    }
+
+    if (exchange.getPattern.isOutCapable){
+      outCapable
+    } else {
+      if (ep.autoack) inOnlyAutoAck else inOnlyManualAck
     }
   }
 
   def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
-  def forwardResponseTo(exchange:Exchange) : PartialFunction[Either[Throwable,Any], Unit] = {
-    case Right(Ack) => { /* no response message to set */}
-    case Right(failure : Failure) => {exchange.fromFailureMessage(failure)}
-    case Right(msg) =>{
-      println("======> OK "+msg)
-      exchange.fromResponseMessage(Message.canonicalize(msg))
-    }
-    case Left(throwable) => {
-      System.err.println("======> FAILED "+throwable)
-
-      exchange.fromFailureMessage(Failure(throwable))
-    }
-  }
 
   def futureFor(exchange: Exchange, timeout : Duration) = {
     val actor = target(path)
@@ -204,17 +216,17 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
     actor.ask(message, new Timeout(timeout))
   }
 
-  private def sendSync(exchange: Exchange, timeout : Duration) {
+  private def sendSync(exchange: Exchange, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
     val future = futureFor(exchange, timeout)
     val response = either(Await.result(future, timeout))
-    forwardResponseTo(exchange)(response)
+    processResponse(response)
   }
 
   private def fireAndForget(exchange: Exchange) { target(path) ! requestFor(exchange) }
 
-  private def sendAsync(exchange: Exchange, timeout : Duration, callback : => Unit) {
+  private def sendAsync(exchange: Exchange, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
     val future = futureFor(exchange, timeout)
-    future.onComplete(forwardResponseTo(exchange) andThen {_ => callback})
+    future.onComplete(processResponse)
   }
 
   private def target(path:Path) =
