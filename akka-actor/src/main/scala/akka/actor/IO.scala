@@ -408,7 +408,7 @@ object IO {
 
 }
 
-final class IOManager(system: ActorSystem) extends Extension {
+final class IOManager private (system: ActorSystem) extends Extension {
   val actor = system.actorOf(Props[IOManagerActor], "io-manager")
 }
 
