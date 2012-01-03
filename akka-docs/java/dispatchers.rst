@@ -166,7 +166,7 @@ if not specified otherwise.
       default-dispatcher {
         # If negative (or zero) then an unbounded mailbox is used (default)
         # If positive then a bounded mailbox is used and the capacity is set to the number specified
-        task-queue-size = 1000
+        mailbox-capacity = 1000
       }
     }
   }
