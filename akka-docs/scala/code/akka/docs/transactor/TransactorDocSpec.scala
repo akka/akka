@@ -141,6 +141,7 @@ class TransactorDocSpec extends AkkaSpec {
     import akka.dispatch.Await
     import akka.util.duration._
     import akka.util.Timeout
+    import akka.patterns.ask
 
     val system = ActorSystem("app")
 

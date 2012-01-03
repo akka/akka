@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventStream
 import scala.collection.immutable.Stack
 import akka.dispatch._
+import akka.patterns.ask
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -71,7 +72,7 @@ class TestActorRef[T <: Actor](
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
         val t = underlying.system.settings.ActorTimeout
-        Await.result(?(InternalGetActor)(t), t.duration).asInstanceOf[T]
+        Await.result(this.?(InternalGetActor)(t), t.duration).asInstanceOf[T]
       case ref ⇒ ref
     }
   }

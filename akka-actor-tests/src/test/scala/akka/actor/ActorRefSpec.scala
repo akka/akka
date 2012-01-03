@@ -15,6 +15,7 @@ import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
+import akka.patterns.ask
 
 object ActorRefSpec {
 
