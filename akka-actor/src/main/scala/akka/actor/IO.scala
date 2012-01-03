@@ -75,38 +75,6 @@ object IO {
   case class Read(handle: ReadHandle, bytes: ByteString) extends IOMessage
   case class Write(handle: WriteHandle, bytes: ByteString) extends IOMessage
 
-  def listen(address: InetSocketAddress)(implicit system: ActorSystem, owner: ActorRef): ServerHandle = {
-    val ioManager = IOManager(system).actor
-    val server = ServerHandle(owner, ioManager)
-    ioManager ! Listen(server, address)
-    server
-  }
-
-  def listen(host: String, port: Int)(implicit system: ActorSystem, owner: ActorRef): ServerHandle =
-    listen(new InetSocketAddress(host, port))(system, owner)
-
-  def listen(address: InetSocketAddress, owner: ActorRef)(implicit system: ActorSystem): ServerHandle =
-    listen(address)(system, owner)
-
-  def listen(host: String, port: Int, owner: ActorRef)(implicit system: ActorSystem): ServerHandle =
-    listen(new InetSocketAddress(host, port))(system, owner)
-
-  def connect(address: InetSocketAddress)(implicit system: ActorSystem, owner: ActorRef): SocketHandle = {
-    val ioManager = IOManager(system).actor
-    val socket = SocketHandle(owner, ioManager)
-    ioManager ! Connect(socket, address)
-    socket
-  }
-
-  def connect(host: String, port: Int)(implicit system: ActorSystem, owner: ActorRef): SocketHandle =
-    connect(new InetSocketAddress(host, port))(system, owner)
-
-  def connect(address: InetSocketAddress, owner: ActorRef)(implicit system: ActorSystem): SocketHandle =
-    connect(address)(system, owner)
-
-  def connect(host: String, port: Int, owner: ActorRef)(implicit system: ActorSystem): SocketHandle =
-    connect(new InetSocketAddress(host, port))(system, owner)
-
   sealed trait Input {
     def ++(that: Input): Input
   }
@@ -410,6 +378,25 @@ object IO {
 
 final class IOManager private (system: ActorSystem) extends Extension {
   val actor = system.actorOf(Props[IOManagerActor], "io-manager")
+
+  def listen(address: InetSocketAddress)(implicit owner: ActorRef): IO.ServerHandle = {
+    val server = IO.ServerHandle(owner, actor)
+    actor ! IO.Listen(server, address)
+    server
+  }
+
+  def listen(host: String, port: Int)(implicit owner: ActorRef): IO.ServerHandle =
+    listen(new InetSocketAddress(host, port))(owner)
+
+  def connect(address: InetSocketAddress)(implicit owner: ActorRef): IO.SocketHandle = {
+    val socket = IO.SocketHandle(owner, actor)
+    actor ! IO.Connect(socket, address)
+    socket
+  }
+
+  def connect(host: String, port: Int)(implicit owner: ActorRef): IO.SocketHandle =
+    connect(new InetSocketAddress(host, port))(owner)
+
 }
 
 object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {

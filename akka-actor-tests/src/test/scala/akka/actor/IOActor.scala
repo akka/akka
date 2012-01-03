@@ -14,9 +14,7 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int, started: TestLatch) extends Actor {
 
-    import context.system
-
-    IO listen (host, port)
+    IOManager(context.system) listen (host, port)
 
     started.open
 
@@ -40,9 +38,7 @@ object IOActorSpec {
 
   class SimpleEchoClient(host: String, port: Int) extends Actor {
 
-    import context.system
-
-    val socket = IO connect (host, port)
+    val socket = IOManager(context.system) connect (host, port)
 
     val state = IO.IterateeRef.sync()
 
@@ -91,7 +87,7 @@ object IOActorSpec {
 
     var kvs: Map[String, String] = Map.empty
 
-    IO listen (host, port)
+    IOManager(context.system) listen (host, port)
 
     started.open
 
@@ -151,9 +147,7 @@ object IOActorSpec {
 
   class KVClient(host: String, port: Int) extends Actor {
 
-    import context.system
-
-    val socket = IO connect (host, port)
+    val socket = IOManager(context.system) connect (host, port)
 
     val state = IO.IterateeRef.sync()
 
