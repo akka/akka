@@ -4,6 +4,10 @@
  Migration Guide 1.3.x to 2.0.x
 ################################
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 Actors
 ======
 
@@ -13,8 +17,61 @@ significant amount of time.
 
 Detailed migration guide will be written.
 
+Migration Kit
+=============
+
+Nobody likes a big refactoring that takes several days to complete until
+anything is able to run again. Therefore we provide a migration kit that
+makes it possible to do the migration changes in smaller steps.
+
+The migration kit only covers the most common usage of Akka. It is not intended
+as a final solution. The whole migration kit is deprecated and will be removed in
+Akka 2.1.
+
+The migration kit is provided in separate jar files. Add the following dependency::
+
+  "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
+
+Search and replace the following:
+
+==================================== ====================================
+Search                               Replace with
+==================================== ====================================
+``akka.actor.Actor``                 ``akka.actor.OldActor``
+``akka.event.EventHandler``          ``akka.event.OldEventHandler``
+``akka.config.Config``               ``akka.config.OldConfig``
+==================================== ====================================
+
+When using the migration kit there will be one global actor system, which loads
+the configuration ``akka.conf`` from the same locations as in Akka 1.x.
+
+For Scala users the migration kit also contains some implicit conversions to be
+able to use some old methods::
+
+  import akka.migration._
+
 Unordered Collection of Migration Items
 =======================================
+
+``ActorRef.start()``
+--------------------
+
+``ActorRef.start()`` has been removed. Actors are now started automatically when created.
+Remove all invocations of ``ActorRef.start()``.
+There will be compilation errors for this.
+
+``ActorRef.stop()``
+--------------------
+
+``ActorRef.start()`` has been moved. Use ``ActorSystem`` or ``ActorContext`` to stop actors.
+There will be compilation errors for this.
+
+``Channel``
+-----------
+
+``self.channel`` has been replaced with unified reply mechanism using ``sender`` (Scala)
+or ``getSender()`` (Java).
+There will be compilation errors for this.
 
 ``ActorRef.ask()``
 ------------------
@@ -27,3 +84,4 @@ determines when the actor will stop itself and hence closes the window for a
 reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
+
