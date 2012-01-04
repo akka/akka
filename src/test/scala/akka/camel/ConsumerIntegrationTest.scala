@@ -8,9 +8,10 @@ import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
 import akka.util.duration._
 import org.apache.camel.CamelExecutionException
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit._
 
-class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
+class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   implicit val system = ActorSystem("test")
 
   class TestActor(_camel : ConsumerRegistry = Camel.instance,  uri:String = "file://abcde") extends Actor with Consumer with ActivationAware{
@@ -18,7 +19,6 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
     def endpointUri = uri
     protected def receive = { case _ =>  println("foooo..")}
   }
-
 
   "Consumer" should "register itself with Camel during initialization" in{
     val mockCamel = mock[ConsumerRegistry]
@@ -45,29 +45,27 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
         def endpointUri = "direct:a1"
         protected def receive = { case m: Message => sender ! "received "+m.bodyAs[String]}
       })
-      camel.template.requestBody("direct:a1", "some message") should be ("received some message")
+      camel.sendTo("direct:a1", msg="some message") should be ("received some message")
     }
   }
 
-  //TODO: slow consumer case for out-capable
   it should "time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
-    val LONG_WAIT = 200
+    val LONG_WAIT = 200 millis
 
     withCamel{ camel =>
       start(new Consumer with ActivationAware{
         override def outTimeout = SHORT_TIMEOUT
 
         def endpointUri = "direct:a3"
-        protected def receive = { case _ => { Thread.sleep(LONG_WAIT); sender ! "done" } }
+        protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
       })
 
       intercept[CamelExecutionException]{
-        camel.template.requestBody("direct:a3", "some msg 3")
+        camel.sendTo("direct:a3", msg = "some msg 3")
       }
     }
   }
-  //TODO: when consumer throws while processing
 
   it should "process messages even after actor restart" in {
     withCamel{ camel =>
@@ -83,9 +81,9 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
         override def preRestart(reason: Throwable, message: Option[Any]) {restarted.countDown()}
       })
       consumer ! "throw"
-      if(!restarted.await(5, TimeUnit.SECONDS)) fail("Actor failed to restart!")
+      if(!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
 
-      val response = camel.template.requestBody("direct:a2", "xyz")
+      val response = camel.sendTo("direct:a2", msg = "xyz")
       response should be ("received xyz")
     }
   }
@@ -94,13 +92,15 @@ class ConsumerScalaTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   it should  "unregister itself when stopped - integration test" in {
     withCamel{ camel =>
       val actorRef = start(new TestActor())
+      ActivationAware.awaitActivation(actorRef, 1 second)
 
-      camel.context.getRoutes().size() should be >(0)
+      camel.routeCount should be >(0)
+
+      val awaitDeactivation = ActivationAware.registerInterestInDeActivation(actorRef, 1 second )
       system.stop(actorRef)
+      awaitDeactivation()
 
-      Thread.sleep(500)
-
-      camel.context.getRoutes.size() should be (0)
+      camel.routeCount should be (0)
     }
   }
 

@@ -12,12 +12,19 @@ import akka.util.{Timeout, Duration}
 import java.util.concurrent.TimeoutException
 import akka.util.duration._
 
+trait CamelEndpoint{
+  /**
+   * This method is called after successful deactivation of the endpoint in a camel context.
+   */
+  def postDeactivation() {}
+}
+
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
  * @author Martin Krasser
  */
-trait Consumer extends Actor{
+trait Consumer extends Actor with CamelEndpoint{
   import RouteDefinitionHandler._
 
   protected[this] lazy val camel : ConsumerRegistry = Camel.instance
@@ -152,17 +159,37 @@ object ActivationAware{
   def awaitActivation(actor: ActorRef, timeout: Duration) = {
     implicit val timeout2 = Timeout(timeout)
     try{
-      Await.ready(actor ? AwaitActivation, timeout)
+      Await.result(actor ? AwaitActivation, timeout) match {
+        case EndpointActivated => {}
+        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
+      }
     }catch {
       case e: TimeoutException => throw new ActivationTimeoutException
     }
   }
+  /**
+   * Awaits for actor to be de-activated.
+   */
+  def registerInterestInDeActivation(actor: ActorRef, timeout: Duration): () => Unit = {
+    val awaitable = actor ? (AwaitDeActivation, Timeout(timeout))
+
+    () => try{
+      Await.result(awaitable, timeout) match {
+        case EndpointDeActivated => {}
+        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
+      }
+    }catch {
+      case e: TimeoutException => throw new DeActivationTimeoutException
+    }
+  }
 }
 
+class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation. Please make sure your actor extends ActivationAware trait.")
 class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation. Please make sure your actor extends ActivationAware trait.")
 
-trait ActivationAware extends Actor{
-  private[this] var awaiting : List[ActorRef] = Nil
+trait ActivationAware extends Actor with CamelEndpoint {
+  private[this] var awaitingActivation : List[ActorRef] = Nil
+  private[this] var awaitingDeActivation : List[ActorRef] = Nil
   private[this] var activated = false
 
 
@@ -171,13 +198,22 @@ trait ActivationAware extends Actor{
     context.become(activation orElse receive, true)
   }
 
+  override def postDeactivation() {
+    super.postDeactivation()
+    awaitingDeActivation foreach (_ ! EndpointDeActivated)
+    awaitingDeActivation = Nil
+  }
+
+  //TODO: consider adding postActivation method to be symetric with de-activation
+
   def activation : Receive = {
-    case AwaitActivation => if (activated) sender ! EndpointActivated else awaiting ::= sender
+    case AwaitActivation => if (activated) sender ! EndpointActivated else awaitingActivation ::= sender
+    case AwaitDeActivation => awaitingDeActivation ::= sender
     case EndpointActivated => {
       migration.Migration.EventHandler.debug(this+" activated")
       activated = true
-      awaiting.foreach(_ ! EndpointActivated)
-      awaiting = Nil
+      awaitingActivation.foreach(_ ! EndpointActivated)
+      awaitingActivation = Nil
     }
   }
 }

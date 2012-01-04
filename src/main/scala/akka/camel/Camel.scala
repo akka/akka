@@ -7,7 +7,8 @@ import org.apache.camel.impl.DefaultCamelContext
 import akka.actor.{Props, ActorSystem, Actor, ActorRef}
 import java.lang.{IllegalStateException, String}
 import org.apache.camel.{ProducerTemplate, CamelContext}
-import akka.util.Duration
+import akka.util.{Timeout, Duration}
+import akka.util.duration._
 
 trait Camel{
   def context : CamelContext
@@ -77,13 +78,17 @@ trait ConsumerRegistry{
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
     consumers.put(Path(consumer.self.path.toString), consumer.self)
-    consumerPublisher ! ConsumerActorRegistered(route, consumer.self, consumer)
+    consumerPublisher.ask(ConsumerActorRegistered(route, consumer.self, consumer), Timeout(1 minute)).onSuccess{
+      case EndpointActivated => consumer.self ! EndpointActivated
+    }
   }
 
   def unregisterConsumer(consumer: Consumer with Actor) = {
     val path = Path(consumer.self.path.toString)
     consumers.remove(path)
-    consumerPublisher ! ConsumerActorUnregistered(path, consumer.self)
+    consumerPublisher.ask(ConsumerActorUnregistered(path, consumer.self), Timeout(1 minute)).onSuccess{
+      case EndpointDeActivated => consumer.postDeactivation //has to be synchronous as the actor is already dead
+    }
   }
 
 
