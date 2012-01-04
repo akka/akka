@@ -261,6 +261,10 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
  * @author Martin Krasser
  */
 class CamelExchangeAdapter(exchange: Exchange) {
+  def getExchangeId = exchange.getExchangeId
+
+  def isOutCapable = exchange.getPattern.isOutCapable
+
   import CamelMessageConversion.toMessageAdapter
 
   /**

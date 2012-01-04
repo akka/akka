@@ -13,10 +13,10 @@ import akka.actor._
 import akka.camel.CamelMessageConversion.toExchangeAdapter
 
 import scala.reflect.BeanProperty
-import akka.camel.{Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
+import akka.camel.{CamelExchangeAdapter, Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
 case class Path(value:String)
 
@@ -48,30 +48,10 @@ class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultCompone
   }
 }
 
-/**
- * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
- * are referenced using <code>actor</code> endpoint URIs of the following format:
- * <code>actor:<actor-id></code>,
- * <code>actor:id:[<actor-id>]</code> and
- * <code>actor:uuid:[<actor-uuid>]</code>,
- * where <code><actor-id></code> refers to <code>ActorRef.id</code> and <code><actor-uuid></code>
- * refers to the String-representation od <code>ActorRef.uuid</code>. In URIs that contain
- * <code>id:</code> or <code>uuid:</code>, an actor identifier (id or uuid) is optional. In this
- * case, the in-message of an exchange produced to this endpoint must contain a message header
- * with name <code>CamelActorIdentifier</code> and a value that is the target actor's identifier.
- * If the URI contains an actor identifier, a message with a <code>CamelActorIdentifier</code>
- * header overrides the identifier in the endpoint URI.
- *
- * @see akka.camel.component.ActorComponent
- * @see akka.camel.component.ActorProducer
 
- * @author Martin Krasser
- */
-class ActorEndpoint(uri: String,
-                    comp: ActorComponent,
-                    val path: Path,
-                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp) {
-
+trait ActorEndpointConfig{
+  def getEndpointUri : String
+  def path : Path
   /**
    * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
    * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
@@ -94,6 +74,33 @@ class ActorEndpoint(uri: String,
    * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
    */
   @BeanProperty var autoack: Boolean = true
+}
+
+/**
+ * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
+ * are referenced using <code>actor</code> endpoint URIs of the following format:
+ * <code>actor:<actor-id></code>,
+ * <code>actor:id:[<actor-id>]</code> and
+ * <code>actor:uuid:[<actor-uuid>]</code>,
+ * where <code><actor-id></code> refers to <code>ActorRef.id</code> and <code><actor-uuid></code>
+ * refers to the String-representation od <code>ActorRef.uuid</code>. In URIs that contain
+ * <code>id:</code> or <code>uuid:</code>, an actor identifier (id or uuid) is optional. In this
+ * case, the in-message of an exchange produced to this endpoint must contain a message header
+ * with name <code>CamelActorIdentifier</code> and a value that is the target actor's identifier.
+ * If the URI contains an actor identifier, a message with a <code>CamelActorIdentifier</code>
+ * header overrides the identifier in the endpoint URI.
+ *
+ * @see akka.camel.component.ActorComponent
+ * @see akka.camel.component.ActorProducer
+
+ * @author Martin Krasser
+ */
+class ActorEndpoint(uri: String,
+                    comp: ActorComponent,
+                    val path: Path,
+                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
+
+
 
   /**
    * @throws UnsupportedOperationException
@@ -133,23 +140,27 @@ class ActorEndpoint(uri: String,
  * @author Martin Krasser
  */
 class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends DefaultProducer(ep) with AsyncProcessor {
-  import ActorProducer._
+  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(exchange)}
+  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(exchange, callback)
+}
+
+class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
 
   private lazy val path = ep.path
 
-  def process(exchange: Exchange) {
-    if (exchange.getPattern.isOutCapable)
+  def process(exchange: CamelExchangeAdapter) {
+    if (exchange.isOutCapable)
       sendSync(exchange, ep.outTimeout, forwardResponseTo(exchange))
     else
       fireAndForget(exchange)
   }
 
-  def forwardResponseTo(exchange:Exchange) : PartialFunction[Either[Throwable,Any], Unit] = {
+  def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
     case Right(msg) => exchange.fromResponseMessage(Message.canonicalize(msg))
     case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
   }
 
-  def process(exchange: Exchange, callback: AsyncCallback): Boolean = {
+  def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
     def notifyDoneSynchronously { callback.done(true)}
     def notifyDoneAsynchronously { callback.done(false)}
     val DoneSync = true
@@ -200,48 +211,41 @@ class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends Defa
       }
     }
 
-    if (exchange.getPattern.isOutCapable){
+    if (exchange.isOutCapable){
       outCapable
     } else {
       if (ep.autoack) inOnlyAutoAck else inOnlyManualAck
     }
   }
 
-  def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
+  private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
 
-  def futureFor(exchange: Exchange, timeout : Duration) = {
+  def futureFor(exchange: CamelExchangeAdapter, timeout : Duration) = {
     val actor = target(path)
     val message = requestFor(exchange)
     actor.ask(message, new Timeout(timeout))
   }
 
-  private def sendSync(exchange: Exchange, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
+  private def sendSync(exchange: CamelExchangeAdapter, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
     val future = futureFor(exchange, timeout)
     val response = either(Await.result(future, timeout))
     processResponse(response)
   }
 
-  private def fireAndForget(exchange: Exchange) { target(path) ! requestFor(exchange) }
+  private def fireAndForget(exchange: CamelExchangeAdapter) { target(path) ! requestFor(exchange) }
 
-  private def sendAsync(exchange: Exchange, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
+  private def sendAsync(exchange: CamelExchangeAdapter, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
     val future = futureFor(exchange, timeout)
     future.onComplete(processResponse)
   }
 
-  private def target(path:Path) =
-    targetById(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+  private def target(path:Path) : ActorRef =
+    camel.findConsumer(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private def targetById(path: Path) = camel.findConsumer(path)
+  private[this] def requestFor(exchange: CamelExchangeAdapter)  =
+     exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 
-}
-
-/**
- * @author Martin Krasser
- */
-private[camel] object ActorProducer {
-  def requestFor(exchange: Exchange) =
-    exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 }
 
 /**
