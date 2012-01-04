@@ -9,6 +9,7 @@ import akka.dispatch.Future
 import akka.dispatch.OldFuture
 import akka.util.Duration
 import java.util.concurrent.TimeUnit
+import java.net.InetSocketAddress
 
 /**
  * Migration replacement for `object akka.actor.Actor`.
@@ -51,6 +52,9 @@ object OldActor {
   @deprecated("use ActorRefFactory (ActorSystem or ActorContext) to create actors", "2.0")
   def actorOf(creator: Creator[Actor]): ActorRef = GlobalActorSystem.actorOf(Props(creator))
 
+  @deprecated("OldActor.remote should not be used", "2.0")
+  lazy val remote: OldRemoteSupport = new OldRemoteSupport
+
 }
 
 @deprecated("use Actor", "2.0")
@@ -62,6 +66,12 @@ abstract class OldActor extends Actor {
 
   implicit def actorRef2OldActorRef(actorRef: ActorRef) = new OldActorRef(actorRef)
 
+  @deprecated("Use context.become instead", "2.0")
+  def become(behavior: Receive, discardOld: Boolean = true) = context.become(behavior, discardOld)
+
+  @deprecated("Use context.unbecome instead", "2.0")
+  def unbecome() = context.unbecome()
+
   class OldActorRef(actorRef: ActorRef) {
     @deprecated("Actors are automatically started when creatd, i.e. remove old call to start()", "2.0")
     def start(): ActorRef = actorRef
@@ -71,12 +81,6 @@ abstract class OldActor extends Actor {
 
     @deprecated("Stop with ActorSystem or ActorContext instead", "2.0")
     def stop(): Unit = context.stop(actorRef)
-
-    @deprecated("Use context.become instead", "2.0")
-    def become(behavior: Receive, discardOld: Boolean = true) = context.become(behavior, discardOld)
-
-    @deprecated("Use context.unbecome instead", "2.0")
-    def unbecome() = context.unbecome()
 
     @deprecated("Use context.getReceiveTimeout instead", "2.0")
     def getReceiveTimeout(): Option[Long] = context.receiveTimeout.map(_.toMillis)
@@ -94,7 +98,10 @@ abstract class OldActor extends Actor {
     def isShutdown: Boolean = self.isTerminated
 
     @deprecated("Use sender instead", "2.0")
-    def channel() = actorRef
+    def channel() = context.sender
+
+    @deprecated("Use sender instead", "2.0")
+    def sender() = Some(context.sender)
 
     @deprecated("Use sender ! instead", "2.0")
     def reply(message: Any) = context.sender.!(message, context.self)
@@ -117,4 +124,41 @@ abstract class OldActor extends Actor {
       true
     }
   }
+}
+
+class OldRemoteSupport {
+
+  @deprecated("remote.start is not needed", "2.0")
+  def start() {}
+
+  @deprecated("remote.start is not needed, use configuration to specify host and port", "2.0")
+  def start(host: String, port: Int) {}
+
+  @deprecated("remote.start is not needed, use configuration to specify host and port", "2.0")
+  def start(host: String, port: Int, loader: ClassLoader) {}
+
+  @deprecated("remote.shutdown is not needed", "2.0")
+  def shutdown() {}
+
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int): ActorRef =
+    GlobalActorSystem.actorFor("akka://%s@%s:%s/user/%s".format(GlobalActorSystem.name, hostname, port, classNameOrServiceId))
+
+  def actorFor(classNameOrServiceId: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, hostname, port)
+
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int): ActorRef =
+    actorFor(serviceId, hostname, port)
+
+  def actorFor(serviceId: String, className: String, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(serviceId, hostname, port)
+
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(classNameOrServiceId, hostname, port)
+
+  def actorFor(classNameOrServiceId: String, timeout: Long, hostname: String, port: Int, loader: ClassLoader): ActorRef =
+    actorFor(classNameOrServiceId, hostname, port)
+
+  def actorFor(serviceId: String, className: String, timeout: Long, hostname: String, port: Int): ActorRef =
+    actorFor(serviceId, hostname, port)
+
 }

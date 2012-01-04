@@ -33,7 +33,7 @@ The migration kit is provided in separate jar files. Add the following dependenc
   "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
 
 The first step of the migration is to do some trivial replacements.
-Search and replace the following:
+Search and replace the following (be careful with the non qualified names):
 
 ==================================== ====================================
 Search                               Replace with
@@ -41,8 +41,11 @@ Search                               Replace with
 ``akka.actor.Actor``                 ``akka.actor.OldActor``
 ``extends Actor``                    ``extends OldActor``
 ``akka.actor.Scheduler``             ``akka.actor.OldScheduler``
+``Scheduler``                        ``OldScheduler``
 ``akka.event.EventHandler``          ``akka.event.OldEventHandler``
+``EventHandler``                     ``OldEventHandler``
 ``akka.config.Config``               ``akka.config.OldConfig``
+``Config``                           ``OldConfig``
 ==================================== ====================================
 
 For Scala users the migration kit also contains some implicit conversions to be
