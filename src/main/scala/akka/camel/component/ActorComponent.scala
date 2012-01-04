@@ -49,33 +49,6 @@ class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultCompone
 }
 
 
-trait ActorEndpointConfig{
-  def getEndpointUri : String
-  def path : Path
-  /**
-   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
-   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
-   * It can be overwritten by setting @see blocking property
-   */
-  @BeanProperty var outTimeout: Duration = Int.MaxValue seconds
-
-
-  /**
-   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
-   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
-   * <code>false</code>.
-   */
-  @BeanProperty var blocking: BlockingOrNot = NonBlocking
-
-  /**
-   * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
-   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
-   * <code>true</code>. When set to <code>true</code> consumer actors need to additionally
-   * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
-   */
-  @BeanProperty var autoack: Boolean = true
-}
-
 /**
  * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
  * are referenced using <code>actor</code> endpoint URIs of the following format:
@@ -119,6 +92,33 @@ class ActorEndpoint(uri: String,
   def isSingleton: Boolean = true
 }
 
+trait ActorEndpointConfig{
+  def getEndpointUri : String
+  def path : Path
+  /**
+   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
+   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
+   * It can be overwritten by setting @see blocking property
+   */
+  @BeanProperty var outTimeout: Duration = Int.MaxValue seconds
+
+
+  /**
+   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
+   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
+   * <code>false</code>.
+   */
+  @BeanProperty var blocking: BlockingOrNot = NonBlocking
+
+  /**
+   * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
+   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
+   * <code>true</code>. When set to <code>true</code> consumer actors need to additionally
+   * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
+   */
+  @BeanProperty var autoack: Boolean = true
+}
+
 /**
  * Sends the in-message of an exchange to an (untyped) actor, identified by an
  * actor endpoint URI or by a <code>CamelActorIdentifier</code> message header.
@@ -153,11 +153,6 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
       sendSync(exchange, ep.outTimeout, forwardResponseTo(exchange))
     else
       fireAndForget(exchange)
-  }
-
-  def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
-    case Right(msg) => exchange.fromResponseMessage(Message.canonicalize(msg))
-    case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
   }
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
@@ -200,7 +195,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
     def inOnlyManualAck: Boolean = {
       ep.blocking match {
         case NonBlocking => {
-          sendAsync(exchange, ep.outTimeout, processAck andThen { _ => notifyDoneAsynchronously})
+          sendAsync(exchange, ep.outTimeout, onComplete = processAck andThen { _ => notifyDoneAsynchronously})
           DoneAsync
         }
         case Blocking(timeout) => {
@@ -218,32 +213,36 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
     }
   }
 
-  private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
-
-
-  def futureFor(exchange: CamelExchangeAdapter, timeout : Duration) = {
-    val actor = target(path)
-    val message = requestFor(exchange)
-    actor.ask(message, new Timeout(timeout))
-  }
-
   private def sendSync(exchange: CamelExchangeAdapter, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
-    val future = futureFor(exchange, timeout)
+    val future = send(exchange, timeout)
     val response = either(Await.result(future, timeout))
     processResponse(response)
   }
 
-  private def fireAndForget(exchange: CamelExchangeAdapter) { target(path) ! requestFor(exchange) }
-
-  private def sendAsync(exchange: CamelExchangeAdapter, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
-    val future = futureFor(exchange, timeout)
-    future.onComplete(processResponse)
+  private def sendAsync(exchange: CamelExchangeAdapter, timeout : Duration, onComplete: PartialFunction[Either[Throwable, Any], Unit]) {
+    val future = send(exchange, timeout)
+    future.onComplete(onComplete)
   }
 
-  private def target(path:Path) : ActorRef =
+  private def fireAndForget(exchange: CamelExchangeAdapter) { actorFor(path) ! messageFor(exchange) }
+
+  private[this] def send(exchange: CamelExchangeAdapter, timeout : Duration) = {
+    val actor = actorFor(path)
+    val message = messageFor(exchange)
+    actor.ask(message, new Timeout(timeout))
+  }
+
+  private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
+    case Right(msg) => exchange.fromResponseMessage(Message.canonicalize(msg))
+    case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+  }
+
+  private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
+
+  private[this] def actorFor(path:Path) : ActorRef =
     camel.findConsumer(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
-  private[this] def requestFor(exchange: CamelExchangeAdapter)  =
+  private[this] def messageFor(exchange: CamelExchangeAdapter)  =
      exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
 
 }
