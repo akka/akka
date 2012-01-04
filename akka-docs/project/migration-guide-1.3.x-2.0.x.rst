@@ -32,23 +32,44 @@ The migration kit is provided in separate jar files. Add the following dependenc
 
   "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
 
+The first step of the migration is to do some trivial replacements.
 Search and replace the following:
 
 ==================================== ====================================
 Search                               Replace with
 ==================================== ====================================
 ``akka.actor.Actor``                 ``akka.actor.OldActor``
+``extends Actor``                    ``extends OldActor``
+``akka.actor.Scheduler``             ``akka.actor.OldScheduler``
 ``akka.event.EventHandler``          ``akka.event.OldEventHandler``
 ``akka.config.Config``               ``akka.config.OldConfig``
 ==================================== ====================================
 
-When using the migration kit there will be one global actor system, which loads
-the configuration ``akka.conf`` from the same locations as in Akka 1.x.
-
 For Scala users the migration kit also contains some implicit conversions to be
-able to use some old methods::
+able to use some old methods. These conversions are useful from tests or other
+code used outside actors.
+
+::
 
   import akka.migration._
+
+Thereafter you need to fix compilation errors that are not handled by the migration
+kit, such as:
+
+* Definition of supervisors
+* Definition of dispatchers
+* ActorRegistry
+
+When everything compiles you continue by replacing/removing the ``OldXxx`` classes
+one-by-one from the migration kit with appropriate migration.
+
+When using the migration kit there will be one global actor system, which loads
+the configuration ``akka.conf`` from the same locations as in Akka 1.x.
+This means that while you are using the migration kit you should not create your
+own ``ActorSystem``, but instead use the ``akka.actor.GlobalActorSystem``. Last
+task of the migration would be to create your own ``ActorSystem``.
+
+
 
 Unordered Collection of Migration Items
 =======================================
@@ -85,3 +106,8 @@ reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
 
+``UntypedActor.getContext()``
+-----------------------------
+
+``getContext()`` and ``context()`` in the Java API for UntypedActor is renamed to
+``getSelf()``.

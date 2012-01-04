@@ -5,6 +5,10 @@ package akka.actor
 
 import akka.japi.Creator
 import akka.util.Timeout
+import akka.dispatch.Future
+import akka.dispatch.OldFuture
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 /**
  * Migration replacement for `object akka.actor.Actor`.
@@ -52,6 +56,65 @@ object OldActor {
 @deprecated("use Actor", "2.0")
 abstract class OldActor extends Actor {
 
-  implicit def askTimeout: Timeout = context.system.settings.ActorTimeout
+  implicit def askTimeout: Timeout = akka.migration.askTimeout
 
+  implicit def future2OldFuture[T](future: Future[T]): OldFuture[T] = akka.migration.future2OldFuture(future)
+
+  implicit def actorRef2OldActorRef(actorRef: ActorRef) = new OldActorRef(actorRef)
+
+  class OldActorRef(actorRef: ActorRef) {
+    @deprecated("Actors are automatically started when creatd, i.e. remove old call to start()", "2.0")
+    def start(): ActorRef = actorRef
+
+    @deprecated("Stop with ActorSystem or ActorContext instead", "2.0")
+    def exit() = stop()
+
+    @deprecated("Stop with ActorSystem or ActorContext instead", "2.0")
+    def stop(): Unit = context.stop(actorRef)
+
+    @deprecated("Use context.become instead", "2.0")
+    def become(behavior: Receive, discardOld: Boolean = true) = context.become(behavior, discardOld)
+
+    @deprecated("Use context.unbecome instead", "2.0")
+    def unbecome() = context.unbecome()
+
+    @deprecated("Use context.getReceiveTimeout instead", "2.0")
+    def getReceiveTimeout(): Option[Long] = context.receiveTimeout.map(_.toMillis)
+
+    @deprecated("Use context.setReceiveTimeout instead", "2.0")
+    def setReceiveTimeout(timeout: Long) = context.setReceiveTimeout(Duration(timeout, TimeUnit.MILLISECONDS))
+
+    @deprecated("Use context.getReceiveTimeout instead", "2.0")
+    def receiveTimeout: Option[Long] = getReceiveTimeout()
+
+    @deprecated("Use context.setReceiveTimeout instead", "2.0")
+    def receiveTimeout_=(timeout: Option[Long]) = setReceiveTimeout(timeout.getOrElse(0L))
+
+    @deprecated("Use self.isTerminated instead", "2.0")
+    def isShutdown: Boolean = self.isTerminated
+
+    @deprecated("Use sender instead", "2.0")
+    def channel() = actorRef
+
+    @deprecated("Use sender ! instead", "2.0")
+    def reply(message: Any) = context.sender.!(message, context.self)
+
+    @deprecated("Use sender ! instead", "2.0")
+    def tryReply(message: Any): Boolean = {
+      reply(message)
+      true
+    }
+
+    @deprecated("Use sender ! instead", "2.0")
+    def tryTell(message: Any)(implicit sender: ActorRef = context.self): Boolean = {
+      actorRef.!(message)(sender)
+      true
+    }
+
+    @deprecated("Use sender ! akka.actor.Status.Failure(e) instead", "2.0")
+    def sendException(ex: Throwable): Boolean = {
+      context.sender.!(akka.actor.Status.Failure(ex), context.self)
+      true
+    }
+  }
 }
