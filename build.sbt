@@ -12,6 +12,7 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 libraryDependencies ++= Seq(
   "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT",
   "com.typesafe.akka" % "akka-slf4j" % "2.0-SNAPSHOT",
+  "com.typesafe.akka" % "akka-testkit" % "2.0-SNAPSHOT" % "test",
 //  "se.scalablesolutions.akka" % "akka-actor" % "1.3-RC5" withSources(),
   "org.apache.camel" % "camel-core" % "2.7.0",
   "org.scalatest" %% "scalatest" % "1.6.1" % "test",
