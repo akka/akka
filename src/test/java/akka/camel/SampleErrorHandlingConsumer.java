@@ -1,5 +1,6 @@
 package akka.camel;
 
+import akka.util.Duration;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
@@ -13,8 +14,8 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
         return "direct:error-handler-test-java";
     }
 
-    public boolean isBlocking() {
-        return true;
+    public BlockingOrNot isBlocking() {
+        return new Blocking(Duration.fromNanos(100000000000L));
     }
 
     public void preStart() {

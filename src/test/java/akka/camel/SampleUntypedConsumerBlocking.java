@@ -1,5 +1,7 @@
 package akka.camel;
 
+import akka.util.Duration;
+
 /**
  * @author Martin Krasser
  */
@@ -9,15 +11,15 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         return "direct:test-untyped-consumer-blocking";
     }
 
-    public boolean isBlocking() {
-        return true;
+    public BlockingOrNot isBlocking() {
+        return new Blocking(Duration.fromNanos(100000000000L));
     }
 
     public void onReceive(Object message) {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
         String header = msg.getHeaderAs("test", String.class);
-        getContext().replySafe(String.format("%s %s", body, header));
+        getContext().sender().tell(String.format("%s %s", body, header));
    }
 
 }

@@ -157,7 +157,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     verify(exchange, never()).fromResponseMessage(any[Message])
   }
 
-  it should "disallow blocking, in only and autoAck" in {
+  it should "disallow blocking, when in only and autoAck" in {
     prepareMocks(doNothingActor, message, outCapable = false)
     val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), registry)
     intercept[IllegalStateException]{
