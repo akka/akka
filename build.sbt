@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "org.apache.camel" % "camel-core" % "2.7.0",
   "org.scalatest" %% "scalatest" % "1.6.1" % "test",
   "org.specs2" %% "specs2" % "1.7.1" % "test",
-  "org.mockito" % "mockito-core" % "1.8.5" % "test",
+  "org.mockito" % "mockito-core" % "1.9.0" % "test",
  	"junit" % "junit" % "4.10" % "test"
 )
 
