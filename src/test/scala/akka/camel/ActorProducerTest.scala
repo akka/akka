@@ -46,7 +46,7 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar{
     receivedMessage.get() should be(message)
   }
 
-  "ActorProducer" should "get a response, when exchange is synchronous" in {
+  it should "get a response, when exchange is synchronous and out capable" in {
     val actor = system.actorOf(Props(new Actor {
       protected def receive = { case msg => sender ! "received "+msg}
     }))
