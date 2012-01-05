@@ -4,7 +4,7 @@ import component.{Path, ActorEndpointConfig, TestableProducer}
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.FlatSpec
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers._
+import org.mockito.Matchers.{eq => the, any}
 import org.mockito.Mockito._
 import akka.actor.{Props, ActorSystem, Actor}
 import java.util.concurrent.{TimeUnit, CountDownLatch}
@@ -33,7 +33,7 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar{
     (receivedLatch, message,  actor)
   }
 
-  "Synchronous process()" should "pass the message to the consumer" in {
+  "ActorProducer" should "pass the message to the consumer, when exchange is synchronous and in-only" in {
     val (receivedLatch, receivedMessage,  actor) = startSimpleActor
 
     when(registry.findConsumer(config.path)) thenReturn Option(actor)
@@ -44,6 +44,21 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar{
 
     if (!receivedLatch.await(1, TimeUnit.SECONDS)) fail("Expected to get a message but got non within the timeout");
     receivedMessage.get() should be(message)
+  }
+
+  "ActorProducer" should "get a response, when exchange is synchronous" in {
+    val actor = system.actorOf(Props(new Actor {
+      protected def receive = { case msg => sender ! "received "+msg}
+    }))
+
+
+    when(registry.findConsumer(config.path)) thenReturn Option(actor)
+    when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
+    when(exchange.isOutCapable) thenReturn true
+
+    producer.process(exchange)
+
+   verify(exchange).fromResponseMessage(the(new Message("received "+message)))
   }
 
 }
