@@ -62,7 +62,7 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar w
     val (getCallbackValueWithin, asyncCallback) = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
-
+    //TODO: we should test it doesn't act before it gets response
     doneSync should be (false)
     getCallbackValueWithin(1 second) should be (false)
     verify(exchange).fromResponseMessage(new Message("received "+message))
@@ -95,6 +95,37 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar w
     verify(exchange, never()).fromResponseMessage(any[Message])
   }
 
+  it should  "timeout when it doesnt get Ack" in pending
+  it should  "timeout when it doesnt get output message" in pending
+
+  it should "get async callback as soon as it gets Ack a message, when exchange is non blocking, in only and manualAck" in {
+    
+    prepareMocks(ackActor, message, outCapable = false)
+    val producer = new TestableProducer(config(isAutoAck = false), registry)
+    
+    val (getCallbackValueWithin, asyncCallback) = createAsyncCallback
+    val doneSync = producer.process(exchange, asyncCallback)
+
+
+    doneSync should be (false)
+    getCallbackValueWithin(1 second) should be (false)
+    verify(exchange, never()).fromResponseMessage(any[Message])
+  }
+
+  it should "get sync callback when it gets Ack a message, when exchange is blocking, in only and manualAck" in {
+
+    prepareMocks(ackActor, message, outCapable = false)
+    val producer = new TestableProducer(config(isBlocking = Blocking(1 second), isAutoAck = false), registry)
+
+    val (getCallbackValueWithin, asyncCallback) = createAsyncCallback
+    val doneSync = producer.process(exchange, asyncCallback)
+
+
+    doneSync should be (true)
+    getCallbackValueWithin(0 second) should be (true)
+    verify(exchange, never()).fromResponseMessage(any[Message])
+  }
+
   it should "disallow blocking, in only and autoAck" in {
     prepareMocks(doNothingActor, message, outCapable = false)
     val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), registry)
@@ -105,6 +136,10 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar w
 
   def doNothingActor = system.actorOf(Props(new Actor {
     protected def receive = { case _ => { /*do nothing*/}}
+  }))
+
+  def ackActor = system.actorOf(Props(new Actor {
+    protected def receive = { case _ => sender ! Ack}
   }))
 
   def createAsyncCallback = {
@@ -123,11 +158,12 @@ class ActorProducerTest extends FlatSpec with ShouldMatchers with MockitoSugar w
     (getValueWithin _, callback)
   }
 
-  def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking) = {
+  def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true) = {
     new ActorEndpointConfig {
       val path = Path(actorPath)
       val getEndpointUri = endpointUri
       blocking = isBlocking
+      autoack = isAutoAck
     }
   }
 
