@@ -5,7 +5,7 @@ package akka.routing
 
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
-import collection.mutable.LinkedList
+import scala.collection.mutable.LinkedList
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
@@ -32,8 +32,6 @@ object RoutingSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
-
-  val impl = system.asInstanceOf[ActorSystemImpl]
 
   import akka.routing.RoutingSpec._
 
@@ -399,7 +397,7 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
 
     "count votes as intended - not as in Florida" in {
-      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter))
+      val routedActor = system.actorOf(Props().withRouter(VoteCountRouter))
       routedActor ! DemocratVote
       routedActor ! DemocratVote
       routedActor ! RepublicanVote
