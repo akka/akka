@@ -11,7 +11,8 @@ import org.scalatest.junit.JUnitSuite
 
 
 class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll {
-  override protected def beforeAll = CamelContextManager.init
+  override protected def beforeAll = Camel.start
+  override protected def afterAll() = Camel.stop
 
   @Test def shouldConvertDoubleBodyToString = {
     assertEquals("1.4", Message(1.4).bodyAs[String])

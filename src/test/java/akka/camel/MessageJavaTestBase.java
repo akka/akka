@@ -1,17 +1,15 @@
 package akka.camel;
 
+import akka.japi.Function;
 import org.apache.camel.NoTypeConversionAvailableException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import akka.camel.CamelContextManager;
-import akka.camel.Message;
-import akka.japi.Function;
 
 import java.io.InputStream;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Martin Krasser
@@ -20,7 +18,12 @@ public class MessageJavaTestBase {
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        CamelContextManager.init();
+        akka.camel.Camel$.MODULE$.start();
+    }
+
+    @AfterClass
+    public static void cleanup(){
+        akka.camel.Camel$.MODULE$.stop();
     }
 
     @Test public void shouldConvertDoubleBodyToString() {

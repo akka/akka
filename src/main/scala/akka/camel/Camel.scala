@@ -21,7 +21,6 @@ trait Camel{
 
 //TODO: Get rid of the singleton!
 object Camel{
-
   class CamelInstance extends Camel with ConsumerRegistry{
     val context = {
       val ctx = new DefaultCamelContext
