@@ -21,7 +21,7 @@ import akka.actor._
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerPublisher(camel : CamelInterface) extends Actor {
+private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   def receive = {
     case r: ConsumerActorRegistered => {
       handleConsumerActorRegistered(r)

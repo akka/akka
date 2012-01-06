@@ -20,7 +20,7 @@ import org.mockito.invocation.InvocationOnMock
 //TODO: this whole test doesn't seem right with FlatSpec, investigate other options, maybe given-when-then style
 class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach{
 
-  var camel : CamelInterface  = _
+  var camel : Camel  = _
   var exchange : CamelExchangeAdapter = _
   var callback : AsyncCallback = _
 
@@ -29,10 +29,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
 
   override protected def beforeEach() {
-    camel = mock[CamelInterface]
-    when(camel.message(any)).thenAnswer(new Answer[Message]{
-      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
-    })
+    camel = mock[Camel]
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
 
@@ -208,6 +205,9 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   def prepareMocks(actor: ActorRef, message: Message, outCapable: Boolean) {
+    when(camel.message(any[Any])).thenAnswer(new Answer[Message]{
+      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
+    })
     when(camel.findConsumer(any[Path])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable

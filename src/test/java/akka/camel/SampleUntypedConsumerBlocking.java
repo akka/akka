@@ -7,8 +7,8 @@ import akka.util.Duration;
  */
 public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
 
-    public CamelInterface camel(){
-        return new Camel().start();
+    public Camel camel(){
+        return new DefaultCamel().start();
     }
 
     public String getEndpointUri() {

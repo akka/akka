@@ -15,7 +15,7 @@ import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{CamelInterface, MessageFactory, CamelExchangeAdapter, Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import akka.camel.{Camel, MessageFactory, CamelExchangeAdapter, DefaultCamel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
 case class Path(value:String)
 
@@ -27,7 +27,7 @@ case class Path(value:String)
  *
  * @author Martin Krasser
  */
-class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultComponent {
+class ActorComponent(camel : DefaultCamel with ConsumerRegistry) extends DefaultComponent {
   printf("Starting component '%s' with camel '%s'\n", this, camel)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = parsePath(remaining)
@@ -70,7 +70,7 @@ class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultCompone
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val path: Path,
-                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
+                    camel : DefaultCamel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
 
 
 
@@ -138,7 +138,7 @@ trait ActorEndpointConfig{
  *
  * @author Martin Krasser
  */
-class ActorProducer(val ep: ActorEndpoint, camel: CamelInterface) extends DefaultProducer(ep) with AsyncProcessor {
+class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer(ep) with AsyncProcessor {
   def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel))}
   def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel), callback)
 }

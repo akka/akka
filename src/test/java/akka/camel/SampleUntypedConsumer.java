@@ -5,8 +5,8 @@ package akka.camel;
  */
 public class SampleUntypedConsumer extends UntypedConsumerActor {
 
-    public CamelInterface camel(){
-        return new Camel().start();
+    public Camel camel(){
+        return new DefaultCamel().start();
     }
 
 

@@ -19,16 +19,16 @@ import akka.actor.{Props, ActorSystem, Actor, ActorRef}
 //  def stop : Unit
 //}
 
-trait CamelInterface extends ConsumerRegistry with MessageFactory{
+trait Camel extends ConsumerRegistry with MessageFactory{
   def context : CamelContext
   def template : ProducerTemplate
   def addRoutes(routeBuilder: RouteBuilder) :Unit
   def stopRoute(routeId: String) : Unit
-  def start : CamelInterface
+  def start : Camel
   def stop : Unit
 }
 
-class Camel extends CamelInterface{
+class DefaultCamel extends Camel{
   val context = {
     val ctx = new DefaultCamelContext
     ctx.setStreamCaching(true)
@@ -85,7 +85,7 @@ class Camel extends CamelInterface{
  * ActorEndpoint uses it to lookup an actor by its path.
  */
 trait ConsumerRegistry{
-  self:CamelInterface =>
+  self:Camel =>
   val actorSystem  = ActorSystem("Camel")
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 

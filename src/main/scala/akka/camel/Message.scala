@@ -12,7 +12,7 @@ import org.apache.camel.util.ExchangeHelper
 import akka.japi.{Function => JFunction}
 import org.apache.camel.{Exchange, Message => CamelMessage}
 
-trait MessageFactory{this : CamelInterface =>
+trait MessageFactory{this : Camel =>
   def message(body: Any, headers: Map[String, Any]) = Message(body, headers, this)
   def message(body: Any, headers: JMap[String, Any]) = Message(body, headers.toMap, this)
   def message(body: Any) = Message(body, Map.empty[String, Any], this)
@@ -23,7 +23,7 @@ trait MessageFactory{this : CamelInterface =>
  *
  * @author Martin Krasser
  */
-case class Message(body: Any, headers: Map[String, Any], camel :CamelInterface) {
+case class Message(body: Any, headers: Map[String, Any], camel :Camel) {
   def context = camel.context
 
   override def toString = "Message(%s, %s)" format (body, headers)
@@ -258,7 +258,7 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
  *
  * @author Martin Krasser
  */
-class CamelExchangeAdapter(exchange: Exchange, camel : CamelInterface) {
+class CamelExchangeAdapter(exchange: Exchange, camel : Camel) {
   def getExchangeId = exchange.getExchangeId
 
   def isOutCapable = exchange.getPattern.isOutCapable
@@ -353,7 +353,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
   /**
    * Creates a new Message object from the adapted Camel message.
    */
-  def toMessage(camel:CamelInterface): Message = toMessage(Map.empty, camel)
+  def toMessage(camel:Camel): Message = toMessage(Map.empty, camel)
 
   /**
    * Creates a new Message object from the adapted Camel message.
@@ -361,7 +361,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toMessage(headers: Map[String, Any], camel :CamelInterface): Message = Message(cm.getBody, cmHeaders(headers, cm), camel)
+  def toMessage(headers: Map[String, Any], camel :Camel): Message = Message(cm.getBody, cmHeaders(headers, cm), camel)
 
   private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) = headers ++ cm.getHeaders
 }
