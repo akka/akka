@@ -796,7 +796,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContext) extends Promise[T] {
   val value = Some(resolve(suppliedValue))
 
-  def tryComplete(value: Either[Throwable, T]): Boolean = true
+  def tryComplete(value: Either[Throwable, T]): Boolean = false
   def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
     val completedAs = value.get
     Future dispatchTask (() ⇒ func(completedAs))
