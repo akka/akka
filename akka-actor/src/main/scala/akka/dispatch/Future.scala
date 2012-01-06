@@ -294,31 +294,28 @@ object Future {
    */
   def blocking(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if taskStack.nonEmpty ⇒
-        val tasks = taskStack.elems
-        taskStack.clear()
-        _taskStack set None
-        dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
-      case Some(_) ⇒ _taskStack set None
-      case _       ⇒ // already None
+      case stack if (stack ne null) && stack.nonEmpty ⇒
+        val tasks = stack.elems
+        stack.clear()
+        _taskStack.remove()
+        dispatchTask(() ⇒ _taskStack.get.elems = tasks, true)
+      case _ ⇒ _taskStack.remove()
     }
 
-  private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
-    override def initialValue = None
-  }
+  private val _taskStack = new ThreadLocal[Stack[() ⇒ Unit]]()
 
   /**
    * Internal API, do not call
    */
   private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if !force ⇒ taskStack push task
+      case stack if (stack ne null) && !force ⇒ stack push task
       case _ ⇒ executor.execute(
         new Runnable {
           def run =
             try {
               val taskStack = Stack[() ⇒ Unit](task)
-              _taskStack set Some(taskStack)
+              _taskStack set taskStack
               while (taskStack.nonEmpty) {
                 val next = taskStack.pop()
                 try {
@@ -334,7 +331,7 @@ object Future {
                     }
                 }
               }
-            } finally { _taskStack set None }
+            } finally { _taskStack.remove() }
         })
     }
 }
