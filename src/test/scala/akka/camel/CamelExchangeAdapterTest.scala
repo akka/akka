@@ -1,12 +1,16 @@
 package akka.camel
 
 import org.apache.camel.impl.{DefaultCamelContext, DefaultExchange}
-import org.apache.camel.ExchangePattern
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
+import org.apache.camel.{Exchange, ExchangePattern}
 
-class CamelExchangeAdapterTest extends JUnitSuite {
-  import CamelMessageConversion.toExchangeAdapter
+class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
+
+  //TODO: Get rid of implicit.
+  // It is here, as was easier to add this implicit than to rewrite the whole test...
+  implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e, camel)
 
   @Test def shouldSetInMessageFromRequestMessage = {
     val e1 = sampleInOnly.fromRequestMessage(Message("x"))

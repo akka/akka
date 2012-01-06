@@ -13,11 +13,14 @@ import akka.util.duration._
 import akka.util.Duration
 import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
+import java.lang.String
+import org.mockito.stubbing.Answer
+import org.mockito.invocation.InvocationOnMock
 
 //TODO: this whole test doesn't seem right with FlatSpec, investigate other options, maybe given-when-then style
 class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach{
 
-  var registry :ConsumerRegistry = _
+  var camel : CamelInterface  = _
   var exchange : CamelExchangeAdapter = _
   var callback : AsyncCallback = _
 
@@ -26,12 +29,15 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
 
   override protected def beforeEach() {
-    registry = mock[ConsumerRegistry]
+    camel = mock[CamelInterface]
+    when(camel.message(any)).thenAnswer(new Answer[Message]{
+      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
+    })
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
 
-    producer = new TestableProducer(config(), registry)
-    message = new Message()
+    producer = new TestableProducer(config(), camel)
+    message = Message(null, null, null)
   }
 
   override protected def afterAll() {
@@ -52,12 +58,14 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     }
   }
 
+  def newMessage(s: String) = Message(s, Map.empty, camel)
+
   it should "get a response, when exchange is synchronous and out capable" in {
     prepareMocks(echoActor, message, outCapable = true)
 
     producer.process(exchange)
 
-    verify(exchange).fromResponseMessage(the(new Message("received "+message)))
+    verify(exchange).fromResponseMessage(newMessage("received "+message))
   }
 
   it should "get a response and async callback as soon as it gets response, when exchange is non blocking, out capable" in {
@@ -68,14 +76,14 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     //TODO: we should test it doesn't act before it gets response
     doneSync should be (false)
     asyncCallback.valueWithin(1 second) should be (false)
-    verify(exchange).fromResponseMessage(new Message("received "+message))
+    verify(exchange).fromResponseMessage(newMessage("received "+message))
   }
 
 
   it should "get a response and sync callback, when exchange is blocking, out capable" in {
     prepareMocks(echoActor, message, outCapable = true)
 
-    val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), registry)
+    val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), camel)
 
     val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
@@ -84,7 +92,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     doneSync should be (true)
     //TODO: This is a bit lame test. Happy for any suggestions.
     asyncCallback.valueWithin(0 second) should be (true)
-    verify(exchange).fromResponseMessage(new Message("received "+message))
+    verify(exchange).fromResponseMessage(newMessage("received "+message))
   }
 
   it should "get async callback as soon as it sends a message, when exchange is non blocking, in only and autoAck" in {
@@ -100,7 +108,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
   it should  "timeout when it doesnt get Ack" in {
     prepareMocks(doNothingActor, message, outCapable = false)
-    val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), registry)
+    val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
     producer.process(exchange, asyncCallback)
@@ -111,7 +119,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
   it should  "timeout when it doesnt get output message" in {
     prepareMocks(doNothingActor, message, outCapable = true)
-    val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), registry)
+    val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
     producer.process(exchange, asyncCallback)
@@ -123,7 +131,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
     val actor = TestProbe()
     prepareMocks(actor.ref, message, outCapable = false)
-    val producer = new TestableProducer(config(isAutoAck = false), registry)
+    val producer = new TestableProducer(config(isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
@@ -142,7 +150,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
     val actor = TestProbe()
     prepareMocks(actor.ref, message, outCapable = false)
-    val producer = new TestableProducer(config(isBlocking = Blocking(1 second), isAutoAck = false), registry)
+    val producer = new TestableProducer(config(isBlocking = Blocking(1 second), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
@@ -159,7 +167,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
   it should "disallow blocking, when in only and autoAck" in {
     prepareMocks(doNothingActor, message, outCapable = false)
-    val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), registry)
+    val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), camel)
     intercept[IllegalStateException]{
       producer.process(exchange, mock[AsyncCallback])
     }
@@ -200,7 +208,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   def prepareMocks(actor: ActorRef, message: Message, outCapable: Boolean) {
-    when(registry.findConsumer(any[Path])) thenReturn Option(actor)
+    when(camel.findConsumer(any[Path])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable
   }

@@ -203,6 +203,8 @@ class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMa
 
 
 class TestConsumer(uri: String) extends Actor with Consumer with ActivationAware{
+  override lazy val camel = null
+
   def endpointUri = uri
   override protected def receive = {
     case msg: Message => sender ! ("received %s" format msg.body)

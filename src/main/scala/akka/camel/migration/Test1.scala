@@ -15,13 +15,14 @@ object Test1 extends App{
   val killer = system.actorOf(Props(new Actor{
     protected def receive = {
       case "stop" => {
-        Camel.stop
         system.shutdown()
       }
     }
   }))
 
   class CamelConsumer extends Actor with akka.camel.Consumer{
+    override lazy val camel = new Camel().start
+    
     def endpointUri = "file://data/input/CamelConsumer"
 
     protected def receive = {
@@ -33,7 +34,6 @@ object Test1 extends App{
   }
 
 
-  Camel.start
 
   system.actorOf(Props[CamelConsumer])
 

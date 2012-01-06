@@ -4,19 +4,20 @@ import actor.{Props, ActorSystem, Actor}
 import util.Duration
 import util.duration._
 import java.util.concurrent.{ExecutionException, TimeUnit}
+import org.apache.camel.CamelContext
+import org.junit.{After, Before}
+import org.scalatest.junit.JUnitSuite
 
 package object camel{
   def withCamel(block: Camel => Unit) = {
-    Camel.start
+    val camel = new Camel().start
     try{
-      block(Camel.instance)
+      block(camel)
     }
     finally {
-      Camel.stop
+      camel.stop
     }
-
   }
-
 
   def start(actor: => Actor)(implicit system : ActorSystem) = {
     val actorRef = system.actorOf(Props(actor))
@@ -42,6 +43,20 @@ package object camel{
     }
 
     def routeCount = camel.context.getRoutes().size()
+  }
+
+  trait MessageSugar{
+    def camel : Camel
+    def Message(body:Any) = akka.camel.Message(body, Map.empty, camel)
+    def Message(body:Any, headers:Map[String, Any]) = akka.camel.Message(body, headers, camel)
+
+  }
+
+  trait CamelSupport{ this: JUnitSuite =>
+    implicit def context : CamelContext = camel.context
+    var camel : Camel = _
+    @Before def before = camel = new Camel().start
+    @After def after() = camel.stop
   }
 
 }

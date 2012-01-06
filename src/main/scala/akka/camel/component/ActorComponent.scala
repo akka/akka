@@ -10,13 +10,12 @@ import org.apache.camel._
 import org.apache.camel.impl.{DefaultProducer, DefaultEndpoint, DefaultComponent}
 
 import akka.actor._
-import akka.camel.CamelMessageConversion.toExchangeAdapter
 
 import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{CamelExchangeAdapter, Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import akka.camel.{CamelInterface, MessageFactory, CamelExchangeAdapter, Camel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
 case class Path(value:String)
 
@@ -139,12 +138,12 @@ trait ActorEndpointConfig{
  *
  * @author Martin Krasser
  */
-class ActorProducer(val ep: ActorEndpoint, camel: ConsumerRegistry) extends DefaultProducer(ep) with AsyncProcessor {
-  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(exchange)}
-  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(exchange, callback)
+class ActorProducer(val ep: ActorEndpoint, camel: CamelInterface) extends DefaultProducer(ep) with AsyncProcessor {
+  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel))}
+  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel), callback)
 }
 
-class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
+class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry with MessageFactory) {
 
   private lazy val path = ep.path
 
@@ -233,10 +232,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry){
   }
 
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
-    case Right(msg) => {
-      val canonicalize = Message.canonicalize(msg)
-      exchange.fromResponseMessage(canonicalize)
-    }
+    case Right(msg) => { exchange.fromResponseMessage(Message.canonicalize(msg, camel))}
     case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
   }
 

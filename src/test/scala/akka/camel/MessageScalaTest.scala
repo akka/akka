@@ -2,17 +2,16 @@ package akka.camel
 
 import java.io.InputStream
 
-import org.apache.camel.NoTypeConversionAvailableException
 import org.junit.Assert._
 import org.junit.Test
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
+import org.apache.camel.NoTypeConversionAvailableException
 
 
-class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll {
-  override protected def beforeAll = Camel.start
-  override protected def afterAll() = Camel.stop
+class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
+
 
   @Test def shouldConvertDoubleBodyToString = {
     assertEquals("1.4", Message(1.4).bodyAs[String])

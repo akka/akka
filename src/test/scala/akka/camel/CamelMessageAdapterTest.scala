@@ -3,8 +3,9 @@ package akka.camel
 import org.apache.camel.impl.DefaultMessage
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
 
-class CamelMessageAdapterTest extends JUnitSuite {
+class CamelMessageAdapterTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
   import CamelMessageConversion.toMessageAdapter
 
   @Test def shouldOverwriteBodyAndAddHeader = {
@@ -15,13 +16,13 @@ class CamelMessageAdapterTest extends JUnitSuite {
   }
 
   @Test def shouldCreateMessageWithBodyAndHeader = {
-    val m = sampleMessage.toMessage
+    val m = sampleMessage.toMessage(null)
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
   }
 
   @Test def shouldCreateMessageWithBodyAndHeaderAndCustomHeader = {
-    val m = sampleMessage.toMessage(Map("key" -> "baz"))
+    val m = sampleMessage.toMessage(Map("key" -> "baz"), null)
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
     assert(m.headers("key") === "baz")

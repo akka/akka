@@ -12,16 +12,16 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   implicit var system :ActorSystem = _
   implicit val timeout = Timeout(10 seconds)
   var template : ProducerTemplate = _
-
+  var camel : Camel = _
   override protected def beforeEach() {
-    Camel.start
+    camel = new Camel().start
     system = ActorSystem("test")
-    template = Camel.template
+    template = camel.template
   }
 
   override protected def afterEach {
     system.shutdown()
-    Camel.stop
+    camel.stop
   }
 
   def testActorWithEndpoint(uri: String): ActorRef = { system.actorOf(Props(new TestConsumer(uri)))}
@@ -29,7 +29,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   "ActivationAware" should "be notified when endpoint is activated" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     try{
-      ActivationAware.awaitActivation(actor, 1 second)
+      ActivationAware.awaitActivation(actor, 10 second)
     } catch {
       case e : ActivationTimeoutException => fail("Failed to get notification within 1 second")
     }
@@ -40,6 +40,8 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   it should "be notified when endpoint is de-activated" in {
     val stopped = new CountDownLatch(1)
     val actor = start(new Consumer with ActivationAware{
+      override lazy val camel = ActivationAwareTest.this.camel
+
       def endpointUri = "direct:a3"
       def receive = {case _ => {}}
 
@@ -80,6 +82,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   }
 
   class TestConsumer(uri:String) extends Actor with Consumer with ActivationAware{
+    override lazy val  camel = ActivationAwareTest.this.camel
     def endpointUri = uri
     override def receive = {
       case msg:Message => sender ! "received " + msg.body

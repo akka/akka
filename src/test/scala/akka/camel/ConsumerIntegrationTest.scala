@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit._
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar{
   implicit val system = ActorSystem("test")
 
-  class TestActor(_camel : ConsumerRegistry = Camel.instance,  uri:String = "file://abcde") extends Actor with Consumer with ActivationAware{
+  class TestActor(_camel : ConsumerRegistry,  uri:String = "file://abcde") extends Actor with Consumer with ActivationAware{
     override lazy val camel = _camel
     def endpointUri = uri
     protected def receive = { case _ =>  println("foooo..")}
@@ -34,18 +34,21 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   it should "never get activation message, if endpoint is invalid" in {
     withCamel{ camel =>
       intercept[ActivationTimeoutException]{
-        start(new TestActor(uri="some invalid uri"))
+        start(new TestActor(camel,  uri="some invalid uri"))
       }
     }
   }
 
   it should  "support in-out messaging" in  {
-    withCamel{ camel =>
+    withCamel{ _camel =>
       start(new Consumer with ActivationAware{
+        override lazy val camel = _camel
         def endpointUri = "direct:a1"
-        protected def receive = { case m: Message => sender ! "received "+m.bodyAs[String]}
+        protected def receive = {
+          case m: Message => sender ! "received "+m.bodyAs[String]
+        }
       })
-      camel.sendTo("direct:a1", msg="some message") should be ("received some message")
+      _camel.sendTo("direct:a1", msg="some message") should be ("received some message")
     }
   }
 
@@ -53,8 +56,9 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
 
-    withCamel{ camel =>
+    withCamel{ _camel =>
       start(new Consumer with ActivationAware{
+        override lazy val camel = _camel
         override def outTimeout = SHORT_TIMEOUT
 
         def endpointUri = "direct:a3"
@@ -62,15 +66,17 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
       })
 
       intercept[CamelExecutionException]{
-        camel.sendTo("direct:a3", msg = "some msg 3")
+        _camel.sendTo("direct:a3", msg = "some msg 3")
       }
     }
   }
 
   it should "process messages even after actor restart" in {
-    withCamel{ camel =>
+    withCamel{ _camel =>
       val restarted = new CountDownLatch(1)
       val consumer = start(new Consumer with ActivationAware{
+        override lazy val camel = _camel
+
         def endpointUri = "direct:a2"
 
         protected def receive = {
@@ -83,7 +89,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
       consumer ! "throw"
       if(!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
 
-      val response = camel.sendTo("direct:a2", msg = "xyz")
+      val response = _camel.sendTo("direct:a2", msg = "xyz")
       response should be ("received xyz")
     }
   }
@@ -91,7 +97,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
 
   it should  "unregister itself when stopped - integration test" in {
     withCamel{ camel =>
-      val actorRef = start(new TestActor())
+      val actorRef = start(new TestActor(camel))
       ActivationAware.awaitActivation(actorRef, 1 second)
 
       camel.routeCount should be >(0)

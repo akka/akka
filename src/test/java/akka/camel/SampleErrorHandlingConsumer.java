@@ -10,6 +10,10 @@ import org.apache.camel.model.RouteDefinition;
  */
 public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
 
+    public CamelInterface camel(){
+        return new Camel().start();
+    }
+
     public String getEndpointUri() {
         return "direct:error-handler-test-java";
     }
