@@ -123,7 +123,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
               remoteClients.get(key) match { //Recheck for addition, race between upgrades
                 case s: Some[RemoteClient] ⇒ s.get //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(this, timer, address, loader, notifyListeners)
+                  val client = new ActiveRemoteClient(this, address, loader, notifyListeners)
                   client.connect()
                   remoteClients += key -> client
                   client
@@ -421,9 +421,7 @@ abstract class RemoteClient private[akka] (
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 class ActiveRemoteClient private[akka] (
-  module: NettyRemoteClientModule,
-  timer: HashedWheelTimer,
-  remoteAddress: InetSocketAddress,
+  module: NettyRemoteClientModule, remoteAddress: InetSocketAddress,
   val loader: Option[ClassLoader] = None, notifyListenersFun: (⇒ Any) ⇒ Unit) extends RemoteClient(module, remoteAddress) {
   import RemoteClientSettings._
 
@@ -435,6 +433,8 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private[remote] var openChannels: DefaultChannelGroup = _
   @volatile
+  private var timer: HashedWheelTimer = _
+  @volatile
   private var reconnectionTimeWindowStart = 0L
 
   def notifyListeners(msg: ⇒ Any): Unit = notifyListenersFun(msg)
@@ -443,6 +443,7 @@ class ActiveRemoteClient private[akka] (
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
+      timer = new HashedWheelTimer
 
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, timer, this))
@@ -478,6 +479,8 @@ class ActiveRemoteClient private[akka] (
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown() = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
+    timer.stop()
+    timer = null
     openChannels.close.awaitUninterruptibly
     openChannels = null
     bootstrap.releaseExternalResources()
