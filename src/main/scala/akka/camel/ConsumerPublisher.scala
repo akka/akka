@@ -24,32 +24,18 @@ import akka.actor._
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   def receive = {
     case r: ConsumerActorRegistered => {
-      handleConsumerActorRegistered(r)
+      camel.addRoutes(new ConsumerActorRouteBuilder(r))
       sender ! EndpointActivated
+      EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (r.actorRef, r.endpointUri))
+
     }
     case u: ConsumerActorUnregistered => {
-      handleConsumerActorUnregistered(u)
+      camel.stopRoute(u.path.value)
       sender ! EndpointDeActivated
-//      activationTracker ! EndpointDeactivated
+      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.path.value))
     }
-    case _ => { /* ignore */}
   }
 
-  /**
-   * Creates a route to the registered consumer actor.
-   */
-  def handleConsumerActorRegistered(event: ConsumerActorRegistered) {
-    camel.addRoutes(new ConsumerActorRouteBuilder(event))
-    EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (event.actorRef, event.endpointUri))
-  }
-
-  /**
-   * Stops the route to the already un-registered consumer actor.
-   */
-  def handleConsumerActorUnregistered(event: ConsumerActorUnregistered) {
-    camel.stopRoute(event.path.value)
-    EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (event.actorRef, event.path.value))
-  }
 }
 
 /**
