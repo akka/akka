@@ -93,9 +93,7 @@ trait ConsumerRegistry{
 
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
-    consumerPublisher.ask(ConsumerActorRegistered(route, consumer.self, consumer), Timeout(1 minute)).onSuccess{
-      case EndpointActivated => consumer.self ! EndpointActivated
-    }
+    consumerPublisher.tell(ConsumerActorRegistered(route, consumer.self, consumer), consumer.self)
   }
 
   def unregisterConsumer(consumer: Consumer with Actor) = {
