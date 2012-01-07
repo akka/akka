@@ -91,11 +91,8 @@ trait ConsumerRegistry{
   val actorSystem : ActorSystem //TODO: maybe sharing of an actor system for internal purposes is not so good idea? What if user forgets to shut it down?
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
-  //TODO: save some kittens and use less blocking collection
-  val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
-    consumers.put(Path(consumer.self.path.toString), consumer.self)
     consumerPublisher.ask(ConsumerActorRegistered(route, consumer.self, consumer), Timeout(1 minute)).onSuccess{
       case EndpointActivated => consumer.self ! EndpointActivated
     }
@@ -103,11 +100,10 @@ trait ConsumerRegistry{
 
   def unregisterConsumer(consumer: Consumer with Actor) = {
     val path = Path(consumer.self.path.toString)
-    consumers.remove(path)
     consumerPublisher.ask(ConsumerActorUnregistered(path, consumer.self), Timeout(1 minute)).onSuccess{
       case EndpointDeActivated => consumer.postDeactivation //has to be synchronous as the actor is already dead
     }
   }
 
-  def findConsumer(path: Path) : Option[ActorRef] = consumers.get(path)
+  def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
 }

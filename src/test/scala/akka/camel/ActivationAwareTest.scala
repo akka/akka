@@ -56,7 +56,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
 
   it should "time out when waiting for endpoint de-activation for too long" in {
     val actor = start(new TestConsumer("direct:a5"))
-    ActivationAware.awaitActivation(actor, 10 millis)
+    ActivationAware.awaitActivation(actor, 1 millis)
     val awaitDeactivation = ActivationAware.registerInterestInDeActivation(actor, 1 second)
     intercept[DeActivationTimeoutException]{
       awaitDeactivation()
