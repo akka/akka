@@ -10,6 +10,8 @@ import akka.util.{Timeout, Duration}
 import akka.util.duration._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 import collection.mutable.HashMap
+import akka.event.EventStream
+import akka.event.Logging.Info
 
 trait Camel extends ConsumerRegistry with MessageFactory with Extension{
   def context : CamelContext
@@ -31,6 +33,7 @@ trait Camel extends ConsumerRegistry with MessageFactory with Extension{
 class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   val context = {
     val ctx = new DefaultCamelContext
+    ctx.setName(actorSystem.name);
     ctx.setStreamCaching(true)
     ctx.addComponent("actor", new ActorComponent(this))
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[BlockingOrNot], classOf[String], BlockingOrNotTypeConverter)
@@ -44,23 +47,29 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   def stopRoute(routeId: String) = context.stopRoute(routeId)
 
   def start = {
-    context.start
-    template.start
-    Migration.EventHandler.Info("Started Camel instance "+this)
+    try {
+      context.start
+    } finally {
+      template.start
+    }
+    actorSystem.eventStream.publish(Info("Camel",String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
     this
   }
 
   override def stop {
-    context.stop()
-    template.stop()
-    Migration.EventHandler.Info("Stoped Camel instance "+this)
+    try {
+      context.stop()
+    } finally {
+      template.stop()
+    }
+    actorSystem.eventStream.publish(Info("Camel",String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
   }
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
+  //TODO not threadsafe
   val overrides = new HashMap[ActorSystem, Camel]
   def setCamelFor(system: ActorSystem, camel: Camel) { overrides(system) = camel } //TODO: putIfAbsent maybe?
-
 
   def createExtension(system: ActorSystemImpl) = {
 
@@ -78,8 +87,6 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
     if(overrides.contains(system)) useOverride(system) else createNew(system)
   }
   def lookup() = CamelExtension
-
-
 }
 
 /**
