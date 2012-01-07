@@ -20,6 +20,14 @@ trait Camel extends ConsumerRegistry with MessageFactory with Extension{
   def stop : Unit
 }
 
+/**
+ * Creates an instance of Camel subsystem.
+ *
+ * @param actorSystem is used to create internal actors needed by camel instance.
+ * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
+ * In typical scenario, when camel is used as akka extension it is natural that camel reuses the system it extends.
+ * Also by not creating extra internal actor system we are conserving resources. //TODO: (maybe it's premature optimisation?)
+ */
 class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   val context = {
     val ctx = new DefaultCamelContext
@@ -53,17 +61,25 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
   val overrides = new HashMap[ActorSystem, Camel]
   def setCamelFor(system: ActorSystem, camel: Camel) { overrides(system) = camel } //TODO: putIfAbsent maybe?
 
+
   def createExtension(system: ActorSystemImpl) = {
-    if(overrides.contains(system)){
+
+    def useOverride(system: ActorSystemImpl) = {
       system.registerOnTermination(overrides.remove(system))
       overrides(system)
-    }else{
+    }
+
+    def createNew(system: ActorSystemImpl) = {
       val camel = new DefaultCamel(system).start;
       system.registerOnTermination(camel.stop)
       camel
     }
+
+    if(overrides.contains(system)) useOverride(system) else createNew(system)
   }
   def lookup() = CamelExtension
+
+
 }
 
 /**
@@ -72,7 +88,7 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
  */
 trait ConsumerRegistry{
   self:Camel =>
-  val actorSystem : ActorSystem
+  val actorSystem : ActorSystem //TODO: maybe sharing of an actor system for internal purposes is not so good idea? What if user forgets to shut it down?
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
   //TODO: save some kittens and use less blocking collection

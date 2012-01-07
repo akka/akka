@@ -46,8 +46,17 @@ package object camel{
   trait CamelSupport{ this: JUnitSuite =>
     implicit def context : CamelContext = camel.context
     var camel : Camel = _
-    @Before def before = camel = new DefaultCamel(ActorSystem("test")).start
-    @After def after() = camel.stop
+    var camelSystem : ActorSystem = _
+
+    @Before def before = {
+      camelSystem = ActorSystem("test")
+      camel = new DefaultCamel(camelSystem).start
+    }
+
+    @After def after() = {
+      camel.stop
+      camelSystem.shutdown()
+    }
   }
 
 }
