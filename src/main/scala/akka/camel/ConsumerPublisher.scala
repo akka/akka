@@ -14,6 +14,7 @@ import akka.actor._
 
 
 /**
+ * TODO I would remove this code alltogether. You can addRoutes and stopRoutes through the extension in the Consumer trait.
  * Publishes consumer actors on <code>ConsumerActorRegistered</code> events and unpublishes
  * consumer actors on <code>ConsumerActorUnregistered</code> events. Publications are tracked
  * by sending an <code>activationTracker</code> an <code>EndpointActivated</code> event,
@@ -76,10 +77,11 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  */
 private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
+  //TODO this should use Actor Path. blocking, autoack etc is configured in the actor. (I think you've done that already, and this might be dead code :)
   protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (event.path, event.blocking, event.autoack, event.outTimeout.toNanos)
 }
 
-
+//TODO I don't think any of these events are necessary anymore.
 /**
  * A consumer (un)registration event.
  */
@@ -101,7 +103,6 @@ private[camel] trait ConsumerActorEvent extends ConsumerEvent {
   val autoack                = actor.autoack
   val routeDefinitionHandler = actor.routeDefinitionHandler
 }
-
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */

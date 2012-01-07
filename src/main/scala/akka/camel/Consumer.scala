@@ -12,8 +12,10 @@ import akka.util.{Timeout, Duration}
 import java.util.concurrent.TimeoutException
 import akka.util.duration._
 
+//TODO this trait is not needed anymore
 trait CamelEndpoint{
   /**
+   * TODO can be done in Extension or in DeathWatch (depending if you want to know this per Actor or per ActorSystem)
    * This method is called after successful deactivation of the endpoint in a camel context.
    */
   def postDeactivation() {}
@@ -26,7 +28,8 @@ trait CamelEndpoint{
  */
 trait Consumer extends Actor with CamelEndpoint{
   import RouteDefinitionHandler._
-
+  // TODO rather, CamelExtension.registerConsumer(...) here (in which you add routes etc), so you dont need the stop and start hooks, and no ConsumerPublisher actor needed,
+  // no ask, tell, activationaware..
   protected[this] val camel : ConsumerRegistry = CamelExtension(context.system)
   def endpointUri : String
 
@@ -35,9 +38,11 @@ trait Consumer extends Actor with CamelEndpoint{
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
+  //TODO this is not necessary anymore.
   override def postStop(){ camel.unregisterConsumer(this) }
+  //TODO this is not necessary anymore.
   override def preStart(){ camel.registerConsumer(endpointUri, this) }
-
+  //TODO would be nice to pack these config items and endpointuri together in a CamelConfig case class
   /**
    * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
    * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.

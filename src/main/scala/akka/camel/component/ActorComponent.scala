@@ -29,6 +29,7 @@ case class Path(value:String)
  */
 class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultComponent {
   printf("Starting component '%s' with camel '%s'\n", this, camel)
+  //TODO the actor component should know about the ActorSystem (or Camel trait delegates)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = parsePath(remaining)
     new ActorEndpoint(uri, this, path, camel)
@@ -49,6 +50,8 @@ class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultCompone
 
 
 /**
+ * TODO this needs to be consistent with Actor Paths instead of the format below.
+ * TODO one Camel/CamelContext for every ActorSystem, which is easy for actorFor.
  * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
  * are referenced using <code>actor</code> endpoint URIs of the following format:
  * <code>actor:<actor-id></code>,
@@ -142,7 +145,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer
   def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel))}
   def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel), callback)
 }
-
+//TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
 class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry with MessageFactory) {
 
   private lazy val path = ep.path
@@ -237,7 +240,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry with M
   }
 
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
-
+//TODO should this not just use actorSystem.actorFor?
   private[this] def actorFor(path:Path) : ActorRef =
     camel.findConsumer(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
 
