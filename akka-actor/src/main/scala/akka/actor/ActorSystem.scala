@@ -234,13 +234,15 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Register a block of code to run after all actors in this actor system have
-   * been stopped.
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
+   * guarantee that they will be executed in a particular order.
    */
   def registerOnTermination[T](code: ⇒ T)
 
   /**
    * Register a block of code to run after all actors in this actor system have
-   * been stopped (Java API).
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
+   * guarantee that they will be executed in a particular order (Java API).
    */
   def registerOnTermination(code: Runnable)
 
