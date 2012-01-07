@@ -1,5 +1,6 @@
 package akka.camel;
 
+import akka.actor.ActorSystem;
 import akka.japi.Function;
 import org.apache.camel.NoTypeConversionAvailableException;
 import org.junit.AfterClass;
@@ -16,15 +17,18 @@ import static org.junit.Assert.assertEquals;
  */
 public class MessageJavaTestBase {
     static Camel camel;
+    private static ActorSystem system;
     private Map<String,Object> empty = new HashMap<String, Object>();
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        camel = new DefaultCamel().start();
+        system = ActorSystem.create("test");
+        camel = new DefaultCamel(system).start();
     }
 
     @AfterClass
     public static void cleanup(){
+        system.shutdown();
         camel.stop();
     }
 

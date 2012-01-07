@@ -27,7 +27,7 @@ trait CamelEndpoint{
 trait Consumer extends Actor with CamelEndpoint{
   import RouteDefinitionHandler._
 
-  protected[this] val camel : ConsumerRegistry = CamelExtensionId(context.system)
+  protected[this] val camel : ConsumerRegistry = CamelExtension(context.system)
   def endpointUri : String
 
   /**

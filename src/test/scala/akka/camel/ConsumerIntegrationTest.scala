@@ -31,7 +31,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   "Consumer" should "register itself with Camel during initialization" in{
     val mockCamel = mock[Camel]
 
-    CamelExtensionId.setCamelFor(system, mockCamel)
+    CamelExtension.setCamelFor(system, mockCamel)
 
     system.actorOf(Props(new TestActor("file://abc")))
     Thread.sleep(300)
@@ -48,7 +48,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   }
 
   def _camel: Camel = {
-    CamelExtensionId(system)
+    CamelExtension(system)
   }
 
   it should  "support in-out messaging" in  {

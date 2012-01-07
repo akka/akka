@@ -12,7 +12,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   implicit var system :ActorSystem = _
   implicit val timeout = Timeout(10 seconds)
   def template : ProducerTemplate = camel.template
-  def camel : Camel = CamelExtensionId(system)
+  def camel : Camel = CamelExtension(system)
 
 
   override protected def beforeEach() {

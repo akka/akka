@@ -20,7 +20,7 @@ trait Camel extends ConsumerRegistry with MessageFactory with Extension{
   def stop : Unit
 }
 
-class DefaultCamel extends Camel{
+class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   val context = {
     val ctx = new DefaultCamelContext
     ctx.setStreamCaching(true)
@@ -43,28 +43,27 @@ class DefaultCamel extends Camel{
   }
 
   override def stop {
-    super.stop
     context.stop()
     template.stop()
     Migration.EventHandler.Info("Stoped Camel instance "+this)
   }
 }
 
-object CamelExtensionId extends ExtensionId[Camel] with ExtensionIdProvider{
+object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
   val overrides = new HashMap[ActorSystem, Camel]
-  def setCamelFor(system: ActorSystem, camel: Camel) = overrides(system) = camel
+  def setCamelFor(system: ActorSystem, camel: Camel) { overrides(system) = camel } //TODO: putIfAbsent maybe?
 
   def createExtension(system: ActorSystemImpl) = {
     if(overrides.contains(system)){
       system.registerOnTermination(overrides.remove(system))
       overrides(system)
     }else{
-      val camel = new DefaultCamel().start;
+      val camel = new DefaultCamel(system).start;
       system.registerOnTermination(camel.stop)
       camel
     }
   }
-  def lookup() = CamelExtensionId
+  def lookup() = CamelExtension
 }
 
 /**
@@ -73,14 +72,13 @@ object CamelExtensionId extends ExtensionId[Camel] with ExtensionIdProvider{
  */
 trait ConsumerRegistry{
   self:Camel =>
-  val actorSystem  = ActorSystem("Camel")
+  val actorSystem : ActorSystem
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
   //TODO: save some kittens and use less blocking collection
   val consumers = synchronized(scala.collection.mutable.HashMap[Path, ActorRef]())
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
-
     consumers.put(Path(consumer.self.path.toString), consumer.self)
     consumerPublisher.ask(ConsumerActorRegistered(route, consumer.self, consumer), Timeout(1 minute)).onSuccess{
       case EndpointActivated => consumer.self ! EndpointActivated
@@ -95,10 +93,5 @@ trait ConsumerRegistry{
     }
   }
 
-
   def findConsumer(path: Path) : Option[ActorRef] = consumers.get(path)
-
-  def stop {
-    actorSystem.shutdown()
-  }
 }

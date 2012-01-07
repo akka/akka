@@ -9,15 +9,6 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before}
 
 package object camel{
-  def withCamel(block: Camel => Unit) = {
-    val camel = new DefaultCamel().start
-    try{
-      block(camel)
-    }
-    finally {
-      camel.stop
-    }
-  }
 
   def start(actor: => Actor)(implicit system : ActorSystem) = {
     val actorRef = system.actorOf(Props(actor))
@@ -55,7 +46,7 @@ package object camel{
   trait CamelSupport{ this: JUnitSuite =>
     implicit def context : CamelContext = camel.context
     var camel : Camel = _
-    @Before def before = camel = new DefaultCamel().start
+    @Before def before = camel = new DefaultCamel(ActorSystem("test")).start
     @After def after() = camel.stop
   }
 
