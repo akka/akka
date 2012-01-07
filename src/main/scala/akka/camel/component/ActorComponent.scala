@@ -27,7 +27,7 @@ case class Path(value:String)
  *
  * @author Martin Krasser
  */
-class ActorComponent(camel : DefaultCamel with ConsumerRegistry) extends DefaultComponent {
+class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultComponent {
   printf("Starting component '%s' with camel '%s'\n", this, camel)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = parsePath(remaining)
@@ -70,7 +70,7 @@ class ActorComponent(camel : DefaultCamel with ConsumerRegistry) extends Default
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val path: Path,
-                    camel : DefaultCamel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
+                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
 
 
 

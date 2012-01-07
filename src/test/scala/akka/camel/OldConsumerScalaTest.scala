@@ -15,7 +15,7 @@ import org.mockito.Matchers.{eq => the}
  */
 class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMatchers with MockitoSugar{
 
-  var service: DefaultCamel = _
+  var service: Camel = _
 
   val system = ActorSystem("test")
 //  Camel.start

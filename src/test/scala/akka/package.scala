@@ -9,7 +9,7 @@ import org.junit.{After, Before}
 import org.scalatest.junit.JUnitSuite
 
 package object camel{
-  def withCamel(block: DefaultCamel => Unit) = {
+  def withCamel(block: Camel => Unit) = {
     val camel = new DefaultCamel().start
     try{
       block(camel)
@@ -26,9 +26,9 @@ package object camel{
   }
 
 
-  implicit def camelToTestWrapper(camel:DefaultCamel) = new CamelTestWrapper(camel)
+  implicit def camelToTestWrapper(camel:Camel) = new CamelTestWrapper(camel)
 
-  class CamelTestWrapper(camel:DefaultCamel){
+  class CamelTestWrapper(camel:Camel){
     /**
      * Sends msg to the endpoint and returns response.
      * It only waits for the response until timeout passes.
@@ -46,7 +46,7 @@ package object camel{
   }
 
   trait MessageSugar{
-    def camel : DefaultCamel
+    def camel : Camel
     def Message(body:Any) = akka.camel.Message(body, Map.empty, camel)
     def Message(body:Any, headers:Map[String, Any]) = akka.camel.Message(body, headers, camel)
 
@@ -54,7 +54,7 @@ package object camel{
 
   trait CamelSupport{ this: JUnitSuite =>
     implicit def context : CamelContext = camel.context
-    var camel : DefaultCamel = _
+    var camel : Camel = _
     @Before def before = camel = new DefaultCamel().start
     @After def after() = camel.stop
   }

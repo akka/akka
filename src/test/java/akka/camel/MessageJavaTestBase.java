@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  * @author Martin Krasser
  */
 public class MessageJavaTestBase {
-    static DefaultCamel camel;
+    static Camel camel;
     private Map<String,Object> empty = new HashMap<String, Object>();
 
     @BeforeClass
@@ -30,7 +30,7 @@ public class MessageJavaTestBase {
 
     Message message(Object body){ return camel.message(body); }
     Message message(Object body, Map<String, Object> headers){ return camel.message(body, headers); }
-    Message message(Object body, Map<String, Object> headers, DefaultCamel camel){ return camel.message(body, headers); }
+    Message message(Object body, Map<String, Object> headers, Camel camel){ return camel.message(body, headers); }
 
     @Test public void shouldConvertDoubleBodyToString() {
         assertEquals("1.4", message("1.4", empty, camel).getBodyAs(String.class));
