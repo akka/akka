@@ -5,11 +5,6 @@ package akka.camel;
  */
 public class SampleUntypedConsumer extends UntypedConsumerActor {
 
-    public Camel camel(){
-        return new DefaultCamel().start();
-    }
-
-
     public String getEndpointUri() {
         return "direct:test-untyped-consumer";
     }

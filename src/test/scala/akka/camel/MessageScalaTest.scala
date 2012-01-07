@@ -12,7 +12,6 @@ import org.apache.camel.NoTypeConversionAvailableException
 
 class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
 
-
   @Test def shouldConvertDoubleBodyToString = {
     assertEquals("1.4", Message(1.4).bodyAs[String])
   }

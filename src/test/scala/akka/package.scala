@@ -5,8 +5,8 @@ import util.Duration
 import util.duration._
 import java.util.concurrent.{ExecutionException, TimeUnit}
 import org.apache.camel.CamelContext
-import org.junit.{After, Before}
 import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before}
 
 package object camel{
   def withCamel(block: Camel => Unit) = {

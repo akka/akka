@@ -7,10 +7,6 @@ import akka.util.Duration;
  */
 public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
 
-    public Camel camel(){
-        return new DefaultCamel().start();
-    }
-
     public String getEndpointUri() {
         return "direct:test-untyped-consumer-blocking";
     }

@@ -8,18 +8,10 @@ import java.lang.String
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import akka.util.{Timeout, Duration}
 import akka.util.duration._
-import akka.actor.{Props, ActorSystem, Actor, ActorRef}
+import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
+import collection.mutable.HashMap
 
-//trait Camel{
-//  def context : CamelContext
-//  def template : ProducerTemplate
-//  def addRoutes(routeBuilder: RouteBuilder)
-//  def stopRoute(routeId: String)
-//  def start : Camel
-//  def stop : Unit
-//}
-
-trait Camel extends ConsumerRegistry with MessageFactory{
+trait Camel extends ConsumerRegistry with MessageFactory with Extension{
   def context : CamelContext
   def template : ProducerTemplate
   def addRoutes(routeBuilder: RouteBuilder) :Unit
@@ -58,27 +50,22 @@ class DefaultCamel extends Camel{
   }
 }
 
-////TODO: Get rid of the singleton!
-//class Camel{
-//
-//  private[this] var _instance : Option[CamelInstance] = None
-//  def instance = _instance.getOrElse(throw new IllegalStateException("Camel not started"))
-//
-//  def start = _instance match{
-//    case None => {_instance = Some(new CamelInstance().start); instance}
-//    case _ => throw new IllegalStateException("Camel alerady started!")
-//  }
-//  def stop {instance.stop; _instance = None}
-//
-//  def context = instance.context
-//  def template = instance.template
-//  def addRoutes(routeBuilder: RouteBuilder) = instance.addRoutes(routeBuilder)
-//  def stopRoute(routeId: String) = instance.stopRoute(routeId)
-//  def registerConsumer(route: String, consumer: Consumer with Actor) = instance.registerConsumer(route, consumer)
-//  def unregisterConsumer(consumer: Consumer with Actor) = instance.unregisterConsumer(consumer)
-//  def findConsumer(path: Path) : Option[ActorRef] = instance.findConsumer(path)
-//
-//}
+object CamelExtensionId extends ExtensionId[Camel] with ExtensionIdProvider{
+  val overrides = new HashMap[ActorSystem, Camel]
+  def setCamelFor(system: ActorSystem, camel: Camel) = overrides(system) = camel
+
+  def createExtension(system: ActorSystemImpl) = {
+    if(overrides.contains(system)){
+      system.registerOnTermination(overrides.remove(system))
+      overrides(system)
+    }else{
+      val camel = new DefaultCamel().start;
+      system.registerOnTermination(camel.stop)
+      camel
+    }
+  }
+  def lookup() = CamelExtensionId
+}
 
 /**
  * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.

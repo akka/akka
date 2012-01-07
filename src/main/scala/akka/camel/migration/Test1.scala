@@ -3,7 +3,6 @@ package akka.camel.migration
 import akka.actor.{Props, ActorSystem}
 
 import RichString._
-import akka.camel.DefaultCamel
 
 object Test1 extends App{
   import akka.actor.Actor
@@ -21,8 +20,7 @@ object Test1 extends App{
   }))
 
   class CamelConsumer extends Actor with akka.camel.Consumer{
-    override lazy val camel = new DefaultCamel().start
-    
+
     def endpointUri = "file://data/input/CamelConsumer"
 
     protected def receive = {
