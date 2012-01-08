@@ -27,7 +27,7 @@ trait Camel extends ConsumerRegistry with MessageFactory with Extension{
  *
  * @param actorSystem is used to create internal actors needed by camel instance.
  * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
- * In typical scenario, when camel is used as akka extension it is natural that camel reuses the system it extends.
+ * In typical scenario, when camel is used as akka extension it is natural that camel reuses the  actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources. //TODO: (maybe it's premature optimisation?)
  */
 class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
