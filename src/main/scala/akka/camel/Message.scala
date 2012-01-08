@@ -10,21 +10,17 @@ import scala.collection.JavaConversions._
 import org.apache.camel.util.ExchangeHelper
 
 import akka.japi.{Function => JFunction}
-import org.apache.camel.{Exchange, Message => CamelMessage}
+import org.apache.camel.{CamelContext, Exchange, Message => CamelMessage}
 
-trait MessageFactory{this : Camel =>
-  def message(body: Any, headers: Map[String, Any]) = Message(body, headers, this)
-  def message(body: Any, headers: JMap[String, Any]) = Message(body, headers.toMap, this)
-  def message(body: Any) = Message(body, Map.empty[String, Any], this)
-}
 
 /**
  * An immutable representation of a Camel message.
  *
  * @author Martin Krasser
  */
-case class Message(body: Any, headers: Map[String, Any], camel :Camel) {
-  def context = camel.context
+case class Message(body: Any, headers: Map[String, Any], context :CamelContext){
+
+  def this(body: Any, headers: JMap[String, Any], context :CamelContext) = this(body, headers.toMap, context) //for Java
 
   override def toString = "Message(%s, %s)" format (body, headers)
   
@@ -132,7 +128,7 @@ case class Message(body: Any, headers: Map[String, Any], camel :Camel) {
   /**
    * Creates a Message with a given <code>body</code>.
    */
-  def setBody(body: Any) = camel.message(body, this.headers)
+  def setBody(body: Any) = Message(body, this.headers, context)
 
   /**
    * Creates a new Message with given <code>headers</code>.
@@ -199,9 +195,9 @@ object Message {
    * Message then <code>msg</code> is returned, otherwise <code>msg</code> is set as body of a
    * newly created Message object.
    */
-  def canonicalize(msg: Any , camel : MessageFactory) = msg match {
+  def canonicalize(msg: Any , camel : Camel) = msg match {
     case mobj: Message => mobj
-    case body          => camel.message(body)
+    case body          => Message(body, Map.empty, camel.context)
   }
 }
 
@@ -258,7 +254,7 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
  *
  * @author Martin Krasser
  */
-class CamelExchangeAdapter(exchange: Exchange, camel : Camel) {
+class CamelExchangeAdapter(exchange: Exchange) {
   def getExchangeId = exchange.getExchangeId
 
   def isOutCapable = exchange.getPattern.isOutCapable
@@ -307,7 +303,7 @@ class CamelExchangeAdapter(exchange: Exchange, camel : Camel) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toRequestMessage(headers: Map[String, Any]): Message = requestMessage.toMessage(headers, camel)
+  def toRequestMessage(headers: Map[String, Any]): Message = requestMessage.toMessage(headers)
 
   /**
    * Depending on the exchange pattern, creates a Message object from Exchange.getIn or Exchange.getOut.
@@ -316,7 +312,7 @@ class CamelExchangeAdapter(exchange: Exchange, camel : Camel) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toResponseMessage(headers: Map[String, Any]): Message = responseMessage.toMessage(headers, camel)
+  def toResponseMessage(headers: Map[String, Any]): Message = responseMessage.toMessage(headers)
 
   /**
    * Creates a Failure object from the adapted Exchange.
@@ -327,7 +323,7 @@ class CamelExchangeAdapter(exchange: Exchange, camel : Camel) {
    * @see Failure
    */
   def toFailureMessage(headers: Map[String, Any]): Failure =
-    Failure(exchange.getException, headers ++ responseMessage.toMessage(camel).headers)
+    Failure(exchange.getException, headers ++ responseMessage.toMessage.headers)
 
   private def requestMessage = exchange.getIn
 
@@ -353,7 +349,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
   /**
    * Creates a new Message object from the adapted Camel message.
    */
-  def toMessage(camel:Camel): Message = toMessage(Map.empty, camel)
+  def toMessage : Message = toMessage(Map.empty)
 
   /**
    * Creates a new Message object from the adapted Camel message.
@@ -361,7 +357,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toMessage(headers: Map[String, Any], camel :Camel): Message = Message(cm.getBody, cmHeaders(headers, cm), camel)
+  def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm), cm.getExchange.getContext)
 
   private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) = headers ++ cm.getHeaders
 }

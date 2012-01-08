@@ -14,8 +14,6 @@ import akka.util.Duration
 import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
 import java.lang.String
-import org.mockito.stubbing.Answer
-import org.mockito.invocation.InvocationOnMock
 
 //TODO: this whole test doesn't seem right with FlatSpec, investigate other options, maybe given-when-then style
 class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach{
@@ -55,7 +53,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     }
   }
 
-  def newMessage(s: String) = Message(s, Map.empty, camel)
+  def newMessage(s: String) = Message(s, Map.empty, camel.context)
 
   it should "get a response, when exchange is synchronous and out capable" in {
     prepareMocks(echoActor, message, outCapable = true)
@@ -161,6 +159,9 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     asyncCallback.valueWithin(1 second) should be (true)
     verify(exchange, never()).fromResponseMessage(any[Message])
   }
+  
+  //TODO: write this test
+  it should "fail if expecting Ack or Failure message and some other message is sent as a response, when in-only, manualAck" in  pending
 
   it should "disallow blocking, when in only and autoAck" in {
     prepareMocks(doNothingActor, message, outCapable = false)
@@ -205,9 +206,10 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   def prepareMocks(actor: ActorRef, message: Message, outCapable: Boolean) {
-    when(camel.message(any[Any])).thenAnswer(new Answer[Message]{
-      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
-    })
+//    when(camel.message(any[Any])).thenAnswer(new Answer[Message]{
+//      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
+//    })
+//
     when(camel.findConsumer(any[Path])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable

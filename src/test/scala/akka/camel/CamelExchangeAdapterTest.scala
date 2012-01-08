@@ -1,6 +1,6 @@
 package akka.camel
 
-import org.apache.camel.impl.{DefaultCamelContext, DefaultExchange}
+import org.apache.camel.impl.DefaultExchange
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
@@ -10,7 +10,7 @@ class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with Ca
 
   //TODO: Get rid of implicit.
   // It is here, as was easier to add this implicit than to rewrite the whole test...
-  implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e, camel)
+  implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e)
 
   @Test def shouldSetInMessageFromRequestMessage = {
     val e1 = sampleInOnly.fromRequestMessage(Message("x"))
@@ -102,7 +102,7 @@ class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with Ca
   private def sampleInOut = sampleExchange(ExchangePattern.InOut)
 
   private def sampleExchange(pattern: ExchangePattern) = {
-    val exchange = new DefaultExchange(new DefaultCamelContext)
+    val exchange = new DefaultExchange(camel.context)
     exchange.getIn.setBody("test-in")
     exchange.getOut.setBody("test-out")
     exchange.getIn.setHeader("key-in", "val-in")

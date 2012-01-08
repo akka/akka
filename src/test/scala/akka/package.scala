@@ -38,8 +38,8 @@ package object camel{
 
   trait MessageSugar{
     def camel : Camel
-    def Message(body:Any) = akka.camel.Message(body, Map.empty, camel)
-    def Message(body:Any, headers:Map[String, Any]) = akka.camel.Message(body, headers, camel)
+    def Message(body:Any) = akka.camel.Message(body, Map.empty, camel.context)
+    def Message(body:Any, headers:Map[String, Any]) = akka.camel.Message(body, headers, camel.context)
 
   }
 

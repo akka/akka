@@ -32,9 +32,9 @@ public class MessageJavaTestBase {
         camel.stop();
     }
 
-    Message message(Object body){ return camel.message(body); }
-    Message message(Object body, Map<String, Object> headers){ return camel.message(body, headers); }
-    Message message(Object body, Map<String, Object> headers, Camel camel){ return camel.message(body, headers); }
+    Message message(Object body){ return new Message(body, new HashMap(), camel.context()); }
+    Message message(Object body, Map<String, Object> headers){ return new Message(body, headers, camel.context()); }
+    Message message(Object body, Map<String, Object> headers, Camel camel){ return new Message(body, headers, camel.context()); }
 
     @Test public void shouldConvertDoubleBodyToString() {
         assertEquals("1.4", message("1.4", empty, camel).getBodyAs(String.class));

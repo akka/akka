@@ -11,7 +11,7 @@ import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension,
 import collection.mutable.HashMap
 import akka.event.Logging.Info
 
-trait Camel extends ConsumerRegistry with MessageFactory with Extension{
+trait Camel extends ConsumerRegistry with Extension{
   def context : CamelContext
   def template : ProducerTemplate
   def addRoutes(routeBuilder: RouteBuilder) :Unit

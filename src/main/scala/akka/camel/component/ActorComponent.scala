@@ -15,7 +15,7 @@ import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{Camel, MessageFactory, CamelExchangeAdapter, DefaultCamel, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import akka.camel.{Camel, MessageFactory, CamelExchangeAdapter, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
 case class Path(value:String)
 
@@ -142,11 +142,11 @@ trait ActorEndpointConfig{
  * @author Martin Krasser
  */
 class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer(ep) with AsyncProcessor {
-  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel))}
-  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange, camel), callback)
+  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange))}
+  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange), callback)
 }
 //TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
-class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry with MessageFactory) {
+class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
 
   private lazy val path = ep.path
 
@@ -167,6 +167,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : ConsumerRegistry with M
       case Right(Ack) => { /* no response message to set */}
       case Right(failure : Failure) => exchange.fromFailureMessage(failure)
       case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+      case Right(msg) => exchange.fromFailureMessage(Failure(new RuntimeException("Expected Ack or Failure message, but got: "+msg)))
     }
 
     def outCapable: Boolean = {
