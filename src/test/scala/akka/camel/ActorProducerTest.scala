@@ -8,12 +8,12 @@ import org.mockito.Mockito._
 import org.apache.camel.AsyncCallback
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.actor.{ActorRef, Props, ActorSystem, Actor}
 import akka.util.duration._
 import akka.util.Duration
 import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
 import java.lang.String
+import akka.actor.{ActorRef, Props, ActorSystem, Actor}
 
 //TODO: this whole test doesn't seem right with FlatSpec, investigate other options, maybe given-when-then style
 class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach{

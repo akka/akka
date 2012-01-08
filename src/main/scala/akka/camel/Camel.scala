@@ -6,11 +6,11 @@ import org.apache.camel.impl.DefaultCamelContext
 import java.lang.String
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import akka.util.duration._
-import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 import collection.mutable.HashMap
 import akka.event.Logging.Info
 import akka.util.{Timeout, Duration}
 import akka.util.ErrorUtils._
+import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 
 trait Camel extends ConsumerRegistry with Extension{
   def context : CamelContext
@@ -95,13 +95,12 @@ trait ConsumerRegistry{
 
 
   def registerConsumer(route: String, consumer: Consumer with Actor) = {
-    consumerPublisher.tell(ConsumerActorRegistered(route, consumer.self, consumer), consumer.self)
+    consumerPublisher.tell(ConsumerActorRegistered(route, consumer), consumer.self)
   }
 
   def unregisterConsumer(consumer: Consumer with Actor) = {
-    val path = Path(consumer.self.path.toString)
-    consumerPublisher.ask(ConsumerActorUnregistered(path, consumer.self), Timeout(1 minute)).onSuccess{
-      case EndpointDeActivated => consumer.postDeactivation //has to be synchronous as the actor is already dead
+    consumerPublisher.ask(ConsumerActorUnregistered(consumer.self), Timeout(1 minute)).onSuccess{
+      case EndpointDeActivated => consumer.postDeactivation() //has to be synchronous as the actor is already dead
     }
   }
 

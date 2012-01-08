@@ -1,13 +1,10 @@
 package akka.camel
 
 
-import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
-
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.{Timeout, Duration}
 import java.util.concurrent.TimeoutException
-import akka.util.duration._
 
 object ActivationAware{
 
@@ -75,3 +72,10 @@ trait ActivationAware extends Actor with CamelEndpoint {
     }
   }
 }
+
+/**
+ * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
+ */
+object AwaitActivation
+object AwaitDeActivation
+

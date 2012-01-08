@@ -3,7 +3,6 @@
  */
 package akka.camel
 
-import component.Path
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
@@ -31,9 +30,9 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
 
     }
     case u: ConsumerActorUnregistered => {
-      camel.stopRoute(u.path.value)
+      camel.stopRoute(u.actorRef.path.toString)
       sender ! EndpointDeActivated
-      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.path.value))
+      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.actorRef.path))
     }
   }
 
@@ -75,7 +74,7 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path) {
+private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path.toString) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
   //TODO this should use Actor Path. blocking, autoack etc is configured in the actor. (I think you've done that already, and this might be dead code :)
   //(PG) not sure what you mean. This is an actor endpoint uri, so if camel wants to create it needs the config.
@@ -87,45 +86,25 @@ private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) e
 
 //TODO I don't think any of these events are necessary anymore.
 /**
- * A consumer (un)registration event.
- */
-private[camel] trait ConsumerEvent {
-  val path: String
-}
-
-/**
- * A consumer actor (un)registration event.
- */
-private[camel] trait ConsumerActorEvent extends ConsumerEvent {
-  val actorRef: ActorRef
-  val actor: Consumer
-  val endpointUri : String
-
-  val path                   = actorRef.path.toString
-  val outTimeout             = actor.outTimeout
-  val blocking               = actor.blocking
-  val autoack                = actor.autoack
-  val routeDefinitionHandler = actor.routeDefinitionHandler
-}
-/**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */
-private[camel] case class ConsumerActorRegistered(endpointUri:String, actorRef: ActorRef, actor: Consumer) extends ConsumerActorEvent
+private[camel] case class ConsumerActorRegistered(endpointUri:String, actor: Consumer){
+  def actorRef               = actor.self
+  def path                   = actorRef.path
+  def outTimeout             = actor.outTimeout
+  def blocking               = actor.blocking
+  def autoack                = actor.autoack
+  def routeDefinitionHandler = actor.routeDefinitionHandler
+}
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
-private[camel] case class ConsumerActorUnregistered(path: Path, actorRef: ActorRef)
+private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef)
 
 /**
  * Event message indicating that a single endpoint has been activated.
  */
 private[camel] case class EndpointActivated(actorRef : ActorRef)
 private[camel] case class EndpointDeActivated(actorRef : ActorRef)
-
-/**
- * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
- */
-object AwaitActivation
-object AwaitDeActivation
 

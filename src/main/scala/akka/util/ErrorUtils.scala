@@ -23,7 +23,7 @@ object ErrorUtils{
    * @throws BlockException if any number of blocks fail. BlockException contains a list of thrown exceptions.
    *
    */
-  def tryAll(block1 : => Unit, block2 : => Unit = {}, block3 : => Unit= {}, block4 : => Unit = {}, block5 : => Unit = {}, block6 : => Unit = {}) = {
+  def tryAll[A1,A2,A3,A4,A5, A6](block1 : => A1, block2 : => A2 = {}, block3 : => A3= {}, block4 : => A4 = {}, block5 : => A5 = {}, block6 : => A6 = {}) = {
     val blocks = List(()=>block1, ()=>block2, ()=>block3, ()=>block4, ()=>block5, ()=>block6)
     val errors = blocks.toList.map(either(_)).filter(_.isLeft).map{case Left(e) => e}
     if (!errors.isEmpty) throw new BlockException(errors)
