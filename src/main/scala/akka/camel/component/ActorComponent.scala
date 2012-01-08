@@ -15,7 +15,7 @@ import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{Camel, MessageFactory, CamelExchangeAdapter, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import akka.camel.{Camel, CamelExchangeAdapter, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
 case class Path(value:String)
 
