@@ -1,7 +1,6 @@
 package akka.camel
 
 import component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
-import migration.Migration
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import java.lang.String
@@ -10,7 +9,6 @@ import akka.util.{Timeout, Duration}
 import akka.util.duration._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 import collection.mutable.HashMap
-import akka.event.EventStream
 import akka.event.Logging.Info
 
 trait Camel extends ConsumerRegistry with MessageFactory with Extension{
@@ -49,7 +47,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   def start = {
     try {
       context.start
-    } finally {
+    } finally { //TODO: Why would we want to start template if context failed to start?
       template.start
     }
     actorSystem.eventStream.publish(Info("Camel",String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
@@ -59,7 +57,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   override def stop {
     try {
       context.stop()
-    } finally {
+    } finally {   //TODO: Do we need try-finally? If the first fails the second probably doesn't make sanse anyway?
       template.stop()
     }
     actorSystem.eventStream.publish(Info("Camel",String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
