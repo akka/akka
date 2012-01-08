@@ -62,8 +62,11 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
-  //TODO not threadsafe
-  val overrides = new HashMap[ActorSystem, Camel]
+  val overrides = synchronized(new HashMap[ActorSystem, Camel])
+  /**
+   * If you need to start Camel context outside of extension you can use this method
+   * to tell the actor system which camel instance it should use.
+   */
   def setCamelFor(system: ActorSystem, camel: Camel) { overrides(system) = camel } //TODO: putIfAbsent maybe?
 
   def createExtension(system: ActorSystemImpl) = {
