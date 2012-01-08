@@ -15,8 +15,9 @@ import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{Camel, CamelExchangeAdapter, ConsumerRegistry, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
+//TODO: replace with ActorPath class
 case class Path(value:String)
 
 /**
@@ -27,7 +28,7 @@ case class Path(value:String)
  *
  * @author Martin Krasser
  */
-class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultComponent {
+class ActorComponent(camel : Camel) extends DefaultComponent {
   printf("Starting component '%s' with camel '%s'\n", this, camel)
   //TODO the actor component should know about the ActorSystem (or Camel trait delegates)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
@@ -73,7 +74,7 @@ class ActorComponent(camel : Camel with ConsumerRegistry) extends DefaultCompone
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
                     val path: Path,
-                    camel : Camel with ConsumerRegistry) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
+                    camel : Camel) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
 
 
 

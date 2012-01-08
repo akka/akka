@@ -78,6 +78,10 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
 private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
   //TODO this should use Actor Path. blocking, autoack etc is configured in the actor. (I think you've done that already, and this might be dead code :)
+  //(PG) not sure what you mean. This is an actor endpoint uri, so if camel wants to create it needs the config.
+  // We could fetch the config from an actor but this would require a message exchange.
+  // Alternatively we could scrap the idea of actor component and just register a processor. That's 30 lines of code but it has its limitations.
+
   protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (event.path, event.blocking, event.autoack, event.outTimeout.toNanos)
 }
 

@@ -5,11 +5,12 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import java.lang.String
 import org.apache.camel.{ProducerTemplate, CamelContext}
-import akka.util.{Timeout, Duration}
 import akka.util.duration._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 import collection.mutable.HashMap
 import akka.event.Logging.Info
+import akka.util.{Timeout, Duration}
+import akka.util.ErrorUtils._
 
 trait Camel extends ConsumerRegistry with Extension{
   def context : CamelContext
@@ -45,21 +46,17 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   def stopRoute(routeId: String) = context.stopRoute(routeId)
 
   def start = {
-    try {
-      context.start
-    } finally { //TODO: Why would we want to start template if context failed to start?
-      template.start
-    }
+    context.start
+    template.start
     actorSystem.eventStream.publish(Info("Camel",String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
     this
   }
 
   override def stop {
-    try {
-      context.stop()
-    } finally {   //TODO: Do we need try-finally? If the first fails the second probably doesn't make sanse anyway?
+    tryAll(
+      context.stop(),
       template.stop()
-    }
+    )
     actorSystem.eventStream.publish(Info("Camel",String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
   }
 }
