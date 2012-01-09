@@ -127,9 +127,9 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
    * there is not yet a way to detect these illegal accesses at compile time.
    */
-  def ask(message: AnyRef, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
+  def ask(message: Any, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
 
-  def ask(message: AnyRef, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
+  def ask(message: Any, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.

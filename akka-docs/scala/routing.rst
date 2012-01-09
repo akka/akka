@@ -19,13 +19,41 @@ The router routes the messages sent to it to its underlying actors called 'route
 Akka comes with four defined routers out of the box, but as you will see in this chapter it
 is really easy to create your own. The four routers shipped with Akka are:
 
-* `RoundRobinRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L173>`_
-* `RandomRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L226>`_
-* `BroadcastRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L284>`_
-* `ScatterGatherFirstCompletedRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L330>`_
+* ``akka.routing.RoundRobinRouter``
+* ``akka.routing.RandomRouter``
+* ``akka.routing.BroadcastRouter``
+* ``akka.routing.ScatterGatherFirstCompletedRouter``
 
-To illustrate how to use the routers we will create a couple of simple actors and then use them in the
-different router types.
+Routers Explained
+^^^^^^^^^^^^^^^^^
+
+This is an example of how to create a router that is defined in configuration:
+
+.. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#config
+
+.. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRouting
+
+This is an example of how to programatically create a router and set the number of routees it should create:
+
+.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
+
+You can also give the router already created routees as in:
+
+.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
+
+When you create a router programatically you define the number of routees *or* you pass already created routees to it.
+If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
+
+*It is also worth pointing out that if you define the number of routees in the configuration file then this
+value will be used instead of any programmatically sent parameters.*
+
+Once you have the router actor it is just to send messages to it as you would to any actor:
+
+.. code-block:: scala
+
+  router ! MyMsg
+
+The router will apply its behavior to the message it receives and forward it to the routees.
 
 Router usage
 ^^^^^^^^^^^^
@@ -39,13 +67,6 @@ and
 
 .. includecode:: code/akka/docs/routing/RouterTypeExample.scala#fibonacciActor
 
-Here is the configuration file to instruct the routers how many instances of routees to create::
-
-  akka.actor.deployment {
-    /router {
-      nr-of-instances = 5
-    }
-  }
 
 RoundRobinRouter
 ****************
@@ -137,34 +158,6 @@ When run you should see this:
 From the output above you can't really see that all the routees performed the calculation, but they did!
 The result you see is from the first routee that returned its calculation to the router.
 
-Routers Explained
-^^^^^^^^^^^^^^^^^
-
-In the example usage above we showed you how to use routers configured with a configuration file but routers
-can also be configured programatically.
-
-This is an example of how to create a router and set the number of routees it should create:
-
-.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
-
-You can also give the router already created routees as in:
-
-.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
-
-When you create a router programatically you define the number of routees *or* you pass already created routees to it.
-If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
-
-*It is also worth pointing out that if you define the number of routees in the configuration file then this
-value will be used instead of any programmatically sent parameters.*
-
-Once you have the router actor it is just to send messages to it as you would to any actor:
-
-.. code-block:: scala
-
-  router ! MyMsg
-
-The router will apply its behavior to the message it receives and forward it to the routees.
-
 Broadcast Messages
 ^^^^^^^^^^^^^^^^^^
 
@@ -193,7 +186,7 @@ We begin with defining the class:
 .. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRouter
    :exclude: crRoute
 
-The next step is to implement the 'createRoute' method in the class just defined:
+The next step is to implement the ``createRoute`` method in the class just defined:
 
 .. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRoute
 
@@ -215,7 +208,7 @@ As you can see above what's returned in the partial function is a ``List`` of ``
 The sender is what "parent" the routee should see - changing this could be useful if you for example want
 another actor than the original sender to intermediate the result of the routee (if there is a result).
 For more information about how to alter the original sender we refer to the source code of
-`ScatterGatherFirstCompletedRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L330>`_
+`ScatterGatherFirstCompletedRouter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
 
 All in all the custom router looks like this:
 

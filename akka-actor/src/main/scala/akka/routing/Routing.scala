@@ -5,9 +5,9 @@ package akka.routing
 
 import akka.actor._
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.JavaConversions._
 import akka.util.{ Duration, Timeout }
 import akka.config.ConfigurationException
+import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -21,7 +21,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _path) {
 
   @volatile
-  private[akka] var _routees: Vector[ActorRef] = _ // this MUST be initialized during createRoute
+  private[akka] var _routees: IndexedSeq[ActorRef] = _ // this MUST be initialized during createRoute
   def routees = _routees
 
   val route = _props.routerConfig.createRoute(_props.copy(routerConfig = NoRouter), actorContext, this)
@@ -94,7 +94,7 @@ trait RouterConfig {
 
   protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
 
-  protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): Vector[ActorRef] = (nrOfInstances, routees) match {
+  protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
     case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
     case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
     case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
@@ -104,9 +104,36 @@ trait RouterConfig {
     registerRoutees(context, createRoutees(props, context, nrOfInstances, routees))
   }
 
-  protected def registerRoutees(context: ActorContext, routees: Vector[ActorRef]): Unit = {
+  protected def registerRoutees(context: ActorContext, routees: IndexedSeq[ActorRef]): Unit = {
     context.self.asInstanceOf[RoutedActorRef]._routees = routees
   }
+
+}
+
+/**
+ * Java API for a custom router factory.
+ * @see akka.routing.RouterConfig
+ */
+abstract class CustomRouterConfig extends RouterConfig {
+  override def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+    val customRoute = createCustomRoute(props, context, ref)
+
+    {
+      case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
+    }
+  }
+
+  def createCustomRoute(props: Props, context: ActorContext, ref: RoutedActorRef): CustomRoute
+
+  protected def registerRoutees(context: ActorContext, routees: java.util.List[ActorRef]): Unit = {
+    import scala.collection.JavaConverters._
+    registerRoutees(context, routees.asScala.toIndexedSeq)
+  }
+
+}
+
+trait CustomRoute {
+  def destinationsFor(sender: ActorRef, message: Any): java.lang.Iterable[Destination]
 }
 
 /**
@@ -189,6 +216,14 @@ case class FromConfig() extends RouterConfig {
 
 object RoundRobinRouter {
   def apply(routees: Iterable[ActorRef]) = new RoundRobinRouter(routees = routees map (_.path.toString))
+
+  /**
+   * Java API to create router with the supplied 'routees' actors.
+   */
+  def create(routees: java.lang.Iterable[ActorRef]): RoundRobinRouter = {
+    import scala.collection.JavaConverters._
+    apply(routees.asScala)
+  }
 }
 /**
  * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
@@ -215,8 +250,8 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(t: java.util.Collection[String]) = {
-    this(routees = collectionAsScalaIterable(t))
+  def this(t: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(t))
   }
 }
 
@@ -247,6 +282,14 @@ trait RoundRobinLike { this: RouterConfig ⇒
 
 object RandomRouter {
   def apply(routees: Iterable[ActorRef]) = new RandomRouter(routees = routees map (_.path.toString))
+
+  /**
+   * Java API to create router with the supplied 'routees' actors.
+   */
+  def create(routees: java.lang.Iterable[ActorRef]): RandomRouter = {
+    import scala.collection.JavaConverters._
+    apply(routees.asScala)
+  }
 }
 /**
  * A Router that randomly selects one of the target connections to send a message to.
@@ -273,8 +316,8 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil)
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(t: java.util.Collection[String]) = {
-    this(routees = collectionAsScalaIterable(t))
+  def this(t: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(t))
   }
 }
 
@@ -309,6 +352,14 @@ trait RandomLike { this: RouterConfig ⇒
 
 object BroadcastRouter {
   def apply(routees: Iterable[ActorRef]) = new BroadcastRouter(routees = routees map (_.path.toString))
+
+  /**
+   * Java API to create router with the supplied 'routees' actors.
+   */
+  def create(routees: java.lang.Iterable[ActorRef]): BroadcastRouter = {
+    import scala.collection.JavaConverters._
+    apply(routees.asScala)
+  }
 }
 /**
  * A Router that uses broadcasts a message to all its connections.
@@ -335,8 +386,8 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(t: java.util.Collection[String]) = {
-    this(routees = collectionAsScalaIterable(t))
+  def this(t: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(t))
   }
 }
 
@@ -360,6 +411,14 @@ trait BroadcastLike { this: RouterConfig ⇒
 
 object ScatterGatherFirstCompletedRouter {
   def apply(routees: Iterable[ActorRef], within: Duration) = new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
+
+  /**
+   * Java API to create router with the supplied 'routees' actors.
+   */
+  def create(routees: java.lang.Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter = {
+    import scala.collection.JavaConverters._
+    apply(routees.asScala, within)
+  }
 }
 /**
  * Simple router that broadcasts the message to all routees, and replies with the first response.
@@ -387,8 +446,8 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(t: java.util.Collection[String], w: Duration) = {
-    this(routees = collectionAsScalaIterable(t), within = w)
+  def this(t: java.lang.Iterable[String], w: Duration) = {
+    this(routees = iterableAsScalaIterable(t), within = w)
   }
 }
 
