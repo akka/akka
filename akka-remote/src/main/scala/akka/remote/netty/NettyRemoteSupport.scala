@@ -565,7 +565,6 @@ class NettyRemoteServer(
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()
-      executionHandler.releaseExternalResources()
       remoteSupport.notifyListeners(RemoteServerShutdown(remoteSupport))
     } catch {
       case e: Exception ⇒ remoteSupport.notifyListeners(RemoteServerError(e, remoteSupport))
