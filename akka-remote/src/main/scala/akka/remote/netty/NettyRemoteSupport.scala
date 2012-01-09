@@ -213,7 +213,7 @@ class ActiveRemoteClient private[akka] (
 
     notifyListeners(RemoteClientShutdown(remoteSupport, remoteAddress))
     try {
-      if (connection.getChannel ne null)
+      if ((connection ne null) && (connection.getChannel ne null))
         connection.getChannel.close()
     } finally {
       connection = null
