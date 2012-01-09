@@ -11,9 +11,8 @@ import akka.camel.migration.Migration._
 
 import akka.actor._
 
-
 /**
- * TODO I would remove this code alltogether. You can addRoutes and stopRoutes through the extension in the Consumer trait.
+ *
  * Publishes consumer actors on <code>ConsumerActorRegistered</code> events and unpublishes
  * consumer actors on <code>ConsumerActorUnregistered</code> events. Publications are tracked
  * by sending an <code>activationTracker</code> an <code>EndpointActivated</code> event,
@@ -24,13 +23,13 @@ import akka.actor._
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   def receive = {
     case r: ConsumerActorRegistered => {
-      camel.addRoutes(new ConsumerActorRouteBuilder(r))
+      camel.addRoutes(new ConsumerActorRouteBuilder(r)) //TODO: we need to handle exceptions here and send EndpointFailedToActivate
       sender ! EndpointActivated
       EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (r.actorRef, r.endpointUri))
 
     }
     case u: ConsumerActorUnregistered => {
-      camel.stopRoute(u.actorRef.path.toString)
+      camel.stopRoute(u.actorRef.path.toString) //TODO: we need to handle exceptions here and send EndpointFailedToDeActivate
       sender ! EndpointDeActivated
       EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.actorRef.path))
     }
@@ -76,15 +75,10 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  */
 private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path.toString) {
   protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
-  //TODO this should use Actor Path. blocking, autoack etc is configured in the actor. (I think you've done that already, and this might be dead code :)
-  //(PG) not sure what you mean. This is an actor endpoint uri, so if camel wants to create it needs the config.
-  // We could fetch the config from an actor but this would require a message exchange.
-  // Alternatively we could scrap the idea of actor component and just register a processor. That's 30 lines of code but it has its limitations.
-
+  //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
   protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (event.path, event.blocking, event.autoack, event.outTimeout.toNanos)
 }
 
-//TODO I don't think any of these events are necessary anymore.
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */

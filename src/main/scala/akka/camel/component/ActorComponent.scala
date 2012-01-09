@@ -17,7 +17,7 @@ import akka.util.{Duration, Timeout}
 import akka.util.duration._
 import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 
-//TODO: replace with ActorPath class
+//TODO: replace with ActorPath class. When I tried I could not find a way of constructing ActorPath from a string. Any ideas?
 case class Path(value:String)
 
 /**
@@ -51,8 +51,7 @@ class ActorComponent(camel : Camel) extends DefaultComponent {
 
 
 /**
- * TODO this needs to be consistent with Actor Paths instead of the format below.
- * TODO one Camel/CamelContext for every ActorSystem, which is easy for actorFor.
+ * TODO fix the doc to be consistent with implementation
  * Camel endpoint for sending messages to and receiving replies from (untyped) actors. Actors
  * are referenced using <code>actor</code> endpoint URIs of the following format:
  * <code>actor:<actor-id></code>,
@@ -113,7 +112,7 @@ trait ActorEndpointConfig{
    */
   @BeanProperty var blocking: BlockingOrNot = NonBlocking
 
-  /**
+  /** TODO fix it
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
    * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
    * <code>true</code>. When set to <code>true</code> consumer actors need to additionally
@@ -147,6 +146,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer
   def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange), callback)
 }
 //TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
+// re: I'd rather keep the abstraction layer for now and let the Camel class delegate
 class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
 
   private lazy val path = ep.path
@@ -167,19 +167,19 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
     def processAck : PartialFunction[Either[Throwable,Any], Unit] = {
       case Right(Ack) => { /* no response message to set */}
       case Right(failure : Failure) => exchange.fromFailureMessage(failure)
+      case Right(msg) => exchange.fromFailureMessage(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: "+msg)))
       case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
-      case Right(msg) => exchange.fromFailureMessage(Failure(new RuntimeException("Expected Ack or Failure message, but got: "+msg)))
     }
 
     def outCapable: Boolean = {
       ep.blocking match {
         case Blocking(timeout) => {
-          sendSync(exchange, timeout, forwardResponseTo(exchange))
+          sendSync(exchange, timeout, onComplete = forwardResponseTo(exchange))
           notifyDoneSynchronously
           DoneSync
         }
         case NonBlocking => {
-          sendAsync(exchange, ep.outTimeout, forwardResponseTo(exchange) andThen { _ => notifyDoneAsynchronously})
+          sendAsync(exchange, ep.outTimeout, onComplete = forwardResponseTo(exchange) andThen { _ => notifyDoneAsynchronously})
           DoneAsync
         }
       }
@@ -203,7 +203,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
           DoneAsync
         }
         case Blocking(timeout) => {
-          sendSync(exchange, timeout, processAck)
+          sendSync(exchange, timeout, onComplete = processAck)
           notifyDoneSynchronously
           DoneSync
         }
@@ -217,10 +217,10 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
     }
   }
 
-  private def sendSync(exchange: CamelExchangeAdapter, timeout : Duration, processResponse: PartialFunction[Either[Throwable, Any], Unit]) {
+  private def sendSync(exchange: CamelExchangeAdapter, timeout : Duration, onComplete: PartialFunction[Either[Throwable, Any], Unit]) {
     val future = send(exchange, timeout)
     val response = either(Await.result(future, timeout))
-    processResponse(response)
+    onComplete(response)
   }
 
   private def sendAsync(exchange: CamelExchangeAdapter, timeout : Duration, onComplete: PartialFunction[Either[Throwable, Any], Unit]) {

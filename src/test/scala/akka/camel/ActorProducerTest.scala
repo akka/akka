@@ -44,7 +44,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   "ActorProducer" should "pass the message to the consumer, when exchange is synchronous and in-only" in {
 
     val actor = TestProbe()
-    prepareMocks(actor.ref, message, outCapable = false)
+    prepareMocks(actor.ref, outCapable = false)
 
     producer.process(exchange)
 
@@ -53,30 +53,30 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     }
   }
 
-  def newMessage(s: String) = Message(s, Map.empty, camel.context)
+  def msg(s: String) = Message(s, Map.empty, camel.context)
 
   it should "get a response, when exchange is synchronous and out capable" in {
-    prepareMocks(echoActor, message, outCapable = true)
+    prepareMocks(echoActor, outCapable = true)
 
     producer.process(exchange)
 
-    verify(exchange).fromResponseMessage(newMessage("received "+message))
+    verify(exchange).fromResponseMessage(msg("received "+message))
   }
 
   it should "get a response and async callback as soon as it gets response, when exchange is non blocking, out capable" in {
-    prepareMocks(echoActor, message, outCapable = true)
+    prepareMocks(echoActor, outCapable = true)
     val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
     //TODO: we should test it doesn't act before it gets response
     doneSync should be (false)
     asyncCallback.valueWithin(1 second) should be (false)
-    verify(exchange).fromResponseMessage(newMessage("received "+message))
+    verify(exchange).fromResponseMessage(msg("received "+message))
   }
 
 
   it should "get a response and sync callback, when exchange is blocking, out capable" in {
-    prepareMocks(echoActor, message, outCapable = true)
+    prepareMocks(echoActor, outCapable = true)
 
     val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), camel)
 
@@ -87,11 +87,11 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     doneSync should be (true)
     //TODO: This is a bit lame test. Happy for any suggestions.
     asyncCallback.valueWithin(0 second) should be (true)
-    verify(exchange).fromResponseMessage(newMessage("received "+message))
+    verify(exchange).fromResponseMessage(msg("received "+message))
   }
 
   it should "get async callback as soon as it sends a message, when exchange is non blocking, in only and autoAck" in {
-    prepareMocks(doNothingActor, message, outCapable = false)
+    prepareMocks(doNothingActor, outCapable = false)
     val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
@@ -102,7 +102,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   it should  "timeout when it doesnt get Ack" in {
-    prepareMocks(doNothingActor, message, outCapable = false)
+    prepareMocks(doNothingActor, outCapable = false)
     val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
@@ -113,7 +113,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   it should  "timeout when it doesnt get output message" in {
-    prepareMocks(doNothingActor, message, outCapable = true)
+    prepareMocks(doNothingActor, outCapable = true)
     val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
@@ -125,7 +125,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   it should "get async callback as soon as it gets Ack a message, when exchange is non blocking, in only and manualAck" in {
 
     val actor = TestProbe()
-    prepareMocks(actor.ref, message, outCapable = false)
+    prepareMocks(actor.ref, outCapable = false)
     val producer = new TestableProducer(config(isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
@@ -144,7 +144,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   it should "get sync callback when it gets Ack a message, when exchange is blocking, in only and manualAck" in {
 
     val actor = TestProbe()
-    prepareMocks(actor.ref, message, outCapable = false)
+    prepareMocks(actor.ref, outCapable = false)
     val producer = new TestableProducer(config(isBlocking = Blocking(1 second), isAutoAck = false), camel)
 
     val asyncCallback = createAsyncCallback
@@ -164,7 +164,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   it should "fail if expecting Ack or Failure message and some other message is sent as a response, when in-only, manualAck" in  pending
 
   it should "disallow blocking, when in only and autoAck" in {
-    prepareMocks(doNothingActor, message, outCapable = false)
+    prepareMocks(doNothingActor, outCapable = false)
     val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), camel)
     intercept[IllegalStateException]{
       producer.process(exchange, mock[AsyncCallback])
@@ -205,7 +205,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     }
   }
 
-  def prepareMocks(actor: ActorRef, message: Message, outCapable: Boolean) {
+  def prepareMocks(actor: ActorRef, message: Message = message, outCapable: Boolean) {
 //    when(camel.message(any[Any])).thenAnswer(new Answer[Message]{
 //      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
 //    })
