@@ -452,7 +452,6 @@ class ActiveRemoteClient private[akka] (
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, module.timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
-      bootstrap.setOption("reuseAddress", true)
 
       connection = bootstrap.connect(remoteAddress)
       connection.awaitUninterruptibly.getChannel // Wait until the connection attempt succeeds or fails.
