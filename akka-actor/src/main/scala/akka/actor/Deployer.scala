@@ -55,12 +55,26 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
+    val pool: Option[RouterPool] = if (config.hasPath("pool")) {
+      val poolConfig = deployment.getConfig("pool")
+      Some(DefaultRouterPool(
+        lowerBound = poolConfig.getInt("lower-bound"),
+        upperBound = poolConfig.getInt("upper-bound"),
+        pressureThreshold = poolConfig.getInt("pressure-threshold"),
+        rampupRate = poolConfig.getDouble("rampup-rate"),
+        backoffThreshold = poolConfig.getDouble("backoff-threshold"),
+        backoffRate = poolConfig.getDouble("backoff-rate"),
+        stopDelay = Duration(poolConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS)))
+    } else {
+      None
+    }
+
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees)
+      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, pool)
+      case "random"         ⇒ RandomRouter(nrOfInstances, routees, pool)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, pool)
+      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, pool)
       case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 

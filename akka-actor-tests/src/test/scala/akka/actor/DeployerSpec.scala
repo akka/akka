@@ -38,6 +38,13 @@ object DeployerSpec {
           router = scatter-gather
           within = 2 seconds
         }
+        /service-pool {
+          router = round-robin
+          pool {
+            lower-bound = 1
+            upper-bound = 10
+          }
+        }
       }
       """, ConfigParseOptions.defaults)
 
@@ -121,18 +128,19 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
     }
 
+    "be able to parse 'akka.actor.deployment._' with router pool" in {
+      val pool = DefaultRouterPool()
+      assertRouting(RoundRobinRouter(pool = Some(pool)), "/service-pool")
+    }
+
     def assertRouting(expected: RouterConfig, service: String) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
-
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          None,
-          expected,
-          LocalScope)))
-
+      deployment.get.path must be(service)
+      deployment.get.recipe must be(None)
+      deployment.get.routing.getClass must be(expected.getClass)
+      deployment.get.routing.pool must be(expected.pool)
+      deployment.get.scope must be(LocalScope)
     }
 
   }
