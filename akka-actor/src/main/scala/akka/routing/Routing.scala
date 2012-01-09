@@ -234,11 +234,12 @@ trait RoundRobinLike { this: RouterConfig ⇒
     val next = new AtomicInteger(-1)
 
     def getNext(): ActorRef = {
-      def size = ref.routees.size
+      val _routees = ref.routees
+      val size = _routees.size
 
       @tailrec
       def reduce(n: Int) {
-        val safetyValue = size * 100000
+        val safetyValue = if (size >= 10000) size else (size * 100000)
         if (n >= safetyValue) {
           // decrease with multiple of the modulus, so that it doesn't change the modulus value
           val newValue = n - safetyValue
@@ -251,7 +252,7 @@ trait RoundRobinLike { this: RouterConfig ⇒
       // make sure we don't exceed Int.MaxValue
       reduce(n)
 
-      ref.routees(n % size)
+      _routees(n % size)
     }
 
     {
