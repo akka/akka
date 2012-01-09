@@ -268,8 +268,8 @@ private[akka] class ActorCell(
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
   final protected def randomName(): String = {
-    val n = nextNameSequence + 1
-    nextNameSequence = n
+    val n = nextNameSequence
+    nextNameSequence = n + 1
     Helpers.base64(n)
   }
 
