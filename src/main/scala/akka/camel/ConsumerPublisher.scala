@@ -10,6 +10,8 @@ import org.apache.camel.model.RouteDefinition
 import akka.camel.migration.Migration._
 
 import akka.actor._
+import akka.util.ErrorUtils._
+import akka.util.ErrorUtils
 
 /**
  *
@@ -23,14 +25,19 @@ import akka.actor._
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   def receive = {
     case r: ConsumerActorRegistered => {
-      camel.addRoutes(new ConsumerActorRouteBuilder(r)) //TODO: we need to handle exceptions here and send EndpointFailedToActivate
-      sender ! EndpointActivated
-      EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (r.actorRef, r.endpointUri))
+      try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
+        case Success(_) => {
+          sender ! EndpointActivated(r.actorRef)
+          EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (r.actorRef, r.endpointUri))
+        }
+        case ErrorUtils.Failure(throwable) => sender ! EndpointFailedToActivate(throwable)
+      }
+
 
     }
     case u: ConsumerActorUnregistered => {
       camel.stopRoute(u.actorRef.path.toString) //TODO: we need to handle exceptions here and send EndpointFailedToDeActivate
-      sender ! EndpointDeActivated
+      sender ! EndpointDeActivated(u.actorRef)
       EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.actorRef.path))
     }
   }
@@ -99,6 +106,7 @@ private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef)
 /**
  * Event message indicating that a single endpoint has been activated.
  */
-private[camel] case class EndpointActivated(actorRef : ActorRef)
-private[camel] case class EndpointDeActivated(actorRef : ActorRef)
+private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage
+private[camel] case class EndpointFailedToActivate(cause : Throwable) extends ActivationMessage
+private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage
 

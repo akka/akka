@@ -6,10 +6,10 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
 import akka.util.duration._
-import org.apache.camel.CamelExecutionException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
+import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
 
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach{
   implicit var system : ActorSystem = _
@@ -41,8 +41,8 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
   it should "fail if camel is not started" in (pending)
 
-  it should "never get activation message, if endpoint is invalid" in {
-    intercept[ActivationTimeoutException]{
+  it should "throw FailedToCreateRouteException, if endpoint is invalid" in {
+    intercept[FailedToCreateRouteException]{
       start(new TestActor( uri="some invalid uri"))
     }
   }

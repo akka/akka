@@ -15,7 +15,8 @@ object ActivationAware{
     implicit val timeout2 = Timeout(timeout)
     try{
       Await.result(actor ? AwaitActivation, timeout) match {
-        case EndpointActivated => {}
+        case EndpointActivated(_) => {}
+        case EndpointFailedToActivate(cause) => throw cause
         case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
       }
     }catch {
@@ -30,7 +31,7 @@ object ActivationAware{
 
     () => try{
       Await.result(awaitable, timeout) match {
-        case EndpointDeActivated => {}
+        case EndpointDeActivated(_) => {}
         case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
       }
     }catch {
@@ -43,39 +44,82 @@ class DeActivationTimeoutException extends RuntimeException("Timed out while wai
 class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation. Please make sure your actor extends ActivationAware trait.")
 
 trait ActivationAware extends Actor with CamelEndpoint {
-  private[this] var awaitingActivation : List[ActorRef] = Nil
-  private[this] var awaitingDeActivation : List[ActorRef] = Nil
-  private[this] var activated = false
+  val stateMachine = new ActivationStateMachine
+
+
+  class ActivationStateMachine{ //TODO: I tried to implement this as an actor but I couldn't start it from preStart. Any ideas?
+    private[this] var awaitingActivation : List[ActorRef] = Nil
+    private[this] var awaitingDeActivation : List[ActorRef] = Nil
+    private[this] var activationFailure : Option[Throwable] = None
+
+    var receive : Receive = notActivated
+
+    def activated : Receive = {
+      case AwaitActivation => sender ! EndpointActivated(self)
+      case AwaitDeActivation => awaitingDeActivation ::= sender
+    }
+
+    def failedToActivate : Receive = {
+      case AwaitActivation => sender ! EndpointFailedToActivate(activationFailure.get)
+      case AwaitDeActivation => sender ! EndpointFailedToActivate(activationFailure.get)
+    }
+
+    def notActivated : Receive = {
+      case AwaitActivation =>  {
+        println("A")
+        awaitingActivation ::= sender
+      }
+      case AwaitDeActivation => awaitingDeActivation ::= sender
+
+      case EndpointActivated(ref) => {
+        migration.Migration.EventHandler.debug(this+" activated")
+        awaitingActivation.foreach(_ ! EndpointActivated(ref))
+        awaitingActivation = Nil
+        receive = activated
+      }
+
+      case EndpointFailedToActivate(cause) => {
+        migration.Migration.EventHandler.debug(this+" failed to activate")
+        activationFailure = Option(cause)
+        awaitingActivation.foreach(_ ! EndpointFailedToActivate(cause))
+        awaitingActivation = Nil
+        receive = failedToActivate
+      }
+    }
+
+    def onDeactivation(){
+      awaitingDeActivation foreach (_ ! EndpointDeActivated(self))
+      awaitingDeActivation = Nil
+    }
+  }
+
 
 
   override def preStart {
     super.preStart()
-    context.become(activation orElse receive, true)
+    context.become(forwardToHelper orElse receive, true)
+  }
+
+  def forwardToHelper : Receive = {
+    case msg if (msg.isInstanceOf[ActivationMessage])  =>{
+      println("GOT "+msg)
+      stateMachine.receive(msg)
+    }
   }
 
   override def postDeactivation() {
     super.postDeactivation()
-    awaitingDeActivation foreach (_ ! EndpointDeActivated)
-    awaitingDeActivation = Nil
+    stateMachine.onDeactivation()
   }
 
   //TODO: consider adding postActivation method to be symetric with de-activation
 
-  def activation : Receive = {
-    case AwaitActivation => if (activated) sender ! EndpointActivated else awaitingActivation ::= sender
-    case AwaitDeActivation => awaitingDeActivation ::= sender
-    case EndpointActivated => {
-      migration.Migration.EventHandler.debug(this+" activated")
-      activated = true
-      awaitingActivation.foreach(_ ! EndpointActivated)
-      awaitingActivation = Nil
-    }
-  }
 }
+trait ActivationMessage
 
 /**
  * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
  */
-object AwaitActivation
-object AwaitDeActivation
+object AwaitActivation extends ActivationMessage
+object AwaitDeActivation extends ActivationMessage
 

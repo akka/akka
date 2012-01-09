@@ -28,7 +28,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   "ActivationAware" should "be notified when endpoint is activated" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     try{
-      ActivationAware.awaitActivation(actor, 10 second)
+      ActivationAware.awaitActivation(actor, 1 second)
     } catch {
       case e : ActivationTimeoutException => fail("Failed to get notification within 1 second")
     }
@@ -67,7 +67,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
     val actor = system.actorOf(Props(new Actor with ActivationAware{
       protected def receive = { case _ => /* consumes all*/ }
     }))
-    actor ! EndpointActivated
+    actor ! EndpointActivated(actor)
     ActivationAware.awaitActivation(actor, 10 millis)
   }
 

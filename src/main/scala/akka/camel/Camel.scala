@@ -103,7 +103,7 @@ trait ConsumerRegistry{
 
   def unregisterConsumer(consumer: Consumer with Actor) = {
     consumerPublisher.ask(ConsumerActorUnregistered(consumer.self), Timeout(1 minute)).onSuccess{
-      case EndpointDeActivated => consumer.postDeactivation() //has to be synchronous as the actor is already dead
+      case EndpointDeActivated(_) => consumer.postDeactivation() //has to be synchronous as the actor is already dead
     }
   }
 
