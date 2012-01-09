@@ -4,7 +4,8 @@
 package akka.docs.routing
 
 import akka.actor.{ Actor, Props, ActorSystem }
-import akka.routing.RoundRobinRouter
+import com.typesafe.config.ConfigFactory
+import akka.routing.FromConfig
 
 case class Message(nbr: Int)
 
@@ -15,10 +16,20 @@ class ExampleActor extends Actor {
 }
 
 object RouterWithConfigExample extends App {
-  val system = ActorSystem("Example")
+  val config = ConfigFactory.parseString("""
+    //#config
+    akka.actor.deployment {
+      /router {
+        router = round-robin
+        nr-of-instances = 5
+      }
+    }
+    //#config
+      """)
+  val system = ActorSystem("Example", config)
   //#configurableRouting
-  val router = system.actorOf(Props[PrintlnActor].withRouter(RoundRobinRouter()),
-    "exampleActor")
+  val router = system.actorOf(Props[ExampleActor].withRouter(FromConfig()),
+    "router")
   //#configurableRouting
   1 to 10 foreach { i ⇒ router ! Message(i) }
 }
