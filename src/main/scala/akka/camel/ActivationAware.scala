@@ -65,10 +65,7 @@ trait ActivationAware extends Actor with CamelEndpoint {
     }
 
     def notActivated : Receive = {
-      case AwaitActivation =>  {
-        println("A")
-        awaitingActivation ::= sender
-      }
+      case AwaitActivation =>  awaitingActivation ::= sender
       case AwaitDeActivation => awaitingDeActivation ::= sender
 
       case EndpointActivated(ref) => {
