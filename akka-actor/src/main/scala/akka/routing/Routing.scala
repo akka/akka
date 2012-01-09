@@ -4,7 +4,7 @@
 package akka.routing
 
 import akka.actor._
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import akka.util.{ Duration, Timeout }
 import akka.config.ConfigurationException
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -264,10 +264,11 @@ trait RoundRobinLike { this: RouterConfig ⇒
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
-    val next = new AtomicInteger(0)
+    val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
-      ref.routees(next.getAndIncrement % ref.routees.size)
+      val _routees = ref.routees
+      _routees((next.getAndIncrement % _routees.size).asInstanceOf[Int])
     }
 
     {
