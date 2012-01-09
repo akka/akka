@@ -3,6 +3,8 @@
  */
 package akka.routing
 
+import scala.annotation.tailrec
+
 import akka.actor._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.util.{ Duration, Timeout }
@@ -264,10 +266,28 @@ trait RoundRobinLike { this: RouterConfig ⇒
   def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
-    val next = new AtomicInteger(0)
+    val next = new AtomicInteger(-1)
 
     def getNext(): ActorRef = {
-      ref.routees(next.getAndIncrement % ref.routees.size)
+      val _routees = ref.routees
+      val size = _routees.size
+
+      @tailrec
+      def reduce(n: Int) {
+        val safetyValue = if (size >= 10000) size else (size * 100000)
+        if (n >= safetyValue) {
+          // decrease with multiple of the modulus, so that it doesn't change the modulus value
+          val newValue = n - safetyValue
+          next.compareAndSet(n, newValue)
+          reduce(next.get)
+        }
+      }
+
+      val n = next.incrementAndGet()
+      // make sure we don't exceed Int.MaxValue
+      reduce(n)
+
+      _routees(n % size)
     }
 
     {
