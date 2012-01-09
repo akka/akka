@@ -117,8 +117,6 @@ trait NettyRemoteClientModule extends RemoteClientModule {
                     timer.newTimeout(new TimerTask() {
                       def run(timeout: Timeout) = {
                         if (isRunning) {
-                          System.err.println("Running reaper.")
-
                           val i = futures.entrySet.iterator
                           while (i.hasNext) {
                             val e = i.next
@@ -130,8 +128,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
                               RemoteClientSettings.REAP_FUTURES_DELAY.unit)
                         }
                       }
-                    }, 100,
-                              TimeUnit.MILLISECONDS)//RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
+                    }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
                   } //Create timer on demand
                   val client = new ActiveRemoteClient(this, address, loader, notifyListeners)
                   client.connect()
