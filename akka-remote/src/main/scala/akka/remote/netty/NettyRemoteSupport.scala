@@ -212,12 +212,19 @@ class ActiveRemoteClient private[akka] (
     log.debug("Shutting down remote client [{}]", name)
 
     notifyListeners(RemoteClientShutdown(remoteSupport, remoteAddress))
-    connection.getChannel.close()
-    connection = null
-    executionHandler.releaseExternalResources()
-    executionHandler = null
-    bootstrap.releaseExternalResources()
-    bootstrap = null
+    try {
+      if (connection.getChannel ne null)
+        connection.getChannel.close()
+    } finally {
+      connection = null
+      executionHandler = null
+      //Do not do this: executionHandler.releaseExternalResources(), since it's shutting down the shared threadpool
+      try {
+        bootstrap.releaseExternalResources()
+      } finally {
+        bootstrap = null
+      }
+    }
 
     log.debug("[{}] has been shut down", name)
   }
