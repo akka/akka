@@ -162,15 +162,9 @@ class ActiveRemoteClient private[akka] (
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
 
-    def closeChannel(connection: ChannelFuture) = {
-      val channel = connection.getChannel
-      openChannels.remove(channel)
-      channel.close()
-    }
-
     def attemptReconnect(): Boolean = {
       log.debug("Remote client reconnecting to [{}]", remoteAddress)
-      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
+      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
@@ -210,7 +204,8 @@ class ActiveRemoteClient private[akka] (
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
-        closeChannel(connection)
+        openChannels.remove(connection.getChannel)
+        connection.getChannel.close()
 
         log.debug("Remote client reconnecting to [{}]", remoteAddress)
         attemptReconnect()
