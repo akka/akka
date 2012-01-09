@@ -259,7 +259,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Returns the ActorContext (for a TypedActor) when inside a method call in a TypedActor.
    */
-  def context = currentContext.get match {
+  def context: ActorContext = currentContext.get match {
     case null ⇒ throw new IllegalStateException("Calling TypedActor.context outside of a TypedActor implementation method!")
     case some ⇒ some
   }
