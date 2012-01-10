@@ -155,9 +155,6 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       // make sure the pool starts at the expected lower limit and grows to the upper as needed
       // as influenced by the backlog of blocking pooled actors
 
-      var latch = TestLatch(3)
-      val count = new AtomicInteger(0)
-
       val resizer = DefaultResizer(
         lowerBound = 2,
         upperBound = 4,
@@ -168,7 +165,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case n: Int ⇒
+          case (n: Int, latch: TestLatch, count: AtomicInteger) ⇒
             (n millis).dilated.sleep
             count.incrementAndGet
             latch.countDown()
@@ -180,26 +177,29 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
-      def loop(loops: Int, t: Int) = {
-        latch = TestLatch(loops)
+      def loop(loops: Int, t: Int, latch: TestLatch, count: AtomicInteger) = {
         count.set(0)
         for (m ← 0 until loops) {
-          router ! t
+          router.!((t, latch, count))
           (10 millis).dilated.sleep
         }
       }
 
       // 2 more should go thru without triggering more
-      loop(2, 200)
-      Await.ready(latch, TestLatch.DefaultTimeout)
-      count.get must be(2)
+      val count1 = new AtomicInteger
+      val latch1 = TestLatch(2)
+      loop(2, 200, latch1, count1)
+      Await.ready(latch1, TestLatch.DefaultTimeout)
+      count1.get must be(2)
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
       // a whole bunch should max it out
-      loop(10, 200)
-      Await.ready(latch, TestLatch.DefaultTimeout)
-      count.get must be(10)
+      val count2 = new AtomicInteger
+      val latch2 = TestLatch(10)
+      loop(10, 200, latch2, count2)
+      Await.ready(latch2, TestLatch.DefaultTimeout)
+      count2.get must be(10)
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(4)
 
