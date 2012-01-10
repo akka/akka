@@ -149,6 +149,11 @@ class Switch(startAsOn: Boolean = false) {
   }
 
   /**
+   * Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status.
+   */
+  def locked[T](code: ⇒ T) = synchronized { code }
+
+  /**
    * Returns whether the switch is IMMEDIATELY on (no locking)
    */
   def isOn = switch.get
