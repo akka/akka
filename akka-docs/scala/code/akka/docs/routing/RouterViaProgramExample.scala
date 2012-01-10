@@ -5,6 +5,7 @@ package akka.docs.routing
 
 import akka.routing.RoundRobinRouter
 import akka.actor.{ ActorRef, Props, Actor, ActorSystem }
+import akka.routing.DefaultResizer
 
 case class Message1(nbr: Int)
 
@@ -31,4 +32,12 @@ object RoutingProgrammaticallyExample extends App {
     RoundRobinRouter(routees = routees)))
   //#programmaticRoutingRoutees
   1 to 6 foreach { i ⇒ router2 ! Message1(i) }
+
+  //#programmaticRoutingWithResizer
+  val resizer = DefaultResizer(lowerBound = 2, upperBound = 15)
+  val router3 = system.actorOf(Props[ExampleActor1].withRouter(
+    RoundRobinRouter(resizer = Some(resizer))))
+  //#programmaticRoutingWithResizer
+  1 to 6 foreach { i ⇒ router3 ! Message1(i) }
+
 }

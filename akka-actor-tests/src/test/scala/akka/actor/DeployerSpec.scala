@@ -38,9 +38,9 @@ object DeployerSpec {
           router = scatter-gather
           within = 2 seconds
         }
-        /service-pool {
+        /service-resizer {
           router = round-robin
-          pool {
+          resizer {
             lower-bound = 1
             upper-bound = 10
           }
@@ -128,9 +128,9 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
     }
 
-    "be able to parse 'akka.actor.deployment._' with router pool" in {
-      val pool = DefaultRouterPool()
-      assertRouting(RoundRobinRouter(pool = Some(pool)), "/service-pool")
+    "be able to parse 'akka.actor.deployment._' with router resizer" in {
+      val resizer = DefaultResizer()
+      assertRouting(RoundRobinRouter(resizer = Some(resizer)), "/service-resizer")
     }
 
     def assertRouting(expected: RouterConfig, service: String) {
@@ -139,7 +139,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.path must be(service)
       deployment.get.recipe must be(None)
       deployment.get.routing.getClass must be(expected.getClass)
-      deployment.get.routing.pool must be(expected.pool)
+      deployment.get.routing.resizer must be(expected.resizer)
       deployment.get.scope must be(LocalScope)
     }
 

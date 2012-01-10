@@ -26,10 +26,10 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
             if (nodes.isEmpty || deploy.routing == NoRouter) d
             else {
               val r = deploy.routing match {
-                case RoundRobinRouter(x, _)                     ⇒ RemoteRoundRobinRouter(x, nodes)
-                case RandomRouter(x, _)                         ⇒ RemoteRandomRouter(x, nodes)
-                case BroadcastRouter(x, _)                      ⇒ RemoteBroadcastRouter(x, nodes)
-                case ScatterGatherFirstCompletedRouter(x, _, w) ⇒ RemoteScatterGatherFirstCompletedRouter(x, nodes, w)
+                case RoundRobinRouter(x, _, resizer)                     ⇒ RemoteRoundRobinRouter(x, nodes, resizer)
+                case RandomRouter(x, _, resizer)                         ⇒ RemoteRandomRouter(x, nodes, resizer)
+                case BroadcastRouter(x, _, resizer)                      ⇒ RemoteBroadcastRouter(x, nodes, resizer)
+                case ScatterGatherFirstCompletedRouter(x, _, w, resizer) ⇒ RemoteScatterGatherFirstCompletedRouter(x, nodes, w, resizer)
               }
               Some(deploy.copy(routing = r))
             }

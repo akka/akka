@@ -171,6 +171,26 @@ This message is called ``Broadcast`` and is used in the following manner:
 Only the actual message is forwarded to the routees, i.e. "Watch out for Davy Jones' locker" in the example above.
 It is up to the routee implementation whether to handle the broadcast message or not.
 
+Dynamically Resizable Routers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All routers can be used with a fixed number of routees or with a resize strategy to adjust the number
+of routees dynamically.
+
+This is an example of how to create a resizable router that is defined in configuration:
+
+.. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#config-resize
+
+.. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRoutingWithResizer
+
+Several more configuration options are availble and described in ``akka.actor.deployment.default.resizer``
+section of the reference :ref:`configuration`.
+
+This is an example of how to programatically create a resizable router:
+
+.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingWithResizer
+
+
 Custom Router
 ^^^^^^^^^^^^^
 
@@ -217,73 +237,10 @@ All in all the custom router looks like this:
 If you are interested in how to use the VoteCountRouter you can have a look at the test class
 `RoutingSpec <https://github.com/jboner/akka/blob/master/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_
 
-Actor Pool
-----------
+Custom Resizer
+**************
 
-An actor pool routes incoming messages to other actors. It has different semantics however when it comes to how those
-actors are managed and selected for dispatch. Therein lies the difference. The pool manages, from start to shutdown,
-the lifecycle of all delegated actors. The number of actors in a pool can be fixed or grow and shrink over time.
-Also, messages can be routed to more than one actor in the pool if so desired. This is a useful little feature for
-accounting for expected failure - especially with remoting - where you can invoke the same request of multiple
-actors and just take the first, best response.
+A router with dynamically resizable number of routees is implemented by providing a ``akka.routing.Resizer``
+in ``resizer`` method of the ``RouterConfig``. See ``akka.routing.DefaultResizer`` for inspiration
+of how to write your own resize strategy.
 
-The actor pool is built around three concepts: capacity, filtering and selection.
-
-Selection
-^^^^^^^^^
-
-All pools require a ``Selector`` to be mixed-in. This trait controls how and how many actors in the pool will
-receive the incoming message. Define *selectionCount* to some positive number greater than one to route to
-multiple actors. Currently two are provided:
-
-* `SmallestMailboxSelector <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L148>`_ - Using the exact same logic as the iterator of the same name, the pooled actor with the fewest number of pending messages will be chosen.
-* `RoundRobinSelector <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L184>`_ - Performs a very simple index-based selection, wrapping around the end of the list, very much like the CyclicIterator does.
-
-Partial Fills
-*************
-
-When selecting more than one pooled actor, its possible that in order to fulfill the requested amount,
-the selection set must contain duplicates. By setting ``partialFill`` to ``true``, you instruct the selector to
-return only unique actors from the pool.
-
-Capacity
-^^^^^^^^
-
-As you'd expect, capacity traits determine how the pool is funded with actors. There are two types of strategies that can be employed:
-
-* `FixedCapacityStrategy <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L346>`_ - When you mix this into your actor pool, you define a pool size and when the pool is started, it will have that number of actors within to which messages will be delegated.
-* `BoundedCapacityStrategy <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L355>`_ - When you mix this into your actor pool, you define upper and lower bounds, and when the pool is started, it will have the minimum number of actors in place to handle messages. You must also mix-in a Capacitor and a Filter when using this strategy (see below).
-
-The *BoundedCapacityStrategy* requires additional logic to function. Specifically it requires a *Capacitor* and a *Filter*.
-Capacitors are used to determine the pressure that the pool is under and provide a (usually) raw reading of this information.
-Currently we provide for the use of either mailbox backlog or active futures count as a means of evaluating pool pressure.
-Each expresses itself as a simple number - a reading of the number of actors either with mailbox sizes over a certain threshold
-or blocking a thread waiting on a future to complete or expire.
-
-Filtering
-^^^^^^^^^
-
-A *Filter* is a trait that modifies the raw pressure reading returned from a Capacitor such that it drives the
-adjustment of the pool capacity to a desired end. More simply, if we just used the pressure reading alone,
-we might only ever increase the size of the pool (to respond to overload) or we might only have a single
-mechanism for reducing the pool size when/if it became necessary. This behavior is fully under your control
-through the use of *Filters*. Let's take a look at some code to see how this works:
-
-.. includecode:: code/akka/docs/routing/BoundedCapacitorExample.scala#boundedCapacitor
-
-.. includecode:: code/akka/docs/routing/CapacityStrategyExample.scala#capacityStrategy
-
-Here we see how the filter function will have the chance to modify the pressure reading to influence the capacity change.
-You are free to implement filter() however you like. We provide a
-`Filter <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L279>`_ trait that
-evaluates both a rampup and a backoff subfilter to determine how to use the pressure reading to alter the pool capacity.
-There are several sub filters available to use, though again you may create whatever makes the most sense for you pool:
-
-* `BasicRampup <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L409>`_ - When pressure exceeds current capacity, increase the number of actors in the pool by some factor (*rampupRate*) of the current pool size.
-* `BasicBackoff <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L426>`_ - When the pressure ratio falls under some predefined amount (*backoffThreshold*), decrease the number of actors in the pool by some factor of the current pool size.
-* `RunningMeanBackoff <https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/routing/Pool.scala#L454>`_ - This filter tracks the average pressure-to-capacity over the lifetime of the pool (or since the last time the filter was reset) and will begin to reduce capacity once this mean falls below some predefined amount. The number of actors that will be stopped is determined by some factor of the difference between the current capacity and pressure. The idea behind this filter is to reduce the likelihood of "thrashing" (removing then immediately creating...) pool actors by delaying the backoff until some quiescent stage of the pool. Put another way, use this subfilter to allow quick rampup to handle load and more subtle backoff as that decreases over time.
-
-Example Usage
-^^^^^^^^^^^^^
-
-.. includecode:: code/akka/docs/routing/ActorPoolExample.scala#testPool

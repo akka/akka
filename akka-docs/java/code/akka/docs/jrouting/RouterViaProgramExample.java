@@ -4,6 +4,7 @@
 package akka.docs.jrouting;
 
 import akka.routing.RoundRobinRouter;
+import akka.routing.DefaultResizer;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
@@ -55,6 +56,16 @@ public class RouterViaProgramExample {
     //#programmaticRoutingRoutees
     for (int i = 1; i <= 6; i++) {
       router2.tell(new ExampleActor.Message(i));
+    }
+
+    //#programmaticRoutingWithResizer
+    int lowerBound = 2;
+    int upperBound = 15;
+    DefaultResizer resizer = new DefaultResizer(lowerBound, upperBound);
+    ActorRef router3 = system.actorOf(new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
+    //#programmaticRoutingWithResizer
+    for (int i = 1; i <= 6; i++) {
+      router3.tell(new ExampleActor.Message(i));
     }
   }
 }

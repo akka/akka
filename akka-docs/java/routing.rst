@@ -170,6 +170,25 @@ This message is called ``Broadcast`` and is used in the following manner:
 Only the actual message is forwarded to the routees, i.e. "Watch out for Davy Jones' locker" in the example above.
 It is up to the routee implementation whether to handle the broadcast message or not.
 
+Dynamically Resizable Routers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All routers can be used with a fixed number of routees or with a resize strategy to adjust the number
+of routees dynamically.
+
+This is an example of how to create a resizable router that is defined in configuration:
+
+.. includecode:: ../scala/code/akka/docs/routing/RouterViaConfigExample.scala#config-resize
+
+.. includecode:: code/akka/docs/jrouting/RouterViaConfigExample.java#configurableRoutingWithResizer
+
+Several more configuration options are availble and described in ``akka.actor.deployment.default.resizer``
+section of the reference :ref:`configuration`.
+
+This is an example of how to programatically create a resizable router:
+
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingWithResizer
+
 Custom Router
 ^^^^^^^^^^^^^
 
@@ -218,4 +237,10 @@ If you are interested in how to use the VoteCountRouter it looks like this:
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#crTest
 
+Custom Resizer
+**************
+
+A router with dynamically resizable number of routees is implemented by providing a ``akka.routing.Resizer``
+in ``resizer`` method of the ``RouterConfig``. See ``akka.routing.DefaultResizer`` for inspiration
+of how to write your own resize strategy.
 

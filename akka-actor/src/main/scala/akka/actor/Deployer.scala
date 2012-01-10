@@ -55,26 +55,27 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
-    val pool: Option[RouterPool] = if (config.hasPath("pool")) {
-      val poolConfig = deployment.getConfig("pool")
-      Some(DefaultRouterPool(
-        lowerBound = poolConfig.getInt("lower-bound"),
-        upperBound = poolConfig.getInt("upper-bound"),
-        pressureThreshold = poolConfig.getInt("pressure-threshold"),
-        rampupRate = poolConfig.getDouble("rampup-rate"),
-        backoffThreshold = poolConfig.getDouble("backoff-threshold"),
-        backoffRate = poolConfig.getDouble("backoff-rate"),
-        stopDelay = Duration(poolConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS)))
+    val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
+      val resizerConfig = deployment.getConfig("resizer")
+      Some(DefaultResizer(
+        lowerBound = resizerConfig.getInt("lower-bound"),
+        upperBound = resizerConfig.getInt("upper-bound"),
+        pressureThreshold = resizerConfig.getInt("pressure-threshold"),
+        rampupRate = resizerConfig.getDouble("rampup-rate"),
+        backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
+        backoffRate = resizerConfig.getDouble("backoff-rate"),
+        stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
+        resizeOnNthMessage = resizerConfig.getInt("resize-on-nth-message")))
     } else {
       None
     }
 
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, pool)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees, pool)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, pool)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, pool)
+      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"         ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 
