@@ -369,9 +369,14 @@ class CamelMessageAdapter(val cm: CamelMessage) {
  */
 object CamelMessageConversion {
 
+  /**
+   * Creates a CamelExchangeAdaptor for the given Camel exchange
+   */
+  implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter =
+    new CamelExchangeAdapter(exchange)
 
   /**
-   * Creates an CamelMessageAdapter for the given Camel message.
+   * Creates a CamelMessageAdapter for the given Camel message.
    */
   implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter =
     new CamelMessageAdapter(cm)
