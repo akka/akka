@@ -60,7 +60,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
     producer.process(exchange)
 
-    verify(exchange).fromResponseMessage(msg("received "+message))
+    verify(exchange).setResponse(msg("received "+message))
   }
 
   it should "get a response and async callback as soon as it gets response, when exchange is non blocking, out capable" in {
@@ -71,7 +71,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     //TODO: we should test it doesn't act before it gets response
     doneSync should be (false)
     asyncCallback.valueWithin(1 second) should be (false)
-    verify(exchange).fromResponseMessage(msg("received "+message))
+    verify(exchange).setResponse(msg("received "+message))
   }
 
 
@@ -87,7 +87,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     doneSync should be (true)
     //TODO: This is a bit lame test. Happy for any suggestions.
     asyncCallback.valueWithin(0 second) should be (true)
-    verify(exchange).fromResponseMessage(msg("received "+message))
+    verify(exchange).setResponse(msg("received "+message))
   }
 
   it should "get async callback as soon as it sends a message, when exchange is non blocking, in only and autoAck" in {
@@ -98,7 +98,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
     doneSync should be (false)
     asyncCallback.valueWithin(1 second) should be (false)
-    verify(exchange, never()).fromResponseMessage(any[Message])
+    verify(exchange, never()).setResponse(any[Message])
   }
 
   it should  "timeout when it doesnt get Ack" in {
@@ -138,7 +138,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
       actor.sender ! Ack
       asyncCallback.valueWithin(remaining) should be (false)
     }
-    verify(exchange, never()).fromResponseMessage(any[Message])
+    verify(exchange, never()).setResponse(any[Message])
   }
 
   it should "get sync callback when it gets Ack a message, when exchange is blocking, in only and manualAck" in {
@@ -157,7 +157,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
       actor.sender ! Ack
     }
     asyncCallback.valueWithin(1 second) should be (true)
-    verify(exchange, never()).fromResponseMessage(any[Message])
+    verify(exchange, never()).setResponse(any[Message])
   }
   
   //TODO: write this test

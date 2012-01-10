@@ -9,7 +9,7 @@ import CamelMessageConversion.toExchangeAdapter
 import org.apache.camel._
 import org.apache.camel.processor.SendProcessor
 
-import akka.actor.{Actor, ActorRef, UntypedActor}
+import akka.actor.{Actor, UntypedActor}
 import akka.dispatch.ActorCompletableFuture
 
 /**
@@ -94,7 +94,7 @@ trait ProducerSupport { this: Actor =>
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     val cmsg = Message.canonicalize(msg)
-    val exchange = createExchange(pattern).fromRequestMessage(cmsg)
+    val exchange = createExchange(pattern).setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
       // Need copies of sender and senderFuture references here

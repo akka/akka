@@ -99,7 +99,7 @@ trait ActivationAware extends Actor with CamelEndpoint {
 
   def forwardToHelper : Receive = {
     case msg if (msg.isInstanceOf[ActivationMessage])  =>{
-      println("GOT "+msg)
+//      println("GOT "+msg)
       stateMachine.receive(msg)
     }
   }

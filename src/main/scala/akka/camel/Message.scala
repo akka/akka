@@ -264,14 +264,14 @@ class CamelExchangeAdapter(exchange: Exchange) {
   /**
    * Sets Exchange.getIn from the given Message object.
    */
-  def fromRequestMessage(msg: Message): Exchange = { requestMessage.fromMessage(msg); exchange }
+  def setRequest(msg: Message): Exchange = { request.copyContentFrom(msg); exchange }
 
   /**
    * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
    * Message object. If the exchange is out-capable then the Exchange.getOut is set, otherwise
    * Exchange.getIn.
    */
-  def fromResponseMessage(msg: Message): Exchange = { responseMessage.fromMessage(msg); exchange }
+  def setResponse(msg: Message): Exchange = { response.copyContentFrom(msg); exchange }
 
   /**
    * Sets Exchange.getException from the given Failure message. Headers of the Failure message
@@ -303,7 +303,7 @@ class CamelExchangeAdapter(exchange: Exchange) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toRequestMessage(headers: Map[String, Any]): Message = requestMessage.toMessage(headers)
+  def toRequestMessage(headers: Map[String, Any]): Message = request.toMessage(headers)
 
   /**
    * Depending on the exchange pattern, creates a Message object from Exchange.getIn or Exchange.getOut.
@@ -312,7 +312,7 @@ class CamelExchangeAdapter(exchange: Exchange) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toResponseMessage(headers: Map[String, Any]): Message = responseMessage.toMessage(headers)
+  def toResponseMessage(headers: Map[String, Any]): Message = response.toMessage(headers)
 
   /**
    * Creates a Failure object from the adapted Exchange.
@@ -323,11 +323,11 @@ class CamelExchangeAdapter(exchange: Exchange) {
    * @see Failure
    */
   def toFailureMessage(headers: Map[String, Any]): Failure =
-    Failure(exchange.getException, headers ++ responseMessage.toMessage.headers)
+    Failure(exchange.getException, headers ++ response.toMessage.headers)
 
-  private def requestMessage = exchange.getIn
+  private def request = exchange.getIn
 
-  private def responseMessage = ExchangeHelper.getResultMessage(exchange)
+  private def response = ExchangeHelper.getResultMessage(exchange)
 
 }
 
@@ -340,7 +340,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
   /**
    * Set the adapted Camel message from the given Message object.
    */
-  def fromMessage(m: Message): CamelMessage = {
+  def copyContentFrom(m: Message): CamelMessage = {
     cm.setBody(m.body)
     for (h <- m.headers) cm.getHeaders.put(h._1, h._2.asInstanceOf[AnyRef])
     cm

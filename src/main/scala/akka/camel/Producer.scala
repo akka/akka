@@ -4,12 +4,11 @@ package akka.camel
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-import CamelMessageConversion.toExchangeAdapter
 
 import org.apache.camel.{ Message => CamelMessage, ExchangePattern, AsyncCallback, Exchange}
 import org.apache.camel.processor.SendProcessor
 
-import akka.actor.{Actor, ActorRef, UntypedActor}
+import akka.actor.{Actor, UntypedActor}
 import akka.camel.CamelMessageConversion._
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -32,7 +31,11 @@ trait ProducerSupport { this: Actor =>
   /**
    * <code>SendProcessor</code> for producing messages to <code>endpoint</code>.
    */
-  private lazy val processor = createSendProcessor
+  private lazy val processor ={
+    val sendProcessor = new SendProcessor(endpoint)
+    sendProcessor.start()
+    sendProcessor
+  }
 
   /**
    * If set to false (default), this producer expects a response message from the Camel endpoint.
@@ -92,12 +95,13 @@ trait ProducerSupport { this: Actor =>
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     val cmsg = Message.canonicalize(msg, camel)
-    val exchange = createExchange(pattern).fromRequestMessage(cmsg)
+    val exchange = createExchangeFor(pattern).setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
 
       def done(doneSync: Boolean): Unit = {
         (doneSync, exchange.isFailed) match {
+          //TODO this boolean logic is smart, but less readable as opposed to traditional if statement.
           case (true, true)   => dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
           case (true, false)  => dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))
           case (false, true)  => dispatchAsync(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
@@ -108,7 +112,7 @@ trait ProducerSupport { this: Actor =>
       private def dispatchSync(result: Any) =
         receiveAfterProduce(result)
 
-      private def dispatchAsync(result: Any) = {
+      private def dispatchAsync(result: Any) = {//TODO why forward?
         sender forward (result)
       }
     })
@@ -132,11 +136,13 @@ trait ProducerSupport { this: Actor =>
     }
   }
 
+
   /**
    * Called before the message is sent to the endpoint specified by <code>endpointUri</code>. The original
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subtraits or subclasses.
    */
+  //TODO shouldn't it be renamed to transformOutgoingMessage? Also "receiveAfterProduce" should be symmetric and called transformResponse and it should return msg and not send the message.
   protected def receiveBeforeProduce: PartialFunction[Any, Any] = {
     case msg => msg
   }
@@ -148,6 +154,7 @@ trait ProducerSupport { this: Actor =>
    * done. This method may be overridden by subtraits or subclasses (e.g. to forward responses to another
    * actor).
    */
+
   protected def receiveAfterProduce: Receive = {
     case msg => if (!oneway) sender ! msg
   }
@@ -156,16 +163,8 @@ trait ProducerSupport { this: Actor =>
    * Creates a new Exchange of given <code>pattern</code> from the endpoint specified by
    * <code>endpointUri</code>.
    */
-  private def createExchange(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
+  private def createExchangeFor(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
 
-  /**
-   * Creates a new <code>SendProcessor</code> for <code>endpoint</code>.
-   */
-  private def createSendProcessor = {
-    val sendProcessor = new SendProcessor(endpoint)
-    sendProcessor.start
-    sendProcessor
-  }
 }
 
 /**

@@ -237,7 +237,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
   }
 
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
-    case Right(msg) => { exchange.fromResponseMessage(Message.canonicalize(msg, camel))}
+    case Right(msg) => { exchange.setResponse(Message.canonicalize(msg, camel))}
     case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
   }
 

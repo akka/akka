@@ -13,19 +13,19 @@ class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with Ca
   implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e)
 
   @Test def shouldSetInMessageFromRequestMessage = {
-    val e1 = sampleInOnly.fromRequestMessage(Message("x"))
+    val e1 = sampleInOnly.setRequest(Message("x"))
     assert(e1.getIn.getBody === "x")
-    val e2 = sampleInOut.fromRequestMessage(Message("y"))
+    val e2 = sampleInOut.setRequest(Message("y"))
     assert(e2.getIn.getBody === "y")
   }
 
   @Test def shouldSetOutMessageFromResponseMessage = {
-    val e1 = sampleInOut.fromResponseMessage(Message("y"))
+    val e1 = sampleInOut.setResponse(Message("y"))
     assert(e1.getOut.getBody === "y")
   }
 
   @Test def shouldSetInMessageFromResponseMessage = {
-    val e1 = sampleInOnly.fromResponseMessage(Message("x"))
+    val e1 = sampleInOnly.setResponse(Message("x"))
     assert(e1.getIn.getBody === "x")
   }
 

@@ -9,7 +9,7 @@ class CamelMessageAdapterTest extends JUnitSuite with BeforeAndAfterAll with Cam
   import CamelMessageConversion.toMessageAdapter
 
   @Test def shouldOverwriteBodyAndAddHeader = {
-    val cm = sampleMessage.fromMessage(Message("blah", Map("key" -> "baz")))
+    val cm = sampleMessage.copyContentFrom(Message("blah", Map("key" -> "baz")))
     assert(cm.getBody === "blah")
     assert(cm.getHeader("foo") === "bar")
     assert(cm.getHeader("key") === "baz")
