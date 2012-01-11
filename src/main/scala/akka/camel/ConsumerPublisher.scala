@@ -25,6 +25,8 @@ import collection.mutable
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
+  //TODO handle state loss on restart (IMPORTANT!!!)
+
   def unless[A](condition: Boolean)(block  : => A) = if (!condition) block
 
   def receive = {

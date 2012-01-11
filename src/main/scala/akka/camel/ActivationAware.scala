@@ -17,6 +17,9 @@ class ActivationTimeoutException extends RuntimeException("Timed out while waiti
 
 class ActivationListener extends Actor{
 
+   //TODO handle state loss on restart (IMPORTANT!!!)
+  val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
+
   class ActivationStateMachine {
     private[this] var awaitingActivation : List[ActorRef] = Nil
     private[this] var awaitingDeActivation : List[ActorRef] = Nil
@@ -65,9 +68,9 @@ class ActivationListener extends Actor{
     }
   }
 
+  //TODO check if subscribe is idempotent (in case of restart)
   context.system.eventStream.subscribe(self, classOf[ActivationMessage])
 
-  val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
 
   override def receive = {
     case msg @ ActivationMessage(ref) =>{
