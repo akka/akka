@@ -172,6 +172,7 @@ trait RouterConfig {
  */
 abstract class CustomRouterConfig extends RouterConfig {
   override def createRoute(props: Props, context: ActorContext): Route = {
+    // as a bonus, this prevents closing of props and context in the returned Route PartialFunction
     val customRoute = createCustomRoute(props, context)
 
     {
@@ -514,7 +515,7 @@ object ScatterGatherFirstCompletedRouter {
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
-                                             override val resizer: Option[Resizer] = None)
+  override val resizer: Option[Resizer] = None)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
@@ -592,57 +593,57 @@ case class DefaultResizer(
    */
   lowerBound: Int = 1,
   /**
- * The most number of routees the router should ever have.
- * Must be greater than or equal to `lowerBound`.
- */
+   * The most number of routees the router should ever have.
+   * Must be greater than or equal to `lowerBound`.
+   */
   upperBound: Int = 10,
   /**
- * Threshold to evaluate if routee is considered to be busy (under pressure).
- * Implementation depends on this value (default is 1).
- * <ul>
- * <li> 0:   number of routees currently processing a message.</li>
- * <li> 1:   number of routees currently processing a message has
- *           some messages in mailbox.</li>
- * <li> > 1: number of routees with at least the configured `pressureThreshold`
- *           messages in their mailbox. Note that estimating mailbox size of
- *           default UnboundedMailbox is O(N) operation.</li>
- * </ul>
- */
+   * Threshold to evaluate if routee is considered to be busy (under pressure).
+   * Implementation depends on this value (default is 1).
+   * <ul>
+   * <li> 0:   number of routees currently processing a message.</li>
+   * <li> 1:   number of routees currently processing a message has
+   *           some messages in mailbox.</li>
+   * <li> > 1: number of routees with at least the configured `pressureThreshold`
+   *           messages in their mailbox. Note that estimating mailbox size of
+   *           default UnboundedMailbox is O(N) operation.</li>
+   * </ul>
+   */
   pressureThreshold: Int = 1,
   /**
- * Percentage to increase capacity whenever all routees are busy.
- * For example, 0.2 would increase 20% (rounded up), i.e. if current
- * capacity is 6 it will request an increase of 2 more routees.
- */
+   * Percentage to increase capacity whenever all routees are busy.
+   * For example, 0.2 would increase 20% (rounded up), i.e. if current
+   * capacity is 6 it will request an increase of 2 more routees.
+   */
   rampupRate: Double = 0.2,
   /**
- * Minimum fraction of busy routees before backing off.
- * For example, if this is 0.3, then we'll remove some routees only when
- * less than 30% of routees are busy, i.e. if current capacity is 10 and
- * 3 are busy then the capacity is unchanged, but if 2 or less are busy
- * the capacity is decreased.
- *
- * Use 0.0 or negative to avoid removal of routees.
- */
+   * Minimum fraction of busy routees before backing off.
+   * For example, if this is 0.3, then we'll remove some routees only when
+   * less than 30% of routees are busy, i.e. if current capacity is 10 and
+   * 3 are busy then the capacity is unchanged, but if 2 or less are busy
+   * the capacity is decreased.
+   *
+   * Use 0.0 or negative to avoid removal of routees.
+   */
   backoffThreshold: Double = 0.3,
   /**
- * Fraction of routees to be removed when the resizer reaches the
- * backoffThreshold.
- * For example, 0.1 would decrease 10% (rounded up), i.e. if current
- * capacity is 9 it will request an decrease of 1 routee.
- */
+   * Fraction of routees to be removed when the resizer reaches the
+   * backoffThreshold.
+   * For example, 0.1 would decrease 10% (rounded up), i.e. if current
+   * capacity is 9 it will request an decrease of 1 routee.
+   */
   backoffRate: Double = 0.1,
   /**
- * When the resizer reduce the capacity the abandoned routee actors are stopped
- * with PoisonPill after this delay. The reason for the delay is to give concurrent
- * messages a chance to be placed in mailbox before sending PoisonPill.
- * Use 0 seconds to skip delay.
- */
+   * When the resizer reduce the capacity the abandoned routee actors are stopped
+   * with PoisonPill after this delay. The reason for the delay is to give concurrent
+   * messages a chance to be placed in mailbox before sending PoisonPill.
+   * Use 0 seconds to skip delay.
+   */
   stopDelay: Duration = 1.second,
   /**
- * Number of messages between resize operation.
- * Use 1 to resize before each message.
- */
+   * Number of messages between resize operation.
+   * Use 1 to resize before each message.
+   */
   messagesPerResize: Int = 10) extends Resizer {
 
   /**
