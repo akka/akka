@@ -130,7 +130,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         lowerBound = 1,
         upperBound = 3,
         pressureThreshold = 0,
-        resizeOnNthMessage = 1)
+        messagesPerResize = 1)
 
       val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
@@ -160,7 +160,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         upperBound = 4,
         rampupRate = 0.1,
         pressureThreshold = 1,
-        resizeOnNthMessage = 1,
+        messagesPerResize = 1,
         backoffThreshold = 0.0)
 
       val router = system.actorOf(Props(new Actor {
@@ -214,7 +214,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         backoffRate = 1.0,
         backoffThreshold = 0.20,
         pressureThreshold = 1,
-        resizeOnNthMessage = 1)
+        messagesPerResize = 1)
 
       val router = system.actorOf(Props(new Actor {
         def receive = {

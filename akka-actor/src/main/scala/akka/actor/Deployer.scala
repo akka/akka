@@ -65,7 +65,7 @@ class Deployer(val settings: ActorSystem.Settings) {
         backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
         backoffRate = resizerConfig.getDouble("backoff-rate"),
         stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
-        resizeOnNthMessage = resizerConfig.getInt("resize-on-nth-message")))
+        messagesPerResize = resizerConfig.getInt("messages-per-resize")))
     } else {
       None
     }

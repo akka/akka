@@ -24,6 +24,8 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _path) {
 
   private val routeeProps = _props.copy(routerConfig = NoRouter)
+  private val resizeProgress = new AtomicBoolean
+  private val resizeCounter = new AtomicLong
 
   @volatile
   private var _routees: IndexedSeq[ActorRef] = IndexedSeq.empty[ActorRef] // this MUST be initialized during createRoute
@@ -41,6 +43,8 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   }
 
   val route = _props.routerConfig.createRoute(routeeProps, actorContext, this)
+  // initial resize, before message send
+  resize()
 
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
     case _: AutoReceivedMessage ⇒ Nil
@@ -61,7 +65,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
-    _props.routerConfig.resize(routeeProps, actorContext, routees)
+    resize()
 
     val s = if (sender eq null) underlying.system.deadLetters else sender
 
@@ -77,8 +81,20 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   }
 
   override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    _props.routerConfig.resize(routeeProps, actorContext, routees)
+    resize()
     super.?(message)(timeout)
+  }
+
+  def resize() {
+    for (r ← _props.routerConfig.resizer) {
+      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true)) {
+        try {
+          r.resize(routeeProps, actorContext, routees, _props.routerConfig)
+        } finally {
+          resizeProgress.set(false)
+        }
+      }
+    }
   }
 }
 
@@ -123,9 +139,8 @@ trait RouterConfig {
   }
 
   protected def createAndRegisterRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): Unit = {
-    resizer match {
-      case None    ⇒ registerRoutees(context, createRoutees(props, context, nrOfInstances, routees))
-      case Some(p) ⇒ resize(props, context, context.self.asInstanceOf[RoutedActorRef].routees)
+    if (resizer.isEmpty) {
+      registerRoutees(context, createRoutees(props, context, nrOfInstances, routees))
     }
   }
 
@@ -143,22 +158,11 @@ trait RouterConfig {
     context.self.asInstanceOf[RoutedActorRef].removeRoutees(routees)
   }
 
+  /**
+   * Routers with dynamically resizable number of routees return the [[akka.routing.Resizer]]
+   * to use.
+   */
   def resizer: Option[Resizer] = None
-
-  private val resizeProgress = new AtomicBoolean
-  private val resizeCounter = new AtomicLong
-
-  def resize(props: Props, context: ActorContext, currentRoutees: IndexedSeq[ActorRef]) {
-    for (r ← resizer) {
-      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true)) {
-        try {
-          r.resize(props, context, currentRoutees, this)
-        } finally {
-          resizeProgress.set(false)
-        }
-      }
-    }
-  }
 
 }
 
@@ -635,7 +639,7 @@ case class DefaultResizer(
  * Number of messages between resize operation.
  * Use 1 to resize before each message.
  */
-  resizeOnNthMessage: Int = 10) extends Resizer {
+  messagesPerResize: Int = 10) extends Resizer {
 
   /**
    * Java API constructor for default values except bounds.
@@ -648,9 +652,9 @@ case class DefaultResizer(
   if (rampupRate < 0.0) throw new IllegalArgumentException("rampupRate must be >= 0.0, was [%s]".format(rampupRate))
   if (backoffThreshold > 1.0) throw new IllegalArgumentException("backoffThreshold must be <= 1.0, was [%s]".format(backoffThreshold))
   if (backoffRate < 0.0) throw new IllegalArgumentException("backoffRate must be >= 0.0, was [%s]".format(backoffRate))
-  if (resizeOnNthMessage <= 0) throw new IllegalArgumentException("resizeOnNthMessage must be > 0, was [%s]".format(resizeOnNthMessage))
+  if (messagesPerResize <= 0) throw new IllegalArgumentException("messagesPerResize must be > 0, was [%s]".format(messagesPerResize))
 
-  def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % resizeOnNthMessage == 0)
+  def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
 
   def resize(props: Props, actorContext: ActorContext, currentRoutees: IndexedSeq[ActorRef], routerConfig: RouterConfig) {
     val requestedCapacity = capacity(currentRoutees)
@@ -716,27 +720,16 @@ case class DefaultResizer(
    * @return number of busy routees, between 0 and routees.size
    */
   def pressure(routees: IndexedSeq[ActorRef]): Int = {
-    if (pressureThreshold == 1) {
-      routees count {
-        case a: LocalActorRef ⇒
-          val cell = a.underlying
-          a.underlying.mailbox.isScheduled && cell.currentMessage != null && a.underlying.mailbox.hasMessages
-        case x ⇒
-          false
-      }
-    } else if (pressureThreshold > 1) {
-      routees count {
-        case a: LocalActorRef ⇒ a.underlying.mailbox.numberOfMessages >= pressureThreshold
-        case x                ⇒ false
-      }
-    } else {
-      routees count {
-        case a: LocalActorRef ⇒
-          val cell = a.underlying
-          a.underlying.mailbox.isScheduled && cell.currentMessage != null
-        case x ⇒
-          false
-      }
+    routees count {
+      case a: LocalActorRef ⇒
+        val cell = a.underlying
+        pressureThreshold match {
+          case 1          ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+          case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+          case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+        }
+      case x ⇒
+        false
     }
   }
 
