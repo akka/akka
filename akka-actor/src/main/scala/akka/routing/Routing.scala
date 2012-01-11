@@ -42,7 +42,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     abandonedRoutees foreach underlying.unwatch
   }
 
-  val route = _props.routerConfig.createRoute(routeeProps, actorContext, this)
+  val route = _props.routerConfig.createRoute(routeeProps, actorContext)
   // initial resize, before message send
   resize()
 
@@ -111,14 +111,14 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
  * do the locking yourself!
  *
  * '''Caution:''' Please note that the [[akka.routing.Router]] which needs to
- * be returned by `apply()` should not send a message to itself in its
+ * be returned by `createActor()` should not send a message to itself in its
  * constructor or `preStart()` or publish its self reference from there: if
  * someone tries sending a message to that reference before the constructor of
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
 trait RouterConfig {
 
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route
+  def createRoute(routeeProps: Props, actorContext: ActorContext): Route
 
   def createActor(): Router = new Router {}
 
@@ -171,15 +171,15 @@ trait RouterConfig {
  * @see akka.routing.RouterConfig
  */
 abstract class CustomRouterConfig extends RouterConfig {
-  override def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
-    val customRoute = createCustomRoute(props, context, ref)
+  override def createRoute(props: Props, context: ActorContext): Route = {
+    val customRoute = createCustomRoute(props, context)
 
     {
       case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
     }
   }
 
-  def createCustomRoute(props: Props, context: ActorContext, ref: RoutedActorRef): CustomRoute
+  def createCustomRoute(props: Props, context: ActorContext): CustomRoute
 
   protected def registerRoutees(context: ActorContext, routees: java.util.List[ActorRef]): Unit = {
     import scala.collection.JavaConverters._
@@ -251,23 +251,23 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
+  def createRoute(props: Props, actorContext: ActorContext): Route = null
 }
 
 /**
  * Router configuration which has no default, i.e. external configuration is required.
  */
 case object FromConfig extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
-    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, actorContext: ActorContext): Route =
+    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
  */
 case class FromConfig() extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
-    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, actorContext: ActorContext): Route =
+    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 object RoundRobinRouter {
@@ -324,9 +324,10 @@ trait RoundRobinLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
@@ -404,7 +405,8 @@ trait RandomLike { this: RouterConfig ⇒
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
   }
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
@@ -476,7 +478,8 @@ trait BroadcastLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     {
@@ -545,7 +548,8 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def within: Duration
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     {

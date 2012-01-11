@@ -107,7 +107,7 @@ public class CustomRouterDocTestBase {
 
     //#crRoute
     @Override
-    public CustomRoute createCustomRoute(Props props, ActorContext context, RoutedActorRef ref) {
+    public CustomRoute createCustomRoute(Props props, ActorContext context) {
       final ActorRef democratActor = context.actorOf(new Props(DemocratActor.class), "d");
       final ActorRef republicanActor = context.actorOf(new Props(RepublicanActor.class), "r");
       List<ActorRef> routees = Arrays.asList(new ActorRef[] { democratActor, republicanActor });

@@ -413,12 +413,12 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
   "custom router" must {
     "be started when constructed" in {
-      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter))
+      val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter()))
       routedActor.isTerminated must be(false)
     }
 
     "count votes as intended - not as in Florida" in {
-      val routedActor = system.actorOf(Props().withRouter(VoteCountRouter))
+      val routedActor = system.actorOf(Props().withRouter(VoteCountRouter()))
       routedActor ! DemocratVote
       routedActor ! DemocratVote
       routedActor ! RepublicanVote
@@ -462,12 +462,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     //#crActors
 
     //#crRouter
-    object VoteCountRouter extends RouterConfig {
+    case class VoteCountRouter() extends RouterConfig {
 
       //#crRoute
-      def createRoute(props: Props,
-                      actorContext: ActorContext,
-                      ref: RoutedActorRef): Route = {
+      def createRoute(routeeProps: Props, actorContext: ActorContext): Route = {
         val democratActor = actorContext.actorOf(Props(new DemocratActor()), "d")
         val republicanActor = actorContext.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)
