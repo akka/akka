@@ -330,7 +330,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
-  val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
+  val log = new BusLogging(eventStream, "ActorSystem", this.getClass)
 
   val scheduler = createScheduler()
 

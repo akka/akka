@@ -85,8 +85,8 @@ creating the ``LoggingAdapter`` correspond to the name of the SL4FJ logger.
     loglevel = "DEBUG"
   }
 
-Logging thread in MDC
----------------------
+Logging Thread and Akka Source in MDC
+-------------------------------------
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
 Mapped Diagnostic Context (MDC) with attribute name ``sourceThread``.
@@ -98,3 +98,16 @@ With Logback the thread name is available with ``%X{sourceThread}`` specifier wi
     </layout>
   </appender>
 
+Another helpful facility is that Akka captures the actor’s address when
+instantiating a logger within it, meaning that the full instance identification
+is available for associating log messages e.g. with members of a router. This
+information is available in the MDC with attribute name ``akkaSource``::
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <layout>
+      <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+    </layout>
+  </appender>
+
+For more details on what this attribute contains—also for non-actors—please see
+`How to Log`_.

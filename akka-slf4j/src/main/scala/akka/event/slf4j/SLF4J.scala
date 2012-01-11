@@ -19,6 +19,7 @@ trait SLF4JLogging {
 
 object Logger {
   def apply(logger: String): SLFLogger = SLFLoggerFactory getLogger logger
+  def apply(logClass: Class[_]): SLFLogger = SLFLoggerFactory getLogger logClass
   def root: SLFLogger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
 
@@ -31,30 +32,31 @@ object Logger {
 class Slf4jEventHandler extends Actor with SLF4JLogging {
 
   val mdcThreadAttributeName = "sourceThread"
+  val mdcAkkaSourceAttributeName = "akkaSource"
 
   def receive = {
 
-    case event @ Error(cause, logSource, message) ⇒
-      withMdc(mdcThreadAttributeName, event.thread.getName) {
+    case event @ Error(cause, logSource, logClass, message) ⇒
+      withMdc(logSource, event.thread.getName) {
         cause match {
-          case Error.NoCause ⇒ Logger(logSource).error(message.toString)
-          case _             ⇒ Logger(logSource).error(message.toString, cause)
+          case Error.NoCause ⇒ Logger(logClass).error(message.toString)
+          case _             ⇒ Logger(logClass).error(message.toString, cause)
         }
       }
 
-    case event @ Warning(logSource, message) ⇒
-      withMdc(mdcThreadAttributeName, event.thread.getName) {
-        Logger(logSource).warn("{}", message.asInstanceOf[AnyRef])
+    case event @ Warning(logSource, logClass, message) ⇒
+      withMdc(logSource, event.thread.getName) {
+        Logger(logClass).warn("{}", message.asInstanceOf[AnyRef])
       }
 
-    case event @ Info(logSource, message) ⇒
-      withMdc(mdcThreadAttributeName, event.thread.getName) {
-        Logger(logSource).info("{}", message.asInstanceOf[AnyRef])
+    case event @ Info(logSource, logClass, message) ⇒
+      withMdc(logSource, event.thread.getName) {
+        Logger(logClass).info("{}", message.asInstanceOf[AnyRef])
       }
 
-    case event @ Debug(logSource, message) ⇒
-      withMdc(mdcThreadAttributeName, event.thread.getName) {
-        Logger(logSource).debug("{}", message.asInstanceOf[AnyRef])
+    case event @ Debug(logSource, logClass, message) ⇒
+      withMdc(logSource, event.thread.getName) {
+        Logger(logClass).debug("{}", message.asInstanceOf[AnyRef])
       }
 
     case InitializeLogger(_) ⇒
@@ -63,12 +65,14 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
   }
 
   @inline
-  final def withMdc(name: String, value: String)(logStatement: ⇒ Unit) {
-    MDC.put(name, value)
+  final def withMdc(logSource: String, thread: String)(logStatement: ⇒ Unit) {
+    MDC.put(mdcAkkaSourceAttributeName, logSource)
+    MDC.put(mdcThreadAttributeName, thread)
     try {
       logStatement
     } finally {
-      MDC.remove(name)
+      MDC.remove(mdcAkkaSourceAttributeName)
+      MDC.remove(mdcThreadAttributeName)
     }
   }
 
