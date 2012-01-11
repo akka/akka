@@ -25,6 +25,17 @@ object RouterWithConfigExample extends App {
       }
     }
     //#config
+    //#config-resize
+    akka.actor.deployment {
+      /router2 {
+        router = round-robin
+        resizer {
+          lower-bound = 2
+          upper-bound = 15
+        }
+      }
+    }
+    //#config-resize
       """)
   val system = ActorSystem("Example", config)
   //#configurableRouting
@@ -32,4 +43,10 @@ object RouterWithConfigExample extends App {
     "router")
   //#configurableRouting
   1 to 10 foreach { i ⇒ router ! Message(i) }
+
+  //#configurableRoutingWithResizer
+  val router2 = system.actorOf(Props[ExampleActor].withRouter(FromConfig()),
+    "router2")
+  //#configurableRoutingWithResizer
+  1 to 10 foreach { i ⇒ router2 ! Message(i) }
 }

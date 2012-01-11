@@ -47,5 +47,12 @@ public class RouterViaConfigExample {
     for (int i = 1; i <= 10; i++) {
       router.tell(new ExampleActor.Message(i));
     }
+
+    //#configurableRoutingWithResizer
+    ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(new FromConfig()), "router2");
+    //#configurableRoutingWithResizer
+    for (int i = 1; i <= 10; i++) {
+      router2.tell(new ExampleActor.Message(i));
+    }
   }
 }

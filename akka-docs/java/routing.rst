@@ -44,8 +44,9 @@ You can also give the router already created routees as in:
 When you create a router programatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
-*It is also worth pointing out that if you define the number of routees in the configuration file then this
-value will be used instead of any programmatically sent parameters.*
+*It is also worth pointing out that if you define the number of routees (``nr-of-instances`` or  ``routees``) in
+the configuration file then this value will be used instead of any programmatically sent parameters, but you must
+also define the ``router`` property in the configuration.*
 
 Once you have the router actor it is just to send messages to it as you would to any actor:
 
@@ -170,6 +171,28 @@ This message is called ``Broadcast`` and is used in the following manner:
 Only the actual message is forwarded to the routees, i.e. "Watch out for Davy Jones' locker" in the example above.
 It is up to the routee implementation whether to handle the broadcast message or not.
 
+Dynamically Resizable Routers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All routers can be used with a fixed number of routees or with a resize strategy to adjust the number
+of routees dynamically.
+
+This is an example of how to create a resizable router that is defined in configuration:
+
+.. includecode:: ../scala/code/akka/docs/routing/RouterViaConfigExample.scala#config-resize
+
+.. includecode:: code/akka/docs/jrouting/RouterViaConfigExample.java#configurableRoutingWithResizer
+
+Several more configuration options are availble and described in ``akka.actor.deployment.default.resizer``
+section of the reference :ref:`configuration`.
+
+This is an example of how to programatically create a resizable router:
+
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingWithResizer
+
+*It is also worth pointing out that if you define the ``router`` in the configuration file then this value
+will be used instead of any programmatically sent parameters.*
+
 Custom Router
 ^^^^^^^^^^^^^
 
@@ -218,4 +241,10 @@ If you are interested in how to use the VoteCountRouter it looks like this:
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#crTest
 
+Custom Resizer
+**************
+
+A router with dynamically resizable number of routees is implemented by providing a ``akka.routing.Resizer``
+in ``resizer`` method of the ``RouterConfig``. See ``akka.routing.DefaultResizer`` for inspiration
+of how to write your own resize strategy.
 

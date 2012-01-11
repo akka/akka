@@ -15,6 +15,15 @@ import com.typesafe.config.ConfigFactory
 
 object RoutingSpec {
 
+  val config = """
+    akka.actor.deployment {
+      /router1 {
+        router = round-robin
+        nr-of-instances = 3
+      }
+    }
+    """
+
   class TestActor extends Actor {
     def receive = {
       case _ ⇒
@@ -31,7 +40,7 @@ object RoutingSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with ImplicitSender {
 
   import akka.routing.RoutingSpec._
 
@@ -85,6 +94,18 @@ class RoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val theActor = system.actorOf(Props(new TheActor), "theActor")
       theActor ! "doIt"
       Await.ready(doneLatch, 1 seconds)
+    }
+
+    "use configured nr-of-instances when FromConfig" in {
+      val router = system.actorOf(Props[TestActor].withRouter(FromConfig), "router1")
+      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
+      system.stop(router)
+    }
+
+    "use configured nr-of-instances when router is specified" in {
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router1")
+      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
+      system.stop(router)
     }
 
   }

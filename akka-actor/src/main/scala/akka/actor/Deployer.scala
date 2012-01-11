@@ -55,12 +55,27 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
+    val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
+      val resizerConfig = deployment.getConfig("resizer")
+      Some(DefaultResizer(
+        lowerBound = resizerConfig.getInt("lower-bound"),
+        upperBound = resizerConfig.getInt("upper-bound"),
+        pressureThreshold = resizerConfig.getInt("pressure-threshold"),
+        rampupRate = resizerConfig.getDouble("rampup-rate"),
+        backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
+        backoffRate = resizerConfig.getDouble("backoff-rate"),
+        stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
+        messagesPerResize = resizerConfig.getInt("messages-per-resize")))
+    } else {
+      None
+    }
+
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees)
+      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"         ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 
