@@ -27,3 +27,8 @@ determines when the actor will stop itself and hence closes the window for a
 reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
+
+ActorPool
+---------
+
+The ActorPool has been replaced by dynamically resizable routers.

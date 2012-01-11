@@ -11,7 +11,7 @@ import akka.config.ConfigurationException
 import akka.util.Duration
 
 trait RemoteRouterConfig extends RouterConfig {
-  override protected def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): Vector[ActorRef] = (nrOfInstances, routees) match {
+  override def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
     case (_, Nil) ⇒ throw new ConfigurationException("must specify list of remote nodes")
     case (n, xs) ⇒
       val nodes = routees map {
@@ -20,7 +20,7 @@ trait RemoteRouterConfig extends RouterConfig {
       }
       val node = Stream.continually(nodes).flatten.iterator
       val impl = context.system.asInstanceOf[ActorSystemImpl] //FIXME should we rely on this cast to work here?
-      Vector.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
+      IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
         val name = "c" + i
         val deploy = Deploy("", ConfigFactory.empty(), None, props.routerConfig, RemoteScope(node.next))
         impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
@@ -39,13 +39,20 @@ trait RemoteRouterConfig extends RouterConfig {
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with RoundRobinLike {
+case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
+  extends RemoteRouterConfig with RoundRobinLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
+  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
 }
 
 /**
@@ -59,13 +66,20 @@ case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String])
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with RandomLike {
+case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
+  extends RemoteRouterConfig with RandomLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
+  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
 }
 
 /**
@@ -79,13 +93,20 @@ case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String]) ext
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String]) extends RemoteRouterConfig with BroadcastLike {
+case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
+  extends RemoteRouterConfig with BroadcastLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String]) = this(n, t.asScala)
+  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
 }
 
 /**
@@ -99,12 +120,19 @@ case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String]) 
  * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
-case class RemoteScatterGatherFirstCompletedRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration)
+case class RemoteScatterGatherFirstCompletedRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration,
+                                                   override val resizer: Option[Resizer] = None)
   extends RemoteRouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
    * Constructor that sets the routees to be used.
    * Java API
    */
-  def this(n: Int, t: java.util.Collection[String], w: Duration) = this(n, t.asScala, w)
+  def this(n: Int, t: java.lang.Iterable[String], w: Duration) = this(n, t.asScala, w)
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer, w: Duration) = this(0, Nil, w, Some(resizer))
 }
