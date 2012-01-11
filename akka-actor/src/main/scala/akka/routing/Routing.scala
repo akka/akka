@@ -42,7 +42,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     abandonedRoutees foreach underlying.unwatch
   }
 
-  val route = _props.routerConfig.createRoute(routeeProps, actorContext, this)
+  val route = _props.routerConfig.createRoute(routeeProps, actorContext)
   // initial resize, before message send
   resize()
 
@@ -111,14 +111,14 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
  * do the locking yourself!
  *
  * '''Caution:''' Please note that the [[akka.routing.Router]] which needs to
- * be returned by `apply()` should not send a message to itself in its
+ * be returned by `createActor()` should not send a message to itself in its
  * constructor or `preStart()` or publish its self reference from there: if
  * someone tries sending a message to that reference before the constructor of
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
 trait RouterConfig {
 
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route
+  def createRoute(routeeProps: Props, actorContext: ActorContext): Route
 
   def createActor(): Router = new Router {}
 
@@ -171,15 +171,16 @@ trait RouterConfig {
  * @see akka.routing.RouterConfig
  */
 abstract class CustomRouterConfig extends RouterConfig {
-  override def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
-    val customRoute = createCustomRoute(props, context, ref)
+  override def createRoute(props: Props, context: ActorContext): Route = {
+    // as a bonus, this prevents closing of props and context in the returned Route PartialFunction
+    val customRoute = createCustomRoute(props, context)
 
     {
       case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
     }
   }
 
-  def createCustomRoute(props: Props, context: ActorContext, ref: RoutedActorRef): CustomRoute
+  def createCustomRoute(props: Props, context: ActorContext): CustomRoute
 
   protected def registerRoutees(context: ActorContext, routees: java.util.List[ActorRef]): Unit = {
     import scala.collection.JavaConverters._
@@ -251,23 +252,23 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route = null
+  def createRoute(props: Props, actorContext: ActorContext): Route = null
 }
 
 /**
  * Router configuration which has no default, i.e. external configuration is required.
  */
 case object FromConfig extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
-    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, actorContext: ActorContext): Route =
+    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
  */
 case class FromConfig() extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext, ref: RoutedActorRef): Route =
-    throw new ConfigurationException("router " + ref + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, actorContext: ActorContext): Route =
+    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 object RoundRobinRouter {
@@ -324,9 +325,10 @@ trait RoundRobinLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
@@ -404,7 +406,8 @@ trait RandomLike { this: RouterConfig ⇒
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
   }
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
@@ -476,7 +479,8 @@ trait BroadcastLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     {
@@ -511,7 +515,7 @@ object ScatterGatherFirstCompletedRouter {
  * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
  */
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
-                                             override val resizer: Option[Resizer] = None)
+  override val resizer: Option[Resizer] = None)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   /**
@@ -545,7 +549,8 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def within: Duration
 
-  def createRoute(props: Props, context: ActorContext, ref: RoutedActorRef): Route = {
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     {
@@ -588,57 +593,57 @@ case class DefaultResizer(
    */
   lowerBound: Int = 1,
   /**
- * The most number of routees the router should ever have.
- * Must be greater than or equal to `lowerBound`.
- */
+   * The most number of routees the router should ever have.
+   * Must be greater than or equal to `lowerBound`.
+   */
   upperBound: Int = 10,
   /**
- * Threshold to evaluate if routee is considered to be busy (under pressure).
- * Implementation depends on this value (default is 1).
- * <ul>
- * <li> 0:   number of routees currently processing a message.</li>
- * <li> 1:   number of routees currently processing a message has
- *           some messages in mailbox.</li>
- * <li> > 1: number of routees with at least the configured `pressureThreshold`
- *           messages in their mailbox. Note that estimating mailbox size of
- *           default UnboundedMailbox is O(N) operation.</li>
- * </ul>
- */
+   * Threshold to evaluate if routee is considered to be busy (under pressure).
+   * Implementation depends on this value (default is 1).
+   * <ul>
+   * <li> 0:   number of routees currently processing a message.</li>
+   * <li> 1:   number of routees currently processing a message has
+   *           some messages in mailbox.</li>
+   * <li> > 1: number of routees with at least the configured `pressureThreshold`
+   *           messages in their mailbox. Note that estimating mailbox size of
+   *           default UnboundedMailbox is O(N) operation.</li>
+   * </ul>
+   */
   pressureThreshold: Int = 1,
   /**
- * Percentage to increase capacity whenever all routees are busy.
- * For example, 0.2 would increase 20% (rounded up), i.e. if current
- * capacity is 6 it will request an increase of 2 more routees.
- */
+   * Percentage to increase capacity whenever all routees are busy.
+   * For example, 0.2 would increase 20% (rounded up), i.e. if current
+   * capacity is 6 it will request an increase of 2 more routees.
+   */
   rampupRate: Double = 0.2,
   /**
- * Minimum fraction of busy routees before backing off.
- * For example, if this is 0.3, then we'll remove some routees only when
- * less than 30% of routees are busy, i.e. if current capacity is 10 and
- * 3 are busy then the capacity is unchanged, but if 2 or less are busy
- * the capacity is decreased.
- *
- * Use 0.0 or negative to avoid removal of routees.
- */
+   * Minimum fraction of busy routees before backing off.
+   * For example, if this is 0.3, then we'll remove some routees only when
+   * less than 30% of routees are busy, i.e. if current capacity is 10 and
+   * 3 are busy then the capacity is unchanged, but if 2 or less are busy
+   * the capacity is decreased.
+   *
+   * Use 0.0 or negative to avoid removal of routees.
+   */
   backoffThreshold: Double = 0.3,
   /**
- * Fraction of routees to be removed when the resizer reaches the
- * backoffThreshold.
- * For example, 0.1 would decrease 10% (rounded up), i.e. if current
- * capacity is 9 it will request an decrease of 1 routee.
- */
+   * Fraction of routees to be removed when the resizer reaches the
+   * backoffThreshold.
+   * For example, 0.1 would decrease 10% (rounded up), i.e. if current
+   * capacity is 9 it will request an decrease of 1 routee.
+   */
   backoffRate: Double = 0.1,
   /**
- * When the resizer reduce the capacity the abandoned routee actors are stopped
- * with PoisonPill after this delay. The reason for the delay is to give concurrent
- * messages a chance to be placed in mailbox before sending PoisonPill.
- * Use 0 seconds to skip delay.
- */
+   * When the resizer reduce the capacity the abandoned routee actors are stopped
+   * with PoisonPill after this delay. The reason for the delay is to give concurrent
+   * messages a chance to be placed in mailbox before sending PoisonPill.
+   * Use 0 seconds to skip delay.
+   */
   stopDelay: Duration = 1.second,
   /**
- * Number of messages between resize operation.
- * Use 1 to resize before each message.
- */
+   * Number of messages between resize operation.
+   * Use 1 to resize before each message.
+   */
   messagesPerResize: Int = 10) extends Resizer {
 
   /**
