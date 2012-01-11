@@ -12,7 +12,7 @@ package object camel{
 
   def start(actor: => Actor)(implicit system : ActorSystem) = {
     val actorRef = system.actorOf(Props(actor))
-    ActivationAware.awaitActivation(actorRef, 1 second)
+    CamelExtension(system).awaitActivation(actorRef, 1 second)
     actorRef
   }
 

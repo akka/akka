@@ -22,7 +22,7 @@ class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMa
 
   def activatedConsumerWithUri(uri : String) ={
     val consumer = system.actorOf(Props(new TestConsumer(uri)))
-    ActivationAware.awaitActivation(consumer, 1 second)
+    CamelExtension(system).awaitActivation(consumer, 1 second)
     consumer
   }
 
@@ -202,7 +202,7 @@ class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMa
 //}
 
 
-class TestConsumer(uri: String) extends Actor with Consumer with ActivationAware{
+class TestConsumer(uri: String) extends Actor with Consumer{
 
   def endpointUri = uri
   override protected def receive = {

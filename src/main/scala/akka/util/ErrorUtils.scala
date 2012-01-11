@@ -6,10 +6,11 @@ object ErrorUtils{
    */
   def either[T](block:() => T) : Either[Throwable,T] = try {Right(block())} catch {case e => Left(e)}
   
-  trait Result[A, B]
-  case class Success[A](result:A) extends Result[A, Throwable]
-  case class Failure[A](throwable:Throwable) extends Result[A, Throwable]
-  def try_[A](block: => A) : Result[A, Throwable] = try {Success(block)} catch {case e => Failure(e)}
+  def try_[A](block: => A) : Either[Throwable, A] = try {
+    Right(block)
+  } catch {
+    case e => Left(e)
+  }
 
   /**
    * Executes all blocks in order and collects exceptions. It guarantees to execute all blocks, even if some of them fail.

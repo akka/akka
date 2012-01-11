@@ -5,14 +5,13 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import java.lang.String
 import org.apache.camel.{ProducerTemplate, CamelContext}
-import akka.util.duration._
 import collection.mutable.HashMap
 import akka.event.Logging.Info
 import akka.util.{Timeout, Duration}
 import akka.util.ErrorUtils._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
 
-trait Camel extends ConsumerRegistry with Extension{
+trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
   def template : ProducerTemplate
   def addRoutes(routeBuilder: RouteBuilder) :Unit
@@ -93,7 +92,7 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
  */
 trait ConsumerRegistry{
   self:Camel =>
-  val actorSystem : ActorSystem //TODO: maybe sharing of an actor system for internal purposes is not so good idea? What if user forgets to shut it down?
+  val actorSystem : ActorSystem
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
 
@@ -101,11 +100,45 @@ trait ConsumerRegistry{
     consumerPublisher.tell(ConsumerActorRegistered(route, consumer), consumer.self)
   }
 
-  def unregisterConsumer(consumer: Consumer with Actor) = {
-    consumerPublisher.ask(ConsumerActorUnregistered(consumer.self), Timeout(1 minute)).onSuccess{
-      case EndpointDeActivated(_) => consumer.postDeactivation() //has to be synchronous as the actor is already dead
+  def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
+}
+
+trait Activation{ this : Camel =>
+  import akka.dispatch.Await
+  import java.util.concurrent.TimeoutException
+
+  val actorSystem : ActorSystem
+  private[camel] val activationListener = actorSystem.actorOf(Props[ActivationListener])
+
+  /**
+   * Awaits for actor to be activated.
+   */
+  def awaitActivation(actor: ActorRef, timeout: Duration){
+    implicit val timeout2 = Timeout(timeout)
+    try{
+      Await.result(activationListener ? AwaitActivation(actor), timeout) match {
+        case EndpointActivated(_) => {}
+        case EndpointFailedToActivate(ref, cause) => throw cause
+        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
+      }
+    }catch {
+      case e: TimeoutException => throw new ActivationTimeoutException
     }
   }
 
-  def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
+  def awaitDeactivation(actor: ActorRef, timeout: Duration) {
+    val awaitable = activationListener ? (AwaitDeActivation(actor), Timeout(timeout))
+
+    try{
+      Await.result(awaitable, timeout) match {
+        case EndpointDeActivated(_) => {}
+        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
+      }
+    }catch {
+      case e: TimeoutException => throw new DeActivationTimeoutException
+    }
+  }
+
+
+
 }

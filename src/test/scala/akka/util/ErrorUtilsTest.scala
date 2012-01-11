@@ -4,7 +4,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import akka.util.ErrorUtils._
 
-class TryAllTest extends FlatSpec with ShouldMatchers{
+class ErrorUtilsTest extends FlatSpec with ShouldMatchers{
 
   "tryAll" should  "make sure blocks after failed block get executed" in {
     class MyException extends Exception
@@ -45,4 +45,13 @@ class TryAllTest extends FlatSpec with ShouldMatchers{
     )
     executed should be (List("b3", "b2", "b1"))
   }
+  
+  "try_" should "return Left on failure" in {
+    try_(throw new RuntimeException).isLeft should be (true)
+  }
+
+  "try_" should "return Right on success" in {
+    try_(math.random).isRight should be (true)
+  }
+
 }

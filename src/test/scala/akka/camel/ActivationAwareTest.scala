@@ -28,7 +28,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
   "ActivationAware" should "be notified when endpoint is activated" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     try{
-      ActivationAware.awaitActivation(actor, 1 second)
+      camel.awaitActivation(actor, 1 second)
     } catch {
       case e : ActivationTimeoutException => fail("Failed to get notification within 1 second")
     }
@@ -38,7 +38,7 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
 
   it should "be notified when endpoint is de-activated" in {
     val stopped = new CountDownLatch(1)
-    val actor = start(new Consumer with ActivationAware{
+    val actor = start(new Consumer{
       def endpointUri = "direct:a3"
       def receive = {case _ => {}}
 
@@ -47,38 +47,29 @@ class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAft
         stopped.countDown()
       }
     })
-    ActivationAware.awaitActivation(actor, 1 second)
-    val awaitDeactivation = ActivationAware.registerInterestInDeActivation(actor, 1 second)
+    camel.awaitActivation(actor, 1 second)
+
     system.stop(actor)
-    awaitDeactivation()
+    camel.awaitDeactivation( actor, 1 second)
     if(!stopped.await(1, TimeUnit.SECONDS)) fail("Actor should have stopped quickly after deactivation!")
   }
 
   it should "time out when waiting for endpoint de-activation for too long" in {
     val actor = start(new TestConsumer("direct:a5"))
-    ActivationAware.awaitActivation(actor, 1 millis)
-    val awaitDeactivation = ActivationAware.registerInterestInDeActivation(actor, 1 second)
+    camel.awaitActivation(actor, 1 millis)
     intercept[DeActivationTimeoutException]{
-      awaitDeactivation()
+      camel.awaitDeactivation( actor, 1 second)
     }
-  }
-
-  it should "consume activation messages first, so even if actor uses a _ wildcard, activation works fine" in {
-    val actor = system.actorOf(Props(new Actor with ActivationAware{
-      protected def receive = { case _ => /* consumes all*/ }
-    }))
-    actor ! EndpointActivated(actor)
-    ActivationAware.awaitActivation(actor, 10 millis)
   }
 
   "awaitActivation" should "fail if notification timeout is too short and activation is not complete yet" in {
     val actor = testActorWithEndpoint("direct:actor-1")
     intercept[ActivationTimeoutException]{
-      ActivationAware.awaitActivation(actor, 0 seconds)
+      camel.awaitActivation(actor, 0 seconds)
     }
   }
 
-  class TestConsumer(uri:String) extends Actor with Consumer with ActivationAware{
+  class TestConsumer(uri:String) extends Actor with Consumer{
     def endpointUri = uri
     override def receive = {
       case msg:Message => sender ! "received " + msg.body

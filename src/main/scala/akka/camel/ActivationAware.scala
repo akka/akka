@@ -2,52 +2,22 @@ package akka.camel
 
 
 import akka.actor._
-import akka.dispatch.Await
-import akka.util.{Timeout, Duration}
-import java.util.concurrent.TimeoutException
+import collection.mutable.WeakHashMap
 
 object ActivationAware{
 
   /**
-   * Awaits for actor to be activated.
-   */
-  def awaitActivation(actor: ActorRef, timeout: Duration) = {
-    implicit val timeout2 = Timeout(timeout)
-    try{
-      Await.result(actor ? AwaitActivation, timeout) match {
-        case EndpointActivated(_) => {}
-        case EndpointFailedToActivate(cause) => throw cause
-        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
-      }
-    }catch {
-      case e: TimeoutException => throw new ActivationTimeoutException
-    }
-  }
-  /**
    * Awaits for actor to be de-activated.
    */
-  def registerInterestInDeActivation(actor: ActorRef, timeout: Duration): () => Unit = {
-    val awaitable = actor ? (AwaitDeActivation, Timeout(timeout))
-
-    () => try{
-      Await.result(awaitable, timeout) match {
-        case EndpointDeActivated(_) => {}
-        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
-      }
-    }catch {
-      case e: TimeoutException => throw new DeActivationTimeoutException
-    }
-  }
 }
 
 class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation. Please make sure your actor extends ActivationAware trait.")
 class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation. Please make sure your actor extends ActivationAware trait.")
 
-trait ActivationAware extends Actor with CamelEndpoint {
-  val stateMachine = new ActivationStateMachine
 
+class ActivationListener extends Actor{
 
-  class ActivationStateMachine{ //TODO: I tried to implement this as an actor but I couldn't start it from preStart. Any ideas?
+  class ActivationStateMachine {
     private[this] var awaitingActivation : List[ActorRef] = Nil
     private[this] var awaitingDeActivation : List[ActorRef] = Nil
     private[this] var activationFailure : Option[Throwable] = None
@@ -55,68 +25,63 @@ trait ActivationAware extends Actor with CamelEndpoint {
     var receive : Receive = notActivated
 
     def activated : Receive = {
-      case AwaitActivation => sender ! EndpointActivated(self)
-      case AwaitDeActivation => awaitingDeActivation ::= sender
+      case AwaitActivation(ref) => sender ! EndpointActivated(ref)
+      case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
+      case EndpointDeActivated(ref) => onDeactivation(ref)
+      case _ => {/*ignore*/}
     }
 
     def failedToActivate : Receive = {
-      case AwaitActivation => sender ! EndpointFailedToActivate(activationFailure.get)
-      case AwaitDeActivation => sender ! EndpointFailedToActivate(activationFailure.get)
+      case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
+      case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
+      case _ => {/*ignore*/}
     }
 
     def notActivated : Receive = {
-      case AwaitActivation =>  awaitingActivation ::= sender
-      case AwaitDeActivation => awaitingDeActivation ::= sender
+      case AwaitActivation(ref) =>  awaitingActivation ::= sender
+      case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
 
-      case EndpointActivated(ref) => {
-        migration.Migration.EventHandler.debug(this+" activated")
+      case EndpointActivated(ref)  => {
+        migration.Migration.EventHandler.debug(ref+" activated")
         awaitingActivation.foreach(_ ! EndpointActivated(ref))
         awaitingActivation = Nil
         receive = activated
       }
 
-      case EndpointFailedToActivate(cause) => {
-        migration.Migration.EventHandler.debug(this+" failed to activate")
+      case EndpointFailedToActivate(ref, cause) => {
+        migration.Migration.EventHandler.debug(ref+" failed to activate")
         activationFailure = Option(cause)
-        awaitingActivation.foreach(_ ! EndpointFailedToActivate(cause))
+        awaitingActivation.foreach(_ ! EndpointFailedToActivate(ref, cause))
         awaitingActivation = Nil
         receive = failedToActivate
       }
+      case _ => {/*ignore*/}
     }
 
-    def onDeactivation(){
-      awaitingDeActivation foreach (_ ! EndpointDeActivated(self))
+    def onDeactivation(ref: ActorRef){
+      awaitingDeActivation foreach (_ ! EndpointDeActivated(ref))
       awaitingDeActivation = Nil
+      context.stop(self)
     }
   }
 
+  context.system.eventStream.subscribe(self, classOf[ActivationMessage])
 
+  val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
 
-  override def preStart {
-    super.preStart()
-    context.become(forwardToHelper orElse receive, true)
-  }
-
-  def forwardToHelper : Receive = {
-    case msg if (msg.isInstanceOf[ActivationMessage])  =>{
-//      println("GOT "+msg)
-      stateMachine.receive(msg)
+  override def receive = {
+    case msg @ ActivationMessage(ref) =>{
+      activations.getOrElseUpdate(ref, new ActivationStateMachine).receive(msg)
     }
   }
 
-  override def postDeactivation() {
-    super.postDeactivation()
-    stateMachine.onDeactivation()
-  }
-
-  //TODO: consider adding postActivation method to be symetric with de-activation
 
 }
-trait ActivationMessage
+case class ActivationMessage(actor: ActorRef)
 
 /**
  * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
  */
-object AwaitActivation extends ActivationMessage
-object AwaitDeActivation extends ActivationMessage
+case class AwaitActivation(ref:ActorRef) extends ActivationMessage(ref)
+case class AwaitDeActivation(ref : ActorRef) extends ActivationMessage(ref)
 

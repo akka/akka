@@ -11,7 +11,7 @@ import akka.camel.migration.Migration._
 
 import akka.actor._
 import akka.util.ErrorUtils._
-import akka.util.ErrorUtils
+import collection.mutable
 
 /**
  *
@@ -23,22 +23,40 @@ import akka.util.ErrorUtils
  * @author Martin Krasser
  */
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
+  val activated  = new mutable.HashSet[ActorRef]
+
+  def unless[A](condition: Boolean)(block  : => A) = if (!condition) block
+
   def receive = {
     case r: ConsumerActorRegistered => {
-      try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
-        case Success(_) => {
-          sender ! EndpointActivated(r.actorRef)
-          EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (r.actorRef, r.endpointUri))
-        }
-        case ErrorUtils.Failure(throwable) => sender ! EndpointFailedToActivate(throwable)
+      unless(activated.contains(r.actorRef)){
+        registerConsumer(r)
       }
-
-
     }
-    case u: ConsumerActorUnregistered => {
-      camel.stopRoute(u.actorRef.path.toString) //TODO: we need to handle exceptions here and send EndpointFailedToDeActivate
-      sender ! EndpointDeActivated(u.actorRef)
-      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (u.actorRef, u.actorRef.path))
+
+    case Terminated(ref) => {
+      activated.remove(ref)
+      camel.stopRoute(ref.path.toString)
+      context.system.eventStream.publish(EndpointDeActivated(ref))
+      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
+    }
+  }
+
+
+  def registerConsumer(r: ConsumerActorRegistered) {
+    context.watch(r.actorRef)
+    try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
+      case Right(_) => {
+        activated.add(r.actorRef)
+
+        //          sender ! EndpointActivated(r.actorRef)
+        context.system.eventStream.publish(EndpointActivated(r.actorRef))
+        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(r.actorRef, r.endpointUri))
+      }
+      case Left(throwable) => {
+        context.unwatch(r.actorRef)
+        context.system.eventStream.publish(EndpointFailedToActivate(r.actorRef, throwable))
+      }
     }
   }
 
@@ -106,7 +124,7 @@ private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef)
 /**
  * Event message indicating that a single endpoint has been activated.
  */
-private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage
-private[camel] case class EndpointFailedToActivate(cause : Throwable) extends ActivationMessage
-private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage
+private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
+private[camel] case class EndpointFailedToActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
+private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
 

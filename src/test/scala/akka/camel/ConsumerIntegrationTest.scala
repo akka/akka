@@ -23,7 +23,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     system.shutdown()
   }
 
-  class TestActor(uri:String = "file://abcde") extends Actor with Consumer with ActivationAware{
+  class TestActor(uri:String = "file://abcde") extends Actor with Consumer{
     def endpointUri = uri
     protected def receive = { case _ =>  println("foooo..")}
   }
@@ -52,7 +52,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   }
 
   it should  "support in-out messaging" in  {
-    start(new Consumer with ActivationAware{
+    start(new Consumer {
       def endpointUri = "direct:a1"
       protected def receive = {
         case m: Message => sender ! "received "+m.bodyAs[String]
@@ -64,7 +64,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
 
-    start(new Consumer with ActivationAware{
+    start(new Consumer{
       override def outTimeout = SHORT_TIMEOUT
 
       def endpointUri = "direct:a3"
@@ -78,7 +78,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
 
   it should "process messages even after actor restart" in {
     val restarted = new CountDownLatch(1)
-    val consumer = start(new Consumer with ActivationAware{
+    val consumer = start(new Consumer{
       def endpointUri = "direct:a2"
 
       protected def receive = {
@@ -86,7 +86,10 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
         case m:Message => sender ! "received "+m.bodyAs[String]
       }
 
-      override def preRestart(reason: Throwable, message: Option[Any]) {restarted.countDown()}
+      override def postRestart(reason: Throwable) {
+        println("RESTARTED!!!")
+        restarted.countDown()
+      }
     })
     consumer ! "throw"
     if(!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
@@ -98,13 +101,13 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
 
   it should  "unregister itself when stopped - integration test" in {
     val actorRef = start(new TestActor())
-    ActivationAware.awaitActivation(actorRef, 1 second)
+    _camel.awaitActivation(actorRef, 1 second)
 
     _camel.routeCount should be >(0)
 
-    val awaitDeactivation = ActivationAware.registerInterestInDeActivation(actorRef, 1 second )
+
     system.stop(actorRef)
-    awaitDeactivation()
+    _camel.awaitDeactivation(actorRef, 1 second )
 
     _camel.routeCount should be (0)
   }

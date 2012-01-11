@@ -33,11 +33,7 @@ trait Consumer extends Actor with CamelEndpoint{
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
-  //TODO replace with deathwatch
-  override def postStop(){ camel.unregisterConsumer(this) }
-
-  //TODO replace with event from actor system
-  override def preStart(){ camel.registerConsumer(endpointUri, this) }
+  camel.registerConsumer(endpointUri, this)
 
   //TODO would be nice to pack these config items and endpointuri together in a CamelConfig case class
   /**
