@@ -12,6 +12,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
+import java.util.concurrent.ConcurrentHashMap
 
 object RoutingSpec {
 
@@ -253,6 +254,56 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       counter1.get must be(1)
       counter2.get must be(1)
+    }
+  }
+
+  "smallest mailbox router" must {
+    "be started when constructed" in {
+      val routedActor = system.actorOf(Props[TestActor].withRouter(SmallestMailboxRouter(nrOfInstances = 1)))
+      routedActor.isTerminated must be(false)
+    }
+
+    "deliver messages to idle actor" in {
+      val usedActors = new ConcurrentHashMap[Int, String]()
+      val router = system.actorOf(Props(new Actor {
+        def receive = {
+          case busy: TestLatch ⇒
+            usedActors.put(0, self.path.toString)
+            Await.ready(busy, TestLatch.DefaultTimeout)
+          case (msg: Int, receivedLatch: TestLatch) ⇒
+            usedActors.put(msg, self.path.toString)
+            receivedLatch.countDown()
+        }
+      }).withRouter(SmallestMailboxRouter(3)))
+
+      val busy = TestLatch(1)
+      router ! busy
+
+      val received1 = TestLatch(1)
+      router.!((1, received1))
+      Await.ready(received1, TestLatch.DefaultTimeout)
+
+      val received2 = TestLatch(1)
+      router.!((2, received2))
+      Await.ready(received2, TestLatch.DefaultTimeout)
+
+      val received3 = TestLatch(1)
+      router.!((3, received3))
+      Await.ready(received3, TestLatch.DefaultTimeout)
+
+      busy.countDown()
+
+      val busyPath = usedActors.get(0)
+      busyPath must not be (null)
+
+      val path1 = usedActors.get(1)
+      val path2 = usedActors.get(2)
+      val path3 = usedActors.get(3)
+
+      path1 must not be (busyPath)
+      path2 must not be (busyPath)
+      path3 must not be (busyPath)
+
     }
   }
 

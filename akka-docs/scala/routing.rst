@@ -16,11 +16,12 @@ Router
 A Router is an actor that routes incoming messages to outbound actors.
 The router routes the messages sent to it to its underlying actors called 'routees'.
 
-Akka comes with four defined routers out of the box, but as you will see in this chapter it
-is really easy to create your own. The four routers shipped with Akka are:
+Akka comes with some defined routers out of the box, but as you will see in this chapter it
+is really easy to create your own. The routers shipped with Akka are:
 
 * ``akka.routing.RoundRobinRouter``
 * ``akka.routing.RandomRouter``
+* ``akka.routing.SmallestMailboxRouter``
 * ``akka.routing.BroadcastRouter``
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
 
@@ -122,6 +123,21 @@ When run you should see a similar output to this:
 
 The result from running the random router should be different, or at least random, every time you run it.
 Try to run it a couple of times to verify its behavior if you don't trust us.
+
+SmallestMailboxRouter
+*********************
+A Router that tries to send to the routee with fewest messages in mailbox.
+The selection is done in this order:
+
+ * pick any idle routee (not processing message) with empty mailbox
+ * pick any routee with empty mailbox
+ * pick routee with fewest pending messages in mailbox
+ * pick any remote routee, remote actors are consider lowest priority,
+   since their mailbox size is unknown
+
+Code example:
+
+.. includecode:: code/akka/docs/routing/RouterTypeExample.scala#smallestMailboxRouter
 
 BroadcastRouter
 ***************
