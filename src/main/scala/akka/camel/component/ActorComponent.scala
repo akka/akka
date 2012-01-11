@@ -29,8 +29,6 @@ case class Path(value:String)
  * @author Martin Krasser
  */
 class ActorComponent(camel : Camel) extends DefaultComponent {
-  printf("Starting component '%s' with camel '%s'\n", this, camel)
-  //TODO the actor component should know about the ActorSystem (or Camel trait delegates)
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = parsePath(remaining)
     new ActorEndpoint(uri, this, path, camel)

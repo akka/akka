@@ -8,9 +8,22 @@ import org.junit.Test
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
 import org.apache.camel.NoTypeConversionAvailableException
+import akka.actor.ActorSystem
 
+/**
+ * Static camel so it doesn't slow down tests
+ */
+object MessageScalaTest{
+  lazy val camelSystem = ActorSystem("test")
+  lazy val camel = CamelExtension(camelSystem)
+}
 
-class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
+class MessageScalaTest extends JUnitSuite with BeforeAndAfterAll with MessageSugar{
+  def camel = MessageScalaTest.camel
+
+  override protected def afterAll() {
+    MessageScalaTest.camelSystem.shutdown()
+  }
 
   @Test def shouldConvertDoubleBodyToString = {
     assertEquals("1.4", Message(1.4).bodyAs[String])

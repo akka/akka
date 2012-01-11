@@ -5,11 +5,23 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 import org.apache.camel.{Exchange, ExchangePattern}
+import akka.actor.ActorSystem
 
-class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
+object CamelExchangeAdapterTest{
+  lazy val system = ActorSystem("test")
+  lazy val camel = CamelExtension(system)
+}
+class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with MessageSugar{
+
+  def camel = CamelExchangeAdapterTest.camel
+
 
   //TODO: Get rid of implicit.
   // It is here, as was easier to add this implicit than to rewrite the whole test...
+  override protected def afterAll() {
+    CamelExchangeAdapterTest.system.shutdown()
+  }
+
   implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e)
 
   @Test def shouldSetInMessageFromRequestMessage = {

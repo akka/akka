@@ -8,7 +8,7 @@ import akka.actor._
 import akka.util.Timeout
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 
-class ActivationAwareTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
+class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
   implicit var system :ActorSystem = _
   implicit val timeout = Timeout(10 seconds)
   def template : ProducerTemplate = camel.template
