@@ -25,22 +25,18 @@ import collection.mutable
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
-  //TODO handle state loss on restart (IMPORTANT!!!)
-
-  def unless[A](condition: Boolean)(block  : => A) = if (!condition) block
-
   def receive = {
-    case r: ConsumerActorRegistered => {
-      unless(activated.contains(r.actorRef)){
-        registerConsumer(r)
-      }
-    }
-
+    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actorRef)) { registerConsumer(r) }
     case Terminated(ref) => {
-      activated.remove(ref)
-      camel.stopRoute(ref.path.toString)
-      context.system.eventStream.publish(EndpointDeActivated(ref))
-      EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
+      try {
+        activated.remove(ref)
+        camel.stopRoute(ref.path.toString)
+        context.system.eventStream.publish(EndpointDeActivated(ref))
+        EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
+      } catch {
+        case e => //TODO: is there anything better we could do?
+      }
+
     }
   }
 
@@ -50,8 +46,6 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
     try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
       case Right(_) => {
         activated.add(r.actorRef)
-
-        //          sender ! EndpointActivated(r.actorRef)
         context.system.eventStream.publish(EndpointActivated(r.actorRef))
         EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(r.actorRef, r.endpointUri))
       }
@@ -61,6 +55,10 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
       }
     }
   }
+
+  def unless[A](condition: Boolean)(block  : => A) = if (!condition) block
+
+  def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
 }
 
