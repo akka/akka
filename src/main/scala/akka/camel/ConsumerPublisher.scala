@@ -28,13 +28,14 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   def receive = {
     case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actorRef)) { registerConsumer(r) }
     case Terminated(ref) => {
-      try {
-        activated.remove(ref)
-        camel.stopRoute(ref.path.toString)
-        context.system.eventStream.publish(EndpointDeActivated(ref))
-        EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
-      } catch {
-        case e => //TODO: is there anything better we could do?
+      activated.remove(ref)
+      try_(camel.stopRoute(ref.path.toString)) match {
+        case Right(_) =>{
+          context.system.eventStream.publish(EndpointDeActivated(ref))
+          EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
+        }
+        case Left(e) => context.system.eventStream.publish(EndpointFailedToDeActivate(ref, e)) //TODO: is there anything better we could do?
+
       }
 
     }
@@ -42,15 +43,14 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
 
 
   def registerConsumer(r: ConsumerActorRegistered) {
-    context.watch(r.actorRef)
     try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
       case Right(_) => {
+        context.watch(r.actorRef)
         activated.add(r.actorRef)
         context.system.eventStream.publish(EndpointActivated(r.actorRef))
         EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(r.actorRef, r.endpointUri))
       }
       case Left(throwable) => {
-        context.unwatch(r.actorRef)
         context.system.eventStream.publish(EndpointFailedToActivate(r.actorRef, throwable))
       }
     }
@@ -127,4 +127,5 @@ private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef)
 private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
 private[camel] case class EndpointFailedToActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
 private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
+private[camel] case class EndpointFailedToDeActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
 

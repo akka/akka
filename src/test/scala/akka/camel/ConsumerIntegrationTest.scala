@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
+import akka.util.Duration
 
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach{
   implicit var system : ActorSystem = _
@@ -35,7 +36,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
 
     system.actorOf(Props(new TestActor("file://abc")))
     Thread.sleep(300)
-    verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor])
+    verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor], any[Duration])
   }
 
   //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.

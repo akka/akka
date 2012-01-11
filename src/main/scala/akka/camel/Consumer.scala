@@ -25,7 +25,8 @@ trait CamelEndpoint{
  */
 trait Consumer extends Actor with CamelEndpoint{
   import RouteDefinitionHandler._
-  protected[this] val camel : ConsumerRegistry = CamelExtension(context.system)
+  protected[this] val camel : Camel = CamelExtension(context.system)
+  def activationTimeout = 10 seconds
   def endpointUri : String
 
   /**
@@ -33,7 +34,8 @@ trait Consumer extends Actor with CamelEndpoint{
    */
   private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
 
-  camel.registerConsumer(endpointUri, this)
+  camel.registerConsumer(endpointUri, this, activationTimeout)
+
 
   //TODO would be nice to pack these config items and endpointuri together in a CamelConfig case class
   /**

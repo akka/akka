@@ -9,7 +9,8 @@ import collection.mutable.HashMap
 import akka.event.Logging.Info
 import akka.util.{Timeout, Duration}
 import akka.util.ErrorUtils._
-import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, Actor, ActorRef}
+import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
+import akka.dispatch.Future
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
@@ -96,8 +97,9 @@ trait ConsumerRegistry{
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
 
-  def registerConsumer(route: String, consumer: Consumer with Actor) = {
-    consumerPublisher.tell(ConsumerActorRegistered(route, consumer), consumer.self)
+  def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
+    consumerPublisher ! ConsumerActorRegistered(route, consumer)
+    awaitActivation(consumer.self, activationTimeout)
   }
 
   def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
@@ -110,30 +112,35 @@ trait Activation{ this : Camel =>
   val actorSystem : ActorSystem
   private[camel] val activationListener = actorSystem.actorOf(Props[ActivationListener])
 
+  def activationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
+    (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[Unit]{
+      case EndpointActivated(_) => {}
+      case EndpointFailedToActivate(_, cause) => throw cause
+    }
+  }
+
   /**
    * Awaits for actor to be activated.
    */
+
   def awaitActivation(actor: ActorRef, timeout: Duration){
-    implicit val timeout2 = Timeout(timeout)
     try{
-      Await.result(activationListener ? AwaitActivation(actor), timeout) match {
-        case EndpointActivated(_) => {}
-        case EndpointFailedToActivate(ref, cause) => throw cause
-        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
-      }
+      Await.result(activationAwaitableFor(actor, timeout), timeout)
     }catch {
       case e: TimeoutException => throw new ActivationTimeoutException
     }
   }
 
-  def awaitDeactivation(actor: ActorRef, timeout: Duration) {
-    val awaitable = activationListener ? (AwaitDeActivation(actor), Timeout(timeout))
+  def deactivationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
+    (activationListener ?(AwaitDeActivation(actor), Timeout(timeout))).map[Unit]{
+      case EndpointDeActivated(_) => {}
+      case EndpointFailedToDeActivate(_, cause) => throw cause
+    }
+  }
 
+  def awaitDeactivation(actor: ActorRef, timeout: Duration) {
     try{
-      Await.result(awaitable, timeout) match {
-        case EndpointDeActivated(_) => {}
-        case msg => throw new RuntimeException("Expected EndpointActivated message but got "+msg)
-      }
+      Await.result(deactivationAwaitableFor(actor, timeout), timeout)
     }catch {
       case e: TimeoutException => throw new DeActivationTimeoutException
     }

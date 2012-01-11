@@ -4,15 +4,8 @@ package akka.camel
 import akka.actor._
 import collection.mutable.WeakHashMap
 
-object ActivationAware{
-
-  /**
-   * Awaits for actor to be de-activated.
-   */
-}
-
-class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation. Please make sure your actor extends ActivationAware trait.")
-class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation. Please make sure your actor extends ActivationAware trait.")
+class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation.")
+class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation.")
 
 
 class ActivationListener extends Actor{
@@ -30,20 +23,26 @@ class ActivationListener extends Actor{
       case AwaitActivation(ref) => sender ! EndpointActivated(ref)
       case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
       case EndpointDeActivated(ref) => onDeactivation(ref)
+      case msg : EndpointFailedToDeActivate => {
+        awaitingDeActivation foreach (_ ! msg)
+        awaitingDeActivation = Nil
+      }
+      case _ => {}
     }
 
     def failedToActivate : Receive = {
       case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
       case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
+      case _ => {}
     }
 
     def notActivated : Receive = {
       case AwaitActivation(ref) =>  awaitingActivation ::= sender
       case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
 
-      case EndpointActivated(ref)  => {
+      case msg @ EndpointActivated(ref)  => {
         migration.Migration.EventHandler.debug(ref+" activated")
-        awaitingActivation.foreach(_ ! EndpointActivated(ref))
+        awaitingActivation.foreach(_ ! msg)
         awaitingActivation = Nil
         receive = activated
       }
