@@ -135,15 +135,15 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
       val latch1 = new TestLatch(1)
-      router.!((latch1, busy))
+      router ! (latch1, busy)
       Await.ready(latch1, 2 seconds)
 
       val latch2 = new TestLatch(1)
-      router.!((latch2, busy))
+      router ! (latch2, busy)
       Await.ready(latch2, 2 seconds)
 
       val latch3 = new TestLatch(1)
-      router.!((latch3, busy))
+      router ! (latch3, busy)
       Await.ready(latch3, 2 seconds)
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)

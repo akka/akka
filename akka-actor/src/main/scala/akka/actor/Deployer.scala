@@ -71,12 +71,13 @@ class Deployer(val settings: ActorSystem.Settings) {
     }
 
     val router: RouterConfig = deployment.getString("router") match {
-      case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees, resizer)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
-      case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
+      case "from-code"        ⇒ NoRouter
+      case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "smallest-mailbox" ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
+      case x                  ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
     }
 
     val recipe: Option[ActorRecipe] =
