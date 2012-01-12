@@ -26,7 +26,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
   def receive = {
-    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor.config) }
+    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor) }
     case Terminated(ref) => {
       activated.remove(ref)
       try_(camel.stopRoute(ref.path.toString)) match {

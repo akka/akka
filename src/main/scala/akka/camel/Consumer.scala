@@ -15,39 +15,45 @@ import akka.util.duration._
  *
  * @author Martin Krasser
  */
-trait Consumer extends Actor{
+trait Consumer extends Actor with ConsumerConfig{
 
   private[this] val camel : Camel = CamelExtension(context.system)
 
   def endpointUri : String
-  def config = ConsumerConfig() //TODO figure out how not to recreate config every time and keep it overridable
 
-  camel.registerConsumer(endpointUri, this, config.activationTimeout)
+  camel.registerConsumer(endpointUri, this, activationTimeout)
 
 }
 
-/** //TODO: Explain the parameters better with some examples!
- * @param activationTimeout How long should the actor wait for activation before it fails.
- *
- * @param outTimeout When endpoint is outCapable (can produce responses) outTimeout is the maximum time
- * the endpoint can take to send the response before the message exchange fails. It defaults to Int.MaxValue seconds.
- * It can be also overwritten by setting @see blocking property
- *
- * @param blocking Determines whether two-way communications between an endpoint and this consumer actor
- * should be done in blocking or non-blocking mode (default is non-blocking). This method
- * doesn't have any effect on one-way communications (they'll never block).
- *
- * @param autoack Determines whether one-way communications between an endpoint and this consumer actor
- * should be auto-acknowledged or application-acknowledged.
- *
- */
 
-case class ConsumerConfig(
-                           activationTimeout: Duration = 10 seconds,
-                     outTimeout : Duration = Int.MaxValue seconds,
-                     blocking : BlockingOrNot = NonBlocking,
-                     autoack : Boolean = true
-                      ) {
+trait ConsumerConfig{
+  //TODO: Explain the parameters better with some examples!
+
+  /**
+   * How long should the actor wait for activation before it fails.
+   */
+  def activationTimeout: Duration = 10 seconds
+
+  /**
+   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
+   * the endpoint can take to send the response before the message exchange fails. It defaults to Int.MaxValue seconds.
+   * It can be also overwritten by setting @see blocking property
+   */
+  def outTimeout : Duration = Int.MaxValue seconds
+
+  /**
+   * Determines whether two-way communications between an endpoint and this consumer actor
+   * should be done in blocking or non-blocking mode (default is non-blocking). This method
+   * doesn't have any effect on one-way communications (they'll never block).
+   */
+  def blocking : BlockingOrNot = NonBlocking
+
+  /**
+   * Determines whether one-way communications between an endpoint and this consumer actor
+   * should be auto-acknowledged or application-acknowledged.
+   */
+  def autoack : Boolean = true
+
   /**
    * The route definition handler for creating a custom route to this consumer instance.
    */

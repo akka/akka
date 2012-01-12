@@ -5,7 +5,7 @@ import RichString._
 import java.lang.String
 import akka.util.duration._
 import akka.actor.{Terminated, OneForOneStrategy, Props, ActorSystem, Actor}
-import akka.camel.{ConsumerConfig, Consumer, Message}
+import akka.camel.{Consumer, Message}
 
 object ConsumerExample extends App{
 
@@ -30,7 +30,7 @@ object ConsumerExample extends App{
     }
 
   class FileConsumer extends Consumer{
-    override def config = new ConsumerConfig(activationTimeout = 10 seconds)
+    override def activationTimeout = 10 seconds
     def endpointUri = "file://data/input/CamelConsumer"
 
     protected def receive = {

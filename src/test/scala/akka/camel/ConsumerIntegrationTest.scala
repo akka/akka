@@ -66,7 +66,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val LONG_WAIT = 200 millis
 
     start(new Consumer{
-      override def config = new ConsumerConfig(outTimeout = SHORT_TIMEOUT)
+      override def outTimeout = SHORT_TIMEOUT
 
       def endpointUri = "direct:a3"
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
