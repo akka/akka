@@ -256,6 +256,14 @@ If you are interested in how to use the VoteCountRouter it looks like this:
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#crTest
 
+Configured Custom Router
+************************
+
+It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
+configuration you define the fully qualified class name of the router class. The router class must extend
+``akka.routing.CustomRouterConfig`` and and have constructor with ``com.typesafe.config.Config`` parameter.
+The deployment section of the configuration is passed to the constructor.
+
 Custom Resizer
 **************
 

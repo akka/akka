@@ -255,6 +255,14 @@ All in all the custom router looks like this:
 If you are interested in how to use the VoteCountRouter you can have a look at the test class
 `RoutingSpec <https://github.com/jboner/akka/blob/master/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_
 
+Configured Custom Router
+************************
+
+It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
+configuration you define the fully qualified class name of the router class. The router class must extend
+``akka.routing.RouterConfig`` and and have constructor with ``com.typesafe.config.Config`` parameter.
+The deployment section of the configuration is passed to the constructor.
+
 Custom Resizer
 **************
 
