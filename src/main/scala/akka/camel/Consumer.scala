@@ -10,20 +10,12 @@ import akka.actor._
 import akka.util.Duration
 import akka.util.duration._
 
-trait CamelEndpoint{
-  /**
-   * This method is called after successful deactivation of the endpoint in a camel context.
-   * It is called after camel route to or from this endpoint is stopped.
-   */
-  def postDeactivation() {}
-}
-
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
  * @author Martin Krasser
  */
-trait Consumer extends Actor with CamelEndpoint{
+trait Consumer extends Actor{
   import RouteDefinitionHandler._
   protected[this] val camel : Camel = CamelExtension(context.system)
   def activationTimeout = 10 seconds
@@ -41,7 +33,7 @@ trait Consumer extends Actor with CamelEndpoint{
   /**
    * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
    * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
-   * It can be overwritten by setting @see blocking property
+   * It can be also overwritten by setting @see blocking property
    */
   def outTimeout : Duration = Int.MaxValue seconds
 
