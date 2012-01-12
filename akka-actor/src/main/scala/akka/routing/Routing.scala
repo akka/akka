@@ -290,8 +290,11 @@ object RoundRobinRouter {
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RoundRobinLike {
@@ -307,9 +310,11 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -365,8 +370,11 @@ object RandomRouter {
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RandomLike {
@@ -382,9 +390,11 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -436,7 +446,7 @@ object SmallestMailboxRouter {
   }
 }
 /**
- * A Router that tries to send to the routee with fewest messages in mailbox.
+ * A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
  * The selection is done in this order:
  * <ul>
  * <li>pick any idle routee (not processing message) with empty mailbox</li>
@@ -452,8 +462,11 @@ object SmallestMailboxRouter {
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with SmallestMailboxLike {
@@ -469,9 +482,11 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -519,6 +534,19 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
   }
 
   /**
+   * Returns true if the actor is currently suspended.
+   * It will always return false for remote actors.
+   * Method is exposed to subclasses to be able to implement custom
+   * routers based on mailbox and actor internal state.
+   */
+  protected def isSuspended(a: ActorRef): Boolean = a match {
+    case x: LocalActorRef ⇒
+      val cell = x.underlying
+      cell.mailbox.isSuspended
+    case _ ⇒ false
+  }
+
+  /**
    * Returns the number of pending messages in the mailbox of the actor.
    * It will always return 0 for remote actors.
    * Method is exposed to subclasses to be able to implement custom
@@ -535,16 +563,14 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
 
     def getNext(): ActorRef = {
       // non-local actors mailbox size is unknown, so consider them lowest priority
-      val local: IndexedSeq[LocalActorRef] = for (a ← ref.routees if a.isInstanceOf[LocalActorRef]) yield a.asInstanceOf[LocalActorRef]
-      // anyone not processing message and with empty mailbox
-      val idle = local.find(a ⇒ !isProcessingMessage(a) && !hasMessages(a))
-      idle getOrElse {
-        // anyone with empty mailbox
-        val emptyMailbox = local.find(a ⇒ !hasMessages(a))
-        emptyMailbox getOrElse {
-          // sort on mailbox size
-          local.sortBy(a ⇒ numberOfMessages(a)).headOption getOrElse {
-            // no locals, just pick one, random
+      val activeLocal = ref.routees collect { case l: LocalActorRef if !isSuspended(l) ⇒ l }
+      // 1. anyone not processing message and with empty mailbox
+      activeLocal.find(a ⇒ !isProcessingMessage(a) && !hasMessages(a)) getOrElse {
+        // 2. anyone with empty mailbox
+        activeLocal.find(a ⇒ !hasMessages(a)) getOrElse {
+          // 3. sort on mailbox size
+          activeLocal.sortBy(a ⇒ numberOfMessages(a)).headOption getOrElse {
+            // 4. no locals, just pick one, random
             ref.routees(random.get.nextInt(ref.routees.size))
           }
         }
@@ -580,8 +606,11 @@ object BroadcastRouter {
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with BroadcastLike {
@@ -597,9 +626,11 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -648,8 +679,11 @@ object ScatterGatherFirstCompletedRouter {
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None)
@@ -666,9 +700,11 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String], w: Duration) = {
-    this(routees = iterableAsScalaIterable(t), within = w)
+  def this(routeePaths: java.lang.Iterable[String], w: Duration) = {
+    this(routees = iterableAsScalaIterable(routeePaths), within = w)
   }
 
   /**

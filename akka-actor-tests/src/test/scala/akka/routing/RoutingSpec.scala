@@ -267,28 +267,33 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val usedActors = new ConcurrentHashMap[Int, String]()
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case busy: TestLatch ⇒
+          case (busy: TestLatch, receivedLatch: TestLatch) ⇒
             usedActors.put(0, self.path.toString)
+            self ! "another in busy mailbox"
+            receivedLatch.countDown()
             Await.ready(busy, TestLatch.DefaultTimeout)
           case (msg: Int, receivedLatch: TestLatch) ⇒
             usedActors.put(msg, self.path.toString)
             receivedLatch.countDown()
+          case s: String ⇒
         }
       }).withRouter(SmallestMailboxRouter(3)))
 
       val busy = TestLatch(1)
-      router ! busy
+      val received0 = TestLatch(1)
+      router ! (busy, received0)
+      Await.ready(received0, TestLatch.DefaultTimeout)
 
       val received1 = TestLatch(1)
-      router.!((1, received1))
+      router ! (1, received1)
       Await.ready(received1, TestLatch.DefaultTimeout)
 
       val received2 = TestLatch(1)
-      router.!((2, received2))
+      router ! (2, received2)
       Await.ready(received2, TestLatch.DefaultTimeout)
 
       val received3 = TestLatch(1)
-      router.!((3, received3))
+      router ! (3, received3)
       Await.ready(received3, TestLatch.DefaultTimeout)
 
       busy.countDown()

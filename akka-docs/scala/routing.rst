@@ -45,9 +45,8 @@ You can also give the router already created routees as in:
 When you create a router programatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
-*It is also worth pointing out that if you define the number of routees (``nr-of-instances`` or  ``routees``) in
-the configuration file then this value will be used instead of any programmatically sent parameters, but you must
-also define the ``router`` property in the configuration.*
+*It is also worth pointing out that if you define the ``router`` in the configuration file then this value will be used
+instead of any programmatically sent parameters.*
 
 Once you have the router actor it is just to send messages to it as you would to any actor:
 
@@ -126,7 +125,7 @@ Try to run it a couple of times to verify its behavior if you don't trust us.
 
 SmallestMailboxRouter
 *********************
-A Router that tries to send to the routee with fewest messages in mailbox.
+A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
 The selection is done in this order:
 
  * pick any idle routee (not processing message) with empty mailbox
