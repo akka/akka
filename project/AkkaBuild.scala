@@ -315,6 +315,8 @@ object AkkaBuild extends Build {
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
+    ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 
     // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
