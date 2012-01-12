@@ -15,10 +15,8 @@ akka {
         deployment {
             /watchers.remote = "akka://other@127.0.0.1:2666"
         }
-        debug.lifecycle = on
     }
     cluster.nodename = buh
-    loglevel = DEBUG
     remote.server {
         hostname = "127.0.0.1"
         port = 2665
