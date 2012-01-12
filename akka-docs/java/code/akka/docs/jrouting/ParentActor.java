@@ -7,6 +7,7 @@ import akka.routing.ScatterGatherFirstCompletedRouter;
 import akka.routing.BroadcastRouter;
 import akka.routing.RandomRouter;
 import akka.routing.RoundRobinRouter;
+import akka.routing.SmallestMailboxRouter;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
@@ -34,6 +35,14 @@ public class ParentActor extends UntypedActor {
         randomRouter.tell(i, getSelf());
       }
       //#randomRouter
+    } else if (msg.equals("smr")) {
+      //#smallestMailboxRouter
+      ActorRef smallestMailboxRouter = getContext().actorOf(
+          new Props(PrintlnActor.class).withRouter(new SmallestMailboxRouter(5)), "router");
+      for (int i = 1; i <= 10; i++) {
+        smallestMailboxRouter.tell(i, getSelf());
+      }
+      //#smallestMailboxRouter
     } else if (msg.equals("br")) {
       //#broadcastRouter
       ActorRef broadcastRouter = getContext().actorOf(new Props(PrintlnActor.class).withRouter(new BroadcastRouter(5)),
