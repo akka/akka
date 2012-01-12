@@ -109,7 +109,7 @@ trait Activation{ this : Camel =>
   import akka.dispatch.Await
 
   val actorSystem : ActorSystem
-  private[camel] val activationListener = actorSystem.actorOf(Props[ActivationListener])
+  private[camel] val activationListener = actorSystem.actorOf(Props[ActivationTracker])
 
   def activationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
     (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[Unit]{

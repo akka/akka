@@ -3,12 +3,13 @@ package akka.camel
 
 import akka.actor._
 import collection.mutable.WeakHashMap
+import akka.event.Logging.Warning
 
 class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation.")
 class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation.")
 
 
-class ActivationListener extends Actor{
+class ActivationTracker extends Actor{
 
   val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
 
@@ -27,13 +28,11 @@ class ActivationListener extends Actor{
         awaitingDeActivation foreach (_ ! msg)
         awaitingDeActivation = Nil
       }
-      case _ => {}
     }
 
     def failedToActivate : Receive = {
       case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
       case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
-      case _ => {}
     }
 
     def notActivated : Receive = {
@@ -69,7 +68,11 @@ class ActivationListener extends Actor{
 
   override def receive = {
     case msg @ ActivationMessage(ref) =>{
-      activations.getOrElseUpdate(ref, new ActivationStateMachine).receive(msg)
+      try{
+        activations.getOrElseUpdate(ref, new ActivationStateMachine).receive(msg)
+      }catch {
+        case e:MatchError => context.system.eventStream.publish(Warning("ActivationTracker", e)) //TODO: 1. Investigate proper logging; 2. Do we need want to log this?
+      }
     }
   }
 
