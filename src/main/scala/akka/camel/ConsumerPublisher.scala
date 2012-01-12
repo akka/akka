@@ -3,6 +3,7 @@
  */
 package akka.camel
 
+import component.BlockingOrNotTypeConverter
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
@@ -99,7 +100,7 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
 private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : ActorRef,  config: ConsumerConfig) extends ConsumerRouteBuilder(endpointUri, consumer.path.toString) {
   def onRouteDefinition(rd: RouteDefinition) = config.onRouteDefinition(rd)
   //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
-  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, config.blocking, config.autoack, config.outTimeout.toNanos)
+  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, BlockingOrNotTypeConverter.toString(config.blocking), config.autoack, config.outTimeout.toNanos)
 
 }
 

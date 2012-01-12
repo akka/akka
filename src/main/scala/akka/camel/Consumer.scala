@@ -63,10 +63,7 @@ trait ConsumerConfig{
 
 sealed trait BlockingOrNot
 case object NonBlocking extends BlockingOrNot
-case class Blocking(timeout : Duration) extends BlockingOrNot{
-  //TODO move this method to converter
-  override def toString = "Blocking(%d nanos)".format(timeout.toNanos)
-}
+case class Blocking(timeout : Duration) extends BlockingOrNot
 
 
 class ConsumerRequiresFromEndpointException extends RuntimeException("Consumer needs to provide from endpoint. Please make sure the consumer calls method from(\"some uri\") in the body of constructor.")

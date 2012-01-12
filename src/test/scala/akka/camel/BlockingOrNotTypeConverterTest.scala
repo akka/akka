@@ -13,11 +13,11 @@ class BlockingOrNotTypeConverterTest extends FlatSpec with ShouldMatchers{
   }
 
   it should "convert Blocking with seconds" in {
-    convert(Blocking(10 seconds).toString) should be (Blocking(10 seconds))
+    convert(BlockingOrNotTypeConverter.toString(Blocking(10 seconds))) should be (Blocking(10 seconds))
   }
 
   it should "convert Blocking with millis" in {
-    convert(Blocking(10 millis).toString) should be (Blocking(10 millis))
+    convert(BlockingOrNotTypeConverter.toString(Blocking(10 millis))) should be (Blocking(10 millis))
   }
 
   def convert(value: String): BlockingOrNot = {

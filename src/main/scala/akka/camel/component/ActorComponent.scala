@@ -283,6 +283,12 @@ object BlockingOrNotTypeConverter extends CamelTypeConverter{
     }
   }
 
+
+  def toString(b : BlockingOrNot)  = b match{
+    case NonBlocking => NonBlocking.toString
+    case Blocking(timeout) => "Blocking(%d nanos)".format(timeout.toNanos)
+  }
+
 }
 
 abstract class CamelTypeConverter extends TypeConverter{

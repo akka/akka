@@ -81,7 +81,7 @@ class ActivationTracker extends Actor{
 case class ActivationMessage(actor: ActorRef)
 
 /**
- * Event message asking the endpoint to respond with EndpointActivated message when it gets activated
+ * Event message asking the endpoint to respond with EndpointActivated message when it gets activated.
  */
 case class AwaitActivation(ref:ActorRef) extends ActivationMessage(ref)
 case class AwaitDeActivation(ref : ActorRef) extends ActivationMessage(ref)
