@@ -218,18 +218,19 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
               }
             })
             val name = fsm.path.toString
+            val fsmClass = fsm.underlyingActor.getClass
             system.eventStream.subscribe(testActor, classOf[Logging.Debug])
             fsm ! "go"
             expectMsgPF(1 second, hint = "processing Event(go,null)") {
-              case Logging.Debug(`name`, _, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
+              case Logging.Debug(`name`, `fsmClass`, s: String) if s.startsWith("processing Event(go,null) from Actor[") ⇒ true
             }
-            expectMsg(1 second, Logging.Debug(name, fsm.underlyingActor.getClass, "setting timer 't'/1500 milliseconds: Shutdown"))
-            expectMsg(1 second, Logging.Debug(name, fsm.underlyingActor.getClass, "transition 1 -> 2"))
+            expectMsg(1 second, Logging.Debug(name, fsmClass, "setting timer 't'/1500 milliseconds: Shutdown"))
+            expectMsg(1 second, Logging.Debug(name, fsmClass, "transition 1 -> 2"))
             fsm ! "stop"
             expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-              case Logging.Debug(`name`, _, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
+              case Logging.Debug(`name`, `fsmClass`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
             }
-            expectMsgAllOf(1 second, Logging.Debug(name, fsm.underlyingActor.getClass, "canceling timer 't'"), Normal)
+            expectMsgAllOf(1 second, Logging.Debug(name, fsmClass, "canceling timer 't'"), Normal)
             expectNoMsg(1 second)
             system.eventStream.unsubscribe(testActor)
           }

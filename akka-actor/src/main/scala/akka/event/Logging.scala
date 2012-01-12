@@ -86,8 +86,9 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
+    val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
-      StandardOutLogger.print(Error(new EventHandlerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
+      StandardOutLogger.print(Error(new EventHandlerException, logName, this.getClass, "unknown akka.stdout-loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
@@ -101,7 +102,7 @@ trait LoggingBus extends ActorEventBus {
       } yield {
         try {
           ReflectiveAccess.getClassFor[Actor](loggerName) match {
-            case Right(actorClass) ⇒ addLogger(system, actorClass, level)
+            case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
             case Left(exception)   ⇒ throw exception
           }
         } catch {
@@ -115,7 +116,7 @@ trait LoggingBus extends ActorEventBus {
         loggers = myloggers
         _logLevel = level
       }
-      publish(Debug(simpleName(this), this.getClass, "Default Loggers started"))
+      publish(Debug(logName, this.getClass, "Default Loggers started"))
       if (!(defaultLoggers contains StandardOutLoggerName)) {
         unsubscribe(StandardOutLogger)
       }
@@ -150,18 +151,18 @@ trait LoggingBus extends ActorEventBus {
     publish(Debug(simpleName(this), this.getClass, "all default loggers stopped"))
   }
 
-  private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel): ActorRef = {
+  private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
-        publish(Warning(simpleName(this), this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
+        publish(Warning(logName, this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
     }
     if (response != LoggerInitialized)
       throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
-    publish(Debug(simpleName(this), this.getClass, "logger " + name + " started"))
+    publish(Debug(logName, this.getClass, "logger " + name + " started"))
     actor
   }
 
@@ -169,11 +170,13 @@ trait LoggingBus extends ActorEventBus {
 
 trait LogSource[-T] {
   def genString(t: T): String
+  def genString(t: T, system: ActorSystem): String = genString(t)
 }
 
 object LogSource {
   implicit val fromString: LogSource[String] = new LogSource[String] {
     def genString(s: String) = s
+    override def genString(s: String, system: ActorSystem) = s + "(" + system + ")"
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
@@ -187,10 +190,13 @@ object LogSource {
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {
     def genString(c: Class[_]) = simpleName(c)
+    override def genString(c: Class[_], system: ActorSystem) = simpleName(c) + "(" + system + ")"
   }
   implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
 
-  def apply[T: LogSource](o: T) = implicitly[LogSource[T]].genString(o)
+  def apply[T: LogSource](o: T): String = implicitly[LogSource[T]].genString(o)
+
+  def apply[T: LogSource](o: T, system: ActorSystem): String = implicitly[LogSource[T]].genString(o, system)
 
   def fromAnyRef(o: AnyRef): String =
     o match {
@@ -199,6 +205,15 @@ object LogSource {
       case a: ActorRef ⇒ fromActorRef.genString(a)
       case s: String   ⇒ s
       case x           ⇒ simpleName(x)
+    }
+
+  def fromAnyRef(o: AnyRef, system: ActorSystem): String =
+    o match {
+      case c: Class[_] ⇒ fromClass.genString(c, system)
+      case a: Actor    ⇒ fromActor.genString(a, system)
+      case a: ActorRef ⇒ fromActorRef.genString(a, system)
+      case s: String   ⇒ fromString.genString(s, system)
+      case x           ⇒ simpleName(x) + "(" + system + ")"
     }
 }
 
@@ -213,8 +228,8 @@ object LogSource {
  * ...
  * log.info("hello world!")
  * </code></pre>
- * 
- * The source object is used in two fashions: its `Class[_]` will be part of 
+ *
+ * The source object is used in two fashions: its `Class[_]` will be part of
  * all log events produced by this logger, plus a string representation is
  * generated which may contain per-instance information, see `apply` or `create`
  * below.
@@ -306,6 +321,41 @@ object Logging {
   val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
   /**
+   * Obtain LoggingAdapter for the given actor system and source object. This
+   * will use the system’s event stream.
+   *
+   * The source is used to identify the source of this logging channel and must have
+   * a corresponding implicit LogSource[T] instance in scope; by default these are
+   * provided for Class[_], Actor, ActorRef and String types. By these, the source
+   * object is translated to a String according to the following rules:
+   * <ul>
+   * <li>if it is an Actor or ActorRef, its path is used</li>
+   * <li>in case of a String it is used as is</li>
+   * <li>in case of a class an approximation of its simpleName
+   * <li>and in all other cases the simpleName of its class</li>
+   * </ul>
+   *
+   * You can add your own rules quite easily:
+   *
+   * {{{
+   * trait MyType { // as an example
+   *   def name: String
+   * }
+   *
+   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
+   *   def genString(a: MyType) = a.name
+   * }
+   *
+   * class MyClass extends MyType {
+   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
+   *   def name = "hallo"
+   * }
+   * }}}
+   */
+  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter =
+    new BusLogging(system.eventStream, LogSource(logSource, system), logSource.getClass)
+
+  /**
    * Obtain LoggingAdapter for the given logging bus and source object.
    *
    * The source is used to identify the source of this logging channel and must have
@@ -318,18 +368,18 @@ object Logging {
    * <li>in case of a class an approximation of its simpleName
    * <li>and in all other cases the simpleName of its class</li>
    * </ul>
-   * 
+   *
    * You can add your own rules quite easily:
-   * 
+   *
    * {{{
    * trait MyType { // as an example
    *   def name: String
    * }
-   * 
+   *
    * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
    *   def genString(a: MyType) = a.name
    * }
-   * 
+   *
    * class MyClass extends MyType {
    *   val log = Logging(eventStream, this) // will use "hallo" as logSource
    *   def name = "hallo"
@@ -353,60 +403,25 @@ object Logging {
    * <li>in case of a class an approximation of its simpleName
    * <li>and in all other cases the simpleName of its class</li>
    * </ul>
-   * 
-   * You can add your own rules quite easily:
-   * 
-   * {{{
-   * trait MyType { // as an example
-   *   def name: String
-   * }
-   * 
-   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
-   *   def genString(a: MyType) = a.name
-   * }
-   * 
-   * class MyClass extends MyType {
-   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
-   *   def name = "hallo"
-   * }
-   * }}}
-   */
-  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter =
-    new BusLogging(system.eventStream, implicitly[LogSource[T]].genString(logSource), logSource.getClass)
-
-  /**
-   * Obtain LoggingAdapter for the given actor system and source object. This
-   * will use the system’s event stream.
    *
-   * The source is used to identify the source of this logging channel and must have
-   * a corresponding implicit LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types. By these, the source
-   * object is translated to a String according to the following rules:
-   * <ul>
-   * <li>if it is an Actor or ActorRef, its path is used</li>
-   * <li>in case of a String it is used as is</li>
-   * <li>in case of a class an approximation of its simpleName
-   * <li>and in all other cases the simpleName of its class</li>
-   * </ul>
-   * 
    * You can add your own rules quite easily:
-   * 
+   *
    * {{{
    * trait MyType { // as an example
    *   def name: String
    * }
-   * 
+   *
    * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
    *   def genString(a: MyType) = a.name
    * }
-   * 
+   *
    * class MyClass extends MyType {
    *   val log = Logging(eventStream, this) // will use "hallo" as logSource
    *   def name = "hallo"
    * }
    * }}}
    */
-  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = apply(system, LogSource.fromAnyRef(logSource))
+  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = apply(system, LogSource.fromAnyRef(logSource, system))
 
   /**
    * Obtain LoggingAdapter for the given logging bus and source object. This
@@ -422,25 +437,25 @@ object Logging {
    * <li>in case of a class an approximation of its simpleName
    * <li>and in all other cases the simpleName of its class</li>
    * </ul>
-   * 
+   *
    * You can add your own rules quite easily:
-   * 
+   *
    * {{{
    * trait MyType { // as an example
    *   def name: String
    * }
-   * 
+   *
    * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
    *   def genString(a: MyType) = a.name
    * }
-   * 
+   *
    * class MyClass extends MyType {
    *   val log = Logging(eventStream, this) // will use "hallo" as logSource
    *   def name = "hallo"
    * }
    * }}}
    */
-  def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = apply(bus, LogSource.fromAnyRef(logSource))
+  //def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = apply(bus, LogSource.fromAnyRef(logSource))
 
   /**
    * Artificial exception injected into Error events if no Throwable is
