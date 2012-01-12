@@ -439,6 +439,8 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
+  private[remote] var openChannels: DefaultChannelGroup = _
+  @volatile
   private[remote] var connection: ChannelFuture = _
   @volatile
   private var reconnectionTimeWindowStart = 0L
@@ -448,13 +450,14 @@ class ActiveRemoteClient private[akka] (
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
     runSwitch switchOn {
+      openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, module.timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
 
       connection = bootstrap.connect(remoteAddress)
-      connection.awaitUninterruptibly.getChannel // Wait until the connection attempt succeeds or fails.
+      openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
@@ -466,9 +469,10 @@ class ActiveRemoteClient private[akka] (
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
+        openChannels.remove(connection.getChannel)
         connection.getChannel.close
         connection = bootstrap.connect(remoteAddress)
-        connection.awaitUninterruptibly.getChannel // Wait until the connection attempt succeeds or fails.
+        openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
         if (!connection.isSuccess) {
           notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
           false
@@ -481,9 +485,9 @@ class ActiveRemoteClient private[akka] (
   def shutdown() = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
     try {
-      if ((connection ne null) && (connection.getChannel ne null))
-        connection.getChannel.close()
+      if (openChannels ne null) openChannels.close.awaitUninterruptibly()
     } finally {
+      openChannels = null
       connection = null
       try {
         bootstrap.releaseExternalResources()
@@ -596,7 +600,10 @@ class ActiveRemoteClientHandler(
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = client.runSwitch ifOn {
     if (client.isWithinReconnectionTimeWindow) {
       timer.newTimeout(new TimerTask() {
-        def run(timeout: Timeout) = if (client.isRunning) client.connect(reconnectIfAlreadyConnected = true)
+        def run(timeout: Timeout) = if (client.isRunning) {
+          client.openChannels.remove(event.getChannel)
+          client.connect(reconnectIfAlreadyConnected = true)
+        }
       }, RemoteClientSettings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
     } else runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
   }
