@@ -51,6 +51,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
       message match{
         case Some(RegisterConsumer(_, consumer)) => sender ! EndpointFailedToActivate(consumer.self, reason)
         case Some(UnregisterConsumer(consumer)) => sender ! EndpointFailedToDeActivate(consumer, reason)
+        case _ =>
       }
     }
   }))
