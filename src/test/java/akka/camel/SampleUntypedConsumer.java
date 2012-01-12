@@ -1,5 +1,7 @@
 package akka.camel;
 
+import akka.camel.javaapi.UntypedConsumerActor;
+
 /**
  * @author Martin Krasser
  */

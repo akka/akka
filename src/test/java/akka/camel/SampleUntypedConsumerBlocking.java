@@ -1,5 +1,6 @@
 package akka.camel;
 
+import akka.camel.javaapi.UntypedConsumerActor;
 import akka.util.Duration;
 
 /**

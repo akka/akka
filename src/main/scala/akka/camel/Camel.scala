@@ -1,9 +1,9 @@
 package akka.camel
 
 import component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
+import java.util.concurrent.TimeoutException
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
-import java.lang.String
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import collection.mutable.HashMap
 import akka.event.Logging.Info
@@ -107,7 +107,6 @@ trait ConsumerRegistry{
 
 trait Activation{ this : Camel =>
   import akka.dispatch.Await
-  import java.util.concurrent.TimeoutException
 
   val actorSystem : ActorSystem
   private[camel] val activationListener = actorSystem.actorOf(Props[ActivationListener])

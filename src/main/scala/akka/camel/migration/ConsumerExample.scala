@@ -30,7 +30,7 @@ object ConsumerExample extends App{
     }
 
   class FileConsumer extends Consumer{
-    override def config = ConsumerConfig(activationTimeout = 10 seconds)
+    override def config = new ConsumerConfig(activationTimeout = 10 seconds)
     def endpointUri = "file://data/input/CamelConsumer"
 
     protected def receive = {

@@ -2,6 +2,8 @@ package akka.camel;
 
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.camel.javaapi.ConsumerConfigBuilder;
+import akka.camel.javaapi.UntypedConsumerActor;
 import akka.util.Duration;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
@@ -17,15 +19,15 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     }
 
     @Override
-    public BlockingOrNot isBlocking() {
-        return new Blocking(Duration.fromNanos(100000000000L));
-    }
+    public ConsumerConfig config(){
+        return new ConsumerConfigBuilder(){
+            @Override
+            //TODO write test confirming this gets called in java
+            public ProcessorDefinition<?> onRouteDefinition(RouteDefinition rd) {
+                return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+            }
 
-
-    @Override
-    //TODO write test confirming this gets called in java
-    public ProcessorDefinition<?> onRouteDefinition(RouteDefinition rd) {
-        return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+        }.withBlocking(new Blocking(Duration.fromNanos(100000000000L))).build();
     }
 
     public void onReceive(Object message) throws Exception {
