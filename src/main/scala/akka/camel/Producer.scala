@@ -112,7 +112,7 @@ trait ProducerSupport { this: Actor =>
       private def dispatchSync(result: Any) =
         receiveAfterProduce(result)
 
-      private def dispatchAsync(result: Any) = {//TODO why forward?
+      private def dispatchAsync(result: Any) = {//TODO why forward? If you do "sender forward x" you are telling sender that the message came from itself => sender ! (x, sender). So I'll ask again why forward?
         sender forward (result)
       }
     })
