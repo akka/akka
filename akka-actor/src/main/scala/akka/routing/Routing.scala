@@ -7,8 +7,10 @@ import akka.actor._
 import akka.dispatch.Future
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
+import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
@@ -758,6 +760,19 @@ trait Resizer {
    * sending [[akka.actor.PoisonPill]] to them.
    */
   def resize(props: Props, actorContext: ActorContext, currentRoutees: IndexedSeq[ActorRef], routerConfig: RouterConfig)
+}
+
+case object DefaultResizer {
+  def apply(resizerConfig: Config): DefaultResizer =
+    DefaultResizer(
+      lowerBound = resizerConfig.getInt("lower-bound"),
+      upperBound = resizerConfig.getInt("upper-bound"),
+      pressureThreshold = resizerConfig.getInt("pressure-threshold"),
+      rampupRate = resizerConfig.getDouble("rampup-rate"),
+      backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
+      backoffRate = resizerConfig.getDouble("backoff-rate"),
+      stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
+      messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 }
 
 case class DefaultResizer(
