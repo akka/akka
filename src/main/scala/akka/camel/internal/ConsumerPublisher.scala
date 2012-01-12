@@ -12,7 +12,6 @@ import org.apache.camel.builder.RouteBuilder
 import akka.camel.migration.Migration._
 
 import akka.actor._
-import akka.util.ErrorUtils._
 import collection.mutable
 import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
 
@@ -28,38 +27,56 @@ import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
 private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
-  def receive = {
-    case r: RegisterConsumer => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor) }
-    case Terminated(ref) => {
-      activated.remove(ref)
-      try_(camel.context.stopRoute(ref.path.toString)) match {
-        case Right(_) =>{
-          context.system.eventStream.publish(EndpointDeActivated(ref))
-          EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
-        }
-        case Left(e) => context.system.eventStream.publish(EndpointFailedToDeActivate(ref, e)) //TODO: is there anything better we could do?
+  val registrator = context.actorOf(Props(new Actor {
 
-      }
-
+    override def postRestart(reason: Throwable) {
+      println("Restarted registrator")
     }
-  }
 
-  def registerConsumer(endpointUri:String,  consumer:ActorRef, config: ConsumerConfig) {
-    try_(camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, config))) match {
-      case Right(_) => {
-        context.watch(consumer)
-        activated.add(consumer)
-        context.system.eventStream.publish(EndpointActivated(consumer))
+    def receive ={
+      case RegisterConsumer(endpointUri, consumer) => {
+        camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer.self, consumer))
+        context.sender ! EndpointActivated(consumer.self)
         EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(consumer, endpointUri))
       }
-      case Left(throwable) => {
-        context.system.eventStream.publish(EndpointFailedToActivate(consumer, throwable))
+
+      case UnregisterConsumer(consumer) => {
+        camel.context.stopRoute(consumer.path.toString)
+        context.sender ! EndpointDeActivated(consumer)
+        EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(consumer, consumer.path))
       }
     }
+
+    override def preRestart(reason: Throwable, message: Option[Any]) {
+      message match{
+        case Some(RegisterConsumer(_, consumer)) => sender ! EndpointFailedToActivate(consumer.self, reason)
+        case Some(UnregisterConsumer(consumer)) => sender ! EndpointFailedToDeActivate(consumer, reason)
+      }
+    }
+  }))
+
+  def receive = {
+    case msg @ RegisterConsumer(_, consumer) => unless(isAlreadyActivated(consumer.self)) {
+      activated.add(consumer.self)
+      registrator ! msg
+    }
+    case msg @ EndpointActivated(consumer) => {
+      context.watch(consumer)
+      context.system.eventStream.publish(msg)
+    }
+    case msg @ EndpointFailedToActivate(consumer, _) => {
+      activated.remove(consumer)
+      context.system.eventStream.publish(msg)
+    }
+    case Terminated(ref) => {
+      activated.remove(ref)
+      registrator ! UnregisterConsumer(ref)
+    }
+    case msg @ EndpointDeActivated(ref) => { context.system.eventStream.publish(msg) }
+    case msg @ EndpointFailedToDeActivate(ref, cause) => { context.system.eventStream.publish(msg) }
   }
 
   def unless[A](condition: Boolean)(block  : => A) = if (!condition) block
-
   def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
 }
