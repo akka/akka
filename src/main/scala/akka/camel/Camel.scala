@@ -1,6 +1,6 @@
 package akka.camel
 
-import component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
+import internal.component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
@@ -90,7 +90,7 @@ trait ConsumerRegistry{
   private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
 
-  def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
+  private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
     consumerPublisher ! RegisterConsumer(route, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }

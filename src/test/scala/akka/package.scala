@@ -43,6 +43,7 @@ package object camel{
 
   }
 
+  //TODO replace with object as it is too slow to start camel for every test
   trait CamelSupport{ this: JUnitSuite =>
     implicit def context : CamelContext = camel.context
     var camel : Camel = _

@@ -254,6 +254,7 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
  *
  * @author Martin Krasser
  */
+//TODO: think on improving method names
 class CamelExchangeAdapter(exchange: Exchange) {
   def getExchangeId = exchange.getExchangeId
 

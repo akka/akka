@@ -4,7 +4,7 @@ package akka.camel.internal
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-import akka.camel.component.BlockingOrNotTypeConverter
+import akka.camel.internal.component.BlockingOrNotTypeConverter
 import akka.camel._
 import java.io.InputStream
 

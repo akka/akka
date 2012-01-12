@@ -1,6 +1,5 @@
-package akka.camel
+package akka.camel.internal.component
 
-import component.{Path, ActorEndpointConfig, TestableProducer}
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{eq => the, any}
@@ -14,6 +13,7 @@ import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec}
 import java.lang.String
 import akka.actor.{ActorRef, Props, ActorSystem, Actor}
+import akka.camel._
 
 //TODO: this whole test doesn't seem right with FlatSpec, investigate other options, maybe given-when-then style
 class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach{
@@ -159,7 +159,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     asyncCallback.valueWithin(1 second) should be (true)
     verify(exchange, never()).setResponse(any[Message])
   }
-  
+
   //TODO: write this test
   it should "fail if expecting Ack or Failure message and some other message is sent as a response, when in-only, manualAck" in  pending
 

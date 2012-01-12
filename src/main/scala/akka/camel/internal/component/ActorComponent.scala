@@ -1,8 +1,8 @@
+package akka.camel.internal.component
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-
-package akka.camel.component
 
 import java.util.{Map => JMap}
 
@@ -143,6 +143,7 @@ class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer
   def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange))}
   def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange), callback)
 }
+
 //TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
 // re: I'd rather keep the abstraction layer for now and let the Camel class delegate
 class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {

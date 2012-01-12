@@ -13,6 +13,7 @@ import org.mockito.Matchers.{eq => the}
 /**
  * @author Martin Krasser
  */
+//TODO: remove this test once all the ideas are moved across to new tests
 class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMatchers with MockitoSugar{
 
   var service: Camel = _

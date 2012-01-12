@@ -1,9 +1,9 @@
-package akka.camel
+package akka.camel.internal.component
 
-import component.BlockingOrNotTypeConverter
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.FlatSpec
 import akka.util.duration._
+import akka.camel.{BlockingOrNot, Blocking, NonBlocking}
 
 class BlockingOrNotTypeConverterTest extends FlatSpec with ShouldMatchers{
 

@@ -14,6 +14,7 @@ import akka.camel.migration.Migration._
  *
  * @author Martin Krasser
  */
+//TODO: investigate what's this object for
 private[camel] object TypedCamelAccess {
   val loader = getClass.getClassLoader
 
