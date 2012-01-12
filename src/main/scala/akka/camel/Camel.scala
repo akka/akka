@@ -111,6 +111,7 @@ trait Activation{ this : Camel =>
   val actorSystem : ActorSystem
   private[camel] val activationListener = actorSystem.actorOf(Props[ActivationTracker])
 
+  //TODO we need better name for this
   def activationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
     (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[Unit]{
       case EndpointActivated(_) => {}
@@ -130,6 +131,7 @@ trait Activation{ this : Camel =>
     }
   }
 
+  //TODO we need better name for this
   def deactivationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
     (activationListener ?(AwaitDeActivation(actor), Timeout(timeout))).map[Unit]{
       case EndpointDeActivated(_) => {}

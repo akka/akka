@@ -255,7 +255,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
  *
  * @author Martin Krasser
  */
-class ActorNotRegisteredException(uri: String) extends RuntimeException {
+class ActorNotRegisteredException(uri: String) extends RuntimeException{
   override def getMessage = "%s not registered" format uri
 }
 

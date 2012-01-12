@@ -17,12 +17,9 @@ import akka.util.duration._
  */
 trait Consumer extends Actor with ConsumerConfig{
 
-  private[this] val camel : Camel = CamelExtension(context.system)
-
   def endpointUri : String
 
-  camel.registerConsumer(endpointUri, this, activationTimeout)
-
+  CamelExtension(context.system).registerConsumer(endpointUri, this, activationTimeout)
 }
 
 
