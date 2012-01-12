@@ -598,7 +598,7 @@ class ActiveRemoteClientHandler(
       timer.newTimeout(new TimerTask() {
         def run(timeout: Timeout) = if (client.isRunning) client.connect(reconnectIfAlreadyConnected = true)
       }, RemoteClientSettings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
-    } //else runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
+    } else runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
