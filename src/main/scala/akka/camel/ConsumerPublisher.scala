@@ -27,7 +27,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
   def receive = {
-    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor) }
+    case r: RegisterConsumer => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor) }
     case Terminated(ref) => {
       activated.remove(ref)
       try_(camel.stopRoute(ref.path.toString)) match {
@@ -107,13 +107,19 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : A
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */
-private[camel] case class ConsumerActorRegistered(endpointUri:String, actor: Consumer)
+private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
 
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
-private[camel] case class ConsumerActorUnregistered(actorRef: ActorRef)
+private[camel] case class UnregisterConsumer(actorRef: ActorRef)
+
+
+/**
+ * Super class of all activation messages.
+ */
+case class ActivationMessage(actor: ActorRef)
 
 /**
  * Event message indicating that a single endpoint has been activated.

@@ -20,21 +20,6 @@ class ActivationTracker extends Actor{
 
     var receive : Receive = notActivated
 
-    def activated : Receive = {
-      case AwaitActivation(ref) => sender ! EndpointActivated(ref)
-      case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
-      case EndpointDeActivated(ref) => onDeactivation(ref)
-      case msg : EndpointFailedToDeActivate => {
-        awaitingDeActivation foreach (_ ! msg)
-        awaitingDeActivation = Nil
-      }
-    }
-
-    def failedToActivate : Receive = {
-      case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
-      case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
-    }
-
     def notActivated : Receive = {
       case AwaitActivation(ref) =>  awaitingActivation ::= sender
       case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
@@ -55,16 +40,30 @@ class ActivationTracker extends Actor{
       }
     }
 
-
-    def onDeactivation(ref: ActorRef){
-      awaitingDeActivation foreach (_ ! EndpointDeActivated(ref))
-      awaitingDeActivation = Nil
-      context.stop(self)
+    def activated : Receive = {
+      case AwaitActivation(ref) => sender ! EndpointActivated(ref)
+      case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
+      case EndpointDeActivated(ref) => {
+        awaitingDeActivation foreach (_ ! EndpointDeActivated(ref))
+        awaitingDeActivation = Nil
+        context.stop(self)
+      }
+      case msg : EndpointFailedToDeActivate => {
+        awaitingDeActivation foreach (_ ! msg)
+        awaitingDeActivation = Nil
+      }
     }
+
+    def failedToActivate : Receive = {
+      case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
+      case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, activationFailure.get)
+    }
+
   }
 
-  context.system.eventStream.subscribe(self, classOf[ActivationMessage])
-
+  override def preStart() {
+    context.system.eventStream.subscribe(self, classOf[ActivationMessage])
+  }
 
   override def receive = {
     case msg @ ActivationMessage(ref) =>{
@@ -75,10 +74,7 @@ class ActivationTracker extends Actor{
       }
     }
   }
-
-
 }
-case class ActivationMessage(actor: ActorRef)
 
 /**
  * Event message asking the endpoint to respond with EndpointActivated message when it gets activated.

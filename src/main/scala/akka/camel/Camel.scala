@@ -98,7 +98,7 @@ trait ConsumerRegistry{
 
 
   def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
-    consumerPublisher ! ConsumerActorRegistered(route, consumer)
+    consumerPublisher ! RegisterConsumer(route, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
 
