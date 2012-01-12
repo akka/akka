@@ -1,22 +1,18 @@
 package akka.camel
 
 import component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
-import java.util.concurrent.TimeoutException
-import org.apache.camel.builder.RouteBuilder
+import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import collection.mutable.HashMap
 import akka.event.Logging.Info
-import akka.util.{Timeout, Duration}
+import akka.util.Duration
 import akka.util.ErrorUtils._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
-import akka.dispatch.Future
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
   def template : ProducerTemplate
-  def addRoutes(routeBuilder: RouteBuilder) :Unit
-  def stopRoute(routeId: String) : Unit
   def start : Camel
   def stop : Unit
 }
@@ -41,9 +37,6 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   }
 
   val template = context.createProducerTemplate()
-
-  def addRoutes(routeBuilder: RouteBuilder) {context addRoutes routeBuilder}
-  def stopRoute(routeId: String) = context.stopRoute(routeId)
 
   def start = {
     context.start
@@ -103,50 +96,4 @@ trait ConsumerRegistry{
   }
 
   def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
-}
-
-trait Activation{ this : Camel =>
-  import akka.dispatch.Await
-
-  val actorSystem : ActorSystem
-  private[camel] val activationListener = actorSystem.actorOf(Props[ActivationTracker])
-
-  //TODO we need better name for this
-  def activationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
-    (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[Unit]{
-      case EndpointActivated(_) => {}
-      case EndpointFailedToActivate(_, cause) => throw cause
-    }
-  }
-
-  /**
-   * Awaits for actor to be activated.
-   */
-
-  def awaitActivation(actor: ActorRef, timeout: Duration){
-    try{
-      Await.result(activationAwaitableFor(actor, timeout), timeout)
-    }catch {
-      case e: TimeoutException => throw new ActivationTimeoutException
-    }
-  }
-
-  //TODO we need better name for this
-  def deactivationAwaitableFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
-    (activationListener ?(AwaitDeActivation(actor), Timeout(timeout))).map[Unit]{
-      case EndpointDeActivated(_) => {}
-      case EndpointFailedToDeActivate(_, cause) => throw cause
-    }
-  }
-
-  def awaitDeactivation(actor: ActorRef, timeout: Duration) {
-    try{
-      Await.result(deactivationAwaitableFor(actor, timeout), timeout)
-    }catch {
-      case e: TimeoutException => throw new DeActivationTimeoutException
-    }
-  }
-
-
-
 }

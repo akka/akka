@@ -1,9 +1,11 @@
+package akka.camel.internal
+
 /**
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
-package akka.camel
 
-import component.BlockingOrNotTypeConverter
+import akka.camel.component.BlockingOrNotTypeConverter
+import akka.camel._
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
@@ -30,7 +32,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
     case r: RegisterConsumer => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor) }
     case Terminated(ref) => {
       activated.remove(ref)
-      try_(camel.stopRoute(ref.path.toString)) match {
+      try_(camel.context.stopRoute(ref.path.toString)) match {
         case Right(_) =>{
           context.system.eventStream.publish(EndpointDeActivated(ref))
           EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(ref, ref.path))
@@ -43,7 +45,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   }
 
   def registerConsumer(endpointUri:String,  consumer:ActorRef, config: ConsumerConfig) {
-    try_(camel.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, config))) match {
+    try_(camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, config))) match {
       case Right(_) => {
         context.watch(consumer)
         activated.add(consumer)
@@ -115,17 +117,4 @@ private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
  */
 private[camel] case class UnregisterConsumer(actorRef: ActorRef)
 
-
-/**
- * Super class of all activation messages.
- */
-case class ActivationMessage(actor: ActorRef)
-
-/**
- * Event message indicating that a single endpoint has been activated.
- */
-private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
-private[camel] case class EndpointFailedToActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
-private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
-private[camel] case class EndpointFailedToDeActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
 

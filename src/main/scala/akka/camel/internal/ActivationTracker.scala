@@ -1,12 +1,10 @@
-package akka.camel
-
+package akka.camel.internal
 
 import akka.actor._
+import akka.camel._
 import collection.mutable.WeakHashMap
 import akka.event.Logging.Warning
 
-class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation.")
-class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation.")
 
 
 class ActivationTracker extends Actor{
@@ -75,10 +73,3 @@ class ActivationTracker extends Actor{
     }
   }
 }
-
-/**
- * Event message asking the endpoint to respond with EndpointActivated message when it gets activated.
- */
-case class AwaitActivation(ref:ActorRef) extends ActivationMessage(ref)
-case class AwaitDeActivation(ref : ActorRef) extends ActivationMessage(ref)
-
