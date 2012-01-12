@@ -1,7 +1,9 @@
 
 resolvers += Classpaths.typesafeResolver
 
-addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.7")
+addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
+
+addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.1")
 
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse" % "1.5.0")
 
@@ -12,4 +14,3 @@ resolvers ++= Seq(
   "coda" at "http://repo.codahale.com")
 
 addSbtPlugin("me.lessis" % "ls-sbt" % "0.1.1")
-
