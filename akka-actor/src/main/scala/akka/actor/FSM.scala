@@ -8,7 +8,7 @@ import akka.util._
 import scala.collection.mutable
 import akka.event.Logging
 import akka.util.Duration._
-import akka.routing.Listeners
+import akka.routing.{ Deafen, Listen, Listeners }
 
 object FSM {
 
@@ -475,7 +475,14 @@ trait FSM[S, D] extends Listeners {
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
+    case Listen(actorRef) ⇒
+      // TODO use DeathWatch to clean up list
+      listeners.add(actorRef)
+      // send current state back as reference point
+      actorRef ! CurrentState(self, currentState.stateName)
     case UnsubscribeTransitionCallBack(actorRef) ⇒
+      listeners.remove(actorRef)
+    case Deafen(actorRef) ⇒
       listeners.remove(actorRef)
     case value ⇒ {
       if (timeoutFuture.isDefined) {

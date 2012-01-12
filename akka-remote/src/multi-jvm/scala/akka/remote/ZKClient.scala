@@ -28,7 +28,6 @@ object ZkClient extends Watcher {
         zk.exists("/", false); true
       } catch {
         case _: KeeperException.ConnectionLossException =>
-          println("Server is not ready, sleeping...")
           Thread.sleep(10000)
           false
       }
@@ -61,7 +60,6 @@ object ZkClient extends Watcher {
     }
 
     def enter() {
-      println("ZK creating " + root + "/" + name)
       zk.create(root + "/" + name, Array[Byte](), Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL)
 
@@ -69,7 +67,6 @@ object ZkClient extends Watcher {
     }
 
     final def leave() {
-      println("ZK leaving " + root + "/" + name)
       zk.create(root + "/" + name + ".leave", Array[Byte](), Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL)
 
