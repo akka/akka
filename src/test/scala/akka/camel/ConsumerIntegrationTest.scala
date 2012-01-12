@@ -48,7 +48,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     }
   }
 
-  def _camel: Camel = {
+  def camel: Camel = {
     CamelExtension(system)
   }
 
@@ -59,21 +59,21 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
         case m: Message => sender ! "received "+m.bodyAs[String]
       }
     })
-    _camel.sendTo("direct:a1", msg="some message") should be ("received some message")
+    camel.sendTo("direct:a1", msg="some message") should be ("received some message")
   }
   it should "time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
 
     start(new Consumer{
-      override def outTimeout = SHORT_TIMEOUT
+      override def config = ConsumerConfig(outTimeout = SHORT_TIMEOUT)
 
       def endpointUri = "direct:a3"
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
     })
 
     intercept[CamelExecutionException]{
-      _camel.sendTo("direct:a3", msg = "some msg 3")
+      camel.sendTo("direct:a3", msg = "some msg 3")
     }
   }
 
@@ -95,22 +95,22 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     consumer ! "throw"
     if(!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
 
-    val response = _camel.sendTo("direct:a2", msg = "xyz")
+    val response = camel.sendTo("direct:a2", msg = "xyz")
     response should be ("received xyz")
   }
 
 
   it should  "unregister itself when stopped - integration test" in {
     val actorRef = start(new TestActor())
-    _camel.awaitActivation(actorRef, 1 second)
+    camel.awaitActivation(actorRef, 1 second)
 
-    _camel.routeCount should be >(0)
+    camel.routeCount should be >(0)
 
 
     system.stop(actorRef)
-    _camel.awaitDeactivation(actorRef, 1 second )
+    camel.awaitDeactivation(actorRef, 1 second )
 
-    _camel.routeCount should be (0)
+    camel.routeCount should be (0)
   }
 
 }

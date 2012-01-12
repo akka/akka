@@ -6,12 +6,12 @@ package akka.camel
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.model.RouteDefinition
 import akka.camel.migration.Migration._
 
 import akka.actor._
 import akka.util.ErrorUtils._
 import collection.mutable
+import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
 
 /**
  *
@@ -26,7 +26,7 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
   def receive = {
-    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actorRef)) { registerConsumer(r) }
+    case r: ConsumerActorRegistered => unless(isAlreadyActivated(r.actor.self)) { registerConsumer(r.endpointUri, r.actor.self, r.actor.config) }
     case Terminated(ref) => {
       activated.remove(ref)
       try_(camel.stopRoute(ref.path.toString)) match {
@@ -41,17 +41,16 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
     }
   }
 
-
-  def registerConsumer(r: ConsumerActorRegistered) {
-    try_(camel.addRoutes(new ConsumerActorRouteBuilder(r))) match {
+  def registerConsumer(endpointUri:String,  consumer:ActorRef, config: ConsumerConfig) {
+    try_(camel.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, config))) match {
       case Right(_) => {
-        context.watch(r.actorRef)
-        activated.add(r.actorRef)
-        context.system.eventStream.publish(EndpointActivated(r.actorRef))
-        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(r.actorRef, r.endpointUri))
+        context.watch(consumer)
+        activated.add(consumer)
+        context.system.eventStream.publish(EndpointActivated(consumer))
+        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(consumer, endpointUri))
       }
       case Left(throwable) => {
-        context.system.eventStream.publish(EndpointFailedToActivate(r.actorRef, throwable))
+        context.system.eventStream.publish(EndpointFailedToActivate(consumer, throwable))
       }
     }
   }
@@ -83,10 +82,9 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
     onRouteDefinition(startRouteDefinition(cnvopt)).to(targetUri)
   }
 
-  protected def routeDefinitionHandler: RouteDefinitionHandler
   protected def targetUri: String
 
-  private def onRouteDefinition(rd: RouteDefinition) = routeDefinitionHandler.onRouteDefinition(rd)
+  def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_]
   private def startRouteDefinition(bodyConversion: Option[Class[_]]): RouteDefinition = bodyConversion match {
     case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz)
     case None        => from(endpointUri).routeId(id)
@@ -98,23 +96,18 @@ private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: Stri
  *
  * @author Martin Krasser
  */
-private[camel] class ConsumerActorRouteBuilder(event: ConsumerActorRegistered) extends ConsumerRouteBuilder(event.endpointUri, event.path.toString) {
-  protected def routeDefinitionHandler: RouteDefinitionHandler = event.routeDefinitionHandler
+private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : ActorRef,  config: ConsumerConfig) extends ConsumerRouteBuilder(endpointUri, consumer.path.toString) {
+  def onRouteDefinition(rd: RouteDefinition) = config.onRouteDefinition(rd)
   //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
-  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (event.path, event.blocking, event.autoack, event.outTimeout.toNanos)
+  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, config.blocking, config.autoack, config.outTimeout.toNanos)
+
 }
 
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
  */
-private[camel] case class ConsumerActorRegistered(endpointUri:String, actor: Consumer){
-  def actorRef               = actor.self
-  def path                   = actorRef.path
-  def outTimeout             = actor.outTimeout
-  def blocking               = actor.blocking
-  def autoack                = actor.autoack
-  def routeDefinitionHandler = actor.routeDefinitionHandler
-}
+private[camel] case class ConsumerActorRegistered(endpointUri:String, actor: Consumer)
+
 
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.

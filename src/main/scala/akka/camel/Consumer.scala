@@ -16,51 +16,42 @@ import akka.util.duration._
  * @author Martin Krasser
  */
 trait Consumer extends Actor{
-  import RouteDefinitionHandler._
-  protected[this] val camel : Camel = CamelExtension(context.system)
-  def activationTimeout = 10 seconds
+
+  private[this] val camel : Camel = CamelExtension(context.system)
+
   def endpointUri : String
+  def config = ConsumerConfig() //TODO figure out how not to recreate config every time and keep it overridable
 
+  camel.registerConsumer(endpointUri, this, config.activationTimeout)
+
+}
+
+/** //TODO: Explain the parameters better with some examples!
+ * @param activationTimeout How long should the actor wait for activation before it fails.
+ *
+ * @param outTimeout When endpoint is outCapable (can produce responses) outTimeout is the maximum time
+ * the endpoint can take to send the response before the message exchange fails. It defaults to Int.MaxValue seconds.
+ * It can be also overwritten by setting @see blocking property
+ *
+ * @param blocking Determines whether two-way communications between an endpoint and this consumer actor
+ * should be done in blocking or non-blocking mode (default is non-blocking). This method
+ * doesn't have any effect on one-way communications (they'll never block).
+ *
+ * @param autoack Determines whether one-way communications between an endpoint and this consumer actor
+ * should be auto-acknowledged or application-acknowledged.
+ *
+  */
+
+case class ConsumerConfig(activationTimeout: Duration = 10 seconds,
+                          outTimeout : Duration = Int.MaxValue seconds,
+                          blocking : BlockingOrNot = NonBlocking,
+                          autoack : Boolean = true
+                          ) {
   /**
-   * The default route definition handler is the identity function
+   * The route definition handler for creating a custom route to this consumer instance.
    */
-  private[camel] var routeDefinitionHandler: RouteDefinitionHandler = identity
-
-  camel.registerConsumer(endpointUri, this, activationTimeout)
-
-
-  //TODO would be nice to pack these config items and endpointuri together in a CamelConfig case class
-  /**
-   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
-   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
-   * It can be also overwritten by setting @see blocking property
-   */
-  def outTimeout : Duration = Int.MaxValue seconds
-
-  /**
-   * Determines whether two-way communications between an endpoint and this consumer actor
-   * should be done in blocking or non-blocking mode (default is non-blocking). This method
-   * doesn't have any effect on one-way communications (they'll never block).
-   */
-  def blocking : BlockingOrNot = NonBlocking
-
-  /**
-   * Determines whether one-way communications between an endpoint and this consumer actor
-   * should be auto-acknowledged or application-acknowledged.
-   */
-  def autoack = true
-
-  /**
-   * Sets the route definition handler for creating a custom route to this consumer instance.
-   */
-  def onRouteDefinition(h: RouteDefinition => ProcessorDefinition[_]): Unit = onRouteDefinition(RouteDefinitionHandler.from(h))
-
-  /**
-   * Sets the route definition handler for creating a custom route to this consumer instance.
-   * <p>
-   * Java API.
-   */
-  def onRouteDefinition(h: RouteDefinitionHandler): Unit = routeDefinitionHandler = h
+  //TODO: write a test confirming onRouteDefinition gets called
+  def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_] = rd
 }
 
 sealed trait BlockingOrNot
@@ -79,8 +70,12 @@ case class Blocking(timeout : Duration) extends BlockingOrNot{
  */
 trait UntypedConsumer extends Consumer { self: UntypedActor =>
   final def endpointUri = getEndpointUri
-  final override def blocking = isBlocking
-  final override def autoack = isAutoack
+
+
+  //TODO figure out how not to delegate but use CustomerConfig from Java
+  override def config = new ConsumerConfig(blocking = isBlocking(), autoack = isAutoack(), activationTimeout = getActivationTimeout()){
+    override def onRouteDefinition(rd: RouteDefinition) = UntypedConsumer.this.onRouteDefinition(rd)
+  }
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
@@ -92,13 +87,18 @@ trait UntypedConsumer extends Consumer { self: UntypedActor =>
    * should be done in blocking or non-blocking mode (default is non-blocking). This method
    * doesn't have any effect on one-way communications (they'll never block).
    */
-  def isBlocking() = super.blocking
+  def isBlocking() : BlockingOrNot = NonBlocking
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
    */
-  def isAutoack() = super.autoack
+  def isAutoack() = false
+
+  def getActivationTimeout(): Duration = 10 seconds
+
+  def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_] = rd
+
 }
 
 /**
