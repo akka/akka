@@ -18,7 +18,6 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
   override protected def beforeAll = {
     camelContext.addRoutes(new TestRoute(system))
-    camel.start
   }
 
   override protected def afterAll = {

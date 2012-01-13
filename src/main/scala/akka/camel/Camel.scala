@@ -13,8 +13,6 @@ import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension,
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
   def template : ProducerTemplate
-  def start : Camel
-  def stop : Unit
 
   /**
    * Refers back to the associated ActorSystem
@@ -43,6 +41,12 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
 
   val template = context.createProducerTemplate()
   def system = actorSystem
+
+  /**
+   * Starts camel and underlying camel context and template.
+   * Only the creator of Camel should start and stop it.
+   * @see akka.camel.DefaultCamel#stop()
+   */
   def start = {
     context.start
     template.start
@@ -50,7 +54,15 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
     this
   }
 
-  override def stop {
+  /**
+   * Stops camel and underlying camel context and template.
+   * Only the creator of Camel should stop it.
+   * There is no need to stop Camel instance, which you get from the CamelExtension, as its lifecycle is bound to the actor system.
+   *
+   * @see akka.camel.DefaultCamel#start()
+   */
+
+  def stop {
     tryAll(
       context.stop(),
       template.stop()
@@ -64,9 +76,17 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
   /**
    * If you need to start Camel context outside of extension you can use this method
    * to tell the actor system which camel instance it should use.
+   * The user is responsible for stopping such a Camel instance.
    */
   def setCamelFor(system: ActorSystem, camel: Camel) { overrides(system) = camel } //TODO: putIfAbsent maybe?
 
+  /**
+   * Creates new instance of Camel and makes sure it gets stopped when actor system is shutdown.
+   *
+   * <br/><br/>When the user wants to use a specific Camel instance, they can set an override - see setCamelFor(ActorSystem, Camel)
+   * In this case the user is responsible for stopping the Camel instance.
+   *
+   */
   def createExtension(system: ActorSystemImpl) = {
 
     def useOverride(system: ActorSystemImpl) = {

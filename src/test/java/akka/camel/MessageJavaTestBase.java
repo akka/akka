@@ -29,7 +29,6 @@ public class MessageJavaTestBase {
     @AfterClass
     public static void cleanup(){
         system.shutdown();
-        camel.stop();
     }
 
     Message message(Object body){ return new Message(body, new HashMap(), camel.context()); }

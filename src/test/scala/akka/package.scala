@@ -55,7 +55,6 @@ package object camel{
     }
 
     @After def after() = {
-      camel.stop
       camelSystem.shutdown()
     }
   }
