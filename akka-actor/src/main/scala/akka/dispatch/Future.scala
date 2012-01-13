@@ -325,7 +325,7 @@ object Future {
                     // FIXME catching all and continue isn't good for OOME, ticket #1418
                     executor match {
                       case m: MessageDispatcher ⇒
-                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", e.getMessage))
+                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", this.getClass, e.getMessage))
                       case other ⇒
                         e.printStackTrace()
                     }
@@ -566,7 +566,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   protected def logError(msg: String, problem: Throwable): Unit = {
     executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, problem.getMessage))
+      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, this.getClass, problem.getMessage))
       case other                ⇒ problem.printStackTrace()
     }
   }

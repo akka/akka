@@ -36,7 +36,8 @@ object LoggingReceive {
 class LoggingReceive(source: AnyRef, r: Receive)(implicit system: ActorSystem) extends Receive {
   def isDefinedAt(o: Any) = {
     val handled = r.isDefinedAt(o)
-    system.eventStream.publish(Debug(LogSource.fromAnyRef(source), "received " + (if (handled) "handled" else "unhandled") + " message " + o))
+    val (str, clazz) = LogSource.fromAnyRef(source)
+    system.eventStream.publish(Debug(str, clazz, "received " + (if (handled) "handled" else "unhandled") + " message " + o))
     handled
   }
   def apply(o: Any): Unit = r(o)

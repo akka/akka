@@ -330,7 +330,11 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
-  val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
+
+  // unfortunately we need logging before we know the rootpath address, which wants to be inserted here
+  @volatile
+  private var _log = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
+  def log = _log
 
   val scheduler = createScheduler()
 
@@ -383,6 +387,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
     deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
@@ -498,4 +503,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
     }
   }
+
+  override def toString = lookupRoot.path.root.address.toString
 }
