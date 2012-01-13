@@ -53,7 +53,7 @@ trait Activation{ this : Camel =>
 /**
  * Super class of all activation messages.
  */
-case class ActivationMessage(actor: ActorRef)
+private[camel] case class ActivationMessage(actor: ActorRef)
 
 /**
  * Event message indicating that a single endpoint has been activated.

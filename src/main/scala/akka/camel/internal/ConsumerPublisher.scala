@@ -13,7 +13,7 @@ import akka.camel.migration.Migration._
 
 import akka.actor._
 import collection.mutable
-import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
+import org.apache.camel.model.RouteDefinition
 
 /**
  *
@@ -86,43 +86,42 @@ private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
  * Abstract builder of a route to a target which can be either an actor or an typed actor method.
  *
  * @param endpointUri endpoint URI of the consumer actor or typed actor method.
- * @param id unique route identifier.
  *
  * @author Martin Krasser
  */
-private[camel] abstract class ConsumerRouteBuilder(endpointUri: String, id: String) extends RouteBuilder {
-  // TODO: make conversions configurable
-  private val bodyConversions = Map(
-    "file" -> classOf[InputStream]
-  )
+private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : ActorRef,  config: ConsumerConfig) extends RouteBuilder {
+
+  //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
+  protected def targetActorUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, BlockingOrNotTypeConverter.toString(config.blocking), config.autoack, config.outTimeout.toNanos)
+
 
   def configure = {
-    val schema = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
-    val cnvopt = bodyConversions.get(schema)
 
-    onRouteDefinition(startRouteDefinition(cnvopt)).to(targetUri)
+    val scheme = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
+
+
+    val route = from(endpointUri).routeId(consumer.path.toString)
+    val converted = Conversions(scheme, route)
+    val userCustomized = applyUserRouteCustomization(converted)
+    userCustomized.to(targetActorUri)
   }
 
-  protected def targetUri: String
+  def applyUserRouteCustomization(rd: RouteDefinition) = config.onRouteDefinition(rd)
 
-  def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_]
-  private def startRouteDefinition(bodyConversion: Option[Class[_]]): RouteDefinition = bodyConversion match {
-    case Some(clazz) => from(endpointUri).routeId(id).convertBodyTo(clazz)
-    case None        => from(endpointUri).routeId(id)
+  object Conversions{
+    // TODO: make conversions configurable
+    private val bodyConversions = Map(
+      "file" -> classOf[InputStream]
+    )
+
+    def apply(scheme: String, routeDefinition: RouteDefinition): RouteDefinition = bodyConversions.get(scheme) match {
+      case Some(clazz) => routeDefinition.convertBodyTo(clazz)
+      case None        => routeDefinition
+    }
   }
-}
-
-/**
- * Builder of a route to a consumer actor.
- *
- * @author Martin Krasser
- */
-private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : ActorRef,  config: ConsumerConfig) extends ConsumerRouteBuilder(endpointUri, consumer.path.toString) {
-  def onRouteDefinition(rd: RouteDefinition) = config.onRouteDefinition(rd)
-  //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
-  protected def targetUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, BlockingOrNotTypeConverter.toString(config.blocking), config.autoack, config.outTimeout.toNanos)
 
 }
+
 
 /**
  * Event indicating that a consumer actor has been registered at the actor registry.
@@ -133,6 +132,6 @@ private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
 /**
  * Event indicating that a consumer actor has been unregistered from the actor registry.
  */
-private[camel] case class UnregisterConsumer(actorRef: ActorRef)
+private[internal] case class UnregisterConsumer(actorRef: ActorRef)
 
 

@@ -112,13 +112,13 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
  * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
  * ActorEndpoint uses it to lookup an actor by its path.
  */
-trait ConsumerRegistry{
-  self:Camel =>
+private[camel] trait ConsumerRegistry{
+  this:Camel =>
   val actorSystem : ActorSystem
-  private[camel] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
+  private[this] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
 
 
-  private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
+   def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
     consumerPublisher ! RegisterConsumer(route, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
