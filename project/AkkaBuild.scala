@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -211,6 +211,13 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel
     )
+  )
+
+  lazy val actorMigration = Project(
+    id = "akka-actor-migration",
+    base = file("akka-actor-migration"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings
   )
 
   lazy val akkaSbtPlugin = Project(
