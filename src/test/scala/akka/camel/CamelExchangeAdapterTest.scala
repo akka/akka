@@ -42,9 +42,9 @@ class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with Me
   }
 
   @Test def shouldSetExceptionFromFailureMessage = {
-    val e1 = sampleInOnly.fromFailureMessage(Failure(new Exception("test1")))
+    val e1 = sampleInOnly.setFailure(Failure(new Exception("test1")))
     assert(e1.getException.getMessage === "test1")
-    val e2 = sampleInOut.fromFailureMessage(Failure(new Exception("test2")))
+    val e2 = sampleInOut.setFailure(Failure(new Exception("test2")))
     assert(e2.getException.getMessage === "test2")
   }
 

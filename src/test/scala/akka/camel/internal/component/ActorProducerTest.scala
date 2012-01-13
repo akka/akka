@@ -24,9 +24,15 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
   var producer : TestableProducer = _
   var message : Message = _
+  var probe : TestProbe = _
+  var asyncCallback : TestAsyncCallback = _
+
 
 
   override protected def beforeEach() {
+    asyncCallback = createAsyncCallback
+
+    probe = TestProbe()
     camel = mock[Camel]
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
@@ -43,13 +49,12 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
   "ActorProducer" should "pass the message to the consumer, when exchange is synchronous and in-only" in {
 
-    val actor = TestProbe()
-    prepareMocks(actor.ref, outCapable = false)
+    prepareMocks(probe.ref, outCapable = false)
 
     producer.process(exchange)
 
     within(1 second){
-      actor.expectMsg(message)
+      probe.expectMsg(message)
     }
   }
 
@@ -63,15 +68,18 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     verify(exchange).setResponse(msg("received "+message))
   }
 
-  it should "get a response and async callback as soon as it gets response, when exchange is non blocking, out capable" in {
-    prepareMocks(echoActor, outCapable = true)
-    val asyncCallback = createAsyncCallback
+  it should "get a response and async callback as soon as it gets response (but not before), when exchange is non blocking, out capable" in {
+    prepareMocks(probe.ref, outCapable = true)
     val doneSync = producer.process(exchange, asyncCallback)
 
-    //TODO: we should test it doesn't act before it gets response
+    asyncCallback.expectNoCallWithin(50 millis)
+    within(1 second){
+      probe.expectMsgType[Message]
+      probe.sender ! "some message"
+    }
     doneSync should be (false)
-    asyncCallback.valueWithin(1 second) should be (false)
-    verify(exchange).setResponse(msg("received "+message))
+    asyncCallback.expectDoneAsyncWithin(1 second)
+    verify(exchange).setResponse(msg("some message"))
   }
 
 
@@ -80,24 +88,22 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
 
     val producer = new TestableProducer(config(isBlocking=Blocking(1 second)), camel)
 
-    val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
 
     doneSync should be (true)
     //TODO: This is a bit lame test. Happy for any suggestions.
-    asyncCallback.valueWithin(0 second) should be (true)
+    asyncCallback.expectDoneSyncWithin(0 second)
     verify(exchange).setResponse(msg("received "+message))
   }
 
   it should "get async callback as soon as it sends a message, when exchange is non blocking, in only and autoAck" in {
     prepareMocks(doNothingActor, outCapable = false)
-    val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
 
     doneSync should be (false)
-    asyncCallback.valueWithin(1 second) should be (false)
+    asyncCallback.expectDoneAsyncWithin(1 second)
     verify(exchange, never()).setResponse(any[Message])
   }
 
@@ -105,63 +111,97 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     prepareMocks(doNothingActor, outCapable = false)
     val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
-    val asyncCallback = createAsyncCallback
     producer.process(exchange, asyncCallback)
 
-    verify(exchange).fromFailureMessage(any[Failure])
+    verify(exchange).setFailure(any[Failure])
 
   }
+  
+  //TODO: write a test which checks it waits for at least as long as blocking timeout specifies
 
+
+  def time[A](block : => A) : Duration ={
+    val start = System.currentTimeMillis()
+    block
+    val duration = System.currentTimeMillis() - start
+    duration millis
+  }
+
+  it should  "timeout when it doesnt get output message, roughly after time specified by blocking timeout parameter" in {
+    prepareMocks(doNothingActor, outCapable = true)
+
+    val producer = new TestableProducer(config(isBlocking = Blocking(50 millis), isAutoAck = false), camel)
+
+    val duration = time {
+      producer.process(exchange, asyncCallback)
+      asyncCallback.awaitCalled()
+    }
+
+    duration should be >= (50 millis)
+    duration should be < (100 millis)
+  }
+  
   it should  "timeout when it doesnt get output message" in {
     prepareMocks(doNothingActor, outCapable = true)
     val producer = new TestableProducer(config(isBlocking = Blocking(10 millis), isAutoAck = false), camel)
 
-    val asyncCallback = createAsyncCallback
     producer.process(exchange, asyncCallback)
 
-    verify(exchange).fromFailureMessage(any[Failure])
+    verify(exchange).setFailure(any[Failure])
   }
 
   it should "get async callback as soon as it gets Ack a message, when exchange is non blocking, in only and manualAck" in {
 
-    val actor = TestProbe()
-    prepareMocks(actor.ref, outCapable = false)
+    prepareMocks(probe.ref, outCapable = false)
     val producer = new TestableProducer(config(isAutoAck = false), camel)
 
-    val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
 
     doneSync should be (false)
     within(1 second){
-      actor.expectMsgType[Message]
-      actor.sender ! Ack
-      asyncCallback.valueWithin(remaining) should be (false)
+      probe.expectMsgType[Message]
+      probe.sender ! Ack
+      asyncCallback.expectDoneAsyncWithin(remaining)
     }
     verify(exchange, never()).setResponse(any[Message])
   }
 
   it should "get sync callback when it gets Ack a message, when exchange is blocking, in only and manualAck" in {
 
-    val actor = TestProbe()
-    prepareMocks(actor.ref, outCapable = false)
+    prepareMocks(probe.ref, outCapable = false)
     val producer = new TestableProducer(config(isBlocking = Blocking(1 second), isAutoAck = false), camel)
 
-    val asyncCallback = createAsyncCallback
     val doneSync = producer.process(exchange, asyncCallback)
 
 
     doneSync should be (true)
     within(5 millis){
-      actor.expectMsgType[Message]
-      actor.sender ! Ack
+      probe.expectMsgType[Message]
+      probe.sender ! Ack
     }
-    asyncCallback.valueWithin(1 second) should be (true)
+    asyncCallback.expectDoneSyncWithin(1 second)
     verify(exchange, never()).setResponse(any[Message])
   }
 
+  //TODO: write more tests for process(exchange) method
+  
   //TODO: write this test
   it should "fail if expecting Ack or Failure message and some other message is sent as a response, when in-only, manualAck" in  pending
+  
+  it should "set an exception on exchange when response is Failure, when outCapable" in {
+    val failure = Failure(new RuntimeException("some failure"))
+    prepareMocks(probe.ref, outCapable = true)
+    producer.process(exchange, asyncCallback)
+
+    within(1 second){
+      probe.expectMsgType[Message]
+      probe.sender ! failure
+      asyncCallback.awaitCalled(remaining)
+    }
+
+    verify(exchange).setFailure(failure)
+  }
 
   it should "disallow blocking, when in only and autoAck" in {
     prepareMocks(doNothingActor, outCapable = false)
@@ -180,7 +220,18 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
     protected def receive = { case _ => sender ! Ack}
   }))
 
-  def createAsyncCallback =  new AsyncCallback {
+  def createAsyncCallback = new TestAsyncCallback
+
+  class TestAsyncCallback extends AsyncCallback{
+    def expectNoCallWithin(duration: Duration){
+      if (callbackReceived.await(duration.toNanos, TimeUnit.NANOSECONDS )) fail("NOT expected callback, but received one!")
+    }
+    
+
+
+    def awaitCalled(timeout: Duration = 1 second){ valueWithin(1 second)}
+
+
     val callbackReceived = new CountDownLatch(1)
     val callbackValue = new AtomicBoolean()
 
@@ -189,9 +240,16 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
       callbackReceived.countDown()
     }
 
-    def valueWithin(implicit timeout:Duration) ={
+    private[this] def valueWithin(implicit timeout:Duration) ={
       if (! callbackReceived.await(timeout.toNanos, TimeUnit.NANOSECONDS)) fail("Callback not received!")
       callbackValue.get
+    }
+
+    def expectDoneSyncWithin(implicit timeout:Duration) {
+      if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
+    }
+    def expectDoneAsyncWithin(implicit timeout:Duration) {
+      if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
     }
 
   }
@@ -206,10 +264,6 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   def prepareMocks(actor: ActorRef, message: Message = message, outCapable: Boolean) {
-//    when(camel.message(any[Any])).thenAnswer(new Answer[Message]{
-//      def answer(invocation: InvocationOnMock) = Message(invocation.getArguments()(0), Map.empty, camel)
-//    })
-//
     when(camel.findConsumer(any[Path])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable

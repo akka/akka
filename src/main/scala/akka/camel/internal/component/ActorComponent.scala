@@ -176,9 +176,9 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
 
     def processAck : PartialFunction[Either[Throwable,Any], Unit] = {
       case Right(Ack) => { /* no response message to set */}
-      case Right(failure : Failure) => exchange.fromFailureMessage(failure)
-      case Right(msg) => exchange.fromFailureMessage(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: "+msg)))
-      case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+      case Right(failure : Failure) => exchange.setFailure(failure)
+      case Right(msg) => exchange.setFailure(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: "+msg)))
+      case Left(throwable) =>  exchange.setFailure(Failure(throwable))
     }
 
     def outCapable: Boolean = {
@@ -247,9 +247,9 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
   }
 
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
-    case Right(failure:Failure) => exchange.fromFailureMessage(failure);
+    case Right(failure:Failure) => exchange.setFailure(failure);
     case Right(msg) => exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(throwable) =>  exchange.fromFailureMessage(Failure(throwable))
+    case Left(throwable) =>  exchange.setFailure(Failure(throwable))
   }
 
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}

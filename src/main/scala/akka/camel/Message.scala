@@ -278,7 +278,7 @@ class CamelExchangeAdapter(exchange: Exchange) {
    * Sets Exchange.getException from the given Failure message. Headers of the Failure message
    * are ignored.
    */
-  def fromFailureMessage(msg: Failure): Exchange = { exchange.setException(msg.cause); exchange }
+  def setFailure(msg: Failure): Exchange = { exchange.setException(msg.cause); exchange }
 
   /**
    * Creates a Message object from Exchange.getIn.
