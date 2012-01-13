@@ -8,7 +8,7 @@ import akka.event.Logging.Info
 import akka.util.Duration
 import akka.util.ErrorUtils._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
-import java.util.concurrent.ConcurrentHashMap
+import collection.mutable.{SynchronizedMap, HashMap}
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
@@ -72,7 +72,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
-  private[this] val overrides = new ConcurrentHashMap[ActorSystem, Camel]
+  private[this] val overrides = new HashMap[ActorSystem, Camel] with SynchronizedMap[ActorSystem, Camel]     //had to revert to SyncMap as ConcurrentHasMap doesn't guarantee that writes will happen before reads
 
   /**
    * If you need to start Camel context outside of extension you can use this method
@@ -91,13 +91,13 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
    */
   def createExtension(system: ActorSystemImpl) = {
 
-    def useOverride(system: ActorSystemImpl) = {
-      val camel = overrides.get(system)
+    def useOverride(system: ActorSystem) = {
+      val camel = overrides(system)
       system.registerOnTermination(overrides.remove(system))
       camel
     }
 
-    def createNew(system: ActorSystemImpl) = {
+    def createNew(system: ActorSystem) = {
       val camel = new DefaultCamel(system).start;
       system.registerOnTermination(camel.shutdown())
       camel
