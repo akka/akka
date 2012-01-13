@@ -1,4 +1,3 @@
-
 .. _deployment-scenarios:
 
 ###################################
@@ -28,7 +27,7 @@ Actors as services
 ^^^^^^^^^^^^^^^^^^
 
 The simplest way you can use Akka is to use the actors as services in your Web
-application. All that’s needed to do that is to put the Akka charts as well as
+application. All that’s needed to do that is to put the Akka jars as well as
 its dependency jars into ``WEB-INF/lib``. You also need to put the :ref:`configuration`
 file in the ``$AKKA_HOME/config`` directory.  Now you can create your
 Actors as regular services referenced from your Web application. You should also
