@@ -13,6 +13,7 @@ import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import java.util.concurrent.ConcurrentHashMap
+import com.typesafe.config.Config
 
 object RoutingSpec {
 
@@ -21,6 +22,10 @@ object RoutingSpec {
       /router1 {
         router = round-robin
         nr-of-instances = 3
+      }
+      /myrouter {
+        router = "akka.routing.RoutingSpec$MyRouter"
+        foo = bar
       }
     }
     """
@@ -35,6 +40,18 @@ object RoutingSpec {
   class Echo extends Actor {
     def receive = {
       case _ ⇒ sender ! self
+    }
+  }
+
+  class MyRouter(config: Config) extends RouterConfig {
+    val foo = config.getString("foo")
+    def createRoute(routeeProps: Props, actorContext: ActorContext): Route = {
+      val routees = IndexedSeq(actorContext.actorOf(Props[Echo]))
+      registerRoutees(actorContext, routees)
+
+      {
+        case (sender, message) ⇒ Nil
+      }
     }
   }
 
@@ -464,6 +481,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       } finally {
         sys.shutdown()
       }
+    }
+    "support custom router" in {
+      val myrouter = system.actorOf(Props().withRouter(FromConfig), "myrouter")
+      myrouter.isTerminated must be(false)
     }
   }
 

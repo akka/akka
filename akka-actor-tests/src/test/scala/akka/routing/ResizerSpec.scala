@@ -178,7 +178,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
       def loop(loops: Int, t: Int, latch: TestLatch, count: AtomicInteger) = {
-        count.set(0)
+        (10 millis).dilated.sleep
         for (m ← 0 until loops) {
           router.!((t, latch, count))
           (10 millis).dilated.sleep
