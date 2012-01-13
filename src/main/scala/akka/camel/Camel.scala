@@ -15,6 +15,11 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
   def template : ProducerTemplate
   def start : Camel
   def stop : Unit
+
+  /**
+   * Refers back to the associated ActorSystem
+   */
+  def system: ActorSystem
 }
 
 /**
@@ -37,7 +42,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   }
 
   val template = context.createProducerTemplate()
-
+  def system = actorSystem
   def start = {
     context.start
     template.start
@@ -94,6 +99,6 @@ trait ConsumerRegistry{
     consumerPublisher ! RegisterConsumer(route, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
-
+  // this might have problems with val initialization, since I also needed it for producers, I added the system to Camel.
   def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
 }
