@@ -47,6 +47,24 @@ object LoggingDocSpec {
   }
   //#my-event-listener
 
+  //#my-source
+  import akka.event.LogSource
+  import akka.actor.ActorSystem
+
+  object MyType {
+    implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
+      def genString(o: AnyRef): String = o.getClass.getName
+      override def getClazz(o: AnyRef): Class[_] = o.getClass
+    }
+  }
+
+  class MyType(system: ActorSystem) {
+    import MyType._
+    import akka.event.Logging
+
+    val log = Logging(system, this)
+  }
+  //#my-source
 }
 
 class LoggingDocSpec extends AkkaSpec {

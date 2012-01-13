@@ -17,8 +17,13 @@ as illustrated in this example:
 .. includecode:: code/akka/docs/event/LoggingDocTestBase.java
    :include: imports,my-actor
 
-The second parameter to the ``Logging.getLogger`` is the source of this logging channel.
-The source object is translated to a String according to the following rules:
+The first parameter to ``Logging.getLogger`` could also be any
+:class:`LoggingBus`, specifically ``system.eventStream()``; in the demonstrated
+case, the actor system’s address is included in the ``akkaSource``
+representation of the log source (see `Logging Thread and Akka Source in MDC`_)
+while in the second case this is not automatically done. The second parameter
+to ``Logging.getLogger`` is the source of this logging channel.  The source
+object is translated to a String according to the following rules:
 
   * if it is an Actor or ActorRef, its path is used
   * in case of a String it is used as is
@@ -27,6 +32,13 @@ The source object is translated to a String according to the following rules:
 
 The log message may contain argument placeholders ``{}``, which will be substituted if the log level
 is enabled.
+
+The Java :class:`Class` of the log source is also included in the generated
+:class:`LogEvent`. In case of a simple string this is replaced with a “marker”
+class :class:`akka.event.DummyClassForStringSources` in order to allow special
+treatment of this case, e.g. in the SLF4J event listener which will then use
+the string instead of the class’ name for looking up the logger instance to
+use.
 
 Event Handler
 =============
@@ -95,6 +107,12 @@ With Logback the thread name is available with ``%X{sourceThread}`` specifier wi
       <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
     </layout>
   </appender>
+
+.. note::
+  
+  It will probably be a good idea to use the ``sourceThread`` MDC value also in
+  non-Akka parts of the application in order to have this property consistently
+  available in the logs.
 
 Another helpful facility is that Akka captures the actor’s address when
 instantiating a logger within it, meaning that the full instance identification

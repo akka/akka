@@ -33,7 +33,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
     }
 
     "notify with one Terminated message when an Actor is stopped" in {
-      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props.empty)
       startWatching(terminal) ! "hallo"
       expectMsg("hallo") // this ensures that the DaemonMsgWatch has been received before we send the PoisonPill
 
@@ -43,7 +43,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
     }
 
     "notify with one Terminated message when an Actor is already dead" in {
-      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props.empty)
 
       terminal ! PoisonPill
 
@@ -52,7 +52,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
     }
 
     "notify with all monitors with one Terminated message when an Actor is stopped" in {
-      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props.empty)
       val monitor1, monitor2, monitor3 = startWatching(terminal)
 
       terminal ! PoisonPill
@@ -67,7 +67,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
     }
 
     "notify with _current_ monitors with one Terminated message when an Actor is stopped" in {
-      val terminal = system.actorOf(Props(context ⇒ { case _ ⇒ }))
+      val terminal = system.actorOf(Props.empty)
       val monitor1, monitor3 = startWatching(terminal)
       val monitor2 = system.actorOf(Props(new Actor {
         context.watch(terminal)

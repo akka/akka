@@ -8,6 +8,7 @@ import org.slf4j.{ Logger ⇒ SLFLogger, LoggerFactory ⇒ SLFLoggerFactory }
 import org.slf4j.MDC
 import akka.event.Logging._
 import akka.actor._
+import akka.event.DummyClassForStringSources
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
@@ -19,7 +20,10 @@ trait SLF4JLogging {
 
 object Logger {
   def apply(logger: String): SLFLogger = SLFLoggerFactory getLogger logger
-  def apply(logClass: Class[_]): SLFLogger = SLFLoggerFactory getLogger logClass
+  def apply(logClass: Class[_], logSource: String): SLFLogger = logClass match {
+    case c if c == classOf[DummyClassForStringSources] ⇒ apply(logSource)
+    case _ ⇒ SLFLoggerFactory getLogger logClass
+  }
   def root: SLFLogger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
 
@@ -39,24 +43,24 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
     case event @ Error(cause, logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
         cause match {
-          case Error.NoCause ⇒ Logger(logClass).error(message.toString)
-          case _             ⇒ Logger(logClass).error(message.toString, cause)
+          case Error.NoCause ⇒ Logger(logClass, logSource).error(message.toString)
+          case _             ⇒ Logger(logClass, logSource).error(message.toString, cause)
         }
       }
 
     case event @ Warning(logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
-        Logger(logClass).warn("{}", message.asInstanceOf[AnyRef])
+        Logger(logClass, logSource).warn("{}", message.asInstanceOf[AnyRef])
       }
 
     case event @ Info(logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
-        Logger(logClass).info("{}", message.asInstanceOf[AnyRef])
+        Logger(logClass, logSource).info("{}", message.asInstanceOf[AnyRef])
       }
 
     case event @ Debug(logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
-        Logger(logClass).debug("{}", message.asInstanceOf[AnyRef])
+        Logger(logClass, logSource).debug("{}", message.asInstanceOf[AnyRef])
       }
 
     case InitializeLogger(_) ⇒

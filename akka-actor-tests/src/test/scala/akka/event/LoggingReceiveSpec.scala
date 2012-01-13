@@ -59,7 +59,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         }
         val log = LoggingReceive("funky")(r)
         log.isDefinedAt("hallo")
-        expectMsg(1 second, Logging.Debug("funky", classOf[String], "received unhandled message hallo"))
+        expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources], "received unhandled message hallo"))
       }
     }
 

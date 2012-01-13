@@ -168,15 +168,85 @@ trait LoggingBus extends ActorEventBus {
 
 }
 
+/**
+ * This trait defines the interface to be provided by a “log source formatting
+ * rule” as used by [[akka.event.Logging]]’s `apply`/`create` method.
+ *
+ * See the companion object for default implementations.
+ *
+ * Example:
+ * {{{
+ * trait MyType { // as an example
+ *   def name: String
+ * }
+ *
+ * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
+ *   def genString(a: MyType) = a.name
+ * }
+ *
+ * class MyClass extends MyType {
+ *   val log = Logging(eventStream, this) // will use "hallo" as logSource
+ *   def name = "hallo"
+ * }
+ * }}}
+ *
+ * The second variant is used for including the actor system’s address:
+ * {{{
+ * trait MyType { // as an example
+ *   def name: String
+ * }
+ *
+ * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
+ *   def genString(a: MyType) = a.name
+ *   def genString(a: MyType, s: ActorSystem) = a.name + "," + s
+ * }
+ *
+ * class MyClass extends MyType {
+ *   val sys = ActorSyste("sys")
+ *   val log = Logging(sys, this) // will use "hallo,akka://sys" as logSource
+ *   def name = "hallo"
+ * }
+ * }}}
+ *
+ * The default implementation of the second variant will just call the first.
+ */
 trait LogSource[-T] {
   def genString(t: T): String
   def genString(t: T, system: ActorSystem): String = genString(t)
+  def getClazz(t: T): Class[_] = t.getClass
 }
 
+/**
+ * This is a “marker” class which is inserted as originator class into
+ * [[akka.event.LogEvent]] when the string representation was supplied
+ * directly.
+ */
+class DummyClassForStringSources
+
+/**
+ * This object holds predefined formatting rules for log sources.
+ *
+ * In case an [[akka.actor.ActorSystem]] is provided, the following apply:
+ * <ul>
+ * <li>[[akka.actor.Actor]] and [[akka.actor.ActorRef]] will be represented by their absolute physical path</li>
+ * <li>providing a `String` as source will append "(<system address>)" and use the result</li>
+ * <li>providing a `Class` will extract its simple name, append "(<system address>)" and use the result</li>
+ * <li>anything else gives compile error unless implicit [[akka.event.LogSource]] is in scope for it</li>
+ * </ul>
+ *
+ * In case a [[akka.event.LoggingBus]] is provided, the following apply:
+ * <ul>
+ * <li>[[akka.actor.Actor]] and [[akka.actor.ActorRef]] will be represented by their absolute physical path</li>
+ * <li>providing a `String` as source will be used as is</li>
+ * <li>providing a `Class` will extract its simple name</li>
+ * <li>anything else gives compile error unless implicit [[akka.event.LogSource]] is in scope for it</li>
+ * </ul>
+ */
 object LogSource {
   implicit val fromString: LogSource[String] = new LogSource[String] {
     def genString(s: String) = s
     override def genString(s: String, system: ActorSystem) = s + "(" + system + ")"
+    override def getClazz(s: String) = classOf[DummyClassForStringSources]
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
@@ -191,29 +261,54 @@ object LogSource {
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {
     def genString(c: Class[_]) = simpleName(c)
     override def genString(c: Class[_], system: ActorSystem) = simpleName(c) + "(" + system + ")"
+    override def getClazz(c: Class[_]) = c
   }
   implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
 
-  def apply[T: LogSource](o: T): String = implicitly[LogSource[T]].genString(o)
+  /**
+   * Convenience converter access: given an implicit `LogSource`, generate the
+   * string representation and originating class.
+   */
+  def apply[T: LogSource](o: T): (String, Class[_]) = {
+    val ls = implicitly[LogSource[T]]
+    (ls.genString(o), ls.getClazz(o))
+  }
 
-  def apply[T: LogSource](o: T, system: ActorSystem): String = implicitly[LogSource[T]].genString(o, system)
+  /**
+   * Convenience converter access: given an implicit `LogSource` and
+   * [[akka.actor.ActorSystem]], generate the string representation and
+   * originating class.
+   */
+  def apply[T: LogSource](o: T, system: ActorSystem): (String, Class[_]) = {
+    val ls = implicitly[LogSource[T]]
+    (ls.genString(o, system), ls.getClazz(o))
+  }
 
-  def fromAnyRef(o: AnyRef): String =
+  /**
+   * construct string representation for any object according to
+   * rules above with fallback to its `Class`’s simple name.
+   */
+  def fromAnyRef(o: AnyRef): (String, Class[_]) =
     o match {
-      case c: Class[_] ⇒ fromClass.genString(c)
-      case a: Actor    ⇒ fromActor.genString(a)
-      case a: ActorRef ⇒ fromActorRef.genString(a)
-      case s: String   ⇒ s
-      case x           ⇒ simpleName(x)
+      case c: Class[_] ⇒ apply(c)
+      case a: Actor    ⇒ apply(a)
+      case a: ActorRef ⇒ apply(a)
+      case s: String   ⇒ apply(s)
+      case x           ⇒ (simpleName(x), x.getClass)
     }
 
-  def fromAnyRef(o: AnyRef, system: ActorSystem): String =
+  /**
+   * construct string representation for any object according to
+   * rules above (including the actor system’s address) with fallback to its
+   * `Class`’s simple name.
+   */
+  def fromAnyRef(o: AnyRef, system: ActorSystem): (String, Class[_]) =
     o match {
-      case c: Class[_] ⇒ fromClass.genString(c, system)
-      case a: Actor    ⇒ fromActor.genString(a, system)
-      case a: ActorRef ⇒ fromActorRef.genString(a, system)
-      case s: String   ⇒ fromString.genString(s, system)
-      case x           ⇒ simpleName(x) + "(" + system + ")"
+      case c: Class[_] ⇒ apply(c)
+      case a: Actor    ⇒ apply(a)
+      case a: ActorRef ⇒ apply(a)
+      case s: String   ⇒ apply(s)
+      case x           ⇒ (simpleName(x) + "(" + system + ")", x.getClass)
     }
 }
 
@@ -322,140 +417,79 @@ object Logging {
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This
-   * will use the system’s event stream.
+   * will use the system’s event stream and include the system’s address in the
+   * log source string.
    *
-   * The source is used to identify the source of this logging channel and must have
-   * a corresponding implicit LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types. By these, the source
-   * object is translated to a String according to the following rules:
-   * <ul>
-   * <li>if it is an Actor or ActorRef, its path is used</li>
-   * <li>in case of a String it is used as is</li>
-   * <li>in case of a class an approximation of its simpleName
-   * <li>and in all other cases the simpleName of its class</li>
-   * </ul>
-   *
-   * You can add your own rules quite easily:
+   * <b>Do not use this if you want to supply a log category string (like
+   * “com.example.app.whatever”) unaltered,</b> supply `system.eventStream` in this
+   * case or use
    *
    * {{{
-   * trait MyType { // as an example
-   *   def name: String
-   * }
-   *
-   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
-   *   def genString(a: MyType) = a.name
-   * }
-   *
-   * class MyClass extends MyType {
-   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
-   *   def name = "hallo"
-   * }
+   * Logging(system, this.getClass)
    * }}}
+   *
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
+   *
+   * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter =
-    new BusLogging(system.eventStream, LogSource(logSource, system), logSource.getClass)
+  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter = {
+    val (str, clazz) = LogSource(logSource, system)
+    new BusLogging(system.eventStream, str, clazz)
+  }
 
   /**
    * Obtain LoggingAdapter for the given logging bus and source object.
    *
-   * The source is used to identify the source of this logging channel and must have
-   * a corresponding implicit LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types. By these, the source
-   * object is translated to a String according to the following rules:
-   * <ul>
-   * <li>if it is an Actor or ActorRef, its path is used</li>
-   * <li>in case of a String it is used as is</li>
-   * <li>in case of a class an approximation of its simpleName
-   * <li>and in all other cases the simpleName of its class</li>
-   * </ul>
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
    *
-   * You can add your own rules quite easily:
-   *
-   * {{{
-   * trait MyType { // as an example
-   *   def name: String
-   * }
-   *
-   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
-   *   def genString(a: MyType) = a.name
-   * }
-   *
-   * class MyClass extends MyType {
-   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
-   *   def name = "hallo"
-   * }
-   * }}}
+   * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def apply[T: LogSource](bus: LoggingBus, logSource: T): LoggingAdapter =
-    new BusLogging(bus, implicitly[LogSource[T]].genString(logSource), logSource.getClass)
+  def apply[T: LogSource](bus: LoggingBus, logSource: T): LoggingAdapter = {
+    val (str, clazz) = LogSource(logSource)
+    new BusLogging(bus, str, clazz)
+  }
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This
-   * will use the system’s event stream.
+   * will use the system’s event stream and include the system’s address in the
+   * log source string.
    *
-   * The source is used to identify the source of this logging channel and must have
-   * a corresponding implicit LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types. By these, the source
-   * object is translated to a String according to the following rules:
-   * <ul>
-   * <li>if it is an Actor or ActorRef, its path is used</li>
-   * <li>in case of a String it is used as is</li>
-   * <li>in case of a class an approximation of its simpleName
-   * <li>and in all other cases the simpleName of its class</li>
-   * </ul>
-   *
-   * You can add your own rules quite easily:
+   * <b>Do not use this if you want to supply a log category string (like
+   * “com.example.app.whatever”) unaltered,</b> supply `system.eventStream` in this
+   * case or use
    *
    * {{{
-   * trait MyType { // as an example
-   *   def name: String
-   * }
-   *
-   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
-   *   def genString(a: MyType) = a.name
-   * }
-   *
-   * class MyClass extends MyType {
-   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
-   *   def name = "hallo"
-   * }
+   * Logging.getLogger(system, this.getClass());
    * }}}
+   *
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
    */
-  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = apply(system, LogSource.fromAnyRef(logSource, system))
+  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = {
+    val (str, clazz) = LogSource.fromAnyRef(logSource, system)
+    new BusLogging(system.eventStream, str, clazz)
+  }
 
   /**
-   * Obtain LoggingAdapter for the given logging bus and source object. This
-   * will use the system’s event stream.
+   * Obtain LoggingAdapter for the given logging bus and source object.
    *
-   * The source is used to identify the source of this logging channel and must have
-   * a corresponding implicit LogSource[T] instance in scope; by default these are
-   * provided for Class[_], Actor, ActorRef and String types. By these, the source
-   * object is translated to a String according to the following rules:
-   * <ul>
-   * <li>if it is an Actor or ActorRef, its path is used</li>
-   * <li>in case of a String it is used as is</li>
-   * <li>in case of a class an approximation of its simpleName
-   * <li>and in all other cases the simpleName of its class</li>
-   * </ul>
-   *
-   * You can add your own rules quite easily:
-   *
-   * {{{
-   * trait MyType { // as an example
-   *   def name: String
-   * }
-   *
-   * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
-   *   def genString(a: MyType) = a.name
-   * }
-   *
-   * class MyClass extends MyType {
-   *   val log = Logging(eventStream, this) // will use "hallo" as logSource
-   *   def name = "hallo"
-   * }
-   * }}}
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
    */
-  //def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = apply(bus, LogSource.fromAnyRef(logSource))
+  def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = {
+    val (str, clazz) = LogSource.fromAnyRef(logSource)
+    new BusLogging(bus, str, clazz)
+  }
 
   /**
    * Artificial exception injected into Error events if no Throwable is
