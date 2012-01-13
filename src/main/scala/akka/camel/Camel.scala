@@ -115,11 +115,11 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
 private[camel] trait ConsumerRegistry{
   this:Camel =>
   val actorSystem : ActorSystem
-  private[this] val consumerPublisher = actorSystem.actorOf(Props(new ConsumerPublisher(this)))
+  private[this] val idempotentRegistry = actorSystem.actorOf(Props(new IdempotentCamelConsumerRegistry(this)))
 
 
    def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
-    consumerPublisher ! RegisterConsumer(route, consumer)
+    idempotentRegistry ! RegisterConsumer(route, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
   // this might have problems with val initialization, since I also needed it for producers, I added the system to Camel.

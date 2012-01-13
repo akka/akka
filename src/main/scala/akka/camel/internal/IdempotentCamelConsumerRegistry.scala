@@ -16,15 +16,13 @@ import collection.mutable
 import org.apache.camel.model.RouteDefinition
 
 /**
+ * Guarantees idempotent registration of camel consumer endpoints.
  *
- * Publishes consumer actors on <code>ConsumerActorRegistered</code> events and unpublishes
- * consumer actors on <code>ConsumerActorUnregistered</code> events. Publications are tracked
- * by sending an <code>activationTracker</code> an <code>EndpointActivated</code> event,
- * unpublications are tracked by sending an <code>EndpointActivated</code> event.
- *
- * @author Martin Krasser
+ * Once registered the consumer is watched and unregistered upon termination.
+ * It also publishes events to the eventStream so interested parties could subscribe to them.
+ * The main consumer of these events is currently the ActivationTracker.
  */
-private[camel] class ConsumerPublisher(camel : Camel) extends Actor {
+private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Actor {
   val activated  = new mutable.HashSet[ActorRef]
 
   val registrator = context.actorOf(Props(new Actor {
