@@ -19,8 +19,10 @@ import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingO
 
 //TODO: replace with ActorPath class. When I tried I could not find a way of constructing ActorPath from a string. Any ideas?
 case class Path(value: String) {
-  //TODO: Like this
-  //TODO: but I'm first completing the ProducerFeatureTest ;-)
+  //TODO: I'd be much happier if it lived inside of akka core.
+  // In the meantime I'd rather do system.actorFor(value).path as it guarantees,
+  // that if anything changes in akka internals, we are still fine - even if it was slower.
+
   def fromString(path: String) = {
     path match {
       case LocalActorPath(root, children) => {
@@ -286,6 +288,9 @@ object DurationTypeConverter extends CamelTypeConverter {
   def convertTo[T](`type`: Class[T], value: AnyRef) = Duration.fromNanos(value.toString.toLong).asInstanceOf[T]
 }
 
+/**
+ * Converter required by akka
+ */
 object BlockingOrNotTypeConverter extends CamelTypeConverter{
   import akka.util.duration._
   val blocking = """Blocking\((\d+) nanos\)""".r

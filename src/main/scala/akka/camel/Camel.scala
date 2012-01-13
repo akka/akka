@@ -25,7 +25,7 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
  *
  * @param actorSystem is used to create internal actors needed by camel instance.
  * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
- * In typical scenario, when camel is used as akka extension it is natural that camel reuses the  actor system it extends.
+ * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the  actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources. //TODO: (maybe it's premature optimisation?)
  */
 class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
@@ -47,6 +47,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
    * Only the creator of Camel should start and stop it.
    * @see akka.camel.DefaultCamel#stop()
    */
+  //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
     template.start()
@@ -61,7 +62,6 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
    *
    * @see akka.camel.DefaultCamel#start()
    */
-
   def shutdown() {
     tryAll(
       context.stop(),
@@ -72,7 +72,8 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
-  val overrides = new ConcurrentHashMap[ActorSystem, Camel]
+  private[this] val overrides = new ConcurrentHashMap[ActorSystem, Camel]
+
   /**
    * If you need to start Camel context outside of extension you can use this method
    * to tell the actor system which camel instance it should use.
