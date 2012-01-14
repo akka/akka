@@ -222,9 +222,9 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     "run echo server under high load" in {
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
-      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
+      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
       assert(Await.result(f, TestLatch.DefaultTimeout).size === 1000)
     }
 
