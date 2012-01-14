@@ -1,7 +1,5 @@
 package akka.camel;
 
-import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.util.Duration;
 import org.apache.camel.builder.Builder;
@@ -25,17 +23,13 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
 
     @Override
     public BlockingOrNot blocking(){
-        return new Blocking(Duration.fromNanos(100000000000L));
+        return new Blocking(Duration.fromNanos(1000000000L));
     }
 
     public void onReceive(Object message) throws Exception {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
         throw new Exception(String.format("error: %s", body));
-    }
-
-    public static void main(String[] args) {
-        ActorSystem.create("test").actorOf(new Props().withCreator( SampleErrorHandlingConsumer.class));
     }
 
 }

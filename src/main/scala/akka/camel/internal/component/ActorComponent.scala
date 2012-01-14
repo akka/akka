@@ -252,7 +252,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
     case Right(failure:Failure) => exchange.setFailure(failure);
     case Right(msg) => exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e:AskTimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check outTimeout and blocking settings.")))
+    case Left(e:TimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check outTimeout and blocking settings.")))
     case Left(throwable) =>  exchange.setFailure(Failure(throwable))
   }
 
