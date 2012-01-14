@@ -91,7 +91,7 @@ object IO {
   }
 
   case class EOF(cause: Option[Exception]) extends Input {
-    def ++(that: Input) = this
+    def ++(that: Input) = that
   }
 
   object Iteratee {
@@ -111,28 +111,32 @@ object IO {
      * and the unused Input.
      */
     final def apply(input: Input): (Iteratee[A], Input) = this match {
-      case Cont(f) ⇒ f(input)
-      case iter    ⇒ (iter, input)
+      case Cont(f, None) ⇒ f(input)
+      case iter          ⇒ (iter, input)
     }
 
     final def get: A = this(EOF(None))._1 match {
-      case Done(value) ⇒ value
-      case Cont(_)     ⇒ sys.error("Divergent Iteratee")
-      case Failure(e)  ⇒ throw e
+      case Done(value)        ⇒ value
+      case Cont(_, None)      ⇒ sys.error("Divergent Iteratee")
+      case Cont(_, Some(err)) ⇒ throw err
     }
 
     final def flatMap[B](f: A ⇒ Iteratee[B]): Iteratee[B] = this match {
-      case Done(value)       ⇒ f(value)
-      case Cont(k: Chain[_]) ⇒ Cont(k :+ f)
-      case Cont(k)           ⇒ Cont(Chain(k, f))
-      case failure: Failure  ⇒ failure
+      case Done(value)            ⇒ f(value)
+      case Cont(k: Chain[_], err) ⇒ Cont(k :+ f, err)
+      case Cont(k, err)           ⇒ Cont(Chain(k, f), err)
     }
 
     final def map[B](f: A ⇒ B): Iteratee[B] = this match {
-      case Done(value)       ⇒ Done(f(value))
-      case Cont(k: Chain[_]) ⇒ Cont(k :+ ((a: A) ⇒ Done(f(a))))
-      case Cont(k)           ⇒ Cont(Chain(k, (a: A) ⇒ Done(f(a))))
-      case failure: Failure  ⇒ failure
+      case Done(value)            ⇒ Done(f(value))
+      case Cont(k: Chain[_], err) ⇒ Cont(k :+ ((a: A) ⇒ Done(f(a))), err)
+      case Cont(k, err)           ⇒ Cont(Chain(k, (a: A) ⇒ Done(f(a))), err)
+    }
+
+    def recover[B >: A](pf: PartialFunction[Exception, B]): Iteratee[B] = this match {
+      case done @ Done(_)                           ⇒ done
+      case Cont(_, Some(err)) if pf isDefinedAt err ⇒ Done(pf(err))
+      case Cont(k, err)                             ⇒ Cont((more ⇒ k(more) match { case (iter, rest) ⇒ (iter recover pf, rest) }), err)
     }
 
   }
@@ -147,13 +151,7 @@ object IO {
   /**
    * An Iteratee that still requires more input to calculate it's result.
    */
-  final case class Cont[+A](f: Input ⇒ (Iteratee[A], Input)) extends Iteratee[A]
-
-  /**
-   * An Iteratee representing a failure to calcualte a result.
-   * FIXME: move into 'Cont' as in Oleg's implementation
-   */
-  final case class Failure(exception: Throwable) extends Iteratee[Nothing]
+  final case class Cont[+A](f: Input ⇒ (Iteratee[A], Input), error: Option[Exception] = None) extends Iteratee[A]
 
   object IterateeRef {
     def sync[A](initial: Iteratee[A]): IterateeRefSync[A] = new IterateeRefSync(initial)
@@ -212,6 +210,8 @@ object IO {
     def future: Future[(Iteratee[A], Input)] = _value
   }
 
+  final def throwErr(err: Exception): Iteratee[Nothing] = Cont(input ⇒ (throwErr(err), input), Some(err))
+
   /**
    * An Iteratee that returns the ByteString prefix up until the supplied delimiter.
    * The delimiter is dropped by default, but it can be returned with the result by
@@ -228,7 +228,8 @@ object IO {
         } else {
           (Cont(step(bytes)), Chunk.empty)
         }
-      case eof ⇒ (Cont(step(taken)), eof)
+      case eof @ EOF(None)  ⇒ (Done(taken), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(taken), cause), eof)
     }
 
     Cont(step(ByteString.empty))
@@ -242,7 +243,8 @@ object IO {
           (Cont(step(taken ++ found)), Chunk.empty)
         else
           (Done(taken ++ found), Chunk(rest))
-      case eof ⇒ (Done(taken), eof)
+      case eof @ EOF(None)  ⇒ (Done(taken), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(taken), cause), eof)
     }
 
     Cont(step(ByteString.empty))
@@ -259,7 +261,8 @@ object IO {
           (Done(bytes.take(length)), Chunk(bytes.drop(length)))
         else
           (Cont(step(bytes)), Chunk.empty)
-      case eof ⇒ (Cont(step(taken)), eof)
+      case eof @ EOF(None)  ⇒ (Done(taken), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(taken), cause), eof)
     }
 
     Cont(step(ByteString.empty))
@@ -275,7 +278,8 @@ object IO {
           (Cont(step(left - more.length)), Chunk.empty)
         else
           (Done(), Chunk(more drop left))
-      case eof ⇒ (Done(), eof)
+      case eof @ EOF(None)  ⇒ (Done(), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(left), cause), eof)
     }
 
     Cont(step(length))
@@ -289,7 +293,8 @@ object IO {
       case Chunk(more) ⇒
         val bytes = taken ++ more
         (Cont(step(bytes)), Chunk.empty)
-      case eof ⇒ (Done(taken), eof)
+      case eof @ EOF(None)  ⇒ (Done(taken), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(taken), cause), eof)
     }
 
     Cont(step(ByteString.empty))
@@ -301,7 +306,8 @@ object IO {
   val takeAny: Iteratee[ByteString] = Cont {
     case Chunk(bytes) if bytes.nonEmpty ⇒ (Done(bytes), Chunk.empty)
     case Chunk(bytes)                   ⇒ (takeAny, Chunk.empty)
-    case eof                            ⇒ (Done(ByteString.empty), eof)
+    case eof @ EOF(None)                ⇒ (Done(ByteString.empty), eof)
+    case eof @ EOF(cause)               ⇒ (Cont(more ⇒ (Done(ByteString.empty), more), cause), eof)
   }
 
   def takeList[A](length: Int)(iter: Iteratee[A]): Iteratee[List[A]] = {
@@ -320,7 +326,8 @@ object IO {
           (Done(bytes.take(length)), Chunk(bytes))
         else
           (Cont(step(bytes)), Chunk.empty)
-      case eof ⇒ (Cont(step(taken)), eof)
+      case eof @ EOF(None)  ⇒ (Done(taken), eof)
+      case eof @ EOF(cause) ⇒ (Cont(step(taken), cause), eof)
     }
 
     Cont(step(ByteString.empty))
@@ -362,10 +369,10 @@ object IO {
           case (Done(value), rest) ⇒
             queueOut.head(value) match {
               //case Cont(Chain(f, q)) ⇒ run(f(rest), q ++ tail) <- can cause big slowdown, need to test if needed
-              case Cont(f) ⇒ run(f(rest), queueOut.tail, queueIn)
-              case iter    ⇒ run((iter, rest), queueOut.tail, queueIn)
+              case Cont(f, None) ⇒ run(f(rest), queueOut.tail, queueIn)
+              case iter          ⇒ run((iter, rest), queueOut.tail, queueIn)
             }
-          case (Cont(f), rest) ⇒
+          case (Cont(f, None), rest) ⇒
             (Cont(new Chain(f, queueOut, queueIn)), rest)
           case _ ⇒ result
         }

@@ -12,11 +12,9 @@ import akka.dispatch.{ Await, Future }
 
 object IOActorSpec {
 
-  class SimpleEchoServer(host: String, port: Int, started: TestLatch) extends Actor {
+  class SimpleEchoServer(host: String, port: Int) extends Actor {
 
     IOManager(context.system) listen (host, port)
-
-    started.open
 
     val state = IO.IterateeRef.Map.sync[IO.Handle]()
 
@@ -38,7 +36,7 @@ object IOActorSpec {
 
   class SimpleEchoClient(host: String, port: Int) extends Actor {
 
-    val socket = IOManager(context.system) connect (host, port)
+    var socket = IOManager(context.system) connect (host, port)
 
     val state = IO.IterateeRef.sync()
 
@@ -47,17 +45,21 @@ object IOActorSpec {
       case bytes: ByteString ⇒
         val source = sender
         socket write bytes
-        for {
-          _ ← state
-          bytes ← IO take bytes.length
-        } yield source ! bytes
+        state flatMap { _ ⇒
+          IO take bytes.length map (source ! _) recover {
+            case e: java.net.ConnectException ⇒
+              self.tell(bytes, source)
+          }
+        }
 
-      case IO.Read(socket, bytes) ⇒
+      case IO.Read(_, bytes) ⇒
         state(IO Chunk bytes)
 
-      case IO.Connected(socket)     ⇒
+      case IO.Connected(_) ⇒
 
-      case IO.Closed(socket, cause) ⇒
+      case IO.Closed(_, cause) ⇒
+        state(IO EOF cause)
+        socket = IOManager(context.system) connect (host, port)
 
     }
   }
@@ -208,23 +210,19 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
   "an IO Actor" must {
     "run echo server" in {
-      val started = TestLatch(1)
-      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064, started)))
-      Await.ready(started, TestLatch.DefaultTimeout)
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064)))
       val f1 = client ? ByteString("Hello World!1")
       val f2 = client ? ByteString("Hello World!2")
       val f3 = client ? ByteString("Hello World!3")
+      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
       Await.result(f1, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!1"))
       Await.result(f2, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!2"))
       Await.result(f3, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!3"))
     }
 
     "run echo server under high load" in {
-      val started = TestLatch(1)
-      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065, started)))
-      Await.ready(started, TestLatch.DefaultTimeout)
       val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
+      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
       val list = List.range(0, 1000)
       val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
       assert(Await.result(f, TestLatch.DefaultTimeout).size === 1000)
