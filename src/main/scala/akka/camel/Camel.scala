@@ -51,7 +51,8 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   def start = {
     context.start()
     template.start()
-    actorSystem.eventStream.publish(Info("Camel",String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
+    //TODO use proper akka logging
+    actorSystem.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
     this
   }
 
@@ -67,7 +68,8 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
       context.stop(),
       template.stop()
     )
-    actorSystem.eventStream.publish(Info("Camel",String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
+    //TODO use proper akka logging
+    actorSystem.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
   }
 }
 

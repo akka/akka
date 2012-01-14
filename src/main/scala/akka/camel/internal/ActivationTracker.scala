@@ -68,7 +68,8 @@ class ActivationTracker extends Actor{
       try{
         activations.getOrElseUpdate(ref, new ActivationStateMachine).receive(msg)
       }catch {
-        case e:MatchError => context.system.eventStream.publish(Warning("ActivationTracker", e)) //TODO: 1. Investigate proper logging; 2. Do we need want to log this?
+        //TODO use proper akka logging
+        case e:MatchError => context.system.eventStream.publish(Warning("ActivationTracker",classOf[ActivationTracker], e)) //TODO: 1. Investigate proper logging; 2. Do we need want to log this?
       }
     }
   }
