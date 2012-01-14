@@ -6,11 +6,11 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers.{eq => the, any}
 import akka.util.duration._
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
 import akka.util.Duration
+import java.util.concurrent.{TimeoutException, CountDownLatch}
 
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach{
   implicit var system : ActorSystem = _
@@ -61,6 +61,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     })
     camel.sendTo("direct:a1", msg="some message") should be ("received some message")
   }
+
   it should "time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
@@ -72,8 +73,11 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
     })
 
-    intercept[CamelExecutionException]{
+    try
       camel.sendTo("direct:a3", msg = "some msg 3")
+    catch{
+      case e: CamelExecutionException => e.getCause.getClass should be (classOf[TimeoutException])
+      case other => fail("Expected CamelExecutionException but got: "+other)
     }
   }
 

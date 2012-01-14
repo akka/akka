@@ -128,6 +128,7 @@ private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
 /**
  * Super class of all activation messages.
  */
+//TODO investigate warnings about case class inheritance
 private[camel] case class ActivationMessage(actor: ActorRef)
 
 /**

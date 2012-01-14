@@ -51,7 +51,7 @@ package object camel{
 
     @Before def before = {
       camelSystem = ActorSystem("test")
-      camel = new DefaultCamel(camelSystem).start
+      camel = CamelExtension(camelSystem)
     }
 
     @After def after() = {

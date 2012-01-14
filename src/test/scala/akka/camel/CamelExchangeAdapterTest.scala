@@ -16,12 +16,12 @@ class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with Me
   def camel = CamelExchangeAdapterTest.camel
 
 
-  //TODO: Get rid of implicit.
-  // It is here, as was easier to add this implicit than to rewrite the whole test...
   override protected def afterAll() {
     CamelExchangeAdapterTest.system.shutdown()
   }
 
+  //TODO: Get rid of implicit.
+  // It is here, as was easier to add this implicit than to rewrite the whole test...
   implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e)
 
   @Test def shouldSetInMessageFromRequestMessage = {

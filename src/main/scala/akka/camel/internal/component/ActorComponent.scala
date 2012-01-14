@@ -16,6 +16,7 @@ import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
 import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
+import java.util.concurrent.TimeoutException
 
 //TODO: replace with ActorPath class. When I tried I could not find a way of constructing ActorPath from a string. Any ideas?
 case class Path(value: String) {
@@ -251,6 +252,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
     case Right(failure:Failure) => exchange.setFailure(failure);
     case Right(msg) => exchange.setResponse(Message.canonicalize(msg, camel))
+    case Left(e:AskTimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check outTimeout and blocking settings.")))
     case Left(throwable) =>  exchange.setFailure(Failure(throwable))
   }
 
