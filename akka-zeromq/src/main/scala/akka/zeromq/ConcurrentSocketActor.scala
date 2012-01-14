@@ -6,8 +6,7 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.{ Await, Promise, Dispatchers, Future }
-import akka.util.duration._
+import akka.dispatch.{ Promise, Future }
 
 private[zeromq] sealed trait PollLifeCycle
 private[zeromq] case object NoResults extends PollLifeCycle
@@ -136,8 +135,8 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   }
 
   override def postStop {
-    currentPoll foreach { _ complete Right(Closing) }
     poller.unregister(socket)
+    currentPoll foreach { _ complete Right(Closing) }
     if (socket != null) socket.close
     notifyListener(Closed)
   }
@@ -159,7 +158,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
     currentPoll = currentPoll orElse newEventLoop
   }
 
-  private def newEventLoop: Option[Promise[PollLifeCycle]] = if (poller.getSize > 0) {
+  private def newEventLoop: Option[Promise[PollLifeCycle]] = {
     implicit val executor = context.system.dispatchers.defaultGlobalDispatcher
     Some((Future {
       if (poller.poll(params.pollTimeoutDuration.toMicros) > 0 && poller.pollin(0)) Results else NoResults
@@ -175,7 +174,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
         if (!self.isTerminated) self ! 'poll
       }
     })
-  } else None
+  }
 
   private def receiveFrames(): Seq[Frame] = {
 
