@@ -23,6 +23,7 @@ public class ConsumerJavaTestBase {
         system.shutdown();
     }
 
+    //TODO I have no idea how this test was working in 1.x without wrapping onReceive with error handler - route definition can not help with this.
     @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
         ActorRef ref = system.actorOf(new Props().withCreator(SampleErrorHandlingConsumer.class));
