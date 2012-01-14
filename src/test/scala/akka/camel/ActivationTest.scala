@@ -7,6 +7,7 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import akka.actor._
 import akka.util.Timeout
 import java.util.concurrent.{TimeUnit, CountDownLatch}
+import TestSupport._
 
 class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
   implicit var system :ActorSystem = _

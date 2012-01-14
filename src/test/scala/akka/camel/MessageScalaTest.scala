@@ -9,6 +9,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitSuite
 import org.apache.camel.NoTypeConversionAvailableException
 import akka.actor.ActorSystem
+import akka.camel.TestSupport.MessageSugar
 
 /**
  * Static camel so it doesn't slow down tests

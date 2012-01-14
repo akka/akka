@@ -11,6 +11,7 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
 import akka.util.Duration
 import java.util.concurrent.{TimeoutException, CountDownLatch}
+import TestSupport._
 
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach{
   implicit var system : ActorSystem = _

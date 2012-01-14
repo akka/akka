@@ -6,6 +6,7 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 import org.apache.camel.{Exchange, ExchangePattern}
 import akka.actor.ActorSystem
+import akka.camel.TestSupport.MessageSugar
 
 object CamelExchangeAdapterTest{
   lazy val system = ActorSystem("test")

@@ -4,6 +4,7 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import org.scalatest.BeforeAndAfterAll
 import org.apache.camel.impl.{DefaultExchange, DefaultMessage}
+import akka.camel.TestSupport.{MessageSugar, CamelSupport}
 
 class CamelMessageAdapterTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
   import CamelMessageConversion.toMessageAdapter

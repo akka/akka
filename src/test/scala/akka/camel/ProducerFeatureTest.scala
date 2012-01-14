@@ -7,7 +7,6 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, Feat
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.duration._
-// TODO: Investigate why it fails when simply importing akka.camel._
 
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
