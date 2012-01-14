@@ -98,7 +98,11 @@ trait ProducerSupport { this: Actor =>
     val cmsg = Message.canonicalize(msg, camel)
     val exchange = createExchangeFor(pattern).setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
-      val senderToProducer = context.sender
+      val producer = self
+      // Need copies of sender reference here since the callback could be done
+      // later by another thread.
+      //
+      val originalSender = sender
 
       def done(doneSync: Boolean): Unit = {
         (doneSync, exchange.isFailed) match {
@@ -113,10 +117,8 @@ trait ProducerSupport { this: Actor =>
       private def dispatchSync(result: Any) = receiveAfterProduce(result)
 
       private def dispatchAsync(result: Any) = {
-        //TODO why forward? If you do "sender forward x" you are telling sender that the message came from itself => sender ! (x, sender). So I'll ask again why forward?
-        // the Producer is in between, so you want to forward the response back to the sender that originally sent to the producer. (there
-        // was a slight bug here though, found out in test.
-        senderToProducer forward result
+        // preserving the originalSender, so that in overriding receiveAfterProduce it is possible to forward responses to another actor
+        producer.tell(result,originalSender)
       }
     })
   }
@@ -139,13 +141,11 @@ trait ProducerSupport { this: Actor =>
     }
   }
 
-
   /**
    * Called before the message is sent to the endpoint specified by <code>endpointUri</code>. The original
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subtraits or subclasses.
    */
-  //TODO shouldn't it be renamed to transformOutgoingMessage? Also "receiveAfterProduce" should be symmetric and called transformResponse and it should return msg and not send the message.
   protected def receiveBeforeProduce: PartialFunction[Any, Any] = {
     case msg => msg
   }
@@ -157,7 +157,6 @@ trait ProducerSupport { this: Actor =>
    * done. This method may be overridden by subtraits or subclasses (e.g. to forward responses to another
    * actor).
    */
-
   protected def receiveAfterProduce: Receive = {
     case msg => if (!oneway) sender ! msg
   }

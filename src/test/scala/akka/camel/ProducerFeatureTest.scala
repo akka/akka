@@ -8,6 +8,9 @@ import akka.actor._
 import akka.dispatch.Await
 import akka.util.duration._
 
+/**
+ * Tests the features of the Camel Producer.
+ */
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
   import ProducerFeatureTest._
@@ -15,43 +18,38 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
   val system = akka.actor.ActorSystem.create("ProducerFeatureTest")
   val camel = CamelExtension(system)
   val camelContext = camel.context
+  val timeout = 1 second
 
-  override protected def beforeAll = {
-    camelContext.addRoutes(new TestRoute(system))
-  }
+  override protected def beforeAll { camelContext.addRoutes(new TestRoute(system)) }
 
-  override protected def afterAll = {
-    system.shutdown()
-  }
+  override protected def afterAll { system.shutdown() }
 
-  override protected def afterEach = {
-    mockEndpoint.reset
-  }
+  override protected def afterEach { mockEndpoint.reset() }
 
-  feature("Produce a message to a sync Camel route") {
+  feature("Producer on a sync Camel route") {
 
-    scenario("produce message and receive normal response") {
+    scenario("produces a message and receives normal response") {
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2", true)))
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
-      val future = producer ?(message, 1 second)
+      val future = producer ?(message, timeout)
       then("a normal response should have been returned by the producer")
       val expected = Message("received TEST", Map(Message.MessageExchangeId -> "123"), camelContext)
-      Await.result(future, 1 second) match {
+      Await.result(future, timeout) match {
         case result: Message => assert(result === expected)
-        case fail:Failure => throw fail.getCause
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
       }
-
     }
-    scenario("produce message and receive failure response") {
+
+    scenario("produces a message and receives failure response") {
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2")))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
-      val future = producer ? (message, 1 second)
-      Await.result(future, 1 second) match {
+      val future = producer ? (message, timeout)
+      Await.result(future, timeout) match {
         case result:Failure => {
           then("a failure response should have been returned by the producer")
           val expectedFailureText = result.cause.getMessage
@@ -59,11 +57,11 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
           assert(expectedFailureText === "failure")
           assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
         }
-        case _ => fail("should have returned a Failure")
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
       }
     }
 
-    scenario("produce message oneway") {
+    scenario("produces message oneway") {
       given("a registered one-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1", true) with Oneway))
 
@@ -75,7 +73,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       mockEndpoint.assertIsSatisfied()
     }
 
-    scenario("produce message twoway without sender reference") {
+    scenario("produces message twoway without sender reference") {
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1")))
 
@@ -88,166 +86,178 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
     }
   }
 
-  feature("Produce a message to an async Camel route") {
+  feature("Producer on an async Camel route") {
 
-    scenario("produce message and receive normal response") {
+    scenario("produces message to direct:producer-test-3 and receives normal response") {
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")))
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
-      val future = producer ? (message, 5 second)
+      val future = producer ? (message, timeout)
 
-      Await.result(future, 5 second) match {
-        case messageResult:MessageResult => {
-          val result= messageResult.message
+      Await.result(future, timeout) match {
+        case result:Message => {
           then("a normal response should have been returned by the producer")
           val expected = Message("received test", Map(Message.MessageExchangeId -> "123"), camelContext)
           assert(result === expected)
         }
-        case fail:Failure => throw fail.getCause
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
       }
     }
 
-    scenario("produce message and receive failure response") {
+    scenario("produces message to direct:producer-test-3 and receives failure response") {
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")))
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
-      val future = producer ? (message, 5 second)
-      Await.result(future, 5 second) match {
-        case result:FailureResult => {
+      val future = producer ? (message, timeout)
+      Await.result(future, timeout) match {
+        case result:Failure=> {
           then("a failure response should have been returned by the producer")
-          val expectedFailureText = result.failure.cause.getMessage
-          val expectedHeaders = result.failure.headers
+          val expectedFailureText = result.cause.getMessage
+          val expectedHeaders = result.headers
           assert(expectedFailureText === "failure")
           assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
         }
-        case m:Any => fail ("should have responded with Failure:"+m)
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
       }
     }
-  /*
-  }
-  feature("Produce a message to a sync Camel route and then forward the response") {
 
-    scenario("produce message, forward normal response to a replying target actor and receive response") {
+    scenario("produces message, forwards normal response of direct:producer-test-2 to a replying target actor and receives response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
+      val target = system.actorOf(Props[ReplyingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
-      when("a test message is sent to the producer with !!")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      when("a test message is sent to the producer with ?")
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val future = producer ? (message, timeout)
 
-      then("a normal response should have been returned by the forward target")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
-      assert(result === Some(expected))
+      Await.result(future, timeout) match {
+        case result:Message => {
+          then("a normal response should have been returned by the forward target")
+          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"), camelContext)
+          assert(result === expected)
+        }
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
+      }
     }
 
-    scenario("produce message, forward failure response to a replying target actor and receive response") {
+    scenario("produces message, forwards failure response of direct:producer-test-2 to a replying target actor and receives response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
+      val target = system.actorOf(Props[ReplyingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
-      when("a test message causing an exception is sent to the producer with !!")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
-
-      then("a failure response should have been returned by the forward target")
-      val expectedFailureText = result.get.cause.getMessage
-      val expectedHeaders = result.get.headers
-      assert(expectedFailureText === "failure")
-      assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
+      when("a test message causing an exception is sent to the producer with ?")
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val future = producer ? (message, timeout)
+      Await.result(future, timeout) match {
+        case failure:Failure => {
+          then("a failure response should have been returned by the forward target")
+          val expectedFailureText = failure.cause.getMessage
+          val expectedHeaders = failure.headers
+          assert(expectedFailureText === "failure")
+          assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
+        }
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
+      }
     }
 
-    scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
+    scenario("produces message, forwards normal response to a producing target actor and produces response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
+      val target = system.actorOf(Props[ProducingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      val result = producer.!(Message("test"))(Some(producer))
+      producer.tell(Message("test",Map(), camelContext),producer)
 
       then("a normal response should have been produced by the forward target")
-      mockEndpoint.assertIsSatisfied
+      mockEndpoint.assertIsSatisfied()
     }
 
-    scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
+    scenario("produces message, forwards failure response to a producing target actor and produces response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-2", target)).start
+
+      val target = system.actorOf(Props[ProducingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
       mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
-      val result = producer.!(Message("fail"))(Some(producer))
+      producer.tell(Message("fail", Map(), camelContext),producer)
 
       then("a failure response should have been produced by the forward target")
-      mockEndpoint.assertIsSatisfied
+      mockEndpoint.assertIsSatisfied()
     }
-  }
 
-  feature("Produce a message to an async Camel route and then forward the response") {
-
-    scenario("produce message, forward normal response to a replying target actor and receive response") {
+    scenario("produces message, forwards normal response from direct:producer-test-3 to a replying target actor and receives response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
+      val target = system.actorOf(Props[ReplyingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
-      when("a test message is sent to the producer with !!")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer !! message
+      when("a test message is sent to the producer with ?")
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+
+      val future = producer ? (message, timeout)
 
       then("a normal response should have been returned by the forward target")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
-      assert(result === Some(expected))
+      Await.result(future, timeout) match {
+        case message:Message => {
+          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"), camelContext)
+          assert(message === expected)
+        }
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
+      }
     }
 
-    scenario("produce message, forward failure response to a replying target actor and receive response") {
+    scenario("produces message, forwards failure response from direct:producer-test-3 to a replying target actor and receives response") {
       given("a registered two-way producer configured with a forward target")
-      val target = actorOf[ReplyingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
+      val target = system.actorOf(Props[ReplyingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
       when("a test message causing an exception is sent to the producer with !!")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = (producer !! message).as[Failure]
-
-      then("a failure response should have been returned by the forward target")
-      val expectedFailureText = result.get.cause.getMessage
-      val expectedHeaders = result.get.headers
-      assert(expectedFailureText === "failure")
-      assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val future= producer ? (message, timeout)
+      Await.result(future, timeout) match {
+        case failure:Failure=> {
+          then("a failure response should have been returned by the forward target")
+          val expectedFailureText = failure.cause.getMessage
+          val expectedHeaders = failure.headers
+          assert(expectedFailureText === "failure")
+          assert(expectedHeaders === Map(Message.MessageExchangeId -> "123", "test" -> "failure"))
+        }
+        case unexpected => fail ("Actor responded with unexpected message:"+unexpected)
+      }
     }
 
-    scenario("produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1") {
+    scenario("produces message, forwards normal response from direct:producer-test-3 to a producing target actor and produces response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
+      val target = system.actorOf(Props[ProducingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      val result = producer.!(Message("test"))(Some(producer))
+      producer.tell(Message("test", Map(), camelContext),producer)
 
       then("a normal response should have been produced by the forward target")
-      mockEndpoint.assertIsSatisfied
+      mockEndpoint.assertIsSatisfied()
     }
 
-    scenario("produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1") {
+    scenario("produces message, forwards failure response from direct:producer-test-3 to a producing target actor and produces response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val target = actorOf[ProducingForwardTarget].start
-      val producer = actorOf(new TestForwarder("direct:producer-test-3", target)).start
+      val target = system.actorOf(Props[ProducingForwardTarget])
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
       mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
-      val result = producer.!(Message("fail"))(Some(producer))
+      producer.tell(Message("fail", Map(), camelContext),producer)
 
       then("a failure response should have been produced by the forward target")
-      mockEndpoint.assertIsSatisfied
+      mockEndpoint.assertIsSatisfied()
     }
-    */
   }
 
   private def mockEndpoint = camel.context.getEndpoint("mock:mock", classOf[MockEndpoint])
