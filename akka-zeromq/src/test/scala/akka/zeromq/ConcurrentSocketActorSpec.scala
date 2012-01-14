@@ -24,7 +24,10 @@ akka {
 """
 }
 
-class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.config) with MustMatchers with DefaultTimeout {
+class ConcurrentSocketActorSpec
+  extends AkkaSpec(ConcurrentSocketActorSpec.config)
+  with MustMatchers
+  with DefaultTimeout {
 
   val endpoint = "tcp://127.0.0.1:%s" format FreePort.randomFreePort()
 
@@ -38,6 +41,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.confi
       val publisher = newPublisher(context, publisherProbe.ref)
       val subscriber = newSubscriber(context, subscriberProbe.ref)
       val msgGenerator = newMessageGenerator(publisher)
+
       try {
         subscriberProbe.expectMsg(Connecting)
         val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
@@ -85,6 +89,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.confi
     }
     def newMessageGenerator(actorRef: ActorRef) = {
       system.actorOf(Props(new MessageGeneratorActor(actorRef)).withTimeout(Timeout(10 millis)))
+
     }
     def checkZeroMQInstallation = try {
       zmq.version match {
@@ -109,7 +114,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.confi
     private var genMessages: Cancellable = null
 
     override def preStart() = {
-      genMessages = system.scheduler.schedule(10 millis, 10 millis, self, 'm)
+      genMessages = system.scheduler.schedule(100 millis, 10 millis, self, 'm)
     }
 
     override def postStop() = {
