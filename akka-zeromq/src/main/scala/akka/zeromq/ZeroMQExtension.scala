@@ -42,11 +42,11 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
                 listener: Option[ActorRef] = None,
                 context: Context = DefaultContext, // For most applications you want to use the default context
                 deserializer: Deserializer = new ZMQMessageDeserializer,
-                pollTimeoutDuration: Duration = 100 millis) = {
+                pollTimeoutDuration: Duration = 500 millis) = {
     verifyZeroMQVersion
     val params = SocketParameters(socketType, context, listener, deserializer, pollTimeoutDuration)
     implicit val timeout = system.settings.ActorTimeout
-    val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("zmqdispatcher")).mapTo[ActorRef]
+    val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("akka.actor.zmqdispatcher")).mapTo[ActorRef]
     Await.result(req, timeout.duration)
   }
 

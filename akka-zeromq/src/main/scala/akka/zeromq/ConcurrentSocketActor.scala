@@ -6,7 +6,8 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.{ Promise, Dispatchers, Future }
+import akka.dispatch.{ Await, Promise, Dispatchers, Future }
+import akka.util.duration._
 
 private[zeromq] sealed trait PollLifeCycle
 private[zeromq] case object NoResults extends PollLifeCycle
@@ -137,7 +138,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   override def postStop {
     currentPoll foreach { _ complete Right(Closing) }
     poller.unregister(socket)
-    socket.close
+    if (socket != null) socket.close
     notifyListener(Closed)
   }
 
@@ -155,13 +156,13 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
 
   private var currentPoll: Option[Promise[PollLifeCycle]] = None
   private def pollAndReceiveFrames() {
-    currentPoll = currentPoll orElse Some(newEventLoop)
+    currentPoll = currentPoll orElse newEventLoop
   }
 
-  private def newEventLoop: Promise[PollLifeCycle] = {
+  private def newEventLoop: Option[Promise[PollLifeCycle]] = if (poller.getSize > 0) {
     implicit val executor = context.system.dispatchers.defaultGlobalDispatcher
-    (Future {
-      if (poller.poll(params.pollTimeoutDuration.toMillis) > 0 && poller.pollin(0)) Results else NoResults
+    Some((Future {
+      if (poller.poll(params.pollTimeoutDuration.toMicros) > 0 && poller.pollin(0)) Results else NoResults
     }).asInstanceOf[Promise[PollLifeCycle]] onSuccess {
       case Results   ⇒ if (!self.isTerminated) self ! 'receiveFrames
       case NoResults ⇒ if (!self.isTerminated) self ! 'poll
@@ -173,15 +174,15 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
         }
         if (!self.isTerminated) self ! 'poll
       }
-    }
-  }
+    })
+  } else None
 
   private def receiveFrames(): Seq[Frame] = {
 
     @inline def receiveBytes(): Array[Byte] = socket.recv(0) match {
-      case null                                   ⇒ noBytes
-      case bytes: Array[Byte] if bytes.length > 0 ⇒ bytes
-      case _                                      ⇒ noBytes
+      case null                                ⇒ noBytes
+      case bytes: Array[_] if bytes.length > 0 ⇒ bytes
+      case _                                   ⇒ noBytes
     }
 
     receiveBytes() match {

@@ -5,11 +5,11 @@ package akka.zeromq
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
-import akka.actor.{ Actor, Props, ActorRef }
 import akka.util.Timeout
 import akka.util.duration._
 import java.net.{ SocketException, ConnectException, Socket }
 import util.Random
+import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 
 object ConcurrentSocketActorSpec {
   val config = """
@@ -38,22 +38,18 @@ class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.confi
       val publisher = newPublisher(context, publisherProbe.ref)
       val subscriber = newSubscriber(context, subscriberProbe.ref)
       val msgGenerator = newMessageGenerator(publisher)
-
       try {
         subscriberProbe.expectMsg(Connecting)
         val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
-          case msg: ZMQMessage ⇒ {
-            println("RECV: " + msg.firstFrameAsString)
-            msg
-          }
+          case msg: ZMQMessage ⇒ msg
         }.map(_.firstFrameAsString.toInt)
         msgNumbers.length must be > 0
         msgNumbers must equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
       } finally {
         system stop msgGenerator
         within(2 seconds) { awaitCond(msgGenerator.isTerminated) }
-        system stop subscriber
         system stop publisher
+        system stop subscriber
         subscriberProbe.receiveWhile(1 seconds) {
           case msg ⇒ msg
         }.last must equal(Closed)
@@ -109,6 +105,19 @@ class ConcurrentSocketActorSpec extends AkkaSpec(ConcurrentSocketActorSpec.confi
   }
   class MessageGeneratorActor(actorRef: ActorRef) extends Actor {
     var messageNumber: Int = 0
+
+    private var genMessages: Cancellable = null
+
+    override def preStart() = {
+      genMessages = system.scheduler.schedule(10 millis, 10 millis, self, 'm)
+    }
+
+    override def postStop() = {
+      if (genMessages != null && !genMessages.isCancelled) {
+        genMessages.cancel
+        genMessages = null
+      }
+    }
 
     protected def receive = {
       case _ ⇒
