@@ -50,28 +50,8 @@ trait Activation{ this : Camel =>
 
 }
 
-/**
- * Super class of all activation messages.
- */
-private[camel] case class ActivationMessage(actor: ActorRef)
-
-/**
- * Event message indicating that a single endpoint has been activated.
- */
-private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
-
-private[camel] case class EndpointFailedToActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
-
-private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
-
-private[camel] case class EndpointFailedToDeActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
 
 
-/**
- * Event message asking the endpoint to respond with EndpointActivated message when it gets activated.
- */
-case class AwaitActivation(ref:ActorRef) extends ActivationMessage(ref)
-case class AwaitDeActivation(ref : ActorRef) extends ActivationMessage(ref)
 
 class DeActivationTimeoutException extends RuntimeException("Timed out while waiting for de-activation.")
 class ActivationTimeoutException extends RuntimeException("Timed out while waiting for activation.")

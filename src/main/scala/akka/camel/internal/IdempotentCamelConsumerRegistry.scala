@@ -23,6 +23,9 @@ import org.apache.camel.model.RouteDefinition
  * The main consumer of these events is currently the ActivationTracker.
  */
 private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Actor {
+
+  case class UnregisterConsumer(actorRef: ActorRef)
+
   val activated  = new mutable.HashSet[ActorRef]
 
   val registrator = context.actorOf(Props(new Actor {
@@ -120,16 +123,20 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : A
 
 }
 
-
-/**
- * Event indicating that a consumer actor has been registered at the actor registry.
- */
 private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
 
+/**
+ * Super class of all activation messages.
+ */
+private[camel] case class ActivationMessage(actor: ActorRef)
 
 /**
- * Event indicating that a consumer actor has been unregistered from the actor registry.
+ * Event message indicating that a single endpoint has been activated.
  */
-private[internal] case class UnregisterConsumer(actorRef: ActorRef)
+private[camel] case class EndpointActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
 
+private[camel] case class EndpointFailedToActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)
 
+private[camel] case class EndpointDeActivated(actorRef : ActorRef) extends ActivationMessage(actorRef)
+
+private[camel] case class EndpointFailedToDeActivate(actorRef : ActorRef, cause : Throwable) extends ActivationMessage(actorRef)

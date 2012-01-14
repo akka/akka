@@ -74,3 +74,7 @@ class ActivationTracker extends Actor{
     }
   }
 }
+
+case class AwaitActivation(ref:ActorRef) extends ActivationMessage(ref)
+
+case class AwaitDeActivation(ref : ActorRef) extends ActivationMessage(ref)
