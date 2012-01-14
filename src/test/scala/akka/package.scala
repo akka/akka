@@ -17,7 +17,7 @@ package object camel{
   }
 
 
-  implicit def camelToTestWrapper(camel:Camel) = new CamelTestWrapper(camel)
+  private[camel] implicit def camelToTestWrapper(camel:Camel) = new CamelTestWrapper(camel)
 
   class CamelTestWrapper(camel:Camel){
     /**

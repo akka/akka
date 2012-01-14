@@ -35,10 +35,10 @@ private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Acto
     }
 
     def receive ={
-      case RegisterConsumer(endpointUri, consumer) => {
-        camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer.self, consumer))
-        context.sender ! EndpointActivated(consumer.self)
-        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(consumer, endpointUri))
+      case RegisterConsumer(endpointUri, consumer,  consumerConfig) => {
+        camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
+        context.sender ! EndpointActivated(consumer)
+        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(consumerConfig, endpointUri))
       }
 
       case UnregisterConsumer(consumer) => {
@@ -50,7 +50,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Acto
 
     override def preRestart(reason: Throwable, message: Option[Any]) {
       message match{
-        case Some(RegisterConsumer(_, consumer)) => sender ! EndpointFailedToActivate(consumer.self, reason)
+        case Some(RegisterConsumer(_, consumer, _)) => sender ! EndpointFailedToActivate(consumer , reason)
         case Some(UnregisterConsumer(consumer)) => sender ! EndpointFailedToDeActivate(consumer, reason)
         case _ =>
       }
@@ -58,8 +58,8 @@ private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Acto
   }))
 
   def receive = {
-    case msg @ RegisterConsumer(_, consumer) => unless(isAlreadyActivated(consumer.self)) {
-      activated.add(consumer.self)
+    case msg @ RegisterConsumer(_, consumer, _) => unless(isAlreadyActivated(consumer)) {
+      activated.add(consumer)
       registrator ! msg
     }
     case msg @ EndpointActivated(consumer) => {
@@ -123,7 +123,7 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : A
 
 }
 
-private[camel] case class RegisterConsumer(endpointUri:String, actor: Consumer)
+private[camel] case class RegisterConsumer(endpointUri:String, actorRef: ActorRef,  config: ConsumerConfig)
 
 /**
  * Super class of all activation messages.

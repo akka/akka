@@ -7,6 +7,7 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, Feat
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.duration._
+// TODO: Investigate why it fails when simply importing akka.camel._
 
 class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
@@ -309,7 +310,7 @@ object ProducerFeatureTest {
       // for one-way messaging tests
       from("direct:producer-test-1").to("mock:mock")
       // for two-way messaging tests (async)
-      from("direct:producer-test-3").to("actor:path:%s" format responder.path)
+      from("direct:producer-test-3").to(responder)
       // for two-way messaging tests (sync)
       from("direct:producer-test-2").process(new Processor() {
         def process(exchange: Exchange) = {

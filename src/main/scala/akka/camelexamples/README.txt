@@ -1,0 +1,1 @@
+This package is outside of akka.camel because we don't want to use private[camel] features in examples.

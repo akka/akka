@@ -1,4 +1,4 @@
-package akka.camel.migration
+package akka.camelexamples
 
 import java.io.FileWriter
 
