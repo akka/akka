@@ -15,32 +15,22 @@ private[zeromq] case object Close extends Request
 
 case class Subscribe(payload: Seq[Byte]) extends Request
 object Subscribe {
-  def apply(topic: String): Subscribe = {
-    Subscribe(topic.getBytes)
-  }
+  def apply(topic: String): Subscribe = Subscribe(topic.getBytes)
 }
 
 case class Unsubscribe(payload: Seq[Byte]) extends Request
 object Unsubscribe {
-  def apply(topic: String): Unsubscribe = {
-    Unsubscribe(topic.getBytes)
-  }
+  def apply(topic: String): Unsubscribe = Unsubscribe(topic.getBytes)
 }
 
 case class Send(frames: Seq[Frame]) extends Request
 
 case class ZMQMessage(frames: Seq[Frame]) {
-  def firstFrameAsString = {
-    new String(frames.head.payload.toArray)
-  }
+  def firstFrameAsString = new String(frames.head.payload.toArray)
 }
 object ZMQMessage {
-  def apply(bytes: Array[Byte]): ZMQMessage = {
-    ZMQMessage(Seq(Frame(bytes)))
-  }
-  def apply(message: Message): ZMQMessage = {
-    ZMQMessage(message.toByteArray)
-  }
+  def apply(bytes: Array[Byte]): ZMQMessage = ZMQMessage(Seq(Frame(bytes)))
+  def apply(message: Message): ZMQMessage = ZMQMessage(message.toByteArray)
 }
 
 case class Linger(value: Long) extends SocketOption
@@ -65,7 +55,6 @@ case class RcvHWM(value: Long) extends SocketOption
 object RcvHWM extends SocketOptionQuery
 
 case class HWM(value: Long) extends SocketOption
-/* object HWM extends SocketOptionQuery */
 
 case class Swap(value: Long) extends SocketOption
 object Swap extends SocketOptionQuery
