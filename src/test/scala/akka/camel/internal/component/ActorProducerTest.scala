@@ -264,7 +264,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with FlatSpec with 
   }
 
   def prepareMocks(actor: ActorRef, message: Message = message, outCapable: Boolean) {
-    when(camel.findConsumer(any[Path])) thenReturn Option(actor)
+    when(camel.findActor(any[Path])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable
   }

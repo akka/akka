@@ -6,14 +6,14 @@ import akka.util.{Timeout, Duration}
 import akka.dispatch.Future
 import akka.actor.{ActorSystem, Props, ActorRef}
 
-trait Activation{ this : Camel =>
+trait Activation{
   import akka.dispatch.Await
 
   val actorSystem : ActorSystem
-  private[camel] val activationListener = actorSystem.actorOf(Props[ActivationTracker])
+  private[camel] val activationTracker = actorSystem.actorOf(Props[ActivationTracker])
 
   def activationFutureFor(actor: ActorRef, timeout: Duration): Future[ActorRef] = {
-    (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[ActorRef]{
+    (activationTracker ?(AwaitActivation(actor), Timeout(timeout))).map[ActorRef]{
       case EndpointActivated(_) => actor
       case EndpointFailedToActivate(_, cause) => throw cause
     }
@@ -31,7 +31,7 @@ trait Activation{ this : Camel =>
   }
 
   def deactivationFutureFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
-    (activationListener ?(AwaitDeActivation(actor), Timeout(timeout))).map[Unit]{
+    (activationTracker ?(AwaitDeActivation(actor), Timeout(timeout))).map[Unit]{
       case EndpointDeActivated(_) => {}
       case EndpointFailedToDeActivate(_, cause) => throw cause
     }

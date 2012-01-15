@@ -120,10 +120,15 @@ private[camel] trait ConsumerRegistry{
   private[this] val idempotentRegistry = actorSystem.actorOf(Props(new IdempotentCamelConsumerRegistry(this)))
 
 
-   private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
+  private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
     idempotentRegistry ! RegisterConsumer(route, consumer.self, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
-  // this might have problems with val initialization, since I also needed it for producers, I added the system to Camel.
-  private[camel] def findConsumer(path: Path) : Option[ActorRef] = Option(actorSystem.actorFor(path.value))
+  private[camel] def findActor(path: Path) : Option[ActorRef] = {
+    val actorRef = actorSystem.actorFor(path.value)
+    actorRef.path.name match {
+      case "deadLetters" => None
+      case _ => Some(actorRef)
+    }
+  }
 }

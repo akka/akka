@@ -19,7 +19,9 @@ import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingO
 import java.util.concurrent.TimeoutException
 
 //TODO: replace with ActorPath class. When I tried I could not find a way of constructing ActorPath from a string. Any ideas?
-case class Path(value: String) {
+private[camel] case class Path(value: String) {
+  require(value != null)
+  require(value.length() >0)
   //TODO: I'd be much happier if it lived inside of akka core.
   // In the meantime I'd rather do system.actorFor(value).path as it guarantees,
   // that if anything changes in akka internals, we are still fine - even if it was slower.
@@ -34,6 +36,15 @@ case class Path(value: String) {
   }
 }
 
+private[camel] object Path{
+  def fromCamelPath(camelPath : String) =  camelPath match {
+    case null | "" => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
+    case   id if id   startsWith "path:"   => Path(id substring 5)
+  }
+}
+
+
+
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
@@ -44,20 +55,8 @@ case class Path(value: String) {
  */
 class ActorComponent(camel : Camel) extends DefaultComponent {
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
-    val path = parsePath(remaining)
+    val path = Path.fromCamelPath(remaining)
     new ActorEndpoint(uri, this, path, camel)
-  }
-
-
-  private def parsePath(remaining: String): Path = remaining match {
-    case null | "" => throw invalidPath(remaining)
-    case   id if id   startsWith "path:"   => Path(parseIdentifier(id substring 5).getOrElse(throw invalidPath(remaining)))
-  }
-
-  private def parseIdentifier(identifier: String): Option[String] = if (identifier.length > 0) Some(identifier) else None
-
-  private[this] def invalidPath(id: String): scala.IllegalArgumentException = {
-    new IllegalArgumentException("invalid path: [%s] - should be <actorid> or id:<actorid> or uuid:<actoruuid>" format id)
   }
 }
 
@@ -160,20 +159,20 @@ class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer
 
 //TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
 // re: I'd rather keep the abstraction layer for now and let the Camel class delegate
-class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
+class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
 
-  private lazy val path = ep.path
+  private lazy val path = config.path
 
   def process(exchange: CamelExchangeAdapter) {
     if (exchange.isOutCapable)
-      sendSync(exchange, ep.outTimeout, forwardResponseTo(exchange))
+      sendSync(exchange, config.outTimeout, forwardResponseTo(exchange))
     else
       fireAndForget(exchange)
   }
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
-    def notifyDoneSynchronously() = callback.done(true)
-    def notifyDoneAsynchronously() = callback.done(false)
+    def notifyDoneSynchronously[A](a:A = null) = callback.done(true)
+    def notifyDoneAsynchronously[A](a:A = null) = callback.done(false)
     val DoneSync = true
     val DoneAsync = false
 
@@ -185,39 +184,39 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
     }
 
     def outCapable: Boolean = {
-      ep.blocking match {
+      config.blocking match {
         case Blocking(timeout) => {
           sendSync(exchange, timeout, onComplete = forwardResponseTo(exchange))
-          notifyDoneSynchronously
+          notifyDoneSynchronously()
           DoneSync
         }
         case NonBlocking => {
-          sendAsync(exchange, ep.outTimeout, onComplete = forwardResponseTo(exchange) andThen { _ => notifyDoneAsynchronously})
+          sendAsync(exchange, config.outTimeout, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
           DoneAsync
         }
       }
     }
 
     def inOnlyAutoAck: Boolean = {
-      ep.blocking match {
+      config.blocking match {
         case NonBlocking => {
           fireAndForget(exchange)
-          notifyDoneAsynchronously
+          notifyDoneAsynchronously()
           DoneAsync
         }
-        case Blocking(_) => throw new IllegalStateException("cannot have blocking=true and autoack=true for in-only message exchanges")
+        case Blocking(_) => throw new IllegalStateException("Cannot be blocking and autoack for in-only message exchanges.")
       }
     }
 
     def inOnlyManualAck: Boolean = {
-      ep.blocking match {
+      config.blocking match {
         case NonBlocking => {
-          sendAsync(exchange, ep.outTimeout, onComplete = processAck andThen { _ => notifyDoneAsynchronously})
+          sendAsync(exchange, config.outTimeout, onComplete = processAck andThen notifyDoneAsynchronously)
           DoneAsync
         }
         case Blocking(timeout) => {
           sendSync(exchange, timeout, onComplete = processAck)
-          notifyDoneSynchronously
+          notifyDoneSynchronously()
           DoneSync
         }
       }
@@ -226,7 +225,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
     if (exchange.isOutCapable){
       outCapable
     } else {
-      if (ep.autoack) inOnlyAutoAck else inOnlyManualAck
+      if (config.autoack) inOnlyAutoAck else inOnlyManualAck
     }
   }
 
@@ -257,9 +256,9 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
   }
 
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
-//TODO should this not just use actorSystem.actorFor?
+
   private[this] def actorFor(path:Path) : ActorRef =
-    camel.findConsumer(path) getOrElse (throw new ActorNotRegisteredException(ep.getEndpointUri))
+    camel.findActor(path) getOrElse (throw new ActorNotRegisteredException(path.value))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter)  =
      exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))
@@ -273,16 +272,7 @@ class TestableProducer(ep : ActorEndpointConfig, camel : Camel) {
  * @author Martin Krasser
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException{
-  override def getMessage = "%s not registered" format uri
-}
-
-/**
- * Thrown to indicate that no actor identifier has been set.
- *
- * @author Martin Krasser
- */
-class ActorIdentifierNotSetException extends RuntimeException {
-  override def getMessage = "actor identifier not set"
+  override def getMessage = "Actor '%s' doesn't exist" format uri
 }
 
 

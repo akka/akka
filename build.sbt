@@ -20,4 +20,6 @@ libraryDependencies ++= Seq(
  	"junit" % "junit" % "4.10" % "test"
 )
 
+scalacOptions ++= Seq("-deprecation", "-unchecked")
+
 parallelExecution in Test := true
