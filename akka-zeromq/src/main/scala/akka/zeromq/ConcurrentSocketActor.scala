@@ -18,9 +18,9 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   private val noBytes = Array[Byte]()
   private val socket: Socket = params.context.socket(params.socketType)
   private val poller: Poller = params.context.poller
-  private object Poll
-  private object ReceiveFrames
-  private object ClearPoll
+  private case object Poll
+  private case object ReceiveFrames
+  private case object ClearPoll
   private case class PollError(ex: Throwable)
   
   private def handleConnectionMessages: Receive = {
