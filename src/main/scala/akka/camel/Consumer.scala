@@ -62,5 +62,10 @@ sealed trait BlockingOrNot
 case object NonBlocking extends BlockingOrNot
 case class Blocking(timeout : Duration) extends BlockingOrNot
 
+object Blocking{
+  def seconds(timeout:Long) = Blocking(timeout seconds)
+  def millis(timeout:Long) = Blocking(timeout millis)
+}
+
 
 class ConsumerRequiresFromEndpointException extends RuntimeException("Consumer needs to provide from endpoint. Please make sure the consumer calls method from(\"some uri\") in the body of constructor.")

@@ -1,10 +1,10 @@
 package akka.camel;
 
 import akka.camel.javaapi.UntypedConsumerActor;
-import akka.util.Duration;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
+import scala.Option;
 
 /**
  * @author Martin Krasser
@@ -23,13 +23,18 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
 
     @Override
     public BlockingOrNot blocking(){
-        return new Blocking(Duration.fromNanos(1000000000L));
+        return Blocking.seconds(1);
     }
 
     public void onReceive(Object message) throws Exception {
-        Message msg = (Message)message;
+        Message msg = (Message) message;
         String body = msg.getBodyAs(String.class);
         throw new Exception(String.format("error: %s", body));
+    }
+
+    @Override
+    public void preRestart(Throwable reason, Option<Object> message){
+        getSender().tell(new Failure(reason));
     }
 
 }

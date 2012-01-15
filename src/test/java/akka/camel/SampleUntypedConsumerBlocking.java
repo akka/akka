@@ -1,7 +1,6 @@
 package akka.camel;
 
 import akka.camel.javaapi.UntypedConsumerActor;
-import akka.util.Duration;
 
 /**
  * @author Martin Krasser
@@ -13,7 +12,7 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
     }
 
     public BlockingOrNot isBlocking() {
-        return new Blocking(Duration.fromNanos(100000000000L));
+        return Blocking.seconds(1);
     }
 
     public void onReceive(Object message) {

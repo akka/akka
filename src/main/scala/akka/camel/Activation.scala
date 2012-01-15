@@ -12,9 +12,9 @@ trait Activation{ this : Camel =>
   val actorSystem : ActorSystem
   private[camel] val activationListener = actorSystem.actorOf(Props[ActivationTracker])
 
-  def activationFutureFor(actor: ActorRef, timeout: Duration): Future[Unit] = {
-    (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[Unit]{
-      case EndpointActivated(_) => {}
+  def activationFutureFor(actor: ActorRef, timeout: Duration): Future[ActorRef] = {
+    (activationListener ?(AwaitActivation(actor), Timeout(timeout))).map[ActorRef]{
+      case EndpointActivated(_) => actor
       case EndpointFailedToActivate(_, cause) => throw cause
     }
   }
@@ -22,7 +22,7 @@ trait Activation{ this : Camel =>
   /**
    * Awaits for actor to be activated.
    */
-  def awaitActivation(actor: ActorRef, timeout: Duration){
+  def awaitActivation(actor: ActorRef, timeout: Duration): ActorRef = {
     try{
       Await.result(activationFutureFor(actor, timeout), timeout)
     }catch {

@@ -3,8 +3,11 @@ package akka.camel;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.util.FiniteDuration;
 import org.junit.AfterClass;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -14,21 +17,19 @@ import static org.junit.Assert.assertEquals;
  */
 public class ConsumerJavaTestBase {
 
-    static ActorSystem system = akka.actor.ActorSystem.create("test");
+    static ActorSystem system = ActorSystem.create("test");
     static Camel camel = ((Camel) CamelExtension.get(system));
-    
+
 
     @AfterClass
     public static void tearDownAfterClass() {
         system.shutdown();
     }
 
-    //TODO I have no idea how this test was working in 1.x without wrapping onReceive with error handler - route definition can not help with this.
     @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
         ActorRef ref = system.actorOf(new Props().withCreator(SampleErrorHandlingConsumer.class));
-        System.out.println("Camel ="+camel);
-        camel.awaitActivation(ref, akka.util.Duration.fromNanos(10000000000L));
+        camel.awaitActivation(ref, new FiniteDuration(1, TimeUnit.SECONDS));
 
         String result = camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
         assertEquals("error: hello", result);
