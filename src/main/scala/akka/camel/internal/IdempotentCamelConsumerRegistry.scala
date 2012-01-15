@@ -14,6 +14,7 @@ import akka.camel.migration.Migration._
 import akka.actor._
 import collection.mutable
 import org.apache.camel.model.RouteDefinition
+import org.apache.camel.CamelContext
 
 /**
  * Guarantees idempotent registration of camel consumer endpoints.
@@ -22,7 +23,7 @@ import org.apache.camel.model.RouteDefinition
  * It also publishes events to the eventStream so interested parties could subscribe to them.
  * The main consumer of these events is currently the ActivationTracker.
  */
-private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Actor {
+private[camel] class IdempotentCamelConsumerRegistry(camelContext : CamelContext) extends Actor {
 
   case class UnregisterConsumer(actorRef: ActorRef)
 
@@ -36,13 +37,13 @@ private[camel] class IdempotentCamelConsumerRegistry(camel : Camel) extends Acto
 
     def receive ={
       case RegisterConsumer(endpointUri, consumer,  consumerConfig) => {
-        camel.context.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
+        camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
         context.sender ! EndpointActivated(consumer)
         EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format(consumerConfig, endpointUri))
       }
 
       case UnregisterConsumer(consumer) => {
-        camel.context.stopRoute(consumer.path.toString)
+        camelContext.stopRoute(consumer.path.toString)
         context.sender ! EndpointDeActivated(consumer)
         EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format(consumer, consumer.path))
       }
