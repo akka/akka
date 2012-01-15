@@ -8,12 +8,13 @@ import akka.util.duration._
 import akka.zeromq.SocketType._
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.Await
+import akka.dispatch.{Dispatcher, Await}
 
 case class SocketParameters(
   socketType: SocketType,
   context: Context,
   listener: Option[ActorRef] = None,
+  pollDispatcher: Option[Dispatcher] = None,
   deserializer: Deserializer = new ZMQMessageDeserializer,
   pollTimeoutDuration: Duration = 100 millis)
 
@@ -24,6 +25,9 @@ case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
   def lookup() = this
   def createExtension(system: ActorSystemImpl) = new ZeroMQExtension(system)
+  
+  private val minVersionString = "2.1.0"
+  private val minVersion = JZMQ.makeVersion(2, 1, 0)
 }
 class ZeroMQExtension(system: ActorSystem) extends Extension {
 
@@ -42,9 +46,10 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
                 listener: Option[ActorRef] = None,
                 context: Context = DefaultContext, // For most applications you want to use the default context
                 deserializer: Deserializer = new ZMQMessageDeserializer,
+                pollDispatcher: Option[Dispatcher] = None,
                 pollTimeoutDuration: Duration = 500 millis) = {
     verifyZeroMQVersion
-    val params = SocketParameters(socketType, context, listener, deserializer, pollTimeoutDuration)
+    val params = SocketParameters(socketType, context, listener, pollDispatcher, deserializer, pollTimeoutDuration)
     implicit val timeout = system.settings.ActorTimeout
     val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("akka.actor.zmqdispatcher")).mapTo[ActorRef]
     Await.result(req, timeout.duration)
@@ -52,14 +57,16 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
 
   val zeromq: ActorRef = {
     verifyZeroMQVersion
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
+    system.actorOf(Props(new Actor {
       protected def receive = { case p: Props ⇒ sender ! context.actorOf(p) }
     }), "zeromq")
   }
+  
+  
 
   private def verifyZeroMQVersion = {
     require(
-      JZMQ.getFullVersion > JZMQ.makeVersion(2, 1, 0),
-      "Unsupported ZeroMQ version: %s".format(JZMQ.getVersionString))
+      JZMQ.getFullVersion > ZeroMQExtension.minVersion,
+      "Unsupported ZeroMQ version: %s, akka needs at least: %s".format(JZMQ.getVersionString, ZeroMQExtension.minVersionString))
   }
 }
