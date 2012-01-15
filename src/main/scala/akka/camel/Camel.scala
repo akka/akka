@@ -126,6 +126,7 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
     awaitActivation(consumer.self, activationTimeout)
   }
   private[camel] def findActor(path: Path) : Option[ActorRef] = {
+    //TODO this is a bit hacky, maybe there is another way?
     val actorRef = actorSystem.actorFor(path.value)
     actorRef.path.name match {
       case "deadLetters" => None
