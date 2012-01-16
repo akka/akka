@@ -65,7 +65,6 @@ public class UntypedActorDocTestBase {
         return new MyUntypedActor();
       }
     });
-    Props props5 = props4.withTimeout(new Timeout(1000));
     //#creating-props-config
   }
 

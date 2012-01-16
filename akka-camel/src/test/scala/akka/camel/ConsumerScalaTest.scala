@@ -100,7 +100,7 @@ class ConsumerScalaTest extends WordSpec with BeforeAndAfterAll with MustMatcher
     "receiving an in-out message exchange" must {
       "lead to a TimeoutException" in {
         service.awaitEndpointActivation(1) {
-          actorOf(Props(creator = () ⇒ new TestBlocker("direct:publish-test-5"), timeout = Timeout(1000)))
+          actorOf(Props(creator = () ⇒ new TestBlocker("direct:publish-test-5")))
         } must be(true)
 
         try {

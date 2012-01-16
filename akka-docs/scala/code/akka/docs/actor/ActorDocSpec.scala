@@ -194,11 +194,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val props3 = Props(new MyActor)
     val props4 = Props(
       creator = { () ⇒ new MyActor },
-      dispatcher = "my-dispatcher",
-      timeout = Timeout(100))
+      dispatcher = "my-dispatcher")
     val props5 = props1.withCreator(new MyActor)
     val props6 = props5.withDispatcher("my-dispatcher")
-    val props7 = props6.withTimeout(Timeout(100))
     //#creating-props-config
   }
 

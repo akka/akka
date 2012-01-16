@@ -580,9 +580,9 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   private def createContinuousTask(delay: Duration, receiver: ActorRef, message: Any): TimerTask = {
     new TimerTask {
       def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
+        receiver ! message
+        // Check if the receiver is still alive and kicking before rescheduling the task
         if (!receiver.isTerminated) {
-          receiver ! message
           try timeout.getTimer.newTimeout(this, delay) catch {
             case _: IllegalStateException ⇒ // stop recurring if timer is stopped
           }
@@ -593,16 +593,8 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
     }
   }
 
-  private def createContinuousTask(delay: Duration, f: ⇒ Unit): TimerTask = {
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.execute(new Runnable { def run = f })
-        try timeout.getTimer.newTimeout(this, delay) catch {
-          case _: IllegalStateException ⇒ // stop recurring if timer is stopped
-        }
-      }
-    }
-  }
+  private def createContinuousTask(delay: Duration, f: ⇒ Unit): TimerTask =
+    createContinuousTask(delay, new Runnable { def run = f })
 
   private def createContinuousTask(delay: Duration, runnable: Runnable): TimerTask = {
     new TimerTask {
