@@ -4,6 +4,10 @@
  Migration Guide 1.3.x to 2.0.x
 ################################
 
+.. sidebar:: Contents
+
+   .. contents:: :local:
+
 Actors
 ======
 
@@ -13,8 +17,176 @@ significant amount of time.
 
 Detailed migration guide will be written.
 
+Migration Kit
+=============
+
+Nobody likes a big refactoring that takes several days to complete until
+anything is able to run again. Therefore we provide a migration kit that
+makes it possible to do the migration changes in smaller steps.
+
+The migration kit only covers the most common usage of Akka. It is not intended
+as a final solution. The whole migration kit is deprecated and will be removed in
+Akka 2.1.
+
+The migration kit is provided in separate jar files. Add the following dependency::
+
+  "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
+
+The first step of the migration is to do some trivial replacements.
+Search and replace the following (be careful with the non qualified names):
+
+==================================== ====================================
+Search                               Replace with
+==================================== ====================================
+``akka.actor.Actor``                 ``akka.actor.OldActor``
+``extends Actor``                    ``extends OldActor``
+``akka.actor.Scheduler``             ``akka.actor.OldScheduler``
+``Scheduler``                        ``OldScheduler``
+``akka.event.EventHandler``          ``akka.event.OldEventHandler``
+``EventHandler``                     ``OldEventHandler``
+``akka.config.Config``               ``akka.config.OldConfig``
+``Config``                           ``OldConfig``
+==================================== ====================================
+
+For Scala users the migration kit also contains some implicit conversions to be
+able to use some old methods. These conversions are useful from tests or other
+code used outside actors.
+
+::
+
+  import akka.migration._
+
+Thereafter you need to fix compilation errors that are not handled by the migration
+kit, such as:
+
+* Definition of supervisors
+* Definition of dispatchers
+* ActorRegistry
+
+When everything compiles you continue by replacing/removing the ``OldXxx`` classes
+one-by-one from the migration kit with appropriate migration.
+
+When using the migration kit there will be one global actor system, which loads
+the configuration ``akka.conf`` from the same locations as in Akka 1.x.
+This means that while you are using the migration kit you should not create your
+own ``ActorSystem``, but instead use the ``akka.actor.GlobalActorSystem``.
+In order to voluntarily exit the JVM you must ``shutdown`` the ``GlobalActorSystem``
+Last task of the migration would be to create your own ``ActorSystem``.
+
+
 Unordered Collection of Migration Items
 =======================================
+
+Creating and starting actors
+----------------------------
+
+Actors are created by passing in a ``Props`` instance into the actorOf factory method in
+a ``ActorRefProvider``, which is the ``ActorSystem`` or ``ActorContext``.
+Use the system to create top level actors. Use the context to
+create actors from other actors. The difference is how the supervisor hierarchy is arranged.
+When using the context the current actor will be supervisor of the created child actor.
+When using the system it will be a top level actor, that is supervised by the system
+(internal guardian actor).
+
+``ActorRef.start()`` has been removed. Actors are now started automatically when created.
+Remove all invocations of ``ActorRef.start()``.
+
+v1.3::
+
+  val myActor = Actor.actorOf[MyActor]
+  myActor.start()
+
+v2.0::
+
+  // top level actor
+  val firstActor = system.actorOf(Props[FirstActor], name = "first")
+
+  // child actor
+  class FirstActor extends Actor {
+    val myActor = context.actorOf(Props[MyActor], name = "myactor")
+
+Documentation:
+
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
+Stopping actors
+---------------
+
+``ActorRef.stop()`` has been moved. Use ``ActorSystem`` or ``ActorContext`` to stop actors.
+
+v1.3::
+
+   actorRef.stop()
+   self.stop()
+   actorRef ! PoisonPill
+
+v2.0::
+
+  context.stop(someChild)
+  context.stop(self)
+  system.stop(actorRef)
+  actorRef ! PoisonPill
+
+*Stop all actors*
+
+v1.3::
+
+  ActorRegistry.shutdownAll()
+
+v2.0::
+
+  system.shutdown()
+
+Documentation:
+
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
+Identifying Actors
+------------------
+
+In v1.3 actors have ``uuid`` and ``id`` field. In v2.0 each actor has a unique logical ``path``.
+
+The ``ActorRegistry`` has been replaced by actor paths and lookup with
+``actorFor`` in ``ActorRefProvider`` (``ActorSystem`` or ``ActorContext``).
+
+v1.3::
+
+  val actor =  Actor.registry.actorFor(uuid)
+  val actors =  Actor.registry.actorsFor(id)
+
+v2.0::
+
+  val actor = context.actorFor("/user/serviceA/aggregator")
+
+Documentation:
+
+ * :ref:`addressing`
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
+Reply to messages
+-----------------
+
+``self.channel`` has been replaced with unified reply mechanism using ``sender`` (Scala)
+or ``getSender()`` (Java). This works for both tell (!) and ask (?).
+
+v1.3::
+
+  self.channel ! result
+  self.channel tryTell result
+  self.reply(result)
+  self.tryReply(result)
+
+v2.0::
+
+  sender ! result
+
+Documentation:
+
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
 
 ``ActorRef.ask()``
 ------------------
@@ -28,7 +200,185 @@ reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
 
+Documentation:
+
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
 ActorPool
 ---------
 
 The ActorPool has been replaced by dynamically resizable routers.
+
+Documentation:
+
+ * :ref:`routing-scala`
+ * :ref:`routing-java`
+
+``UntypedActor.getContext()`` (Java API only)
+---------------------------------------------
+
+``getContext()`` in the Java API for UntypedActor is renamed to
+``getSelf()``.
+
+v1.3::
+
+  actorRef.tell("Hello", getContext());
+
+v2.0::
+
+  actorRef.tell("Hello", getSelf());
+
+Documentation:
+
+ * :ref:`untyped-actors-java`
+
+Logging
+-------
+
+EventHandler API has been replaced by LoggingAdapter, which publish log messages
+to the event bus. You can still plugin your own actor as event listener with the
+``akka.event-handlers`` configuration property.
+
+v1.3::
+
+  EventHandler.error(exception, this, message)
+  EventHandler.warning(this, message)
+  EventHandler.info(this, message)
+  EventHandler.debug(this, message)
+  EventHandler.debug(this, "Processing took %s ms".format(duration))
+
+v2.0::
+
+  import akka.event.Logging
+
+  val log = Logging(context.system, this)
+  log.error(exception, this, message)
+  log.warning(this, message)
+  log.info(this, message)
+  log.debug(this, message)
+  log.debug(this, "Processing took {} ms", duration)
+
+Documentation:
+
+  * :ref:`logging-scala`
+  * :ref:`logging-java`
+  * :ref:`event-bus-scala`
+  * :ref:`event-bus-java`
+
+Supervision
+-----------
+
+Akka v2.0 implements parental supervision. Actors can only be created by other actors — where the top-level
+actor is provided by the library — and each created actor is supervised by its parent.
+In contrast to the special supervision relationship between parent and child, each actor may monitor any
+other actor for termination.
+
+v1.3::
+
+  self.link(actorRef)
+  self.unlink(actorRef)
+
+v2.0::
+
+  class WatchActor extends Actor {
+    val actorRef = ...
+    // Terminated message will be delivered when the actorRef actor
+    // is stopped
+    context.watch(actorRef)
+
+    val supervisedChild = context.actorOf(Props[ChildActor])
+
+    def receive = {
+      case Terminated(`actorRef`) ⇒ ...
+    }
+  }
+
+Note that ``link`` in v1.3 established a supervision relation, which ``watch`` doesn't.
+``watch`` is only a way to get notification, ``Terminated`` message, when the monitored
+actor has been stopped.
+
+*Refererence to the supervisor*
+
+v1.3::
+
+  self.supervisor
+
+v2.0::
+
+  context.parent
+
+*Fault handling strategy*
+
+v1.3::
+
+  val supervisor = Supervisor(
+    SupervisorConfig(
+      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      Supervise(
+        actorOf[MyActor1],
+        Permanent) ::
+      Supervise(
+        actorOf[MyActor2],
+        Permanent) ::
+      Nil))
+
+v2.0::
+
+  val strategy = OneForOneStrategy({
+    case _: ArithmeticException      ⇒ Resume
+    case _: NullPointerException     ⇒ Restart
+    case _: IllegalArgumentException ⇒ Stop
+    case _: Exception                ⇒ Escalate
+  }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+
+  val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(strategy), "supervisor")
+
+Documentation:
+
+ * :ref:`supervision`
+ * :ref:`fault-tolerance-java`
+ * :ref:`fault-tolerance-scala`
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
+Spawn
+-----
+
+``spawn`` has been removed and can be implemented like this, if needed. Be careful to not
+access any shared mutable state closed over by the body.
+
+::
+
+  def spawn(body: ⇒ Unit) {
+    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) })) ! "go"
+  }
+
+Documentation:
+
+  * :ref:`jmm`
+
+HotSwap
+-------
+
+In v2.0 ``become`` and ``unbecome`` metods are located in ``ActorContext``, i.e. ``context.become`` and ``context.unbecome``.
+
+The special ``HotSwap`` and ``RevertHotswap`` messages in v1.3 has been removed. Similar can be
+implemented with your own message and using ``context.become`` and ``context.unbecome``
+in the actor receiving the message.
+
+ * :ref:`actors-scala`
+ * :ref:`untyped-actors-java`
+
+More to be written
+------------------
+
+* Futures
+* Dispatchers
+* STM
+* TypedActors
+* Routing
+* Remoting
+* Scheduler
+* Configuration
+* ...?
