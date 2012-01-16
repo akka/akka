@@ -46,7 +46,7 @@ private[camel] object TestSupport {
     lazy val system = ActorSystem("test")
     def camel = CamelExtension(system)
 
-    override protected def afterAll() {
+    abstract override protected def afterAll() {
       super.afterAll()
       system.shutdown() 
     }
