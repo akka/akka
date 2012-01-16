@@ -27,8 +27,6 @@ class RemoteActorRefProvider(
   val scheduler: Scheduler,
   _deadLetters: InternalActorRef) extends ActorRefProvider {
 
-  val log = Logging(eventStream, "RemoteActorRefProvider")
-
   val remoteSettings = new RemoteSettings(settings.config, systemName)
 
   def rootGuardian = local.rootGuardian
@@ -43,6 +41,8 @@ class RemoteActorRefProvider(
 
   val remote = new Remote(settings, remoteSettings)
   implicit val transports = remote.transports
+
+  val log = Logging(eventStream, "RemoteActorRefProvider(" + remote.remoteAddress + ")")
 
   val rootPath: ActorPath = RootActorPath(remote.remoteAddress)
 

@@ -28,6 +28,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
               val r = deploy.routing match {
                 case RoundRobinRouter(x, _, resizer)                     ⇒ RemoteRoundRobinRouter(x, nodes, resizer)
                 case RandomRouter(x, _, resizer)                         ⇒ RemoteRandomRouter(x, nodes, resizer)
+                case SmallestMailboxRouter(x, _, resizer)                ⇒ RemoteSmallestMailboxRouter(x, nodes, resizer)
                 case BroadcastRouter(x, _, resizer)                      ⇒ RemoteBroadcastRouter(x, nodes, resizer)
                 case ScatterGatherFirstCompletedRouter(x, _, w, resizer) ⇒ RemoteScatterGatherFirstCompletedRouter(x, nodes, w, resizer)
               }

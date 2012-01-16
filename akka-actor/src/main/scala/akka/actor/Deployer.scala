@@ -13,6 +13,7 @@ import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
+import akka.util.ReflectiveAccess
 
 case class Deploy(path: String, config: Config, recipe: Option[ActorRecipe] = None, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
 
@@ -56,27 +57,29 @@ class Deployer(val settings: ActorSystem.Settings) {
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
     val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
-      val resizerConfig = deployment.getConfig("resizer")
-      Some(DefaultResizer(
-        lowerBound = resizerConfig.getInt("lower-bound"),
-        upperBound = resizerConfig.getInt("upper-bound"),
-        pressureThreshold = resizerConfig.getInt("pressure-threshold"),
-        rampupRate = resizerConfig.getDouble("rampup-rate"),
-        backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
-        backoffRate = resizerConfig.getDouble("backoff-rate"),
-        stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
-        messagesPerResize = resizerConfig.getInt("messages-per-resize")))
+      Some(DefaultResizer(deployment.getConfig("resizer")))
     } else {
       None
     }
 
     val router: RouterConfig = deployment.getString("router") match {
-      case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees, resizer)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
-      case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
+      case "from-code"        ⇒ NoRouter
+      case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "smallest-mailbox" ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
+      case fqn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config])
+        ReflectiveAccess.createInstance[RouterConfig](fqn, constructorSignature, Array[AnyRef](deployment)) match {
+          case Right(router) ⇒ router
+          case Left(exception) ⇒
+            throw new IllegalArgumentException(
+              ("Cannot instantiate router [%s], defined in [%s], " +
+                "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
+                "[com.typesafe.config.Config] parameter")
+                .format(fqn, key), exception)
+        }
     }
 
     val recipe: Option[ActorRecipe] =

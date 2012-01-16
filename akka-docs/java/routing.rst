@@ -16,11 +16,12 @@ Router
 A Router is an actor that routes incoming messages to outbound actors.
 The router routes the messages sent to it to its underlying actors called 'routees'.
 
-Akka comes with four defined routers out of the box, but as you will see in this chapter it
-is really easy to create your own. The four routers shipped with Akka are:
+Akka comes with some defined routers out of the box, but as you will see in this chapter it
+is really easy to create your own. The routers shipped with Akka are:
 
 * ``akka.routing.RoundRobinRouter``
 * ``akka.routing.RandomRouter``
+* ``akka.routing.SmallestMailboxRouter``
 * ``akka.routing.BroadcastRouter``
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
 
@@ -44,9 +45,8 @@ You can also give the router already created routees as in:
 When you create a router programatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
-*It is also worth pointing out that if you define the number of routees (``nr-of-instances`` or  ``routees``) in
-the configuration file then this value will be used instead of any programmatically sent parameters, but you must
-also define the ``router`` property in the configuration.*
+*It is also worth pointing out that if you define the ``router`` in the configuration file then this value will be used
+instead of any programmatically sent parameters.*
 
 Once you have the router actor it is just to send messages to it as you would to any actor:
 
@@ -121,6 +121,21 @@ When run you should see a similar output to this:
 
 The result from running the random router should be different, or at least random, every time you run it.
 Try to run it a couple of times to verify its behavior if you don't trust us.
+
+SmallestMailboxRouter
+*********************
+A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
+The selection is done in this order:
+
+ * pick any idle routee (not processing message) with empty mailbox
+ * pick any routee with empty mailbox
+ * pick routee with fewest pending messages in mailbox
+ * pick any remote routee, remote actors are consider lowest priority,
+   since their mailbox size is unknown
+
+Code example:
+
+.. includecode:: code/akka/docs/jrouting/ParentActor.java#smallestMailboxRouter
 
 BroadcastRouter
 ***************
@@ -240,6 +255,14 @@ All in all the custom router looks like this:
 If you are interested in how to use the VoteCountRouter it looks like this:
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#crTest
+
+Configured Custom Router
+************************
+
+It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
+configuration you define the fully qualified class name of the router class. The router class must extend
+``akka.routing.CustomRouterConfig`` and and have constructor with ``com.typesafe.config.Config`` parameter.
+The deployment section of the configuration is passed to the constructor.
 
 Custom Resizer
 **************

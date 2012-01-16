@@ -83,6 +83,33 @@ case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String], ove
 }
 
 /**
+ * A Router that tries to send to routee with fewest messages in mailbox.
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
+ * that the random router should both create new actors and use the 'routees' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
+ * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ */
+case class RemoteSmallestMailboxRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
+  extends RemoteRouterConfig with SmallestMailboxLike {
+
+  /**
+   * Constructor that sets the routees to be used.
+   * Java API
+   */
+  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
+}
+
+/**
  * A Router that uses broadcasts a message to all its connections.
  * <br>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means

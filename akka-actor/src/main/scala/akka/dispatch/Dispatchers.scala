@@ -77,7 +77,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           } else {
             // Note that the configurator of the default dispatcher will be registered for this id,
             // so this will only be logged once, which is crucial.
-            prerequisites.eventStream.publish(Warning("Dispatchers",
+            prerequisites.eventStream.publish(Warning("Dispatchers", this.getClass,
               "Dispatcher [%s] not configured, using default-dispatcher".format(id)))
             lookupConfigurator(DefaultDispatcherId)
           }

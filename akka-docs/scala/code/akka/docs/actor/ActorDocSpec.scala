@@ -7,6 +7,9 @@ package akka.docs.actor
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
+
+//#imports1
+
 import akka.dispatch.Future
 import akka.actor.ActorSystem
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
@@ -162,10 +165,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.eventStream.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
-    expectMsgPF(1 second) { case Logging.Info(_, "received test") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received test") ⇒ true }
 
     myActor ! "unknown"
-    expectMsgPF(1 second) { case Logging.Info(_, "received unknown message") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received unknown message") ⇒ true }
 
     system.eventStream.unsubscribe(testActor)
     system.eventStream.publish(TestEvent.UnMute(filter))

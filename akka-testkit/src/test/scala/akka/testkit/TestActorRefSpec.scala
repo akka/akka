@@ -81,7 +81,7 @@ object TestActorRefSpec {
     var count = 0
     var msg: String = _
     def receive = {
-      case Warning(_, m: String) ⇒ count += 1; msg = m
+      case Warning(_, _, m: String) ⇒ count += 1; msg = m
     }
   }
 

@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -213,6 +213,13 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val actorMigration = Project(
+    id = "akka-actor-migration",
+    base = file("akka-actor-migration"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -314,6 +321,8 @@ object AkkaBuild extends Build {
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+
+    ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 

@@ -153,7 +153,7 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
 
   override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
     case message: DaemonMsg ⇒
-      log.debug("Received command [\n{}] to RemoteSystemDaemon on [{}]", message, remote.remoteSettings.NodeName)
+      log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, remote.remoteSettings.NodeName)
       message match {
         case DaemonMsgCreate(factory, path, supervisor) ⇒
           import remote.remoteAddress

@@ -80,7 +80,7 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
       runnable.run()
     } catch {
       // FIXME catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
+      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()
     }

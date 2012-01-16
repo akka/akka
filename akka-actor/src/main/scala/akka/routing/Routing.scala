@@ -7,8 +7,10 @@ import akka.actor._
 import akka.dispatch.Future
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
+import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
@@ -286,12 +288,15 @@ object RoundRobinRouter {
  * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
  * <br>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the round robin should both create new actors and use the 'routees' actor(s).
+ * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RoundRobinLike {
@@ -307,9 +312,11 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -361,12 +368,15 @@ object RandomRouter {
  * A Router that randomly selects one of the target connections to send a message to.
  * <br>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
+ * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RandomLike {
@@ -382,9 +392,11 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -424,6 +436,159 @@ trait RandomLike { this: RouterConfig ⇒
   }
 }
 
+object SmallestMailboxRouter {
+  def apply(routees: Iterable[ActorRef]) = new SmallestMailboxRouter(routees = routees map (_.path.toString))
+
+  /**
+   * Java API to create router with the supplied 'routees' actors.
+   */
+  def create(routees: java.lang.Iterable[ActorRef]): SmallestMailboxRouter = {
+    import scala.collection.JavaConverters._
+    apply(routees.asScala)
+  }
+}
+/**
+ * A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
+ * The selection is done in this order:
+ * <ul>
+ * <li>pick any idle routee (not processing message) with empty mailbox</li>
+ * <li>pick any routee with empty mailbox</li>
+ * <li>pick routee with fewest pending messages in mailbox</li>
+ * <li>pick any remote routee, remote actors are consider lowest priority,
+ *     since their mailbox size is unknown</li>
+ * </ul>
+ *
+ * <br>
+ * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
+ * that the router should both create new actors and use the 'routees' actor(s).
+ * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
+ * <br>
+ * <b>The</b> configuration parameter trumps the constructor arguments. This means that
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+ */
+case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+  extends RouterConfig with SmallestMailboxLike {
+
+  /**
+   * Constructor that sets nrOfInstances to be created.
+   * Java API
+   */
+  def this(nr: Int) = {
+    this(nrOfInstances = nr)
+  }
+
+  /**
+   * Constructor that sets the routees to be used.
+   * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
+   */
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
+  }
+
+  /**
+   * Constructor that sets the resizer to be used.
+   * Java API
+   */
+  def this(resizer: Resizer) = this(resizer = Some(resizer))
+}
+
+trait SmallestMailboxLike { this: RouterConfig ⇒
+
+  import java.security.SecureRandom
+
+  def nrOfInstances: Int
+
+  def routees: Iterable[String]
+
+  private val random = new ThreadLocal[SecureRandom] {
+    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
+  }
+
+  /**
+   * Returns true if the actor is currently processing a message.
+   * It will always return false for remote actors.
+   * Method is exposed to subclasses to be able to implement custom
+   * routers based on mailbox and actor internal state.
+   */
+  protected def isProcessingMessage(a: ActorRef): Boolean = a match {
+    case x: LocalActorRef ⇒
+      val cell = x.underlying
+      cell.mailbox.isScheduled && cell.currentMessage != null
+    case _ ⇒ false
+  }
+
+  /**
+   * Returns true if the actor currently has any pending messages
+   * in the mailbox, i.e. the mailbox is not empty.
+   * It will always return false for remote actors.
+   * Method is exposed to subclasses to be able to implement custom
+   * routers based on mailbox and actor internal state.
+   */
+  protected def hasMessages(a: ActorRef): Boolean = a match {
+    case x: LocalActorRef ⇒ x.underlying.mailbox.hasMessages
+    case _                ⇒ false
+  }
+
+  /**
+   * Returns true if the actor is currently suspended.
+   * It will always return false for remote actors.
+   * Method is exposed to subclasses to be able to implement custom
+   * routers based on mailbox and actor internal state.
+   */
+  protected def isSuspended(a: ActorRef): Boolean = a match {
+    case x: LocalActorRef ⇒
+      val cell = x.underlying
+      cell.mailbox.isSuspended
+    case _ ⇒ false
+  }
+
+  /**
+   * Returns the number of pending messages in the mailbox of the actor.
+   * It will always return 0 for remote actors.
+   * Method is exposed to subclasses to be able to implement custom
+   * routers based on mailbox and actor internal state.
+   */
+  protected def numberOfMessages(a: ActorRef): Int = a match {
+    case x: LocalActorRef ⇒ x.underlying.mailbox.numberOfMessages
+    case _                ⇒ 0
+  }
+
+  def createRoute(props: Props, context: ActorContext): Route = {
+    val ref = context.self.asInstanceOf[RoutedActorRef]
+    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+
+    def getNext(): ActorRef = {
+      // non-local actors mailbox size is unknown, so consider them lowest priority
+      val activeLocal = ref.routees collect { case l: LocalActorRef if !isSuspended(l) ⇒ l }
+      // 1. anyone not processing message and with empty mailbox
+      activeLocal.find(a ⇒ !isProcessingMessage(a) && !hasMessages(a)) getOrElse {
+        // 2. anyone with empty mailbox
+        activeLocal.find(a ⇒ !hasMessages(a)) getOrElse {
+          // 3. sort on mailbox size
+          activeLocal.sortBy(a ⇒ numberOfMessages(a)).headOption getOrElse {
+            // 4. no locals, just pick one, random
+            ref.routees(random.get.nextInt(ref.routees.size))
+          }
+        }
+      }
+    }
+
+    {
+      case (sender, message) ⇒
+        message match {
+          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case msg            ⇒ List(Destination(sender, getNext()))
+        }
+    }
+  }
+}
+
 object BroadcastRouter {
   def apply(routees: Iterable[ActorRef]) = new BroadcastRouter(routees = routees map (_.path.toString))
 
@@ -439,12 +604,15 @@ object BroadcastRouter {
  * A Router that uses broadcasts a message to all its connections.
  * <br>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
+ * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with BroadcastLike {
@@ -460,9 +628,11 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(t))
+  def this(routeePaths: java.lang.Iterable[String]) = {
+    this(routees = iterableAsScalaIterable(routeePaths))
   }
 
   /**
@@ -507,12 +677,15 @@ object ScatterGatherFirstCompletedRouter {
  * Simple router that broadcasts the message to all routees, and replies with the first response.
  * <br>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
+ * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
  * <br>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
+ * be ignored if the router is defined in the configuration file for the actor being used.
+ *
+ * @param routees string representation of the actor paths of the routees that will be looked up
+ *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None)
@@ -529,9 +702,11 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   /**
    * Constructor that sets the routees to be used.
    * Java API
+   * @param routeePaths string representation of the actor paths of the routees that will be looked up
+   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(t: java.lang.Iterable[String], w: Duration) = {
-    this(routees = iterableAsScalaIterable(t), within = w)
+  def this(routeePaths: java.lang.Iterable[String], w: Duration) = {
+    this(routees = iterableAsScalaIterable(routeePaths), within = w)
   }
 
   /**
@@ -585,6 +760,19 @@ trait Resizer {
    * sending [[akka.actor.PoisonPill]] to them.
    */
   def resize(props: Props, actorContext: ActorContext, currentRoutees: IndexedSeq[ActorRef], routerConfig: RouterConfig)
+}
+
+case object DefaultResizer {
+  def apply(resizerConfig: Config): DefaultResizer =
+    DefaultResizer(
+      lowerBound = resizerConfig.getInt("lower-bound"),
+      upperBound = resizerConfig.getInt("upper-bound"),
+      pressureThreshold = resizerConfig.getInt("pressure-threshold"),
+      rampupRate = resizerConfig.getDouble("rampup-rate"),
+      backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
+      backoffRate = resizerConfig.getDouble("backoff-rate"),
+      stopDelay = Duration(resizerConfig.getMilliseconds("stop-delay"), TimeUnit.MILLISECONDS),
+      messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 }
 
 case class DefaultResizer(

@@ -135,15 +135,15 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
       val latch1 = new TestLatch(1)
-      router.!((latch1, busy))
+      router ! (latch1, busy)
       Await.ready(latch1, 2 seconds)
 
       val latch2 = new TestLatch(1)
-      router.!((latch2, busy))
+      router ! (latch2, busy)
       Await.ready(latch2, 2 seconds)
 
       val latch3 = new TestLatch(1)
-      router.!((latch3, busy))
+      router ! (latch3, busy)
       Await.ready(latch3, 2 seconds)
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
@@ -178,7 +178,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
       def loop(loops: Int, t: Int, latch: TestLatch, count: AtomicInteger) = {
-        count.set(0)
+        (10 millis).dilated.sleep
         for (m ← 0 until loops) {
           router.!((t, latch, count))
           (10 millis).dilated.sleep

@@ -12,6 +12,8 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
+import java.util.concurrent.ConcurrentHashMap
+import com.typesafe.config.Config
 
 object RoutingSpec {
 
@@ -20,6 +22,10 @@ object RoutingSpec {
       /router1 {
         router = round-robin
         nr-of-instances = 3
+      }
+      /myrouter {
+        router = "akka.routing.RoutingSpec$MyRouter"
+        foo = bar
       }
     }
     """
@@ -34,6 +40,18 @@ object RoutingSpec {
   class Echo extends Actor {
     def receive = {
       case _ ⇒ sender ! self
+    }
+  }
+
+  class MyRouter(config: Config) extends RouterConfig {
+    val foo = config.getString("foo")
+    def createRoute(routeeProps: Props, actorContext: ActorContext): Route = {
+      val routees = IndexedSeq(actorContext.actorOf(Props[Echo]))
+      registerRoutees(actorContext, routees)
+
+      {
+        case (sender, message) ⇒ Nil
+      }
     }
   }
 
@@ -256,6 +274,61 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
   }
 
+  "smallest mailbox router" must {
+    "be started when constructed" in {
+      val routedActor = system.actorOf(Props[TestActor].withRouter(SmallestMailboxRouter(nrOfInstances = 1)))
+      routedActor.isTerminated must be(false)
+    }
+
+    "deliver messages to idle actor" in {
+      val usedActors = new ConcurrentHashMap[Int, String]()
+      val router = system.actorOf(Props(new Actor {
+        def receive = {
+          case (busy: TestLatch, receivedLatch: TestLatch) ⇒
+            usedActors.put(0, self.path.toString)
+            self ! "another in busy mailbox"
+            receivedLatch.countDown()
+            Await.ready(busy, TestLatch.DefaultTimeout)
+          case (msg: Int, receivedLatch: TestLatch) ⇒
+            usedActors.put(msg, self.path.toString)
+            receivedLatch.countDown()
+          case s: String ⇒
+        }
+      }).withRouter(SmallestMailboxRouter(3)))
+
+      val busy = TestLatch(1)
+      val received0 = TestLatch(1)
+      router ! (busy, received0)
+      Await.ready(received0, TestLatch.DefaultTimeout)
+
+      val received1 = TestLatch(1)
+      router ! (1, received1)
+      Await.ready(received1, TestLatch.DefaultTimeout)
+
+      val received2 = TestLatch(1)
+      router ! (2, received2)
+      Await.ready(received2, TestLatch.DefaultTimeout)
+
+      val received3 = TestLatch(1)
+      router ! (3, received3)
+      Await.ready(received3, TestLatch.DefaultTimeout)
+
+      busy.countDown()
+
+      val busyPath = usedActors.get(0)
+      busyPath must not be (null)
+
+      val path1 = usedActors.get(1)
+      val path2 = usedActors.get(2)
+      val path3 = usedActors.get(3)
+
+      path1 must not be (busyPath)
+      path2 must not be (busyPath)
+      path3 must not be (busyPath)
+
+    }
+  }
+
   "broadcast router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(BroadcastRouter(nrOfInstances = 1)))
@@ -408,6 +481,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       } finally {
         sys.shutdown()
       }
+    }
+    "support custom router" in {
+      val myrouter = system.actorOf(Props().withRouter(FromConfig), "myrouter")
+      myrouter.isTerminated must be(false)
     }
   }
 

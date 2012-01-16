@@ -190,7 +190,7 @@ trait FSM[S, D] extends Listeners {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val log = Logging(context.system, context.self)
+  val log = Logging(context.system, this)
 
   /**
    * ****************************************

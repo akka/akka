@@ -296,7 +296,7 @@ class LocalActorRefProvider(
   val nodename: String = "local"
   val clustername: String = "local"
 
-  val log = Logging(eventStream, "LocalActorRefProvider")
+  val log = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
 
   /*
    * generate name for temporary actor refs
