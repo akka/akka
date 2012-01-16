@@ -1,13 +1,11 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.testkit.AkkaSpec
-import akka.testkit.EventFilter
 import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestLatch
+import akka.testkit._
 import akka.dispatch.Await
+import java.util.concurrent.atomic.AtomicInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
@@ -92,6 +90,36 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       }
 
       assert(ticks.await(3, TimeUnit.SECONDS) == false) //No counting down should've been made
+    }
+
+    "be cancellable during initial delay" in {
+      val ticks = new AtomicInteger
+
+      val initialDelay = 200.milliseconds.dilated
+      val delay = 10.milliseconds.dilated
+      val timeout = collectCancellable(system.scheduler.schedule(initialDelay, delay) {
+        ticks.incrementAndGet()
+      })
+      10.milliseconds.dilated.sleep()
+      timeout.cancel()
+      (initialDelay + 100.milliseconds.dilated).sleep()
+
+      ticks.get must be(0)
+    }
+
+    "be cancellable after initial delay" in {
+      val ticks = new AtomicInteger
+
+      val initialDelay = 20.milliseconds.dilated
+      val delay = 200.milliseconds.dilated
+      val timeout = collectCancellable(system.scheduler.schedule(initialDelay, delay) {
+        ticks.incrementAndGet()
+      })
+      (initialDelay + 100.milliseconds.dilated).sleep()
+      timeout.cancel()
+      (delay + 100.milliseconds.dilated).sleep()
+
+      ticks.get must be(1)
     }
 
     /**
