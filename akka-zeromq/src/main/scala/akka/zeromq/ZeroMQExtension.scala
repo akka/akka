@@ -51,7 +51,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
     verifyZeroMQVersion
     val params = SocketParameters(socketType, context, listener, pollDispatcher, deserializer, pollTimeoutDuration)
     implicit val timeout = system.settings.ActorTimeout
-    val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("akka.actor.zmqdispatcher")).mapTo[ActorRef]
+    val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("akka.zeromq.socket-dispatcher")).mapTo[ActorRef]
     Await.result(req, timeout.duration)
   }
 
