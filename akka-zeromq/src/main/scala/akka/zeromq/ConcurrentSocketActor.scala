@@ -7,6 +7,7 @@ import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Promise, Future }
+import akka.event.Logging
 
 private[zeromq] sealed trait PollLifeCycle
 private[zeromq] case object NoResults extends PollLifeCycle
@@ -18,6 +19,8 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   private val noBytes = Array[Byte]()
   private val socket: Socket = params.context.socket(params.socketType)
   private val poller: Poller = params.context.poller
+  private val log = Logging(context.system, this)
+
   private case object Poll
   private case object ReceiveFrames
   private case object ClearPoll
@@ -107,7 +110,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
     }
     case ClearPoll => currentPoll = None
     case PollError(ex) => {
-      context.system.log.error(ex, "There was a problem polling the zeromq socket")
+      log.error(ex, "There was a problem polling the zeromq socket")
       self ! Poll
     }
   }
@@ -144,7 +147,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   }
 
   private def newEventLoop: Option[Promise[PollLifeCycle]] = {
-    implicit val executor = params.pollDispatcher getOrElse context.system.dispatchers.defaultGlobalDispatcher
+    implicit val executor = params.pollDispatcher getOrElse context.system.dispatcher
     Some((Future {
       if (poller.poll(params.pollTimeoutDuration.toMicros) > 0 && poller.pollin(0)) Results else NoResults
     }).asInstanceOf[Promise[PollLifeCycle]] onSuccess {
