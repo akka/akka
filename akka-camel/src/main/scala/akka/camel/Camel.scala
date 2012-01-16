@@ -63,7 +63,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    context.stop(),
+    context.stop()
     template.stop()
     //TODO use proper akka logging
     actorSystem.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
