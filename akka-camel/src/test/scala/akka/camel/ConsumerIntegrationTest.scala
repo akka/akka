@@ -74,12 +74,10 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
     })
 
-    try
+    val exception = intercept[CamelExecutionException]{
       camel.sendTo("direct:a3", msg = "some msg 3")
-    catch{
-      case e: CamelExecutionException => e.getCause.getClass should be (classOf[TimeoutException])
-      case other => fail("Expected CamelExecutionException but got: "+other)
     }
+    exception.getCause.getClass should be (classOf[TimeoutException])
   }
 
   it should "process messages even after actor restart" in {
@@ -105,7 +103,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   }
 
 
-  it should  "unregister itself when stopped - integration test" in {
+  it should  "unregister itself when stopped" in {
     val actorRef = start(new TestActor())
     camel.awaitActivation(actorRef, 1 second)
 

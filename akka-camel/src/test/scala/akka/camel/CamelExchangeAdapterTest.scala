@@ -3,23 +3,11 @@ package akka.camel
 import org.apache.camel.impl.DefaultExchange
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import org.scalatest.BeforeAndAfterAll
 import org.apache.camel.{Exchange, ExchangePattern}
-import akka.actor.ActorSystem
-import akka.camel.TestSupport.MessageSugar
-
-object CamelExchangeAdapterTest{
-  lazy val system = ActorSystem("test")
-  lazy val camel = CamelExtension(system)
-}
-class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with MessageSugar{
-
-  def camel = CamelExchangeAdapterTest.camel
+import akka.camel.TestSupport.{SharedCamelSystem, MessageSugar}
 
 
-  override protected def afterAll() {
-    CamelExchangeAdapterTest.system.shutdown()
-  }
+class CamelExchangeAdapterTest extends JUnitSuite with SharedCamelSystem with MessageSugar{
 
   //TODO: Get rid of implicit.
   // It is here, as was easier to add this implicit than to rewrite the whole test...

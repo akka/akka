@@ -7,22 +7,19 @@ import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, Feat
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.duration._
+import akka.camel.TestSupport.SharedCamelSystem
 
 /**
  * Tests the features of the Camel Producer.
  */
-class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
+class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
 
   import ProducerFeatureTest._
 
-  val system = akka.actor.ActorSystem.create("ProducerFeatureTest")
-  val camel = CamelExtension(system)
   val camelContext = camel.context
   val timeout = 1 second
 
   override protected def beforeAll { camelContext.addRoutes(new TestRoute(system)) }
-
-  override protected def afterAll { system.shutdown() }
 
   override protected def afterEach { mockEndpoint.reset() }
 
