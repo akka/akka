@@ -560,11 +560,14 @@ class TypedActorExtension(system: ActorSystemImpl) extends TypedActorFactory wit
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
-    val classLoader: ClassLoader = if (props.loader.nonEmpty) props.loader.get else props.interfaces.headOption.map(_.getClassLoader).orNull
+    val classLoader: ClassLoader = if (props.loader.nonEmpty) props.loader.get else props.interfaces.headOption.map(_.getClassLoader).orNull //If we have no loader, we arbitrarily take the loader of the first interface
     val proxy = Proxy.newProxyInstance(
       classLoader,
       props.interfaces.toArray,
-      new TypedActorInvocationHandler(this, actorVar, props.timeout.getOrElse(this.settings.ActorTimeout))).asInstanceOf[R]
+      new TypedActorInvocationHandler(
+        this,
+        actorVar,
+        if (props.timeout.isDefined) props.timeout.get else this.settings.ActorTimeout)).asInstanceOf[R]
 
     proxyVar match {
       case null ⇒
