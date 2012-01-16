@@ -130,7 +130,10 @@ private[camel] case class RegisterConsumer(endpointUri:String, actorRef: ActorRe
  * Super class of all activation messages.
  */
 //TODO investigate warnings about case class inheritance
-private[camel] case class ActivationMessage(actor: ActorRef)
+private[camel] abstract class ActivationMessage(val actor: ActorRef)
+object ActivationMessage{
+  def unapply(msg:ActivationMessage) : Option[ActorRef] = Some(msg.actor)
+}
 
 /**
  * Event message indicating that a single endpoint has been activated.
