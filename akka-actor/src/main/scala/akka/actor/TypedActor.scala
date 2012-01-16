@@ -54,7 +54,7 @@ trait TypedActorFactory {
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T]): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
-    val ap = props.actorProps.withCreator(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c()))
+    val ap = props.actorProps.withCreator(new TypedActor.TypedActor[R, T](proxyVar, c()))
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -407,12 +407,13 @@ object TypedProps {
  * TypedProps is a TypedActor configuration object, that is thread safe and fully sharable.
  * It's used in TypedActorFactory.typedActorOf to configure a TypedActor instance.
  */
-case class TypedProps[T <: AnyRef] protected[akka] (interfaces: Seq[Class[_]],
-                                                    creator: () ⇒ T,
-                                                    dispatcher: String = TypedProps.defaultDispatcherId,
-                                                    faultHandler: FaultHandlingStrategy = TypedProps.defaultFaultHandler,
-                                                    timeout: Option[Timeout] = TypedProps.defaultTimeout,
-                                                    loader: Option[ClassLoader] = TypedProps.defaultLoader) {
+case class TypedProps[T <: AnyRef] protected[TypedProps] (
+  interfaces: Seq[Class[_]],
+  creator: () ⇒ T,
+  dispatcher: String = TypedProps.defaultDispatcherId,
+  faultHandler: FaultHandlingStrategy = TypedProps.defaultFaultHandler,
+  timeout: Option[Timeout] = TypedProps.defaultTimeout,
+  loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
