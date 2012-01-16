@@ -5,11 +5,7 @@
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
-import org.jboss.netty.akka.util.HashedWheelTimer
-import org.jboss.netty.akka.util.TimerTask
-import org.jboss.netty.akka.util.Timer
-import org.jboss.netty.akka.util.{ Timeout ⇒ HWTimeout }
-import akka.util.Timeout.intToTimeout
+import org.jboss.netty.akka.util.{ Timer, TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
 import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
@@ -545,12 +541,12 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
     val continuousCancellable = new ContinuousCancellable
     val task = new TimerTask with ContinuousScheduling {
       def run(timeout: HWTimeout) {
-        // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
-        if (!receiver.isTerminated) {
-          receiver ! message
-          scheduleNext(timeout, delay, continuousCancellable)
-        } else {
+        receiver ! message
+        // Check if the receiver is still alive and kicking before reschedule the task
+        if (receiver.isTerminated) {
           log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
+        } else {
+          scheduleNext(timeout, delay, continuousCancellable)
         }
       }
     }
@@ -559,10 +555,12 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   }
 
   def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
+
     val continuousCancellable = new ContinuousCancellable
-    val task = new TimerTask with ContinuousScheduling {
+    val task = new TimerTask with ContinuousScheduling with Runnable {
+      def run = f
       def run(timeout: HWTimeout) {
-        dispatcher.execute(new Runnable { def run = f })
+        dispatcher execute this
         scheduleNext(timeout, delay, continuousCancellable)
       }
     }
@@ -636,25 +634,27 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
  * since they create new Timeout for each tick.
  */
 private[akka] class ContinuousCancellable extends Cancellable {
+  @volatile
   private var delegate: HWTimeout = _
+  @volatile
   private var cancelled = false
 
-  private[akka] def init(initialTimeout: HWTimeout): Unit = synchronized {
+  private[akka] def init(initialTimeout: HWTimeout): Unit = {
     delegate = initialTimeout
   }
 
-  private[akka] def swap(newTimeout: HWTimeout): Unit = synchronized {
+  private[akka] def swap(newTimeout: HWTimeout): Unit = {
     val wasCancelled = isCancelled
     delegate = newTimeout
-    if (wasCancelled) cancel()
+    if (wasCancelled || isCancelled) cancel()
   }
 
-  def isCancelled(): Boolean = synchronized {
+  def isCancelled(): Boolean = {
     // delegate is initially null, but this object will not be exposed to the world until after init
     cancelled || delegate.isCancelled()
   }
 
-  def cancel(): Unit = synchronized {
+  def cancel(): Unit = {
     // the underlying Timeout will not become cancelled once the task has been started to run,
     // therefore we keep a flag here to make sure that rescheduling doesn't occur when cancelled
     cancelled = true
