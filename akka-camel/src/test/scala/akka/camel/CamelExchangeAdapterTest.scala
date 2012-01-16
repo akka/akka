@@ -1,95 +1,99 @@
 package akka.camel
 
-import org.apache.camel.impl.{ DefaultCamelContext, DefaultExchange }
-import org.apache.camel.ExchangePattern
+import org.apache.camel.impl.DefaultExchange
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
+import org.apache.camel.{Exchange, ExchangePattern}
+import akka.actor.ActorSystem
+import akka.camel.TestSupport.MessageSugar
 
-class CamelExchangeAdapterTest extends JUnitSuite {
-  import CamelMessageConversion.toExchangeAdapter
+object CamelExchangeAdapterTest{
+  lazy val system = ActorSystem("test")
+  lazy val camel = CamelExtension(system)
+}
+class CamelExchangeAdapterTest extends JUnitSuite with BeforeAndAfterAll with MessageSugar{
 
-  @Test
-  def shouldSetInMessageFromRequestMessage = {
-    val e1 = sampleInOnly.fromRequestMessage(Message("x"))
+  def camel = CamelExchangeAdapterTest.camel
+
+
+  override protected def afterAll() {
+    CamelExchangeAdapterTest.system.shutdown()
+  }
+
+  //TODO: Get rid of implicit.
+  // It is here, as was easier to add this implicit than to rewrite the whole test...
+  implicit def exchangeToAdapter(e:Exchange) = new CamelExchangeAdapter(e)
+
+  @Test def shouldSetInMessageFromRequestMessage = {
+    val e1 = sampleInOnly.setRequest(Message("x"))
     assert(e1.getIn.getBody === "x")
-    val e2 = sampleInOut.fromRequestMessage(Message("y"))
+    val e2 = sampleInOut.setRequest(Message("y"))
     assert(e2.getIn.getBody === "y")
   }
 
-  @Test
-  def shouldSetOutMessageFromResponseMessage = {
-    val e1 = sampleInOut.fromResponseMessage(Message("y"))
+  @Test def shouldSetOutMessageFromResponseMessage = {
+    val e1 = sampleInOut.setResponse(Message("y"))
     assert(e1.getOut.getBody === "y")
   }
 
-  @Test
-  def shouldSetInMessageFromResponseMessage = {
-    val e1 = sampleInOnly.fromResponseMessage(Message("x"))
+  @Test def shouldSetInMessageFromResponseMessage = {
+    val e1 = sampleInOnly.setResponse(Message("x"))
     assert(e1.getIn.getBody === "x")
   }
 
-  @Test
-  def shouldSetExceptionFromFailureMessage = {
-    val e1 = sampleInOnly.fromFailureMessage(Failure(new Exception("test1")))
+  @Test def shouldSetExceptionFromFailureMessage = {
+    val e1 = sampleInOnly.setFailure(Failure(new Exception("test1")))
     assert(e1.getException.getMessage === "test1")
-    val e2 = sampleInOut.fromFailureMessage(Failure(new Exception("test2")))
+    val e2 = sampleInOut.setFailure(Failure(new Exception("test2")))
     assert(e2.getException.getMessage === "test2")
   }
 
-  @Test
-  def shouldCreateRequestMessageFromInMessage = {
+  @Test def shouldCreateRequestMessageFromInMessage = {
     val m = sampleInOnly.toRequestMessage
     assert(m === Message("test-in", Map("key-in" -> "val-in")))
   }
 
-  @Test
-  def shouldCreateResponseMessageFromInMessage = {
+  @Test def shouldCreateResponseMessageFromInMessage = {
     val m = sampleInOnly.toResponseMessage
     assert(m === Message("test-in", Map("key-in" -> "val-in")))
   }
 
-  @Test
-  def shouldCreateResponseMessageFromOutMessage = {
+  @Test def shouldCreateResponseMessageFromOutMessage = {
     val m = sampleInOut.toResponseMessage
     assert(m === Message("test-out", Map("key-out" -> "val-out")))
   }
 
-  @Test
-  def shouldCreateFailureMessageFromExceptionAndInMessage = {
+  @Test def shouldCreateFailureMessageFromExceptionAndInMessage = {
     val e1 = sampleInOnly
     e1.setException(new Exception("test1"))
     assert(e1.toFailureMessage.cause.getMessage === "test1")
     assert(e1.toFailureMessage.headers("key-in") === "val-in")
   }
 
-  @Test
-  def shouldCreateFailureMessageFromExceptionAndOutMessage = {
+  @Test def shouldCreateFailureMessageFromExceptionAndOutMessage = {
     val e1 = sampleInOut
     e1.setException(new Exception("test2"))
     assert(e1.toFailureMessage.cause.getMessage === "test2")
     assert(e1.toFailureMessage.headers("key-out") === "val-out")
   }
 
-  @Test
-  def shouldCreateRequestMessageFromInMessageWithAdditionalHeader = {
+  @Test def shouldCreateRequestMessageFromInMessageWithAdditionalHeader = {
     val m = sampleInOnly.toRequestMessage(Map("x" -> "y"))
     assert(m === Message("test-in", Map("key-in" -> "val-in", "x" -> "y")))
   }
 
-  @Test
-  def shouldCreateResponseMessageFromInMessageWithAdditionalHeader = {
+  @Test def shouldCreateResponseMessageFromInMessageWithAdditionalHeader = {
     val m = sampleInOnly.toResponseMessage(Map("x" -> "y"))
     assert(m === Message("test-in", Map("key-in" -> "val-in", "x" -> "y")))
   }
 
-  @Test
-  def shouldCreateResponseMessageFromOutMessageWithAdditionalHeader = {
+  @Test def shouldCreateResponseMessageFromOutMessageWithAdditionalHeader = {
     val m = sampleInOut.toResponseMessage(Map("x" -> "y"))
     assert(m === Message("test-out", Map("key-out" -> "val-out", "x" -> "y")))
   }
 
-  @Test
-  def shouldCreateFailureMessageFromExceptionAndInMessageWithAdditionalHeader = {
+  @Test def shouldCreateFailureMessageFromExceptionAndInMessageWithAdditionalHeader = {
     val e1 = sampleInOnly
     e1.setException(new Exception("test1"))
     assert(e1.toFailureMessage.cause.getMessage === "test1")
@@ -98,8 +102,7 @@ class CamelExchangeAdapterTest extends JUnitSuite {
     assert(headers("x") === "y")
   }
 
-  @Test
-  def shouldCreateFailureMessageFromExceptionAndOutMessageWithAdditionalHeader = {
+  @Test def shouldCreateFailureMessageFromExceptionAndOutMessageWithAdditionalHeader = {
     val e1 = sampleInOut
     e1.setException(new Exception("test2"))
     assert(e1.toFailureMessage.cause.getMessage === "test2")
@@ -112,7 +115,7 @@ class CamelExchangeAdapterTest extends JUnitSuite {
   private def sampleInOut = sampleExchange(ExchangePattern.InOut)
 
   private def sampleExchange(pattern: ExchangePattern) = {
-    val exchange = new DefaultExchange(new DefaultCamelContext)
+    val exchange = new DefaultExchange(camel.context)
     exchange.getIn.setBody("test-in")
     exchange.getOut.setBody("test-out")
     exchange.getIn.setHeader("key-in", "val-in")

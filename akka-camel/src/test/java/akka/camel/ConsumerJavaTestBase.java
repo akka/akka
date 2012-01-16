@@ -1,46 +1,37 @@
 package akka.camel;
 
-import akka.japi.SideEffect;
-
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.util.FiniteDuration;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static akka.actor.Actors.*;
-import static akka.camel.CamelContextManager.*;
-import static akka.camel.CamelServiceManager.*;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * @author Martin Krasser
  */
 public class ConsumerJavaTestBase {
 
-    @BeforeClass
-    public static void setUpBeforeClass() {
-        startCamelService();
-    }
+    static ActorSystem system = ActorSystem.create("test");
+    static Camel camel = ((Camel) CamelExtension.get(system));
+
 
     @AfterClass
     public static void tearDownAfterClass() {
-        stopCamelService();
-        registry().local().shutdownAll();
+        system.shutdown();
     }
 
-    @Test @Ignore // TODO: fix race
-
-    // org.apache.camel.CamelExchangeException: No consumers available
-    // on endpoint: Endpoint[direct://error-handler-test-java]
-
+    @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
-        getMandatoryService().awaitEndpointActivation(1, new SideEffect() {
-            public void apply() {
-                actorOf(SampleErrorHandlingConsumer.class);
-            }
-        });
-        String result = getMandatoryTemplate().requestBody("direct:error-handler-test-java", "hello", String.class);
+        ActorRef ref = system.actorOf(new Props().withCreator(SampleErrorHandlingConsumer.class));
+        camel.awaitActivation(ref, new FiniteDuration(1, TimeUnit.SECONDS));
+
+        String result = camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
         assertEquals("error: hello", result);
     }
 }

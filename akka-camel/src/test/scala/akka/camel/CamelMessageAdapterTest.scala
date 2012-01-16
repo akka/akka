@@ -1,29 +1,28 @@
 package akka.camel
 
-import org.apache.camel.impl.DefaultMessage
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import org.scalatest.BeforeAndAfterAll
+import org.apache.camel.impl.{DefaultExchange, DefaultMessage}
+import akka.camel.TestSupport.{MessageSugar, CamelSupport}
 
-class CamelMessageAdapterTest extends JUnitSuite {
+class CamelMessageAdapterTest extends JUnitSuite with BeforeAndAfterAll with CamelSupport with MessageSugar{
   import CamelMessageConversion.toMessageAdapter
 
-  @Test
-  def shouldOverwriteBodyAndAddHeader = {
-    val cm = sampleMessage.fromMessage(Message("blah", Map("key" -> "baz")))
+  @Test def shouldOverwriteBodyAndAddHeader = {
+    val cm = sampleMessage.copyContentFrom(Message("blah", Map("key" -> "baz")))
     assert(cm.getBody === "blah")
     assert(cm.getHeader("foo") === "bar")
     assert(cm.getHeader("key") === "baz")
   }
 
-  @Test
-  def shouldCreateMessageWithBodyAndHeader = {
+  @Test def shouldCreateMessageWithBodyAndHeader = {
     val m = sampleMessage.toMessage
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
   }
 
-  @Test
-  def shouldCreateMessageWithBodyAndHeaderAndCustomHeader = {
+  @Test def shouldCreateMessageWithBodyAndHeaderAndCustomHeader = {
     val m = sampleMessage.toMessage(Map("key" -> "baz"))
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
@@ -34,7 +33,7 @@ class CamelMessageAdapterTest extends JUnitSuite {
     val message = new DefaultMessage
     message.setBody("test")
     message.setHeader("foo", "bar")
+    message.setExchange(new DefaultExchange(camel.context))
     message
   }
-
 }
