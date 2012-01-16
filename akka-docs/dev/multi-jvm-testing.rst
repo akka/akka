@@ -22,7 +22,7 @@ You can add it as a plugin by adding the following to your plugins/build.sbt::
 
    resolvers += Classpaths.typesafeResolver
 
-   addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.7")
+   addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
 
 You can then add multi-JVM testing to a project by including the ``MultiJvm``
 settings and config. For example, here is how the akka-cluster project adds
@@ -380,3 +380,7 @@ is deleted.
 Each test machine starts a node in zookeeper server ensemble that can be used for synchronization. Since
 the server is started on a fixed port, it's not currently possible to run more than one test session on the
 same machine at the same time.
+
+The machines that are used for testing (slaves) should have ssh access to the outside world and be able to talk
+to each other with the internal addresses given. On the master machine ssh client is required. Obviosly git
+and sbt should be installed on both master and slave machines.
