@@ -72,7 +72,7 @@ object AkkaBuild extends Build {
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
-      libraryDependencies ++= Dependencies.cluster,
+      libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -393,10 +393,15 @@ object Dependencies {
     Test.scalacheck, protobuf, jacksonMapper, sjson
   )
 
-  val cluster = Seq(
-    bookkeeper, commonsCodec, commonsIo, guice, h2Lzf, jacksonCore, jacksonMapper, log4j, netty,
-    protobuf, sjson, zkClient, zookeeper, zookeeperLock, Test.junit, Test.scalatest
+  val remote = Seq(
+    netty, protobuf, sjson, h2Lzf, Test.junit, Test.scalatest,
+    Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
+
+//  val cluster = Seq(
+//    bookkeeper, commonsCodec, commonsIo, guice, h2Lzf, jacksonCore, jacksonMapper, log4j, netty,
+//    protobuf, sjson, zkClient, zookeeper, zookeeperLock, Test.junit, Test.scalatest
+//  )
 
   val slf4j = Seq(slf4jApi)
 
@@ -416,7 +421,7 @@ object Dependencies {
 
   val mongoMailbox = Seq(mongoAsync, twttrUtilCore, Test.junit)
 
-  val zookeeperMailbox = Seq(zookeeper, Test.junit)
+  val zookeeperMailbox = Seq(zkClient, zookeeper, Test.junit)
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
@@ -467,7 +472,7 @@ object Dependency {
   val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
   val jettyXml      = "org.eclipse.jetty"           % "jetty-xml"              % V.Jetty      // Eclipse license
   val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"          % V.Jetty      // Eclipse license
-  val log4j         = "log4j"                       % "log4j"                  % "1.2.15"     // ApacheV2
+  val log4j         = "log4j"                       % "log4j"                  % "1.2.14"     // ApacheV2
   val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
   val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
@@ -505,14 +510,16 @@ object Dependency {
   // Test
 
   object Test {
-    val commonsColl = "commons-collections"     % "commons-collections" % "3.2.1"      % "test" // ApacheV2
-    val commonsMath = "org.apache.commons"      % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val jetty       = "org.eclipse.jetty"       % "jetty-server"        % V.Jetty      % "test" // Eclipse license
-    val jettyWebapp = "org.eclipse.jetty"       % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
-    val junit       = "junit"                   % "junit"               % "4.5"        % "test" // Common Public License 1.0
-    val logback     = "ch.qos.logback"          % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
-    val mockito     = "org.mockito"             % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val scalatest   = "org.scalatest"           %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing" %% "scalacheck"         % "1.9"        % "test" // New BSD
+    val commonsColl = "commons-collections"         % "commons-collections" % "3.2.1"      % "test" // ApacheV2
+    val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
+    val jetty       = "org.eclipse.jetty"           % "jetty-server"        % V.Jetty      % "test" // Eclipse license
+    val jettyWebapp = "org.eclipse.jetty"           % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
+    val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
+    val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
+    val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
+    val scalatest   = "org.scalatest"               %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"         % "1.9"        % "test" // New BSD
+    val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
+    val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
 }
