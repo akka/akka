@@ -7,7 +7,8 @@ import akka.util.duration._
 import java.util.concurrent.{ExecutionException, TimeUnit}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-object TestSupport {
+private[camel] object TestSupport {
+
   def start(actor: => Actor)(implicit system : ActorSystem) = {
     val actorRef = system.actorOf(Props(actor))
     CamelExtension(system).awaitActivation(actorRef, 1 second)
@@ -44,7 +45,11 @@ object TestSupport {
   trait SharedCamelSystem extends BeforeAndAfterAll{ this:Suite =>
     lazy val system = ActorSystem("test")
     def camel = CamelExtension(system)
-    override protected def afterAll() { system.shutdown() }
+
+    override protected def afterAll() {
+      super.afterAll()
+      system.shutdown() 
+    }
   }
 
 
