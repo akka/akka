@@ -348,3 +348,35 @@ you are on another platform you might need to install it yourself. Here is a
 port:
 
 http://info.iet.unipi.it/~luigi/dummynet
+
+
+Running tests on many machines
+==============================
+
+The same tests that are run on a single machine using sbt-multi-jvm can be run on multiple
+machines using schoir (read the same as ``esquire``) plugin. The plugin is included just like sbt-multi-jvm::
+
+   resolvers += Classpaths.typesafeResolver
+
+   addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.1")
+
+The interaction with the plugin is through ``schoir:master`` input task. This input task optionally accepts the
+path to the file with the following properties::
+
+   git.url=git@github.com:jboner/akka.git
+   external.addresses.for.ssh=host1:port1,...,hostN:portN
+   internal.host.names=host1,...,hostN
+
+Alternative to specifying the property file, one can set respective settings in the build file::
+
+   gitUrl := "git@github.com:jboner/akka.git",
+   machinesExt := List(InetAddress("host1", port1)),
+   machinesInt := List("host1")
+
+The reason the first property is called ``git.url`` is that the plugin sets up a temporary remote branch on git
+to test against the local working copy. After the tests are finished the changes are regained and the branch
+is deleted.
+
+Each test machine starts a node in zookeeper server ensemble that can be used for synchronization. Since
+the server is started on a fixed port, it's not currently possible to run more than one test session on the
+same machine at the same time.
