@@ -9,7 +9,7 @@ object  ActorLifecycleTest extends App{
   val supervisor = system.actorOf(Props(faultHandler = AllForOneStrategy(List(classOf[Exception]), maxNrOfRetries = 3, withinTimeRange = 10000), creator = () => new Actor {
       protected def receive = {
         case ("watch", actor : ActorRef) => context.watch(actor)
-        case creator: (() => Actor) => context.actorOf(Props(creator))
+        case props: Props => context.actorOf(props)
         case Terminated(actor) => println("Terminated "+actor)
         case x => println("Got: " + x)
       }
@@ -35,7 +35,7 @@ object  ActorLifecycleTest extends App{
   supervisor ! ("watch", dead)
 
 //  supervisor ! "test"
-//  supervisor ! troubleMaker
+//  supervisor ! Props(troubleMaker)
 
 
 }

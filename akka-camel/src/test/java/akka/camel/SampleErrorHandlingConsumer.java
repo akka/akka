@@ -17,7 +17,7 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
 
     @Override
     //TODO write test confirming this gets called in java
-    public ProcessorDefinition<?> onRouteDefinition(RouteDefinition rd) {
+    public ProcessorDefinition onRouteDefinition(RouteDefinition rd) {
         return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
     }
 

@@ -287,7 +287,7 @@ object BlockingOrNotTypeConverter extends CamelTypeConverter{
   import akka.util.duration._
   val blocking = """Blocking\((\d+) nanos\)""".r
   def convertTo[T](`type`: Class[T], value: AnyRef) = `type` match{
-    case c: Class[BlockingOrNot] => value.toString match  {
+    case c if c == classOf[BlockingOrNot] => value.toString match  {
       case blocking(timeout) => Blocking(timeout.toLong nanos).asInstanceOf[T]
       case "NonBlocking" => NonBlocking.asInstanceOf[T]
     }
