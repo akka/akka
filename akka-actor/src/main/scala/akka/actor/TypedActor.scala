@@ -8,9 +8,8 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Duration, Timeout }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import akka.serialization.{ Serializer, Serialization }
+import akka.serialization.{ Serializer, Serialization, SerializationExtension }
 import akka.dispatch._
-import akka.serialization.SerializationExtension
 import java.util.concurrent.TimeoutException
 import java.lang.IllegalStateException
 
@@ -124,22 +123,25 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
 
     private def writeReplace(): AnyRef = parameters match {
-      case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null, null)
-      case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array[Int](), Array[Array[Byte]]())
+      case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
+      case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
-        val serializers: Array[Serializer] = ps map SerializationExtension(Serialization.currentSystem.value).findSerializerFor
-        val serializedParameters: Array[Array[Byte]] = Array.ofDim[Array[Byte]](serializers.length)
-        for (i ← 0 until serializers.length)
-          serializedParameters(i) = serializers(i) toBinary parameters(i) //Mutable for the sake of sanity
+        val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
+        for (i ← 0 until ps.length) {
+          val p = ps(i)
+          val s = SerializationExtension(Serialization.currentSystem.value).findSerializerFor(p)
+          val m = if (s.includeManifest) p.getClass else null
+          serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
+        }
 
-        SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializers.map(_.identifier), serializedParameters)
+        SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializedParameters)
     }
   }
 
   /**
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializerIdentifiers: Array[Int], serializedParameters: Array[Array[Byte]]) {
+  case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, Class[_], Array[Byte])]) {
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
@@ -154,8 +156,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
-          for (i ← 0 until a.length)
-            deserializedParameters(i) = serialization.serializerByIdentity(serializerIdentifiers(i)).fromBinary(serializedParameters(i))
+          for (i ← 0 until a.length) {
+            val (sId, manifest, bytes) = a(i)
+            deserializedParameters(i) = serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
+          }
 
           deserializedParameters
       })
