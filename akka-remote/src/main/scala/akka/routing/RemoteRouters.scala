@@ -19,7 +19,7 @@ trait RemoteRouterConfig extends RouterConfig {
         case x                         ⇒ throw new ConfigurationException("unparseable remote node " + x)
       }
       val node = Stream.continually(nodes).flatten.iterator
-      val impl = context.system.asInstanceOf[ActorSystemImpl] //FIXME should we rely on this cast to work here?
+      val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
       IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
         val name = "c" + i
         val deploy = Deploy("", ConfigFactory.empty(), None, props.routerConfig, RemoteScope(node.next))

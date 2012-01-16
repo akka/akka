@@ -290,6 +290,8 @@ private[akka] class ActorCell(
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
     dispatcher.attach(this)
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    dispatcher.systemDispatch(this, Create())
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -360,7 +362,7 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      // FIXME catching all and continue isn't good for OOME, ticket #1418
+      // TODO catching all and continue isn't good for OOME, ticket #1418
       case e ⇒
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
@@ -394,7 +396,7 @@ private[akka] class ActorCell(
 
       props.faultHandler.handleSupervisorRestarted(cause, self, children)
     } catch {
-      // FIXME catching all and continue isn't good for OOME, ticket #1418
+      // TODO catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ try {
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted

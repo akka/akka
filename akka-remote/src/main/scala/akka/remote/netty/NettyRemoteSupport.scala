@@ -350,8 +350,7 @@ class ActiveRemoteClientHandler(
           runOnceNow {
             client.remoteSupport.shutdownClientConnection(remoteAddress) // spawn in another thread
           }
-        case e: Exception ⇒
-          event.getChannel.close() //FIXME Is this the correct behavior???
+        case e: Exception ⇒ event.getChannel.close()
       }
 
     } else client.notifyListeners(RemoteClientError(new Exception("Unknown cause"), client.remoteSupport, client.remoteAddress))
@@ -670,7 +669,7 @@ class RemoteServerHandler(
             val inbound = RemoteNettyAddress(origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
-          case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410
+          case CommandType.SHUTDOWN ⇒ //Will be unbound in channelClosed
           case _                    ⇒ //Unknown command
         }
       case _ ⇒ //ignore

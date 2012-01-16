@@ -41,10 +41,8 @@ trait ActorRefProvider {
    */
   def deathWatch: DeathWatch
 
-  // FIXME: remove/replace???
   def nodename: String
 
-  // FIXME: remove/replace???
   def clustername: String
 
   /**
@@ -291,7 +289,6 @@ class LocalActorRefProvider(
       new RootActorPath(LocalAddress(_systemName)),
       new Deployer(settings))
 
-  // FIXME remove both
   val nodename: String = "local"
   val clustername: String = "local"
 

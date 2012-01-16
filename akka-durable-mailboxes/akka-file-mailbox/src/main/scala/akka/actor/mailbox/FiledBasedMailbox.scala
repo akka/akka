@@ -68,7 +68,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
     queue.remove
     true
   } catch {
-    // FIXME catching all and continue isn't good for OOME, ticket #1418
+    // TODO catching all and continue isn't good for OOME, ticket #1418
     case e ⇒ false
   }
 

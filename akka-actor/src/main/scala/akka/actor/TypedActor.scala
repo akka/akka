@@ -544,23 +544,6 @@ class TypedActorExtension(system: ActorSystemImpl) extends TypedActorFactory wit
 
   // Private API
 
-  private[akka] def configureAndProxyLocalActorRef[T <: AnyRef](supervisor: ActorRefFactory, interfaces: Array[Class[_]], proxyVar: AtomVar[T], props: Props, name: Option[String], loader: ClassLoader): T = {
-    //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
-    val actorVar = new AtomVar[ActorRef](null)
-
-    //FIXME
-    val timeout = settings.ActorTimeout
-    /*val timeout = props.timeout match {
-      case Props.`defaultTimeout` ⇒ settings.ActorTimeout
-      case x                      ⇒ x
-    }*/
-    val proxy: T = Proxy.newProxyInstance(loader, interfaces, new TypedActorInvocationHandler(this, actorVar, timeout)).asInstanceOf[T]
-    proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-    val ref = if (name.isDefined) supervisor.actorOf(props, name.get) else supervisor.actorOf(props)
-    actorVar.set(ref) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
-    proxyVar.get
-  }
-
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)

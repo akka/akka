@@ -117,25 +117,6 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
     ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs)
 
   /**
-   * FIXME implement support for this
-   */
-  private def serializerForBestMatchClass(cl: Class[_]): Either[Exception, Serializer] = {
-    if (bindings.isEmpty)
-      Left(NoSerializerFoundException("No mapping serializer found for " + cl))
-    else {
-      bindings find {
-        case (clazzName, _) ⇒
-          ReflectiveAccess.getClassFor(clazzName) match {
-            case Right(clazz) ⇒ clazz.isAssignableFrom(cl)
-            case _            ⇒ false
-          }
-      } map {
-        case (_, ser) ⇒ serializerOf(ser)
-      } getOrElse Left(NoSerializerFoundException("No mapping serializer found for " + cl))
-    }
-  }
-
-  /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "default" -> akka.serialization.JavaSerializer
    * But "default" can be overridden in config
