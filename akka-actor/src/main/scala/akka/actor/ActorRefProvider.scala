@@ -5,8 +5,7 @@
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
-import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer }
-import akka.util.Timeout.intToTimeout
+import org.jboss.netty.akka.util.{ Timer, TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
 import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
@@ -538,79 +537,80 @@ class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassificat
  */
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
-  import org.jboss.netty.akka.util.{ Timeout ⇒ HWTimeout }
-
-  def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(delay, receiver, message), initialDelay))
-
-  def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(delay, f), initialDelay))
-
-  def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createContinuousTask(delay, runnable), initialDelay))
-
-  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(runnable), delay))
-
-  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(receiver, message), delay))
-
-  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
-    new DefaultCancellable(hashedWheelTimer.newTimeout(createSingleTask(f), delay))
-
-  private def createSingleTask(runnable: Runnable): TimerTask =
-    new TimerTask() {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) { dispatcher.execute(runnable) }
+  def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
+    val continuousCancellable = new ContinuousCancellable
+    val task = new TimerTask with ContinuousScheduling {
+      def run(timeout: HWTimeout) {
+        receiver ! message
+        // Check if the receiver is still alive and kicking before reschedule the task
+        if (receiver.isTerminated) {
+          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
+        } else {
+          scheduleNext(timeout, delay, continuousCancellable)
+        }
+      }
     }
+    continuousCancellable.init(hashedWheelTimer.newTimeout(task, initialDelay))
+    continuousCancellable
+  }
 
-  private def createSingleTask(receiver: ActorRef, message: Any): TimerTask =
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+  def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
+
+    val continuousCancellable = new ContinuousCancellable
+    val task = new TimerTask with ContinuousScheduling with Runnable {
+      def run = f
+      def run(timeout: HWTimeout) {
+        dispatcher execute this
+        scheduleNext(timeout, delay, continuousCancellable)
+      }
+    }
+    continuousCancellable.init(hashedWheelTimer.newTimeout(task, initialDelay))
+    continuousCancellable
+  }
+
+  def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
+    val continuousCancellable = new ContinuousCancellable
+    val task = new TimerTask with ContinuousScheduling {
+      def run(timeout: HWTimeout) {
+        dispatcher.execute(runnable)
+        scheduleNext(timeout, delay, continuousCancellable)
+      }
+    }
+    continuousCancellable.init(hashedWheelTimer.newTimeout(task, initialDelay))
+    continuousCancellable
+  }
+
+  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable = {
+    val task = new TimerTask() {
+      def run(timeout: HWTimeout) { dispatcher.execute(runnable) }
+    }
+    new DefaultCancellable(hashedWheelTimer.newTimeout(task, delay))
+  }
+
+  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
+    val task = new TimerTask {
+      def run(timeout: HWTimeout) {
         receiver ! message
       }
     }
+    new DefaultCancellable(hashedWheelTimer.newTimeout(task, delay))
+  }
 
-  private def createSingleTask(f: ⇒ Unit): TimerTask =
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
+  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable = {
+    val task = new TimerTask {
+      def run(timeout: HWTimeout) {
         dispatcher.execute(new Runnable { def run = f })
       }
     }
-
-  private def createContinuousTask(delay: Duration, receiver: ActorRef, message: Any): TimerTask = {
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        // Check if the receiver is still alive and kicking before sending it a message and reschedule the task
-        if (!receiver.isTerminated) {
-          receiver ! message
-          try timeout.getTimer.newTimeout(this, delay) catch {
-            case _: IllegalStateException ⇒ // stop recurring if timer is stopped
-          }
-        } else {
-          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
-        }
-      }
-    }
+    new DefaultCancellable(hashedWheelTimer.newTimeout(task, delay))
   }
 
-  private def createContinuousTask(delay: Duration, f: ⇒ Unit): TimerTask = {
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.execute(new Runnable { def run = f })
-        try timeout.getTimer.newTimeout(this, delay) catch {
-          case _: IllegalStateException ⇒ // stop recurring if timer is stopped
-        }
-      }
-    }
-  }
-
-  private def createContinuousTask(delay: Duration, runnable: Runnable): TimerTask = {
-    new TimerTask {
-      def run(timeout: org.jboss.netty.akka.util.Timeout) {
-        dispatcher.execute(runnable)
-        try timeout.getTimer.newTimeout(this, delay) catch {
-          case _: IllegalStateException ⇒ // stop recurring if timer is stopped
-        }
+  private trait ContinuousScheduling { this: TimerTask ⇒
+    def scheduleNext(timeout: HWTimeout, delay: Duration, delegator: ContinuousCancellable) {
+      try {
+        delegator.swap(timeout.getTimer.newTimeout(this, delay))
+      } catch {
+        case _: IllegalStateException ⇒ // stop recurring if timer is stopped
       }
     }
   }
@@ -628,7 +628,42 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
   }
 }
 
-class DefaultCancellable(val timeout: org.jboss.netty.akka.util.Timeout) extends Cancellable {
+/**
+ * Wrapper of a [[org.jboss.netty.akka.util.Timeout]] that delegates all
+ * methods. Needed to be able to cancel continuous tasks,
+ * since they create new Timeout for each tick.
+ */
+private[akka] class ContinuousCancellable extends Cancellable {
+  @volatile
+  private var delegate: HWTimeout = _
+  @volatile
+  private var cancelled = false
+
+  private[akka] def init(initialTimeout: HWTimeout): Unit = {
+    delegate = initialTimeout
+  }
+
+  private[akka] def swap(newTimeout: HWTimeout): Unit = {
+    val wasCancelled = isCancelled
+    delegate = newTimeout
+    if (wasCancelled || isCancelled) cancel()
+  }
+
+  def isCancelled(): Boolean = {
+    // delegate is initially null, but this object will not be exposed to the world until after init
+    cancelled || delegate.isCancelled()
+  }
+
+  def cancel(): Unit = {
+    // the underlying Timeout will not become cancelled once the task has been started to run,
+    // therefore we keep a flag here to make sure that rescheduling doesn't occur when cancelled
+    cancelled = true
+    // delegate is initially null, but this object will not be exposed to the world until after init
+    delegate.cancel()
+  }
+}
+
+class DefaultCancellable(val timeout: HWTimeout) extends Cancellable {
   def cancel() {
     timeout.cancel()
   }
