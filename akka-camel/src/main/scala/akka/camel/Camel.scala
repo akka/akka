@@ -6,7 +6,6 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import akka.event.Logging.Info
 import akka.util.Duration
-import akka.util.ErrorUtils._
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
 import collection.mutable.{SynchronizedMap, HashMap}
 
@@ -64,10 +63,8 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    tryAll(
-      context.stop(),
-      template.stop()
-    )
+    context.stop(),
+    template.stop()
     //TODO use proper akka logging
     actorSystem.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
   }
