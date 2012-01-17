@@ -287,6 +287,9 @@ private[akka] class ActorCell(
     mailbox = dispatcher.createMailbox(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    dispatcher.systemDispatch(this, Create())
+
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
     dispatcher.attach(this)
