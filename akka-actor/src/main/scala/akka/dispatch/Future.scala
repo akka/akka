@@ -426,15 +426,15 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
    */
   def or[U >: T](that: Future[U]): Future[U] = {
     val p = Promise[U]()
-    def register(to: Future[U]) = to onComplete {
+    def register(to: Future[U], fallback: Future[U]) = to onComplete {
       case r @ Right(_) ⇒ p tryComplete r
-      case l @ Left(_) ⇒ that.value match {
+      case l @ Left(_) ⇒ fallback.value match {
         case Some(Left(_)) ⇒ p tryComplete l //If he failed, race for setting failure
         case _             ⇒ // Either "that" was successful, or he's not done yet, let him win
       }
     }
-    register(this)
-    register(that)
+    register(this, that)
+    register(that, this)
     p
   }
 
