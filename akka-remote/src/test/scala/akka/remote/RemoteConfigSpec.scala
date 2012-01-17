@@ -34,8 +34,6 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
       getBytes("akka.remote.server.max-total-memory-size") must equal(0)
 
       //akka.remote.client
-      getBoolean("akka.remote.client.buffering.retry-message-send-on-failure") must equal(false)
-      getInt("akka.remote.client.buffering.capacity") must equal(-1)
       getMilliseconds("akka.remote.client.reconnect-delay") must equal(5 * 1000)
       getMilliseconds("akka.remote.client.read-timeout") must equal(3600 * 1000)
       getMilliseconds("akka.remote.client.reconnection-time-window") must equal(600 * 1000)
