@@ -17,33 +17,67 @@ import org.scalatest.{Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
 
 
 
-class ActorProducerWordSpecTest extends TestKit(ActorSystem("test")) with WordSpec with ShouldMatchers with ActorProducerFixture{
+class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with ShouldMatchers with ActorProducerFixture{
 
 
   "ActorProducer" when {
     "synchronous" when {
-      "in-only" should{
-
-        "pass the message to the consumer" in {
-
-          producer = given(outCapable = false)
-
-          producer.process(exchange)
-
-          within(1 second){
-            probe.expectMsg(message)
-          }
-        }
+      "consumer actor doesnt exist" should {
+        "set failure message on exchange" in (pending)
       }
 
-      "out capable" should{
-        "get a response" in {
-          producer = given(actor = echoActor, outCapable = true)
-
-          producer.process(exchange)
-
-          verify(exchange).setResponse(msg("received "+message)); info("response as expected")
+      "in-only" should{
+        def process() = {
+          producer = given(outCapable = false)
+          time(producer.process(exchange))
         }
+        
+        "pass the message to the consumer" in {
+          process()
+          within(1 second)(probe.expectMsg(message))
+        }
+        
+        "not expect response and not block" in {
+          process should be < (10 millis)
+        }
+
+      }
+
+      "out capable" when{
+        "response is sent back by actor" should{
+
+          "get a response" in {
+            producer = given(actor = echoActor, outCapable = true)
+
+            producer.process(exchange)
+
+            verify(exchange).setResponse(msg("received "+message))
+          }
+        }
+
+        "response is not sent by actor" should{
+
+          def process() = {
+            producer = given(outCapable=true, outTimeout = 50 millis)
+            time(producer.process(exchange))
+          }
+
+          "timeout after outTimeout" in {
+            val duration = process()
+            duration should (be >= (50 millis) and be < (100 millis))
+          }
+
+          "never set the response on exchange" in {
+            process()
+            verify(exchange, never()).setResponse(any[Message])
+          }
+
+          "set failure message to timeout" in {
+            process()
+            verify (exchange).setFailure(any[Failure])
+          }
+        }
+
       }
 
       //TODO: write more tests for synchronous process(exchange) method
@@ -94,7 +128,7 @@ class ActorProducerWordSpecTest extends TestKit(ActorSystem("test")) with WordSp
         "blocking" when {
           "it gets an output message" should{
 
-            "get a correct response and sync callback" in {
+            "set a correct response and call sync callback" in {
               producer = given(actor = echoActor, outCapable = true, blocking = Blocking(1 second))
 
               val doneSync = producer.process(exchange, asyncCallback)
@@ -109,22 +143,24 @@ class ActorProducerWordSpecTest extends TestKit(ActorSystem("test")) with WordSp
 
           "it doesnt get output message" should{
 
-            "timeout, roughly after time specified by blocking timeout parameter" in {
+            def process() = {
               producer = given( outCapable = true, blocking = Blocking(50 millis), autoAck = false)
-
-              val duration = time {
+              time(
                 producer.process(exchange, asyncCallback)
-                asyncCallback.awaitCalled()
-              }
-
-              duration should (be >= (50 millis) and be < (100 millis))
+              )
             }
 
+            "timeout, roughly after time specified by blocking timeout parameter" in {
+              process() should (be >= (50 millis) and be < (100 millis))
+            }
+
+            "call a callback" in {
+              process()
+              asyncCallback.expectDoneSyncWithin(0 second)
+
+            }
             "set failure message" in {
-              producer = given( outCapable = true, blocking = Blocking(10 millis), autoAck = false)
-
-              producer.process(exchange, asyncCallback)
-
+              process()
               verify(exchange).setFailure(any[Failure])
             }
           }
@@ -175,13 +211,12 @@ class ActorProducerWordSpecTest extends TestKit(ActorSystem("test")) with WordSp
 
             }
           }
+
           "non blocking" should{
             "get async callback as soon as it gets an Ack message" in {
               producer = given( outCapable = false, blocking = NonBlocking, autoAck = false)
 
-
               val doneSync = producer.process(exchange, asyncCallback)
-
 
               doneSync should be (false)
               within(1 second){
@@ -192,6 +227,7 @@ class ActorProducerWordSpecTest extends TestKit(ActorSystem("test")) with WordSp
               verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
             }
           }
+
           "blocking" should{
             "get sync callback when it gets an Ack message" in {
 
@@ -251,9 +287,9 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   def msg(s: String) = Message(s, Map.empty, camel.context)
 
 
-  def given(actor: ActorRef = probe.ref, outCapable: Boolean, blocking: BlockingOrNot = NonBlocking, autoAck: Boolean = true) = {
+  def given(actor: ActorRef = probe.ref, outCapable: Boolean, blocking: BlockingOrNot = NonBlocking, autoAck: Boolean = true, outTimeout : Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
-    new TestableProducer(config(isBlocking = blocking, isAutoAck = autoAck), camel)
+    new TestableProducer(config(isBlocking = blocking, isAutoAck = autoAck, _outTimeout = outTimeout), camel)
   }
 
   def time[A](block : => A) : Duration ={
@@ -261,6 +297,13 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     block
     val duration = System.currentTimeMillis() - start
     duration millis
+  }
+
+  def timeAndRes[A](block : => A) : (Duration,A) ={
+    val start = System.currentTimeMillis()
+    val res = block
+    val duration = System.currentTimeMillis() - start
+    (duration millis, res)
   }
 
   def createAsyncCallback = new TestAsyncCallback
@@ -294,12 +337,13 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   }
 
-  def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true) = {
+  def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
     new ActorEndpointConfig {
       val path = Path(actorPath)
       val getEndpointUri = endpointUri
       blocking = isBlocking
       autoack = isAutoAck
+      outTimeout = _outTimeout
     }
   }
 
