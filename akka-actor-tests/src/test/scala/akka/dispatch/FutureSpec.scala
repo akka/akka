@@ -51,7 +51,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "return supplied value on timeout" in {
         val timedOut = Promise.successful[String]("Timedout")
         val promise = Promise[String]() or timedOut
+        val promise2 = timedOut or Promise[String]()
         Await.result(promise, timeout.duration) must be("Timedout")
+        Await.result(promise2, timeout.duration) must be("Timedout")
       }
     }
     "completed with a result" must {
