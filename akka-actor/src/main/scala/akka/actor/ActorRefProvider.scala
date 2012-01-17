@@ -41,8 +41,6 @@ trait ActorRefProvider {
 
   def nodename: String
 
-  def clustername: String
-
   /**
    * The root path for all actors within this actor system, including remote
    * address if enabled.

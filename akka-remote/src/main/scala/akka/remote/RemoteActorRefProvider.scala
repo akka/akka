@@ -33,7 +33,6 @@ class RemoteActorRefProvider(
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
   def nodename = remoteSettings.NodeName
-  def clustername = remoteSettings.ClusterName
   def terminationFuture = local.terminationFuture
   def dispatcher = local.dispatcher
 

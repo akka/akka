@@ -40,7 +40,6 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
 
       // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
       //akka.cluster
-      getString("akka.cluster.name") must equal("default-cluster")
       getString("akka.cluster.nodename") must equal("node1")
       getStringList("akka.cluster.seed-nodes") must equal(new java.util.ArrayList[String])
 
