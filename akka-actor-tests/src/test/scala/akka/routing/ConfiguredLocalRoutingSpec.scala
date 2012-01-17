@@ -15,7 +15,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with Impli
   "RouterConfig" must {
 
     "be overridable in config" in {
-      deployer.deploy(Deploy("/config", null, None, RandomRouter(4), LocalScope))
+      deployer.deploy(Deploy("/config", null, RandomRouter(4), LocalScope))
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "get" ⇒ sender ! context.props

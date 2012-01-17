@@ -15,7 +15,7 @@ import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
 import akka.util.ReflectiveAccess
 
-case class Deploy(path: String, config: Config, recipe: Option[ActorRecipe] = None, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
+case class Deploy(path: String, config: Config, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
 
 case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
 
@@ -82,16 +82,7 @@ class Deployer(val settings: ActorSystem.Settings) {
         }
     }
 
-    val recipe: Option[ActorRecipe] =
-      deployment.getString("create-as.class") match {
-        case "" ⇒ None
-        case impl ⇒
-          val implementationClass = getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
-            "Config option [akka.actor.deployment." + key + ".create-as.class] load failed", e), identity)
-          Some(ActorRecipe(implementationClass))
-      }
-
-    Some(Deploy(key, deployment, recipe, router, LocalScope))
+    Some(Deploy(key, deployment, router, LocalScope))
   }
 
 }

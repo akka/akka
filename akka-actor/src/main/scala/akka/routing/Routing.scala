@@ -130,9 +130,9 @@ trait RouterConfig {
 
   def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
     deploy match {
-      case Some(Deploy(_, _, _, NoRouter, _)) ⇒ this
-      case Some(Deploy(_, _, _, r, _))        ⇒ r
-      case _                                  ⇒ this
+      case Some(Deploy(_, _, NoRouter, _)) ⇒ this
+      case Some(Deploy(_, _, r, _))        ⇒ r
+      case _                               ⇒ this
     }
   }
 
