@@ -3,163 +3,71 @@
  */
 package akka.routing
 
-import akka.actor._
-import akka.remote._
-import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
+import akka.actor.ActorContext
+import akka.actor.ActorRef
+import akka.actor.ActorSystemImpl
+import akka.actor.Deploy
+import akka.actor.InternalActorRef
+import akka.actor.Props
 import akka.config.ConfigurationException
-import akka.util.Duration
+import akka.remote.RemoteScope
+import akka.remote.RemoteAddressExtractor
 
-trait RemoteRouterConfig extends RouterConfig {
-  override def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
-    case (_, Nil) ⇒ throw new ConfigurationException("must specify list of remote nodes")
-    case (n, xs) ⇒
-      val nodes = routees map {
-        case RemoteAddressExtractor(a) ⇒ a
-        case x                         ⇒ throw new ConfigurationException("unparseable remote node " + x)
-      }
-      val node = Stream.continually(nodes).flatten.iterator
-      val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-      IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
-        val name = "c" + i
-        val deploy = Deploy("", ConfigFactory.empty(), None, props.routerConfig, RemoteScope(node.next))
-        impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
-      })
+/**
+ * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
+ * target nodes. Delegates other duties to the local [[akka.routing.RouterConfig]],
+ * which makes it possible to mix this with the built-in routers such as
+ * [[akka.routing.RoundRobinRouter]] or custom routers.
+ */
+class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
+
+  override protected[akka] def createRouteeProvider(ref: RoutedActorRef, context: ActorContext) =
+    new RemoteRouteeProvider(nodes, ref, context, resizer)
+
+  override def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+    local.createRoute(routeeProps, routeeProvider)
   }
+
+  override def createActor(): Router = local.createActor()
+
+  override def resizer: Option[Resizer] = local.resizer
+
 }
 
 /**
- * A Router that uses round-robin to select a connection. For concurrent calls, round robin is just a best effort.
- * <br>
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the round robin should both create new actors and use the 'routees' actor(s).
- * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
+ * Factory and registry for routees of the router.
+ * Deploys new routees on the specified `nodes`, round-robin.
+ *
+ * Routee paths may not be combined with remote target nodes.
  */
-case class RemoteRoundRobinRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
-  extends RemoteRouterConfig with RoundRobinLike {
+class RemoteRouteeProvider(nodes: Iterable[String], _ref: RoutedActorRef, _context: ActorContext, _resizer: Option[Resizer])
+  extends RouteeProvider(_ref, _context, _resizer) {
 
-  /**
-   * Constructor that sets the routees to be used.
-   * Java API
-   */
-  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
+  // need this iterator as instance variable since Resizer may call createRoutees several times
+  private val nodeAddressIter = {
+    val nodeAddresses = nodes map {
+      case RemoteAddressExtractor(a) ⇒ a
+      case x                         ⇒ throw new ConfigurationException("unparseable remote node " + x)
+    }
+    Stream.continually(nodeAddresses).flatten.iterator
+  }
 
-  /**
-   * Constructor that sets the resizer to be used.
-   * Java API
-   */
-  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
+  override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
+    (nrOfInstances, routees, nodes) match {
+      case (_, _, Nil) ⇒ throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
+        format context.self.path.toString)
+
+      case (n, Nil, ys) ⇒
+        val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
+        IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
+          val name = "c" + i
+          val deploy = Deploy("", ConfigFactory.empty(), None, props.routerConfig, RemoteScope(nodeAddressIter.next))
+          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
+        })
+
+      case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
+        format context.self.path.toString)
+    }
 }
 
-/**
- * A Router that randomly selects one of the target connections to send a message to.
- * <br>
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
- * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
- */
-case class RemoteRandomRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
-  extends RemoteRouterConfig with RandomLike {
-
-  /**
-   * Constructor that sets the routees to be used.
-   * Java API
-   */
-  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
-
-  /**
-   * Constructor that sets the resizer to be used.
-   * Java API
-   */
-  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
-}
-
-/**
- * A Router that tries to send to routee with fewest messages in mailbox.
- * <br>
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
- * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
- */
-case class RemoteSmallestMailboxRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
-  extends RemoteRouterConfig with SmallestMailboxLike {
-
-  /**
-   * Constructor that sets the routees to be used.
-   * Java API
-   */
-  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
-
-  /**
-   * Constructor that sets the resizer to be used.
-   * Java API
-   */
-  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
-}
-
-/**
- * A Router that uses broadcasts a message to all its connections.
- * <br>
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
- * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
- */
-case class RemoteBroadcastRouter(nrOfInstances: Int, routees: Iterable[String], override val resizer: Option[Resizer] = None)
-  extends RemoteRouterConfig with BroadcastLike {
-
-  /**
-   * Constructor that sets the routees to be used.
-   * Java API
-   */
-  def this(n: Int, t: java.lang.Iterable[String]) = this(n, t.asScala)
-
-  /**
-   * Constructor that sets the resizer to be used.
-   * Java API
-   */
-  def this(resizer: Resizer) = this(0, Nil, Some(resizer))
-}
-
-/**
- * Simple router that broadcasts the message to all routees, and replies with the first response.
- * <br>
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
- * that the random router should both create new actors and use the 'routees' actor(s).
- * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' to during instantiation they will
- * be ignored if the 'nrOfInstances' is defined in the configuration file for the actor being used.
- */
-case class RemoteScatterGatherFirstCompletedRouter(nrOfInstances: Int, routees: Iterable[String], within: Duration,
-                                                   override val resizer: Option[Resizer] = None)
-  extends RemoteRouterConfig with ScatterGatherFirstCompletedLike {
-
-  /**
-   * Constructor that sets the routees to be used.
-   * Java API
-   */
-  def this(n: Int, t: java.lang.Iterable[String], w: Duration) = this(n, t.asScala, w)
-
-  /**
-   * Constructor that sets the resizer to be used.
-   * Java API
-   */
-  def this(resizer: Resizer, w: Duration) = this(0, Nil, w, Some(resizer))
-}

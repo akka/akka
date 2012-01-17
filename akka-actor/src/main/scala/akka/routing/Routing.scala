@@ -44,7 +44,8 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     abandonedRoutees foreach underlying.unwatch
   }
 
-  val route = _props.routerConfig.createRoute(routeeProps, actorContext)
+  private val routeeProvider = _props.routerConfig.createRouteeProvider(this, actorContext)
+  val route = _props.routerConfig.createRoute(routeeProps, routeeProvider)
   // initial resize, before message send
   resize()
 
@@ -91,7 +92,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     for (r ← _props.routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true)) {
         try {
-          r.resize(routeeProps, actorContext, routees, _props.routerConfig)
+          r.resize(routeeProps, routeeProvider)
         } finally {
           resizeProgress.set(false)
         }
@@ -120,7 +121,10 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
  */
 trait RouterConfig {
 
-  def createRoute(routeeProps: Props, actorContext: ActorContext): Route
+  def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route
+
+  protected[akka] def createRouteeProvider(ref: RoutedActorRef, context: ActorContext) =
+    new RouteeProvider(ref, context, resizer)
 
   def createActor(): Router = new Router {}
 
@@ -134,32 +138,6 @@ trait RouterConfig {
 
   protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
 
-  def createRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
-    case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
-    case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
-    case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
-  }
-
-  protected def createAndRegisterRoutees(props: Props, context: ActorContext, nrOfInstances: Int, routees: Iterable[String]): Unit = {
-    if (resizer.isEmpty) {
-      registerRoutees(context, createRoutees(props, context, nrOfInstances, routees))
-    }
-  }
-
-  /**
-   * Adds new routees to the router.
-   */
-  def registerRoutees(context: ActorContext, routees: IndexedSeq[ActorRef]): Unit = {
-    context.self.asInstanceOf[RoutedActorRef].addRoutees(routees)
-  }
-
-  /**
-   * Removes routees from the router. This method doesn't stop the routees.
-   */
-  def unregisterRoutees(context: ActorContext, routees: IndexedSeq[ActorRef]): Unit = {
-    context.self.asInstanceOf[RoutedActorRef].removeRoutees(routees)
-  }
-
   /**
    * Routers with dynamically resizable number of routees return the [[akka.routing.Resizer]]
    * to use.
@@ -169,25 +147,68 @@ trait RouterConfig {
 }
 
 /**
+ * Factory and registry for routees of the router.
+ * Uses `context.actorOf` to create routees from nrOfInstances property
+ * and `context.actorFor` lookup routees from paths.
+ */
+class RouteeProvider(ref: RoutedActorRef, val context: ActorContext, val resizer: Option[Resizer]) {
+  /**
+   * Adds new routees to the router.
+   */
+  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = {
+    context.self.asInstanceOf[RoutedActorRef].addRoutees(routees)
+  }
+
+  /**
+   * Adds new routees to the router.
+   * Java API.
+   */
+  protected def registerRoutees(routees: java.util.List[ActorRef]): Unit = {
+    import scala.collection.JavaConverters._
+    registerRoutees(routees.asScala.toIndexedSeq)
+  }
+
+  /**
+   * Removes routees from the router. This method doesn't stop the routees.
+   */
+  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = {
+    context.self.asInstanceOf[RoutedActorRef].removeRoutees(routees)
+  }
+
+  def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
+    case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
+    case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+    case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
+  }
+
+  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit = {
+    if (resizer.isEmpty) {
+      registerRoutees(createRoutees(props, nrOfInstances, routees))
+    }
+  }
+
+  /**
+   * All routees of the router
+   */
+  def routees: IndexedSeq[ActorRef] = ref.routees
+
+}
+
+/**
  * Java API for a custom router factory.
  * @see akka.routing.RouterConfig
  */
 abstract class CustomRouterConfig extends RouterConfig {
-  override def createRoute(props: Props, context: ActorContext): Route = {
+  override def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
     // as a bonus, this prevents closing of props and context in the returned Route PartialFunction
-    val customRoute = createCustomRoute(props, context)
+    val customRoute = createCustomRoute(props, routeeProvider)
 
     {
       case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
     }
   }
 
-  def createCustomRoute(props: Props, context: ActorContext): CustomRoute
-
-  protected def registerRoutees(context: ActorContext, routees: java.util.List[ActorRef]): Unit = {
-    import scala.collection.JavaConverters._
-    registerRoutees(context, routees.asScala.toIndexedSeq)
-  }
+  def createCustomRoute(props: Props, routeeProvider: RouteeProvider): CustomRoute
 
 }
 
@@ -254,23 +275,23 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * Oxymoron style.
  */
 case object NoRouter extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext): Route = null
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
 }
 
 /**
  * Router configuration which has no default, i.e. external configuration is required.
  */
 case object FromConfig extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext): Route =
-    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
+    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
  */
 case class FromConfig() extends RouterConfig {
-  def createRoute(props: Props, actorContext: ActorContext): Route =
-    throw new ConfigurationException("router " + actorContext.self + " needs external configuration from file (e.g. application.conf)")
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
+    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 }
 
 object RoundRobinRouter {
@@ -332,21 +353,20 @@ trait RoundRobinLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext): Route = {
-    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
-    val ref = context.self.asInstanceOf[RoutedActorRef]
     val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
-      val _routees = ref.routees
+      val _routees = routeeProvider.routees
       _routees((next.getAndIncrement % _routees.size).asInstanceOf[Int])
     }
 
     {
       case (sender, message) ⇒
         message match {
-          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case Broadcast(msg) ⇒ toAll(sender, routeeProvider.routees)
           case msg            ⇒ List(Destination(sender, getNext()))
         }
     }
@@ -418,18 +438,18 @@ trait RandomLike { this: RouterConfig ⇒
     override def initialValue = SecureRandom.getInstance("SHA1PRNG")
   }
 
-  def createRoute(props: Props, context: ActorContext): Route = {
-    val ref = context.self.asInstanceOf[RoutedActorRef]
-    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
-      ref.routees(random.get.nextInt(ref.routees.size))
+      val _routees = routeeProvider.routees
+      _routees(random.get.nextInt(_routees.size))
     }
 
     {
       case (sender, message) ⇒
         message match {
-          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case Broadcast(msg) ⇒ toAll(sender, routeeProvider.routees)
           case msg            ⇒ List(Destination(sender, getNext()))
         }
     }
@@ -559,13 +579,12 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     case _                ⇒ 0
   }
 
-  def createRoute(props: Props, context: ActorContext): Route = {
-    val ref = context.self.asInstanceOf[RoutedActorRef]
-    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
       // non-local actors mailbox size is unknown, so consider them lowest priority
-      val activeLocal = ref.routees collect { case l: LocalActorRef if !isSuspended(l) ⇒ l }
+      val activeLocal = routeeProvider.routees collect { case l: LocalActorRef if !isSuspended(l) ⇒ l }
       // 1. anyone not processing message and with empty mailbox
       activeLocal.find(a ⇒ !isProcessingMessage(a) && !hasMessages(a)) getOrElse {
         // 2. anyone with empty mailbox
@@ -573,7 +592,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
           // 3. sort on mailbox size
           activeLocal.sortBy(a ⇒ numberOfMessages(a)).headOption getOrElse {
             // 4. no locals, just pick one, random
-            ref.routees(random.get.nextInt(ref.routees.size))
+            val _routees = routeeProvider.routees
+            _routees(random.get.nextInt(_routees.size))
           }
         }
       }
@@ -582,7 +602,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         message match {
-          case Broadcast(msg) ⇒ toAll(sender, ref.routees)
+          case Broadcast(msg) ⇒ toAll(sender, routeeProvider.routees)
           case msg            ⇒ List(Destination(sender, getNext()))
         }
     }
@@ -649,14 +669,13 @@ trait BroadcastLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, context: ActorContext): Route = {
-    val ref = context.self.asInstanceOf[RoutedActorRef]
-    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     {
       case (sender, message) ⇒
         message match {
-          case _ ⇒ toAll(sender, ref.routees)
+          case _ ⇒ toAll(sender, routeeProvider.routees)
         }
     }
   }
@@ -724,16 +743,15 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def within: Duration
 
-  def createRoute(props: Props, context: ActorContext): Route = {
-    val ref = context.self.asInstanceOf[RoutedActorRef]
-    createAndRegisterRoutees(props, context, nrOfInstances, routees)
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     {
       case (sender, message) ⇒
-        val asker = context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
+        val asker = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
         asker.result.pipeTo(sender)
         message match {
-          case _ ⇒ toAll(asker, ref.routees)
+          case _ ⇒ toAll(asker, routeeProvider.routees)
         }
     }
   }
@@ -755,11 +773,11 @@ trait Resizer {
   /**
    * Decide if the capacity of the router need to be changed. Will be invoked when `isTimeForResize`
    * returns true and no other resize is in progress.
-   * Create and register more routees with `routerConfig.registerRoutees(actorContext, newRoutees)
-   * or remove routees with `routerConfig.unregisterRoutees(actorContext, abandonedRoutees)` and
+   * Create and register more routees with `routeeProvider.registerRoutees(newRoutees)
+   * or remove routees with `routeeProvider.unregisterRoutees(abandonedRoutees)` and
    * sending [[akka.actor.PoisonPill]] to them.
    */
-  def resize(props: Props, actorContext: ActorContext, currentRoutees: IndexedSeq[ActorRef], routerConfig: RouterConfig)
+  def resize(props: Props, routeeProvider: RouteeProvider)
 }
 
 case object DefaultResizer {
@@ -849,16 +867,17 @@ case class DefaultResizer(
 
   def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
 
-  def resize(props: Props, actorContext: ActorContext, currentRoutees: IndexedSeq[ActorRef], routerConfig: RouterConfig) {
+  def resize(props: Props, routeeProvider: RouteeProvider) {
+    val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
     if (requestedCapacity > 0) {
-      val newRoutees = routerConfig.createRoutees(props, actorContext, requestedCapacity, Nil)
-      routerConfig.registerRoutees(actorContext, newRoutees)
+      val newRoutees = routeeProvider.createRoutees(props, requestedCapacity, Nil)
+      routeeProvider.registerRoutees(newRoutees)
     } else if (requestedCapacity < 0) {
       val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
-      routerConfig.unregisterRoutees(actorContext, abandon)
-      delayedStop(actorContext.system.scheduler, abandon)
+      routeeProvider.unregisterRoutees(abandon)
+      delayedStop(routeeProvider.context.system.scheduler, abandon)
     }
   }
 
