@@ -23,10 +23,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
             if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
             val nodes = deploy.config.getStringList("target.nodes").asScala
             if (nodes.isEmpty || deploy.routing == NoRouter) d
-            else {
-              val r = new RemoteRouterConfig(deploy.routing, nodes)
-              Some(deploy.copy(routing = r))
-            }
+            else Some(deploy.copy(routing = new RemoteRouterConfig(deploy.routing, nodes)))
         }
       case None ⇒ None
     }

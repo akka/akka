@@ -175,11 +175,14 @@ class RouteeProvider(ref: RoutedActorRef, val context: ActorContext, val resizer
     context.self.asInstanceOf[RoutedActorRef].removeRoutees(routees)
   }
 
-  def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] = (nrOfInstances, routees) match {
-    case (0, Nil) ⇒ throw new IllegalArgumentException("Insufficient information - missing configuration.")
-    case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
-    case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
-  }
+  def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
+    (nrOfInstances, routees) match {
+      case (x, Nil) if x <= 0 ⇒
+        throw new IllegalArgumentException(
+          "Must specify nrOfInstances or routees for [%s]" format context.self.path.toString)
+      case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+      case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
+    }
 
   def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit = {
     if (resizer.isEmpty) {
@@ -748,6 +751,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
     {
       case (sender, message) ⇒
+        // FIXME avoid this cast
         val asker = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
         asker.result.pipeTo(sender)
         message match {

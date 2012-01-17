@@ -69,7 +69,7 @@ The "app" in this case refers to the name of the ``ActorSystem``::
     actor {
       deployment {
         /serviceA/retrieval {
-          remote = "akka://app@10.0.0.1:2552”
+          remote = "akka://app@10.0.0.1:2552"
         }
       }
     }
