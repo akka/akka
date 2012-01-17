@@ -19,7 +19,7 @@ class ActorComponentConfigurationTest extends JUnitSuite  with ShouldMatchers wi
 
     actorEndpointConfig should  have (
       'endpointUri ("actor://path:akka://test/user/$a?autoack=false&blocking=Blocking%28123000000+nanos%29&outTimeout=987000000+nanos"),
-      'path (Path.fromCamelPath("path:akka://test/user/$a")),
+      'path (ActorEndpointPath.fromCamelPath("path:akka://test/user/$a")),
       'blocking (Blocking(123000000 nanos)),
       'autoack (false),
       'outTimeout (987000000 nanos)

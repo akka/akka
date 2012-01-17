@@ -1,6 +1,6 @@
 package akka.camel
 
-import internal.component.Path
+import internal.component.ActorEndpointPath
 import org.apache.camel.model.RouteDefinition
 import akka.actor.ActorRef
 
@@ -9,7 +9,7 @@ object  ActorRouteDefinition {
 }
 
 class ActorRouteDefinition(rd: RouteDefinition){
-  def to(actorRef: ActorRef) = rd.to(Path(actorRef).toCamelPath)
+  def to(actorRef: ActorRef) = rd.to(ActorEndpointPath(actorRef).toCamelPath)
 }
 
 

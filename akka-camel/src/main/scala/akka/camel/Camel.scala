@@ -1,6 +1,6 @@
 package akka.camel
 
-import internal.component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, Path}
+import internal.component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, ActorEndpointPath}
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
@@ -122,7 +122,7 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
     idempotentRegistry ! RegisterConsumer(route, consumer.self, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
-  private[camel] def findActor(path: Path) : Option[ActorRef] = {
+  private[camel] def findActor(path: ActorEndpointPath) : Option[ActorRef] = {
     //TODO this is a bit hacky, maybe there is another way?
     val actorRef = actorSystem.actorFor(path.actorPath)
     actorRef.path.name match {

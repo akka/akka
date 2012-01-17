@@ -22,10 +22,12 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
 
   "ActorProducer" when {
+
+    "consumer actor doesnt exist" should {
+      "set failure message on exchange" in (pending)
+    }
+
     "synchronous" when {
-      "consumer actor doesnt exist" should {
-        "set failure message on exchange" in (pending)
-      }
 
       "in-only" should{
         def process() = {
@@ -324,9 +326,9 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   }
 
-  def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
+  def config(actorPath: String = "path:akka://test/path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
     new ActorEndpointConfig {
-      val path = new Path(actorPath)
+      val path = ActorEndpointPath.fromCamelPath(actorPath)
       val getEndpointUri = endpointUri
       blocking = isBlocking
       autoack = isAutoAck
@@ -335,7 +337,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def prepareMocks(actor: ActorRef, message: Message = message, outCapable: Boolean) {
-    when(camel.findActor(any[Path])) thenReturn Option(actor)
+    when(camel.findActor(any[ActorEndpointPath])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable
   }

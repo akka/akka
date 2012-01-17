@@ -18,16 +18,20 @@ import akka.util.duration._
 import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 import java.util.concurrent.TimeoutException
 
-private[camel] case class Path(actorPath: String) {
+private[camel] case class ActorEndpointPath private(actorPath: String) {
   require(actorPath != null)
   require(actorPath.length() > 0)
   def toCamelPath =  "actor://path:%s" format actorPath
 }
 
-private[camel] object Path{
-  def apply(actorRef: ActorRef) = new Path(actorRef.path.toString)
+private[camel] object ActorEndpointPath{
+  def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
+
+  /**
+   * Expects path in a format: path:%s
+   */
   def fromCamelPath(camelPath : String) =  camelPath match {
-    case id if id startsWith "path:"   => new Path(id substring 5)
+    case id if id startsWith "path:"   => new ActorEndpointPath(id substring 5)
     case _ => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
   }
 }
@@ -44,7 +48,7 @@ private[camel] object Path{
  */
 class ActorComponent(camel : Camel) extends DefaultComponent {
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
-    val path = Path.fromCamelPath(remaining)
+    val path = ActorEndpointPath.fromCamelPath(remaining)
     new ActorEndpoint(uri, this, path, camel)
   }
 }
@@ -72,7 +76,7 @@ class ActorComponent(camel : Camel) extends DefaultComponent {
  */
 class ActorEndpoint(uri: String,
                     comp: ActorComponent,
-                    val path: Path,
+                    val path: ActorEndpointPath,
                     camel : Camel) extends DefaultEndpoint(uri, comp)  with ActorEndpointConfig{
 
 
@@ -95,8 +99,7 @@ class ActorEndpoint(uri: String,
 }
 
 trait ActorEndpointConfig{
-  def getEndpointUri : String
-  def path : Path
+  def path : ActorEndpointPath
   /**
    * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
    * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
@@ -246,7 +249,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
 
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
-  private[this] def actorFor(path:Path) : ActorRef =
+  private[this] def actorFor(path:ActorEndpointPath) : ActorRef =
     camel.findActor(path) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter)  =
