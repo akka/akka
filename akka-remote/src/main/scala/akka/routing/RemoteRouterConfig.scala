@@ -22,8 +22,7 @@ import akka.remote.RemoteAddressExtractor
  */
 class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
 
-  override protected[akka] def createRouteeProvider(ref: RoutedActorRef, context: ActorContext) =
-    new RemoteRouteeProvider(nodes, ref, context, resizer)
+  override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
 
   override def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
     local.createRoute(routeeProps, routeeProvider)
@@ -41,8 +40,8 @@ class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends R
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[String], _ref: RoutedActorRef, _context: ActorContext, _resizer: Option[Resizer])
-  extends RouteeProvider(_ref, _context, _resizer) {
+class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _resizer: Option[Resizer])
+  extends RouteeProvider(_context, _resizer) {
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter = {

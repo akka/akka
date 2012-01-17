@@ -33,18 +33,30 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   private var _routees: IndexedSeq[ActorRef] = IndexedSeq.empty[ActorRef] // this MUST be initialized during createRoute
   def routees = _routees
 
-  def addRoutees(newRoutees: IndexedSeq[ActorRef]) {
+  /**
+   * Adds the routees to existing routees.
+   * Adds death watch of the routees so that they are removed when terminated.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `RouterConfig.createRoute` and `Resizer.resize`
+   */
+  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]) {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
     newRoutees foreach underlying.watch
   }
 
-  def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]) {
+  /**
+   * Adds the routees to existing routees.
+   * Removes death watch of the routees. Doesn't stop the routees.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `Resizer.resize`
+   */
+  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]) {
     _routees = _routees diff abandonedRoutees
     abandonedRoutees foreach underlying.unwatch
   }
 
-  private val routeeProvider = _props.routerConfig.createRouteeProvider(this, actorContext)
+  private val routeeProvider = _props.routerConfig.createRouteeProvider(actorContext)
   val route = _props.routerConfig.createRoute(routeeProps, routeeProvider)
   // initial resize, before message send
   resize()
@@ -123,8 +135,7 @@ trait RouterConfig {
 
   def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route
 
-  protected[akka] def createRouteeProvider(ref: RoutedActorRef, context: ActorContext) =
-    new RouteeProvider(ref, context, resizer)
+  def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
 
   def createActor(): Router = new Router {}
 
@@ -151,28 +162,38 @@ trait RouterConfig {
  * Uses `context.actorOf` to create routees from nrOfInstances property
  * and `context.actorFor` lookup routees from paths.
  */
-class RouteeProvider(ref: RoutedActorRef, val context: ActorContext, val resizer: Option[Resizer]) {
+class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
+
   /**
-   * Adds new routees to the router.
+   * Adds the routees to the router.
+   * Adds death watch of the routees so that they are removed when terminated.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `RouterConfig.createRoute` and `Resizer.resize`.
    */
   def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    context.self.asInstanceOf[RoutedActorRef].addRoutees(routees)
+    routedRef.addRoutees(routees)
   }
 
   /**
-   * Adds new routees to the router.
+   * Adds the routees to the router.
+   * Adds death watch of the routees so that they are removed when terminated.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `RouterConfig.createRoute` and `Resizer.resize`.
    * Java API.
    */
-  protected def registerRoutees(routees: java.util.List[ActorRef]): Unit = {
+  def registerRoutees(routees: java.util.List[ActorRef]): Unit = {
     import scala.collection.JavaConverters._
     registerRoutees(routees.asScala.toIndexedSeq)
   }
 
   /**
    * Removes routees from the router. This method doesn't stop the routees.
+   * Removes death watch of the routees.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `Resizer.resize`.
    */
   def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    context.self.asInstanceOf[RoutedActorRef].removeRoutees(routees)
+    routedRef.removeRoutees(routees)
   }
 
   def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
@@ -193,7 +214,9 @@ class RouteeProvider(ref: RoutedActorRef, val context: ActorContext, val resizer
   /**
    * All routees of the router
    */
-  def routees: IndexedSeq[ActorRef] = ref.routees
+  def routees: IndexedSeq[ActorRef] = routedRef.routees
+
+  private def routedRef = context.self.asInstanceOf[RoutedActorRef]
 
 }
 
