@@ -118,9 +118,9 @@ object ActorSystem {
  * system.actorOf(props)
  *
  * // Scala
- * system.actorOf(Props[MyActor]("name")
- * system.actorOf(Props[MyActor]
- * system.actorOf(Props(new MyActor(...))
+ * system.actorOf(Props[MyActor], "name")
+ * system.actorOf(Props[MyActor])
+ * system.actorOf(Props(new MyActor(...)))
  *
  * // Java
  * system.actorOf(MyActor.class);
