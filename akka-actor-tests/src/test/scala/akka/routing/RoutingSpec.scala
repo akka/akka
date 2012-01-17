@@ -45,9 +45,9 @@ object RoutingSpec {
 
   class MyRouter(config: Config) extends RouterConfig {
     val foo = config.getString("foo")
-    def createRoute(routeeProps: Props, actorContext: ActorContext): Route = {
-      val routees = IndexedSeq(actorContext.actorOf(Props[Echo]))
-      registerRoutees(actorContext, routees)
+    def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+      val routees = IndexedSeq(routeeProvider.context.actorOf(Props[Echo]))
+      routeeProvider.registerRoutees(routees)
 
       {
         case (sender, message) ⇒ Nil
@@ -542,13 +542,13 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     case class VoteCountRouter() extends RouterConfig {
 
       //#crRoute
-      def createRoute(routeeProps: Props, actorContext: ActorContext): Route = {
-        val democratActor = actorContext.actorOf(Props(new DemocratActor()), "d")
-        val republicanActor = actorContext.actorOf(Props(new RepublicanActor()), "r")
+      def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+        val democratActor = routeeProvider.context.actorOf(Props(new DemocratActor()), "d")
+        val republicanActor = routeeProvider.context.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)
 
         //#crRegisterRoutees
-        registerRoutees(actorContext, routees)
+        routeeProvider.registerRoutees(routees)
         //#crRegisterRoutees
 
         //#crRoutingLogic

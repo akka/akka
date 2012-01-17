@@ -14,7 +14,6 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
 
   override protected def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._
-    import akka.util.ReflectiveAccess._
 
     super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒
@@ -24,16 +23,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
             if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
             val nodes = deploy.config.getStringList("target.nodes").asScala
             if (nodes.isEmpty || deploy.routing == NoRouter) d
-            else {
-              val r = deploy.routing match {
-                case RoundRobinRouter(x, _, resizer)                     ⇒ RemoteRoundRobinRouter(x, nodes, resizer)
-                case RandomRouter(x, _, resizer)                         ⇒ RemoteRandomRouter(x, nodes, resizer)
-                case SmallestMailboxRouter(x, _, resizer)                ⇒ RemoteSmallestMailboxRouter(x, nodes, resizer)
-                case BroadcastRouter(x, _, resizer)                      ⇒ RemoteBroadcastRouter(x, nodes, resizer)
-                case ScatterGatherFirstCompletedRouter(x, _, w, resizer) ⇒ RemoteScatterGatherFirstCompletedRouter(x, nodes, w, resizer)
-              }
-              Some(deploy.copy(routing = r))
-            }
+            else Some(deploy.copy(routing = new RemoteRouterConfig(deploy.routing, nodes)))
         }
       case None ⇒ None
     }
