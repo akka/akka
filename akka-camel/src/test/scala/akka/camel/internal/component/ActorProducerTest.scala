@@ -14,6 +14,7 @@ import java.lang.String
 import akka.actor.{ActorRef, Props, ActorSystem, Actor}
 import akka.camel._
 import org.scalatest.{Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach}
+import akka.camel.TestSupport._
 
 
 
@@ -292,20 +293,6 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     new TestableProducer(config(isBlocking = blocking, isAutoAck = autoAck, _outTimeout = outTimeout), camel)
   }
 
-  def time[A](block : => A) : Duration ={
-    val start = System.currentTimeMillis()
-    block
-    val duration = System.currentTimeMillis() - start
-    duration millis
-  }
-
-  def timeAndRes[A](block : => A) : (Duration,A) ={
-    val start = System.currentTimeMillis()
-    val res = block
-    val duration = System.currentTimeMillis() - start
-    (duration millis, res)
-  }
-
   def createAsyncCallback = new TestAsyncCallback
 
   class TestAsyncCallback extends AsyncCallback{
@@ -339,7 +326,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def config(actorPath: String = "test-path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
     new ActorEndpointConfig {
-      val path = Path(actorPath)
+      val path = new Path(actorPath)
       val getEndpointUri = endpointUri
       blocking = isBlocking
       autoack = isAutoAck

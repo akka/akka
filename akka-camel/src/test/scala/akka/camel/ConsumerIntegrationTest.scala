@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
 import akka.util.Duration
-import java.util.concurrent.{TimeoutException, CountDownLatch}
 import TestSupport._
+import java.util.concurrent.{TimeoutException, CountDownLatch}
 
 class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach{
   implicit var system : ActorSystem = _
@@ -65,6 +65,21 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
       }
     })
     camel.sendTo("direct:a1", msg="some message") should be ("received some message")
+  }
+
+  it should  "support blocking, in-out messaging" in  {
+    start(new Consumer {
+      def endpointUri = "direct:a1"
+      override def blocking = Blocking(200 millis)
+
+      protected def receive = {
+        case m: Message =>{
+          Thread.sleep(150)
+          sender ! "received "+m.bodyAs[String]
+        }
+      }
+    })
+    time(camel.sendTo("direct:a1", msg="some message")) should be >=(150 millis)
   }
 
   it should "time-out if consumer is slow" in {

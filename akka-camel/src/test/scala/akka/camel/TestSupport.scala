@@ -52,6 +52,13 @@ private[camel] object TestSupport {
     }
   }
 
+  def time[A](block : => A) : Duration ={
+    val start = System.currentTimeMillis()
+    block
+    val duration = System.currentTimeMillis() - start
+    duration millis
+  }
+
 
 
 }

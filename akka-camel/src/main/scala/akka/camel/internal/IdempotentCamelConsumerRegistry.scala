@@ -4,8 +4,8 @@ package akka.camel.internal
  * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
-import akka.camel.internal.component.BlockingOrNotTypeConverter
 import akka.camel._
+import component.{DurationTypeConverter, BlockingOrNotTypeConverter}
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
@@ -94,7 +94,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext : CamelContext
 private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : ActorRef,  config: ConsumerConfig) extends RouteBuilder {
 
   //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
-  protected def targetActorUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, BlockingOrNotTypeConverter.toString(config.blocking), config.autoack, config.outTimeout.toNanos)
+  protected def targetActorUri = "actor:path:%s?blocking=%s&autoack=%s&outTimeout=%s" format (consumer.path, BlockingOrNotTypeConverter.toString(config.blocking), config.autoack, DurationTypeConverter.toString(config.outTimeout))
 
 
   def configure = {

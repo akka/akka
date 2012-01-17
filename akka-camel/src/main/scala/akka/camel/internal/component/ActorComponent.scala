@@ -27,7 +27,7 @@ private[camel] case class Path(actorPath: String) {
 private[camel] object Path{
   def apply(actorRef: ActorRef) = new Path(actorRef.path.toString)
   def fromCamelPath(camelPath : String) =  camelPath match {
-    case id if id startsWith "path:"   => Path(id substring 5)
+    case id if id startsWith "path:"   => new Path(id substring 5)
     case _ => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
   }
 }
@@ -266,7 +266,12 @@ class ActorNotRegisteredException(uri: String) extends RuntimeException{
 
 
 object DurationTypeConverter extends CamelTypeConverter {
-  def convertTo[T](`type`: Class[T], value: AnyRef) = Duration.fromNanos(value.toString.toLong).asInstanceOf[T]
+  def convertTo[T](`type`: Class[T], value: AnyRef) = {
+    require(value.toString.endsWith(" nanos"))
+    Duration.fromNanos(value.toString.dropRight(6).toLong).asInstanceOf[T]
+  }
+
+  def toString(duration: Duration) = duration.toNanos +" nanos"
 }
 
 /**

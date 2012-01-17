@@ -25,3 +25,4 @@ class BlockingOrNotTypeConverterTest extends FlatSpec with ShouldMatchers{
   }
 
 }
+
