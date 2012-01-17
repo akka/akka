@@ -15,11 +15,6 @@ object DeployerSpec {
       akka.actor.deployment {
         /service1 {
         }
-        /service3 {
-          create-as {
-            class = "akka.actor.DeployerSpec$RecipeActor"
-          }
-        }
         /service-direct {
           router = from-code
         }
@@ -68,7 +63,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          None,
           NoRouter,
           LocalScope)))
     }
@@ -77,20 +71,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       val service = "/undefined"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be(None)
-    }
-
-    "be able to parse 'akka.actor.deployment._' with recipe" in {
-      val service = "/service3"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
-      deployment must be('defined)
-
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          Some(ActorRecipe(classOf[DeployerSpec.RecipeActor])),
-          NoRouter,
-          LocalScope)))
     }
 
     "detect invalid number-of-instances" in {
@@ -137,7 +117,6 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
       deployment.get.path must be(service)
-      deployment.get.recipe must be(None)
       deployment.get.routing.getClass must be(expected.getClass)
       deployment.get.routing.resizer must be(expected.resizer)
       deployment.get.scope must be(LocalScope)

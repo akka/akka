@@ -41,7 +41,6 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          None,
           RoundRobinRouter(3),
           RemoteScope(UnparsedSystemAddress(Some("sys"), UnparsedTransportAddress("akka", "wallace", 2552))))))
     }

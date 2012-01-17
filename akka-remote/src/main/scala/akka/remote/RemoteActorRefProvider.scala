@@ -103,7 +103,7 @@ class RemoteActorRefProvider(
       })
 
       deployment match {
-        case Some(Deploy(_, _, _, _, RemoteScope(address))) ⇒
+        case Some(Deploy(_, _, _, RemoteScope(address))) ⇒
           // FIXME RK this should be done within the deployer, i.e. the whole parsing business
           address.parse(remote.transports) match {
             case Left(x) ⇒
