@@ -49,11 +49,18 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "never completed" must {
       behave like emptyFuture(_(Promise()))
       "return supplied value on timeout" in {
+        val f = new RuntimeException("br0ken")
         val timedOut = Promise.successful[String]("Timedout")
-        val promise = Promise.failed[String](new RuntimeException("br0ken")) or timedOut
+        val promise1 = Promise.failed[String](f) or timedOut
         val promise2 = timedOut or Promise[String]()
-        Await.result(promise, timeout.duration) must be("Timedout")
+        val promise3 = Promise.failed[String](f) or Promise.failed[String](f) or timedOut
+        val promise4 = Promise.failed[String](f) or Promise.failed[String](new RuntimeException("last"))
+        Await.result(promise1, timeout.duration) must be("Timedout")
         Await.result(promise2, timeout.duration) must be("Timedout")
+        Await.result(promise3, timeout.duration) must be("Timedout")
+        intercept[RuntimeException] {
+          Await.result(promise4, timeout.duration)
+        }.getMessage must be("last")
       }
     }
     "completed with a result" must {
