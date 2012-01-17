@@ -62,7 +62,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _ref: RoutedActorRef, _conte
         val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + i
-          val deploy = Deploy("", ConfigFactory.empty(), None, props.routerConfig, RemoteScope(nodeAddressIter.next))
+          val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
           impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
         })
 
