@@ -7,8 +7,21 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 
+object ConfiguredLocalRoutingSpec {
+  val config = """
+    akka {
+      actor {
+        default-dispatcher {
+          core-pool-size-min = 8
+          core-pool-size-max = 16
+        }
+      }
+    }
+  """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.config) with DefaultTimeout with ImplicitSender {
 
   val deployer = system.asInstanceOf[ActorSystemImpl].provider.deployer
 
