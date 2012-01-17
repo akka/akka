@@ -4,14 +4,13 @@ package akka.camel.internal.component
 import org.junit._
 import org.scalatest.junit.JUnitSuite
 
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.matchers.ShouldMatchers
 import akka.util.duration._
 import akka.camel.Blocking
 import akka.camel.TestSupport.SharedCamelSystem
 import org.apache.camel.Component
 
-class ActorComponentConfigurationTest extends JUnitSuite  with ShouldMatchers with MockitoSugar with SharedCamelSystem{
+class ActorComponentConfigurationTest extends JUnitSuite  with ShouldMatchers with SharedCamelSystem{
 
   val component: Component = camel.context.getComponent("actor")
 
