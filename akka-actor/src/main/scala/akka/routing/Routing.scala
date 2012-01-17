@@ -351,10 +351,7 @@ trait BroadcastLike { this: RouterConfig ⇒
     createAndRegisterRoutees(props, context, nrOfInstances, routees)
 
     {
-      case (sender, message) ⇒
-        message match {
-          case _ ⇒ toAll(sender, ref.routees)
-        }
+      case (sender, message) ⇒ toAll(sender, ref.routees)
     }
   }
 }
@@ -407,12 +404,9 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = context.asInstanceOf[ActorCell].systemImpl.provider
-        val promise = Promise[Any]()(provider.dispatcher)
-        val asker = provider.ask(promise, Timeout(within)).get
-        promise.pipeTo(sender)
-        message match {
-          case _ ⇒ toAll(asker, ref.routees)
-        }
+        val asker = provider.ask(Timeout(within)).get
+        asker.result.pipeTo(sender)
+        toAll(asker, ref.routees)
     }
   }
 }

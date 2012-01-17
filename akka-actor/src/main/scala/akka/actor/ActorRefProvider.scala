@@ -104,7 +104,7 @@ trait ActorRefProvider {
    * Create AskActorRef and register it properly so it can be serialized/deserialized;
    * caller needs to send the message.
    */
-  def ask(result: Promise[Any], within: Timeout): Option[ActorRef]
+  def ask(within: Timeout): Option[PromiseActorRef]
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
@@ -494,12 +494,13 @@ class LocalActorRefProvider(
     }
   }
 
-  def ask(result: Promise[Any], within: Timeout): Option[ActorRef] = {
+  def ask(within: Timeout): Option[PromiseActorRef] = {
     (if (within == null) settings.ActorTimeout else within) match {
       case t if t.duration.length <= 0 ⇒ None
       case t ⇒
         val path = tempPath()
         val name = path.name
+        val result = Promise[Any]()(dispatcher)
         val a = new PromiseActorRef(path, tempContainer, result, deathWatch)
         tempContainer.addChild(name, a)
         val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
@@ -509,24 +510,6 @@ class LocalActorRefProvider(
         }
 
         Some(a)
-
-      // Alternative implementation:
-      // Create a full-blown actor to complete the promise.
-      // This would also work but not as efficient as PromiseActorRef.
-      //val b = actorOf(system, Props(new Actor {
-      //  def receive = {
-      //    case Status.Success(r) ⇒ result.success(r)
-      //    case Status.Failure(f) ⇒ result.failure(f)
-      //    case other             ⇒ result.success(other)
-      //  }
-      //}), systemGuardian, systemGuardian.path / "promise" / tempName(), false, None)
-      //val ff = system.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
-      //result onComplete { _ ⇒
-      //  b.stop()
-      //  ff.cancel()
-      //}
-      //
-      //Some(b)
     }
   }
 }

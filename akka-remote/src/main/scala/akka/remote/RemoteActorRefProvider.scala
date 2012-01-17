@@ -138,7 +138,7 @@ class RemoteActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
-  def ask(result: Promise[Any], within: Timeout): Option[ActorRef] = local.ask(result, within)
+  def ask(within: Timeout): Option[PromiseActorRef] = local.ask(within)
 
   /**
    * Using (checking out) actor on a specific node.
@@ -160,12 +160,12 @@ trait RemoteRef extends ActorRefScope {
  * This reference is network-aware (remembers its origin) and immutable.
  */
 private[akka] class RemoteActorRef private[akka] (
-  override val provider: RemoteActorRefProvider,
+  val provider: RemoteActorRefProvider,
   remote: RemoteSupport[ParsedTransportAddress],
   val path: ActorPath,
   val getParent: InternalActorRef,
   loader: Option[ClassLoader])
-  extends InternalActorRef with RemoteRef {
+  extends InternalActorRef with RemoteRef with ActorRefWithProvider {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream

@@ -168,6 +168,13 @@ trait LocalRef extends ActorRefScope {
 }
 
 /**
+ * Trait for matching on ActorRefs which have access to a provider; this is used in akka.patterns.ask.
+ */
+trait ActorRefWithProvider { this: InternalActorRef ⇒
+  def provider: ActorRefProvider
+}
+
+/**
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  *
@@ -180,7 +187,6 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
   def getParent: InternalActorRef
-  def provider: ActorRefProvider
   /**
    * Obtain ActorRef by possibly traversing the actor tree or looking it up at
    * some provider-specific location. This method shall return the end result,
@@ -212,7 +218,7 @@ private[akka] class LocalActorRef private[akka] (
   val systemService: Boolean = false,
   _receiveTimeout: Option[Duration] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends InternalActorRef with LocalRef {
+  extends InternalActorRef with LocalRef with ActorRefWithProvider {
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -341,8 +347,7 @@ case class SerializedActorRef(path: String) {
 trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def getParent: InternalActorRef = Nobody
-  def provider: ActorRefProvider =
-    throw new UnsupportedOperationException("Not supported for [%s]".format(getClass.getName))
+
   def getChild(names: Iterator[String]): InternalActorRef = {
     val dropped = names.dropWhile(_.isEmpty)
     if (dropped.isEmpty) this
@@ -466,10 +471,14 @@ class AskTimeoutException(message: String, cause: Throwable) extends TimeoutExce
   def this(message: String) = this(message, null: Throwable)
 }
 
+/**
+ * Akka private optimized representation of the temporary actor spawned to 
+ * receive the reply to an "ask" operation.
+ */
 private[akka] final class PromiseActorRef(
   val path: ActorPath,
   override val getParent: InternalActorRef,
-  private final val result: Promise[Any],
+  val result: Promise[Any],
   val deathWatch: DeathWatch) extends MinimalActorRef {
 
   final val running = new AtomicBoolean(true)

@@ -8,7 +8,6 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
 import akka.dispatch.Future
-import akka.Patterns
 
 //#imports1
 
@@ -221,6 +220,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "using ask" in {
     //#using-ask
+    import akka.patterns.ask
+
     class MyActor extends Actor {
       def receive = {
         case x: String ⇒ sender ! x.toUpperCase
@@ -230,10 +231,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     val myActor = system.actorOf(Props(new MyActor), name = "myactor")
     implicit val timeout = system.settings.ActorTimeout
-    val future = Patterns.ask(myActor, "hello")
+    val future = ask(myActor, "hello")
     for (x ← future) println(x) //Prints "hello"
 
-    val result: Future[Int] = for (x ← Patterns.ask(myActor, 3).mapTo[Int]) yield { 2 * x }
+    val result: Future[Int] = for (x ← ask(myActor, 3).mapTo[Int]) yield { 2 * x }
     //#using-ask
 
     system.stop(myActor)
