@@ -420,11 +420,22 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
-   * Creates a Future that will be the result of the first completed Future of this and the Future that was passed into this.
-   * This is semantically the same as: Future.firstCompletedOf(Seq(this, that))
+   * Returns a new Future that is either the successful result of this Future, the successful result of that Future,
+   * or the failure from either this or that.
    */
-  // TODO ticket #1650
-  def orElse[A >: T](that: Future[A]): Future[A] = Future.firstCompletedOf(List(this, that))
+  def or[U >: T](that: Future[U]): Future[U] = {
+    val p = Promise[U]()
+    def register(to: Future[U]) = to onComplete {
+      case r @ Right(_) ⇒ p tryComplete r
+      case l @ Left(_) ⇒ that.value match {
+        case Some(Left(_)) ⇒ p tryComplete l //If he failed, race for setting failure
+        case _             ⇒ // Either "that" was successful, or he's not done yet, let him win
+      }
+    }
+    register(this)
+    register(that)
+    p
+  }
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
