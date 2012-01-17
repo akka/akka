@@ -154,11 +154,6 @@ abstract class ActorSystem extends ActorRefFactory {
   def logConfiguration(): Unit
 
   /**
-   * The logical node name where this actor system resides.
-   */
-  def nodename: String
-
-  /**
    * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
    */
   def /(name: String): ActorPath
@@ -373,7 +368,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def guardian: InternalActorRef = provider.guardian
   def systemGuardian: InternalActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
-  def nodename: String = provider.nodename
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path

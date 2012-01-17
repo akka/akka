@@ -11,7 +11,7 @@ object DirectRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSp
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! context.system.nodename
+      case "identify" ⇒ sender ! self.path.address.hostPort
     }
   }
 
@@ -52,7 +52,7 @@ class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(DirectRoutedRe
       val actor = system.actorOf(Props[SomeActor], "service-hello")
       actor.isInstanceOf[RemoteActorRef] must be(true)
 
-      Await.result(actor ? "identify", timeout.duration) must equal("node1")
+      Await.result(actor ? "identify", timeout.duration) must equal("AkkaRemoteSpec@localhost:9991")
 
       barrier("done")
     }

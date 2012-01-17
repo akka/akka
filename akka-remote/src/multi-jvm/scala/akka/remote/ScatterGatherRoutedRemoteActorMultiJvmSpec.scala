@@ -10,7 +10,7 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMul
   override def NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! context.system.nodename
+      case "hit" ⇒ sender ! self.path.address.hostPort
       case "end" ⇒ context.stop(self)
     }
   }
@@ -91,7 +91,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(Scatter
 
       val replies = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
         case name: String ⇒ (name, 1)
-      }).foldLeft(Map("node1" -> 0, "node2" -> 0, "node3" -> 0)) {
+      }).foldLeft(Map("AkkaRemoteSpec@localhost:9991" -> 0, "AkkaRemoteSpec@localhost:9992" -> 0, "AkkaRemoteSpec@localhost:9993" -> 0)) {
         case (m, (n, c)) ⇒ m + (n -> (m(n) + c))
       }
 

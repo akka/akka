@@ -3,7 +3,7 @@ package akka.remote
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
+class RemoteConfigSpec extends AkkaSpec("") {
 
   "RemoteExtension" must {
     "be able to parse remote and cluster config elements" in {
@@ -40,7 +40,6 @@ class RemoteConfigSpec extends AkkaSpec("akka.cluster.nodename = node1") {
 
       // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
       //akka.cluster
-      getString("akka.cluster.nodename") must equal("node1")
       getStringList("akka.cluster.seed-nodes") must equal(new java.util.ArrayList[String])
 
       //   getMilliseconds("akka.cluster.max-time-to-wait-until-connected") must equal(30 * 1000)

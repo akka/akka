@@ -159,21 +159,20 @@ You can define specific JVM options for each of the spawned JVMs. You do that by
 a file named after the node in the test with suffix ``.opts`` and put them in the same
 directory as the test.
 
-For example, to feed the JVM options ``-Dakka.cluster.nodename=node1`` and
-``-Dakka.remote.port=9991`` to the ``SampleMultiJvmNode1`` let's create three ``*.opts`` files
-and add the options to them.
+For example, to feed the JVM options ``-Dakka.remote.port=9991`` to the ``SampleMultiJvmNode1``
+let's create three ``*.opts`` files and add the options to them.
 
 ``SampleMultiJvmNode1.opts``::
 
-    -Dakka.cluster.nodename=node1 -Dakka.remote.port=9991
+    -Dakka.remote.port=9991
 
 ``SampleMultiJvmNode2.opts``::
 
-    -Dakka.cluster.nodename=node2 -Dakka.remote.port=9992
+    -Dakka.remote.port=9992
 
 ``SampleMultiJvmNode3.opts``::
 
-    -Dakka.cluster.nodename=node3 -Dakka.remote.port=9993
+    -Dakka.remote.port=9993
 
 
 Overriding configuration options
@@ -188,15 +187,15 @@ For example, to override the configuration option ``akka.cluster.name`` let's cr
 
 ``SampleMultiJvmNode1.conf``::
 
-    akka.cluster.name = "test-cluster"
+    akka.remote.port = 9991
 
 ``SampleMultiJvmNode2.conf``::
 
-    akka.cluster.name = "test-cluster"
+    akka.remote.port = 9992
 
 ``SampleMultiJvmNode3.conf``::
 
-    akka.cluster.name = "test-cluster"
+    akka.remote.port = 9993
 
 
 ScalaTest
@@ -277,7 +276,6 @@ something in coordination::
       "A cluster" must {
 
         "have jvm options" in {
-          System.getProperty("akka.cluster.nodename", "") must be("node1")
           System.getProperty("akka.remote.port", "") must be("9991")
           akka.config.Config.config.getString("test.name", "") must be("node1")
         }
@@ -298,7 +296,6 @@ something in coordination::
       "A cluster" must {
 
         "have jvm options" in {
-          System.getProperty("akka.cluster.nodename", "") must be("node2")
           System.getProperty("akka.remote.port", "") must be("9992")
           akka.config.Config.config.getString("test.name", "") must be("node2")
         }

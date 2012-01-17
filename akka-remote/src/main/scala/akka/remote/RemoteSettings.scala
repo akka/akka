@@ -29,11 +29,6 @@ class RemoteSettings(val config: Config, val systemName: String) {
     case RemoteAddressExtractor(addr) ⇒ addr.transport
   }
 
-  val NodeName: String = config.getString("akka.cluster.nodename") match {
-    case ""    ⇒ throw new ConfigurationException("Configuration option 'akka.cluster.nodename' must be non-empty.")
-    case value ⇒ value
-  }
-
   val serverSettings = new RemoteServerSettings
   val clientSettings = new RemoteClientSettings
 

@@ -19,7 +19,6 @@ object RemoteRouterSpec {
 class RemoteRouterSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
-  cluster.nodename = Nonsense
   remote.server {
     hostname = localhost
     port = 12345

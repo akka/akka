@@ -11,7 +11,6 @@ import com.typesafe.config._
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
       akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-      akka.cluster.nodename = Whatever
       akka.actor.deployment {
         /user/service2 {
           router = round-robin

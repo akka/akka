@@ -39,8 +39,6 @@ trait ActorRefProvider {
    */
   def deathWatch: DeathWatch
 
-  def nodename: String
-
   /**
    * The root path for all actors within this actor system, including remote
    * address if enabled.
@@ -284,9 +282,6 @@ class LocalActorRefProvider(
       deadLetters,
       new RootActorPath(LocalAddress(_systemName)),
       new Deployer(settings))
-
-  val nodename: String = "local"
-  val clustername: String = "local"
 
   val log = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
 

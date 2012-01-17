@@ -110,7 +110,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
       }
     }
 
-    log.info("Starting remote server on [{}] with node name [{}]", remoteAddress, provider.nodename)
+    log.info("Starting remote server on [{}@{}]", system.name, remoteAddress)
   }
 }
 
@@ -153,7 +153,7 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
 
   override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
     case message: DaemonMsg ⇒
-      log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, remote.remoteSettings.NodeName)
+      log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address.hostPort)
       message match {
         case DaemonMsgCreate(factory, path, supervisor) ⇒
           import remote.remoteAddress
