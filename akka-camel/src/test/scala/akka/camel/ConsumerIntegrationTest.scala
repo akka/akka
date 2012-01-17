@@ -40,12 +40,16 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     verify(mockCamel).registerConsumer(the("file://abc"), any[TestActor], any[Duration])
   }
 
+  //TODO test manualAck
+
   //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
   it should "fail if camel is not started" in (pending)
 
-  it should "throw FailedToCreateRouteException, if endpoint is invalid" in {
+  it should "throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
+    val actorRef = system.actorOf(Props(new TestActor( uri="some invalid uri")))
+
     intercept[FailedToCreateRouteException]{
-      start(new TestActor( uri="some invalid uri"))
+      CamelExtension(system).awaitActivation(actorRef, 1 second)
     }
   }
 

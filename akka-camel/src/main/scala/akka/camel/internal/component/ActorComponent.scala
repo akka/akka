@@ -18,28 +18,17 @@ import akka.util.duration._
 import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 import java.util.concurrent.TimeoutException
 
-//TODO: replace with ActorPath class. When I tried I could not find a way of constructing ActorPath from a string. Any ideas?
-private[camel] case class Path(value: String) {
-  require(value != null)
-  require(value.length() >0)
-  //TODO: I'd be much happier if it lived inside of akka core.
-  // In the meantime I'd rather do system.actorFor(value).path as it guarantees,
-  // that if anything changes in akka internals, we are still fine - even if it was slower.
-
-  def fromString(path: String) = {
-    path match {
-      case LocalActorPath(root, children) => {
-        val rootPath = RootActorPath(root)
-        children.foldLeft[ActorPath](rootPath)((b, a) => b / a)
-      }
-    }
-  }
+private[camel] case class Path(actorPath: String) {
+  require(actorPath != null)
+  require(actorPath.length() > 0)
+  def toCamelPath =  "actor://path:%s" format actorPath
 }
 
 private[camel] object Path{
+  def apply(actorRef: ActorRef) = new Path(actorRef.path.toString)
   def fromCamelPath(camelPath : String) =  camelPath match {
-    case null | "" => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
-    case   id if id   startsWith "path:"   => Path(id substring 5)
+    case id if id startsWith "path:"   => Path(id substring 5)
+    case _ => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
   }
 }
 
@@ -258,7 +247,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
   private[this] def actorFor(path:Path) : ActorRef =
-    camel.findActor(path) getOrElse (throw new ActorNotRegisteredException(path.value))
+    camel.findActor(path) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter)  =
      exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))

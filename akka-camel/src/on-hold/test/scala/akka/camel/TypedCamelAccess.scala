@@ -10,7 +10,7 @@ import akka.util.ReflectiveAccess.getObjectFor
 import akka.camel.migration.Migration._
 
 /**
- * Module for reflective access to akka-camel-typed. 
+ * Module for reflective access to akka-camel-typed.
  *
  * @author Martin Krasser
  */

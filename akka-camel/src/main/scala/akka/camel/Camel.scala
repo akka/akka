@@ -124,7 +124,7 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
   }
   private[camel] def findActor(path: Path) : Option[ActorRef] = {
     //TODO this is a bit hacky, maybe there is another way?
-    val actorRef = actorSystem.actorFor(path.value)
+    val actorRef = actorSystem.actorFor(path.actorPath)
     actorRef.path.name match {
       case "deadLetters" => None
       case _ => Some(actorRef)
