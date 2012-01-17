@@ -420,21 +420,18 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
-   * Returns a new Future that is either the successful result of this Future, the successful result of that Future,
-   * or the failure from either this or that. In case fails, and the other never completes,
-   * the returned Future will never be completed.
+   * Returns a new Future that will either hold the successful value of this Future,
+   * or, it this Future fails, it will hold the successful result of "that" Future.
+   *
+   * This means that if this Future never completes at all, then the returned Future
+   * won't be completed either.
    */
   def or[U >: T](that: Future[U]): Future[U] = {
     val p = Promise[U]()
-    def register(to: Future[U], fallback: Future[U]) = to onComplete {
-      case r @ Right(_) ⇒ p tryComplete r
-      case l @ Left(_) ⇒ fallback.value match {
-        case Some(Left(_)) ⇒ p tryComplete l //If he failed, race for setting failure
-        case _             ⇒ // Either "that" was successful, or he's not done yet, let him win
-      }
+    onComplete {
+      case r @ Right(_) ⇒ p complete r
+      case _            ⇒ that onSuccess { case r ⇒ p success r }
     }
-    register(this, that)
-    register(that, this)
     p
   }
 
