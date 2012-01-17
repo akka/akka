@@ -208,6 +208,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    systemDispatch(actor, Create())
   }
 
   /**
