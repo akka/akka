@@ -38,7 +38,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
         
         "not expect response and not block" in {
-          process should be < (10 millis)
+          process should be < (30 millis)
         }
 
       }
@@ -58,13 +58,13 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "response is not sent by actor" should{
 
           def process() = {
-            producer = given(outCapable=true, outTimeout = 50 millis)
+            producer = given(outCapable=true, outTimeout = 100 millis)
             time(producer.process(exchange))
           }
 
           "timeout after outTimeout" in {
             val duration = process()
-            duration should (be >= (50 millis) and be < (100 millis))
+            duration should (be >= (100 millis) and be < (200 millis))
           }
 
           "never set the response on exchange" in {
@@ -110,7 +110,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
             val doneSync = producer.process(exchange, asyncCallback)
 
-            asyncCallback.expectNoCallWithin(50 millis); info("no async callback before response")
+            asyncCallback.expectNoCallWithin(100 millis); info("no async callback before response")
 
 
             within(1 second){
@@ -144,14 +144,14 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           "it doesnt get output message" should{
 
             def process() = {
-              producer = given( outCapable = true, blocking = Blocking(50 millis), autoAck = false)
+              producer = given( outCapable = true, blocking = Blocking(100 millis), autoAck = false)
               time(
                 producer.process(exchange, asyncCallback)
               )
             }
 
             "timeout, roughly after time specified by blocking timeout parameter" in {
-              process() should (be >= (50 millis) and be < (100 millis))
+              process() should (be >= (100 millis) and be < (200 millis))
             }
 
             "call a callback" in {
