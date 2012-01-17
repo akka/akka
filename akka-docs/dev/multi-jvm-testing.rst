@@ -22,17 +22,17 @@ You can add it as a plugin by adding the following to your plugins/build.sbt::
 
    resolvers += Classpaths.typesafeResolver
 
-   addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.7")
+   addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
 
 You can then add multi-JVM testing to a project by including the ``MultiJvm``
-settings and config. For example, here is how the akka-cluster project adds
+settings and config. For example, here is how the akka-remote project adds
 multi-JVM testing::
 
    import MultiJvmPlugin.{ MultiJvm, extraOptions }
 
    lazy val cluster = Project(
-     id = "akka-cluster",
-     base = file("akka-cluster"),
+     id = "akka-remote",
+     base = file("akka-remote"),
      settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
        extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
          (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dconfig.file=" + _.absolutePath).toSeq
@@ -52,26 +52,26 @@ Running tests
 The multi-jvm tasks are similar to the normal tasks: ``test``, ``test-only``,
 and ``run``, but are under the ``multi-jvm`` configuration.
 
-So in Akka, to run all the multi-JVM tests in the akka-cluster project use (at
+So in Akka, to run all the multi-JVM tests in the akka-remote project use (at
 the sbt prompt):
 
 .. code-block:: none
 
-   akka-cluster/multi-jvm:test
+   akka-remote/multi-jvm:test
 
-Or one can change to the ``akka-cluster`` project first, and then run the
+Or one can change to the ``akka-remote`` project first, and then run the
 tests:
 
 .. code-block:: none
 
-   project akka-cluster
+   project akka-remote
    multi-jvm:test
 
 To run individual tests use ``test-only``:
 
 .. code-block:: none
 
-   multi-jvm:test-only akka.cluster.deployment.Deployment
+   multi-jvm:test-only akka.remote.RandomRoutedRemoteActor
 
 More than one test name can be listed to run multiple specific
 tests. Tab-completion in sbt makes it easy to complete the test names.
@@ -81,7 +81,7 @@ options after the test names and ``--``. For example:
 
 .. code-block:: none
 
-    multi-jvm:test-only akka.cluster.deployment.Deployment -- -Dsome.option=something
+    multi-jvm:test-only akka.remote.RandomRoutedRemoteActor -- -Dsome.option=something
 
 
 Creating application tests
@@ -180,24 +180,16 @@ Overriding configuration options
 --------------------------------
 
 You can also override the options in the :ref:`configuration` file with different options for each
-spawned JVM. You do that by creating a file named after the node in the test with suffix
-``.conf`` and put them in the same  directory as the test .
+spawned JVM. You do that by inheriting ``AbstractRemoteActorMultiJvmSpec`` trait in the object that
+describes your test configuration.
+For example, to override the configuration option ``akka.cluster.name`` declare the following::
 
-For example, to override the configuration option ``akka.cluster.name`` let's create three
-``*.conf`` files and add the option to them.
-
-``SampleMultiJvmNode1.conf``::
-
+object SampleMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
+  val NrOfNodes = 2
+  def commonConfig = ConfigFactory.parseString("""
     akka.cluster.name = "test-cluster"
-
-``SampleMultiJvmNode2.conf``::
-
-    akka.cluster.name = "test-cluster"
-
-``SampleMultiJvmNode3.conf``::
-
-    akka.cluster.name = "test-cluster"
-
+  """)
+}
 
 ScalaTest
 =========
@@ -234,18 +226,23 @@ To run just these tests you would call ``multi-jvm:test-only sample.Spec`` at
 the sbt prompt.
 
 
-ZookeeperBarrier
-================
+Barriers
+========
 
 When running multi-JVM tests it's common to need to coordinate timing across
-nodes. To do this there is a ZooKeeper-based double-barrier (there is both an
-entry barrier and an exit barrier). ClusterNodes also have support for creating
-barriers easily. To wait at the entry use the ``enter`` method. To wait at the
-exit use the ``leave`` method. It's also possible t pass a block of code which
+nodes. To do this, multi-JVM test framework has the notion of a double-barrier
+(there is both an entry barrier and an exit barrier).
+To wait at the entry use the ``enter`` method. To wait at the
+exit use the ``leave`` method. It's also possible to pass a block of code which
 will be run between the barriers.
 
-When creating a barrier you pass it a name and the number of nodes that are
-expected to arrive at the barrier. You can also pass a timeout. The default
+There are 2 implementations of the barrier: one is used for coordinating JVMs
+running on a single machine and is based on local files, another used in a distributed
+scenario (see below) and is based on apache ZooKeeper. These two cases
+are differentiated with ``test.hosts`` property defined. The choice for a proper barrier
+implementation is made in ``AkkaRemoteSpec`` which is a base class for all multi-JVM tests.
+
+When creating a barrier you pass it a name. You can also pass a timeout. The default
 timeout is 60 seconds.
 
 Here is an example of coordinating the starting of two nodes and then running
@@ -259,20 +256,16 @@ something in coordination::
 
     import akka.cluster._
 
-    object SampleMultiJvmSpec {
+    object SampleMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
       val NrOfNodes = 2
+      def commonConfig = ConfigFactory.parseString("""
+        // Declare your configuration here.
+      """)
     }
 
-    class SampleMultiJvmNode1 extends WordSpec with MustMatchers with BeforeAndAfterAll {
+    class SampleMultiJvmNode1 extends AkkaRemoteSpec(SampleMultiJvmSpec.nodeConfigs(0))
+      with WordSpec with MustMatchers {
       import SampleMultiJvmSpec._
-
-      override def beforeAll() = {
-        Cluster.startLocalCluster()
-      }
-
-      override def afterAll() = {
-        Cluster.shutdownLocalCluster()
-      }
 
       "A cluster" must {
 
@@ -283,16 +276,15 @@ something in coordination::
         }
 
         "be able to start all nodes" in {
-          LocalCluster.barrier("start", NrOfNodes) {
-            Cluster.node.start()
-          }
-          Cluster.node.isRunning must be(true)
-          Cluster.node.shutdown()
+          barrier("start")
+          println("All nodes are started!")
+          barrier("end")
         }
       }
     }
 
-    class SampleMultiJvmNode2 extends WordSpec with MustMatchers {
+    class SampleMultiJvmNode2 extends AkkaRemoteSpec(SampleMultiJvmSpec.nodeConfigs(1))
+      with WordSpec with MustMatchers {
       import SampleMultiJvmSpec._
 
       "A cluster" must {
@@ -304,29 +296,12 @@ something in coordination::
         }
 
         "be able to start all nodes" in {
-          LocalCluster.barrier("start", NrOfNodes) {
-            Cluster.node.start()
-          }
-          Cluster.node.isRunning must be(true)
-          Cluster.node.shutdown()
+          barrier("start")
+          println("All nodes are started!")
+          barrier("end")
         }
       }
     }
-
-An example output from this would be:
-
-.. code-block:: none
-
-    > multi-jvm:test-only sample.Sample
-    ...
-    [info] Starting JVM-Node1 for example.SampleMultiJvmNode1
-    [info] Starting JVM-Node2 for example.SampleMultiJvmNode2
-    [JVM-Node1] Loading config [akka.conf] from the application classpath.
-    [JVM-Node2] Loading config [akka.conf] from the application classpath.
-    ...
-    [JVM-Node2] Hello from node 2
-    [JVM-Node1] Hello from node 1
-    [success]
 
 
 NetworkFailureTest
@@ -348,3 +323,39 @@ you are on another platform you might need to install it yourself. Here is a
 port:
 
 http://info.iet.unipi.it/~luigi/dummynet
+
+
+Running tests on many machines
+==============================
+
+The same tests that are run on a single machine using sbt-multi-jvm can be run on multiple
+machines using schoir (read the same as ``esquire``) plugin. The plugin is included just like sbt-multi-jvm::
+
+   resolvers += Classpaths.typesafeResolver
+
+   addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.1")
+
+The interaction with the plugin is through ``schoir:master`` input task. This input task optionally accepts the
+path to the file with the following properties::
+
+   git.url=git@github.com:jboner/akka.git
+   external.addresses.for.ssh=host1:port1,...,hostN:portN
+   internal.host.names=host1,...,hostN
+
+Alternative to specifying the property file, one can set respective settings in the build file::
+
+   gitUrl := "git@github.com:jboner/akka.git",
+   machinesExt := List(InetAddress("host1", port1)),
+   machinesInt := List("host1")
+
+The reason the first property is called ``git.url`` is that the plugin sets up a temporary remote branch on git
+to test against the local working copy. After the tests are finished the changes are regained and the branch
+is deleted.
+
+Each test machine starts a node in zookeeper server ensemble that can be used for synchronization. Since
+the server is started on a fixed port, it's not currently possible to run more than one test session on the
+same machine at the same time.
+
+The machines that are used for testing (slaves) should have ssh access to the outside world and be able to talk
+to each other with the internal addresses given. On the master machine ssh client is required. Obviosly git
+and sbt should be installed on both master and slave machines.
