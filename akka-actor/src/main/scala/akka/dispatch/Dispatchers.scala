@@ -190,7 +190,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
-        threadPoolConfig,
+        threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
 
   /**
@@ -209,8 +209,9 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   /**
    * Creates new dispatcher for each invocation.
    */
-  override def dispatcher(): MessageDispatcher =
-    new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
+  override def dispatcher(): MessageDispatcher = configureThreadPool(config,
+    threadPoolConfig ⇒
+      new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)).build
 
 }
