@@ -100,4 +100,22 @@ object Patterns {
    * }}}
    */
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): Future[AnyRef] = scalaAsk(actor, message)(new Timeout(timeoutMillis)).asInstanceOf[Future[AnyRef]]
+
+  /**
+   * Register an onComplete callback on this [[akka.dispatch.Future]] to send
+   * the result to the given actor reference. Returns the original Future to
+   * allow method chaining.
+   *
+   * <b>Recommended usage example:</b>
+   *
+   * {{{
+   *   val f = ask(worker, request)(timeout)
+   *   flow {
+   *     EnrichedRequest(request, f())
+   *   } pipeTo nextActor
+   * }}}
+   *
+   * [see [[akka.dispatch.Future]] for a description of `flow`]
+   */
+  def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = akka.pattern.pipeTo(future, actorRef)
 }

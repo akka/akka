@@ -69,4 +69,39 @@ package object pattern {
     case _ ⇒ throw new IllegalArgumentException("incompatible ActorRef " + actorRef)
   }
 
+  /**
+   * Import this implicit conversion to gain the `pipeTo` method on [[akka.dispatch.Future]]:
+   *
+   * {{{
+   * import akka.pattern.pipeTo
+   *
+   * Future { doExpensiveCalc() } pipeTo nextActor
+   * }}}
+   */
+  implicit def pipeTo[T](future: Future[T]): PipeToSupport.PipeableFuture[T] = new PipeToSupport.PipeableFuture(future)
+
+  /**
+   * Register an onComplete callback on this [[akka.dispatch.Future]] to send
+   * the result to the given actor reference. Returns the original Future to
+   * allow method chaining.
+   *
+   * <b>Recommended usage example:</b>
+   *
+   * {{{
+   *   val f = ask(worker, request)(timeout)
+   *   flow {
+   *     EnrichedRequest(request, f())
+   *   } pipeTo nextActor
+   * }}}
+   *
+   * [see [[akka.dispatch.Future]] for a description of `flow`]
+   */
+  def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = {
+    future onComplete {
+      case Right(r) ⇒ actorRef ! r
+      case Left(f)  ⇒ actorRef ! akka.actor.Status.Failure(f)
+    }
+    future
+  }
+
 }
