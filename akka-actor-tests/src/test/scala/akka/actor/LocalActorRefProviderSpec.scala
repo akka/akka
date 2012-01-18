@@ -14,7 +14,7 @@ object LocalActorRefProviderSpec {
     akka {
       actor {
         default-dispatcher {
-          core-pool-size-min = 8
+          core-pool-size-min = 16
           core-pool-size-max = 16
         }
       }
