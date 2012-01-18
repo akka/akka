@@ -102,7 +102,7 @@ object Futures {
    * Java API.
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
-  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, T], executor: ExecutionContext): Future[R] =
+  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, R, T], executor: ExecutionContext): Future[R] =
     Future.reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)(executor)
 
   /**
@@ -224,9 +224,9 @@ object Future {
    *   val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
    * </pre>
    */
-  def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) ⇒ T)(implicit executor: ExecutionContext): Future[R] = {
+  def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection"))
-    else sequence(futures).map(_ reduce op)
+    else sequence(futures).map(_ reduceLeft op)
   }
   /**
    * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A ⇒ Future[B].
