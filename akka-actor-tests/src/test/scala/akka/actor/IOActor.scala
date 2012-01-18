@@ -14,13 +14,13 @@ object IOActorSpec {
 
   class SimpleEchoServer(host: String, port: Int) extends Actor {
 
-    IOManager(context.system) listen (host, port)
+    val server = IOManager(context.system) listen (host, port)
 
     val state = IO.IterateeRef.Map.sync[IO.Handle]()
 
     def receive = {
 
-      case IO.NewClient(server) ⇒
+      case IO.NewClient(`server`) ⇒
         val socket = server.accept()
         state(socket) flatMap (_ ⇒ IO repeat (IO.takeAny map socket.write))
 
@@ -32,11 +32,15 @@ object IOActorSpec {
 
     }
 
+    override def postStop {
+      server.close()
+      state.keySet foreach (_.close())
+    }
   }
 
   class SimpleEchoClient(host: String, port: Int) extends Actor {
 
-    var socket = IOManager(context.system) connect (host, port)
+    val socket = IOManager(context.system) connect (host, port)
 
     val state = IO.IterateeRef.sync()
 
@@ -51,15 +55,20 @@ object IOActorSpec {
           }
         }
 
-      case IO.Read(_, bytes) ⇒
+      case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
-      case IO.Connected(_) ⇒
+      case IO.Connected(`socket`) ⇒
 
-      case IO.Closed(_, cause) ⇒
+      case IO.Closed(`socket`, cause) ⇒
         state(IO EOF cause)
-        socket = IOManager(context.system) connect (host, port)
+        throw (cause getOrElse new RuntimeException("Socket closed"))
 
+    }
+
+    override def postStop {
+      socket.close()
+      state(IO EOF None)
     }
   }
 
@@ -80,7 +89,7 @@ object IOActorSpec {
   }
 
   // Basic Redis-style protocol
-  class KVStore(host: String, port: Int, started: TestLatch) extends Actor {
+  class KVStore(host: String, port: Int) extends Actor {
 
     import context.system
 
@@ -88,15 +97,13 @@ object IOActorSpec {
 
     var kvs: Map[String, String] = Map.empty
 
-    IOManager(context.system) listen (host, port)
-
-    started.open
+    val server = IOManager(context.system) listen (host, port)
 
     val EOL = ByteString("\r\n")
 
     def receive = {
 
-      case IO.NewClient(server) ⇒
+      case IO.NewClient(`server`) ⇒
         val socket = server.accept()
         state(socket) flatMap { _ ⇒
           IO repeat {
@@ -144,6 +151,10 @@ object IOActorSpec {
 
     }
 
+    override def postStop {
+      server.close()
+      state.keySet foreach (_.close())
+    }
   }
 
   class KVClient(host: String, port: Int) extends Actor {
@@ -158,46 +169,54 @@ object IOActorSpec {
       case cmd: KVCommand ⇒
         val source = sender
         socket write cmd.bytes
-        for {
-          _ ← state
-          result ← readResult
-        } yield result.fold(err ⇒ source ! Status.Failure(new RuntimeException(err)), source !)
+        state flatMap { _ ⇒
+          readResult map (source !) recover {
+            case e ⇒ source ! Status.Failure(e)
+          }
+        }
 
-      case IO.Read(socket, bytes) ⇒
+      case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
-      case IO.Connected(socket)     ⇒
+      case IO.Connected(`socket`) ⇒
 
-      case IO.Closed(socket, cause) ⇒
+      case IO.Closed(`socket`, cause) ⇒
+        state(IO EOF cause)
+        throw (cause getOrElse new RuntimeException("Socket closed"))
 
     }
 
-    def readResult: IO.Iteratee[Either[String, Any]] = {
+    override def postStop {
+      socket.close()
+      state(IO EOF None)
+    }
+
+    def readResult: IO.Iteratee[Any] = {
       IO take 1 map (_.utf8String) flatMap {
-        case "+" ⇒ IO takeUntil EOL map (msg ⇒ Right(msg.utf8String))
-        case "-" ⇒ IO takeUntil EOL map (err ⇒ Left(err.utf8String))
+        case "+" ⇒ IO takeUntil EOL map (msg ⇒ msg.utf8String)
+        case "-" ⇒ IO takeUntil EOL flatMap (err ⇒ IO throwErr new RuntimeException(err.utf8String))
         case "$" ⇒
           IO takeUntil EOL map (_.utf8String.toInt) flatMap {
-            case -1 ⇒ IO Iteratee Right(None)
+            case -1 ⇒ IO Done None
             case length ⇒
               for {
                 value ← IO take length
                 _ ← IO takeUntil EOL
-              } yield Right(Some(value.utf8String))
+              } yield Some(value.utf8String)
           }
         case "*" ⇒
           IO takeUntil EOL map (_.utf8String.toInt) flatMap {
-            case -1 ⇒ IO Iteratee Right(None)
+            case -1 ⇒ IO Done None
             case length ⇒
-              IO.takeList(length)(readResult) map { list ⇒
+              IO.takeList(length)(readResult) flatMap { list ⇒
                 ((Right(Map()): Either[String, Map[String, String]]) /: list.grouped(2)) {
-                  case (Right(m), List(Right(Some(k: String)), Right(Some(v: String)))) ⇒ Right(m + (k -> v))
+                  case (Right(m), List(Some(k: String), Some(v: String))) ⇒ Right(m + (k -> v))
                   case (Right(_), _) ⇒ Left("Unexpected Response")
                   case (left, _) ⇒ left
-                }
+                } fold (msg ⇒ IO throwErr new RuntimeException(msg), IO Done _)
               }
           }
-        case _ ⇒ IO Iteratee Left("Unexpected Response")
+        case _ ⇒ IO throwErr new RuntimeException("Unexpected Response")
       }
     }
   }
@@ -249,61 +268,46 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
   "an IO Actor" must {
     "run echo server" in {
-      val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064)))
-      val f1 = retry() { client ? ByteString("Hello World!1") }
-      val f2 = retry() { client ? ByteString("Hello World!2") }
-      val f3 = retry() { client ? ByteString("Hello World!3") }
-      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
-      Await.result(f1, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!1"))
-      Await.result(f2, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!2"))
-      Await.result(f3, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!3"))
+      filterException[java.net.ConnectException] {
+        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064)))
+        val f1 = retry() { client ? ByteString("Hello World!1") }
+        val f2 = retry() { client ? ByteString("Hello World!2") }
+        val f3 = retry() { client ? ByteString("Hello World!3") }
+        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
+        Await.result(f1, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!1"))
+        Await.result(f2, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!2"))
+        Await.result(f3, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!3"))
+      }
     }
 
     "run echo server under high load" in {
-      val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
-      val list = List.range(0, 1000)
-      val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
-      val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
-      assert(Await.result(f, TestLatch.DefaultTimeout).size === 1000)
+      filterException[java.net.ConnectException] {
+        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
+        val list = List.range(0, 1000)
+        val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
+        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
+        assert(Await.result(f, TestLatch.DefaultTimeout).size === 1000)
+      }
     }
-
-    // Not currently configurable at runtime
-    /*
-    "run echo server under high load with small buffer" in {
-      val started = TestLatch(1)
-      val ioManager = actorOf(new IOManager(2))
-      val server = actorOf(new SimpleEchoServer("localhost", 8066, ioManager, started))
-      started.await
-      val client = actorOf(new SimpleEchoClient("localhost", 8066, ioManager))
-      val list = List.range(0, 1000)
-      val f = Future.traverse(list)(i ⇒ client ? ByteString(i.toString))
-      assert(Await.result(f, timeout.duration).size === 1000)
-      system.stop(client)
-      system.stop(server)
-      system.stop(ioManager)
-    }
-    */
 
     "run key-value store" in {
-      val started = TestLatch(1)
-      val server = system.actorOf(Props(new KVStore("localhost", 8067, started)))
-      Await.ready(started, TestLatch.DefaultTimeout)
-      val client1 = system.actorOf(Props(new KVClient("localhost", 8067)))
-      val client2 = system.actorOf(Props(new KVClient("localhost", 8067)))
-      val f1 = client1 ? KVSet("hello", "World")
-      val f2 = client1 ? KVSet("test", "No one will read me")
-      val f3 = client1 ? KVGet("hello")
-      Await.ready(f2, TestLatch.DefaultTimeout)
-      val f4 = client2 ? KVSet("test", "I'm a test!")
-      Await.ready(f4, TestLatch.DefaultTimeout)
-      val f5 = client1 ? KVGet("test")
-      val f6 = client2 ? KVGetAll
-      Await.result(f1, TestLatch.DefaultTimeout) must equal("OK")
-      Await.result(f2, TestLatch.DefaultTimeout) must equal("OK")
-      Await.result(f3, TestLatch.DefaultTimeout) must equal(Some("World"))
-      Await.result(f4, TestLatch.DefaultTimeout) must equal("OK")
-      Await.result(f5, TestLatch.DefaultTimeout) must equal(Some("I'm a test!"))
-      Await.result(f6, TestLatch.DefaultTimeout) must equal(Map("hello" -> "World", "test" -> "I'm a test!"))
+      filterException[java.net.ConnectException] {
+        val client1 = system.actorOf(Props(new KVClient("localhost", 8067)))
+        val client2 = system.actorOf(Props(new KVClient("localhost", 8067)))
+        val f1 = retry() { client1 ? KVSet("hello", "World") }
+        val f2 = retry() { client1 ? KVSet("test", "No one will read me") }
+        val f3 = f1 flatMap { _ ⇒ retry() { client1 ? KVGet("hello") } }
+        val f4 = f2 flatMap { _ ⇒ retry() { client2 ? KVSet("test", "I'm a test!") } }
+        val f5 = f4 flatMap { _ ⇒ retry() { client1 ? KVGet("test") } }
+        val f6 = Future.sequence(List(f3, f5)) flatMap { _ ⇒ retry() { client2 ? KVGetAll } }
+        val server = system.actorOf(Props(new KVStore("localhost", 8067)))
+        Await.result(f1, TestLatch.DefaultTimeout) must equal("OK")
+        Await.result(f2, TestLatch.DefaultTimeout) must equal("OK")
+        Await.result(f3, TestLatch.DefaultTimeout) must equal(Some("World"))
+        Await.result(f4, TestLatch.DefaultTimeout) must equal("OK")
+        Await.result(f5, TestLatch.DefaultTimeout) must equal(Some("I'm a test!"))
+        Await.result(f6, TestLatch.DefaultTimeout) must equal(Map("hello" -> "World", "test" -> "I'm a test!"))
+      }
     }
   }
 
