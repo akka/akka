@@ -10,6 +10,7 @@ object Patterns {
   import akka.util.Timeout
 
   /**
+   * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
@@ -42,6 +43,7 @@ object Patterns {
   def ask(actor: ActorRef, message: Any): Future[AnyRef] = scalaAsk(actor, message).asInstanceOf[Future[AnyRef]]
 
   /**
+   * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
@@ -72,6 +74,7 @@ object Patterns {
   def ask(actor: ActorRef, message: Any, timeout: Timeout): Future[AnyRef] = scalaAsk(actor, message)(timeout).asInstanceOf[Future[AnyRef]]
 
   /**
+   * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
