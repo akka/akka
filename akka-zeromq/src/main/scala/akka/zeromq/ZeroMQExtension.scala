@@ -14,7 +14,7 @@ case class SocketParameters(
   socketType: SocketType,
   context: Context,
   listener: Option[ActorRef] = None,
-  pollDispatcher: Option[Dispatcher] = None,
+  pollDispatcher: Option[String] = None,
   deserializer: Deserializer = new ZMQMessageDeserializer,
   pollTimeoutDuration: Duration = 100 millis)
 
@@ -46,7 +46,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
                 listener: Option[ActorRef] = None,
                 context: Context = DefaultContext, // For most applications you want to use the default context
                 deserializer: Deserializer = new ZMQMessageDeserializer,
-                pollDispatcher: Option[Dispatcher] = None,
+                pollDispatcher: Option[String] = None,
                 pollTimeoutDuration: Duration = 500 millis): ActorRef = {
     verifyZeroMQVersion
     val params = SocketParameters(socketType, context, listener, pollDispatcher, deserializer, pollTimeoutDuration)

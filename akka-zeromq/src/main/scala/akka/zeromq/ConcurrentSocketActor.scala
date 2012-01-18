@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.zeromq
 
@@ -56,42 +56,42 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
 
   private def handleSocketOption: Receive = {
     case Linger(value)            ⇒ socket.setLinger(value)
-    case Linger                   ⇒ sender ! socket.getLinger
-    case ReconnectIVL             ⇒ sender ! socket.getReconnectIVL
     case ReconnectIVL(value)      ⇒ socket.setReconnectIVL(value)
-    case Backlog                  ⇒ sender ! socket.getBacklog
     case Backlog(value)           ⇒ socket.setBacklog(value)
-    case ReconnectIVLMax          ⇒ sender ! socket.getReconnectIVLMax
     case ReconnectIVLMax(value)   ⇒ socket.setReconnectIVLMax(value)
-    case MaxMsgSize               ⇒ sender ! socket.getMaxMsgSize
     case MaxMsgSize(value)        ⇒ socket.setMaxMsgSize(value)
-    case SndHWM                   ⇒ sender ! socket.getSndHWM
     case SndHWM(value)            ⇒ socket.setSndHWM(value)
-    case RcvHWM                   ⇒ sender ! socket.getRcvHWM
     case RcvHWM(value)            ⇒ socket.setRcvHWM(value)
     case HWM(value)               ⇒ socket.setHWM(value)
-    case Swap                     ⇒ sender ! socket.getSwap
     case Swap(value)              ⇒ socket.setSwap(value)
-    case Affinity                 ⇒ sender ! socket.getAffinity
     case Affinity(value)          ⇒ socket.setAffinity(value)
-    case Identity                 ⇒ sender ! socket.getIdentity
     case Identity(value)          ⇒ socket.setIdentity(value)
-    case Rate                     ⇒ sender ! socket.getRate
     case Rate(value)              ⇒ socket.setRate(value)
-    case RecoveryInterval         ⇒ sender ! socket.getRecoveryInterval
     case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
-    case MulticastLoop            ⇒ sender ! socket.hasMulticastLoop
     case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
-    case MulticastHops            ⇒ sender ! socket.getMulticastHops
     case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
-    case ReceiveTimeOut           ⇒ sender ! socket.getReceiveTimeOut
     case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
-    case SendTimeOut              ⇒ sender ! socket.getSendTimeOut
     case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
-    case SendBufferSize           ⇒ sender ! socket.getSendBufferSize
     case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
-    case ReceiveBufferSize        ⇒ sender ! socket.getReceiveBufferSize
     case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
+    case Linger                   ⇒ sender ! socket.getLinger
+    case ReconnectIVL             ⇒ sender ! socket.getReconnectIVL
+    case Backlog                  ⇒ sender ! socket.getBacklog
+    case ReconnectIVLMax          ⇒ sender ! socket.getReconnectIVLMax
+    case MaxMsgSize               ⇒ sender ! socket.getMaxMsgSize
+    case SndHWM                   ⇒ sender ! socket.getSndHWM
+    case RcvHWM                   ⇒ sender ! socket.getRcvHWM
+    case Swap                     ⇒ sender ! socket.getSwap
+    case Affinity                 ⇒ sender ! socket.getAffinity
+    case Identity                 ⇒ sender ! socket.getIdentity
+    case Rate                     ⇒ sender ! socket.getRate
+    case RecoveryInterval         ⇒ sender ! socket.getRecoveryInterval
+    case MulticastLoop            ⇒ sender ! socket.hasMulticastLoop
+    case MulticastHops            ⇒ sender ! socket.getMulticastHops
+    case ReceiveTimeOut           ⇒ sender ! socket.getReceiveTimeOut
+    case SendTimeOut              ⇒ sender ! socket.getSendTimeOut
+    case SendBufferSize           ⇒ sender ! socket.getSendBufferSize
+    case ReceiveBufferSize        ⇒ sender ! socket.getReceiveBufferSize
     case ReceiveMore              ⇒ sender ! socket.hasReceiveMore
     case FileDescriptor           ⇒ sender ! socket.getFD
   }
@@ -146,8 +146,12 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
     if (currentPoll.isEmpty) currentPoll = newEventLoop
   }
 
+  private val eventLoopDispatcher = {
+    params.pollDispatcher.map(d ⇒ context.system.dispatchers.lookup(d)) getOrElse context.system.dispatcher
+  }
+
   private def newEventLoop: Option[Promise[PollLifeCycle]] = {
-    implicit val executor = params.pollDispatcher getOrElse context.system.dispatcher
+    implicit val executor = eventLoopDispatcher
     Some((Future {
       if (poller.poll(params.pollTimeoutDuration.toMicros) > 0 && poller.pollin(0)) Results else NoResults
     }).asInstanceOf[Promise[PollLifeCycle]] onSuccess {
