@@ -11,7 +11,6 @@ class ActivationTracker extends Actor{
   val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
 
   class ActivationStateMachine {
-    import  scala.collection.mutable.ListBuffer
 
     var receive : Receive = notActivated()
 
@@ -26,7 +25,7 @@ class ActivationTracker extends Actor{
         case msg @ EndpointActivated(ref)  => {
           migration.Migration.EventHandler.debug(ref+" activated")
           awaitingActivation.foreach(_ ! msg)
-          receive = activated(new ListBuffer[ActorRef]() ++ awaitingDeActivation)
+          receive = activated(awaitingDeActivation)
         }
 
         case EndpointFailedToActivate(ref, cause) => {
@@ -37,16 +36,20 @@ class ActivationTracker extends Actor{
       }
     }
 
-    def activated( awaitingDeActivation : ListBuffer[ActorRef]) : Receive = {
-      case AwaitActivation(ref) => sender ! EndpointActivated(ref)
-      case AwaitDeActivation(ref) => awaitingDeActivation.append(sender)
-      case msg @ EndpointDeActivated(ref) =>  {
-        awaitingDeActivation foreach (_ ! msg)
-        receive = deactivated
-      }
-      case msg @ EndpointFailedToDeActivate(ref,  cause) =>  {
-        awaitingDeActivation foreach (_ ! msg)
-        receive = failedToDeActivate(cause)
+    def activated( currentAwaitingDeActivation : List[ActorRef]) : Receive = {
+      var awaitingDeActivation = currentAwaitingDeActivation
+
+      {
+        case AwaitActivation(ref) => sender ! EndpointActivated(ref)
+        case AwaitDeActivation(ref) => awaitingDeActivation ::= sender
+        case msg @ EndpointDeActivated(ref) =>  {
+          awaitingDeActivation foreach (_ ! msg)
+          receive = deactivated
+        }
+        case msg @ EndpointFailedToDeActivate(ref,  cause) =>  {
+          awaitingDeActivation foreach (_ ! msg)
+          receive = failedToDeActivate(cause)
+        }
       }
     }
 
