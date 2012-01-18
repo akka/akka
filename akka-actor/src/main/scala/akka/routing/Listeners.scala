@@ -25,7 +25,7 @@ case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
  * Send <code>WithListeners(fun)</code> to traverse the current listeners.
  */
 trait Listeners { self: Actor ⇒
-  private val listeners = new ConcurrentSkipListSet[ActorRef]
+  protected val listeners = new ConcurrentSkipListSet[ActorRef]
 
   protected def listenerManagement: Actor.Receive = {
     case Listen(l)        ⇒ listeners add l

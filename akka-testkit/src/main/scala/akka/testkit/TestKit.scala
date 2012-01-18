@@ -102,7 +102,7 @@ class TestKit(_system: ActorSystem) {
    * registration as message target.
    */
   lazy val testActor: ActorRef = {
-    val impl = system.asInstanceOf[ActorSystemImpl] //FIXME should we rely on this cast to work here?
+    val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
     impl.systemActorOf(Props(new TestActor(queue))
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)

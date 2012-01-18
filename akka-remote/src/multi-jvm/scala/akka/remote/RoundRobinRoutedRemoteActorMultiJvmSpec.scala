@@ -12,7 +12,7 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJ
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! context.system.nodename
+      case "hit" ⇒ sender ! self.path.address.hostPort
       case "end" ⇒ context.stop(self)
     }
   }
@@ -85,13 +85,14 @@ class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RoundRobin
       val iterationCount = 10
 
       var replies = Map(
-        "node1" -> 0,
-        "node2" -> 0,
-        "node3" -> 0)
+        "AkkaRemoteSpec@localhost:9991" -> 0,
+        "AkkaRemoteSpec@localhost:9992" -> 0,
+        "AkkaRemoteSpec@localhost:9993" -> 0)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
           val nodeName = Await.result(actor ? "hit", timeout.duration).toString
+
           replies = replies + (nodeName -> (replies(nodeName) + 1))
         }
       }

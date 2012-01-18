@@ -112,7 +112,7 @@ object Status {
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system.eventStream, context.self)
+  val log = akka.event.Logging(context.system, context.self)
 }
 
 object Actor {
@@ -248,7 +248,7 @@ trait Actor {
    * up of resources before Actor is terminated.
    */
   def preRestart(reason: Throwable, message: Option[Any]) {
-    context.children foreach (context.stop(_))
+    context.children foreach context.stop
     postStop()
   }
 
@@ -279,7 +279,6 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-    // FIXME this should all go into ActorCell
     val behaviorStack = context.asInstanceOf[ActorCell].hotswap
     msg match {
       case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)

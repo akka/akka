@@ -21,7 +21,7 @@ Usage
 Configuration
 -------------
 
-For Akka to know which ``Serializer`` to use for what, you need edit your Akka Configuration,
+For Akka to know which ``Serializer`` to use for what, you need edit your :ref:`configuration`,
 in the "akka.actor.serializers"-section you bind names to implementations of the ``akka.serialization.Serializer``
 you wish to use, like this:
 
@@ -90,5 +90,5 @@ which is done by extending ``akka.serialization.JSerializer``, like this:
    :include: imports,my-own-serializer
    :exclude: ...
 
-Then you only need to fill in the blanks, bind it to a name in your Akka Configuration and then
+Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
 list which classes that should be serialized using it.

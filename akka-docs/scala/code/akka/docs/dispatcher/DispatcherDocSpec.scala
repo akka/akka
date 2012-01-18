@@ -41,10 +41,8 @@ object DispatcherDocSpec {
       type = Dispatcher
       core-pool-size-factor = 8.0
       max-pool-size-factor  = 16.0
-      # Specifies the bounded capacity of the task queue
-      task-queue-size = 100
-      # Specifies which type of task queue will be used, can be "array" or "linked" (default)
-      task-queue-type = "array"
+      # Specifies the bounded capacity of the mailbox queue
+      mailbox-capacity = 100
       throughput = 3
     }
     //#my-bounded-config

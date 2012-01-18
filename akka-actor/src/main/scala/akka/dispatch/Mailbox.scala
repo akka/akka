@@ -214,7 +214,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
       }
     } catch {
       case e ⇒
-        actor.system.eventStream.publish(Error(e, actor.self.path.toString, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
+        actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
   }
@@ -227,27 +227,28 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
    * called when an actor is unregistered.
    * By default it dequeues all system messages + messages and ships them to the owning actors' systems' DeadLetterMailbox
    */
-  protected[dispatch] def cleanUp(): Unit = if (actor ne null) {
-    val dlq = actor.systemImpl.deadLetterMailbox
-    if (hasSystemMessages) {
-      var message = systemDrain()
-      while (message ne null) {
-        // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        dlq.systemEnqueue(actor.self, message)
-        message = next
+  protected[dispatch] def cleanUp(): Unit =
+    if (actor ne null) { // actor is null for the deadLetterMailbox
+      val dlq = actor.systemImpl.deadLetterMailbox
+      if (hasSystemMessages) {
+        var message = systemDrain()
+        while (message ne null) {
+          // message must be “virgin” before being able to systemEnqueue again
+          val next = message.next
+          message.next = null
+          dlq.systemEnqueue(actor.self, message)
+          message = next
+        }
       }
-    }
 
-    if (hasMessages) {
-      var envelope = dequeue
-      while (envelope ne null) {
-        dlq.enqueue(actor.self, envelope)
-        envelope = dequeue
+      if (hasMessages) {
+        var envelope = dequeue
+        while (envelope ne null) {
+          dlq.enqueue(actor.self, envelope)
+          envelope = dequeue
+        }
       }
     }
-  }
 }
 
 trait MessageQueue {

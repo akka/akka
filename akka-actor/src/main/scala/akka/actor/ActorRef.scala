@@ -389,7 +389,10 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
+trait DeadLetterActorRefLike extends MinimalActorRef {
+
+  def eventStream: EventStream
+
   @volatile
   private var brokenPromise: Future[Any] = _
   @volatile
@@ -411,6 +414,10 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
 
+  // FIXME reimplement behavior of brokenPromise on ask
+}
+
+class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
   @throws(classOf[java.io.ObjectStreamException])
   override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
@@ -419,8 +426,8 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
  */
-class EmptyLocalActorRef(_eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
-  extends DeadLetterActorRef(_eventStream) {
+class EmptyLocalActorRef(val eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
+  extends DeadLetterActorRefLike {
   init(_dispatcher, _path)
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ // do NOT form endless loops

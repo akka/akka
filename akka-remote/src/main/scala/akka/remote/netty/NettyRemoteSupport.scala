@@ -60,7 +60,7 @@ abstract class RemoteClient private[akka] (
    * Converts the message to the wireprotocol and sends the message across the wire
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
-    log.debug("Sending message: {}", message)
+    log.debug("Sending message {} from {} to {}", message, senderOption, recipient)
     send((message, senderOption, recipient))
   } else {
     val exception = new RemoteClientException("RemoteModule client is not running, make sure you have invoked 'RemoteClient.connect()' before using it.", remoteSupport, remoteAddress)
@@ -132,8 +132,6 @@ class ActiveRemoteClient private[akka] (
   private var bootstrap: ClientBootstrap = _
   @volatile
   private[remote] var connection: ChannelFuture = _
-  @volatile
-  private[remote] var openChannels: DefaultChannelGroup = _
 
   @volatile
   private var reconnectionTimeWindowStart = 0L
@@ -162,16 +160,10 @@ class ActiveRemoteClient private[akka] (
       connection.getChannel.write(remoteSupport.createControlEnvelope(handshake.build))
     }
 
-    def closeChannel(connection: ChannelFuture) = {
-      val channel = connection.getChannel
-      openChannels.remove(channel)
-      channel.close()
-    }
-
     def attemptReconnect(): Boolean = {
       log.debug("Remote client reconnecting to [{}]", remoteAddress)
-      val connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
-      openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
+      connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
+      connection.awaitUninterruptibly.getChannel // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, remoteSupport, remoteAddress))
@@ -183,8 +175,6 @@ class ActiveRemoteClient private[akka] (
     }
 
     runSwitch switchOn {
-      openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
-
       executionHandler = new ExecutionHandler(remoteSupport.executor)
 
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
@@ -195,9 +185,7 @@ class ActiveRemoteClient private[akka] (
       log.debug("Starting remote client connection to [{}]", remoteAddress)
 
       connection = bootstrap.connect(new InetSocketAddress(remoteAddress.ip.get, remoteAddress.port))
-
-      val channel = connection.awaitUninterruptibly.getChannel
-      openChannels.add(channel)
+      connection.awaitUninterruptibly.getChannel // Wait until the connection attempt succeeds or fails.
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, remoteSupport, remoteAddress))
@@ -210,7 +198,7 @@ class ActiveRemoteClient private[akka] (
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
-        closeChannel(connection)
+        connection.getChannel.close()
 
         log.debug("Remote client reconnecting to [{}]", remoteAddress)
         attemptReconnect()
@@ -224,13 +212,19 @@ class ActiveRemoteClient private[akka] (
     log.debug("Shutting down remote client [{}]", name)
 
     notifyListeners(RemoteClientShutdown(remoteSupport, remoteAddress))
-    openChannels.close.awaitUninterruptibly
-    openChannels = null
-    executionHandler.releaseExternalResources()
-    executionHandler = null
-    bootstrap.releaseExternalResources()
-    bootstrap = null
-    connection = null
+    try {
+      if ((connection ne null) && (connection.getChannel ne null))
+        connection.getChannel.close()
+    } finally {
+      connection = null
+      executionHandler = null
+      //Do not do this: executionHandler.releaseExternalResources(), since it's shutting down the shared threadpool
+      try {
+        bootstrap.releaseExternalResources()
+      } finally {
+        bootstrap = null
+      }
+    }
 
     log.debug("[{}] has been shut down", name)
   }
@@ -326,12 +320,8 @@ class ActiveRemoteClientHandler(
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = client.runSwitch ifOn {
     if (client.isWithinReconnectionTimeWindow) {
       timer.newTimeout(new TimerTask() {
-        def run(timeout: Timeout) = {
-          if (client.isRunning) {
-            client.openChannels.remove(event.getChannel)
-            client.connect(reconnectIfAlreadyConnected = true)
-          }
-        }
+        def run(timeout: Timeout) =
+          if (client.isRunning) client.connect(reconnectIfAlreadyConnected = true)
       }, client.remoteSupport.clientSettings.ReconnectDelay.toMillis, TimeUnit.MILLISECONDS)
     } else runOnceNow {
       client.remoteSupport.shutdownClientConnection(remoteAddress) // spawn in another thread
@@ -360,8 +350,7 @@ class ActiveRemoteClientHandler(
           runOnceNow {
             client.remoteSupport.shutdownClientConnection(remoteAddress) // spawn in another thread
           }
-        case e: Exception ⇒
-          event.getChannel.close() //FIXME Is this the correct behavior???
+        case e: Exception ⇒ event.getChannel.close()
       }
 
     } else client.notifyListeners(RemoteClientError(new Exception("Unknown cause"), client.remoteSupport, client.remoteAddress))
@@ -575,7 +564,6 @@ class NettyRemoteServer(
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()
-      executionHandler.releaseExternalResources()
       remoteSupport.notifyListeners(RemoteServerShutdown(remoteSupport))
     } catch {
       case e: Exception ⇒ remoteSupport.notifyListeners(RemoteServerError(e, remoteSupport))
@@ -681,7 +669,7 @@ class RemoteServerHandler(
             val inbound = RemoteNettyAddress(origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, remoteSupport, inbound)
             remoteSupport.bindClient(inbound, client)
-          case CommandType.SHUTDOWN ⇒ //FIXME Dispose passive connection here, ticket #1410
+          case CommandType.SHUTDOWN ⇒ //Will be unbound in channelClosed
           case _                    ⇒ //Unknown command
         }
       case _ ⇒ //ignore

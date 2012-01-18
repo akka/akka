@@ -27,15 +27,11 @@ class RemoteActorRefProvider(
   val scheduler: Scheduler,
   _deadLetters: InternalActorRef) extends ActorRefProvider {
 
-  val log = Logging(eventStream, "RemoteActorRefProvider")
-
   val remoteSettings = new RemoteSettings(settings.config, systemName)
 
   def rootGuardian = local.rootGuardian
   def guardian = local.guardian
   def systemGuardian = local.systemGuardian
-  def nodename = remoteSettings.NodeName
-  def clustername = remoteSettings.ClusterName
   def terminationFuture = local.terminationFuture
   def dispatcher = local.dispatcher
 
@@ -48,6 +44,8 @@ class RemoteActorRefProvider(
 
   val remote = new Remote(settings, remoteSettings)
   implicit val transports = remote.transports
+
+  val log = Logging(eventStream, "RemoteActorRefProvider(" + remote.remoteAddress + ")")
 
   val rootPath: ActorPath = RootActorPath(remote.remoteAddress)
 
@@ -109,7 +107,7 @@ class RemoteActorRefProvider(
       })
 
       deployment match {
-        case Some(Deploy(_, _, _, _, RemoteScope(address))) ⇒
+        case Some(Deploy(_, _, _, RemoteScope(address))) ⇒
           // FIXME RK this should be done within the deployer, i.e. the whole parsing business
           address.parse(remote.transports) match {
             case Left(x) ⇒

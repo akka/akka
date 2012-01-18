@@ -79,8 +79,8 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     try {
       runnable.run()
     } catch {
-      // FIXME catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", e.getMessage))
+      // TODO catching all and continue isn't good for OOME, ticket #1418
+      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()
     }
@@ -208,8 +208,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    systemDispatch(actor, Create()) //FIXME should this be here or moved into ActorCell.start perhaps?
   }
 
   /**

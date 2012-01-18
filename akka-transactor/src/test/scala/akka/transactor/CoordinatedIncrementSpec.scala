@@ -15,6 +15,18 @@ import scala.concurrent.stm._
 import akka.pattern.ask
 
 object CoordinatedIncrement {
+
+  val config = """
+    akka {
+      actor {
+        default-dispatcher {
+          core-pool-size-min = 5
+          core-pool-size-max = 16
+        }
+      }
+    }
+  """
+
   case class Increment(friends: Seq[ActorRef])
   case object GetCount
 
@@ -50,7 +62,7 @@ object CoordinatedIncrement {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CoordinatedIncrementSpec extends AkkaSpec with BeforeAndAfterAll {
+class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
   implicit val timeout = Timeout(5.seconds.dilated)

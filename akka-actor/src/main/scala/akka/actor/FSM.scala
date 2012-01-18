@@ -8,6 +8,7 @@ import akka.util._
 import scala.collection.mutable
 import akka.event.Logging
 import akka.util.Duration._
+import akka.routing.{ Deafen, Listen, Listeners }
 
 object FSM {
 
@@ -179,7 +180,7 @@ object FSM {
  *   timerActive_? ("tock")
  * </pre>
  */
-trait FSM[S, D] extends ListenerManagement {
+trait FSM[S, D] extends Listeners {
   this: Actor ⇒
 
   import FSM._
@@ -189,7 +190,7 @@ trait FSM[S, D] extends ListenerManagement {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val log = Logging(context.system, context.self)
+  val log = Logging(context.system, this)
 
   /**
    * ****************************************
@@ -447,9 +448,6 @@ trait FSM[S, D] extends ListenerManagement {
     for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
-  // ListenerManagement shall not start() or stop() listener actors
-  override protected val manageLifeCycleOfListeners = false
-
   /*
    * *******************************************
    *       Main actor receive() method
@@ -474,11 +472,18 @@ trait FSM[S, D] extends ListenerManagement {
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
       // TODO use DeathWatch to clean up list
-      addListener(actorRef)
+      listeners.add(actorRef)
+      // send current state back as reference point
+      actorRef ! CurrentState(self, currentState.stateName)
+    case Listen(actorRef) ⇒
+      // TODO use DeathWatch to clean up list
+      listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName)
     case UnsubscribeTransitionCallBack(actorRef) ⇒
-      removeListener(actorRef)
+      listeners.remove(actorRef)
+    case Deafen(actorRef) ⇒
+      listeners.remove(actorRef)
     case value ⇒ {
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel()
@@ -523,7 +528,7 @@ trait FSM[S, D] extends ListenerManagement {
       if (currentState.stateName != nextState.stateName) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
-        notifyListeners(Transition(self, currentState.stateName, nextState.stateName))
+        gossip(Transition(self, currentState.stateName, nextState.stateName))
       }
       currentState = nextState
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)

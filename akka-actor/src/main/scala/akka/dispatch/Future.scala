@@ -148,7 +148,7 @@ object Future {
           try {
             Right(body)
           } catch {
-            // FIXME catching all and continue isn't good for OOME, ticket #1418
+            // TODO catching all and continue isn't good for OOME, ticket #1418
             case e ⇒ Left(e)
           }
         }
@@ -294,47 +294,44 @@ object Future {
    */
   def blocking(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if taskStack.nonEmpty ⇒
-        val tasks = taskStack.elems
-        taskStack.clear()
-        _taskStack set None
-        dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
-      case Some(_) ⇒ _taskStack set None
-      case _       ⇒ // already None
+      case stack if (stack ne null) && stack.nonEmpty ⇒
+        val tasks = stack.elems
+        stack.clear()
+        _taskStack.remove()
+        dispatchTask(() ⇒ _taskStack.get.elems = tasks, true)
+      case _ ⇒ _taskStack.remove()
     }
 
-  private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
-    override def initialValue = None
-  }
+  private val _taskStack = new ThreadLocal[Stack[() ⇒ Unit]]()
 
   /**
    * Internal API, do not call
    */
   private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if !force ⇒ taskStack push task
+      case stack if (stack ne null) && !force ⇒ stack push task
       case _ ⇒ executor.execute(
         new Runnable {
           def run =
             try {
               val taskStack = Stack[() ⇒ Unit](task)
-              _taskStack set Some(taskStack)
+              _taskStack set taskStack
               while (taskStack.nonEmpty) {
                 val next = taskStack.pop()
                 try {
                   next.apply()
                 } catch {
                   case e ⇒
-                    // FIXME catching all and continue isn't good for OOME, ticket #1418
+                    // TODO catching all and continue isn't good for OOME, ticket #1418
                     executor match {
                       case m: MessageDispatcher ⇒
-                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", e.getMessage))
+                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", this.getClass, e.getMessage))
                       case other ⇒
                         e.printStackTrace()
                     }
                 }
               }
-            } finally { _taskStack set None }
+            } finally { _taskStack.remove() }
         })
     }
 }
@@ -423,11 +420,17 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
-   * Creates a Future that will be the result of the first completed Future of this and the Future that was passed into this.
-   * This is semantically the same as: Future.firstCompletedOf(Seq(this, that))
+   * Returns a new Future that will either hold the successful value of this Future,
+   * or, it this Future fails, it will hold the result of "that" Future.
    */
-  //FIXME implement as The result of any of the Futures, or if oth failed, the first failure
-  def orElse[A >: T](that: Future[A]): Future[A] = Future.firstCompletedOf(List(this, that)) //TODO Optimize
+  def or[U >: T](that: Future[U]): Future[U] = {
+    val p = Promise[U]()
+    onComplete {
+      case r @ Right(_) ⇒ p complete r
+      case _            ⇒ p completeWith that
+    }
+    p
+  }
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -569,7 +572,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   protected def logError(msg: String, problem: Throwable): Unit = {
     executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, problem.getMessage))
+      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, this.getClass, problem.getMessage))
       case other                ⇒ problem.printStackTrace()
     }
   }
@@ -796,7 +799,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContext) extends Promise[T] {
   val value = Some(resolve(suppliedValue))
 
-  def tryComplete(value: Either[Throwable, T]): Boolean = true
+  def tryComplete(value: Either[Throwable, T]): Boolean = false
   def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
     val completedAs = value.get
     Future dispatchTask (() ⇒ func(completedAs))

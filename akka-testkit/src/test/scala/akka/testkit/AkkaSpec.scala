@@ -30,6 +30,11 @@ object AkkaSpec {
         actor {
           default-dispatcher {
             core-pool-size-factor = 2
+            core-pool-size-min = 4
+            core-pool-size-max = 8
+            max-pool-size-factor = 2
+            max-pool-size-min = 4
+            max-pool-size-max = 8
           }
         }
       }

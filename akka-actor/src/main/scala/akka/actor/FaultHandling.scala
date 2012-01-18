@@ -13,10 +13,10 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
 
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
-      case (Some(retries), _) if retries < 1    ⇒ false
-      case (Some(retries), None)                ⇒ maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
-      case (x @ (Some(_) | None), Some(window)) ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
-      case (None, _)                            ⇒ true
+      case (Some(retries), _) if retries < 1 ⇒ false
+      case (Some(retries), None)             ⇒ maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
+      case (x, Some(window))                 ⇒ retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
+      case (None, _)                         ⇒ true
     }
 
   private def retriesInWindowOkay(retries: Int, window: Int): Boolean = {

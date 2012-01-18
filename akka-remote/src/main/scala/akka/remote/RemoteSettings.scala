@@ -9,10 +9,9 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
 import akka.config.ConfigurationException
 import com.eaio.uuid.UUID
-import akka.actor._
 import scala.collection.JavaConverters._
 
-class RemoteSettings(val config: Config, val systemName: String) extends Extension {
+class RemoteSettings(val config: Config, val systemName: String) {
 
   import config._
 
@@ -26,14 +25,8 @@ class RemoteSettings(val config: Config, val systemName: String) extends Extensi
   val BackoffTimeout = Duration(config.getMilliseconds("akka.remote.backoff-timeout"), MILLISECONDS)
 
   // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
-  val ClusterName = getString("akka.cluster.name")
   val SeedNodes = Set.empty[RemoteNettyAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
     case RemoteAddressExtractor(addr) ⇒ addr.transport
-  }
-
-  val NodeName: String = config.getString("akka.cluster.nodename") match {
-    case ""    ⇒ throw new ConfigurationException("Configuration option 'akka.cluster.nodename' must be non-empty.")
-    case value ⇒ value
   }
 
   val serverSettings = new RemoteServerSettings

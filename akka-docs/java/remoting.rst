@@ -9,39 +9,42 @@ For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Akka remoting is a separate jar file. Make sure that you have a dependency from your project to this jar::
+The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project::
 
-  akka-remote.jar
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-remote</artifactId>
+    <version>2.0-SNAPSHOT</version>
+  </dependency>
 
-First of all you have to change the actor provider from ``LocalActorRefProvider`` to ``RemoteActorRefProvider``::
+To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+to your ``application.conf`` file::
 
   akka {
     actor {
-     provider = "akka.remote.RemoteActorRefProvider"
+      provider = "akka.remote.RemoteActorRefProvider"
     }
-  }
-
-After that you must also add the following settings::
-
-  akka {
     remote {
+      transport = "akka.remote.netty.NettyRemoteSupport"
       server {
-        # The hostname or ip to bind the remoting to,
-        # InetAddress.getLocalHost.getHostAddress is used if empty
-        hostname = ""
-
-        # The default remote server port clients should connect to.
-        # Default is 2552 (AKKA)
+        hostname = "127.0.0.1"
         port = 2552
       }
-    }
+   }
   }
 
-These are the bare minimal settings that must exist in order to get started with remoting.
-There are, of course, more properties that can be tweaked. We refer to the following
+As you can see in the example above there are four things you need to add to get started:
+
+* Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
+* Add host name - the machine you want to run the actor system on
+* Add port number - the port the actor system should listen on
+
+The example above only illustrates the bare minimum of properties you have to add to enable remoting.
+There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
 
-* `reference.conf of akka-remote <https://github.com/jboner/akka/blob/master/akka-remote/src/main/resources/reference.conf#L39>`_
+.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
+   :language: none
 
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,7 +69,7 @@ The "app" in this case refers to the name of the ``ActorSystem``::
     actor {
       deployment {
         /serviceA/retrieval {
-          remote = “akka://app@10.0.0.1:2552”
+          remote = "akka://app@10.0.0.1:2552"
         }
       }
     }
@@ -103,10 +106,10 @@ This is also done via configuration::
     actor {
       deployment {
         /serviceA/aggregation {
-          router = “round-robin”
+          router = "round-robin"
           nr-of-instances = 10
-          routees {
-            nodes = [“akka://app@10.0.0.2:2552”, “akka://app@10.0.0.3:2552”]
+          target {
+            nodes = ["akka://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
           }
         }
       }

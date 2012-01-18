@@ -13,7 +13,7 @@ object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! context.system.nodename
+      case "identify" ⇒ sender ! self.path.address.hostPort
     }
   }
 
@@ -56,7 +56,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(NewRemoteActorMultiJvmS
       barrier("start")
 
       val actor = system.actorOf(Props[SomeActor], "service-hello")
-      Await.result(actor ? "identify", timeout.duration) must equal("node1")
+      Await.result(actor ? "identify", timeout.duration) must equal("AkkaRemoteSpec@localhost:9991")
 
       barrier("done")
     }

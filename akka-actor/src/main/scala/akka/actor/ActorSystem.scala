@@ -119,12 +119,12 @@ object ActorSystem {
  * system.actorOf(props)
  *
  * // Scala
- * system.actorOf(Props[MyActor]("name")
- * system.actorOf(Props[MyActor]
- * system.actorOf(Props(new MyActor(...))
+ * system.actorOf(Props[MyActor], "name")
+ * system.actorOf(Props[MyActor])
+ * system.actorOf(Props(new MyActor(...)))
  *
  * // Java
- * system.actorOf(classOf[MyActor]);
+ * system.actorOf(MyActor.class);
  * system.actorOf(Props(new Creator<MyActor>() {
  *   public MyActor create() { ... }
  * });
@@ -153,16 +153,6 @@ abstract class ActorSystem extends ActorRefFactory {
    * Log the configuration.
    */
   def logConfiguration(): Unit
-
-  /**
-   * The logical node name where this actor system resides.
-   */
-  def nodename: String
-
-  /**
-   * The logical name of the cluster this actor system belongs to.
-   */
-  def clustername: String
 
   /**
    * Construct a path below the application guardian to be used with [[ActorSystem.actorFor]].
@@ -235,13 +225,15 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Register a block of code to run after all actors in this actor system have
-   * been stopped.
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
+   * guarantee that they will be executed in a particular order.
    */
   def registerOnTermination[T](code: ⇒ T)
 
   /**
    * Register a block of code to run after all actors in this actor system have
-   * been stopped (Java API).
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
+   * guarantee that they will be executed in a particular order (Java API).
    */
   def registerOnTermination(code: Runnable)
 
@@ -329,7 +321,11 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   // this provides basic logging (to stdout) until .start() is called below
   val eventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
-  val log = new BusLogging(eventStream, "ActorSystem") // “this” used only for .getClass in tagging messages
+
+  // unfortunately we need logging before we know the rootpath address, which wants to be inserted here
+  @volatile
+  private var _log = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
+  def log = _log
 
   val scheduler = createScheduler()
 
@@ -373,8 +369,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def guardian: InternalActorRef = provider.guardian
   def systemGuardian: InternalActorRef = provider.systemGuardian
   def deathWatch: DeathWatch = provider.deathWatch
-  def nodename: String = provider.nodename
-  def clustername: String = provider.clustername
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
@@ -382,6 +376,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
     deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
@@ -497,4 +492,6 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
     }
   }
+
+  override def toString = lookupRoot.path.root.address.toString
 }
