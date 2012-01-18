@@ -26,6 +26,7 @@ import akka.actor.ActorSystemImpl
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
 import java.util.concurrent._
 import locks.ReentrantReadWriteLock
+import akka.dispatch.MonitorableThreadFactory
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -177,7 +178,9 @@ class ActiveRemoteClient private[akka] (
     runSwitch switchOn {
       executionHandler = new ExecutionHandler(remoteSupport.executor)
 
-      bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
+      bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(
+        Executors.newCachedThreadPool(remoteSupport.threadFactory),
+        Executors.newCachedThreadPool(remoteSupport.threadFactory)))
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, bootstrap, executionHandler, remoteAddress, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
@@ -366,14 +369,15 @@ class NettyRemoteSupport(_system: ActorSystemImpl, val remote: Remote, val addre
 
   val serverSettings = remote.remoteSettings.serverSettings
   val clientSettings = remote.remoteSettings.clientSettings
-
+  val threadFactory = new MonitorableThreadFactory("NettyRemoteSupport", remote.remoteSettings.Daemonic)
   val timer: HashedWheelTimer = new HashedWheelTimer
   val executor = new OrderedMemoryAwareThreadPoolExecutor(
     serverSettings.ExecutionPoolSize,
     serverSettings.MaxChannelMemorySize,
     serverSettings.MaxTotalMemorySize,
     serverSettings.ExecutionPoolKeepAlive.length,
-    serverSettings.ExecutionPoolKeepAlive.unit)
+    serverSettings.ExecutionPoolKeepAlive.unit,
+    threadFactory)
 
   private val remoteClients = new HashMap[RemoteNettyAddress, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
@@ -527,7 +531,9 @@ class NettyRemoteServer(
 
   val name = "NettyRemoteServer@" + address
 
-  private val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool)
+  private val factory = new NioServerSocketChannelFactory(
+    Executors.newCachedThreadPool(remoteSupport.threadFactory),
+    Executors.newCachedThreadPool(remoteSupport.threadFactory))
 
   private val bootstrap = new ServerBootstrap(factory)
 
