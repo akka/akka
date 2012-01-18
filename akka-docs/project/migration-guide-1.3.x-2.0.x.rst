@@ -253,11 +253,11 @@ v2.0::
   import akka.event.Logging
 
   val log = Logging(context.system, this)
-  log.error(exception, this, message)
-  log.warning(this, message)
-  log.info(this, message)
-  log.debug(this, message)
-  log.debug(this, "Processing took {} ms", duration)
+  log.error(exception, message)
+  log.warning(message)
+  log.info(message)
+  log.debug(message)
+  log.debug("Processing took {} ms", duration)
 
 Documentation:
 
