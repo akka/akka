@@ -450,7 +450,7 @@ object Dependency {
     val Netty        = "3.2.5.Final"
     val Protobuf     = "2.4.1"
     val Rabbit       = "2.3.1"
-    val ScalaStm     = "0.4"
+    val ScalaStm     = "0.5.0-SNAPSHOT"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"

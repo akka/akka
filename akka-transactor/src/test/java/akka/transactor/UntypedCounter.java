@@ -7,7 +7,8 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.transactor.UntypedTransactor;
 import akka.transactor.SendTo;
-import scala.concurrent.stm.*;
+import static scala.concurrent.stm.JavaAPI.*;
+import scala.concurrent.stm.Ref;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -15,15 +16,10 @@ import java.util.concurrent.TimeUnit;
 
 public class UntypedCounter extends UntypedTransactor {
     private String name;
-    private Ref<Integer> count = Stm.ref(0);
+    private Ref.View<Integer> count = newRef(0);
 
     public UntypedCounter(String name) {
         this.name = name;
-    }
-
-    private void increment(InTxn txn) {
-        Integer newValue = count.get(txn) + 1;
-        count.set(newValue, txn);
     }
 
     @Override public Set<SendTo> coordinate(Object message) {
@@ -41,22 +37,23 @@ public class UntypedCounter extends UntypedTransactor {
         }
     }
 
-    public void atomically(InTxn txn, Object message) {
+    public void atomically(Object message) {
         if (message instanceof Increment) {
-            increment(txn);
+            increment(count, 1);
             final Increment increment = (Increment) message;
-            CompletionHandler countDown = new CompletionHandler() {
-                public void handle(Txn.Status status) {
+            Runnable countDown = new Runnable() {
+                public void run() {
                     increment.getLatch().countDown();
                 }
             };
-            Stm.afterCompletion(countDown);
+            afterRollback(countDown);
+            afterCommit(countDown);
         }
     }
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.single().get());
+            getSender().tell(count.get());
             return true;
         } else return false;
     }
