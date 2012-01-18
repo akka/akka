@@ -5,7 +5,7 @@ package akka
 
 package object pattern {
 
-  import akka.actor.{ ActorRef, InternalActorRef, ActorRefWithProvider, AskTimeoutException }
+  import akka.actor.{ ActorRef, InternalActorRef, ActorRefWithProvider }
   import akka.dispatch.{ Future, Promise }
   import akka.util.Timeout
 
@@ -24,7 +24,7 @@ package object pattern {
    *
    * All of the above use an implicit [[akka.actor.Timeout]].
    */
-  implicit def ask(actorRef: ActorRef): AskableActorRef = new AskableActorRef(actorRef)
+  implicit def ask(actorRef: ActorRef): AskSupport.AskableActorRef = new AskSupport.AskableActorRef(actorRef)
 
   /**
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
@@ -54,15 +54,17 @@ package object pattern {
    *
    * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
-  def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
+  def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout = null): Future[Any] = actorRef match {
     case ref: ActorRefWithProvider ⇒
-      ref.provider.ask(timeout) match {
-        case Some(ref) ⇒
-          actorRef.tell(message, ref)
-          ref.result
-        case None ⇒
+      val provider = ref.provider
+      (if (timeout == null) provider.settings.ActorTimeout else timeout) match {
+        case t if t.duration.length <= 0 ⇒
           actorRef.tell(message)
-          Promise.failed(new AskTimeoutException("failed to create PromiseActorRef"))(ref.provider.dispatcher)
+          Promise.failed(new AskTimeoutException("failed to create PromiseActorRef"))(provider.dispatcher)
+        case t ⇒
+          val a = AskSupport.createAsker(provider, t)
+          actorRef.tell(message, a)
+          a.result
       }
     case _ ⇒ throw new IllegalArgumentException("incompatible ActorRef " + actorRef)
   }

@@ -71,6 +71,26 @@ trait ActorRefProvider {
   def scheduler: Scheduler
 
   /**
+   * Generates and returns a unique actor path below “/temp”.
+   */
+  def tempPath(): ActorPath
+
+  /**
+   * Returns the actor reference representing the “/temp” path.
+   */
+  def tempContainer: InternalActorRef
+
+  /**
+   * Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
+   */
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath)
+
+  /**
+   * Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path.
+   */
+  def unregisterTempActor(path: ActorPath)
+
+  /**
    * Actor factory with create-only semantics: will create an actor as
    * described by props with the given supervisor and path (may be different
    * in case of remote supervision). If systemService is true, deployment is
@@ -99,12 +119,6 @@ trait ActorRefProvider {
    * physically or logically attached to this actor system.
    */
   def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
-
-  /**
-   * Create AskActorRef and register it properly so it can be serialized/deserialized;
-   * caller needs to send the message.
-   */
-  def ask(within: Timeout): Option[PromiseActorRef]
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
@@ -441,6 +455,16 @@ class LocalActorRefProvider(
 
   lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
 
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
+    assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
+    tempContainer.addChild(path.name, actorRef)
+  }
+
+  def unregisterTempActor(path: ActorPath): Unit = {
+    assert(path.parent eq tempNode, "cannot unregisterTempActor() with anything not obtained from tempPath()")
+    tempContainer.removeChild(path.name)
+  }
+
   val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
 
   def init(_system: ActorSystemImpl) {
@@ -491,25 +515,6 @@ class LocalActorRefProvider(
           deployer.lookup(lookupPath)
         }
         new RoutedActorRef(system, props.withRouter(router.adaptFromDeploy(depl)), supervisor, path)
-    }
-  }
-
-  def ask(within: Timeout): Option[PromiseActorRef] = {
-    (if (within == null) settings.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒ None
-      case t ⇒
-        val path = tempPath()
-        val name = path.name
-        val result = Promise[Any]()(dispatcher)
-        val a = new PromiseActorRef(path, tempContainer, result, deathWatch)
-        tempContainer.addChild(name, a)
-        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
-        result onComplete { _ ⇒
-          try { a.stop(); f.cancel() }
-          finally { tempContainer.removeChild(name) }
-        }
-
-        Some(a)
     }
   }
 }

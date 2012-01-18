@@ -39,6 +39,11 @@ class RemoteActorRefProvider(
   def terminationFuture = local.terminationFuture
   def dispatcher = local.dispatcher
 
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath) = local.registerTempActor(actorRef, path)
+  def unregisterTempActor(path: ActorPath) = local.unregisterTempActor(path)
+  def tempPath() = local.tempPath()
+  def tempContainer = local.tempContainer
+
   val deployer = new RemoteDeployer(settings)
 
   val remote = new Remote(settings, remoteSettings)
@@ -137,8 +142,6 @@ class RemoteActorRefProvider(
   }
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
-
-  def ask(within: Timeout): Option[PromiseActorRef] = local.ask(within)
 
   /**
    * Using (checking out) actor on a specific node.

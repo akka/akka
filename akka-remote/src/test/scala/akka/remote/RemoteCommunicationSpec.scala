@@ -83,8 +83,8 @@ akka {
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
-        case ("pong", s: PromiseActorRef) ⇒ // good
-        case m                            ⇒ fail(m + " was not (pong, AskActorRef)")
+        case ("pong", s: akka.pattern.AskSupport.PromiseActorRef) ⇒ // good
+        case m ⇒ fail(m + " was not (pong, AskActorRef)")
       }
     }
 

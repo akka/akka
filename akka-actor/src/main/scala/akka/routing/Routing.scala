@@ -9,6 +9,7 @@ import scala.collection.JavaConversions._
 import akka.util.{ Duration, Timeout }
 import akka.config.ConfigurationException
 import akka.dispatch.Promise
+import akka.pattern.AskSupport
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -404,7 +405,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = context.asInstanceOf[ActorCell].systemImpl.provider
-        val asker = provider.ask(Timeout(within)).get
+        val asker = AskSupport.createAsker(provider, within)
         asker.result.pipeTo(sender)
         toAll(asker, ref.routees)
     }
