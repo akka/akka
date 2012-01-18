@@ -4,12 +4,45 @@
 package akka.zeromq
 
 import com.google.protobuf.Message
+import org.zeromq.{ ZMQ ⇒ JZMQ }
+import akka.actor.ActorRef
+import akka.util.duration._
+import akka.util.Duration
 
 sealed trait Request
-sealed trait SocketOption extends Request
+trait SocketOption extends Request
 sealed trait SocketOptionQuery extends Request
 
 case class Connect(endpoint: String) extends Request
+
+object Context {
+  def apply(numIoThreads: Int = 1) = new Context(numIoThreads)
+}
+class Context(numIoThreads: Int) extends SocketOption {
+  private val context = JZMQ.context(numIoThreads)
+  def socket(socketType: SocketType.ZMQSocketType) = {
+    context.socket(socketType.id)
+  }
+  def poller = {
+    context.poller
+  }
+  def term = {
+    context.term
+  }
+}
+
+object SocketType {
+  abstract class ZMQSocketType(val id: Int) extends SocketOption
+  object Pub extends ZMQSocketType(JZMQ.PUB)
+  object Sub extends ZMQSocketType(JZMQ.SUB)
+  object Dealer extends ZMQSocketType(JZMQ.DEALER)
+  object Router extends ZMQSocketType(JZMQ.ROUTER)
+}
+
+case class Listener(listener: ActorRef) extends SocketOption
+case class PollDispatcher(name: String) extends SocketOption
+case class PollTimeoutDuration(duration: Duration = 100 millis) extends SocketOption
+
 case class Bind(endpoint: String) extends Request
 private[zeromq] case object Close extends Request
 

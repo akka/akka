@@ -37,7 +37,7 @@ class ConcurrentSocketActorSpec
     "support pub-sub connections" in {
       checkZeroMQInstallation
       val (publisherProbe, subscriberProbe) = (TestProbe(), TestProbe())
-      val context = zmq.newContext()
+      val context = Context()
       val publisher = newPublisher(context, publisherProbe.ref)
       val subscriber = newSubscriber(context, subscriberProbe.ref)
       val msgGenerator = newMessageGenerator(publisher)
@@ -63,7 +63,7 @@ class ConcurrentSocketActorSpec
     "support zero-length message frames" in {
       checkZeroMQInstallation
       val publisherProbe = TestProbe()
-      val context = zmq.newContext()
+      val context = Context()
       val publisher = newPublisher(context, publisherProbe.ref)
 
       try {
@@ -77,18 +77,18 @@ class ConcurrentSocketActorSpec
       }
     }
     def newPublisher(context: Context, listener: ActorRef) = {
-      val publisher = zmq.newSocket(SocketType.Pub, context = context, listener = Some(listener))
+      val publisher = zmq.newSocket(SocketType.Pub, context, Listener(listener))
       publisher ! Bind(endpoint)
       publisher
     }
     def newSubscriber(context: Context, listener: ActorRef) = {
-      val subscriber = zmq.newSocket(SocketType.Sub, context = context, listener = Some(listener))
+      val subscriber = zmq.newSocket(SocketType.Sub, context, Listener(listener))
       subscriber ! Connect(endpoint)
       subscriber ! Subscribe(Seq())
       subscriber
     }
     def newMessageGenerator(actorRef: ActorRef) = {
-      system.actorOf(Props(new MessageGeneratorActor(actorRef)).withTimeout(Timeout(10 millis)))
+      system.actorOf(Props(new MessageGeneratorActor(actorRef)))
 
     }
     def checkZeroMQInstallation = try {
@@ -114,7 +114,7 @@ class ConcurrentSocketActorSpec
     private var genMessages: Cancellable = null
 
     override def preStart() = {
-      genMessages = system.scheduler.schedule(100 millis, 10 millis, self, 'm)
+      genMessages = system.scheduler.schedule(100 millis, 10 millis, self, "genMessage")
     }
 
     override def postStop() = {

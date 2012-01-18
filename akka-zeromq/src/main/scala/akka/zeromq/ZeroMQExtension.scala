@@ -5,18 +5,10 @@ package akka.zeromq
 
 import akka.util.Duration
 import akka.util.duration._
-import akka.zeromq.SocketType._
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Dispatcher, Await }
-
-case class SocketParameters(
-  socketType: SocketType,
-  context: Context,
-  listener: Option[ActorRef] = None,
-  pollDispatcher: Option[String] = None,
-  deserializer: Deserializer = new ZMQMessageDeserializer,
-  pollTimeoutDuration: Duration = 100 millis)
+import collection.mutable.ListBuffer
 
 case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
   override def toString = "%d.%d.%d".format(major, minor, patch)
@@ -28,6 +20,12 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 
   private val minVersionString = "2.1.0"
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
+
+  private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) = {
+    parameters exists { p ⇒
+      ClassManifest.singleType(p) <:< manifest[TOption]
+    }
+  }
 }
 class ZeroMQExtension(system: ActorSystem) extends Extension {
 
@@ -35,23 +33,15 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
     ZeroMQVersion(JZMQ.getMajorVersion, JZMQ.getMinorVersion, JZMQ.getPatchVersion)
   }
 
-  lazy val DefaultContext = newContext()
-
-  def newContext(numIoThreads: Int = 1) = {
+  def newSocketProps(socketParameters: SocketOption*): Props = {
     verifyZeroMQVersion
-    new Context(numIoThreads)
+    require(ZeroMQExtension.check[SocketType.ZMQSocketType](socketParameters), "A socket type is required")
+    Props(new ConcurrentSocketActor(socketParameters)).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 
-  def newSocket(socketType: SocketType,
-                listener: Option[ActorRef] = None,
-                context: Context = DefaultContext, // For most applications you want to use the default context
-                deserializer: Deserializer = new ZMQMessageDeserializer,
-                pollDispatcher: Option[String] = None,
-                pollTimeoutDuration: Duration = 500 millis): ActorRef = {
-    verifyZeroMQVersion
-    val params = SocketParameters(socketType, context, listener, pollDispatcher, deserializer, pollTimeoutDuration)
+  def newSocket(socketParameters: SocketOption*): ActorRef = {
     implicit val timeout = system.settings.ActorTimeout
-    val req = (zeromq ? Props(new ConcurrentSocketActor(params)).withDispatcher("akka.zeromq.socket-dispatcher")).mapTo[ActorRef]
+    val req = (zeromq ? newSocketProps(socketParameters: _*)).mapTo[ActorRef]
     Await.result(req, timeout.duration)
   }
 

@@ -6,7 +6,7 @@ package akka.zeromq
 case class Frame(payload: Seq[Byte])
 object Frame { def apply(s: String): Frame = Frame(s.getBytes) }
 
-trait Deserializer {
+trait Deserializer extends SocketOption {
   def apply(frames: Seq[Frame]): Any
 }
 

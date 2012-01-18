@@ -8,17 +8,22 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Promise, Future }
 import akka.event.Logging
+import akka.util.duration._
 
 private[zeromq] sealed trait PollLifeCycle
 private[zeromq] case object NoResults extends PollLifeCycle
 private[zeromq] case object Results extends PollLifeCycle
 private[zeromq] case object Closing extends PollLifeCycle
 
-private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Actor {
+private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends Actor {
 
   private val noBytes = Array[Byte]()
-  private val socket: Socket = params.context.socket(params.socketType)
-  private val poller: Poller = params.context.poller
+  private val zmqContext = {
+    params find (_.isInstanceOf[Context]) map (_.asInstanceOf[Context]) getOrElse new Context(1)
+  }
+  private lazy val deserializer = deserializerFromParams
+  private lazy val socket: Socket = socketFromParams
+  private lazy val poller: Poller = zmqContext.poller
   private val log = Logging(context.system, this)
 
   private case object Poll
@@ -55,45 +60,26 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   }
 
   private def handleSocketOption: Receive = {
-    case Linger(value)            ⇒ socket.setLinger(value)
-    case ReconnectIVL(value)      ⇒ socket.setReconnectIVL(value)
-    case Backlog(value)           ⇒ socket.setBacklog(value)
-    case ReconnectIVLMax(value)   ⇒ socket.setReconnectIVLMax(value)
-    case MaxMsgSize(value)        ⇒ socket.setMaxMsgSize(value)
-    case SndHWM(value)            ⇒ socket.setSndHWM(value)
-    case RcvHWM(value)            ⇒ socket.setRcvHWM(value)
-    case HWM(value)               ⇒ socket.setHWM(value)
-    case Swap(value)              ⇒ socket.setSwap(value)
-    case Affinity(value)          ⇒ socket.setAffinity(value)
-    case Identity(value)          ⇒ socket.setIdentity(value)
-    case Rate(value)              ⇒ socket.setRate(value)
-    case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
-    case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
-    case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
-    case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
-    case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
-    case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
-    case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
-    case Linger                   ⇒ sender ! socket.getLinger
-    case ReconnectIVL             ⇒ sender ! socket.getReconnectIVL
-    case Backlog                  ⇒ sender ! socket.getBacklog
-    case ReconnectIVLMax          ⇒ sender ! socket.getReconnectIVLMax
-    case MaxMsgSize               ⇒ sender ! socket.getMaxMsgSize
-    case SndHWM                   ⇒ sender ! socket.getSndHWM
-    case RcvHWM                   ⇒ sender ! socket.getRcvHWM
-    case Swap                     ⇒ sender ! socket.getSwap
-    case Affinity                 ⇒ sender ! socket.getAffinity
-    case Identity                 ⇒ sender ! socket.getIdentity
-    case Rate                     ⇒ sender ! socket.getRate
-    case RecoveryInterval         ⇒ sender ! socket.getRecoveryInterval
-    case MulticastLoop            ⇒ sender ! socket.hasMulticastLoop
-    case MulticastHops            ⇒ sender ! socket.getMulticastHops
-    case ReceiveTimeOut           ⇒ sender ! socket.getReceiveTimeOut
-    case SendTimeOut              ⇒ sender ! socket.getSendTimeOut
-    case SendBufferSize           ⇒ sender ! socket.getSendBufferSize
-    case ReceiveBufferSize        ⇒ sender ! socket.getReceiveBufferSize
-    case ReceiveMore              ⇒ sender ! socket.hasReceiveMore
-    case FileDescriptor           ⇒ sender ! socket.getFD
+    case Linger            ⇒ sender ! socket.getLinger
+    case ReconnectIVL      ⇒ sender ! socket.getReconnectIVL
+    case Backlog           ⇒ sender ! socket.getBacklog
+    case ReconnectIVLMax   ⇒ sender ! socket.getReconnectIVLMax
+    case MaxMsgSize        ⇒ sender ! socket.getMaxMsgSize
+    case SndHWM            ⇒ sender ! socket.getSndHWM
+    case RcvHWM            ⇒ sender ! socket.getRcvHWM
+    case Swap              ⇒ sender ! socket.getSwap
+    case Affinity          ⇒ sender ! socket.getAffinity
+    case Identity          ⇒ sender ! socket.getIdentity
+    case Rate              ⇒ sender ! socket.getRate
+    case RecoveryInterval  ⇒ sender ! socket.getRecoveryInterval
+    case MulticastLoop     ⇒ sender ! socket.hasMulticastLoop
+    case MulticastHops     ⇒ sender ! socket.getMulticastHops
+    case ReceiveTimeOut    ⇒ sender ! socket.getReceiveTimeOut
+    case SendTimeOut       ⇒ sender ! socket.getSendTimeOut
+    case SendBufferSize    ⇒ sender ! socket.getSendBufferSize
+    case ReceiveBufferSize ⇒ sender ! socket.getReceiveBufferSize
+    case ReceiveMore       ⇒ sender ! socket.hasReceiveMore
+    case FileDescriptor    ⇒ sender ! socket.getFD
   }
 
   private def internalMessage: Receive = {
@@ -104,7 +90,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
     case ReceiveFrames ⇒ {
       receiveFrames() match {
         case Seq()  ⇒
-        case frames ⇒ notifyListener(params.deserializer(frames))
+        case frames ⇒ notifyListener(deserializer(frames))
       }
       self ! Poll
     }
@@ -118,7 +104,44 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   override def receive: Receive = handleConnectionMessages orElse handleSocketOption orElse internalMessage
 
   override def preStart {
+    setupSocket()
     poller.register(socket, Poller.POLLIN)
+  }
+
+  private def socketFromParams() = {
+    require(ZeroMQExtension.check[SocketType.ZMQSocketType](params), "A socket type is required")
+    (params
+      find (_.isInstanceOf[SocketType.ZMQSocketType])
+      map (t ⇒ zmqContext.socket(t.asInstanceOf[SocketType.ZMQSocketType])) get)
+  }
+
+  private def deserializerFromParams = {
+    params find (_.isInstanceOf[Deserializer]) map (_.asInstanceOf[Deserializer]) getOrElse new ZMQMessageDeserializer
+  }
+
+  private def setupSocket() = {
+    params foreach {
+      case Linger(value)            ⇒ socket.setLinger(value)
+      case ReconnectIVL(value)      ⇒ socket.setReconnectIVL(value)
+      case Backlog(value)           ⇒ socket.setBacklog(value)
+      case ReconnectIVLMax(value)   ⇒ socket.setReconnectIVLMax(value)
+      case MaxMsgSize(value)        ⇒ socket.setMaxMsgSize(value)
+      case SndHWM(value)            ⇒ socket.setSndHWM(value)
+      case RcvHWM(value)            ⇒ socket.setRcvHWM(value)
+      case HWM(value)               ⇒ socket.setHWM(value)
+      case Swap(value)              ⇒ socket.setSwap(value)
+      case Affinity(value)          ⇒ socket.setAffinity(value)
+      case Identity(value)          ⇒ socket.setIdentity(value)
+      case Rate(value)              ⇒ socket.setRate(value)
+      case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
+      case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
+      case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
+      case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
+      case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
+      case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
+      case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
+      case _                        ⇒
+    }
   }
 
   override def postStop {
@@ -146,14 +169,22 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
     if (currentPoll.isEmpty) currentPoll = newEventLoop
   }
 
-  private val eventLoopDispatcher = {
-    params.pollDispatcher.map(d ⇒ context.system.dispatchers.lookup(d)) getOrElse context.system.dispatcher
+  private lazy val eventLoopDispatcher = {
+    val fromConfig = params.find(_.isInstanceOf[PollDispatcher]) map {
+      option ⇒ context.system.dispatchers.lookup(option.asInstanceOf[PollDispatcher].name)
+    }
+    fromConfig getOrElse context.system.dispatcher
+  }
+
+  private lazy val pollTimeout = {
+    val fromConfig = params find (_.isInstanceOf[PollTimeoutDuration]) map (_.asInstanceOf[PollTimeoutDuration].duration)
+    fromConfig getOrElse 100.millis
   }
 
   private def newEventLoop: Option[Promise[PollLifeCycle]] = {
     implicit val executor = eventLoopDispatcher
     Some((Future {
-      if (poller.poll(params.pollTimeoutDuration.toMicros) > 0 && poller.pollin(0)) Results else NoResults
+      if (poller.poll(pollTimeout.toMicros) > 0 && poller.pollin(0)) Results else NoResults
     }).asInstanceOf[Promise[PollLifeCycle]] onSuccess {
       case Results   ⇒ self ! ReceiveFrames
       case NoResults ⇒ self ! Poll
@@ -184,7 +215,7 @@ private[zeromq] class ConcurrentSocketActor(params: SocketParameters) extends Ac
   }
 
   private def notifyListener(message: Any) {
-    params.listener.foreach { listener ⇒
+    params find (_.isInstanceOf[Listener]) map (_.asInstanceOf[Listener].listener) foreach { listener ⇒
       if (listener.isTerminated)
         context stop self
       else
