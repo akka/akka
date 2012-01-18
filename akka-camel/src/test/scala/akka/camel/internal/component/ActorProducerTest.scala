@@ -290,7 +290,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   def msg(s: String) = Message(s, Map.empty, camel.context)
 
 
-  def given(actor: ActorRef = probe.ref, outCapable: Boolean, blocking: BlockingOrNot = NonBlocking, autoAck: Boolean = true, outTimeout : Duration = Int.MaxValue seconds) = {
+  def given(actor: ActorRef = probe.ref, outCapable: Boolean, blocking: CommunicationStyle = NonBlocking, autoAck: Boolean = true, outTimeout : Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
     new TestableProducer(config(isBlocking = blocking, isAutoAck = autoAck, _outTimeout = outTimeout), camel)
   }
@@ -326,11 +326,11 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   }
 
-  def config(actorPath: String = "path:akka://test/path",  endpointUri: String = "test-uri",  isBlocking: BlockingOrNot = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
+  def config(actorPath: String = "path:akka://test/path",  endpointUri: String = "test-uri",  isBlocking: CommunicationStyle = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
     new ActorEndpointConfig {
       val path = ActorEndpointPath.fromCamelPath(actorPath)
       val getEndpointUri = endpointUri
-      blocking = isBlocking
+      communicationStyle = isBlocking
       autoack = isAutoAck
       outTimeout = _outTimeout
     }

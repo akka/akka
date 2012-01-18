@@ -9,7 +9,8 @@ object  ActorRouteDefinition {
 }
 
 class ActorRouteDefinition(rd: RouteDefinition){
-  def to(actorRef: ActorRef) = rd.to(ActorEndpointPath(actorRef).toCamelPath)
+  def to(actorRef: ActorRef) = rd.to(ActorEndpointPath(actorRef).toCamelPath())
+  def to(actorRef: ActorRef, conf: ConsumerConfig) = rd.to(ActorEndpointPath(actorRef).toCamelPath(conf))
 }
 
 

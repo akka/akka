@@ -15,13 +15,13 @@ import scala.reflect.BeanProperty
 import akka.dispatch.Await
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
-import akka.camel.{Camel, CamelExchangeAdapter, Ack, Failure, Message, BlockingOrNot, Blocking, NonBlocking}
 import java.util.concurrent.TimeoutException
+import akka.camel.{ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message, CommunicationStyle, Blocking, NonBlocking}
 
 private[camel] case class ActorEndpointPath private(actorPath: String) {
   require(actorPath != null)
   require(actorPath.length() > 0)
-  def toCamelPath =  "actor://path:%s" format actorPath
+  def toCamelPath(config: ConsumerConfig = new ConsumerConfig {}) : String =  "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
 }
 
 private[camel] object ActorEndpointPath{
@@ -113,7 +113,7 @@ trait ActorEndpointConfig{
    * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
    * <code>false</code>.
    */
-  @BeanProperty var blocking: BlockingOrNot = NonBlocking
+  @BeanProperty var communicationStyle: CommunicationStyle = NonBlocking
 
   /** TODO fix it
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
@@ -163,6 +163,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
   }
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
+    // Following 4 methods are here to make the rest of the code more readable.
     def notifyDoneSynchronously[A](a:A = null) = callback.done(true)
     def notifyDoneAsynchronously[A](a:A = null) = callback.done(false)
     val DoneSync = true
@@ -176,7 +177,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     }
 
     def outCapable: Boolean = {
-      config.blocking match {
+      config.communicationStyle match {
         case Blocking(timeout) => {
           sendSync(exchange, timeout, onComplete = forwardResponseTo(exchange))
           notifyDoneSynchronously()
@@ -190,7 +191,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     }
 
     def inOnlyAutoAck: Boolean = {
-      config.blocking match {
+      config.communicationStyle match {
         case NonBlocking => {
           fireAndForget(exchange)
           notifyDoneAsynchronously()
@@ -201,7 +202,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     }
 
     def inOnlyManualAck: Boolean = {
-      config.blocking match {
+      config.communicationStyle match {
         case NonBlocking => {
           sendAsync(exchange, config.outTimeout, onComplete = processAck andThen notifyDoneAsynchronously)
           DoneAsync
@@ -268,7 +269,7 @@ class ActorNotRegisteredException(uri: String) extends RuntimeException{
 }
 
 
-object DurationTypeConverter extends CamelTypeConverter {
+private[camel] object DurationTypeConverter extends CamelTypeConverter {
   def convertTo[T](`type`: Class[T], value: AnyRef) = {
     require(value.toString.endsWith(" nanos"))
     Duration.fromNanos(value.toString.dropRight(6).toLong).asInstanceOf[T]
@@ -280,25 +281,25 @@ object DurationTypeConverter extends CamelTypeConverter {
 /**
  * Converter required by akka
  */
-object BlockingOrNotTypeConverter extends CamelTypeConverter{
+private[camel] object CommunicationStyleTypeConverter extends CamelTypeConverter{
   import akka.util.duration._
   val blocking = """Blocking\((\d+) nanos\)""".r
   def convertTo[T](`type`: Class[T], value: AnyRef) = `type` match{
-    case c if c == classOf[BlockingOrNot] => value.toString match  {
+    case c if c == classOf[CommunicationStyle] => value.toString match  {
       case blocking(timeout) => Blocking(timeout.toLong nanos).asInstanceOf[T]
       case "NonBlocking" => NonBlocking.asInstanceOf[T]
     }
   }
 
 
-  def toString(b : BlockingOrNot)  = b match{
+  def toString(b : CommunicationStyle)  = b match{
     case NonBlocking => NonBlocking.toString
     case Blocking(timeout) => "Blocking(%d nanos)".format(timeout.toNanos)
   }
 
 }
 
-abstract class CamelTypeConverter extends TypeConverter{
+private[camel] abstract class CamelTypeConverter extends TypeConverter{
   def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
   def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
   def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)

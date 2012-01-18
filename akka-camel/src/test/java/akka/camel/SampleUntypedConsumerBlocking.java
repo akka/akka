@@ -11,7 +11,7 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         return "direct:test-untyped-consumer-blocking";
     }
 
-    public BlockingOrNot isBlocking() {
+    public CommunicationStyle communicationStyle() {
         return Blocking.seconds(1);
     }
 

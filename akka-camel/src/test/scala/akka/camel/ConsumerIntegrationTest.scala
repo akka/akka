@@ -70,7 +70,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   it should  "support blocking, in-out messaging" in  {
     start(new Consumer {
       def endpointUri = "direct:a1"
-      override def blocking = Blocking(200 millis)
+      override def communicationStyle = Blocking(200 millis)
 
       protected def receive = {
         case m: Message =>{

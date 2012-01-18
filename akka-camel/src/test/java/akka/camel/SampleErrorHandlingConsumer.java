@@ -22,7 +22,7 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     }
 
     @Override
-    public BlockingOrNot blocking(){
+    public CommunicationStyle communicationStyle(){
         return Blocking.seconds(1);
     }
 

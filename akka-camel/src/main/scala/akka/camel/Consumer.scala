@@ -4,6 +4,7 @@
 
 package akka.camel
 
+import internal.component.{DurationTypeConverter, CommunicationStyleTypeConverter}
 import org.apache.camel.model.{RouteDefinition, ProcessorDefinition}
 
 import akka.actor._
@@ -43,7 +44,7 @@ trait ConsumerConfig{
    * should be done in blocking or non-blocking mode (default is non-blocking). This method
    * doesn't have any effect on one-way communications (they'll never block).
    */
-  def blocking : BlockingOrNot = NonBlocking
+  def communicationStyle : CommunicationStyle = NonBlocking
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
@@ -56,13 +57,18 @@ trait ConsumerConfig{
    */
   //TODO: write a test confirming onRouteDefinition gets called
   def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_] = rd
+
+  private[camel] def toCamelParameters : String = "communicationStyle=%s&autoack=%s&outTimeout=%s" format (CommunicationStyleTypeConverter.toString(communicationStyle), autoack, DurationTypeConverter.toString(outTimeout))
 }
 
-sealed trait BlockingOrNot
-case object NonBlocking extends BlockingOrNot
-case class Blocking(timeout : Duration) extends BlockingOrNot
+
+
+sealed trait CommunicationStyle
+case object NonBlocking extends CommunicationStyle
+case class Blocking(timeout : Duration) extends CommunicationStyle
 
 object Blocking{
+  //this methods are for java customers
   def seconds(timeout:Long) = Blocking(timeout seconds)
   def millis(timeout:Long) = Blocking(timeout millis)
 }

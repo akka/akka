@@ -10,7 +10,7 @@ object SupervisedConsumersExample extends App{
   val system = ActorSystem("test1")
 
   system.actorOf(Props(new Actor{
-    context.watch(context.actorOf(Props(faultHandler = retry3xWithin1s, creator = () => new EndpointManager)))
+    context.watch(context.actorOf(Props[EndpointManager].withFaultHandler(retry3xWithin1s)))
     protected def receive = {
       case Terminated(ref) => system.shutdown()
     }

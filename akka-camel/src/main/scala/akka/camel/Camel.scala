@@ -1,6 +1,6 @@
 package akka.camel
 
-import internal.component.{BlockingOrNotTypeConverter, DurationTypeConverter, ActorComponent, ActorEndpointPath}
+import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent, ActorEndpointPath}
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
@@ -33,7 +33,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
     ctx.setName(actorSystem.name);
     ctx.setStreamCaching(true)
     ctx.addComponent("actor", new ActorComponent(this))
-    ctx.getTypeConverterRegistry.addTypeConverter(classOf[BlockingOrNot], classOf[String], BlockingOrNotTypeConverter)
+    ctx.getTypeConverterRegistry.addTypeConverter(classOf[CommunicationStyle], classOf[String], CommunicationStyleTypeConverter)
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)
     ctx
   }
