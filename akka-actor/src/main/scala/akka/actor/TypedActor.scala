@@ -396,7 +396,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
-        import akka.patterns.ask
+        import akka.pattern.ask
         MethodCall(method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
           case m if m.returnsFuture_? ⇒ actor.?(m, timeout)

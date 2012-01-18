@@ -8,7 +8,7 @@ import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {

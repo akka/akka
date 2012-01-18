@@ -7,7 +7,7 @@ import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
 import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers }
-import akka.patterns.ask
+import akka.pattern.ask
 
 object PinnedActorSpec {
   val config = """

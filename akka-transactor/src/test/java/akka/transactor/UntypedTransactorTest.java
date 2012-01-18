@@ -18,7 +18,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Await;
 import akka.dispatch.Future;
-import static akka.Patterns.ask;
+import static akka.pattern.Patterns.ask;
 import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;

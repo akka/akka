@@ -9,7 +9,7 @@ import akka.util.duration._
 import Actor._
 import akka.util.Duration
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"

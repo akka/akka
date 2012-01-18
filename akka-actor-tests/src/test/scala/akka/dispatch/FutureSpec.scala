@@ -16,7 +16,7 @@ import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 import scala.runtime.NonLocalReturnControl
-import akka.patterns.ask
+import akka.pattern.ask
 
 object FutureSpec {
   class TestActor extends Actor {

@@ -55,7 +55,7 @@ import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.dispatch.Futures;
-import akka.Patterns;
+import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
 

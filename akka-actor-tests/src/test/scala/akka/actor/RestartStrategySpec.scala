@@ -14,7 +14,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
 import akka.util.duration._
-import akka.patterns.ask
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RestartStrategySpec extends AkkaSpec with DefaultTimeout {

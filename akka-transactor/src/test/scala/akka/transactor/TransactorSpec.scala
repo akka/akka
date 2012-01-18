@@ -10,7 +10,7 @@ import akka.util.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
-import akka.patterns.ask
+import akka.pattern.ask
 
 object TransactorIncrement {
   case class Increment(friends: Seq[ActorRef], latch: TestLatch)

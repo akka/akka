@@ -44,7 +44,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg = "hello"
     //#ask-blocking
     import akka.dispatch.Await
-    import akka.patterns.ask
+    import akka.pattern.ask
 
     implicit val timeout = system.settings.ActorTimeout
     val future = actor ? msg // enabled by the “ask” import
@@ -59,7 +59,7 @@ class FutureDocSpec extends AkkaSpec {
     implicit val timeout = system.settings.ActorTimeout
     //#map-to
     import akka.dispatch.Future
-    import akka.patterns.ask
+    import akka.pattern.ask
 
     val future: Future[String] = ask(actor, msg).mapTo[String]
     //#map-to
@@ -149,7 +149,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg2 = 2
     implicit val timeout = system.settings.ActorTimeout
     import akka.dispatch.Await
-    import akka.patterns.ask
+    import akka.pattern.ask
     //#composing-wrong
 
     val f1 = ask(actor1, msg1)
@@ -173,7 +173,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg2 = 2
     implicit val timeout = system.settings.ActorTimeout
     import akka.dispatch.Await
-    import akka.patterns.ask
+    import akka.pattern.ask
     //#composing
 
     val f1 = ask(actor1, msg1)
@@ -195,7 +195,7 @@ class FutureDocSpec extends AkkaSpec {
     val oddActor = system.actorOf(Props[OddActor])
     //#sequence-ask
     // oddActor returns odd numbers sequentially from 1 as a List[Future[Int]]
-    val listOfFutures = List.fill(100)(akka.patterns.ask(oddActor, GetNext).mapTo[Int])
+    val listOfFutures = List.fill(100)(akka.pattern.ask(oddActor, GetNext).mapTo[Int])
 
     // now we have a Future[List[Int]]
     val futureList = Future.sequence(listOfFutures)
@@ -243,7 +243,7 @@ class FutureDocSpec extends AkkaSpec {
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#recover
-    val future = akka.patterns.ask(actor, msg1) recover {
+    val future = akka.pattern.ask(actor, msg1) recover {
       case e: ArithmeticException ⇒ 0
     }
     //#recover

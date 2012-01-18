@@ -168,7 +168,7 @@ trait LocalRef extends ActorRefScope {
 }
 
 /**
- * Trait for matching on ActorRefs which have access to a provider; this is used in akka.patterns.ask.
+ * Trait for matching on ActorRefs which have access to a provider; this is used in akka.pattern.ask.
  */
 trait ActorRefWithProvider { this: InternalActorRef ⇒
   def provider: ActorRefProvider
@@ -472,7 +472,7 @@ class AskTimeoutException(message: String, cause: Throwable) extends TimeoutExce
 }
 
 /**
- * Akka private optimized representation of the temporary actor spawned to 
+ * Akka private optimized representation of the temporary actor spawned to
  * receive the reply to an "ask" operation.
  */
 private[akka] final class PromiseActorRef(

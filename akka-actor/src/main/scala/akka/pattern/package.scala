@@ -3,7 +3,7 @@
  */
 package akka
 
-package object patterns {
+package object pattern {
 
   import akka.actor.{ ActorRef, InternalActorRef, ActorRefWithProvider, AskTimeoutException }
   import akka.dispatch.{ Future, Promise }
@@ -15,7 +15,7 @@ package object patterns {
    * `ask(actorRef, message)(timeout)` method defined here.
    *
    * {{{
-   * import akka.patterns.ask
+   * import akka.pattern.ask
    *
    * val future = actor ? message             // => ask(actor, message)
    * val future = actor ask message           // => ask(actor, message)

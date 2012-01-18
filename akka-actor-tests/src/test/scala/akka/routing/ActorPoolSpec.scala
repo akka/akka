@@ -6,7 +6,7 @@ import akka.util.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.AkkaSpec
 import akka.dispatch.{ Await, Promise, Future }
-import akka.patterns.ask
+import akka.pattern.ask
 
 object ActorPoolSpec {
 

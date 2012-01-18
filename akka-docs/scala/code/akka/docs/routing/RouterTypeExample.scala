@@ -8,7 +8,7 @@ import annotation.tailrec
 import akka.actor.{ Props, Actor }
 import akka.util.duration._
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 case class FibonacciNumber(nbr: Int)
 

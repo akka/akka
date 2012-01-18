@@ -7,7 +7,7 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {

@@ -7,7 +7,7 @@ import akka.config.ConfigurationException
 import akka.actor._
 import akka.event._
 import akka.dispatch._
-import akka.patterns.ask
+import akka.pattern.ask
 import akka.util.duration._
 import akka.util.Timeout
 import akka.util.Timeout._

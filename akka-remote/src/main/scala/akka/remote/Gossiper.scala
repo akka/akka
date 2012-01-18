@@ -22,7 +22,7 @@ import scala.annotation.tailrec
 import com.google.protobuf.ByteString
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 /**
  * Interface for node membership change listener.

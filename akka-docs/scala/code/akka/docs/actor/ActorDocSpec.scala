@@ -220,7 +220,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "using ask" in {
     //#using-ask
-    import akka.patterns.ask
+    import akka.pattern.ask
 
     class MyActor extends Actor {
       def receive = {
@@ -245,7 +245,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#using-implicit-timeout
     import akka.util.duration._
     import akka.util.Timeout
-    import akka.patterns.ask
+    import akka.pattern.ask
     implicit val timeout = Timeout(500 millis)
     val future = myActor ? "hello"
     //#using-implicit-timeout
@@ -257,7 +257,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
     import akka.util.duration._
-    import akka.patterns.ask
+    import akka.pattern.ask
     val future = myActor ? ("hello", timeout = 500 millis)
     //#using-explicit-timeout
     Await.result(future, 500 millis) must be("hello")

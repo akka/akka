@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
-import akka.patterns.ask
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {

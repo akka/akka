@@ -38,7 +38,7 @@ import org.junit.Test;
 import scala.Option;
 import java.lang.Object;
 import java.util.concurrent.TimeUnit;
-import akka.Patterns;
+import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
 

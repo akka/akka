@@ -10,7 +10,7 @@ import akka.testkit.DefaultTimeout
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
 import akka.util.Timeout
-import akka.patterns.ask
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeout {

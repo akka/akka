@@ -5,7 +5,7 @@ import akka.routing._
 import akka.testkit.AkkaSpec
 import akka.dispatch.Await
 import akka.util.duration._
-import akka.patterns.ask
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket703Spec extends AkkaSpec {

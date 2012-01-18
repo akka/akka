@@ -7,7 +7,7 @@ package akka.agent
 import akka.actor._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
 import akka.dispatch._
-import akka.patterns.ask
+import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
 

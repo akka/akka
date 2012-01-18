@@ -13,7 +13,7 @@ import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.dispatch.Await;
-import static akka.Patterns.ask;
+import static akka.pattern.Patterns.ask;
 import akka.util.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;

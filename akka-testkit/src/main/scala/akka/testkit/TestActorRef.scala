@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.event.EventStream
 import scala.collection.immutable.Stack
 import akka.dispatch._
-import akka.patterns.ask
+import akka.pattern.ask
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it

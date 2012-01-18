@@ -18,7 +18,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, Dispatchers, Future, Promise }
-import akka.patterns.ask
+import akka.pattern.ask
 
 object TypedActorSpec {
 

@@ -13,7 +13,7 @@ import akka.util.Timeout
 import akka.util.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
-import akka.patterns.ask
+import akka.pattern.ask
 
 class ProtobufSerializer extends Serializer {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
