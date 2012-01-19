@@ -1,17 +1,11 @@
 package akka.dispatch
 
-import akka.actor.{ Props, LocalActorRef, Actor }
-import akka.testkit.AkkaSpec
-import akka.util.Duration
-import akka.util.duration._
-import akka.testkit.DefaultTimeout
-import com.typesafe.config.Config
 import annotation.tailrec
-import org.scalatest.matchers.{ MustMatchers, ShouldMatchers }
+import org.scalatest.matchers.MustMatchers
 
 object DaemonicSpec {
 
-  def getConfigStr(daemonOn: Boolean) = {
+  private def getConfigStr(daemonOn: Boolean) = {
     " akka { " +
       "\n        actor.default-dispatcher.daemonic = " + { if (daemonOn) "on" else "off" } +
       "\n    }"
@@ -35,7 +29,7 @@ object DaemonicSpec {
     val taSize = rootTg.enumerate(ta);
     ta.collect({ case a if a != null ⇒ a })
   }
-  def getAllDefaultDispThreads = {
+  private def getAllDefaultDispThreads = {
     getAllThreads.collect {
       case t if t.getName.startsWith("default-dispatcher") ⇒ t
     }.toList
