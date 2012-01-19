@@ -61,9 +61,9 @@ trait Activation{
 }
 
 class DeActivationTimeoutException(endpoint: ActorRef,  timeout: Duration) extends TimeoutException{
-  override def getMessage = "Timed out after %s, while waiting for de-activation of %s" format (endpoint.path, timeout)
+  override def getMessage = "Timed out after %s, while waiting for de-activation of %s" format (timeout, endpoint.path)
 }
 
 class ActivationTimeoutException(endpoint:ActorRef, timeout: Duration) extends TimeoutException{
-  override def getMessage = "Timed out after %s, while waiting for activation of %s" format (endpoint.path, timeout)
+  override def getMessage = "Timed out after %s, while waiting for activation of %s" format (timeout, endpoint.path)
 }
