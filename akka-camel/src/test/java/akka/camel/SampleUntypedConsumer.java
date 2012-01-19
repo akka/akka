@@ -1,6 +1,6 @@
 package akka.camel;
 
-import akka.camel.UntypedConsumerActor;
+import akka.camel.javaapi.UntypedConsumerActor;
 
 /**
  * @author Martin Krasser
@@ -15,7 +15,7 @@ public class SampleUntypedConsumer extends UntypedConsumerActor {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
         String header = msg.getHeaderAs("test", String.class);
-        sender.tell(String.format("%s %s", body, header));
+        getContext().sender().tell(String.format("%s %s", body, header));
    }
 
 }
