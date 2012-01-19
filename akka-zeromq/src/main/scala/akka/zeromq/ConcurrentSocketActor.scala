@@ -142,7 +142,9 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   private def socketFromParams() = {
     require(ZeroMQExtension.check[SocketType.ZMQSocketType](params), "A socket type is required")
-    (params collectFirst { case t: SocketType.ZMQSocketType ⇒ zmqContext.socket(t) } get)
+    (params
+      collectFirst { case t: SocketType.ZMQSocketType ⇒ zmqContext.socket(t) }
+      getOrElse (throw new NoSocketHandleException))
   }
 
   private def deserializerFromParams = {
