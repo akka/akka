@@ -31,14 +31,13 @@ import akka.util.Duration
  */
 class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,
-  _name: String,
   _id: String,
   throughput: Int,
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   config: ThreadPoolConfig,
   _shutdownTimeout: Duration)
-  extends Dispatcher(_prerequisites, _name, _id, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
+  extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
   val rebalance = new AtomicBoolean(false)

@@ -140,11 +140,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
 
   /**
-   * Name of this dispatcher.
-   */
-  def name: String
-
-  /**
    * Identifier of this dispatcher, corresponds to the full key
    * of the dispatcher configuration.
    */

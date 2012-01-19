@@ -450,7 +450,6 @@ object DispatcherModelSpec {
     private val instance: MessageDispatcher = {
       configureThreadPool(config,
         threadPoolConfig ⇒ new Dispatcher(prerequisites,
-          config.getString("name"),
           config.getString("id"),
           config.getInt("throughput"),
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
@@ -525,7 +524,6 @@ object BalancingDispatcherModelSpec {
     private val instance: MessageDispatcher = {
       configureThreadPool(config,
         threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-          config.getString("name"),
           config.getString("id"),
           config.getInt("throughput"),
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),

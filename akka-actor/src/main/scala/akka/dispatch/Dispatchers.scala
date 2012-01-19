@@ -161,7 +161,6 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   private val instance =
     configureThreadPool(config,
       threadPoolConfig ⇒ new Dispatcher(prerequisites,
-        config.getString("name"),
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
@@ -186,7 +185,6 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
   private val instance =
     configureThreadPool(config,
       threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-        config.getString("name"),
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
@@ -211,7 +209,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
    */
   override def dispatcher(): MessageDispatcher = configureThreadPool(config,
     threadPoolConfig ⇒
-      new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
+      new PinnedDispatcher(prerequisites, null, config.getString("id"), mailboxType,
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
         threadPoolConfig)).build
 

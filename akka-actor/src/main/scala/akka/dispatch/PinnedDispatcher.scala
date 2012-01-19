@@ -21,13 +21,11 @@ import java.util.concurrent.TimeUnit
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _actor: ActorCell,
-  _name: String,
   _id: String,
   _mailboxType: MailboxType,
   _shutdownTimeout: Duration,
   _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
   extends Dispatcher(_prerequisites,
-    _name,
     _id,
     Int.MaxValue,
     Duration.Zero,
