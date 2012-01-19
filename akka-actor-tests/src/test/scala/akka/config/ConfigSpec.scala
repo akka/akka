@@ -36,9 +36,18 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout") must equal(1 * 1000)
       getInt("akka.actor.default-dispatcher.throughput") must equal(5)
       getMilliseconds("akka.actor.default-dispatcher.throughput-deadline-time") must equal(0)
+
       getBoolean("akka.actor.serialize-messages") must equal(false)
       settings.SerializeAllMessages must equal(false)
 
+      getInt("akka.scheduler.ticksPerWheel") must equal(512)
+      settings.SchedulerTicksPerWheel must equal(512)
+
+      getMilliseconds("akka.scheduler.tickDuration") must equal(100)
+      settings.SchedulerTickDuration must equal(100 millis)
+
+      getBoolean("akka.scheduler.daemonic") must equal(true)
+      settings.SchedulerDaemonicity must equal(true)
     }
   }
 }
