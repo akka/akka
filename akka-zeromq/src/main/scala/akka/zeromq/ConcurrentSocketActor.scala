@@ -10,6 +10,8 @@ import akka.dispatch.{ Promise, Future }
 import akka.event.Logging
 import akka.util.duration._
 import annotation.tailrec
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
 
 private[zeromq] sealed trait PollLifeCycle
 private[zeromq] case object NoResults extends PollLifeCycle
@@ -186,9 +188,12 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     fromConfig getOrElse context.system.dispatcher
   }
 
+  private val defaultPollTimeout =
+    Duration(context.system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
+
   private val pollTimeout = {
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    fromConfig getOrElse 100.millis
+    fromConfig getOrElse defaultPollTimeout
   }
 
   private def newEventLoop: Option[Promise[PollLifeCycle]] = {
