@@ -205,23 +205,13 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   }
 
   private def receiveFrames(): Seq[Frame] = {
-
-    @inline def receiveBytes(): Array[Byte] = socket.recv(0) match {
-      case null                                ⇒ noBytes
-      case bytes: Array[_] if bytes.length > 0 ⇒ bytes
-      case _                                   ⇒ noBytes
+    @tailrec def receiveBytes(next: Array[Byte], currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] = {
+      val nwBytes = if (next != null && next.nonEmpty) next else noBytes
+      val frames = currentFrames :+ Frame(nwBytes)
+      if (socket.hasReceiveMore) receiveBytes(socket.recv(0), frames) else frames
     }
 
-    receiveBytes() match {
-      case `noBytes` ⇒ Vector.empty
-      case someBytes ⇒
-        var frames = Vector(Frame(someBytes))
-        while (socket.hasReceiveMore) receiveBytes() match {
-          case `noBytes` ⇒
-          case someBytes ⇒ frames :+= Frame(someBytes)
-        }
-        frames
-    }
+    receiveBytes(socket.recv(0))
   }
 
   private def listenerOpt = params collectFirst { case Listener(l) ⇒ l }
