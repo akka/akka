@@ -233,6 +233,59 @@ Documentation:
 
  * :ref:`untyped-actors-java`
 
+Configuration
+-------------
+
+A new, more powerful, configuration utility has been implemented. The format of the
+configuration file is very similar to the format in v1.3. In addition it also supports
+configuration files in json and properties format. The syntax is described in the
+`HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_ specification.
+
+v1.3::
+
+  include "other.conf"
+
+  akka {
+    event-handler-level = "DEBUG"
+  }
+
+v2.0::
+
+  include "other"
+
+  akka {
+    loglevel = "DEBUG"
+  }
+
+In v1.3 the default name of the configuration file was ``akka.conf``.
+In v2.0 the default name is ``application.conf``. It is still loaded from classpath
+or can be specified with java System properties (``-D`` command line arguments).
+
+v1.3::
+
+  -Dakka.config=<file path to configuration file>
+  -Dakka.output.config.source=on
+
+v2.0::
+
+  -Dconfig.file=<file path to configuration file>
+  -Dakka.logConfigOnStart=on
+
+
+Several configuration properties have been changed, such as:
+
+  * ``akka.event-handler-level`` => ``akka.loglevel``
+  * dispatcher ``type`` values are changed
+  * ``akka.actor.throughput`` => ``akka.actor.default-dispatcher.throughput``
+  * ``akka.remote.layer`` => ``akka.remote.transport``
+  * the global ``time-unit`` property is removed, all durations are specified with duration unit in the property value, ``timeout = 5s``
+
+Verify used configuration properties against the reference :ref:`configuration`.
+
+Documentation:
+
+ * :ref:`configuration`
+
 Logging
 -------
 
@@ -421,5 +474,4 @@ More to be written
 * TypedActors
 * Routing
 * Remoting
-* Configuration
 * ...?
