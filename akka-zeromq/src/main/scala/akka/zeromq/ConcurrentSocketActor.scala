@@ -60,26 +60,45 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   }
 
   private def handleSocketOption: Receive = {
-    case Linger            ⇒ sender ! socket.getLinger
-    case ReconnectIVL      ⇒ sender ! socket.getReconnectIVL
-    case Backlog           ⇒ sender ! socket.getBacklog
-    case ReconnectIVLMax   ⇒ sender ! socket.getReconnectIVLMax
-    case MaxMsgSize        ⇒ sender ! socket.getMaxMsgSize
-    case SndHWM            ⇒ sender ! socket.getSndHWM
-    case RcvHWM            ⇒ sender ! socket.getRcvHWM
-    case Swap              ⇒ sender ! socket.getSwap
-    case Affinity          ⇒ sender ! socket.getAffinity
-    case Identity          ⇒ sender ! socket.getIdentity
-    case Rate              ⇒ sender ! socket.getRate
-    case RecoveryInterval  ⇒ sender ! socket.getRecoveryInterval
-    case MulticastLoop     ⇒ sender ! socket.hasMulticastLoop
-    case MulticastHops     ⇒ sender ! socket.getMulticastHops
-    case ReceiveTimeOut    ⇒ sender ! socket.getReceiveTimeOut
-    case SendTimeOut       ⇒ sender ! socket.getSendTimeOut
-    case SendBufferSize    ⇒ sender ! socket.getSendBufferSize
-    case ReceiveBufferSize ⇒ sender ! socket.getReceiveBufferSize
-    case ReceiveMore       ⇒ sender ! socket.hasReceiveMore
-    case FileDescriptor    ⇒ sender ! socket.getFD
+    case Linger(value)            ⇒ socket.setLinger(value)
+    case ReconnectIVL(value)      ⇒ socket.setReconnectIVL(value)
+    case Backlog(value)           ⇒ socket.setBacklog(value)
+    case ReconnectIVLMax(value)   ⇒ socket.setReconnectIVLMax(value)
+    case MaxMsgSize(value)        ⇒ socket.setMaxMsgSize(value)
+    case SndHWM(value)            ⇒ socket.setSndHWM(value)
+    case RcvHWM(value)            ⇒ socket.setRcvHWM(value)
+    case HWM(value)               ⇒ socket.setHWM(value)
+    case Swap(value)              ⇒ socket.setSwap(value)
+    case Affinity(value)          ⇒ socket.setAffinity(value)
+    case Identity(value)          ⇒ socket.setIdentity(value)
+    case Rate(value)              ⇒ socket.setRate(value)
+    case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
+    case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
+    case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
+    case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
+    case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
+    case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
+    case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
+    case Linger                   ⇒ sender ! socket.getLinger
+    case ReconnectIVL             ⇒ sender ! socket.getReconnectIVL
+    case Backlog                  ⇒ sender ! socket.getBacklog
+    case ReconnectIVLMax          ⇒ sender ! socket.getReconnectIVLMax
+    case MaxMsgSize               ⇒ sender ! socket.getMaxMsgSize
+    case SndHWM                   ⇒ sender ! socket.getSndHWM
+    case RcvHWM                   ⇒ sender ! socket.getRcvHWM
+    case Swap                     ⇒ sender ! socket.getSwap
+    case Affinity                 ⇒ sender ! socket.getAffinity
+    case Identity                 ⇒ sender ! socket.getIdentity
+    case Rate                     ⇒ sender ! socket.getRate
+    case RecoveryInterval         ⇒ sender ! socket.getRecoveryInterval
+    case MulticastLoop            ⇒ sender ! socket.hasMulticastLoop
+    case MulticastHops            ⇒ sender ! socket.getMulticastHops
+    case ReceiveTimeOut           ⇒ sender ! socket.getReceiveTimeOut
+    case SendTimeOut              ⇒ sender ! socket.getSendTimeOut
+    case SendBufferSize           ⇒ sender ! socket.getSendBufferSize
+    case ReceiveBufferSize        ⇒ sender ! socket.getReceiveBufferSize
+    case ReceiveMore              ⇒ sender ! socket.hasReceiveMore
+    case FileDescriptor           ⇒ sender ! socket.getFD
   }
 
   private def internalMessage: Receive = {
@@ -106,6 +125,12 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   override def preStart {
     setupSocket()
     poller.register(socket, Poller.POLLIN)
+    setupConnection()
+  }
+
+  private def setupConnection() {
+    params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
+    params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
   }
 
   private def socketFromParams() = {
@@ -121,26 +146,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   private def setupSocket() = {
     params foreach {
-      case Linger(value)            ⇒ socket.setLinger(value)
-      case ReconnectIVL(value)      ⇒ socket.setReconnectIVL(value)
-      case Backlog(value)           ⇒ socket.setBacklog(value)
-      case ReconnectIVLMax(value)   ⇒ socket.setReconnectIVLMax(value)
-      case MaxMsgSize(value)        ⇒ socket.setMaxMsgSize(value)
-      case SndHWM(value)            ⇒ socket.setSndHWM(value)
-      case RcvHWM(value)            ⇒ socket.setRcvHWM(value)
-      case HWM(value)               ⇒ socket.setHWM(value)
-      case Swap(value)              ⇒ socket.setSwap(value)
-      case Affinity(value)          ⇒ socket.setAffinity(value)
-      case Identity(value)          ⇒ socket.setIdentity(value)
-      case Rate(value)              ⇒ socket.setRate(value)
-      case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
-      case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
-      case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
-      case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
-      case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
-      case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
-      case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
-      case _                        ⇒
+      case _: SocketConnectOption | _: PubSubOption | _: SocketMeta ⇒ // ignore, handled differently
+      case m ⇒ self ! m
     }
   }
 

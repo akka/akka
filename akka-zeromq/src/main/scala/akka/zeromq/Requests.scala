@@ -10,15 +10,22 @@ import akka.util.duration._
 import akka.util.Duration
 
 sealed trait Request
-trait SocketOption extends Request
+sealed trait SocketOption extends Request
+sealed trait SocketMeta extends SocketOption
+sealed trait SocketConnectOption extends SocketOption {
+  def endpoint: String
+}
+sealed trait PubSubOption extends SocketOption {
+  def payload: Seq[Byte]
+}
 sealed trait SocketOptionQuery extends Request
 
-case class Connect(endpoint: String) extends Request
+case class Connect(endpoint: String) extends SocketConnectOption
 
 object Context {
   def apply(numIoThreads: Int = 1) = new Context(numIoThreads)
 }
-class Context(numIoThreads: Int) extends SocketOption {
+class Context(numIoThreads: Int) extends SocketMeta {
   private val context = JZMQ.context(numIoThreads)
   def socket(socketType: SocketType.ZMQSocketType) = {
     context.socket(socketType.id)
@@ -31,27 +38,31 @@ class Context(numIoThreads: Int) extends SocketOption {
   }
 }
 
+trait Deserializer extends SocketOption {
+  def apply(frames: Seq[Frame]): Any
+}
+
 object SocketType {
-  abstract class ZMQSocketType(val id: Int) extends SocketOption
+  abstract class ZMQSocketType(val id: Int) extends SocketMeta
   object Pub extends ZMQSocketType(JZMQ.PUB)
   object Sub extends ZMQSocketType(JZMQ.SUB)
   object Dealer extends ZMQSocketType(JZMQ.DEALER)
   object Router extends ZMQSocketType(JZMQ.ROUTER)
 }
 
-case class Listener(listener: ActorRef) extends SocketOption
-case class PollDispatcher(name: String) extends SocketOption
-case class PollTimeoutDuration(duration: Duration = 100 millis) extends SocketOption
+case class Listener(listener: ActorRef) extends SocketMeta
+case class PollDispatcher(name: String) extends SocketMeta
+case class PollTimeoutDuration(duration: Duration = 100 millis) extends SocketMeta
 
-case class Bind(endpoint: String) extends Request
+case class Bind(endpoint: String) extends SocketConnectOption
 private[zeromq] case object Close extends Request
 
-case class Subscribe(payload: Seq[Byte]) extends Request
+case class Subscribe(payload: Seq[Byte]) extends PubSubOption
 object Subscribe {
-  def apply(topic: String): Subscribe = Subscribe(topic.getBytes)
+  def apply(topic: String): Subscribe = new Subscribe(topic.getBytes)
 }
 
-case class Unsubscribe(payload: Seq[Byte]) extends Request
+case class Unsubscribe(payload: Seq[Byte]) extends PubSubOption
 object Unsubscribe {
   def apply(topic: String): Unsubscribe = Unsubscribe(topic.getBytes)
 }

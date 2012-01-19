@@ -77,15 +77,10 @@ class ConcurrentSocketActorSpec
       }
     }
     def newPublisher(context: Context, listener: ActorRef) = {
-      val publisher = zmq.newSocket(SocketType.Pub, context, Listener(listener))
-      publisher ! Bind(endpoint)
-      publisher
+      zmq.newSocket(SocketType.Pub, context, Listener(listener), Bind(endpoint))
     }
     def newSubscriber(context: Context, listener: ActorRef) = {
-      val subscriber = zmq.newSocket(SocketType.Sub, context, Listener(listener))
-      subscriber ! Connect(endpoint)
-      subscriber ! Subscribe(Seq())
-      subscriber
+      zmq.newSocket(SocketType.Sub, context, Listener(listener), Connect(endpoint), Subscribe(Seq.empty))
     }
     def newMessageGenerator(actorRef: ActorRef) = {
       system.actorOf(Props(new MessageGeneratorActor(actorRef)))

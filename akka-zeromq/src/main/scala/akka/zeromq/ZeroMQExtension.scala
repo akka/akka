@@ -3,12 +3,10 @@
  */
 package akka.zeromq
 
-import akka.util.Duration
 import akka.util.duration._
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Dispatcher, Await }
-import collection.mutable.ListBuffer
 
 case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
   override def toString = "%d.%d.%d".format(major, minor, patch)
