@@ -649,6 +649,7 @@ object Logging {
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     val path: ActorPath = new RootActorPath(LocalAddress("all-systems"), "/StandardOutLogger")
+    def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }

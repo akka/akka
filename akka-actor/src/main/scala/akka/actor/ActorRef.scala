@@ -168,25 +168,31 @@ trait LocalRef extends ActorRefScope {
 }
 
 /**
- * Trait for matching on ActorRefs which have access to a provider; this is used in akka.pattern.ask.
- */
-trait ActorRefWithProvider { this: InternalActorRef ⇒
-  def provider: ActorRefProvider
-}
-
-/**
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  *
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
 private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope ⇒
+  /*
+   * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
+   */
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
+
+  /**
+   * Get a reference to the actor ref provider which created this ref.
+   */
+  def provider: ActorRefProvider
+
+  /**
+   * Obtain parent of this ref; used by getChild for ".." paths.
+   */
   def getParent: InternalActorRef
+
   /**
    * Obtain ActorRef by possibly traversing the actor tree or looking it up at
    * some provider-specific location. This method shall return the end result,
@@ -196,6 +202,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * exist, return Nobody.
    */
   def getChild(name: Iterator[String]): InternalActorRef
+
   /**
    * Scope: if this ref points to an actor which resides within the same JVM,
    * i.e. whose mailbox is directly reachable etc.
@@ -203,8 +210,12 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def isLocal: Boolean
 }
 
+/**
+ * This is an internal look-up failure token, not useful for anything else.
+ */
 private[akka] case object Nobody extends MinimalActorRef {
   val path = new RootActorPath(new LocalAddress("all-systems"), "/Nobody")
+  def provider = throw new UnsupportedOperationException("Nobody does not provide")
 }
 
 /**
@@ -218,7 +229,7 @@ private[akka] class LocalActorRef private[akka] (
   val systemService: Boolean = false,
   _receiveTimeout: Option[Duration] = None,
   _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
-  extends InternalActorRef with LocalRef with ActorRefWithProvider {
+  extends InternalActorRef with LocalRef {
 
   /*
    * actorCell.start() publishes actorCell & this to the dispatcher, which
@@ -371,8 +382,9 @@ trait MinimalActorRef extends InternalActorRef with LocalRef {
 }
 
 object MinimalActorRef {
-  def apply(_path: ActorPath)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
+  def apply(_path: ActorPath, _provider: ActorRefProvider)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
     def path = _path
+    def provider = _provider
     override def !(message: Any)(implicit sender: ActorRef = null): Unit =
       if (receive.isDefinedAt(message)) receive(message)
   }
@@ -394,17 +406,19 @@ trait DeadLetterActorRefLike extends MinimalActorRef {
   def eventStream: EventStream
 
   @volatile
-  private var brokenPromise: Future[Any] = _
-  @volatile
   private var _path: ActorPath = _
   def path: ActorPath = {
     assert(_path != null)
     _path
   }
 
-  private[akka] def init(dispatcher: MessageDispatcher, path: ActorPath) {
+  @volatile
+  private var _provider: ActorRefProvider = _
+  def provider = _provider
+
+  private[akka] def init(provider: ActorRefProvider, path: ActorPath) {
     _path = path
-    brokenPromise = Promise.failed(new ActorKilledException("In DeadLetterActorRef - promises are always broken."))(dispatcher)
+    _provider = provider
   }
 
   override def isTerminated(): Boolean = true
@@ -426,16 +440,25 @@ class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRe
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
  */
-class EmptyLocalActorRef(val eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
-  extends DeadLetterActorRefLike {
-  init(_dispatcher, _path)
+class EmptyLocalActorRef(
+  val eventStream: EventStream,
+  _provider: ActorRefProvider,
+  _dispatcher: MessageDispatcher,
+  _path: ActorPath) extends DeadLetterActorRefLike {
+
+  init(_provider, _path)
+
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ // do NOT form endless loops
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
 }
 
-class VirtualPathContainer(val path: ActorPath, override val getParent: InternalActorRef, val log: LoggingAdapter) extends MinimalActorRef {
+class VirtualPathContainer(
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  override val getParent: InternalActorRef,
+  val log: LoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 

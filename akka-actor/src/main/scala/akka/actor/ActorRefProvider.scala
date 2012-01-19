@@ -324,6 +324,8 @@ class LocalActorRefProvider(
 
     val path = rootPath / "bubble-walker"
 
+    def provider: ActorRefProvider = LocalActorRefProvider.this
+
     override def stop() = stopped switchOn {
       terminationFuture.complete(causeOfTermination.toLeft(()))
     }
@@ -440,7 +442,7 @@ class LocalActorRefProvider(
   lazy val systemGuardian: InternalActorRef =
     actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None)
 
-  lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
+  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
@@ -489,7 +491,7 @@ class LocalActorRefProvider(
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
         log.debug("look-up of path sequence '{}' failed", path)
-        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path)
+        new EmptyLocalActorRef(eventStream, system.provider, dispatcher, ref.path / path)
       case x ⇒ x
     }
 

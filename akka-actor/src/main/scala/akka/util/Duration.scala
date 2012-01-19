@@ -568,4 +568,3 @@ object Timeout {
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
 }
-

@@ -377,10 +377,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
     _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
-    deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
+    deadLetters.init(provider, lookupRoot.path / "deadLetters")
     // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
-    _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
+    _locker = new Locker(scheduler, ReaperInterval, provider, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this

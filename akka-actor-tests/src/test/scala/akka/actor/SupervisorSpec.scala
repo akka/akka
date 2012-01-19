@@ -129,12 +129,12 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   }
 
   def ping(pingPongActor: ActorRef) = {
-    Await.result(pingPongActor.?(Ping, TimeoutMillis), TimeoutMillis millis) must be === PongMessage
+    Await.result(pingPongActor.?(Ping)(TimeoutMillis), TimeoutMillis millis) must be === PongMessage
     expectMsg(Timeout, PingMessage)
   }
 
   def kill(pingPongActor: ActorRef) = {
-    val result = (pingPongActor ? (DieReply, TimeoutMillis))
+    val result = (pingPongActor.?(DieReply)(TimeoutMillis))
     expectMsg(Timeout, ExceptionMessage)
     intercept[RuntimeException] { Await.result(result, TimeoutMillis millis) }
   }
@@ -152,7 +152,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
     "not restart temporary actor" in {
       val (temporaryActor, _) = temporaryActorAllForOne
 
-      intercept[RuntimeException] { Await.result(temporaryActor.?(DieReply, TimeoutMillis), TimeoutMillis millis) }
+      intercept[RuntimeException] { Await.result(temporaryActor.?(DieReply)(TimeoutMillis), TimeoutMillis millis) }
 
       expectNoMsg(1 second)
     }
@@ -298,11 +298,11 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
         EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
           intercept[RuntimeException] {
-            Await.result(dyingActor.?(DieReply, TimeoutMillis), TimeoutMillis millis)
+            Await.result(dyingActor.?(DieReply)(TimeoutMillis), TimeoutMillis millis)
           }
         }
 
-      Await.result(dyingActor.?(Ping, TimeoutMillis), TimeoutMillis millis) must be === PongMessage
+      Await.result(dyingActor.?(Ping)(TimeoutMillis), TimeoutMillis millis) must be === PongMessage
 
       inits.get must be(3)
 

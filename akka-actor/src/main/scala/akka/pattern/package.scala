@@ -3,6 +3,10 @@
  */
 package akka
 
+import akka.actor._
+import akka.dispatch.{ Future, Promise }
+import akka.util.{ Timeout, Duration }
+
 /**
  * == Commonly Used Patterns With Akka ==
  *
@@ -37,10 +41,6 @@ package akka
  * }}}
  */
 package object pattern {
-
-  import akka.actor._
-  import akka.dispatch.{ Future, Promise }
-  import akka.util.{ Timeout, Duration }
 
   /**
    * Import this implicit conversion to gain `?` and `ask` methods on
@@ -88,12 +88,15 @@ package object pattern {
    * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout = null): Future[Any] = actorRef match {
-    case ref: ActorRefWithProvider ⇒
+    case ref: InternalActorRef if ref.isTerminated ⇒
+      actorRef.tell(message)
+      Promise.failed(new AskTimeoutException("sending to terminated ref breaks promises"))(ref.provider.dispatcher)
+    case ref: InternalActorRef ⇒
       val provider = ref.provider
       (if (timeout == null) provider.settings.ActorTimeout else timeout) match {
         case t if t.duration.length <= 0 ⇒
           actorRef.tell(message)
-          Promise.failed(new AskTimeoutException("failed to create PromiseActorRef"))(provider.dispatcher)
+          Promise.failed(new AskTimeoutException("not asking with negative timeout"))(provider.dispatcher)
         case t ⇒
           val a = AskSupport.createAsker(provider, t)
           actorRef.tell(message, a)
@@ -132,7 +135,7 @@ package object pattern {
   def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = {
     future onComplete {
       case Right(r) ⇒ actorRef ! r
-      case Left(f)  ⇒ actorRef ! akka.actor.Status.Failure(f)
+      case Left(f)  ⇒ actorRef ! Status.Failure(f)
     }
     future
   }

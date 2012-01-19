@@ -252,7 +252,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#using-explicit-timeout
     import akka.util.duration._
     import akka.pattern.ask
-    val future = myActor ? ("hello", timeout = 500 millis)
+    val future = myActor.ask("hello")(500 millis)
     //#using-explicit-timeout
     Await.result(future, 500 millis) must be("hello")
   }

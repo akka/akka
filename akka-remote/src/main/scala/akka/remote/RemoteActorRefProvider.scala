@@ -166,7 +166,7 @@ private[akka] class RemoteActorRef private[akka] (
   val path: ActorPath,
   val getParent: InternalActorRef,
   loader: Option[ClassLoader])
-  extends InternalActorRef with RemoteRef with ActorRefWithProvider {
+  extends InternalActorRef with RemoteRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream

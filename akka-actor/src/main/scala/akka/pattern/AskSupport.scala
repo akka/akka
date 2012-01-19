@@ -51,7 +51,7 @@ object AskSupport {
      *
      * [see the [[akka.dispatch.Future]] companion object for a description of `flow`]
      */
-    def ask(message: AnyRef)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
+    def ask(message: Any)(implicit timeout: Timeout = null): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
 
     /**
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
@@ -81,20 +81,7 @@ object AskSupport {
      *
      * [see the [[akka.dispatch.Future]] companion object for a description of `flow`]
      */
-    def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)
-
-    /*
-   * FIXME: I think this should be removed, since it introduces an “ambiguity” 
-   * when sending Tuple2, which the compiler resolves unexpectedly to this 
-   * method; also overloading is bad, isn’t it?  - RK (ticket #1653)
-   */
-    /**
-     * Sends a message asynchronously, returning a future which may eventually hold the reply.
-     * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
-     * implicit timeout
-     */
-    def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
-
+    def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
   }
 
   /**
@@ -102,6 +89,7 @@ object AskSupport {
    * receive the reply to an "ask" operation.
    */
   private[akka] final class PromiseActorRef(
+    val provider: ActorRefProvider,
     val path: ActorPath,
     override val getParent: InternalActorRef,
     val result: Promise[Any],
@@ -130,7 +118,7 @@ object AskSupport {
   def createAsker(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
     val path = provider.tempPath()
     val result = Promise[Any]()(provider.dispatcher)
-    val a = new PromiseActorRef(path, provider.tempContainer, result, provider.deathWatch)
+    val a = new PromiseActorRef(provider, path, provider.tempContainer, result, provider.deathWatch)
     provider.registerTempActor(a, path)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.failure(new AskTimeoutException("Timed out")) }
     result onComplete { _ ⇒
