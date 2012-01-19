@@ -437,6 +437,47 @@ Documentation:
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`
 
+Dispatchers
+-----------
+
+Dispatchers are defined in configuration instead of in code.
+
+v1.3::
+
+  // in code
+  val myDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name)
+    .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
+    .setCorePoolSize(16)
+    .setMaxPoolSize(128)
+    .setKeepAliveTimeInMillis(60000)
+    .build
+
+v2.0::
+
+  // in config
+  my-dispatcher {
+    type = Dispatcher
+    core-pool-size-factor = 8.0
+    max-pool-size-factor  = 16.0
+    mailbox-capacity = 100
+  }
+
+The dispatcher is assigned to the actor in a different way.
+
+v1.3::
+
+  actorRef.dispatcher = MyGlobals.myDispatcher
+  slef.dispatcher = = MyGlobals.myDispatcher
+
+v2.0::
+
+  val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor")
+
+Documentation:
+
+ * :ref:`dispatchers-java`
+ * :ref:`dispatchers-scala`
+
 Spawn
 -----
 
@@ -469,7 +510,6 @@ More to be written
 ------------------
 
 * Futures
-* Dispatchers
 * STM
 * TypedActors
 * Routing
