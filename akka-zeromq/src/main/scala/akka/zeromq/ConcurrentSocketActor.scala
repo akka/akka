@@ -158,8 +158,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   override def postStop {
     try {
-      poller.unregister(socket)
       currentPoll foreach { _ complete Right(Closing) }
+      poller.unregister(socket)
       if (socket != null) socket.close
     } finally {
       notifyListener(Closed)
@@ -181,12 +181,12 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     if (currentPoll.isEmpty) currentPoll = newEventLoop
   }
 
-  private lazy val eventLoopDispatcher = {
+  private val eventLoopDispatcher = {
     val fromConfig = params collectFirst { case PollDispatcher(name) ⇒ context.system.dispatchers.lookup(name) }
     fromConfig getOrElse context.system.dispatcher
   }
 
-  private lazy val pollTimeout = {
+  private val pollTimeout = {
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
     fromConfig getOrElse 100.millis
   }
@@ -214,7 +214,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     receiveBytes(socket.recv(0))
   }
 
-  private def listenerOpt = params collectFirst { case Listener(l) ⇒ l }
+  private val listenerOpt = params collectFirst { case Listener(l) ⇒ l }
   private def watchListener() {
     listenerOpt foreach context.watch
   }
