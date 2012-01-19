@@ -7,15 +7,15 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.UntypedActor;
-import static scala.concurrent.stm.JavaAPI.*;
 import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.Stm;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
-    private Ref.View<Integer> count = newRef(0);
+    private Ref.View<Integer> count = Stm.newRef(0);
 
     public UntypedCoordinatedCounter(String name) {
         this.name = name;
@@ -40,9 +40,8 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 }
                 coordinated.atomic(new Runnable() {
                     public void run() {
-                        increment(count, 1);
-                        afterRollback(countDown);
-                        afterCommit(countDown);
+                        Stm.increment(count, 1);
+                        Stm.afterCompletion(countDown);
                     }
                 });
             }

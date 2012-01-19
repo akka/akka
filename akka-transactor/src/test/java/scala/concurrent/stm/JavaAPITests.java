@@ -5,13 +5,12 @@ package scala.concurrent.stm;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
-import scala.concurrent.stm.Ref;
-import static scala.concurrent.stm.JavaAPI.*;
+import scala.concurrent.stm.japi.Stm;
+import static scala.concurrent.stm.japi.Stm.*;
 
 import scala.runtime.AbstractFunction1;
 import java.util.concurrent.Callable;
 
-import static scala.collection.JavaConversions.*;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
@@ -96,8 +95,7 @@ public class JavaAPITests {
 
     @Test
     public void createAndUseTMap() {
-        TMap.View<Integer, String> tmap = newTMap();
-        Map<Integer, String> map = mutableMapAsJavaMap(tmap);
+        Map<Integer, String> map = newMap();
         map.put(1, "one");
         map.put(2, "two");
         assertEquals("one", map.get(1));
@@ -109,8 +107,7 @@ public class JavaAPITests {
 
     @Test(expected = TestException.class)
     public void failingTMapTransaction() {
-        TMap.View<Integer, String> tmap = newTMap();
-        final Map<Integer, String> map = mutableMapAsJavaMap(tmap);
+        final Map<Integer, String> map = newMap();
         try {
             atomic(new Runnable() {
             	public void run() {
@@ -130,8 +127,7 @@ public class JavaAPITests {
 
     @Test
     public void createAndUseTSet() {
-        TSet.View<String> tset = newTSet();
-        Set<String> set = mutableSetAsJavaSet(tset);
+        Set<String> set = newSet();
         set.add("one");
         set.add("two");
         assertTrue(set.contains("one"));
@@ -146,16 +142,15 @@ public class JavaAPITests {
 
     @Test
     public void createAndUseTArray() {
-        TArray.View<String> tarray = newTArray(3);
-        List<String> seq = mutableSeqAsJavaList(tarray);
-        assertEquals(null, seq.get(0));
-        assertEquals(null, seq.get(1));
-        assertEquals(null, seq.get(2));
-        seq.set(0, "zero");
-        seq.set(1, "one");
-        seq.set(2, "two");
-        assertEquals("zero", seq.get(0));
-        assertEquals("one", seq.get(1));
-        assertEquals("two", seq.get(2));
+        List<String> list = newList(3);
+        assertEquals(null, list.get(0));
+        assertEquals(null, list.get(1));
+        assertEquals(null, list.get(2));
+        list.set(0, "zero");
+        list.set(1, "one");
+        list.set(2, "two");
+        assertEquals("zero", list.get(0));
+        assertEquals("one", list.get(1));
+        assertEquals("two", list.get(2));
     }
 }

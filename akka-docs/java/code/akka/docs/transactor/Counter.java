@@ -7,14 +7,14 @@ package akka.docs.transactor;
 //#class
 import akka.transactor.*;
 import scala.concurrent.stm.Ref;
-import static scala.concurrent.stm.JavaAPI.*;
+import scala.concurrent.stm.japi.Stm;
 
 public class Counter extends UntypedTransactor {
-    Ref.View<Integer> count = newRef(0);
+    Ref.View<Integer> count = Stm.newRef(0);
 
     public void atomically(Object message) {
         if (message instanceof Increment) {
-            increment(count, 1);
+            Stm.increment(count, 1);
         }
     }
 

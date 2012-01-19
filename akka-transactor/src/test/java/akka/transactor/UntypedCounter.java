@@ -7,8 +7,8 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.transactor.UntypedTransactor;
 import akka.transactor.SendTo;
-import static scala.concurrent.stm.JavaAPI.*;
 import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.Stm;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class UntypedCounter extends UntypedTransactor {
     private String name;
-    private Ref.View<Integer> count = newRef(0);
+    private Ref.View<Integer> count = Stm.newRef(0);
 
     public UntypedCounter(String name) {
         this.name = name;
@@ -39,15 +39,14 @@ public class UntypedCounter extends UntypedTransactor {
 
     public void atomically(Object message) {
         if (message instanceof Increment) {
-            increment(count, 1);
+            Stm.increment(count, 1);
             final Increment increment = (Increment) message;
             Runnable countDown = new Runnable() {
                 public void run() {
                     increment.getLatch().countDown();
                 }
             };
-            afterRollback(countDown);
-            afterCommit(countDown);
+            Stm.afterCompletion(countDown);
         }
     }
 

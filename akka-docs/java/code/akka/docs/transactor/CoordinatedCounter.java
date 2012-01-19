@@ -8,10 +8,10 @@ package akka.docs.transactor;
 import akka.actor.*;
 import akka.transactor.*;
 import scala.concurrent.stm.Ref;
-import static scala.concurrent.stm.JavaAPI.*;
+import scala.concurrent.stm.japi.Stm;
 
 public class CoordinatedCounter extends UntypedActor {
-    private Ref.View<Integer> count = newRef(0);
+    private Ref.View<Integer> count = Stm.newRef(0);
 
     public void onReceive(Object incoming) throws Exception {
         if (incoming instanceof Coordinated) {
@@ -24,7 +24,7 @@ public class CoordinatedCounter extends UntypedActor {
                 }
                 coordinated.atomic(new Runnable() {
                     public void run() {
-                        increment(count, 1);
+                        Stm.increment(count, 1);
                     }
                 });
             }
