@@ -31,7 +31,7 @@ object DaemonicSpec {
   }
   private def getAllDefaultDispThreads = {
     getAllThreads.collect {
-      case t if t.getName.startsWith("default-dispatcher") ⇒ t
+      case t if t.getName.startsWith("akka.actor.default-dispatcher") ⇒ t
     }.toList
   }
 }
@@ -74,8 +74,8 @@ class DaemonicSpec extends org.scalatest.WordSpec with MustMatchers {
       val system = akka.actor.ActorSystem("daemonicTest", config)
       try {
         val defaultDispThreads = DaemonicSpec.getAllDefaultDispThreads
+        //DaemonicSpec.getAllThreads foreach (t ⇒ println("Thead(daemon=" + t.isDaemon + "): " + t.getName))
         defaultDispThreads must not be ('empty)
-        //defaultDispThreads foreach (t ⇒ println("Thead(daemon=" + t.isDaemon + "): " + t.getName))
         defaultDispThreads foreach (_ must not be ('daemon))
       } finally {
         system.shutdown
