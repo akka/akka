@@ -122,12 +122,9 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
     idempotentRegistry ! RegisterConsumer(route, consumer.self, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
+
   private[camel] def findActor(path: ActorEndpointPath) : Option[ActorRef] = {
-    //TODO this is a bit hacky, maybe there is another way?
-    val actorRef = actorSystem.actorFor(path.actorPath)
-    actorRef.path.name match {
-      case "deadLetters" => None
-      case _ => Some(actorRef)
-    }
+    val ref = actorSystem.actorFor(path.actorPath)
+    if (ref.isTerminated) None else Some(ref)
   }
 }
