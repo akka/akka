@@ -274,7 +274,7 @@ private[akka] class ActorCell(
   }
 
   @inline
-  final def dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
+  final val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
 
   /**
    * UntypedActorContext impl

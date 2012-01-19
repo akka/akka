@@ -6,17 +6,11 @@ package akka.remote
 
 import akka.actor._
 import akka.event._
-import akka.actor.Status._
 import akka.util._
 import akka.util.duration._
 import akka.util.Helpers._
-import akka.serialization.Compression.LZF
-import java.net.InetSocketAddress
-import com.eaio.uuid.UUID
-import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression, SerializationExtension }
-import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher, MessageDispatcher }
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
+import akka.dispatch.MessageDispatcher
 import akka.dispatch.SystemMessage
 import scala.annotation.tailrec
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, AkkaRemoteProtocol, RemoteControlProtocol, RemoteMessageProtocol }

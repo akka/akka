@@ -90,7 +90,7 @@ object ThreadPoolConfigDispatcherBuilder {
  */
 case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfig) ⇒ MessageDispatcher, config: ThreadPoolConfig) extends DispatcherBuilder {
   import ThreadPoolConfig._
-  def build = dispatcherFactory(config)
+  def build: MessageDispatcher = dispatcherFactory(config)
 
   def withNewThreadPoolWithCustomBlockingQueue(newQueueFactory: QueueFactory): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(queueFactory = newQueueFactory))
@@ -203,54 +203,3 @@ class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
     else runnable.run()
   }
 }
-
-/**
- * Commented out pending discussion with Doug Lea
- *
- * case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availableProcessors()) extends ExecutorServiceFactoryProvider {
- * final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ExecutorServiceFactory {
- * def createExecutorService: ExecutorService = {
- * new ForkJoinPool(targetParallelism) with ExecutorService {
- * setAsyncMode(true)
- * setMaintainsParallelism(true)
- *
- * override final def execute(r: Runnable) {
- * r match {
- * case fjmbox: FJMailbox ⇒
- * //fjmbox.fjTask.reinitialize()
- * Thread.currentThread match {
- * case fjwt: ForkJoinWorkerThread if fjwt.getPool eq this ⇒
- * fjmbox.fjTask.fork() //We should do fjwt.pushTask(fjmbox.fjTask) but it's package protected
- * case _ ⇒ super.execute[Unit](fjmbox.fjTask)
- * }
- * case _ ⇒
- * super.execute(r)
- * }
- * }
- *
- * import java.util.{ Collection ⇒ JCollection }
- *
- * def invokeAny[T](callables: JCollection[_ <: Callable[T]]) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- *
- * def invokeAny[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- *
- * def invokeAll[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- * }
- * }
- * }
- * }
- *
- * trait FJMailbox { self: Mailbox ⇒
- * final val fjTask = new ForkJoinTask[Unit] with Runnable {
- * private[this] var result: Unit = ()
- * final def getRawResult() = result
- * final def setRawResult(v: Unit) { result = v }
- * final def exec() = { self.run(); true }
- * final def run() { invoke() }
- * }
- * }
- *
- */

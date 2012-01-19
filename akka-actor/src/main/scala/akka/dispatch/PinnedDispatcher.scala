@@ -25,14 +25,14 @@ class PinnedDispatcher(
   _id: String,
   _mailboxType: MailboxType,
   _shutdownTimeout: Duration,
-  _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1))
+  _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
   extends Dispatcher(_prerequisites,
     _name,
     _id,
     Int.MaxValue,
     Duration.Zero,
     _mailboxType,
-    _threadPoolConfig,
+    _threadPoolConfig.copy(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
     _shutdownTimeout) {
 
   @volatile

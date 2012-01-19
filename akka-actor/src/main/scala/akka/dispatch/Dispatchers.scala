@@ -61,7 +61,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   /**
    * Returns a dispatcher as specified in configuration, or if not defined it uses
-   * the default dispatcher.
+   * the default dispatcher. Please note that this method _may_ create and return a NEW dispatcher,
+   * _every_ call.
    */
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
 
@@ -189,8 +190,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
+        mailboxType, threadPoolConfig,
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
 
   /**
@@ -212,6 +212,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   override def dispatcher(): MessageDispatcher = configureThreadPool(config,
     threadPoolConfig ⇒
       new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)).build
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        threadPoolConfig)).build
 
 }
