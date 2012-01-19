@@ -267,13 +267,13 @@ public class FutureDocTestBase {
     //A sequence of Futures, in this case Strings
     Iterable<Future<String>> futures = source;
 
-    Future<String> resultFuture = reduce(futures, new Function2<String, String, String>() {
-      public String apply(String r, String t) {
+    Future<Object> resultFuture = reduce(futures, new Function2<Object, String, Object>() {
+      public Object apply(Object r, String t) {
         return r + t; //Just concatenate
       }
     }, system.dispatcher());
 
-    String result = Await.result(resultFuture, Duration.create(1, SECONDS));
+    Object result = Await.result(resultFuture, Duration.create(1, SECONDS));
     //#reduce
 
     assertEquals("ab", result);
