@@ -97,10 +97,8 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer : A
   protected def targetActorUri = ActorEndpointPath(consumer).toCamelPath(config)
 
 
-  def configure = {
-
+  def configure(){
     val scheme = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
-
 
     val route = from(endpointUri).routeId(consumer.path.toString)
     val converted = Conversions(scheme, route)
@@ -129,9 +127,8 @@ private[camel] case class RegisterConsumer(endpointUri:String, actorRef: ActorRe
 /**
  * Super class of all activation messages.
  */
-//TODO investigate warnings about case class inheritance
 private[camel] abstract class ActivationMessage(val actor: ActorRef)
-object ActivationMessage{
+private[camel] object ActivationMessage{
   def unapply(msg:ActivationMessage) : Option[ActorRef] = Some(msg.actor)
 }
 
