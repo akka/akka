@@ -123,7 +123,9 @@ trait Cancellable {
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
  * returned from stop().
  */
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
+                       log: LoggingAdapter,
+                       dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
   def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
     val continuousCancellable = new ContinuousCancellable

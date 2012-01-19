@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.config
@@ -24,7 +24,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       settings.ConfigVersion must equal("2.0-SNAPSHOT")
 
       getString("akka.actor.default-dispatcher.type") must equal("Dispatcher")
-      getString("akka.actor.default-dispatcher.name") must equal("default-dispatcher")
       getMilliseconds("akka.actor.default-dispatcher.keep-alive-time") must equal(60 * 1000)
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(3.0)
       getDouble("akka.actor.default-dispatcher.max-pool-size-factor") must equal(3.0)
@@ -37,9 +36,18 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       getMilliseconds("akka.actor.default-dispatcher.shutdown-timeout") must equal(1 * 1000)
       getInt("akka.actor.default-dispatcher.throughput") must equal(5)
       getMilliseconds("akka.actor.default-dispatcher.throughput-deadline-time") must equal(0)
+
       getBoolean("akka.actor.serialize-messages") must equal(false)
       settings.SerializeAllMessages must equal(false)
 
+      getInt("akka.scheduler.ticksPerWheel") must equal(512)
+      settings.SchedulerTicksPerWheel must equal(512)
+
+      getMilliseconds("akka.scheduler.tickDuration") must equal(100)
+      settings.SchedulerTickDuration must equal(100 millis)
+
+      getBoolean("akka.scheduler.daemonic") must equal(true)
+      settings.SchedulerDaemonicity must equal(true)
     }
   }
 }

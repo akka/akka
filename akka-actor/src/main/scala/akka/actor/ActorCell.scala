@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -274,7 +274,7 @@ private[akka] class ActorCell(
   }
 
   @inline
-  final def dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
+  final val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
 
   /**
    * UntypedActorContext impl

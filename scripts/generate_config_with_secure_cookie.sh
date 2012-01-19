@@ -3,7 +3,7 @@ exec scala "$0" "$@"
 !#
 
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 import java.security.{MessageDigest, SecureRandom}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -138,11 +138,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    *  Creates and returns a mailbox for the given actor.
    */
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
-
-  /**
-   * Name of this dispatcher.
-   */
-  def name: String
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
