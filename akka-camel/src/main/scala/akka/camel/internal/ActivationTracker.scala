@@ -11,10 +11,11 @@ class ActivationTracker extends Actor{
   val activations = new WeakHashMap[ActorRef,  ActivationStateMachine]
 
   class ActivationStateMachine {
+    type State = PartialFunction[ActivationMessage, Unit]
 
-    var receive : Receive = notActivated()
+    var receive : State = notActivated()
 
-    def notActivated() : Receive = {
+    def notActivated() : State = {
       var awaitingActivation = List[ActorRef]()
       var awaitingDeActivation = List[ActorRef]()
 
@@ -36,7 +37,7 @@ class ActivationTracker extends Actor{
       }
     }
 
-    def activated( currentAwaitingDeActivation : List[ActorRef]) : Receive = {
+    def activated( currentAwaitingDeActivation : List[ActorRef]) : State = {
       var awaitingDeActivation = currentAwaitingDeActivation
 
       {
@@ -53,17 +54,17 @@ class ActivationTracker extends Actor{
       }
     }
 
-    def deactivated : Receive = {
+    def deactivated : State = {
       case AwaitActivation(ref) => sender ! EndpointActivated(ref)
       case AwaitDeActivation(ref) => sender ! EndpointDeActivated(ref)
     }
 
-    def failedToActivate(cause:Throwable) : Receive = {
+    def failedToActivate(cause:Throwable) : State = {
       case AwaitActivation(ref) => sender ! EndpointFailedToActivate(ref, cause)
       case AwaitDeActivation(ref) => sender ! EndpointFailedToActivate(ref, cause)
     }
 
-    def failedToDeActivate(cause:Throwable) : Receive = {
+    def failedToDeActivate(cause:Throwable) : State = {
       case AwaitActivation(ref) => sender ! EndpointActivated(ref)
       case AwaitDeActivation(ref) => sender ! EndpointFailedToDeActivate(ref, cause)
     }
