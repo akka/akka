@@ -24,13 +24,16 @@ private[zeromq] object ConcurrentSocketActor {
   private case object ClearPoll
   private case class PollError(ex: Throwable)
 
+  private class NoSocketHandleException() extends Exception("Couldn't create a zeromq socket.")
+
+  private val DefaultContext = Context()
 }
 private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends Actor {
 
   import ConcurrentSocketActor._
   private val noBytes = Array[Byte]()
   private val zmqContext = {
-    params collectFirst { case c: Context ⇒ c } getOrElse Context()
+    params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
   }
 
   private val deserializer = deserializerFromParams
@@ -83,8 +86,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case RecoveryInterval(value)  ⇒ socket.setRecoveryInterval(value)
     case MulticastLoop(value)     ⇒ socket.setMulticastLoop(value)
     case MulticastHops(value)     ⇒ socket.setMulticastHops(value)
-    case ReceiveTimeOut(value)    ⇒ socket.setReceiveTimeOut(value)
-    case SendTimeOut(value)       ⇒ socket.setSendTimeOut(value)
     case SendBufferSize(value)    ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value) ⇒ socket.setReceiveBufferSize(value)
     case Linger                   ⇒ sender ! socket.getLinger
@@ -101,11 +102,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case RecoveryInterval         ⇒ sender ! socket.getRecoveryInterval
     case MulticastLoop            ⇒ sender ! socket.hasMulticastLoop
     case MulticastHops            ⇒ sender ! socket.getMulticastHops
-    case ReceiveTimeOut           ⇒ sender ! socket.getReceiveTimeOut
-    case SendTimeOut              ⇒ sender ! socket.getSendTimeOut
     case SendBufferSize           ⇒ sender ! socket.getSendBufferSize
     case ReceiveBufferSize        ⇒ sender ! socket.getReceiveBufferSize
-    case ReceiveMore              ⇒ sender ! socket.hasReceiveMore
     case FileDescriptor           ⇒ sender ! socket.getFD
   }
 
