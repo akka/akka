@@ -11,11 +11,11 @@ import akka.testkit.{ EventFilter, filterEvents, filterException }
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
-import java.lang.ArithmeticException
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 import scala.runtime.NonLocalReturnControl
+import java.lang.{ IllegalStateException, ArithmeticException }
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -325,6 +325,24 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val timeout = 10000
         def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200), timeout).mapTo[Int] }
         Await.result(Future.fold(futures)(0)(_ + _), timeout millis) must be(45)
+      }
+
+      "zip" in {
+        val timeout = 10000 millis
+        val f = new IllegalStateException("test")
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](f) zip Promise.successful("foo"), timeout)
+        } must be(f)
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.successful("foo") zip Promise.failed[String](f), timeout)
+        } must be(f)
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](f) zip Promise.failed[String](f), timeout)
+        } must be(f)
+
+        Await.result(Promise.successful("foo") zip Promise.successful("foo"), timeout) must be(("foo", "foo"))
       }
 
       "fold by composing" in {
@@ -859,6 +877,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(p, timeout.duration) must be(result)
       }
     }
+    "zip properly" in {
+      f { (future, result) ⇒
+        Await.result(future zip Promise.successful("foo"), timeout.duration) must be((result, "foo"))
+        (evaluating { Await.result(future zip Promise.failed(new RuntimeException("ohnoes")), timeout.duration) } must produce[RuntimeException]).getMessage must be("ohnoes")
+      }
+    }
     "not recover from exception" in { f((future, result) ⇒ Await.result(future.recover({ case _ ⇒ "pigdog" }), timeout.duration) must be(result)) }
     "perform action on result" in {
       f { (future, result) ⇒
@@ -892,6 +916,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "retain exception with map" in { f((future, message) ⇒ (evaluating { Await.result(future map (_.toString.length), timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with flatMap" in { f((future, message) ⇒ (evaluating { Await.result(future flatMap (_ ⇒ Promise.successful[Any]("foo")), timeout.duration) } must produce[E]).getMessage must be(message)) }
     "not perform action with foreach" is pending
+
+    "zip properly" in {
+      f { (future, message) ⇒ (evaluating { Await.result(future zip Promise.successful("foo"), timeout.duration) } must produce[E]).getMessage must be(message) }
+    }
     "recover from exception" in { f((future, message) ⇒ Await.result(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), timeout.duration) must be("pigdog")) }
     "not perform action on result" is pending
     "project a failure" in { f((future, message) ⇒ Await.result(future.failed, timeout.duration).getMessage must be(message)) }
