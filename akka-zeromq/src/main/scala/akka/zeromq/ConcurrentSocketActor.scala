@@ -15,8 +15,16 @@ private[zeromq] case object NoResults extends PollLifeCycle
 private[zeromq] case object Results extends PollLifeCycle
 private[zeromq] case object Closing extends PollLifeCycle
 
+private[zeromq] object ConcurrentSocketActor {
+  private case object Poll
+  private case object ReceiveFrames
+  private case object ClearPoll
+  private case class PollError(ex: Throwable)
+
+}
 private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends Actor {
 
+  import ConcurrentSocketActor._
   private val noBytes = Array[Byte]()
   private val zmqContext = {
     params find (_.isInstanceOf[Context]) map (_.asInstanceOf[Context]) getOrElse new Context(1)
@@ -26,10 +34,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   private lazy val poller: Poller = zmqContext.poller
   private val log = Logging(context.system, this)
 
-  private case object Poll
-  private case object ReceiveFrames
-  private case object ClearPoll
-  private case class PollError(ex: Throwable)
 
   private def handleConnectionMessages: Receive = {
     case Send(frames) ⇒ {
