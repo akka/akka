@@ -403,11 +403,17 @@ To use ScalaSTM the import from Scala is::
 Java
 ~~~~
 
-For Java there is a special JavaAPI helper object that can be statically
-imported, along with any other imports that might be needed::
+For Java there is a special helper object with Java-friendly methods::
+
+  import scala.concurrent.stm.japi.Stm;
+
+These methods can also be statically imported::
+
+  import static scala.concurrent.stm.japi.Stm.*;
+
+Other imports that are needed are in the stm package, particularly ``Ref``::
 
   import scala.concurrent.stm.Ref;
-  import static scala.concurrent.stm.JavaAPI.*;
 
 Transactions
 ^^^^^^^^^^^^
@@ -440,7 +446,7 @@ for more information.
 Java
 ~~~~
 
-In the ScalaSTM JavaAPI helpers there are atomic methods which accept
+In the ScalaSTM Java API helpers there are atomic methods which accept
 ``java.lang.Runnable`` and ``java.util.concurrent.Callable``.
 
 v1.3::
@@ -461,7 +467,7 @@ v1.3::
 
 v2.0::
 
-  import static scala.concurrent.stm.JavaAPI.*;
+  import static scala.concurrent.stm.japi.Stm.atomic;
   import java.util.concurrent.Callable;
 
   atomic(new Runnable() {
@@ -546,7 +552,7 @@ Java
 
 As ``Ref.View`` in ScalaSTM does not require implicit transactions, this is more
 easily used from Java. ``Ref`` could be used, but requires explicit threading of
-transactions. There are helper methods in ``JavaAPI`` for creating ``Ref.View``
+transactions. There are helper methods in ``japi.Stm`` for creating ``Ref.View``
 references.
 
 v1.3::
@@ -555,7 +561,7 @@ v1.3::
 
 v2.0::
 
-  Ref.View<Integer> ref = newRef(0);
+  Ref.View<Integer> ref = Stm.newRef(0);
 
 The ``set`` and ``get`` methods work the same way for both versions.
 
@@ -570,7 +576,7 @@ v2.0::
   ref.set(1); // set new value
 
 There are also ``transform``, ``getAndTransform``, and ``transformAndGet``
-methods in ``JavaAPI`` which accept ``scala.runtime.AbstractFunction1``.
+methods in ``japi.Stm`` which accept ``scala.runtime.AbstractFunction1``.
 
 There are ``increment`` helper methods for ``Ref.View<Integer>`` and
 ``Ref.View<Long>`` references.
@@ -611,16 +617,21 @@ Java
 
 Rather than using the ``deferred`` and ``compensating`` methods in
 ``akka.stm.StmUtils``, use the ``afterCommit`` and ``afterRollback`` methods in
-``scala.concurrent.stm.JavaAPI``, which behave in the same way and accept
+``scala.concurrent.stm.japi.Stm``, which behave in the same way and accept
 ``Runnable``.
 
 Transactional Datastructures
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In ScalaSTM see ``TMap``, ``TSet``, and ``TArray`` for transactional
-datastructures. There are helper methods for creating these in
-``JavaAPI``. These datastructure implement the ``scala.collection`` interfaces
-and can also be used from Java with Scala's ``JavaConversions``.
+datastructures.
+
+There are helper methods for creating these from Java in ``japi.Stm``:
+``newTMap``, ``newTSet``, and ``newTArray``. These datastructures implement the
+``scala.collection`` interfaces and can also be used from Java with Scala's
+``JavaConversions``. There are helper methods that apply the conversions,
+returning ``java.util`` ``Map``, ``Set``, and ``List``: ``newMap``, ``newSet``,
+and ``newList``.
 
 
 More to be written
