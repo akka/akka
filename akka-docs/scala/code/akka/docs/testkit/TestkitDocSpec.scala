@@ -132,7 +132,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestActorRef
     system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
     val ref = TestActorRef[MyActor]
-    ref(Unknown)
+    ref.receive(Unknown)
     expectMsg(1 second, UnhandledMessage(Unknown, system.deadLetters, ref))
     //#test-unhandled
   }
@@ -146,7 +146,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         case boom ⇒ throw new IllegalArgumentException("boom")
       }
     })
-    intercept[IllegalArgumentException] { actorRef("hello") }
+    intercept[IllegalArgumentException] { actorRef.receive("hello") }
     //#test-expecting-exceptions
   }
 

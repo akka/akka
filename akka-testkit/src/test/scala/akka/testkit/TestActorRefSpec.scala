@@ -224,9 +224,9 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
       a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
     }
 
-    "proxy apply for the underlying actor" in {
+    "proxy receive for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
-      ref("work")
+      ref.receive("work")
       ref.isTerminated must be(true)
     }
 

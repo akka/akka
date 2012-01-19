@@ -58,7 +58,7 @@ class TestActorRef[T <: Actor](
    * thrown will be available to you, while still being able to use
    * become/unbecome.
    */
-  def apply(o: Any) { underlyingActor.apply(o) }
+  def receive(o: Any) { underlyingActor.apply(o) }
 
   /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the
