@@ -266,6 +266,48 @@ Documentation:
   * :ref:`event-bus-scala`
   * :ref:`event-bus-java`
 
+
+Scheduler
+---------
+
+The functionality of the scheduler is identical, but the API is slightly adjusted.
+
+v1.3::
+
+  //Schedules to send the "foo"-message to the testActor after 50ms
+  Scheduler.scheduleOnce(testActor, "foo", 50L, TimeUnit.MILLISECONDS)
+
+  // Schedules periodic send of "foo"-message to the testActor after 1s inital delay,
+  // and then with 200ms between successive sends
+  Scheduler.schedule(testActor, "foo", 1000L, 200L, TimeUnit.MILLISECONDS)
+
+  // Schedules a function to be executed (send the current time) to the testActor after 50ms
+  Scheduler.scheduleOnce({testActor ! System.currentTimeMillis}, 50L, TimeUnit.MILLISECONDS)
+
+v2.0::
+
+  //Schedules to send the "foo"-message to the testActor after 50ms
+  system.scheduler.scheduleOnce(50 milliseconds, testActor, "foo")
+
+  // Schedules periodic send of "foo"-message to the testActor after 1s inital delay,
+  // and then with 200ms between successive sends
+  system.scheduler.schedule(1 second, 200 milliseconds, testActor, "foo")
+
+  // Schedules a function to be executed (send the current time) to the testActor after 50ms
+  system.scheduler.scheduleOnce(50 milliseconds) {
+    testActor ! System.currentTimeMillis
+  }
+
+
+The internal implementation of the scheduler is changed from
+``java.util.concurrent.ScheduledExecutorService`` to a variant of
+``org.jboss.netty.util.HashedWheelTimer``.
+
+Documentation:
+
+  * :ref:`scheduler-scala`
+  * :ref:`scheduler-java`
+
 Supervision
 -----------
 
@@ -379,6 +421,5 @@ More to be written
 * TypedActors
 * Routing
 * Remoting
-* Scheduler
 * Configuration
 * ...?
