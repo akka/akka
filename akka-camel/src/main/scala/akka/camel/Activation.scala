@@ -10,8 +10,8 @@ import akka.actor.{ActorSystem, Props, ActorRef}
 trait Activation{
   import akka.dispatch.Await
 
-  val actorSystem : ActorSystem
-  private[camel] val activationTracker = actorSystem.actorOf(Props[ActivationTracker])
+  def system : ActorSystem
+  private[camel] val activationTracker = system.actorOf(Props[ActivationTracker])
 
   /**
    * Awaits for endpoint to be activated. It is blocking until endpoint is registered in camel context or timeout expires.
