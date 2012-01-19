@@ -25,8 +25,13 @@ import com.eaio.uuid.UUID
 
 /**
  * IO messages and iteratees.
+ *
+ * This is still in an experimental state and is subject to change until it
+ * has received more real world testing.
  */
 object IO {
+
+  final class DivergentIterateeException extends Exception("Iteratees should not return a continuation when receiving EOF")
 
   /**
    * An immutable handle to a Java NIO Channel. Contains a reference to the
@@ -41,10 +46,10 @@ object IO {
     def uuid: UUID
     override lazy val hashCode = scala.runtime.ScalaRunTime._hashCode(this)
 
-    def asReadable: ReadHandle = sys error "Not readable"
-    def asWritable: WriteHandle = sys error "Not writable"
-    def asSocket: SocketHandle = sys error "Not a socket"
-    def asServer: ServerHandle = sys error "Not a server"
+    def asReadable: ReadHandle = throw new ClassCastException(this.toString + " is not a ReadHandle")
+    def asWritable: WriteHandle = throw new ClassCastException(this.toString + " is not a WriteHandle")
+    def asSocket: SocketHandle = throw new ClassCastException(this.toString + " is not a SocketHandle")
+    def asServer: ServerHandle = throw new ClassCastException(this.toString + " is not a ServerHandle")
 
     /**
      * Sends a request to the [[akka.actor.IOManager]] to close the Channel
@@ -271,7 +276,7 @@ object IO {
      */
     final def get: A = this(EOF(None))._1 match {
       case Done(value)        ⇒ value
-      case Cont(_, None)      ⇒ sys.error("Divergent Iteratee")
+      case Cont(_, None)      ⇒ throw new DivergentIterateeException
       case Cont(_, Some(err)) ⇒ throw err
     }
 
@@ -802,6 +807,7 @@ final class IOManagerActor extends Actor {
           }
       }
     } catch {
+      case e: ClassCastException           ⇒ cleanup(handle, Some(e))
       case e: CancelledKeyException        ⇒ cleanup(handle, Some(e))
       case e: IOException                  ⇒ cleanup(handle, Some(e))
       case e: ActorInitializationException ⇒ cleanup(handle, Some(e))
