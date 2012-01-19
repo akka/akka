@@ -15,11 +15,6 @@ object ConcurrentSocketActorSpec {
   val config = """
 akka {
   extensions = ["akka.zeromq.ZeroMQExtension$"]
-  zeromq {
-    socket-dispatcher {
-      type = "PinnedDispatcher"
-    }
-  }
 }
 """
 }
