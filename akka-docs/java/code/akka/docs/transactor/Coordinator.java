@@ -6,7 +6,6 @@ package akka.docs.transactor;
 
 import akka.actor.*;
 import akka.transactor.*;
-import scala.concurrent.stm.*;
 
 public class Coordinator extends UntypedActor {
     public void onReceive(Object incoming) throws Exception {
@@ -15,8 +14,8 @@ public class Coordinator extends UntypedActor {
             Object message = coordinated.getMessage();
             if (message instanceof Message) {
                 //#coordinated-atomic
-                coordinated.atomic(new Atomically() {
-                    public void atomically(InTxn txn) {
+                coordinated.atomic(new Runnable() {
+                    public void run() {
                         // do something in the coordinated transaction ...
                     }
                 });

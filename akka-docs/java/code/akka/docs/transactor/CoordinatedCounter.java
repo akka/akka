@@ -7,15 +7,11 @@ package akka.docs.transactor;
 //#class
 import akka.actor.*;
 import akka.transactor.*;
-import scala.concurrent.stm.*;
+import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.Stm;
 
 public class CoordinatedCounter extends UntypedActor {
-    private Ref<Integer> count = Stm.ref(0);
-
-    private void increment(InTxn txn) {
-        Integer newValue = count.get(txn) + 1;
-        count.set(newValue, txn);
-    }
+    private Ref.View<Integer> count = Stm.newRef(0);
 
     public void onReceive(Object incoming) throws Exception {
         if (incoming instanceof Coordinated) {
@@ -26,14 +22,14 @@ public class CoordinatedCounter extends UntypedActor {
                 if (increment.hasFriend()) {
                     increment.getFriend().tell(coordinated.coordinate(new Increment()));
                 }
-                coordinated.atomic(new Atomically() {
-                    public void atomically(InTxn txn) {
-                        increment(txn);
+                coordinated.atomic(new Runnable() {
+                    public void run() {
+                        Stm.increment(count, 1);
                     }
                 });
             }
         } else if ("GetCount".equals(incoming)) {
-            getSender().tell(count.single().get());
+            getSender().tell(count.get());
         } else {
           unhandled(incoming);
         }
