@@ -22,15 +22,15 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
 /**
  * Creates an instance of Camel subsystem.
  *
- * @param actorSystem is used to create internal actors needed by camel instance.
+ * @param system is used to create internal actors needed by camel instance.
  * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
  * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the  actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources.
  */
-class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
+class DefaultCamel(val system : ActorSystem) extends Camel{
   val context = {
     val ctx = new DefaultCamelContext
-    ctx.setName(actorSystem.name);
+    ctx.setName(system.name);
     ctx.setStreamCaching(true)
     ctx.addComponent("actor", new ActorComponent(this))
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[CommunicationStyle], classOf[String], CommunicationStyleTypeConverter)
@@ -39,7 +39,6 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
   }
 
   val template = context.createProducerTemplate()
-  def system = actorSystem
 
   /**
    * Starts camel and underlying camel context and template.
@@ -51,7 +50,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
     context.start()
     template.start()
     //TODO use proper akka logging
-    actorSystem.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
+    system.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, system.name)))
     this
   }
 
@@ -66,7 +65,7 @@ class DefaultCamel(val actorSystem : ActorSystem) extends Camel{
     context.stop()
     template.stop()
     //TODO use proper akka logging
-    actorSystem.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, actorSystem.name)))
+    system.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, system.name)))
   }
 }
 
@@ -112,10 +111,10 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
  * ActorEndpoint uses it to lookup an actor by its path.
  */
 private[camel] trait ConsumerRegistry{ this:Activation =>
-  def actorSystem : ActorSystem
+  def system : ActorSystem
   def context : CamelContext
 
-  private[this] lazy val idempotentRegistry = actorSystem.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
+  private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
 
 
   private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
@@ -124,7 +123,7 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
   }
 
   private[camel] def findActor(path: ActorEndpointPath) : Option[ActorRef] = {
-    val ref = actorSystem.actorFor(path.actorPath)
+    val ref = system.actorFor(path.actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
 }
