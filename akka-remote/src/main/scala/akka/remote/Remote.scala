@@ -239,7 +239,8 @@ trait RemoteMarshallingOps {
   }
 
   def receiveMessage(remoteMessage: RemoteMessage) {
-    log.debug("received message {}", remoteMessage)
+    if (remote.remoteSettings.LogReceivedMessages)
+      log.debug("received message {}", remoteMessage)
 
     val remoteDaemon = remote.remoteDaemon
 
