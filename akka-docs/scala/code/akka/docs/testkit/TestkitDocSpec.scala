@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.testkit
 
@@ -134,7 +134,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestActorRef
     system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
     val ref = TestActorRef[MyActor]
-    ref(Unknown)
+    ref.receive(Unknown)
     expectMsg(1 second, UnhandledMessage(Unknown, system.deadLetters, ref))
     //#test-unhandled
   }
@@ -148,7 +148,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         case boom ⇒ throw new IllegalArgumentException("boom")
       }
     })
-    intercept[IllegalArgumentException] { actorRef("hello") }
+    intercept[IllegalArgumentException] { actorRef.receive("hello") }
     //#test-expecting-exceptions
   }
 

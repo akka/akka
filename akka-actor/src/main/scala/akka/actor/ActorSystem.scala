@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -97,6 +97,7 @@ object ActorSystem {
 
     final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
     final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+    final val Daemonicity = getBoolean("akka.daemonic")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -275,6 +276,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   import ActorSystem._
 
   final val settings = new Settings(applicationConfig, name)
+  final val threadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -361,7 +363,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
-  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(threadFactory, eventStream, deadLetterMailbox, scheduler))
   val dispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
@@ -409,18 +411,18 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
    * executed upon close(), the task may execute before its timeout.
    */
   protected def createScheduler(): Scheduler = {
-    val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
-    val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
+    val hwt = new HashedWheelTimer(log,
+      threadFactory.copy(threadFactory.name + "-scheduler"),
+      settings.SchedulerTickDuration,
+      settings.SchedulerTicksPerWheel)
     // note that dispatcher is by-name parameter in DefaultScheduler constructor,
     // because dispatcher is not initialized when the scheduler is created
-    def safeDispatcher = {
-      if (dispatcher eq null) {
+    def safeDispatcher = dispatcher match {
+      case null ⇒
         val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
         log.error(exc, exc.getMessage)
         throw exc
-      } else {
-        dispatcher
-      }
+      case dispatcher ⇒ dispatcher
     }
     new DefaultScheduler(hwt, log, safeDispatcher)
   }

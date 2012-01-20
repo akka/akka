@@ -1,11 +1,9 @@
 /**
- *   Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *   Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.ConcurrentHashMap
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.actor.ActorSystem
@@ -17,14 +15,17 @@ import com.typesafe.config.ConfigFactory
 import akka.config.ConfigurationException
 import akka.event.Logging.Warning
 import akka.actor.Props
+import java.util.concurrent.{ ThreadFactory, TimeUnit, ConcurrentHashMap }
 
 trait DispatcherPrerequisites {
+  def threadFactory: ThreadFactory
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
 }
 
 case class DefaultDispatcherPrerequisites(
+  val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler) extends DispatcherPrerequisites
@@ -61,7 +62,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   /**
    * Returns a dispatcher as specified in configuration, or if not defined it uses
-   * the default dispatcher.
+   * the default dispatcher. Please note that this method _may_ create and return a NEW dispatcher,
+   * _every_ call.
    */
   def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
 
@@ -160,7 +162,6 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
   private val instance =
     configureThreadPool(config,
       threadPoolConfig ⇒ new Dispatcher(prerequisites,
-        config.getString("name"),
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
@@ -185,12 +186,10 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
   private val instance =
     configureThreadPool(config,
       threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-        config.getString("name"),
         config.getString("id"),
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        threadPoolConfig,
+        mailboxType, threadPoolConfig,
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
 
   /**
@@ -209,8 +208,10 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   /**
    * Creates new dispatcher for each invocation.
    */
-  override def dispatcher(): MessageDispatcher =
-    new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
+  override def dispatcher(): MessageDispatcher = configureThreadPool(config,
+    threadPoolConfig ⇒
+      new PinnedDispatcher(prerequisites, null, config.getString("id"), mailboxType,
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        threadPoolConfig)).build
 
 }

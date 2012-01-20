@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -32,10 +32,7 @@ object RoutingSpec {
     """
 
   class TestActor extends Actor {
-    def receive = {
-      case _ ⇒
-        println("Hello")
-    }
+    def receive = { case _ ⇒ }
   }
 
   class Echo extends Actor {

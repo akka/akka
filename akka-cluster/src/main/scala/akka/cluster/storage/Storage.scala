@@ -1,7 +1,7 @@
 package akka.cluster.storage
 
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 import akka.cluster.zookeeper.AkkaZkClient
 import akka.AkkaException

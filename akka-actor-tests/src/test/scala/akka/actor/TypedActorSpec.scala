@@ -1,7 +1,7 @@
 package akka.actor
 
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }

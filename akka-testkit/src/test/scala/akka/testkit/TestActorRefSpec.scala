@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -11,6 +11,7 @@ import akka.dispatch.{ Future, Promise, Await }
 import akka.util.duration._
 import akka.actor.ActorSystem
 import akka.pattern.ask
+import akka.dispatch.Dispatcher
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
@@ -89,7 +90,7 @@ object TestActorRefSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
+class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndAfterEach with DefaultTimeout {
 
   import TestActorRefSpec._
 
@@ -225,9 +226,14 @@ class TestActorRefSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTime
       a.underlying.dispatcher.getClass must be(classOf[CallingThreadDispatcher])
     }
 
-    "proxy apply for the underlying actor" in {
+    "allow override of dispatcher" in {
+      val a = TestActorRef(Props[WorkerActor].withDispatcher("disp1"))
+      a.underlying.dispatcher.getClass must be(classOf[Dispatcher])
+    }
+
+    "proxy receive for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
-      ref("work")
+      ref.receive("work")
       ref.isTerminated must be(true)
     }
 

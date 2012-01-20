@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
 
 import akka.AkkaException
 import akka.util.Timeout
-import scala.concurrent.stm._
+import scala.concurrent.stm.{ CommitBarrier, InTxn }
+import java.util.concurrent.Callable
 
 /**
  * Akka-specific exception for coordinated transactions.
@@ -125,7 +126,7 @@ class Coordinated(val message: Any, member: CommitBarrier.Member) {
    *
    * @throws CoordinatedTransactionException if the coordinated transaction fails.
    */
-  def atomic[T](body: InTxn ⇒ T): T = {
+  def atomic[A](body: InTxn ⇒ A): A = {
     member.atomic(body) match {
       case Right(result) ⇒ result
       case Left(CommitBarrier.MemberUncaughtExceptionCause(x)) ⇒
@@ -136,13 +137,22 @@ class Coordinated(val message: Any, member: CommitBarrier.Member) {
   }
 
   /**
-   * Java API: coordinated atomic method that accepts an [[akka.transactor.Atomically]].
+   * Java API: coordinated atomic method that accepts a `java.lang.Runnable`.
    * Delimits the coordinated transaction. The transaction will wait for all other transactions
    * in this coordination before committing. The timeout is specified when creating the Coordinated.
    *
    * @throws CoordinatedTransactionException if the coordinated transaction fails.
    */
-  def atomic(atomically: Atomically): Unit = atomic(txn ⇒ atomically.atomically(txn))
+  def atomic(runnable: Runnable): Unit = atomic { _ ⇒ runnable.run }
+
+  /**
+   * Java API: coordinated atomic method that accepts a `java.util.concurrent.Callable`.
+   * Delimits the coordinated transaction. The transaction will wait for all other transactions
+   * in this coordination before committing. The timeout is specified when creating the Coordinated.
+   *
+   * @throws CoordinatedTransactionException if the coordinated transaction fails.
+   */
+  def atomic[A](callable: Callable[A]): A = atomic { _ ⇒ callable.call }
 
   /**
    * An empty coordinated atomic block. Can be used to complete the number of members involved
