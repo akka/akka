@@ -73,7 +73,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         system2.shutdown()
       }
 
-      system2.awaitTermination()
+      system2.awaitTermination(5 seconds)
       callbackWasRun must be(true)
 
     }
