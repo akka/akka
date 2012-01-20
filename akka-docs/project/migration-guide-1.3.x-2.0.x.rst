@@ -10,14 +10,9 @@
       :local:
       :depth: 3
 
-Actors
-======
-
 The 2.0 release contains several new features which require source-level
 changes in client code. This API cleanup is planned to be the last one for a
 significant amount of time.
-
-Detailed migration guide will be written.
 
 Migration Kit
 =============
@@ -472,7 +467,7 @@ The dispatcher is assigned to the actor in a different way.
 v1.3::
 
   actorRef.dispatcher = MyGlobals.myDispatcher
-  slef.dispatcher = = MyGlobals.myDispatcher
+  self.dispatcher = MyGlobals.myDispatcher
 
 v2.0::
 
