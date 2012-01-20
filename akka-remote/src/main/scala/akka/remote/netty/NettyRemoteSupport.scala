@@ -373,8 +373,7 @@ class NettyRemoteSupport(_system: ActorSystemImpl, val remote: Remote, val addre
 
   val serverSettings = remote.remoteSettings.serverSettings
   val clientSettings = remote.remoteSettings.clientSettings
-
-  val threadFactory = new MonitorableThreadFactory("NettyRemoteSupport", remote.remoteSettings.Daemonic)
+  val threadFactory = _system.threadFactory.copy(_system.threadFactory.name + "-remote")
   val timer: HashedWheelTimer = new HashedWheelTimer(threadFactory)
 
   val executor = new OrderedMemoryAwareThreadPoolExecutor(
@@ -566,7 +565,6 @@ class NettyRemoteServer(
   }
 
   openChannels.add(bootstrap.bind(new InetSocketAddress(address.transport.ip.get, address.transport.port)))
-  remoteSupport.notifyListeners(RemoteServerStarted(remoteSupport))
 
   def shutdown() {
     try {

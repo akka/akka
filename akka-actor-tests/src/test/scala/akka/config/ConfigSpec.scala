@@ -23,6 +23,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       getString("akka.version") must equal("2.0-SNAPSHOT")
       settings.ConfigVersion must equal("2.0-SNAPSHOT")
 
+      getBoolean("akka.daemonic") must equal(false)
+
       getString("akka.actor.default-dispatcher.type") must equal("Dispatcher")
       getMilliseconds("akka.actor.default-dispatcher.keep-alive-time") must equal(60 * 1000)
       getDouble("akka.actor.default-dispatcher.core-pool-size-factor") must equal(3.0)
@@ -45,9 +47,6 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
       getMilliseconds("akka.scheduler.tickDuration") must equal(100)
       settings.SchedulerTickDuration must equal(100 millis)
-
-      getBoolean("akka.scheduler.daemonic") must equal(true)
-      settings.SchedulerDaemonicity must equal(true)
     }
   }
 }
