@@ -18,7 +18,7 @@ object RemoteClientSettings {
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
   val REAP_FUTURES_DELAY = Duration(config.getInt("akka.remote.client.reap-futures-delay", 5), TIME_UNIT)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
-  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.client.connection-timeout", 100), TIME_UNIT)
+  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.client.connection-timeout", 10), TIME_UNIT)
 }
 
 object RemoteServerSettings {
