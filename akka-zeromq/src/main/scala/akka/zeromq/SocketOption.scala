@@ -305,7 +305,7 @@ case class MaxMsgSize(value: Long) extends SocketOption
 object MaxMsgSize extends SocketOptionQuery
 
 /**
- * The [[akka.zeromq.SndHWM]] option shall set the high water mark for outbound messages on the specified socket.
+ * The [[akka.zeromq.SendHighWatermark]] option shall set the high water mark for outbound messages on the specified socket.
  * The high water mark is a hard limit on the maximum number of outstanding messages ØMQ shall queue in memory
  * for any single peer that the specified socket is communicating with.
  *
@@ -316,16 +316,16 @@ object MaxMsgSize extends SocketOptionQuery
  *
  * @param value
  */
-case class SndHWM(value: Long) extends SocketOption
+case class SendHighWatermark(value: Long) extends SocketOption
 
 /**
  * Gets the SendHWM
- * @see [[akka.zeromq.SndHWM]]
+ * @see [[akka.zeromq.SendHighWatermark]]
  */
-object SndHWM extends SocketOptionQuery
+object SendHighWatermark extends SocketOptionQuery
 
 /**
- * The [[akka.zeromq.RcvHWM]] option shall set the high water mark for inbound messages on the specified socket.
+ * The [[akka.zeromq.ReceiveHighWatermark]] option shall set the high water mark for inbound messages on the specified socket.
  * The high water mark is a hard limit on the maximum number of outstanding messages ØMQ shall queue
  * in memory for any single peer that the specified socket is communicating with.
  *
@@ -336,26 +336,26 @@ object SndHWM extends SocketOptionQuery
  *
  * @param value
  */
-case class RcvHWM(value: Long) extends SocketOption
+case class ReceiveHighWatermark(value: Long) extends SocketOption
 
 /**
- * Gets the RcvHWM
- * @see [[akka.zeromq.RcvHWM]]
+ * Gets the ReceiveHighWatermark
+ * @see [[akka.zeromq.ReceiveHighWatermark]]
  */
-object RcvHWM extends SocketOptionQuery
+object ReceiveHighWatermark extends SocketOptionQuery
 
 /**
- * The [[akka.zeromq.HWM]] option shall set the high water mark for the specified socket.
+ * The [[akka.zeromq.HighWatermark]] option shall set the high water mark for the specified socket.
  * The high water mark is a hard limit on the maximum number of outstanding messages ØMQ shall queue in memory for
  * any single peer that the specified socket is communicating with.
  *
  * If this limit has been reached the socket shall enter an exceptional state and depending on the socket type,
  * ØMQ shall take appropriate action such as blocking or dropping sent messages.
- * The default [[akka.zeromq.HWM]] value of zero means "no limit".
+ * The default [[akka.zeromq.HighWatermark]] value of zero means "no limit".
  *
  * @param value
  */
-case class HWM(value: Long) extends SocketOption
+case class HighWatermark(value: Long) extends SocketOption
 
 /**
  * The [[akka.zeromq.Swap]] option shall set the disk offload (swap) size for the specified socket.

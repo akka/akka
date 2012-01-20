@@ -8,7 +8,6 @@ package akka.zeromq
  * @param payload
  */
 case class Frame(payload: Seq[Byte])
-object Frame { def apply(s: String): Frame = Frame(s.getBytes) }
 
 /**
  * Deserializes ZeroMQ messages into an immutable sequence of frames
