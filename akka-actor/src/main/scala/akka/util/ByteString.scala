@@ -10,27 +10,49 @@ import scala.collection.generic.{ CanBuildFrom, GenericCompanion }
 
 object ByteString {
 
+  /**
+   * Creates a new ByteString by copying a byte array.
+   */
   def apply(bytes: Array[Byte]): ByteString = ByteString1(bytes.clone)
 
+  /**
+   * Creates a new ByteString by copying bytes.
+   */
   def apply(bytes: Byte*): ByteString = {
     val ar = new Array[Byte](bytes.size)
     bytes.copyToArray(ar)
     ByteString1(ar)
   }
 
+  /**
+   * Creates a new ByteString by converting from integral numbers to bytes.
+   */
   def apply[T](bytes: T*)(implicit num: Integral[T]): ByteString =
     ByteString1(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
 
+  /**
+   * Creates a new ByteString by copying bytes from a ByteBuffer.
+   */
   def apply(bytes: ByteBuffer): ByteString = {
     val ar = new Array[Byte](bytes.remaining)
     bytes.get(ar)
     ByteString1(ar)
   }
 
+  /**
+   * Creates a new ByteString by encoding a String as UTF-8.
+   */
   def apply(string: String): ByteString = apply(string, "UTF-8")
 
+  /**
+   * Creates a new ByteString by encoding a String with a charset.
+   */
   def apply(string: String, charset: String): ByteString = ByteString1(string.getBytes(charset))
 
+  /**
+   * Creates a new ByteString by copying length bytes starting at offset from
+   * an Array.
+   */
   def fromArray(array: Array[Byte], offset: Int, length: Int): ByteString = {
     val copyOffset = math.max(offset, 0)
     val copyLength = math.max(math.min(array.length - copyOffset, length), 0)
@@ -55,6 +77,9 @@ object ByteString {
     def apply(bytes: Array[Byte]) = new ByteString1(bytes)
   }
 
+  /**
+   * An unfragmented ByteString.
+   */
   final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString {
 
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
@@ -152,6 +177,9 @@ object ByteString {
 
   }
 
+  /**
+   * A ByteString with 2 or more fragments.
+   */
   final class ByteStrings private (val bytestrings: Vector[ByteString1], val length: Int) extends ByteString {
 
     def apply(idx: Int): Byte =
@@ -233,18 +261,70 @@ object ByteString {
 
 }
 
-sealed trait ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+/**
+ * A [[http://en.wikipedia.org/wiki/Rope_(computer_science) Rope-like]] immutable
+ * data structure containing bytes. The goal of this structure is to reduce
+ * copying of arrays when concatenating and slicing sequences of bytes, and also
+ * providing a thread safe way of working with bytes.
+ *
+ * TODO: Add performance characteristics
+ */
+abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   override protected[this] def newBuilder = ByteString.newBuilder
+
+  /**
+   * Efficiently concatenate another ByteString.
+   */
   def ++(that: ByteString): ByteString
+
+  /**
+   * Copy as many bytes as possible to a ByteBuffer, starting from it's
+   * current position. This method will not overflow the buffer.
+   *
+   * @param buffer a ByteBuffer to copy bytes to
+   * @return the number of bytes actually copied
+   */
   def copyToBuffer(buffer: ByteBuffer): Int
+
+  /**
+   * Create a new ByteString with all contents compacted into a single
+   * byte array.
+   */
   def compact: ByteString
+
+  /**
+   * Returns a read-only ByteBuffer that directly wraps this ByteString
+   * if it is not fragmented.
+   */
   def asByteBuffer: ByteBuffer
+
+  /**
+   * Creates a new ByteBuffer with a copy of all bytes contained in this
+   * ByteString.
+   */
   final def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
+
+  /**
+   * Decodes this ByteString as a UTF-8 encoded String.
+   */
   final def utf8String: String = decodeString("UTF-8")
+
+  /**
+   * Decodes this ByteString using a charset to produce a String.
+   */
   def decodeString(charset: String): String
+
+  /**
+   * map method that will automatically cast Int back into Byte.
+   */
   final def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
 }
 
+/**
+ * A mutable builder for efficiently creating a [[akka.util.ByteString]].
+ *
+ * The created ByteString is not automatically compacted.
+ */
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
   import ByteString.{ ByteString1, ByteStrings }
   private var _length = 0
