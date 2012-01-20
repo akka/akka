@@ -8,6 +8,7 @@ import scala.collection.mutable
 import akka.actor.{ LocalActorRef, Actor, ActorRef, Props, newUuid }
 import akka.actor.Actor._
 import akka.actor.ActorSystemImpl
+import akka.actor.Address
 
 /**
  * Stream of all kinds of network events, remote failure and connection events, cluster failure and connection events etc.
@@ -17,10 +18,10 @@ object NetworkEventStream {
 
   private sealed trait NetworkEventStreamEvent
 
-  private case class Register(listener: Listener, connectionAddress: ParsedTransportAddress)
+  private case class Register(listener: Listener, connectionAddress: Address)
     extends NetworkEventStreamEvent
 
-  private case class Unregister(listener: Listener, connectionAddress: ParsedTransportAddress)
+  private case class Unregister(listener: Listener, connectionAddress: Address)
     extends NetworkEventStreamEvent
 
   /**
@@ -35,8 +36,8 @@ object NetworkEventStream {
    */
   private class Channel extends Actor {
 
-    val listeners = new mutable.HashMap[ParsedTransportAddress, mutable.Set[Listener]]() {
-      override def default(k: ParsedTransportAddress) = mutable.Set.empty[Listener]
+    val listeners = new mutable.HashMap[Address, mutable.Set[Listener]]() {
+      override def default(k: Address) = mutable.Set.empty[Listener]
     }
 
     def receive = {
@@ -67,12 +68,12 @@ class NetworkEventStream(system: ActorSystemImpl) {
   /**
    * Registers a network event stream listener (asyncronously).
    */
-  def register(listener: Listener, connectionAddress: ParsedTransportAddress) =
+  def register(listener: Listener, connectionAddress: Address) =
     sender ! Register(listener, connectionAddress)
 
   /**
    * Unregisters a network event stream listener (asyncronously) .
    */
-  def unregister(listener: Listener, connectionAddress: ParsedTransportAddress) =
+  def unregister(listener: Listener, connectionAddress: Address) =
     sender ! Unregister(listener, connectionAddress)
 }

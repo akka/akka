@@ -647,7 +647,7 @@ object Logging {
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
-    val path: ActorPath = new RootActorPath(LocalAddress("all-systems"), "/StandardOutLogger")
+    val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }

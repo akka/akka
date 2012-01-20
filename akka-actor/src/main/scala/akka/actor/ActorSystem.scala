@@ -341,20 +341,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   val provider: ActorRefProvider = {
-    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
     val arguments = Seq(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler,
       classOf[InternalActorRef] -> deadLetters)
-    val types: Array[Class[_]] = arguments map (_._1) toArray
-    val values: Array[AnyRef] = arguments map (_._2) toArray
 
-    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
+    val loader = Thread.currentThread.getContextClassLoader match {
+      case null ⇒ getClass.getClassLoader
+      case l    ⇒ l
+    }
+
+    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, loader) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }

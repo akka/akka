@@ -39,6 +39,15 @@ object ReflectiveAccess {
     }
   }
 
+  def createInstance[T](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Exception, T] =
+    createInstance(clazz, args.map(_._1).toArray, args.map(_._2).toArray)
+
+  def createInstance[T](fqcn: String, args: Seq[(Class[_], AnyRef)], classloader: ClassLoader): Either[Exception, T] =
+    createInstance(fqcn, args.map(_._1).toArray, args.map(_._2).toArray, classloader)
+
+  def createInstance[T](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Exception, T] =
+    createInstance(fqcn, args.map(_._1).toArray, args.map(_._2).toArray, loader)
+
   //Obtains a reference to fqn.MODULE$
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, T] = try {
     getClassFor(fqn, classloader) match {

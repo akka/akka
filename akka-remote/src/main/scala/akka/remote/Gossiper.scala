@@ -27,8 +27,8 @@ import akka.dispatch.Await
  * Interface for node membership change listener.
  */
 trait NodeMembershipChangeListener {
-  def nodeConnected(node: ParsedTransportAddress)
-  def nodeDisconnected(node: ParsedTransportAddress)
+  def nodeConnected(node: Address)
+  def nodeDisconnected(node: Address)
 }
 
 /**
@@ -36,9 +36,9 @@ trait NodeMembershipChangeListener {
  */
 case class Gossip(
   version: VectorClock,
-  node: ParsedTransportAddress,
-  availableNodes: Set[ParsedTransportAddress] = Set.empty[ParsedTransportAddress],
-  unavailableNodes: Set[ParsedTransportAddress] = Set.empty[ParsedTransportAddress])
+  node: Address,
+  availableNodes: Set[Address] = Set.empty[Address],
+  unavailableNodes: Set[Address] = Set.empty[Address])
 
 // ====== START - NEW GOSSIP IMPLEMENTATION ======
 /*
@@ -94,7 +94,7 @@ case class Gossip(
  *       gossip to random seed with certain probability depending on number of unreachable, seed and live nodes.
  * </pre>
  */
-class Gossiper(remote: Remote, system: ActorSystemImpl) {
+class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
 
   /**
    * Represents the state for this Gossiper. Implemented using optimistic lockless concurrency,
@@ -108,27 +108,19 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
   private val serialization = remote.serialization
   private val log = Logging(system, "Gossiper")
   private val failureDetector = remote.failureDetector
-  private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[ParsedTransportAddress, ActorRef])
+  private val connectionManager = new RemoteConnectionManager(system, remote, Map.empty[Address, ActorRef])
 
   private val seeds = {
-    val seeds = remoteSettings.SeedNodes flatMap {
-      case x: UnparsedTransportAddress ⇒
-        x.parse(remote.transports) match {
-          case y: ParsedTransportAddress ⇒ Some(y)
-          case _                         ⇒ None
-        }
-      case _ ⇒ None
-    }
-    if (seeds.isEmpty) throw new ConfigurationException(
+    if (remoteSettings.SeedNodes.isEmpty) throw new ConfigurationException(
       "At least one seed node must be defined in the configuration [akka.cluster.seed-nodes]")
-    else seeds
+    else remoteSettings.SeedNodes
   }
 
-  private val address = remote.remoteAddress
+  private val address = remote.transport.address
   private val nodeFingerprint = address.##
 
   private val random = SecureRandom.getInstance("SHA1PRNG")
-  private val initalDelayForGossip = remoteSettings.InitalDelayForGossip
+  private val initalDelayForGossip = remoteSettings.InitialDelayForGossip
   private val gossipFrequency = remoteSettings.GossipFrequency
 
   private val state = new AtomicReference[State](State(currentGossip = newGossip()))
@@ -166,7 +158,7 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
           node ← oldAvailableNodes
           if connectionManager.connectionFor(node).isEmpty
         } {
-          val connectionFactory = () ⇒ system.actorFor(RootActorPath(RemoteSystemAddress(system.name, gossipingNode)) / "remote")
+          val connectionFactory = () ⇒ system.actorFor(RootActorPath(gossipingNode) / "remote")
           connectionManager.putIfAbsent(node, connectionFactory) // create a new remote connection to the new node
           oldState.nodeMembershipChangeListeners foreach (_ nodeConnected node) // notify listeners about the new nodes
         }
@@ -240,7 +232,7 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
   /**
    * Gossips set of nodes passed in as argument. Returns 'true' if it gossiped to a "seed" node.
    */
-  private def gossipTo(nodes: Set[ParsedTransportAddress]): Boolean = {
+  private def gossipTo(nodes: Set[Address]): Boolean = {
     val peers = nodes filter (_ != address) // filter out myself
     val peer = selectRandomNode(peers)
     val oldState = state.get
@@ -298,8 +290,8 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
   private def newGossip(): Gossip = Gossip(
     version = VectorClock(),
-    node = address.transport,
-    availableNodes = Set(address.transport))
+    node = address,
+    availableNodes = Set(address))
 
   private def incrementVersionForGossip(from: Gossip): Gossip = {
     val newVersion = from.version.increment(nodeFingerprint, newTimestamp)
@@ -314,7 +306,7 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
     }
   }
 
-  private def selectRandomNode(nodes: Set[ParsedTransportAddress]): ParsedTransportAddress = {
+  private def selectRandomNode(nodes: Set[Address]): Address = {
     nodes.toList(random.nextInt(nodes.size))
   }
 }

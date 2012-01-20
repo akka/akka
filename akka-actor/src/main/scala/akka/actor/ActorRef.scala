@@ -253,7 +253,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
 }
 
 private[akka] case object Nobody extends MinimalActorRef {
-  val path = new RootActorPath(new LocalAddress("all-systems"), "/Nobody")
+  val path = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
 }
 
 /**

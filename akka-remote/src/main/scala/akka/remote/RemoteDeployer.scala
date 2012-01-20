@@ -8,7 +8,7 @@ import akka.routing._
 import com.typesafe.config._
 import akka.config.ConfigurationException
 
-case class RemoteScope(node: UnparsedSystemAddress[UnparsedTransportAddress]) extends Scope
+case class RemoteScope(node: Address) extends Scope
 
 class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings) {
 
@@ -18,7 +18,7 @@ class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings
     super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒
         deploy.config.getString("remote") match {
-          case RemoteAddressExtractor(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
+          case AddressExtractor(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
           case str ⇒
             if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
             val nodes = deploy.config.getStringList("target.nodes").asScala

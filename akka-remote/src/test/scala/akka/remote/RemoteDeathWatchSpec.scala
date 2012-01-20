@@ -16,14 +16,14 @@ akka {
             /watchers.remote = "akka://other@127.0.0.1:2666"
         }
     }
-    remote.server {
+    remote.netty {
         hostname = "127.0.0.1"
         port = 2665
     }
 }
 """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
 
-  val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.server.port=2666").withFallback(system.settings.config))
+  val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.port=2666").withFallback(system.settings.config))
 
   override def atTermination() {
     other.shutdown()

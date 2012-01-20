@@ -5,13 +5,11 @@
 package akka.remote
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
-
 import System.{ currentTimeMillis ⇒ newTimestamp }
-
 import akka.actor.ActorSystem
+import akka.actor.Address
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -35,9 +33,9 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    */
   private case class State(
     version: Long = 0L,
-    failureStats: Map[ParsedTransportAddress, FailureStats] = Map.empty[ParsedTransportAddress, FailureStats],
-    intervalHistory: Map[ParsedTransportAddress, Vector[Long]] = Map.empty[ParsedTransportAddress, Vector[Long]],
-    timestamps: Map[ParsedTransportAddress, Long] = Map.empty[ParsedTransportAddress, Long])
+    failureStats: Map[Address, FailureStats] = Map.empty[Address, FailureStats],
+    intervalHistory: Map[Address, Vector[Long]] = Map.empty[Address, Vector[Long]],
+    timestamps: Map[Address, Long] = Map.empty[Address, Long])
 
   private val state = new AtomicReference[State](State())
 
@@ -45,13 +43,13 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Returns true if the connection is considered to be up and healthy
    * and returns false otherwise.
    */
-  def isAvailable(connection: ParsedTransportAddress): Boolean = phi(connection) < threshold
+  def isAvailable(connection: Address): Boolean = phi(connection) < threshold
 
   /**
    * Records a heartbeat for a connection.
    */
   @tailrec
-  final def heartbeat(connection: ParsedTransportAddress) {
+  final def heartbeat(connection: Address) {
     val oldState = state.get
 
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -132,7 +130,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
    * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
    */
-  def phi(connection: ParsedTransportAddress): Double = {
+  def phi(connection: Address): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
     if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
@@ -147,7 +145,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    * Removes the heartbeat management for a connection.
    */
   @tailrec
-  final def remove(connection: ParsedTransportAddress) {
+  final def remove(connection: Address) {
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {

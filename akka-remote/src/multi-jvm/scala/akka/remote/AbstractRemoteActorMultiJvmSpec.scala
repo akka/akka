@@ -21,8 +21,8 @@ trait AbstractRemoteActorMultiJvmSpec {
     case (idx, host) =>
       ConfigFactory.parseString("""
         akka {
-          remote.server.hostname="%s"
-          remote.server.port = "%d"
+          remote.netty.hostname="%s"
+          remote.netty.port = "%d"
         }""".format(host, 9990+idx, idx)) withFallback commonConfig
   }
 }

@@ -6,7 +6,7 @@ package akka.remote
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
-import akka.remote.netty.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteTransport
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout

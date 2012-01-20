@@ -280,7 +280,7 @@ class LocalActorRefProvider(
       eventStream,
       scheduler,
       deadLetters,
-      new RootActorPath(LocalAddress(_systemName)),
+      new RootActorPath(Address("akka", _systemName)),
       new Deployer(settings))
 
   val log = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
@@ -443,7 +443,7 @@ class LocalActorRefProvider(
         deadLetters
       } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
       else actorFor(ref, elems)
-    case LocalActorPath(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
+    case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
     case _ ⇒
       log.debug("look-up of unknown path '{}' failed", path)
       deadLetters
