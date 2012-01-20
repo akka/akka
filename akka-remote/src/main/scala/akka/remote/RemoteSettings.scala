@@ -16,7 +16,6 @@ class RemoteSettings(val config: Config, val systemName: String) {
   import config._
 
   val RemoteTransport = getString("akka.remote.transport")
-  val Daemonic = getBoolean("akka.remote.daemonic")
   val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
   val ShouldCompressData = getBoolean("akka.remote.use-compression")

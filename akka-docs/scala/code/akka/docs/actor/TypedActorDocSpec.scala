@@ -45,7 +45,7 @@ class SquarerImpl(val name: String) extends Squarer {
   //#typed-actor-impl-methods
 }
 //#typed-actor-impl
-
+import java.lang.Integer.{ parseInt ⇒ println } //Mr funny man avoids printing to stdout AND keeping docs alright
 //#typed-actor-supercharge
 trait Foo {
   def doFoo(times: Int): Unit = println("doFoo(" + times + ")")

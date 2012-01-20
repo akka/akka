@@ -342,7 +342,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
     //Apply the following options to the config if they are present in the config
 
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(daemonic = config getBoolean "daemonic"))
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")

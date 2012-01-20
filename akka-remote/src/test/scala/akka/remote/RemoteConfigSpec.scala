@@ -16,7 +16,6 @@ class RemoteConfigSpec extends AkkaSpec("") {
       getString("akka.remote.secure-cookie") must equal("")
       getBoolean("akka.remote.use-passive-connections") must equal(true)
       getMilliseconds("akka.remote.backoff-timeout") must equal(0)
-      getBoolean("akka.remote.daemonic") must equal(true)
       // getMilliseconds("akka.remote.remote-daemon-ack-timeout") must equal(30 * 1000)
 
       //akka.remote.server
