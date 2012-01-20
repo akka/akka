@@ -8,7 +8,7 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor.ActorRef
 import akka.util.duration._
 import akka.util.Duration
-import org.zeromq.ZMQ.{Poller, Socket}
+import org.zeromq.ZMQ.{ Poller, Socket }
 
 /**
  * Marker trait representing request messages for zeromq
