@@ -4,27 +4,22 @@
 package akka.actor
 
 import akka.config.ConfigurationException
-import akka.actor._
 import akka.event._
 import akka.dispatch._
 import akka.util.duration._
-import akka.util.Timeout
 import akka.util.Timeout._
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeUnit.NANOSECONDS
-import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigResolveOptions
-import com.typesafe.config.ConfigException
-import akka.util.{ Helpers, Duration, ReflectiveAccess }
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{ CountDownLatch, Executors, ConcurrentHashMap }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
+import akka.dispatch.Await.Awaitable
+import akka.dispatch.Await.CanAwait
+import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
+import akka.util._
+import collection.immutable.Stack
 
 object ActorSystem {
 
@@ -224,18 +219,41 @@ abstract class ActorSystem extends ActorRefFactory {
   def dispatcher: MessageDispatcher
 
   /**
-   * Register a block of code to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
-   * guarantee that they will be executed in a particular order.
+   * Register a block of code (callback) to run after all actors in this actor system have
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * last registration is run first.
+   *
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   *
+   * Scala API
    */
-  def registerOnTermination[T](code: ⇒ T)
+  def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
-   * guarantee that they will be executed in a particular order (Java API).
+   * Register a block of code (callback) to run after all actors in this actor system have
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * last registration is run first.
+   *
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   *
+   * Java API
    */
-  def registerOnTermination(code: Runnable)
+  def registerOnTermination(code: Runnable): Unit
+
+  /**
+   * Block current thread until the system has been shutdown, or the specified
+   * timeout has elapsed. This will block until after all on termination
+   * callbacks have been run.
+   */
+  def awaitTermination(timeout: Duration): Unit
+
+  /**
+   * Block current thread until the system has been shutdown. This will
+   * block until after all on termination callbacks have been run.
+   */
+  def awaitTermination(): Unit
 
   /**
    * Stop this actor system. This will stop the guardian actor, which in turn
@@ -379,8 +397,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     provider.init(this)
     _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
     deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
-    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
+    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
@@ -393,8 +411,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   def start() = _start
 
-  def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
-  def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
+  private lazy val terminationCallbacks = {
+    val callbacks = new TerminationCallbacks
+    terminationFuture onComplete (_ ⇒ callbacks.run)
+    callbacks
+  }
+  def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
+  def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
+  def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
+  def awaitTermination() = awaitTermination(Duration.Inf)
 
   def shutdown() {
     stop(guardian)
@@ -495,4 +520,43 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   }
 
   override def toString = lookupRoot.path.root.address.toString
+
+  final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
+    private val lock = new ReentrantGuard
+    private var callbacks: Stack[Runnable] = _ //non-volatile since guarded by the lock
+    lock withGuard { callbacks = Stack.empty[Runnable] }
+
+    private val latch = new CountDownLatch(1)
+
+    final def add(callback: Runnable): Unit = {
+      latch.getCount match {
+        case 0 ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
+        case _ ⇒ lock withGuard {
+          if (latch.getCount == 0) throw new RejectedExecutionException("Must be called prior to system shutdown.")
+          else callbacks = callbacks.push(callback)
+        }
+      }
+    }
+
+    final def run(): Unit = lock withGuard {
+      @tailrec def runNext(c: Stack[Runnable]): Stack[Runnable] = c.headOption match {
+        case None ⇒ Stack.empty[Runnable]
+        case Some(callback) ⇒
+          try callback.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+          runNext(c.pop)
+      }
+      try { callbacks = runNext(callbacks) } finally latch.countDown()
+    }
+
+    final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
+      if (atMost.isFinite()) {
+        if (!latch.await(atMost.length, atMost.unit))
+          throw new TimeoutException("Await termination timed out after [%s]" format (atMost.toString))
+      } else latch.await()
+
+      this
+    }
+
+    final def result(atMost: Duration)(implicit permit: CanAwait): Unit = ready(atMost)
+  }
 }
