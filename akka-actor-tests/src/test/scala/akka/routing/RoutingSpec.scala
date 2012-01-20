@@ -31,10 +31,7 @@ object RoutingSpec {
     """
 
   class TestActor extends Actor {
-    def receive = {
-      case _ ⇒
-        println("Hello")
-    }
+    def receive = { case _ ⇒ }
   }
 
   class Echo extends Actor {

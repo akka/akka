@@ -96,7 +96,7 @@ object ActorSystem {
 
     final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
     final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
-    final val SchedulerDaemonicity = getBoolean("akka.scheduler.daemonic")
+    final val Daemonicity = getBoolean("akka.daemonic")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -275,6 +275,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   import ActorSystem._
 
   final val settings = new Settings(applicationConfig, name)
+  final val threadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -361,7 +362,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
-  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
+  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(threadFactory, eventStream, deadLetterMailbox, scheduler))
   val dispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
@@ -410,7 +411,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
    */
   protected def createScheduler(): Scheduler = {
     val hwt = new HashedWheelTimer(log,
-      new MonitorableThreadFactory("DefaultScheduler", settings.SchedulerDaemonicity),
+      threadFactory.copy(threadFactory.name + "-scheduler"),
       settings.SchedulerTickDuration,
       settings.SchedulerTicksPerWheel)
     // note that dispatcher is by-name parameter in DefaultScheduler constructor,
