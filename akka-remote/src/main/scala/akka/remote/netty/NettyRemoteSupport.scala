@@ -455,6 +455,7 @@ class ActiveRemoteClient private[akka] (
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, module.timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
+      bootstrap.setOption("connectTimeoutMillis", CONNECTION_TIMEOUT.toMillis)
 
       connection = bootstrap.connect(remoteAddress)
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
@@ -712,7 +713,6 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("child.reuseAddress", true)
-  bootstrap.setOption("child.connectTimeoutMillis", RemoteServerSettings.CONNECTION_TIMEOUT.toMillis)
 
   openChannels.add(bootstrap.bind(address))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))

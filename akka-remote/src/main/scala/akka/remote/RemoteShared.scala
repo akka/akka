@@ -18,6 +18,7 @@ object RemoteClientSettings {
   val RECONNECT_DELAY = Duration(config.getInt("akka.remote.client.reconnect-delay", 5), TIME_UNIT)
   val REAP_FUTURES_DELAY = Duration(config.getInt("akka.remote.client.reap-futures-delay", 5), TIME_UNIT)
   val MESSAGE_FRAME_SIZE = config.getInt("akka.remote.client.message-frame-size", 1048576)
+  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.client.connection-timeout", 100), TIME_UNIT)
 }
 
 object RemoteServerSettings {
@@ -34,7 +35,6 @@ object RemoteServerSettings {
   val UNTRUSTED_MODE = config.getBool("akka.remote.server.untrusted-mode", false)
   val HOSTNAME = config.getString("akka.remote.server.hostname", "localhost")
   val PORT = config.getInt("akka.remote.server.port", 2552)
-  val CONNECTION_TIMEOUT = Duration(config.getInt("akka.remote.server.connection-timeout", 100), TIME_UNIT)
 
   val BACKLOG = config.getInt("akka.remote.server.backlog", 4096)
 
