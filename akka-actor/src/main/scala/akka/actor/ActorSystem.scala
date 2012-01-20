@@ -255,7 +255,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * timeout has elapsed. This will block until after all on termination
    * callbacks have been run.
    */
-  def awaitTermination(timeout: Duration = Long.MaxValue.nanos): Unit
+  def awaitTermination(timeout: Duration): Unit
 
   /**
    * Block current thread until the system has been shutdown. This will
@@ -265,7 +265,7 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Stop this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actTAors, then the system guardian
+   * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
@@ -426,7 +426,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
   def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
   def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
-  def awaitTermination() = awaitTermination(Long.MaxValue.nanos)
+  def awaitTermination() = awaitTermination(Duration.Inf)
 
   def shutdown() {
     stop(guardian)
@@ -537,21 +537,27 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
       callbacks add callback
     }
 
-    def run() {
+    def run(): Unit = try {
       for (c ← callbacks.asScala.toSeq.reverse) {
         try {
           c.run()
         } catch {
-          case e: Exception ⇒
+          case e ⇒
+            // TODO catching all and continue isn't good for OOME, ticket #1310
             log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage)
         }
       }
+    } finally {
       latch.countDown()
     }
 
     def ready(atMost: Duration)(implicit permit: CanAwait) = {
-      val opened = latch.await(atMost.toNanos, TimeUnit.NANOSECONDS)
-      if (!opened) throw new TimeoutException("Await termination timed out after [%s]" format (atMost.toString))
+      if (atMost == Duration.Inf) {
+        latch.await()
+      } else {
+        val opened = latch.await(atMost.toNanos, TimeUnit.NANOSECONDS)
+        if (!opened) throw new TimeoutException("Await termination timed out after [%s]" format (atMost.toString))
+      }
       this
     }
 
