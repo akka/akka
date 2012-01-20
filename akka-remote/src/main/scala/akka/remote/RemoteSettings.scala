@@ -39,6 +39,7 @@ class RemoteSettings(val config: Config, val systemName: String) {
       case cookie ⇒ Some(cookie)
     }
 
+    val ConnectionTimeout = Duration(getMilliseconds("akka.remote.client.connection-timeout"), MILLISECONDS)
     val ReconnectionTimeWindow = Duration(getMilliseconds("akka.remote.client.reconnection-time-window"), MILLISECONDS)
     val ReadTimeout = Duration(getMilliseconds("akka.remote.client.read-timeout"), MILLISECONDS)
     val ReconnectDelay = Duration(getMilliseconds("akka.remote.client.reconnect-delay"), MILLISECONDS)
@@ -67,13 +68,12 @@ class RemoteSettings(val config: Config, val systemName: String) {
       case value ⇒ value
     }
     val Port = getInt("akka.remote.server.port") match {
-      case 0 => try {
+      case 0 ⇒ try {
         val s = new java.net.ServerSocket(0)
         try s.getLocalPort finally s.close()
-      } catch { case e => throw new ConfigurationException("Unable to obtain random port", e) }
-      case other => other
+      } catch { case e ⇒ throw new ConfigurationException("Unable to obtain random port", e) }
+      case other ⇒ other
     }
-    val ConnectionTimeout = Duration(getMilliseconds("akka.remote.server.connection-timeout"), MILLISECONDS)
 
     val Backlog = getInt("akka.remote.server.backlog")
 
