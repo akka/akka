@@ -8,8 +8,6 @@ ZeroMQ
 
    .. contents:: :local:
 
-Module stability: **IN PROGRESS**
-
 Akka provides a ZeroMQ module which abstracts a ZeroMQ connection and therefore allows interaction between Akka actors to take place over ZeroMQ connections. The messages can be of a proprietary format or they can be defined using Protobuf. The socket actor is fault-tolerant by default and when you use the newSocket method to create new sockets it will properly reinitialize the socket.
 
 ZeroMQ is very opinionated when it comes to multi-threading so configuration option `akka.zeromq.socket-dispatcher` always needs to be configured to a PinnedDispatcher, because the actual ZeroMQ socket can only be accessed by the thread that created it.
@@ -29,7 +27,7 @@ ZeroMQ supports multiple connectivity patterns, each aimed to meet a different s
 
 will create a ZeroMQ Publisher socket that is Bound to the port 1234 on localhost.
 Importing the akka.zeromq._ package ensures that the implicit zeromq method is available.
-Similarly you can create a subscribtion socket, that subscribes to all messages from the publisher using:
+Similarly you can create a subscription socket, that subscribes to all messages from the publisher using:
 
 .. code-block:: scala
 

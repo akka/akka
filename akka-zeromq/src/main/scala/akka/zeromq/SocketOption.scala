@@ -8,6 +8,7 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor.ActorRef
 import akka.util.duration._
 import akka.util.Duration
+import org.zeromq.ZMQ.{Poller, Socket}
 
 /**
  * Marker trait representing request messages for zeromq
@@ -55,27 +56,24 @@ case class Connect(endpoint: String) extends SocketConnectOption
  * Companion object for a ZeroMQ I/O thread pool
  */
 object Context {
-  def apply(numIoThreads: Int = 1) = new Context(numIoThreads)
+  def apply(numIoThreads: Int = 1): Context = new Context(numIoThreads)
 }
 
 /**
  * Represents an I/O thread pool for ZeroMQ sockets.
- * By default the ZeroMQ module uses a thread pool with 1 thread. For most applications that should be
- * sufficient
+ * By default the ZeroMQ module uses an I/O thread pool with 1 thread.
+ * For most applications that should be sufficient
  *
  * @param numIoThreads
  */
 class Context(numIoThreads: Int) extends SocketMeta {
   private val context = JZMQ.context(numIoThreads)
-  def socket(socketType: SocketType.ZMQSocketType) = {
-    context.socket(socketType.id)
-  }
-  def poller = {
-    context.poller
-  }
-  def term = {
-    context.term
-  }
+
+  def socket(socketType: SocketType.ZMQSocketType): Socket = context.socket(socketType.id)
+
+  def poller: Poller = context.poller
+
+  def term: Unit = context.term
 }
 
 /**
