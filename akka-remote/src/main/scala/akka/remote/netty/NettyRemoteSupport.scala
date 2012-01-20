@@ -184,6 +184,7 @@ class ActiveRemoteClient private[akka] (
       bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, bootstrap, executionHandler, remoteAddress, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
+      bootstrap.setOption("connectTimeoutMillis", ConnectionTimeout.toMillis)
 
       log.debug("Starting remote client connection to [{}]", remoteAddress)
 
@@ -372,8 +373,7 @@ class NettyRemoteSupport(_system: ActorSystemImpl, val remote: Remote, val addre
 
   val serverSettings = remote.remoteSettings.serverSettings
   val clientSettings = remote.remoteSettings.clientSettings
-
-  val threadFactory = new MonitorableThreadFactory("NettyRemoteSupport", remote.remoteSettings.Daemonic)
+  val threadFactory = _system.threadFactory.copy(_system.threadFactory.name + "-remote")
   val timer: HashedWheelTimer = new HashedWheelTimer(threadFactory)
 
   val executor = new OrderedMemoryAwareThreadPoolExecutor(
@@ -548,23 +548,23 @@ class NettyRemoteServer(
     Executors.newCachedThreadPool(remoteSupport.threadFactory),
     Executors.newCachedThreadPool(remoteSupport.threadFactory))
 
-  private val bootstrap = new ServerBootstrap(factory)
-
   private val executionHandler = new ExecutionHandler(remoteSupport.executor)
 
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
   val pipelineFactory = new RemoteServerPipelineFactory(name, openChannels, executionHandler, loader, remoteSupport)
-  bootstrap.setPipelineFactory(pipelineFactory)
-  bootstrap.setOption("backlog", Backlog)
-  bootstrap.setOption("child.tcpNoDelay", true)
-  bootstrap.setOption("child.keepAlive", true)
-  bootstrap.setOption("child.reuseAddress", true)
-  bootstrap.setOption("child.connectTimeoutMillis", ConnectionTimeout.toMillis)
+  private val bootstrap: ServerBootstrap = {
+    val b = new ServerBootstrap(factory)
+    b.setPipelineFactory(pipelineFactory)
+    b.setOption("backlog", Backlog)
+    b.setOption("child.tcpNoDelay", true)
+    b.setOption("child.keepAlive", true)
+    b.setOption("child.reuseAddress", true)
+    b
+  }
 
   openChannels.add(bootstrap.bind(new InetSocketAddress(address.transport.ip.get, address.transport.port)))
-  remoteSupport.notifyListeners(RemoteServerStarted(remoteSupport))
 
   def shutdown() {
     try {

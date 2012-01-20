@@ -4,8 +4,6 @@
 
 package akka.dispatch
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.ConcurrentHashMap
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.actor.ActorSystem
@@ -17,14 +15,17 @@ import com.typesafe.config.ConfigFactory
 import akka.config.ConfigurationException
 import akka.event.Logging.Warning
 import akka.actor.Props
+import java.util.concurrent.{ ThreadFactory, TimeUnit, ConcurrentHashMap }
 
 trait DispatcherPrerequisites {
+  def threadFactory: ThreadFactory
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
 }
 
 case class DefaultDispatcherPrerequisites(
+  val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler) extends DispatcherPrerequisites
