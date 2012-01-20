@@ -221,15 +221,15 @@ object AkkaBuild extends Build {
        libraryDependencies ++= Dependencies.camel
      )
   )
-
-  lazy val camelTyped = Project(
-     id = "akka-camel-typed",
-     base = file("akka-camel-typed"),
-     dependencies = Seq(actor, slf4j,camel, testkit % "test->test"),
-     settings = defaultSettings ++ Seq(
-       libraryDependencies ++= Dependencies.camel
-     )
-  )
+//  uncomment when akka-camel-typed is migrated, now contains code that does not compile
+//  lazy val camelTyped = Project(
+//     id = "akka-camel-typed",
+//     base = file("akka-camel-typed"),
+//     dependencies = Seq(actor, slf4j,camel, testkit % "test->test"),
+//     settings = defaultSettings ++ Seq(
+//       libraryDependencies ++= Dependencies.camel
+//     )
+//  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
