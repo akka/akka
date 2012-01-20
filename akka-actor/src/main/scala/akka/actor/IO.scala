@@ -481,6 +481,9 @@ object IO {
     Cont(step(ByteString.empty))
   }
 
+  /**
+   * An Iteratee that will collect bytes as long as a predicate is true.
+   */
   def takeWhile(p: (Byte) ⇒ Boolean): Iteratee[ByteString] = {
     def step(taken: ByteString)(input: Input): (Iteratee[ByteString], Input) = input match {
       case Chunk(more) ⇒
@@ -556,6 +559,9 @@ object IO {
     case eof @ EOF(cause)               ⇒ (Cont(more ⇒ (Done(ByteString.empty), more), cause), eof)
   }
 
+  /**
+   * An Iteratee that creates a list made up of the results of an Iteratee.
+   */
   def takeList[A](length: Int)(iter: Iteratee[A]): Iteratee[List[A]] = {
     def step(left: Int, list: List[A]): Iteratee[List[A]] =
       if (left == 0) Done(list.reverse)
@@ -564,6 +570,10 @@ object IO {
     step(length, Nil)
   }
 
+  /**
+   * An Iteratee that returns a [[akka.util.ByteString]] of the request length,
+   * but does not consume the Input.
+   */
   def peek(length: Int): Iteratee[ByteString] = {
     def step(taken: ByteString)(input: Input): (Iteratee[ByteString], Input) = input match {
       case Chunk(more) ⇒
@@ -579,12 +589,25 @@ object IO {
     Cont(step(ByteString.empty))
   }
 
+  /**
+   * An Iteratee that continually repeats an Iteratee.
+   *
+   * TODO: Should terminate on EOF
+   */
   def repeat(iter: Iteratee[Unit]): Iteratee[Unit] =
     iter flatMap (_ ⇒ repeat(iter))
 
+  /**
+   * An Iteratee that applies an Iteratee to each element of a Traversable
+   * and finally returning a single Iteratee containing a Traversable of the results.
+   */
   def traverse[A, B, M[A] <: Traversable[A]](in: M[A])(f: A ⇒ Iteratee[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]]): Iteratee[M[B]] =
     fold(cbf(in), in)((b, a) ⇒ f(a) map (b += _)) map (_.result)
 
+  /**
+   * An Iteratee that folds over a Traversable by applying a function that
+   * returns an Iteratee.
+   */
   def fold[A, B, M[A] <: Traversable[A]](initial: B, in: M[A])(f: (B, A) ⇒ Iteratee[B]): Iteratee[B] =
     (Iteratee(initial) /: in)((ib, a) ⇒ ib flatMap (b ⇒ f(b, a)))
 
@@ -629,24 +652,85 @@ object IO {
 
 }
 
+/**
+ * IOManager contains a reference to the [[akka.actor.IOManagerActor]] for
+ * an [[akka.actor.ActorSystem]].
+ *
+ * This is the recommended entry point to creating sockets for performing
+ * IO.
+ *
+ * Use the companion object to retrieve the instance of this class for an
+ * ActorSystem.
+ *
+ * {{{
+ * val ioManager = IOManager(context.system)
+ * val socket = ioManager.connect("127.0.0.1")
+ * }}}
+ *
+ * An IOManager does not need to be manually stopped when not in use as it will
+ * automatically enter an idle state when it has no channels to manage.
+ */
 final class IOManager private (system: ActorSystem) extends Extension {
+  /**
+   * A reference to the [[akka.actor.IOManagerActor]] that performs the actual
+   * IO. It communicates with other actors using subclasses of
+   * [[akka.actor.IO.IOMessage]].
+   */
   val actor = system.actorOf(Props[IOManagerActor], "io-manager")
 
+  /**
+   * Create a ServerSocketChannel listening on an address. Messages will be
+   * sent from the [[akka.actor.IOManagerActor]] to the owner
+   * [[akka.actor.ActorRef]].
+   *
+   * @param address the address to listen on
+   * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
+   */
   def listen(address: InetSocketAddress)(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
     actor ! IO.Listen(server, address)
     server
   }
 
+  /**
+   * Create a ServerSocketChannel listening on a host and port. Messages will
+   * be sent from the [[akka.actor.IOManagerActor]] to the owner
+   * [[akka.actor.ActorRef]].
+   *
+   * @param host the hostname or IP to listen on
+   * @param port the port to listen on
+   * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
+   */
   def listen(host: String, port: Int)(implicit owner: ActorRef): IO.ServerHandle =
     listen(new InetSocketAddress(host, port))(owner)
 
+  /**
+   * Create a SocketChannel connecting to an address. Messages will be
+   * sent from the [[akka.actor.IOManagerActor]] to the owner
+   * [[akka.actor.ActorRef]].
+   *
+   * @param address the address to connect to
+   * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
+   */
   def connect(address: InetSocketAddress)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address)
     socket
   }
 
+  /**
+   * Create a SocketChannel connecting to a host and port. Messages will
+   * be sent from the [[akka.actor.IOManagerActor]] to the owner
+   * [[akka.actor.ActorRef]].
+   *
+   * @param host the hostname or IP to connect to
+   * @param port the port to connect to
+   * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
+   */
   def connect(host: String, port: Int)(implicit owner: ActorRef): IO.SocketHandle =
     connect(new InetSocketAddress(host, port))(owner)
 
@@ -657,40 +741,57 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
   override def createExtension(system: ActorSystemImpl) = new IOManager(system)
 }
 
-// TODO: Support a pool of workers
+/**
+ * An [[akka.actor.Actor]] that performs IO using a Java NIO Selector.
+ *
+ * Use [[akka.actor.IOManager]] to retrieve an instance of this Actor.
+ */
 final class IOManagerActor extends Actor {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
 
-  val bufferSize = 8192 // TODO: make buffer size configurable
+  private val bufferSize = 8192 // TODO: make buffer size configurable
 
-  type ReadChannel = ReadableByteChannel with SelectableChannel
-  type WriteChannel = WritableByteChannel with SelectableChannel
+  private type ReadChannel = ReadableByteChannel with SelectableChannel
+  private type WriteChannel = WritableByteChannel with SelectableChannel
 
-  val selector: Selector = Selector open ()
+  private val selector: Selector = Selector open ()
 
-  val channels = mutable.Map.empty[IO.Handle, SelectableChannel]
+  private val channels = mutable.Map.empty[IO.Handle, SelectableChannel]
 
-  val accepted = mutable.Map.empty[IO.ServerHandle, mutable.Queue[SelectableChannel]]
+  private val accepted = mutable.Map.empty[IO.ServerHandle, mutable.Queue[SelectableChannel]]
 
-  val writes = mutable.Map.empty[IO.WriteHandle, WriteBuffer]
+  private val writes = mutable.Map.empty[IO.WriteHandle, WriteBuffer]
 
-  val closing = mutable.Set.empty[IO.Handle]
+  /** Channels that should close after writes are complete */
+  private val closing = mutable.Set.empty[IO.Handle]
 
-  val buffer = ByteBuffer.allocate(bufferSize)
+  /** Buffer used for all reads */
+  private val buffer = ByteBuffer.allocate(bufferSize)
 
-  var lastSelect = 0
+  /** a counter that is incremented each time a message is retreived */
+  private var lastSelect = 0
 
-  val selectAt = 100 // TODO: determine best value, perhaps based on throughput? Other triggers (like write queue size)?
+  /** force a select when lastSelect reaches this amount */
+  private val selectAt = 100
 
-  var running = false
+  /** true while the selector is open and channels.nonEmpty */
+  private var running = false
 
-  var selectSent = false
+  /** is there already a Select message in flight? */
+  private var selectSent = false
 
-  var fastSelect = false
+  /**
+   * select blocks for 1ms when false and is completely nonblocking when true.
+   * Automatically changes due to activity. This reduces object allocations
+   * when there are no pending events.
+   */
+  private var fastSelect = false
 
-  object Select
+  /** unique message that is sent to ourself to initiate the next select */
+  private object Select
 
-  def run() {
+  /** This method should be called after receiving any message */
+  private def run() {
     if (!running) {
       running = true
       if (!selectSent) {
@@ -702,7 +803,7 @@ final class IOManagerActor extends Actor {
     if (lastSelect >= selectAt) select()
   }
 
-  def select() {
+  private def select() {
     if (selector.isOpen) {
       // TODO: Make select behaviour configurable.
       // Blocking 1ms reduces allocations during idle times, non blocking gives better performance.
@@ -721,7 +822,7 @@ final class IOManagerActor extends Actor {
     lastSelect = 0
   }
 
-  def receive = {
+  protected def receive = {
     case Select ⇒
       select()
       if (running) self ! Select
@@ -785,7 +886,7 @@ final class IOManagerActor extends Actor {
     selector.close
   }
 
-  def process(key: SelectionKey) {
+  private def process(key: SelectionKey) {
     val handle = key.attachment.asInstanceOf[IO.Handle]
     try {
       if (key.isConnectable) key.channel match {
@@ -814,7 +915,7 @@ final class IOManagerActor extends Actor {
     }
   }
 
-  def cleanup(handle: IO.Handle, cause: Option[Exception]) {
+  private def cleanup(handle: IO.Handle, cause: Option[Exception]) {
     closing -= handle
     handle match {
       case server: IO.ServerHandle  ⇒ accepted -= server
@@ -829,22 +930,22 @@ final class IOManagerActor extends Actor {
     }
   }
 
-  def setOps(handle: IO.Handle, ops: Int): Unit =
+  private def setOps(handle: IO.Handle, ops: Int): Unit =
     channels(handle) keyFor selector interestOps ops
 
-  def addOps(handle: IO.Handle, ops: Int) {
+  private def addOps(handle: IO.Handle, ops: Int) {
     val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur | ops)
   }
 
-  def removeOps(handle: IO.Handle, ops: Int) {
+  private def removeOps(handle: IO.Handle, ops: Int) {
     val key = channels(handle) keyFor selector
     val cur = key.interestOps
     key interestOps (cur - (cur & ops))
   }
 
-  def connect(socket: IO.SocketHandle, channel: SocketChannel) {
+  private def connect(socket: IO.SocketHandle, channel: SocketChannel) {
     if (channel.finishConnect) {
       removeOps(socket, OP_CONNECT)
       socket.owner ! IO.Connected(socket)
@@ -854,7 +955,7 @@ final class IOManagerActor extends Actor {
   }
 
   @tailrec
-  def accept(server: IO.ServerHandle, channel: ServerSocketChannel) {
+  private def accept(server: IO.ServerHandle, channel: ServerSocketChannel) {
     val socket = channel.accept
     if (socket ne null) {
       socket configureBlocking false
@@ -874,7 +975,7 @@ final class IOManagerActor extends Actor {
   }
 
   @tailrec
-  def read(handle: IO.ReadHandle, channel: ReadChannel) {
+  private def read(handle: IO.ReadHandle, channel: ReadChannel) {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
@@ -886,7 +987,7 @@ final class IOManagerActor extends Actor {
     }
   }
 
-  def write(handle: IO.WriteHandle, channel: WriteChannel) {
+  private def write(handle: IO.WriteHandle, channel: WriteChannel) {
     val queue = writes(handle)
     queue write channel
     if (queue.isEmpty) {
