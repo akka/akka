@@ -10,14 +10,9 @@
       :local:
       :depth: 3
 
-Actors
-======
-
 The 2.0 release contains several new features which require source-level
 changes in client code. This API cleanup is planned to be the last one for a
 significant amount of time.
-
-Detailed migration guide will be written.
 
 Migration Kit
 =============
@@ -238,6 +233,59 @@ Documentation:
 
  * :ref:`untyped-actors-java`
 
+Configuration
+^^^^^^^^^^^^^
+
+A new, more powerful, configuration utility has been implemented. The format of the
+configuration file is very similar to the format in v1.3. In addition it also supports
+configuration files in json and properties format. The syntax is described in the
+`HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_ specification.
+
+v1.3::
+
+  include "other.conf"
+
+  akka {
+    event-handler-level = "DEBUG"
+  }
+
+v2.0::
+
+  include "other"
+
+  akka {
+    loglevel = "DEBUG"
+  }
+
+In v1.3 the default name of the configuration file was ``akka.conf``.
+In v2.0 the default name is ``application.conf``. It is still loaded from classpath
+or can be specified with java System properties (``-D`` command line arguments).
+
+v1.3::
+
+  -Dakka.config=<file path to configuration file>
+  -Dakka.output.config.source=on
+
+v2.0::
+
+  -Dconfig.file=<file path to configuration file>
+  -Dakka.logConfigOnStart=on
+
+
+Several configuration properties have been changed, such as:
+
+  * ``akka.event-handler-level`` => ``akka.loglevel``
+  * dispatcher ``type`` values are changed
+  * ``akka.actor.throughput`` => ``akka.actor.default-dispatcher.throughput``
+  * ``akka.remote.layer`` => ``akka.remote.transport``
+  * the global ``time-unit`` property is removed, all durations are specified with duration unit in the property value, ``timeout = 5s``
+
+Verify used configuration properties against the reference :ref:`configuration`.
+
+Documentation:
+
+ * :ref:`configuration`
+
 Logging
 ^^^^^^^
 
@@ -270,6 +318,48 @@ Documentation:
   * :ref:`logging-java`
   * :ref:`event-bus-scala`
   * :ref:`event-bus-java`
+
+
+Scheduler
+^^^^^^^^^
+
+The functionality of the scheduler is identical, but the API is slightly adjusted.
+
+v1.3::
+
+  //Schedules to send the "foo"-message to the testActor after 50ms
+  Scheduler.scheduleOnce(testActor, "foo", 50L, TimeUnit.MILLISECONDS)
+
+  // Schedules periodic send of "foo"-message to the testActor after 1s inital delay,
+  // and then with 200ms between successive sends
+  Scheduler.schedule(testActor, "foo", 1000L, 200L, TimeUnit.MILLISECONDS)
+
+  // Schedules a function to be executed (send the current time) to the testActor after 50ms
+  Scheduler.scheduleOnce({testActor ! System.currentTimeMillis}, 50L, TimeUnit.MILLISECONDS)
+
+v2.0::
+
+  //Schedules to send the "foo"-message to the testActor after 50ms
+  system.scheduler.scheduleOnce(50 milliseconds, testActor, "foo")
+
+  // Schedules periodic send of "foo"-message to the testActor after 1s inital delay,
+  // and then with 200ms between successive sends
+  system.scheduler.schedule(1 second, 200 milliseconds, testActor, "foo")
+
+  // Schedules a function to be executed (send the current time) to the testActor after 50ms
+  system.scheduler.scheduleOnce(50 milliseconds) {
+    testActor ! System.currentTimeMillis
+  }
+
+
+The internal implementation of the scheduler is changed from
+``java.util.concurrent.ScheduledExecutorService`` to a variant of
+``org.jboss.netty.util.HashedWheelTimer``.
+
+Documentation:
+
+  * :ref:`scheduler-scala`
+  * :ref:`scheduler-java`
 
 Supervision
 ^^^^^^^^^^^
@@ -346,6 +436,47 @@ Documentation:
  * :ref:`fault-tolerance-scala`
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`
+
+Dispatchers
+^^^^^^^^^^^
+
+Dispatchers are defined in configuration instead of in code.
+
+v1.3::
+
+  // in code
+  val myDispatcher = Dispatchers.newExecutorBasedEventDrivenDispatcher(name)
+    .withNewThreadPoolWithLinkedBlockingQueueWithCapacity(100)
+    .setCorePoolSize(16)
+    .setMaxPoolSize(128)
+    .setKeepAliveTimeInMillis(60000)
+    .build
+
+v2.0::
+
+  // in config
+  my-dispatcher {
+    type = Dispatcher
+    core-pool-size-factor = 8.0
+    max-pool-size-factor  = 16.0
+    mailbox-capacity = 100
+  }
+
+The dispatcher is assigned to the actor in a different way.
+
+v1.3::
+
+  actorRef.dispatcher = MyGlobals.myDispatcher
+  self.dispatcher = MyGlobals.myDispatcher
+
+v2.0::
+
+  val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor")
+
+Documentation:
+
+ * :ref:`dispatchers-java`
+ * :ref:`dispatchers-scala`
 
 Spawn
 ^^^^^
@@ -638,10 +769,6 @@ More to be written
 ------------------
 
 * Futures
-* Dispatchers
 * TypedActors
 * Routing
 * Remoting
-* Scheduler
-* Configuration
-* ...?
