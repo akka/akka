@@ -252,7 +252,7 @@ class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
     try {
       val t = remoteSettings.RemoteSystemDaemonAckTimeout
-      Await.result(connection ? (newGossip, t), t) match {
+      Await.result(connection.?(newGossip)(t), t) match {
         case Success(receiver) ⇒ log.debug("Gossip sent to [{}] was successfully received", receiver)
         case Failure(cause)    ⇒ log.error(cause, cause.toString)
       }

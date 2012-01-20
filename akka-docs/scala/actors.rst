@@ -325,9 +325,9 @@ Send messages
 Messages are sent to an Actor through one of the following methods.
 
 * ``!`` means “fire-and-forget”, e.g. send a message asynchronously and return
-  immediately. Also know as ``tell``.
+  immediately. Also known as ``tell``.
 * ``?`` sends a message asynchronously and returns a :class:`Future`
-  representing a possible reply. Also know as ``ask``.
+  representing a possible reply. Also known as ``ask``.
 
 Message ordering is guaranteed on a per-sender basis.
 
@@ -352,25 +352,34 @@ If invoked from an instance that is **not** an Actor the sender will be
 Ask: Send-And-Receive-Future
 ----------------------------
 
-Using ``?`` will send a message to the receiving Actor asynchronously and
-will immediately return a :class:`Future` which will be completed with
-an ``akka.actor.AskTimeoutException`` after the specified timeout:
+The ``ask`` pattern involves actors as well as futures, hence it is offered as
+a use pattern rather than a method on :class:`ActorRef`:
 
-.. code-block:: scala
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#ask-pipeTo
 
-  val future = actor ? "hello"
+This example demonstrates ``ask`` together with the ``pipeTo`` pattern on
+futures, because this is likely to be a common combination. Please note that
+all of the above is completely non-blocking and asynchronous: ``ask`` produces
+a :class:`Future`, three of which are composed into a new future using the
+for-comprehension and then ``pipeTo`` installs an ``onComplete``-handler on the
+future to effect the submission of the aggregated :class:`Result` to another
+actor.
 
-The receiving actor should reply to this message, which will complete the
-future with the reply message as value; ``sender ! result``.
+Using ``ask`` will send a message to the receiving Actor as with ``tell``, and
+the receiving actor must reply with ``sender ! reply`` in order to complete the
+returned :class:`Future` with a value. The ``ask`` operation involves creating
+an internal actor for handling this reply, which needs to have a timeout after
+which it is destroyed in order not to leak resources; see more below.
 
 To complete the future with an exception you need send a Failure message to the sender.
-This is not done automatically when an actor throws an exception while processing a
+This is *not done automatically* when an actor throws an exception while processing a
 message.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#reply-exception
 
-If the actor does not complete the future, it will expire after the timeout period,
-which is taken from one of the following locations in order of precedence:
+If the actor does not complete the future, it will expire after the timeout
+period, completing it with an :class:`AskTimeoutException`.  The timeout is
+taken from one of the following locations in order of precedence:
 
 1. explicitly given timeout as in:
 
@@ -379,6 +388,9 @@ which is taken from one of the following locations in order of precedence:
 2. implicit argument of type :class:`akka.util.Timeout`, e.g.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-implicit-timeout
+
+3. actor system’s default value from ``akka.actor.timeout`` setting for
+   :meth:`ask` methods
 
 See :ref:`futures-scala` for more information on how to await or query a
 future.
@@ -397,23 +409,6 @@ Gives you a way to avoid blocking.
   the callback will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time.
   See also: :ref:`jmm-shared-state`
-
-The future returned from the ``?`` method can conveniently be passed around or
-chained with further processing steps, but sometimes you just need the value,
-even if that entails waiting for it (but keep in mind that waiting inside an
-actor is prone to dead-locks, e.g. if obtaining the result depends on
-processing another message on this actor).
-
-For this purpose, there is the method :meth:`Future.as[T]` which waits until
-either the future is completed or its timeout expires, whichever comes first.
-The result is then inspected and returned as :class:`Some[T]` if it was
-normally completed and the answer’s runtime type matches the desired type; if
-the future contains an exception or the value cannot be cast to the desired
-type, it will throw the exception or a :class:`ClassCastException` (if you want
-to get :obj:`None` in the latter case, use :meth:`Future.asSilently[T]`). In
-case of a timeout, :obj:`None` is returned.
-
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-ask
 
 Forward message
 ---------------

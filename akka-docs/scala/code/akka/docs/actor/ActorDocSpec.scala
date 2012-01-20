@@ -212,28 +212,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.stop(myActor)
   }
 
-  "using ask" in {
-    //#using-ask
-    import akka.pattern.ask
-
-    class MyActor extends Actor {
-      def receive = {
-        case x: String ⇒ sender ! x.toUpperCase
-        case n: Int    ⇒ sender ! (n + 1)
-      }
-    }
-
-    val myActor = system.actorOf(Props(new MyActor), name = "myactor")
-    implicit val timeout = system.settings.ActorTimeout
-    val future = ask(myActor, "hello")
-    for (x ← future) println(x) //Prints "hello"
-
-    val result: Future[Int] = for (x ← ask(myActor, 3).mapTo[Int]) yield { 2 * x }
-    //#using-ask
-
-    system.stop(myActor)
-  }
-
   "using implicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-implicit-timeout
@@ -331,6 +309,28 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       case e: ActorTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
-
   }
+
+  "using pattern ask / pipeTo" in {
+    val actorA, actorB, actorC, actorD = system.actorOf(Props.empty)
+    //#ask-pipeTo
+    import akka.pattern.{ ask, pipeTo }
+
+    case class Result(x: Int, s: String, d: Double)
+    case object Request
+
+    implicit val timeout = Timeout(5 seconds) // needed for `?` below
+
+    val f: Future[Result] =
+      for {
+        x ← ask(actorA, Request).mapTo[Int] // call pattern directly
+        s ← actorB ask Request mapTo manifest[String] // call by implicit conversion
+        d ← actorC ? Request mapTo manifest[Double] // call by symbolic name
+      } yield Result(x, s, d)
+
+    f pipeTo actorD // .. or ..
+    pipeTo(f, actorD)
+    //#ask-pipeTo
+  }
+
 }
