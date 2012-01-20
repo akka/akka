@@ -81,7 +81,7 @@ object AskSupport {
      *
      * [see the [[akka.dispatch.Future]] companion object for a description of `flow`]
      */
-    def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
+    def ?(message: Any)(implicit timeout: Timeout = null): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
   }
 
   /**

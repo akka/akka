@@ -205,6 +205,26 @@ Documentation:
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`
 
+``ActorRef.?(msg, timeout)``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This method has a dangerous overlap with ``ActorRef.?(msg)(implicit timeout)``
+due to the fact that Scala allows to pass a :class:`Tuple` in place of the
+message without requiring extra parentheses::
+
+  actor ? (1, "hallo") // will send a tuple
+  actor ? (1, Timeout()) // will send 1 with an explicit timeout
+
+To remove this ambiguity, the latter variant is removed in version 2.0. If you
+were using it before, it will now send tuples where that is not desired. In
+order to correct all places in the code where this happens, simply import
+``akka.migration.ask`` instead of ``akka.pattern.ask`` to obtain a variant
+which will give deprecation warnings where the old method signature is used::
+
+  import akka.migration.ask
+
+  actor ? (1, Timeout(2 seconds)) // will give deprecation warning
+
 ActorPool
 ^^^^^^^^^
 
