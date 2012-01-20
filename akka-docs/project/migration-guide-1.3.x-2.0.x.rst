@@ -6,7 +6,9 @@
 
 .. sidebar:: Contents
 
-   .. contents:: :local:
+   .. contents::
+      :local:
+      :depth: 3
 
 Actors
 ======
@@ -77,8 +79,11 @@ Last task of the migration would be to create your own ``ActorSystem``.
 Unordered Collection of Migration Items
 =======================================
 
+Actors
+------
+
 Creating and starting actors
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Actors are created by passing in a ``Props`` instance into the actorOf factory method in
 a ``ActorRefProvider``, which is the ``ActorSystem`` or ``ActorContext``.
@@ -111,7 +116,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 Stopping actors
----------------
+^^^^^^^^^^^^^^^
 
 ``ActorRef.stop()`` has been moved. Use ``ActorSystem`` or ``ActorContext`` to stop actors.
 
@@ -144,7 +149,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 Identifying Actors
-------------------
+^^^^^^^^^^^^^^^^^^
 
 In v1.3 actors have ``uuid`` and ``id`` field. In v2.0 each actor has a unique logical ``path``.
 
@@ -167,7 +172,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 Reply to messages
------------------
+^^^^^^^^^^^^^^^^^
 
 ``self.channel`` has been replaced with unified reply mechanism using ``sender`` (Scala)
 or ``getSender()`` (Java). This works for both tell (!) and ask (?).
@@ -189,7 +194,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 ``ActorRef.ask()``
-------------------
+^^^^^^^^^^^^^^^^^^
 
 The mechanism for collecting an actor’s reply in a :class:`Future` has been
 reworked for better location transparency: it uses an actor under the hood.
@@ -206,7 +211,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 ActorPool
----------
+^^^^^^^^^
 
 The ActorPool has been replaced by dynamically resizable routers.
 
@@ -216,7 +221,7 @@ Documentation:
  * :ref:`routing-java`
 
 ``UntypedActor.getContext()`` (Java API only)
----------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``getContext()`` in the Java API for UntypedActor is renamed to
 ``getSelf()``.
@@ -234,7 +239,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 Configuration
--------------
+^^^^^^^^^^^^^
 
 A new, more powerful, configuration utility has been implemented. The format of the
 configuration file is very similar to the format in v1.3. In addition it also supports
@@ -287,7 +292,7 @@ Documentation:
  * :ref:`configuration`
 
 Logging
--------
+^^^^^^^
 
 EventHandler API has been replaced by LoggingAdapter, which publish log messages
 to the event bus. You can still plugin your own actor as event listener with the
@@ -321,7 +326,7 @@ Documentation:
 
 
 Scheduler
----------
+^^^^^^^^^
 
 The functionality of the scheduler is identical, but the API is slightly adjusted.
 
@@ -362,7 +367,7 @@ Documentation:
   * :ref:`scheduler-java`
 
 Supervision
------------
+^^^^^^^^^^^
 
 Akka v2.0 implements parental supervision. Actors can only be created by other actors — where the top-level
 actor is provided by the library — and each created actor is supervised by its parent.
@@ -438,7 +443,7 @@ Documentation:
  * :ref:`untyped-actors-java`
 
 Dispatchers
------------
+^^^^^^^^^^^
 
 Dispatchers are defined in configuration instead of in code.
 
@@ -479,7 +484,7 @@ Documentation:
  * :ref:`dispatchers-scala`
 
 Spawn
------
+^^^^^
 
 ``spawn`` has been removed and can be implemented like this, if needed. Be careful to not
 access any shared mutable state closed over by the body.
@@ -495,7 +500,7 @@ Documentation:
   * :ref:`jmm`
 
 HotSwap
--------
+^^^^^^^
 
 In v2.0 ``become`` and ``unbecome`` metods are located in ``ActorContext``, i.e. ``context.become`` and ``context.unbecome``.
 
@@ -506,12 +511,269 @@ in the actor receiving the message.
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`
 
+STM
+---
+
+In Akka v2.0 `ScalaSTM`_ is used rather than Multiverse.
+
+.. _ScalaSTM: http://nbronson.github.com/scala-stm/
+
+Agent and Transactor have been ported to ScalaSTM. The API's for Agent and
+Transactor are basically the same, other than integration with ScalaSTM. See:
+
+ * :ref:`agents-scala`
+ * :ref:`agents-java`
+ * :ref:`transactors-scala`
+ * :ref:`transactors-java`
+
+Imports
+^^^^^^^
+
+Scala
+~~~~~
+
+To use ScalaSTM the import from Scala is::
+
+  import scala.concurrent.stm._
+
+Java
+~~~~
+
+For Java there is a special helper object with Java-friendly methods::
+
+  import scala.concurrent.stm.japi.Stm;
+
+These methods can also be statically imported::
+
+  import static scala.concurrent.stm.japi.Stm.*;
+
+Other imports that are needed are in the stm package, particularly ``Ref``::
+
+  import scala.concurrent.stm.Ref;
+
+Transactions
+^^^^^^^^^^^^
+
+Scala
+~~~~~
+
+Both v1.3 and v2.0 provide an ``atomic`` block, however, the ScalaSTM ``atomic``
+is a function from ``InTxn`` to return type.
+
+v1.3::
+
+  atomic {
+    // do something in transaction
+  }
+
+v2.0::
+
+  atomic { implicit txn =>
+    // do something in transaction
+  }
+
+Note that in ScalaSTM the ``InTxn`` in the atomic function is usually marked as
+implicit as transactional references require an implicit ``InTxn`` on all
+methods. That is, the transaction is statically required and it is a
+compile-time warning to use a reference without a transaction. There is also a
+``Ref.View`` for operations without requiring an ``InTxn`` statically. See below
+for more information.
+
+Java
+~~~~
+
+In the ScalaSTM Java API helpers there are atomic methods which accept
+``java.lang.Runnable`` and ``java.util.concurrent.Callable``.
+
+v1.3::
+
+  new Atomic() {
+      public Object atomically() {
+          // in transaction
+          return null;
+      }
+  }.execute();
+
+  SomeObject result = new Atomic<SomeObject>() {
+      public SomeObject atomically() {
+          // in transaction
+          return ...;
+      }
+  }.execute();
+
+v2.0::
+
+  import static scala.concurrent.stm.japi.Stm.atomic;
+  import java.util.concurrent.Callable;
+
+  atomic(new Runnable() {
+      public void run() {
+          // in transaction
+      }
+  });
+
+  SomeObject result = atomic(new Callable<SomeObject>() {
+      public SomeObject call() {
+          // in transaction
+          return ...;
+      }
+  });
+
+Ref
+^^^
+
+Scala
+~~~~~
+
+Other than the import, creating a Ref is basically identical between Akka STM in
+v1.3 and ScalaSTM used in v2.0.
+
+v1.3::
+
+  val ref = Ref(0)
+
+v2.0::
+
+  val ref = Ref(0)
+
+The API for Ref is similar. For example:
+
+v1.3::
+
+  ref.get // get current value
+  ref()   // same as get
+
+  ref.set(1)  // set to new value, return old value
+  ref() = 1   // same as set
+  ref.swap(2) // same as set
+
+  ref alter { _ + 1 } // apply a function, return new value
+
+v2.0::
+
+  ref.get // get current value
+  ref()   // same as get
+
+  ref.set(1)  // set to new value, return nothing
+  ref() = 1   // same as set
+  ref.swap(2) // set and return old value
+
+  ref transform { _ + 1 } // apply function, return nothing
+
+  ref transformIfDefined { case 1 => 2 } // apply partial function if defined
+
+Ref.View
+^^^^^^^^
+
+In v1.3 using a ``Ref`` method outside of a transaction would automatically
+create a single-operation transaction. In v2.0 (in ScalaSTM) there is a
+``Ref.View`` which provides methods without requiring a current
+transaction.
+
+Scala
+~~~~~
+
+The ``Ref.View`` can be accessed with the ``single`` method::
+
+  ref.single() // returns current value
+  ref.single() = 1 // set new value
+
+  // with atomic this would be:
+
+  atomic { implicit t => ref() }
+  atomic { implicit t => ref() = 1 }
+
+Java
+~~~~
+
+As ``Ref.View`` in ScalaSTM does not require implicit transactions, this is more
+easily used from Java. ``Ref`` could be used, but requires explicit threading of
+transactions. There are helper methods in ``japi.Stm`` for creating ``Ref.View``
+references.
+
+v1.3::
+
+  Ref<Integer> ref = new Ref<Integer>(0);
+
+v2.0::
+
+  Ref.View<Integer> ref = Stm.newRef(0);
+
+The ``set`` and ``get`` methods work the same way for both versions.
+
+v1.3::
+
+  ref.get();  // get current value
+  ref.set(1); // set new value
+
+v2.0::
+
+  ref.get();  // get current value
+  ref.set(1); // set new value
+
+There are also ``transform``, ``getAndTransform``, and ``transformAndGet``
+methods in ``japi.Stm`` which accept ``scala.runtime.AbstractFunction1``.
+
+There are ``increment`` helper methods for ``Ref.View<Integer>`` and
+``Ref.View<Long>`` references.
+
+Transaction lifecycle callbacks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Scala
+~~~~~
+
+It is also possible to hook into the transaction lifecycle in ScalaSTM. See the
+ScalaSTM documentation for the full range of possibilities.
+
+v1.3::
+
+  atomic {
+    deferred {
+      // executes when transaction commits
+    }
+    compensating {
+      // executes when transaction aborts
+    }
+  }
+
+v2.0::
+
+  atomic { implicit txn =>
+    txn.afterCommit { txnStatus =>
+      // executes when transaction commits
+    }
+    txn.afterRollback { txnStatus =>
+      // executes when transaction rolls back
+    }
+  }
+
+Java
+~~~~
+
+Rather than using the ``deferred`` and ``compensating`` methods in
+``akka.stm.StmUtils``, use the ``afterCommit`` and ``afterRollback`` methods in
+``scala.concurrent.stm.japi.Stm``, which behave in the same way and accept
+``Runnable``.
+
+Transactional Datastructures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In ScalaSTM see ``TMap``, ``TSet``, and ``TArray`` for transactional
+datastructures.
+
+There are helper methods for creating these from Java in ``japi.Stm``:
+``newTMap``, ``newTSet``, and ``newTArray``. These datastructures implement the
+``scala.collection`` interfaces and can also be used from Java with Scala's
+``JavaConversions``. There are helper methods that apply the conversions,
+returning ``java.util`` ``Map``, ``Set``, and ``List``: ``newMap``, ``newSet``,
+and ``newList``.
+
+
 More to be written
 ------------------
 
 * Futures
-* STM
 * TypedActors
 * Routing
 * Remoting
-* ...?
