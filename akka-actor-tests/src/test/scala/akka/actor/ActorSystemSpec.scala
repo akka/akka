@@ -6,11 +6,10 @@ package akka.actor
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
 import akka.dispatch.Await
 import akka.util.duration._
 import scala.collection.JavaConverters
+import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
@@ -57,7 +56,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
     }
 
-    "awaitTtermination after termination callbacks" in {
+    "awaitTermination after termination callbacks" in {
       import scala.collection.JavaConverters._
 
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
@@ -69,13 +68,20 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         callbackWasRun = true
       }
 
-      system2.scheduler.scheduleOnce(200.millis.dilated) {
-        system2.shutdown()
-      }
+      system2.scheduler.scheduleOnce(200.millis.dilated) { system2.shutdown() }
 
       system2.awaitTermination(5 seconds)
       callbackWasRun must be(true)
+    }
 
+    "throw RejectedExecutionException when shutdown" in {
+      val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
+      system2.shutdown()
+      system2.awaitTermination(5 seconds)
+
+      intercept[RejectedExecutionException] {
+        system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
+      }.getMessage must be("Must be called prior to system shutdown.")
     }
 
   }

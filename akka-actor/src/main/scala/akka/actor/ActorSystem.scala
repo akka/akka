@@ -7,19 +7,19 @@ import akka.config.ConfigurationException
 import akka.event._
 import akka.dispatch._
 import akka.util.duration._
-import akka.util.Timeout
 import akka.util.Timeout._
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.util.{ Helpers, Duration, ReflectiveAccess }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
 import akka.dispatch.Await.Awaitable
 import akka.dispatch.Await.CanAwait
-import java.util.concurrent.{ CountDownLatch, LinkedBlockingDeque, TimeUnit, TimeoutException }
+import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
+import akka.util._
+import collection.immutable.Stack
 
 object ActorSystem {
 
@@ -224,7 +224,9 @@ abstract class ActorSystem extends ActorRefFactory {
    * The callbacks will be run sequentilly in reverse order of registration, i.e.
    * last registration is run first.
    *
-   * Callbacks registered after that the shutdown process has started will likely not be run.
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   *
+   * Scala API
    */
   def registerOnTermination[T](code: ⇒ T): Unit
 
@@ -234,7 +236,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * The callbacks will be run sequentilly in reverse order of registration, i.e.
    * last registration is run first.
    *
-   * Callbacks registered after that the shutdown process has started will likely not be run.
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    *
    * Java API
    */
@@ -518,21 +520,31 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
 
   override def toString = lookupRoot.path.root.address.toString
 
-  class TerminationCallbacks extends Runnable with Awaitable[Unit] {
-    private val callbacks = new LinkedBlockingDeque[Runnable]
+  final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
+    private val lock = new ReentrantGuard
+    private var callbacks: Stack[Runnable] = _ //non-volatile since guarded by the lock
+    lock withGuard { callbacks = Stack.empty[Runnable] }
+
     private val latch = new CountDownLatch(1)
 
-    final def add(callback: Runnable): Unit =
-      if (latch.await(0, TimeUnit.NANOSECONDS)) callbacks.clear() else callbacks addFirst callback
-
-    final def run(): Unit = {
-      @tailrec def runNext(): Unit = callbacks.pollFirst() match {
-        case null ⇒ ()
-        case some ⇒
-          try some.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
-          runNext()
+    final def add(callback: Runnable): Unit = {
+      latch.getCount match {
+        case 0 ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
+        case _ ⇒ lock withGuard {
+          if (latch.getCount == 0) throw new RejectedExecutionException("Must be called prior to system shutdown.")
+          else callbacks = callbacks.push(callback)
+        }
       }
-      try runNext() finally latch.countDown()
+    }
+
+    final def run(): Unit = lock withGuard {
+      @tailrec def runNext(c: Stack[Runnable]): Stack[Runnable] = c.headOption match {
+        case None ⇒ Stack.empty[Runnable]
+        case Some(callback) ⇒
+          try callback.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+          runNext(c.pop)
+      }
+      try { callbacks = runNext(callbacks) } finally latch.countDown()
     }
 
     final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
