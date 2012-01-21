@@ -282,8 +282,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   @inline
   protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
-  @inline
-  protected[akka] final val isThroughputDefined = throughput > 1
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 
