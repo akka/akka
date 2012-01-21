@@ -181,6 +181,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
     if ((shouldProcessMessage) && (left > 0 || (dispatcher.isThroughputDeadlineTimeDefined && System.nanoTime >= deadlineNs))) {
       val next = dequeue()
       if (next ne null) {
+        if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
         processAllSystemMessages()
         process(left - 1, deadlineNs)
