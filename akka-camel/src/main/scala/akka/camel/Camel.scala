@@ -28,7 +28,7 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
  * Also by not creating extra internal actor system we are conserving resources.
  */
 class DefaultCamel(val system : ActorSystem) extends Camel{
-  val context = {
+  lazy val context : CamelContext = {
     val ctx = new DefaultCamelContext
     ctx.setName(system.name);
     ctx.setStreamCaching(true)
@@ -38,7 +38,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
     ctx
   }
 
-  val template = context.createProducerTemplate()
+  lazy val template = context.createProducerTemplate()
 
   /**
    * Starts camel and underlying camel context and template.
@@ -48,7 +48,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
   //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
-    template.start()
+    try template.start() catch { case e => context.stop(); throw e }
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, system.name)))
     this
@@ -62,8 +62,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    context.stop()
-    template.stop()
+    try context.stop() finally template.stop()
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, system.name)))
   }
