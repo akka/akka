@@ -212,6 +212,24 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
+ 
+  lazy val camel = Project(
+     id = "akka-camel",
+     base = file("akka-camel"),
+     dependencies = Seq(actor, slf4j, testkit % "test->test"),
+     settings = defaultSettings ++ Seq(
+       libraryDependencies ++= Dependencies.camel
+     )
+  )
+//  uncomment when akka-camel-typed is migrated, now contains code that does not compile
+//  lazy val camelTyped = Project(
+//     id = "akka-camel-typed",
+//     base = file("akka-camel-typed"),
+//     dependencies = Seq(actor, slf4j,camel, testkit % "test->test"),
+//     settings = defaultSettings ++ Seq(
+//       libraryDependencies ++= Dependencies.camel
+//     )
+//  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
@@ -426,6 +444,8 @@ object Dependencies {
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
   val kernel = Seq(Test.scalatest, Test.junit)
+
+  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
