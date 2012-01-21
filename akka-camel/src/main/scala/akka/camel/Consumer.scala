@@ -33,11 +33,11 @@ trait ConsumerConfig{
   def activationTimeout: Duration = 10 seconds
 
   /**
-   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
-   * the endpoint can take to send the response before the message exchange fails. It defaults to Int.MaxValue seconds.
-   * It can be also overwritten by setting @see blocking property
+   * When endpoint is outCapable (can produce responses) replyTimeout is the maximum time
+   * the endpoint can take to send the response before the message exchange fails. It defaults to 1 minute.
+   * It can be also overwritten by setting communicationStyle property.
    */
-  def outTimeout : Duration = Int.MaxValue seconds
+  def replyTimeout : Duration = 1 minute
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
@@ -58,7 +58,7 @@ trait ConsumerConfig{
   //TODO: write a test confirming onRouteDefinition gets called
   def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_] = rd
 
-  private[camel] def toCamelParameters : String = "communicationStyle=%s&autoack=%s&outTimeout=%s" format (CommunicationStyleTypeConverter.toString(communicationStyle), autoack, DurationTypeConverter.toString(outTimeout))
+  private[camel] def toCamelParameters : String = "communicationStyle=%s&autoack=%s&replyTimeout=%s" format (CommunicationStyleTypeConverter.toString(communicationStyle), autoack, DurationTypeConverter.toString(replyTimeout))
 }
 
 

@@ -100,12 +100,8 @@ class ActorEndpoint(uri: String,
 
 trait ActorEndpointConfig{
   def path : ActorEndpointPath
-  /**
-   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
-   * the endpoint can take to send the response back. It defaults to Int.MaxValue seconds.
-   * It can be overwritten by setting @see blocking property
-   */
-  @BeanProperty var outTimeout: Duration = Int.MaxValue seconds
+
+  @BeanProperty var replyTimeout: Duration = 1 minute
 
 
   /**
@@ -157,7 +153,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
 
   def process(exchange: CamelExchangeAdapter) {
     if (exchange.isOutCapable)
-      sendSync(exchange, config.outTimeout, forwardResponseTo(exchange))
+      sendSync(exchange, config.replyTimeout, forwardResponseTo(exchange))
     else
       fireAndForget(exchange)
   }
@@ -184,7 +180,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
           DoneSync
         }
         case NonBlocking => {
-          sendAsync(exchange, config.outTimeout, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
+          sendAsync(exchange, config.replyTimeout, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
           DoneAsync
         }
       }
@@ -204,7 +200,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     def inOnlyManualAck: Boolean = {
       config.communicationStyle match {
         case NonBlocking => {
-          sendAsync(exchange, config.outTimeout, onComplete = processAck andThen notifyDoneAsynchronously)
+          sendAsync(exchange, config.replyTimeout, onComplete = processAck andThen notifyDoneAsynchronously)
           DoneAsync
         }
         case Blocking(timeout) => {
@@ -244,7 +240,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
   private[this] def forwardResponseTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
     case Right(failure:Failure) => exchange.setFailure(failure);
     case Right(msg) => exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e:TimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check outTimeout and blocking settings.")))
+    case Left(e:TimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
     case Left(throwable) =>  exchange.setFailure(Failure(throwable))
   }
 

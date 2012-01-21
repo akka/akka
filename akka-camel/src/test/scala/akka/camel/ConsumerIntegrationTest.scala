@@ -3,13 +3,11 @@ package akka.camel
 import akka.actor._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers.{eq => the, any}
+import org.mockito.Matchers.{eq => the}
 import akka.util.duration._
 import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
-import akka.util.Duration
 import TestSupport._
 import java.util.concurrent.{TimeoutException, CountDownLatch}
 
@@ -77,7 +75,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val LONG_WAIT = 200 millis
 
     start(new Consumer{
-      override def outTimeout = SHORT_TIMEOUT
+      override def replyTimeout = SHORT_TIMEOUT
 
       def endpointUri = "direct:a3"
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }

@@ -65,7 +65,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             time(producer.process(exchange))
           }
 
-          "timeout after outTimeout" in {
+          "timeout after replyTimeout" in {
             val duration = process()
             duration should (be >= (100 millis) and be < (200 millis))
           }
@@ -332,7 +332,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
       val getEndpointUri = endpointUri
       communicationStyle = isBlocking
       autoack = isAutoAck
-      outTimeout = _outTimeout
+      replyTimeout = _outTimeout
     }
   }
 
