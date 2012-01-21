@@ -175,14 +175,14 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
    */
   @tailrec private final def processMailbox(
     left: Int = java.lang.Math.max(dispatcher.throughput, 1),
-    deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
+    deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
       val next = dequeue()
       if (next ne null) {
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
         processAllSystemMessages()
-        if ((left > 1) && ((!dispatcher.isThroughputDeadlineTimeDefined) || (System.nanoTime - deadlineNs) < 0))
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
       }
     }
