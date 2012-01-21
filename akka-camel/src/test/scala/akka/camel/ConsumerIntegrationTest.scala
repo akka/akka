@@ -30,16 +30,6 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     protected def receive = { case _ =>  println("foooo..")}
   }
 
-  "Consumer" should "register itself with Camel during initialization" in{
-    val mockCamel = mock[Camel]
-
-    CamelExtension.setCamelFor(system, mockCamel)
-
-    system.actorOf(Props(new TestActor("file://target/abc")))
-    Thread.sleep(300)
-    verify(mockCamel).registerConsumer(the("file://target/abc"), any[TestActor], any[Duration])
-  }
-
   //TODO test manualAck
 
   //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.

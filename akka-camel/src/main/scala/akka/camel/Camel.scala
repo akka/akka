@@ -69,39 +69,16 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
-  private[this] val overrides = new HashMap[ActorSystem, Camel] with SynchronizedMap[ActorSystem, Camel]     //had to revert to SyncMap as ConcurrentHasMap doesn't guarantee that writes will happen before reads
-
-  /**
-   * If you need to start Camel context outside of extension you can use this method
-   * to tell the actor system which camel instance it should use.
-   * The user is responsible for stopping such a Camel instance.
-   * The override is only valid until the actor system is terminated.
-   */
-  def setCamelFor(system: ActorSystem, camel: Camel) { overrides.put(system, camel) }
 
   /**
    * Creates new instance of Camel and makes sure it gets stopped when actor system is shutdown.
-   *
-   * <br/><br/>When the user wants to use a specific Camel instance, they can set an override - see setCamelFor(ActorSystem, Camel)
-   * In this case the user is responsible for stopping the Camel instance.
-   *
    */
   def createExtension(system: ActorSystemImpl) = {
-
-    def useOverride(system: ActorSystem) = {
-      val camel = overrides(system)
-      system.registerOnTermination(overrides.remove(system))
-      camel
-    }
-
-    def createNew(system: ActorSystem) = {
-      val camel = new DefaultCamel(system).start;
-      system.registerOnTermination(camel.shutdown())
-      camel
-    }
-
-    if(overrides.contains(system)) useOverride(system) else createNew(system)
+    val camel = new DefaultCamel(system).start;
+    system.registerOnTermination(camel.shutdown())
+    camel
   }
+
   def lookup() = CamelExtension
 }
 
