@@ -53,8 +53,8 @@ public class SettingsExtensionDocTestBase {
 
   //#extension-usage-actor
   public static class MyActor extends UntypedActor {
-    Connection connection = connect(Settings.instance.get(getContext().system()).DB_URI,
-        Settings.instance.get(getContext().system()).CIRCUIT_BREAKER_TIMEOUT);
+    final SettingsImpl settings = Settings.instance.get(getContext().system());
+    Connection connection = connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
 
     //#extension-usage-actor
 

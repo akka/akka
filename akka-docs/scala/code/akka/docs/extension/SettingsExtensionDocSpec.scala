@@ -51,7 +51,8 @@ object SettingsExtensionDocSpec {
   //#extension-usage-actor
 
   class MyActor extends Actor {
-    val connection = connect(Settings(context.system).DbUri, Settings(context.system).CircuitBreakerTimeout)
+    val settings = Settings(context.system)
+    val connection = connect(settings.DbUri, settings.CircuitBreakerTimeout)
 
     //#extension-usage-actor
     def receive = {
