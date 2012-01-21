@@ -117,8 +117,8 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
   private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
 
 
-  private[camel] def registerConsumer(route: String, consumer: Consumer,  activationTimeout : Duration) = {
-    idempotentRegistry ! RegisterConsumer(route, consumer.self, consumer)
+  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer,  activationTimeout : Duration) = {
+    idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }
 
