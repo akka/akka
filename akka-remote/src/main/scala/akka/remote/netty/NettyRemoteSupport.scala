@@ -61,7 +61,7 @@ abstract class RemoteClient private[akka] (
    */
   def send(message: Any, senderOption: Option[ActorRef], recipient: ActorRef): Unit = if (isRunning) {
     if (remoteSupport.remote.remoteSettings.LogSentMessages)
-      log.debug("Sending message {} from {} to {}", message, senderOption, recipient)
+      log.debug("Sending message [{}] from [{}] to [{}]", message, senderOption, recipient)
 
     send((message, senderOption, recipient))
   } else {
