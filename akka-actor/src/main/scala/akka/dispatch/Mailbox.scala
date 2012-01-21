@@ -175,32 +175,17 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
    *
    * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-  private final def processMailbox() {
-    if (shouldProcessMessage) {
-      var nextMessage = dequeue()
-      if (nextMessage ne null) { //If we have a message
-        if (dispatcher.isThroughputDefined) { //If we're using throughput, we need to do some book-keeping
-          var processedMessages = 0
-          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
-          do {
-            if (debug) println(actor.self + " processing message " + nextMessage)
-            actor invoke nextMessage
-            processAllSystemMessages() //After we're done, process all system messages
+  private final def processMailbox(): Unit = if (dispatcher.isThroughputDefined) process(dispatcher.throughput) else process(1)
 
-            nextMessage = if (shouldProcessMessage) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
-              processedMessages += 1
-              if ((processedMessages >= dispatcher.throughput) || (dispatcher.isThroughputDeadlineTimeDefined && System.nanoTime >= deadlineNs)) // If we're throttled, break out
-                null //We reached our boundaries, abort
-              else dequeue //Dequeue the next message
-            } else null //Abort
-          } while (nextMessage ne null)
-        } else { //If we only run one message per process
-          actor invoke nextMessage //Just run it
-          processAllSystemMessages() //After we're done, process all system messages
-        }
-      }
-    }
-  }
+  @tailrec private final def process(left: Int, deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0l): Unit =
+    if ((shouldProcessMessage) && (left > 0 || (dispatcher.isThroughputDeadlineTimeDefined && System.nanoTime >= deadlineNs))) {
+      val next = dequeue()
+      if (next ne null) {
+        actor invoke next
+        processAllSystemMessages()
+        process(left - 1, deadlineNs)
+      } else ()
+    } else ()
 
   final def processAllSystemMessages() {
     var nextMessage = systemDrain()

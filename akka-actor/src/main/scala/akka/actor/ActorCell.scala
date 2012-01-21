@@ -471,6 +471,7 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope) {
+    if (Mailbox.debug) println(self + " processing message " + messageHandle)
     try {
       currentMessage = messageHandle
       try {
