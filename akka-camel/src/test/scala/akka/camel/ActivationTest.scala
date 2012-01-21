@@ -57,9 +57,9 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
 
   it should "time out when waiting for endpoint de-activation for too long" in {
     val actor = start(new TestConsumer("direct:a5"))
-    camel.awaitActivation(actor, 1 millis)
+    camel.awaitActivation(actor, 1 second)
     intercept[DeActivationTimeoutException]{
-      camel.awaitDeactivation( actor, 1 second)
+      camel.awaitDeactivation( actor, 1 millis)
     }
   }
 
