@@ -33,9 +33,10 @@ trait ConsumerConfig{
   def activationTimeout: Duration = 10 seconds
 
   /**
-   * When endpoint is outCapable (can produce responses) replyTimeout is the maximum time
+   * When endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails. It defaults to 1 minute.
-   * It can be also overwritten by setting communicationStyle property.
+   * This setting is used for out-capable, non blocking or in-only, manually acknowledged communication.
+   * When the communicationStyle is set to Blocking replyTimeout is ignored.
    */
   def replyTimeout : Duration = 1 minute
 
@@ -49,6 +50,7 @@ trait ConsumerConfig{
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
+   * This flag has only effect when exchange is in-only.
    */
   def autoack : Boolean = true
 
@@ -72,6 +74,3 @@ object Blocking{
   def seconds(timeout:Long) = Blocking(timeout seconds)
   def millis(timeout:Long) = Blocking(timeout millis)
 }
-
-
-class ConsumerRequiresFromEndpointException extends RuntimeException("Consumer needs to provide from endpoint. Please make sure the consumer calls method from(\"some uri\") in the body of constructor.")
