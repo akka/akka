@@ -15,7 +15,7 @@ public class SampleUntypedConsumer extends UntypedConsumerActor {
         Message msg = (Message)message;
         String body = msg.getBodyAs(String.class);
         String header = msg.getHeaderAs("test", String.class);
-        getContext().sender().tell(String.format("%s %s", body, header));
+        sender().tell(String.format("%s %s", body, header));
    }
 
 }

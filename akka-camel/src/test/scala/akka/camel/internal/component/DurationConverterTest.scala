@@ -8,7 +8,7 @@ import akka.util.Duration
 class DurationConverterTest extends FlatSpec with ShouldMatchers{
   import DurationTypeConverter._
 
-  "C" should "convert '10 nanos'" in {
+  "DurationTypeConverter" should "convert '10 nanos'" in {
     convertTo(classOf[Duration], "10 nanos") should be (10 nanos)
   }
   
