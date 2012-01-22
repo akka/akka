@@ -3,13 +3,11 @@ package akka.camel
 import akka.actor._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers.{eq => the, any}
+import org.mockito.Matchers.{eq => the}
 import akka.util.duration._
 import java.util.concurrent.TimeUnit._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
-import akka.util.Duration
 import TestSupport._
 import java.util.concurrent.{TimeoutException, CountDownLatch}
 
@@ -28,16 +26,6 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
   class TestActor(uri:String = "file://target/abcde") extends Actor with Consumer{
     def endpointUri = uri
     protected def receive = { case _ =>  println("foooo..")}
-  }
-
-  "Consumer" should "register itself with Camel during initialization" in{
-    val mockCamel = mock[Camel]
-
-    CamelExtension.setCamelFor(system, mockCamel)
-
-    system.actorOf(Props(new TestActor("file://target/abc")))
-    Thread.sleep(300)
-    verify(mockCamel).registerConsumer(the("file://target/abc"), any[TestActor], any[Duration])
   }
 
   //TODO test manualAck
@@ -87,7 +75,7 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val LONG_WAIT = 200 millis
 
     start(new Consumer{
-      override def outTimeout = SHORT_TIMEOUT
+      override def replyTimeout = SHORT_TIMEOUT
 
       def endpointUri = "direct:a3"
       protected def receive = { case _ => { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }

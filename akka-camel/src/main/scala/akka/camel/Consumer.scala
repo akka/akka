@@ -33,11 +33,12 @@ trait ConsumerConfig{
   def activationTimeout: Duration = 10 seconds
 
   /**
-   * When endpoint is outCapable (can produce responses) outTimeout is the maximum time
-   * the endpoint can take to send the response before the message exchange fails. It defaults to Int.MaxValue seconds.
-   * It can be also overwritten by setting @see blocking property
+   * When endpoint is out-capable (can produce responses) replyTimeout is the maximum time
+   * the endpoint can take to send the response before the message exchange fails. It defaults to 1 minute.
+   * This setting is used for out-capable, non blocking or in-only, manually acknowledged communication.
+   * When the communicationStyle is set to Blocking replyTimeout is ignored.
    */
-  def outTimeout : Duration = Int.MaxValue seconds
+  def replyTimeout : Duration = 1 minute
 
   /**
    * Determines whether two-way communications between an endpoint and this consumer actor
@@ -49,6 +50,7 @@ trait ConsumerConfig{
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
+   * This flag has only effect when exchange is in-only.
    */
   def autoack : Boolean = true
 
@@ -58,7 +60,7 @@ trait ConsumerConfig{
   //TODO: write a test confirming onRouteDefinition gets called
   def onRouteDefinition(rd: RouteDefinition) : ProcessorDefinition[_] = rd
 
-  private[camel] def toCamelParameters : String = "communicationStyle=%s&autoack=%s&outTimeout=%s" format (CommunicationStyleTypeConverter.toString(communicationStyle), autoack, DurationTypeConverter.toString(outTimeout))
+  private[camel] def toCamelParameters : String = "communicationStyle=%s&autoack=%s&replyTimeout=%s" format (CommunicationStyleTypeConverter.toString(communicationStyle), autoack, DurationTypeConverter.toString(replyTimeout))
 }
 
 
@@ -72,6 +74,3 @@ object Blocking{
   def seconds(timeout:Long) = Blocking(timeout seconds)
   def millis(timeout:Long) = Blocking(timeout millis)
 }
-
-
-class ConsumerRequiresFromEndpointException extends RuntimeException("Consumer needs to provide from endpoint. Please make sure the consumer calls method from(\"some uri\") in the body of constructor.")

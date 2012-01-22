@@ -1,13 +1,13 @@
 package akka.camel
 
-import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent, ActorEndpointPath}
+import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent}
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
-import akka.event.Logging.Info
 import akka.util.Duration
-import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
-import collection.mutable.{SynchronizedMap, HashMap}
+import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem}
+import akka.event.Logging.Info
+import DangerousStuff._
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
@@ -28,7 +28,7 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
  * Also by not creating extra internal actor system we are conserving resources.
  */
 class DefaultCamel(val system : ActorSystem) extends Camel{
-  val context = {
+  lazy val context : CamelContext = {
     val ctx = new DefaultCamelContext
     ctx.setName(system.name);
     ctx.setStreamCaching(true)
@@ -38,7 +38,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
     ctx
   }
 
-  val template = context.createProducerTemplate()
+  lazy val template = context.createProducerTemplate()
 
   /**
    * Starts camel and underlying camel context and template.
@@ -48,7 +48,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
   //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
-    template.start()
+    try_(template.start()) otherwise context.stop()
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, system.name)))
     this
@@ -62,47 +62,23 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    context.stop()
-    template.stop()
+    try context.stop() finally safe(template.stop())
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, system.name)))
   }
 }
 
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
-  private[this] val overrides = new HashMap[ActorSystem, Camel] with SynchronizedMap[ActorSystem, Camel]     //had to revert to SyncMap as ConcurrentHasMap doesn't guarantee that writes will happen before reads
-
-  /**
-   * If you need to start Camel context outside of extension you can use this method
-   * to tell the actor system which camel instance it should use.
-   * The user is responsible for stopping such a Camel instance.
-   * The override is only valid until the actor system is terminated.
-   */
-  def setCamelFor(system: ActorSystem, camel: Camel) { overrides.put(system, camel) }
 
   /**
    * Creates new instance of Camel and makes sure it gets stopped when actor system is shutdown.
-   *
-   * <br/><br/>When the user wants to use a specific Camel instance, they can set an override - see setCamelFor(ActorSystem, Camel)
-   * In this case the user is responsible for stopping the Camel instance.
-   *
    */
   def createExtension(system: ActorSystemImpl) = {
-
-    def useOverride(system: ActorSystem) = {
-      val camel = overrides(system)
-      system.registerOnTermination(overrides.remove(system))
-      camel
-    }
-
-    def createNew(system: ActorSystem) = {
-      val camel = new DefaultCamel(system).start;
-      system.registerOnTermination(camel.shutdown())
-      camel
-    }
-
-    if(overrides.contains(system)) useOverride(system) else createNew(system)
+    val camel = new DefaultCamel(system).start;
+    system.registerOnTermination(camel.shutdown())
+    camel
   }
+
   def lookup() = CamelExtension
 }
 
@@ -122,8 +98,4 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
     awaitActivation(consumer.self, activationTimeout)
   }
 
-  private[camel] def findActor(path: ActorEndpointPath) : Option[ActorRef] = {
-    val ref = system.actorFor(path.actorPath)
-    if (ref.isTerminated) None else Some(ref)
-  }
 }
