@@ -18,18 +18,23 @@ class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatche
       override lazy val context = mock[CamelContext]
     }
 
-    "during shutdown, stops both template and context even if one of them fails to shutdown" in {
+    "during shutdown, when both context and template fail to shutdown" - {
       val camel = camelWitMocks
 
-      when(camel.template.stop()) thenThrow new RuntimeException
-      when(camel.context.stop()) thenThrow new RuntimeException
-
-      intercept[RuntimeException]{
+      when(camel.context.stop()) thenThrow new RuntimeException("context")
+      when(camel.template.stop()) thenThrow new RuntimeException("template")
+      val exception = intercept[RuntimeException]{
         camel.shutdown()
+      } 
+
+      "throws exception thrown by context.stop()" in{
+        exception.getMessage() should be ("context");
       }
 
-      verify(camel.template).stop()
-      verify(camel.context).stop()
+      "tries to stop both template and context" in{
+        verify(camel.template).stop()
+        verify(camel.context).stop()
+      }
 
     }
 

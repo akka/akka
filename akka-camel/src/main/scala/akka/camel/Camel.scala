@@ -4,9 +4,10 @@ import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverte
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
-import akka.event.Logging.Info
 import akka.util.Duration
 import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem}
+import akka.event.Logging.Info
+import DangerousStuff._
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
@@ -47,7 +48,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
   //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
-    try template.start() catch { case e => context.stop(); throw e }
+    try_(template.start()) otherwise context.stop()
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, system.name)))
     this
@@ -61,7 +62,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    try context.stop() finally template.stop()
+    try context.stop() finally safe(template.stop())
     //TODO use proper akka logging
     system.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, system.name)))
   }
