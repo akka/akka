@@ -65,7 +65,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             time(producer.process(exchange))
           }
 
-          "timeout after outTimeout" in {
+          "timeout after replyTimeout" in {
             val duration = process()
             duration should (be >= (100 millis) and be < (200 millis))
           }
@@ -234,17 +234,20 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           "blocking" should{
             "get sync callback when it gets an Ack message" in {
 
-              producer = given( outCapable = false, blocking = Blocking(1 second), autoAck = false)
+              producer = given(
+                actor = system.actorOf(Props(ctx => {case _ => ctx.sender ! Ack})),
+                outCapable = false, blocking = Blocking(1 second), autoAck = false
+              )
 
-              val doneSync = producer.process(exchange, asyncCallback)
+              var doneSync = false
+              time{
+                doneSync = producer.process(exchange, asyncCallback)
+              } should be < (1 second)
 
 
               doneSync should be (true)
-              within(5 millis){
-                probe.expectMsgType[Message]; info("message already received by consumer")
-                probe.sender ! Ack
-              }
-              asyncCallback.expectDoneSyncWithin(1 second); info("sync callback received")
+              asyncCallback.expectDoneSyncWithin(0 second); info("sync callback received")
+              verify(exchange, never()).setFailure(any[Failure]); info("no failure")
               verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
             }
 
@@ -268,6 +271,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   var message : Message = _
   var probe : TestProbe = _
   var asyncCallback : TestAsyncCallback = _
+  var actorEndpointPath : ActorEndpointPath = _
 
 
 
@@ -278,6 +282,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     camel = mock[Camel]
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
+    actorEndpointPath = mock[ActorEndpointPath]
 
     producer = new TestableProducer(config(), camel)
     message = Message(null, null, null)
@@ -326,18 +331,18 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   }
 
-  def config(actorPath: String = "path:akka://test/path",  endpointUri: String = "test-uri",  isBlocking: CommunicationStyle = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
+  def config(endpointUri: String = "test-uri",  isBlocking: CommunicationStyle = NonBlocking, isAutoAck : Boolean = true, _outTimeout : Duration = Int.MaxValue seconds) = {
     new ActorEndpointConfig {
-      val path = ActorEndpointPath.fromCamelPath(actorPath)
+      val path = actorEndpointPath
       val getEndpointUri = endpointUri
       communicationStyle = isBlocking
       autoack = isAutoAck
-      outTimeout = _outTimeout
+      replyTimeout = _outTimeout
     }
   }
 
   def prepareMocks(actor: ActorRef, message: Message = message, outCapable: Boolean) {
-    when(camel.findActor(any[ActorEndpointPath])) thenReturn Option(actor)
+    when(actorEndpointPath.findActorIn(any[ActorSystem])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable
   }
