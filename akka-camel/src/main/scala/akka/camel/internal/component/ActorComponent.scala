@@ -22,6 +22,12 @@ private[camel] case class ActorEndpointPath private(actorPath: String) {
   require(actorPath != null)
   require(actorPath.length() > 0)
   def toCamelPath(config: ConsumerConfig = new ConsumerConfig {}) : String =  "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
+
+  def findActorIn(system: ActorSystem) : Option[ActorRef] = {
+    val ref = system.actorFor(actorPath)
+    if (ref.isTerminated) None else Some(ref)
+  }
+
 }
 
 private[camel] object ActorEndpointPath{
@@ -247,7 +253,7 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
   private[this] def either[T](block: => T) : Either[Throwable,T] = try {Right(block)} catch {case e => Left(e)}
 
   private[this] def actorFor(path:ActorEndpointPath) : ActorRef =
-    camel.findActor(path) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
+    path.findActorIn(camel.system) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter)  =
      exchange.toRequestMessage(Map(Message.MessageExchangeId -> exchange.getExchangeId))

@@ -1,13 +1,12 @@
 package akka.camel
 
-import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent, ActorEndpointPath}
+import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent}
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ProducerTemplate, CamelContext}
 import akka.event.Logging.Info
 import akka.util.Duration
-import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem, ActorRef}
-import collection.mutable.{SynchronizedMap, HashMap}
+import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem}
 
 trait Camel extends ConsumerRegistry with Extension with Activation{
   def context : CamelContext
@@ -98,8 +97,4 @@ private[camel] trait ConsumerRegistry{ this:Activation =>
     awaitActivation(consumer.self, activationTimeout)
   }
 
-  private[camel] def findActor(path: ActorEndpointPath) : Option[ActorRef] = {
-    val ref = system.actorFor(path.actorPath)
-    if (ref.isTerminated) None else Some(ref)
-  }
 }
