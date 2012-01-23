@@ -5,16 +5,13 @@ package akka.zeromq
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
-import akka.util.Timeout
 import akka.util.duration._
-import java.net.{ SocketException, ConnectException, Socket }
-import util.Random
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 
 object ConcurrentSocketActorSpec {
   val config = """
 akka {
-  extensions = ["akka.zeromq.ZeroMQExtension$"]
+  extensions = []
 }
 """
 }
@@ -24,7 +21,7 @@ class ConcurrentSocketActorSpec
   with MustMatchers
   with DefaultTimeout {
 
-  val endpoint = "tcp://127.0.0.1:%s" format FreePort.randomFreePort()
+  val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
   def zmq = system.extension(ZeroMQExtension)
 
@@ -119,35 +116,6 @@ class ConcurrentSocketActorSpec
         val payload = "%s".format(messageNumber)
         messageNumber = messageNumber + 1
         actorRef ! ZMQMessage(payload.getBytes)
-    }
-  }
-
-  object FreePort {
-
-    def isPortFree(port: Int) = {
-      try {
-        val socket = new Socket("127.0.0.1", port)
-        socket.close()
-        false
-      } catch {
-        case e: ConnectException ⇒ true
-        case e: SocketException if e.getMessage == "Connection reset by peer" ⇒ true
-      }
-    }
-
-    private def newPort = Random.nextInt(55365) + 10000
-
-    def randomFreePort(maxRetries: Int = 50) = {
-      var count = 0
-      var freePort = newPort
-      while (!isPortFree(freePort)) {
-        freePort = newPort
-        count += 1
-        if (count >= maxRetries) {
-          throw new RuntimeException("Couldn't determine a free port")
-        }
-      }
-      freePort
     }
   }
 }
