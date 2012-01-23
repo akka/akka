@@ -3,13 +3,16 @@
  */
 package akka.docs.actor
 
+//#test-code
 import akka.testkit.AkkaSpec
+import akka.actor.Props
 
 class FSMDocSpec extends AkkaSpec {
 
   "simple finite state machine" must {
+    //#fsm-code-elided
     //#simple-imports
-    import akka.actor.{ Actor, ActorRef, FSM, Props }
+    import akka.actor.{ Actor, ActorRef, FSM }
     import akka.util.duration._
     //#simple-imports
     //#simple-events
@@ -23,11 +26,11 @@ class FSMDocSpec extends AkkaSpec {
     //#simple-events
     //#simple-state
     // states
-    trait State
+    sealed trait State
     case object Idle extends State
     case object Active extends State
 
-    trait Data
+    sealed trait Data
     case object Uninitialized extends Data
     case class Todo(target: ActorRef, queue: Seq[Any]) extends Data
     //#simple-state
@@ -40,20 +43,20 @@ class FSMDocSpec extends AkkaSpec {
         case Event(SetTarget(ref), Uninitialized) ⇒ stay using Todo(ref, Vector.empty)
       }
 
-      //#simple-transition
+      //#transition-elided
       onTransition {
         case Active -> Idle ⇒
           stateData match {
             case Todo(ref, queue) ⇒ ref ! Batch(queue)
           }
       }
-      //#simple-transition
+      //#transition-elided
 
       when(Active, stateTimeout = 1 second) {
         case Event(Flush | FSM.StateTimeout, t: Todo) ⇒ goto(Idle) using t.copy(queue = Vector.empty)
       }
 
-      //#simple-unhandled
+      //#unhandled-elided
       whenUnhandled {
         // common code for both states
         case Event(Queue(obj), t @ Todo(_, v)) ⇒
@@ -63,11 +66,12 @@ class FSMDocSpec extends AkkaSpec {
           log.warning("received unhandled request {} in state {}/{}", e, stateName, s)
           stay
       }
-      //#simple-unhandled
+      //#unhandled-elided
 
       initialize
     }
     //#simple-fsm
+    //#fsm-code-elided
 
     "batch correctly" in {
       val buncher = system.actorOf(Props(new Buncher))
@@ -87,7 +91,6 @@ class FSMDocSpec extends AkkaSpec {
       buncher ! Queue(42)
       expectNoMsg
     }
-
   }
-
 }
+//#test-code
