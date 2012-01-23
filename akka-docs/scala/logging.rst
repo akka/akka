@@ -50,7 +50,7 @@ This config option is very good if you want to know what config settings are loa
     akka {
       # Log the complete configuration at INFO level when the actor system is started.
       # This is useful when you are uncertain of what configuration is used.
-      logConfigOnStart = off
+      logConfigOnStart = on
     }
 
 If you want very detailed logging of all user-level messages that are processed
@@ -62,7 +62,7 @@ by Actors that use akka.event.LoggingReceive:
       debug {
         # enable function of LoggingReceive, which is to log any received message at
         # DEBUG level
-        receive = off
+        receive = on
       }
     }
 
@@ -74,7 +74,7 @@ by Actors:
     akka {
       debug {
         # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
-        autoreceive = off
+        autoreceive = on
       }
     }
 
@@ -85,7 +85,7 @@ If you want very detailed logging of all lifecycle changes of Actors (restarts, 
     akka {
       debug {
         # enable DEBUG logging of actor lifecycle changes
-        lifecycle = off
+        lifecycle = on
       }
     }
 
@@ -96,7 +96,7 @@ If you want very detailed logging of all events, transitions and timers of FSM A
     akka {
       debug {
         # enable DEBUG logging of all LoggingFSMs for events, transitions and timers
-        fsm = off
+        fsm = on
       }
     }
 
@@ -107,7 +107,7 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
     akka {
       debug {
         # enable DEBUG logging of subscription changes on the eventStream
-        event-stream = off
+        event-stream = on
       }
     }
 
@@ -122,7 +122,7 @@ If you want to see all messages that are sent through remoting at DEBUG log leve
     akka {
       remote {
         # If this is "on", Akka will log all outbound messages at DEBUG level, if off then they are not logged
-        log-sent-messages = off
+        log-sent-messages = on
       }
     }
 
@@ -134,7 +134,7 @@ If you want to see all messages that are received through remoting at DEBUG log 
     akka {
       remote {
         # If this is "on", Akka will log all inbound messages at DEBUG level, if off then they are not logged
-        log-received-messages = off
+        log-received-messages = on
       }
     }
 
