@@ -18,32 +18,6 @@ import akka.util.duration._
 import java.util.concurrent.TimeoutException
 import akka.camel.{ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message, CommunicationStyle, Blocking, NonBlocking}
 
-private[camel] case class ActorEndpointPath private(actorPath: String) {
-  require(actorPath != null)
-  require(actorPath.length() > 0)
-  def toCamelPath(config: ConsumerConfig = new ConsumerConfig {}) : String =  "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
-
-  def findActorIn(system: ActorSystem) : Option[ActorRef] = {
-    val ref = system.actorFor(actorPath)
-    if (ref.isTerminated) None else Some(ref)
-  }
-
-}
-
-private[camel] object ActorEndpointPath{
-  def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
-
-  /**
-   * Expects path in a format: path:%s
-   */
-  def fromCamelPath(camelPath : String) =  camelPath match {
-    case id if id startsWith "path:"   => new ActorEndpointPath(id substring 5)
-    case _ => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
-  }
-}
-
-
-
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
  *
@@ -147,15 +121,11 @@ trait ActorEndpointConfig{
  * @author Martin Krasser
  */
 class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer(ep) with AsyncProcessor {
-  def process(exchange: Exchange) {new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange))}
-  def process(exchange: Exchange, callback: AsyncCallback) = new TestableProducer(ep, camel).process(new CamelExchangeAdapter(exchange), callback)
+  def process(exchange: Exchange) {new ConsumerAsyncProcessor(ep, camel).process(new CamelExchangeAdapter(exchange))}
+  def process(exchange: Exchange, callback: AsyncCallback) = new ConsumerAsyncProcessor(ep, camel).process(new CamelExchangeAdapter(exchange), callback)
 }
 
-//TODO needs to know about ActorSystem instead of ConsumerRegistry. why is it called TestableProducer?
-// re: I'd rather keep the abstraction layer for now and let the Camel class delegate
-class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
-
-  private lazy val path = config.path
+class ConsumerAsyncProcessor(config : ActorEndpointConfig, camel : Camel) {
 
   def process(exchange: CamelExchangeAdapter) {
     if (exchange.isOutCapable)
@@ -171,12 +141,6 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     val DoneSync = true
     val DoneAsync = false
 
-    def processAck : PartialFunction[Either[Throwable,Any], Unit] = {
-      case Right(Ack) => { /* no response message to set */}
-      case Right(failure : Failure) => exchange.setFailure(failure)
-      case Right(msg) => exchange.setFailure(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: "+msg)))
-      case Left(throwable) =>  exchange.setFailure(Failure(throwable))
-    }
 
     def outCapable: Boolean = {
       config.communicationStyle match {
@@ -206,11 +170,11 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     def inOnlyManualAck: Boolean = {
       config.communicationStyle match {
         case NonBlocking => {
-          sendAsync(exchange, config.replyTimeout, onComplete = processAck andThen notifyDoneAsynchronously)
+          sendAsync(exchange, config.replyTimeout, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
           DoneAsync
         }
         case Blocking(timeout) => {
-          sendSync(exchange, timeout, onComplete = processAck)
+          sendSync(exchange, timeout, onComplete = forwardAckTo(exchange))
           notifyDoneSynchronously()
           DoneSync
         }
@@ -235,10 +199,10 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     future.onComplete(onComplete)
   }
 
-  private def fireAndForget(exchange: CamelExchangeAdapter) { actorFor(path) ! messageFor(exchange) }
+  private def fireAndForget(exchange: CamelExchangeAdapter) { actorFor(config.path) ! messageFor(exchange) }
 
   private[this] def send(exchange: CamelExchangeAdapter, timeout : Duration) = {
-    val actor = actorFor(path)
+    val actor = actorFor(config.path)
     val message = messageFor(exchange)
     actor ? (message, new Timeout(timeout))
   }
@@ -247,6 +211,13 @@ class TestableProducer(config : ActorEndpointConfig, camel : Camel) {
     case Right(failure:Failure) => exchange.setFailure(failure);
     case Right(msg) => exchange.setResponse(Message.canonicalize(msg, camel))
     case Left(e:TimeoutException) =>  exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
+    case Left(throwable) =>  exchange.setFailure(Failure(throwable))
+  }
+
+  def forwardAckTo(exchange:CamelExchangeAdapter) : PartialFunction[Either[Throwable,Any], Unit] = {
+    case Right(Ack) => { /* no response message to set */}
+    case Right(failure : Failure) => exchange.setFailure(failure)
+    case Right(msg) => exchange.setFailure(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: "+msg)))
     case Left(throwable) =>  exchange.setFailure(Failure(throwable))
   }
 
@@ -307,3 +278,27 @@ private[camel] abstract class CamelTypeConverter extends TypeConverter{
   def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
 }
 
+
+private[camel] case class ActorEndpointPath private(actorPath: String) {
+  require(actorPath != null)
+  require(actorPath.length() > 0)
+  def toCamelPath(config: ConsumerConfig = new ConsumerConfig {}) : String =  "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
+
+  def findActorIn(system: ActorSystem) : Option[ActorRef] = {
+    val ref = system.actorFor(actorPath)
+    if (ref.isTerminated) None else Some(ref)
+  }
+
+}
+
+private[camel] object ActorEndpointPath{
+  def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
+
+  /**
+   * Expects path in a format: path:%s
+   */
+  def fromCamelPath(camelPath : String) =  camelPath match {
+    case id if id startsWith "path:"   => new ActorEndpointPath(id substring 5)
+    case _ => throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
+  }
+}
