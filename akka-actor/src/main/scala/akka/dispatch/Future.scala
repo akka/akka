@@ -354,7 +354,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
-   * @returns a new Future that will contain a tuple containing the successful result of this and that Future.
+   * @return a new Future that will contain a tuple containing the successful result of this and that Future.
    * If this or that fail, they will race to complete the returned Future with their failure.
    * The returned Future will not be completed if neither this nor that are completed.
    */

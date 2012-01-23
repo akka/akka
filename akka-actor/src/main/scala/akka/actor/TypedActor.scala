@@ -376,7 +376,7 @@ object TypedProps {
   val defaultLoader: Option[ClassLoader] = None
 
   /**
-   * @returns a sequence of interfaces that the speicified class implements,
+   * @return a sequence of interfaces that the speicified class implements,
    * or a sequence containing only itself, if itself is an interface.
    */
   def extractInterfaces(clazz: Class[_]): Seq[Class[_]] =
@@ -474,7 +474,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withDispatcher(d: String) = copy(dispatcher = d)
 
   /**
-   * @returns a new Props that will use the specified ClassLoader to create its proxy class in
+   * @return a new Props that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Java API
@@ -482,7 +482,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @returns a new Props that will use the specified ClassLoader to create its proxy class in
+   * @return a new Props that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -490,7 +490,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @returns a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new Props that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Java API
@@ -498,7 +498,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @returns a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new Props that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Scala API
