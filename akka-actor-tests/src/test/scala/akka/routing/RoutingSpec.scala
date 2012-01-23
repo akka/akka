@@ -12,6 +12,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
+import akka.pattern.ask
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 

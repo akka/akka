@@ -19,6 +19,7 @@ import akka.dispatch.Await;
 import akka.dispatch.Future;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
+import static akka.pattern.Patterns.ask;
 
 import static akka.docs.jrouting.CustomRouterDocTestBase.DemocratActor;
 import static akka.docs.jrouting.CustomRouterDocTestBase.RepublicanActor;
@@ -48,8 +49,8 @@ public class CustomRouterDocTestBase {
     routedActor.tell(DemocratVote);
     routedActor.tell(RepublicanVote);
     Timeout timeout = new Timeout(Duration.parse("1 seconds"));
-    Future<Object> democratsResult = routedActor.ask(DemocratCountResult, timeout);
-    Future<Object> republicansResult = routedActor.ask(RepublicanCountResult, timeout);
+    Future<Object> democratsResult = ask(routedActor, DemocratCountResult, timeout);
+    Future<Object> republicansResult = ask(routedActor, RepublicanCountResult, timeout);
 
     assertEquals(3, Await.result(democratsResult, timeout.duration()));
     assertEquals(2, Await.result(republicansResult, timeout.duration()));

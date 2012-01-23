@@ -31,4 +31,7 @@ package object migration {
     def stop(): Unit = GlobalActorSystem.stop(actorRef)
   }
 
+  implicit def ask(actorRef: ActorRef) = new akka.migration.AskableActorRef(actorRef)
+  def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout = null): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
+
 }

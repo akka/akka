@@ -17,6 +17,7 @@ import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
 import akka.dispatch.Dispatchers
+import akka.pattern.ask
 
 object TimingTest extends Tag("timing")
 

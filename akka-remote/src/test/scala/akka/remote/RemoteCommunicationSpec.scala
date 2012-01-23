@@ -7,6 +7,7 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -81,8 +82,8 @@ akka {
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
-        case ("pong", s: AskActorRef) ⇒ // good
-        case m                        ⇒ fail(m + " was not (pong, AskActorRef)")
+        case ("pong", s: akka.pattern.AskSupport.PromiseActorRef) ⇒ // good
+        case m ⇒ fail(m + " was not (pong, AskActorRef)")
       }
     }
 

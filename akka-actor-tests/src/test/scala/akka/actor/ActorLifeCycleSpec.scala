@@ -12,6 +12,7 @@ import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object ActorLifeCycleSpec {
 
@@ -35,7 +36,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
       filterException[ActorKilledException] {
         val id = newUuid().toString
-        val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+        val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(3)))))
         val gen = new AtomicInteger(0)
         val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen) {
           override def preRestart(reason: Throwable, message: Option[Any]) { report("preRestart") }
@@ -69,7 +70,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
     "default for preRestart and postRestart is to call postStop and preStart respectively" in {
       filterException[ActorKilledException] {
         val id = newUuid().toString
-        val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+        val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(3)))))
         val gen = new AtomicInteger(0)
         val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen))
         val restarter = Await.result((supervisor ? restarterProps).mapTo[ActorRef], timeout.duration)
@@ -99,7 +100,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
 
     "not invoke preRestart and postRestart when never restarted using OneForOneStrategy" in {
       val id = newUuid().toString
-      val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), Some(3))))
+      val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]), Some(3)))))
       val gen = new AtomicInteger(0)
       val props = Props(new LifeCycleTestActor(testActor, id, gen))
       val a = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)

@@ -218,6 +218,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       TypedActor.currentContext set null
     }
 
+    override def supervisorStrategy(): SupervisorStrategy = me match {
+      case l: Supervisor ⇒ l.supervisorStrategy
+      case _             ⇒ super.supervisorStrategy
+    }
+
     override def preStart(): Unit = me match {
       case l: PreStart ⇒ l.preStart()
       case _           ⇒ super.preStart()
@@ -273,6 +278,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           TypedActor.currentContext set null
         }
     }
+  }
+
+  /**
+   * Mix this into your TypedActor to be able to define supervisor strategy
+   */
+  trait Supervisor {
+    /**
+     * User overridable definition the strategy to use for supervising
+     * child actors.
+     */
+    def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
   }
 
   /**
@@ -332,17 +348,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        import akka.pattern.ask
         MethodCall(method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
+          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            val f = actor.?(m, timeout)
+            val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ Await.result(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }
@@ -355,7 +372,6 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 object TypedProps {
 
   val defaultDispatcherId: String = Dispatchers.DefaultDispatcherId
-  val defaultFaultHandler: FaultHandlingStrategy = akka.actor.Props.defaultFaultHandler
   val defaultTimeout: Option[Timeout] = None
   val defaultLoader: Option[ClassLoader] = None
 
@@ -415,7 +431,6 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
-  faultHandler: FaultHandlingStrategy = TypedProps.defaultFaultHandler,
   timeout: Option[Timeout] = TypedProps.defaultTimeout,
   loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
@@ -457,11 +472,6 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String) = copy(dispatcher = d)
-
-  /**
-   * Returns a new Props with the specified faulthandler set.
-   */
-  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
   /**
    * @returns a new Props that will use the specified ClassLoader to create its proxy class in
@@ -512,8 +522,8 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   import akka.actor.{ Props ⇒ ActorProps }
   def actorProps(): ActorProps =
-    if (dispatcher == ActorProps().dispatcher && faultHandler == ActorProps().faultHandler) ActorProps()
-    else ActorProps(dispatcher = dispatcher, faultHandler = faultHandler)
+    if (dispatcher == ActorProps().dispatcher) ActorProps()
+    else ActorProps(dispatcher = dispatcher)
 }
 
 case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext) extends TypedActorFactory {

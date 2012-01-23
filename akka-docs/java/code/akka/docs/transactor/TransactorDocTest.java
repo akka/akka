@@ -10,6 +10,7 @@ import org.junit.Test;
 //#imports
 import akka.actor.*;
 import akka.dispatch.Await;
+import static akka.pattern.Patterns.ask;
 import akka.transactor.Coordinated;
 import akka.util.Duration;
 import akka.util.Timeout;
@@ -30,7 +31,7 @@ public class TransactorDocTest {
 
         counter1.tell(new Coordinated(new Increment(counter2), timeout));
 
-        Integer count = (Integer) Await.result(counter1.ask("GetCount", timeout), timeout.duration());
+        Integer count = (Integer) Await.result(ask(counter1, "GetCount", timeout), timeout.duration());
         //#coordinated-example
 
         assertEquals(count, new Integer(1));
@@ -71,7 +72,7 @@ public class TransactorDocTest {
         counter.tell(coordinated.coordinate(new Increment()));
         coordinated.await();
 
-        Integer count = (Integer) Await.result(counter.ask("GetCount", timeout), timeout.duration());
+        Integer count = (Integer) Await.result(ask(counter, "GetCount", timeout), timeout.duration());
         assertEquals(count, new Integer(1));
 
         system.shutdown();
@@ -88,10 +89,10 @@ public class TransactorDocTest {
         friendlyCounter.tell(coordinated.coordinate(new Increment(friend)));
         coordinated.await();
 
-        Integer count1 = (Integer) Await.result(friendlyCounter.ask("GetCount", timeout), timeout.duration());
+        Integer count1 = (Integer) Await.result(ask(friendlyCounter, "GetCount", timeout), timeout.duration());
         assertEquals(count1, new Integer(1));
 
-        Integer count2 = (Integer) Await.result(friend.ask("GetCount", timeout), timeout.duration());
+        Integer count2 = (Integer) Await.result(ask(friend, "GetCount", timeout), timeout.duration());
         assertEquals(count2, new Integer(1));
 
         system.shutdown();

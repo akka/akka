@@ -6,6 +6,7 @@ import akka.routing._
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2

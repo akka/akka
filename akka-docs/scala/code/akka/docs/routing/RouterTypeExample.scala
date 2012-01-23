@@ -8,6 +8,7 @@ import annotation.tailrec
 import akka.actor.{ Props, Actor }
 import akka.util.duration._
 import akka.dispatch.Await
+import akka.pattern.ask
 import akka.routing.SmallestMailboxRouter
 
 case class FibonacciNumber(nbr: Int)

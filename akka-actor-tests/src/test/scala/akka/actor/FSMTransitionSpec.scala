@@ -72,8 +72,9 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       val fsm = system.actorOf(Props(new MyFSM(testActor)))
       val sup = system.actorOf(Props(new Actor {
         context.watch(fsm)
+        override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), None, None)
         def receive = { case _ ⇒ }
-      }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+      }))
 
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)

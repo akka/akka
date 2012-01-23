@@ -10,6 +10,7 @@ import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.{ Await, Future, Promise, ExecutionContext, MessageDispatcher }
 import java.net.{ SocketAddress, InetSocketAddress }
+import akka.pattern.ask
 
 object IOActorSpec {
 

@@ -10,6 +10,7 @@ import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise, Await }
 import akka.util.duration._
 import akka.actor.ActorSystem
+import akka.pattern.ask
 import akka.dispatch.Dispatcher
 
 /**
@@ -181,8 +182,10 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
             override def postRestart(reason: Throwable) { counter -= 1 }
           }), self, "child")
 
+          override def supervisorStrategy = OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)
+
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)))
+        }))
 
         boss ! "sendKill"
 

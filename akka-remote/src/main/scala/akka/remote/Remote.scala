@@ -118,7 +118,7 @@ case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMs
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
 class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
-  extends VirtualPathContainer(_path, _parent, _log) {
+  extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   /**
    * Find the longest matching path which we know about and return that ref

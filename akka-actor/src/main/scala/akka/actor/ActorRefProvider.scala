@@ -47,6 +47,8 @@ trait ActorRefProvider {
 
   def settings: ActorSystem.Settings
 
+  def dispatcher: MessageDispatcher
+
   /**
    * Initialization of an ActorRefProvider happens in two steps: first
    * construction of the object with settings, eventStream, scheduler, etc.
@@ -58,6 +60,26 @@ trait ActorRefProvider {
   def deployer: Deployer
 
   def scheduler: Scheduler
+
+  /**
+   * Generates and returns a unique actor path below “/temp”.
+   */
+  def tempPath(): ActorPath
+
+  /**
+   * Returns the actor reference representing the “/temp” path.
+   */
+  def tempContainer: InternalActorRef
+
+  /**
+   * Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
+   */
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit
+
+  /**
+   * Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path.
+   */
+  def unregisterTempActor(path: ActorPath): Unit
 
   /**
    * Actor factory with create-only semantics: will create an actor as
@@ -88,12 +110,6 @@ trait ActorRefProvider {
    * physically or logically attached to this actor system.
    */
   def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
-
-  /**
-   * Create AskActorRef and register it properly so it can be serialized/deserialized;
-   * caller needs to send the message.
-   */
-  def ask(within: Timeout): Option[AskActorRef]
 
   /**
    * This Future is completed upon termination of this ActorRefProvider, which
@@ -308,6 +324,8 @@ class LocalActorRefProvider(
 
     val path = rootPath / "bubble-walker"
 
+    def provider: ActorRefProvider = LocalActorRefProvider.this
+
     override def stop() = stopped switchOn {
       terminationFuture.complete(causeOfTermination.toLeft(()))
     }
@@ -334,6 +352,16 @@ class LocalActorRefProvider(
    * exceptions which might have occurred.
    */
   private class Guardian extends Actor {
+
+    override val supervisorStrategy = {
+      import akka.actor.SupervisorStrategy._
+      OneForOneStrategy {
+        case _: ActorKilledException         ⇒ Stop
+        case _: ActorInitializationException ⇒ Stop
+        case _: Exception                    ⇒ Restart
+      }
+    }
+
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
       case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
@@ -366,16 +394,6 @@ class LocalActorRefProvider(
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
-  private val guardianFaultHandlingStrategy = {
-    import akka.actor.FaultHandlingStrategy._
-    OneForOneStrategy {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
-
   /*
    * The problem is that ActorRefs need a reference to the ActorSystem to
    * provide their service. Hence they cannot be created while the
@@ -401,6 +419,8 @@ class LocalActorRefProvider(
    */
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
+  private val guardianProps = Props(new Guardian)
+
   lazy val rootGuardian: InternalActorRef =
     new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
       object Extra {
@@ -424,7 +444,17 @@ class LocalActorRefProvider(
   lazy val systemGuardian: InternalActorRef =
     actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None)
 
-  lazy val tempContainer = new VirtualPathContainer(tempNode, rootGuardian, log)
+  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
+    assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
+    tempContainer.addChild(path.name, actorRef)
+  }
+
+  def unregisterTempActor(path: ActorPath): Unit = {
+    assert(path.parent eq tempNode, "cannot unregisterTempActor() with anything not obtained from tempPath()")
+    tempContainer.removeChild(path.name)
+  }
 
   val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
 
@@ -463,7 +493,7 @@ class LocalActorRefProvider(
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
         log.debug("look-up of path sequence '{}' failed", path)
-        new EmptyLocalActorRef(eventStream, dispatcher, ref.path / path)
+        new EmptyLocalActorRef(eventStream, system.provider, dispatcher, ref.path / path)
       case x ⇒ x
     }
 
@@ -476,25 +506,6 @@ class LocalActorRefProvider(
           deployer.lookup(lookupPath)
         }
         new RoutedActorRef(system, props.withRouter(router.adaptFromDeploy(depl)), supervisor, path)
-    }
-  }
-
-  def ask(within: Timeout): Option[AskActorRef] = {
-    (if (within == null) settings.ActorTimeout else within) match {
-      case t if t.duration.length <= 0 ⇒ None
-      case t ⇒
-        val path = tempPath()
-        val name = path.name
-        val a = new AskActorRef(path, tempContainer, dispatcher, deathWatch)
-        tempContainer.addChild(name, a)
-        val result = a.result
-        val f = dispatcher.prerequisites.scheduler.scheduleOnce(t.duration) { result.failure(new AskTimeoutException("Timed out")) }
-        result onComplete { _ ⇒
-          try { a.stop(); f.cancel() }
-          finally { tempContainer.removeChild(name) }
-        }
-
-        Some(a)
     }
   }
 }

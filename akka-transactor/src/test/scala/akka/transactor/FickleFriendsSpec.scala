@@ -15,6 +15,7 @@ import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._
 import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
+import akka.pattern.ask
 
 object FickleFriends {
   case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)

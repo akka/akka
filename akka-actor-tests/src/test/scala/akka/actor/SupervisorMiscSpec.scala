@@ -8,6 +8,7 @@ import akka.dispatch.{ PinnedDispatcher, Dispatchers, Await }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
+import akka.pattern.ask
 
 object SupervisorMiscSpec {
   val config = """
@@ -28,7 +29,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       filterEvents(EventFilter[Exception]("Kill")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 5000)))
+        val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]), 3, 5000))))
 
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable) { countDownLatch.countDown() }

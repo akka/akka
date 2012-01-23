@@ -5,6 +5,7 @@ import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import akka.dispatch.Await
+import akka.pattern.ask
 import java.util.concurrent.atomic.AtomicInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -133,7 +134,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val restartLatch = new TestLatch
       val pingLatch = new TestLatch(6)
 
-      val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+      val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]), 3, 1000))))
       val props = Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()

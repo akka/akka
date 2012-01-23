@@ -20,6 +20,7 @@ import akka.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
 import akka.util.Duration
+import akka.pattern.ask
 
 object ActorModelSpec {
 
