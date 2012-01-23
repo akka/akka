@@ -38,10 +38,10 @@ public class SettingsExtensionDocTestBase {
 
   //#extensionid
   public static class Settings extends AbstractExtensionId<SettingsImpl> implements ExtensionIdProvider {
-    public final static Settings instance = new Settings();
+    public final static Settings SettingsProvider = new Settings();
 
     public Settings lookup() {
-      return Settings.instance;
+      return Settings.SettingsProvider;
     }
 
     public SettingsImpl createExtension(ActorSystemImpl system) {
@@ -53,7 +53,8 @@ public class SettingsExtensionDocTestBase {
 
   //#extension-usage-actor
   public static class MyActor extends UntypedActor {
-    final SettingsImpl settings = Settings.instance.get(getContext().system());
+    // typically you would use static import of CountExtension.CountExtensionProvider field
+    final SettingsImpl settings = Settings.SettingsProvider.get(getContext().system());
     Connection connection = connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
 
     //#extension-usage-actor
@@ -75,7 +76,8 @@ public class SettingsExtensionDocTestBase {
     final ActorSystem system = null;
     try {
       //#extension-usage
-      String dbUri = Settings.instance.get(system).DB_URI;
+      // typically you would use static import of CountExtension.CountExtensionProvider field
+      String dbUri = Settings.SettingsProvider.get(system).DB_URI;
       //#extension-usage
     } catch (Exception e) {
       //do nothing

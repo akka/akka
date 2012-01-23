@@ -17,10 +17,10 @@ import static org.junit.Assert.*;
 public class JavaExtension {
 
   static class TestExtensionId extends AbstractExtensionId<TestExtension> implements ExtensionIdProvider {
-    public final static TestExtensionId instance = new TestExtensionId();
+    public final static TestExtensionId TestExtensionProvider = new TestExtensionId();
 
     public ExtensionId<TestExtension> lookup() {
-      return instance;
+      return TestExtensionId.TestExtensionProvider;
     }
 
     public TestExtension createExtension(ActorSystemImpl i) {
@@ -64,8 +64,8 @@ public class JavaExtension {
 
   @Test
   public void mustBeAccessible() {
-    assertSame(system.extension(TestExtensionId.instance).system, system);
-    assertSame(TestExtensionId.instance.apply(system).system, system);
+    assertSame(system.extension(TestExtensionId.TestExtensionProvider).system, system);
+    assertSame(TestExtensionId.TestExtensionProvider.apply(system).system, system);
   }
 
   @Test

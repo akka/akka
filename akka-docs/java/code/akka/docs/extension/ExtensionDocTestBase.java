@@ -30,14 +30,14 @@ public class ExtensionDocTestBase {
   //#extensionid
   public static class CountExtension extends AbstractExtensionId<CountExtensionImpl> implements ExtensionIdProvider {
     //This will be the identifier of our CountExtension
-    public final static CountExtension instance = new CountExtension();
+    public final static CountExtension CountExtensionProvider = new CountExtension();
 
     //The lookup method is required by ExtensionIdProvider,
     // so we return ourselves here, this allows us
     // to configure our extension to be loaded when
     // the ActorSystem starts up
     public CountExtension lookup() {
-      return CountExtension.instance; //The public static final
+      return CountExtension.CountExtensionProvider; //The public static final
     }
 
     //This method will be called by Akka
@@ -52,7 +52,8 @@ public class ExtensionDocTestBase {
   //#extension-usage-actor
   public static class MyActor extends UntypedActor {
     public void onReceive(Object msg) {
-      CountExtension.instance.get(getContext().system()).increment();
+      // typically you would use static import of CountExtension.CountExtensionProvider field
+      CountExtension.CountExtensionProvider.get(getContext().system()).increment();
     }
   }
 
@@ -63,7 +64,8 @@ public class ExtensionDocTestBase {
     final ActorSystem system = null;
     try {
       //#extension-usage
-      CountExtension.instance.get(system).increment();
+      // typically you would use static import of CountExtension.CountExtensionProvider field
+      CountExtension.CountExtensionProvider.get(system).increment();
       //#extension-usage
     } catch (Exception e) {
       //do nothing
