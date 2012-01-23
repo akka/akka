@@ -395,7 +395,7 @@ private[akka] class ActorCell(
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
-      props.faultHandler.handleSupervisorRestarted(cause, self, children)
+      actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
       // TODO catching all and continue isn't good for OOME, ticket #1418
       case e ⇒ try {
@@ -491,11 +491,11 @@ private[akka] class ActorCell(
             // make sure that InterruptedException does not leave this thread
             if (e.isInstanceOf[InterruptedException]) {
               val ex = ActorInterruptedException(e)
-              props.faultHandler.handleSupervisorFailing(self, children)
+              actor.supervisorStrategy.handleSupervisorFailing(self, children)
               parent.tell(Failed(ex), self)
               throw e //Re-throw InterruptedExceptions as expected
             } else {
-              props.faultHandler.handleSupervisorFailing(self, children)
+              actor.supervisorStrategy.handleSupervisorFailing(self, children)
               parent.tell(Failed(e), self)
             }
         } finally {
@@ -569,7 +569,7 @@ private[akka] class ActorCell(
   }
 
   final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.path.name) match {
-    case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
+    case Some(stats) if stats.child == child ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
     case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
     case None                                ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
   }
@@ -577,7 +577,7 @@ private[akka] class ActorCell(
   final def handleChildTerminated(child: ActorRef): Unit = {
     if (childrenRefs contains child.path.name) {
       childrenRefs -= child.path.name
-      props.faultHandler.handleChildTerminated(this, child, children)
+      actor.supervisorStrategy.handleChildTerminated(this, child, children)
       if (stopping && childrenRefs.isEmpty) doTerminate()
     } else system.locker ! ChildTerminated(child)
   }
