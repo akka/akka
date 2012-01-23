@@ -46,6 +46,14 @@ Auxiliary logging options
 Akka has a couple of configuration options for very low level debugging, that makes most sense in
 for developers and not for operations.
 
+You almost definitely need to have logging set to DEBUG to use any of the options below:
+
+.. code-block:: ruby
+
+    akka {
+      loglevel = DEBUG
+    }
+
 This config option is very good if you want to know what config settings are loaded by Akka:
 
 .. code-block:: ruby
@@ -127,6 +135,8 @@ If you want to see all messages that are received through remoting at DEBUG log 
         log-received-messages = on
       }
     }
+
+Also see the logging options for TestKit: :ref:`actor.logging`.
 
 
 Event Handler
