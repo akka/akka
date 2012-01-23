@@ -20,11 +20,11 @@ be found here:
 Release Versions
 ================
 
-1.3-SNAPSHOT
+1.3-RC7
 ---
 
-- Akka 1.3-SNAPSHOT - http://akka.io/docs/akka/1.3-SNAPSHOT/ (or in `PDF format <http://akka.io/docs/akka/1.3-SNAPSHOT/Akka.pdf>`__)
-- Akka Modules 1.3-SNAPSHOT - http://akka.io/docs/akka-modules/1.3-SNAPSHOT/ (or in `PDF format <http://akka.io/docs/akka-modules/1.3-SNAPSHOT/AkkaModules.pdf>`__)
+- Akka 1.3-RC7 - http://akka.io/docs/akka/1.3-RC7/ (or in `PDF format <http://akka.io/docs/akka/1.3-RC7/Akka.pdf>`__)
+- Akka Modules 1.3-RC7 - http://akka.io/docs/akka-modules/1.3-RC7/ (or in `PDF format <http://akka.io/docs/akka-modules/1.3-RC7/AkkaModules.pdf>`__)
 
 1.1
 ---

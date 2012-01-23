@@ -41,14 +41,14 @@ Downloading and installing Akka
 
 To build and run the tutorial sample from the command line, you have to download Akka. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Let's get the ``akka-1.3-SNAPSHOT`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
+Let's get the ``akka-1.3-RC7`` distribution of Akka core (not Akka Modules) from `http://akka.io/downloads <http://akka.io/downloads/>`_. Once you have downloaded the distribution unzip it in the folder you would like to have Akka installed in, in my case I choose to install it in ``/Users/jboner/tools/``, simply by unzipping it to this directory.
 
 You need to do one more thing in order to install Akka properly: set the ``AKKA_HOME`` environment variable to the root of the distribution. In my case I'm opening up a shell, navigating down to the distribution, and setting the ``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-1.3-SNAPSHOT
+    $ cd /Users/jboner/tools/akka-1.3-RC7
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-1.3-SNAPSHOT
+    /Users/jboner/tools/akka-1.3-RC7
 
 The distribution looks like this::
 
@@ -68,27 +68,27 @@ The distribution looks like this::
 - In the ``scripts`` directory we have scripts for running Akka.
 - Finally ``scala-library.jar`` is the JAR for the latest Scala distribution that Akka depends on.
 
-The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.3-SNAPSHOT.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
+The only JAR we will need for this tutorial (apart from the ``scala-library.jar`` JAR) is the ``akka-actor-1.3-RC7.jar`` JAR in the ``dist`` directory. This is a self-contained JAR with zero dependencies and contains everything we need to write a system using Actors.
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.3-SNAPSHOT.jar`` -- Standard Actors
-- ``akka-typed-actor-1.3-SNAPSHOT.jar`` -- Typed Actors
-- ``akka-remote-1.3-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-stm-1.3-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.3-SNAPSHOT.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.3-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
-- ``akka-testkit-1.3-SNAPSHOT.jar`` -- Toolkit for testing Actors
+- ``akka-actor-1.3-RC7.jar`` -- Standard Actors
+- ``akka-typed-actor-1.3-RC7.jar`` -- Typed Actors
+- ``akka-remote-1.3-RC7.jar`` -- Remote Actors
+- ``akka-stm-1.3-RC7.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.3-RC7.jar`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.3-RC7.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.3-RC7.jar`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
 
-- ``akka-kernel-1.3-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.3-SNAPSHOT.jar`` -- AMQP integration
-- ``akka-camel-1.3-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.3-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.3-SNAPSHOT.jar`` -- Support for the Scalaz library
-- ``akka-spring-1.3-SNAPSHOT.jar`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.3-SNAPSHOT.jar`` -- OSGi support
+- ``akka-kernel-1.3-RC7.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.3-RC7.jar`` -- AMQP integration
+- ``akka-camel-1.3-RC7.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.3-RC7.jar`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.3-RC7.jar`` -- Support for the Scalaz library
+- ``akka-spring-1.3-RC7.jar`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.3-RC7.jar`` -- OSGi support
 
 Downloading and installing Scala
 --------------------------------
@@ -144,7 +144,7 @@ To use the plugin, first add a plugin definition to your SBT project by creating
 
     class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
       val akkaRepo   = "Akka Repo" at "http://akka.io/repository"
-      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.3-SNAPSHOT"
+      val akkaPlugin = "se.scalablesolutions.akka" % "akka-sbt-plugin" % "1.3-RC7"
     }
 
 Now we need to create a project definition using our Akka SBT plugin. We do that by creating a ``project/build/Project.scala`` file containing::
@@ -168,7 +168,7 @@ So, now we are all set. Just one final thing to do; make SBT download the depend
 
     > update
 
-SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.3-SNAPSHOT.jar``. SBT downloads that as well.
+SBT itself needs a whole bunch of dependencies but our project will only need one; ``akka-actor-1.3-RC7.jar``. SBT downloads that as well.
 
 Start writing the code
 ----------------------
@@ -274,13 +274,13 @@ Run it as a command line application
 
 If you have not typed in (or copied) the code for the tutorial as ``$AKKA_HOME/tutorial/Pi.scala`` then now is the time. When that's done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
 
-First we need to compile the source file. That is done with Scala's compiler ``scalac``. Our application depends on the ``akka-actor-1.3-SNAPSHOT.jar`` JAR file, so let's add that to the compiler classpath when we compile the source::
+First we need to compile the source file. That is done with Scala's compiler ``scalac``. Our application depends on the ``akka-actor-1.3-RC7.jar`` JAR file, so let's add that to the compiler classpath when we compile the source::
 
-    $ scalac -cp dist/akka-actor-1.3-SNAPSHOT.jar tutorial/Pi.scala
+    $ scalac -cp dist/akka-actor-1.3-RC7.jar tutorial/Pi.scala
 
-When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.3-SNAPSHOT.jar`` JAR file to the classpath, and this time we also need to add the Scala runtime library ``scala-library.jar`` and the classes we compiled ourselves::
+When we have compiled the source file we are ready to run the application. This is done with ``java`` but yet again we need to add the ``akka-actor-1.3-RC7.jar`` JAR file to the classpath, and this time we also need to add the Scala runtime library ``scala-library.jar`` and the classes we compiled ourselves::
 
-    $ java -cp dist/akka-actor-1.3-SNAPSHOT.jar:scala-library.jar:tutorial akka.tutorial.scala.first.Pi
+    $ java -cp dist/akka-actor-1.3-RC7.jar:scala-library.jar:tutorial akka.tutorial.scala.first.Pi
     AKKA_HOME is defined as [/Users/jboner/src/akka-stuff/akka-core], loading config from \
       [/Users/jboner/src/akka-stuff/akka-core/config/akka.conf].
 
