@@ -195,6 +195,17 @@ object AkkaBuild extends Build {
     )
   )
 
+
+  lazy val zeroMQ = Project(
+    id = "akka-zeromq",
+    base = file("akka-zeromq"),
+    dependencies = Seq(actor, testkit % "test;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.zeroMQ
+    )
+  )
+
+
   // lazy val spring = Project(
   //   id = "akka-spring",
   //   base = file("akka-spring"),
@@ -434,6 +445,8 @@ object Dependencies {
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit)
+
+  val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
 }
 
 object Dependency {
@@ -489,6 +502,7 @@ object Dependency {
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
 
   // Provided
 
