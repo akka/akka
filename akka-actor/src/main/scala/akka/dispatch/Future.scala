@@ -272,7 +272,7 @@ object Future {
    * in blocking calls after the call to this method, giving the system a
    * chance to spawn new threads, reuse old threads or otherwise, to prevent
    * starvation and/or unfairness.
-   * 
+   *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
    * executed in the current thread. This is needed if the current task may
