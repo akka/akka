@@ -5,7 +5,7 @@ package akka.actor
 
 import akka.dispatch.{ Future, ExecutionContext }
 import akka.util.ByteString
-import java.net.InetSocketAddress
+import java.net.{ SocketAddress, InetSocketAddress }
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{
@@ -132,7 +132,9 @@ object IO {
    *
    * Normally sent using IOManager.listen()
    */
-  case class Listen(server: ServerHandle, address: InetSocketAddress) extends IOMessage
+  case class Listen(server: ServerHandle, address: SocketAddress) extends IOMessage
+
+  case class Listening(server: ServerHandle, address: SocketAddress) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that a new connection has been
@@ -153,7 +155,7 @@ object IO {
    *
    * Normally sent using IOManager.connect()
    */
-  case class Connect(socket: SocketHandle, address: InetSocketAddress) extends IOMessage
+  case class Connect(socket: SocketHandle, address: SocketAddress) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that the SocketChannel has
@@ -162,7 +164,7 @@ object IO {
    * No action is required by the receiving [[akka.actor.Actor]], although
    * the message still needs to be in it's receive method.
    */
-  case class Connected(socket: SocketHandle) extends IOMessage
+  case class Connected(socket: SocketHandle, address: SocketAddress) extends IOMessage
 
   /**
    * Message to an [[akka.actor.IOManager]] to close the Channel.
@@ -687,7 +689,7 @@ final class IOManager private (system: ActorSystem) extends Extension {
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(address: InetSocketAddress)(implicit owner: ActorRef): IO.ServerHandle = {
+  def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
     actor ! IO.Listen(server, address)
     server
@@ -715,7 +717,7 @@ final class IOManager private (system: ActorSystem) extends Extension {
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
-  def connect(address: InetSocketAddress)(implicit owner: ActorRef): IO.SocketHandle = {
+  def connect(address: SocketAddress)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address)
     socket
@@ -834,6 +836,7 @@ final class IOManagerActor extends Actor {
       channel.socket bind (address, 1000) // TODO: make backlog configurable
       channels update (server, channel)
       channel register (selector, OP_ACCEPT, server)
+      server.owner ! IO.Listening(server, channel.getLocalAddress())
       run()
 
     case IO.Connect(socket, address) ⇒
@@ -948,7 +951,7 @@ final class IOManagerActor extends Actor {
   private def connect(socket: IO.SocketHandle, channel: SocketChannel) {
     if (channel.finishConnect) {
       removeOps(socket, OP_CONNECT)
-      socket.owner ! IO.Connected(socket)
+      socket.owner ! IO.Connected(socket, channel.getLocalAddress())
     } else {
       cleanup(socket, None) // TODO: Add a cause
     }

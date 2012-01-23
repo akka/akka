@@ -9,6 +9,7 @@ import akka.util.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.{ Await, Future, Promise, ExecutionContext, MessageDispatcher }
+import java.net.{ SocketAddress, InetSocketAddress }
 
 object IOActorSpec {
 
@@ -58,7 +59,7 @@ object IOActorSpec {
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
-      case IO.Connected(`socket`) ⇒
+      case IO.Connected(`socket`, _) ⇒
 
       case IO.Closed(`socket`, cause) ⇒
         state(IO EOF cause)
@@ -89,7 +90,7 @@ object IOActorSpec {
   }
 
   // Basic Redis-style protocol
-  class KVStore(host: String, port: Int) extends Actor {
+  class KVStore(addressPromise: Promise[SocketAddress]) extends Actor {
 
     import context.system
 
@@ -97,11 +98,14 @@ object IOActorSpec {
 
     var kvs: Map[String, String] = Map.empty
 
-    val server = IOManager(context.system) listen (host, port)
+    val server = IOManager(context.system) listen (new InetSocketAddress("localhost", 0))
 
     val EOL = ByteString("\r\n")
 
     def receive = {
+
+      case IO.Listening(`server`, address) ⇒
+        addressPromise success address
 
       case IO.NewClient(`server`) ⇒
         val socket = server.accept()
@@ -157,9 +161,9 @@ object IOActorSpec {
     }
   }
 
-  class KVClient(host: String, port: Int) extends Actor {
+  class KVClient(address: SocketAddress) extends Actor {
 
-    val socket = IOManager(context.system) connect (host, port)
+    val socket = IOManager(context.system) connect (address)
 
     val state = IO.IterateeRef.sync()
 
@@ -178,7 +182,7 @@ object IOActorSpec {
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
-      case IO.Connected(`socket`) ⇒
+      case IO.Connected(`socket`, _) ⇒
 
       case IO.Closed(`socket`, cause) ⇒
         state(IO EOF cause)
@@ -296,9 +300,11 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     "run key-value store" in {
       filterException[java.net.ConnectException] {
-        val server = system.actorOf(Props(new KVStore("localhost", 8067)))
-        val client1 = system.actorOf(Props(new KVClient("localhost", 8067)))
-        val client2 = system.actorOf(Props(new KVClient("localhost", 8067)))
+        val addressPromise = Promise[SocketAddress]()
+        val server = system.actorOf(Props(new KVStore(addressPromise)))
+        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val client1 = system.actorOf(Props(new KVClient(address)))
+        val client2 = system.actorOf(Props(new KVClient(address)))
         val f1 = retry() { client1 ? KVSet("hello", "World") }
         val f2 = retry() { client1 ? KVSet("test", "No one will read me") }
         val f3 = f1 flatMap { _ ⇒ retry() { client1 ? KVGet("hello") } }
