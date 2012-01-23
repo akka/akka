@@ -236,7 +236,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
    * @param filter determines which exceptions should be retried
    * @return a future containing the result or the last exception before a limit was hit.
    */
-  def retry[T](count: Option[Int] = None, timeout: Option[Duration] = None, delay: Option[Duration] = None, filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
+  def retry[T](count: Option[Int] = None, timeout: Option[Duration] = None, delay: Option[Duration] = Some(100 millis), filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
 
     val promise = Promise[T]()(executor)
 
@@ -269,29 +269,34 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
   "an IO Actor" must {
     "run echo server" in {
       filterException[java.net.ConnectException] {
+        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
         val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064)))
         val f1 = retry() { client ? ByteString("Hello World!1") }
         val f2 = retry() { client ? ByteString("Hello World!2") }
         val f3 = retry() { client ? ByteString("Hello World!3") }
-        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
         Await.result(f1, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!1"))
         Await.result(f2, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!2"))
         Await.result(f3, TestLatch.DefaultTimeout) must equal(ByteString("Hello World!3"))
+        system.stop(client)
+        system.stop(server)
       }
     }
 
     "run echo server under high load" in {
       filterException[java.net.ConnectException] {
-        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
-        val list = List.range(0, 1000)
-        val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
         val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
-        assert(Await.result(f, TestLatch.DefaultTimeout).size === 1000)
+        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
+        val list = List.range(0, 100)
+        val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
+        assert(Await.result(f, TestLatch.DefaultTimeout).size === 100)
+        system.stop(client)
+        system.stop(server)
       }
     }
 
     "run key-value store" in {
       filterException[java.net.ConnectException] {
+        val server = system.actorOf(Props(new KVStore("localhost", 8067)))
         val client1 = system.actorOf(Props(new KVClient("localhost", 8067)))
         val client2 = system.actorOf(Props(new KVClient("localhost", 8067)))
         val f1 = retry() { client1 ? KVSet("hello", "World") }
@@ -300,13 +305,15 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
         val f4 = f2 flatMap { _ ⇒ retry() { client2 ? KVSet("test", "I'm a test!") } }
         val f5 = f4 flatMap { _ ⇒ retry() { client1 ? KVGet("test") } }
         val f6 = Future.sequence(List(f3, f5)) flatMap { _ ⇒ retry() { client2 ? KVGetAll } }
-        val server = system.actorOf(Props(new KVStore("localhost", 8067)))
         Await.result(f1, TestLatch.DefaultTimeout) must equal("OK")
         Await.result(f2, TestLatch.DefaultTimeout) must equal("OK")
         Await.result(f3, TestLatch.DefaultTimeout) must equal(Some("World"))
         Await.result(f4, TestLatch.DefaultTimeout) must equal("OK")
         Await.result(f5, TestLatch.DefaultTimeout) must equal(Some("I'm a test!"))
         Await.result(f6, TestLatch.DefaultTimeout) must equal(Map("hello" -> "World", "test" -> "I'm a test!"))
+        system.stop(client1)
+        system.stop(client2)
+        system.stop(server)
       }
     }
   }
