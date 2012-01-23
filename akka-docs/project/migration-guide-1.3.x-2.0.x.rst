@@ -207,6 +207,9 @@ reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
 
+Since there is no good library default value for the ask-timeout, specification
+of a timeout is required for all usages as shown below.
+
 Also, since the ``ask`` feature is coupling futures and actors, it is no longer
 offered on the :class:`ActorRef` itself, but instead as a use pattern to be
 imported. While Scala’s implicit conversions enable transparent replacement,
@@ -221,15 +224,17 @@ v2.0 (Scala)::
 
   import akka.pattern.ask
 
-  actorRef ? message
-  ask(actorRef, message) // will use `akka.actor.timeout` or implicit Timeout
-  ask(actorRef, message)(timeout)
+  implicit val timeout: Timeout = ...
+  actorRef ? message              // uses implicit timeout
+  actorRef ask message            // uses implicit timeout
+  actorRef.ask(message)(timeout)  // uses explicit timeout
+  ask(actorRef, message)          // uses implicit timeout
+  ask(actorRef, message)(timeout) // uses explicit timeout
 
 v2.0 (Java)::
 
   import akka.pattern.Patterns;
 
-  Patterns.ask(actorRef, message) // will use `akka.actor.timeout`
   Patterns.ask(actorRef, message, timeout)
 
 Documentation:
@@ -358,7 +363,7 @@ v2.0::
   import akka.event.Logging
 
   val log = Logging(context.system, this) // will include system name in message source
-  val log = Logging(system.eventStream, this) // will not include system name
+  val log = Logging(system.eventStream, getClass.getName) // will not include system name
   log.error(exception, message)
   log.warning(message)
   log.info(message)

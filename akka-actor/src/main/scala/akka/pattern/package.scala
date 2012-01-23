@@ -87,20 +87,19 @@ package object pattern {
    *
    * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
-  def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout = null): Future[Any] = actorRef match {
+  def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef.tell(message)
       Promise.failed(new AskTimeoutException("sending to terminated ref breaks promises"))(ref.provider.dispatcher)
     case ref: InternalActorRef ⇒
       val provider = ref.provider
-      (if (timeout == null) provider.settings.ActorTimeout else timeout) match {
-        case t if t.duration.length <= 0 ⇒
-          actorRef.tell(message)
-          Promise.failed(new AskTimeoutException("not asking with negative timeout"))(provider.dispatcher)
-        case t ⇒
-          val a = AskSupport.createAsker(provider, t)
-          actorRef.tell(message, a)
-          a.result
+      if (timeout.duration.length <= 0) {
+        actorRef.tell(message)
+        Promise.failed(new AskTimeoutException("not asking with negative timeout"))(provider.dispatcher)
+      } else {
+        val a = AskSupport.createAsker(provider, timeout)
+        actorRef.tell(message, a)
+        a.result
       }
     case _ ⇒ throw new IllegalArgumentException("incompatible ActorRef " + actorRef)
   }

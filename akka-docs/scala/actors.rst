@@ -389,9 +389,6 @@ taken from one of the following locations in order of precedence:
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-implicit-timeout
 
-3. actor system’s default value from ``akka.actor.timeout`` setting for
-   :meth:`ask` methods
-
 See :ref:`futures-scala` for more information on how to await or query a
 future.
 
