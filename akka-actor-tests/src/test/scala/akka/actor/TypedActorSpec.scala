@@ -300,7 +300,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = system.actorOf(Props(new Actor {
           override val supervisorStrategy = OneForOneStrategy {
-            case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
+            case e: IllegalStateException if e.getMessage == "expected" ⇒ SupervisorStrategy.Resume
           }
           def receive = {
             case p: TypedProps[_] ⇒ context.sender ! TypedActor(context).typedActorOf(p)

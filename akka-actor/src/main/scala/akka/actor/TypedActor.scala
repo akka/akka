@@ -218,9 +218,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       TypedActor.currentContext set null
     }
 
-    override def supervisorStrategy: FaultHandlingStrategy = me match {
-      case l: SupervisorStrategy ⇒ l.supervisorStrategy
-      case _                     ⇒ super.supervisorStrategy
+    override def supervisorStrategy(): SupervisorStrategy = me match {
+      case l: Supervisor ⇒ l.supervisorStrategy
+      case _             ⇒ super.supervisorStrategy
     }
 
     override def preStart(): Unit = me match {
@@ -283,12 +283,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Mix this into your TypedActor to be able to define supervisor strategy
    */
-  trait SupervisorStrategy {
+  trait Supervisor {
     /**
      * User overridable definition the strategy to use for supervising
      * child actors.
      */
-    def supervisorStrategy: FaultHandlingStrategy = FaultHandlingStrategy.defaultFaultHandler
+    def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
   }
 
   /**

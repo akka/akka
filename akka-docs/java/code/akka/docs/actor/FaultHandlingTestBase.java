@@ -6,8 +6,8 @@ package akka.docs.actor;
 //#testkit
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.FaultHandlingStrategy;
-import static akka.actor.FaultHandlingStrategy.*;
+import akka.actor.SupervisorStrategy;
+import static akka.actor.SupervisorStrategy.*;
 import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
@@ -38,7 +38,7 @@ public class FaultHandlingTestBase {
   static public class Supervisor extends UntypedActor {
 
     //#strategy
-    private static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+    private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
       @Override
       public Action apply(Throwable t) {
         if (t instanceof ArithmeticException) {
@@ -54,7 +54,7 @@ public class FaultHandlingTestBase {
     }, 10, 60000);
 
     @Override
-    public FaultHandlingStrategy supervisorStrategy() {
+    public SupervisorStrategy supervisorStrategy() {
       return strategy;
     }
 
@@ -75,7 +75,7 @@ public class FaultHandlingTestBase {
   static public class Supervisor2 extends UntypedActor {
 
     //#strategy2
-    private static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+    private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
       @Override
       public Action apply(Throwable t) {
         if (t instanceof ArithmeticException) {
@@ -91,7 +91,7 @@ public class FaultHandlingTestBase {
     }, 10, 60000);
 
     @Override
-    public FaultHandlingStrategy supervisorStrategy() {
+    public SupervisorStrategy supervisorStrategy() {
       return strategy;
     }
 
@@ -147,7 +147,7 @@ public class FaultHandlingTestBase {
   }
 
   @Test
-  public void mustEmployFaultHandler() {
+  public void mustEmploySupervisorStrategy() {
     // code here
     //#testkit
     EventFilter ex1 = (EventFilter) new ErrorFilter(ArithmeticException.class);

@@ -44,7 +44,7 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
   }
 }
 
-object FaultHandlingStrategy {
+object SupervisorStrategy {
   sealed trait Action
 
   /**
@@ -95,7 +95,7 @@ object FaultHandlingStrategy {
    */
   def escalate = Escalate
 
-  final val defaultFaultHandler: FaultHandlingStrategy = {
+  final val defaultStrategy: SupervisorStrategy = {
     def defaultDecider: Decider = {
       case _: ActorInitializationException ⇒ Stop
       case _: ActorKilledException         ⇒ Stop
@@ -158,9 +158,9 @@ object FaultHandlingStrategy {
     }
 }
 
-abstract class FaultHandlingStrategy {
+abstract class SupervisorStrategy {
 
-  import FaultHandlingStrategy._
+  import SupervisorStrategy._
 
   def decider: Decider
 
@@ -200,12 +200,12 @@ abstract class FaultHandlingStrategy {
 
 object AllForOneStrategy {
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
-    new AllForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit),
+    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): AllForOneStrategy =
-    new AllForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int]): AllForOneStrategy =
-    new AllForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit), maxNrOfRetries, None)
+    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, None)
 }
 
 /**
@@ -214,22 +214,22 @@ object AllForOneStrategy {
  * maxNrOfRetries = the number of times an actor is allowed to be restarted
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
-case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
+case class AllForOneStrategy(decider: SupervisorStrategy.Decider,
                              maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+                             withinTimeRange: Option[Int] = None) extends SupervisorStrategy {
 
-  def this(decider: FaultHandlingStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(decider),
+  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(SupervisorStrategy.makeDecider(decider),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(trapExit),
+    this(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(trapExit),
+    this(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
@@ -257,12 +257,12 @@ case class AllForOneStrategy(decider: FaultHandlingStrategy.Decider,
 
 object OneForOneStrategy {
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
-    new OneForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit),
+    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): OneForOneStrategy =
-    new OneForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
   def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int]): OneForOneStrategy =
-    new OneForOneStrategy(FaultHandlingStrategy.makeDecider(trapExit), maxNrOfRetries, None)
+    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, None)
 }
 
 /**
@@ -271,22 +271,22 @@ object OneForOneStrategy {
  * maxNrOfRetries = the number of times an actor is allowed to be restarted
  * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
  */
-case class OneForOneStrategy(decider: FaultHandlingStrategy.Decider,
+case class OneForOneStrategy(decider: SupervisorStrategy.Decider,
                              maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends FaultHandlingStrategy {
+                             withinTimeRange: Option[Int] = None) extends SupervisorStrategy {
 
-  def this(decider: FaultHandlingStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(decider),
+  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
+    this(SupervisorStrategy.makeDecider(decider),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(trapExit),
+    this(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 
   def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(FaultHandlingStrategy.makeDecider(trapExit),
+    this(SupervisorStrategy.makeDecider(trapExit),
       if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
       if (withinTimeRange < 0) None else Some(withinTimeRange))
 

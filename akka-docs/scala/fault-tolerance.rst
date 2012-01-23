@@ -1,7 +1,7 @@
 .. _fault-tolerance-scala:
 
-Fault Handling Strategies (Scala)
-=================================
+Fault Tolerance (Scala)
+=======================
 
 .. sidebar:: Contents
 
@@ -12,8 +12,8 @@ children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the
 actor system’s structure.
 
-Creating a Fault Handling Strategy
-----------------------------------
+Creating a Supervisor Strategy
+------------------------------
 
 For the sake of demonstration let us consider the following strategy:
 

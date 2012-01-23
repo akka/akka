@@ -16,7 +16,7 @@ object SupervisorHierarchySpec {
    * For testing Supervisor behavior, normally you don't supply the strategy
    * from the outside like this.
    */
-  class CountDownActor(countDown: CountDownLatch, override val supervisorStrategy: FaultHandlingStrategy) extends Actor {
+  class CountDownActor(countDown: CountDownLatch, override val supervisorStrategy: SupervisorStrategy) extends Actor {
 
     protected def receive = {
       case p: Props ⇒ sender ! context.actorOf(p)
@@ -43,7 +43,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
       val managerProps = Props(new CountDownActor(countDown, AllForOneStrategy(List(), None, None)))
       val manager = Await.result((boss ? managerProps).mapTo[ActorRef], timeout.duration)
 
-      val workerProps = Props(new CountDownActor(countDown, FaultHandlingStrategy.defaultFaultHandler))
+      val workerProps = Props(new CountDownActor(countDown, SupervisorStrategy.defaultStrategy))
       val workerOne, workerTwo, workerThree = Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration)
 
       filterException[ActorKilledException] {
@@ -62,7 +62,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
       val boss = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), 1, 5000)
 
-        val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages, FaultHandlingStrategy.defaultFaultHandler))))
+        val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages, SupervisorStrategy.defaultStrategy))))
 
         protected def receive = {
           case "killCrasher" ⇒ crasher ! Kill

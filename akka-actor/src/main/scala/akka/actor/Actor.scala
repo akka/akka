@@ -236,7 +236,7 @@ trait Actor {
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  def supervisorStrategy(): FaultHandlingStrategy = FaultHandlingStrategy.defaultFaultHandler
+  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.

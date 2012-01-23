@@ -19,7 +19,7 @@ object FaultHandlingDocSpec {
   class Supervisor extends Actor {
     //#strategy
     import akka.actor.OneForOneStrategy
-    import akka.actor.FaultHandlingStrategy._
+    import akka.actor.SupervisorStrategy._
 
     override val supervisorStrategy = OneForOneStrategy({
       case _: ArithmeticException      ⇒ Resume
@@ -39,7 +39,7 @@ object FaultHandlingDocSpec {
   class Supervisor2 extends Actor {
     //#strategy2
     import akka.actor.OneForOneStrategy
-    import akka.actor.FaultHandlingStrategy._
+    import akka.actor.SupervisorStrategy._
 
     override val supervisorStrategy = OneForOneStrategy({
       case _: ArithmeticException      ⇒ Resume

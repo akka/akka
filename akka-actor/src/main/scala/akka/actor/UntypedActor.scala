@@ -37,7 +37,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *      }
  *    }
  *
- *   private static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+ *   private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
  *     @Override
  *     public Action apply(Throwable t) {
  *       if (t instanceof ArithmeticException) {
@@ -53,7 +53,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *   }, 10, 60000);
  *
  *   @Override
- *   public FaultHandlingStrategy supervisorStrategy() {
+ *   public SupervisorStrategy supervisorStrategy() {
  *     return strategy;
  *    }
  *
@@ -116,7 +116,7 @@ abstract class UntypedActor extends Actor {
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  override def supervisorStrategy(): FaultHandlingStrategy = super.supervisorStrategy()
+  override def supervisorStrategy(): SupervisorStrategy = super.supervisorStrategy()
 
   /**
    * User overridable callback.
