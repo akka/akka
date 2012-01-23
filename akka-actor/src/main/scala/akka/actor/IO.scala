@@ -836,7 +836,7 @@ final class IOManagerActor extends Actor {
       channel.socket bind (address, 1000) // TODO: make backlog configurable
       channels update (server, channel)
       channel register (selector, OP_ACCEPT, server)
-      server.owner ! IO.Listening(server, channel.getLocalAddress())
+      server.owner ! IO.Listening(server, channel.socket.getLocalSocketAddress())
       run()
 
     case IO.Connect(socket, address) ⇒
@@ -951,7 +951,7 @@ final class IOManagerActor extends Actor {
   private def connect(socket: IO.SocketHandle, channel: SocketChannel) {
     if (channel.finishConnect) {
       removeOps(socket, OP_CONNECT)
-      socket.owner ! IO.Connected(socket, channel.getLocalAddress())
+      socket.owner ! IO.Connected(socket, channel.socket.getRemoteSocketAddress())
     } else {
       cleanup(socket, None) // TODO: Add a cause
     }
