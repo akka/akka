@@ -7,7 +7,10 @@ import akka.actor.ActorRef
 import akka.dispatch.Future
 import akka.util.Timeout
 
-class AskableActorRef(val actorRef: ActorRef) {
+/**
+ * Implementation detail of the “ask” pattern enrichment of ActorRef
+ */
+private[akka] final class AskableActorRef(val actorRef: ActorRef) {
 
   /**
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
@@ -29,8 +32,8 @@ class AskableActorRef(val actorRef: ActorRef) {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   val f = worker.ask(request)(timeout)
    *   flow {
+   *     val f = worker.ask(request)(timeout)
    *     EnrichedRequest(request, f())
    *   } pipeTo nextActor
    * }}}
@@ -59,8 +62,8 @@ class AskableActorRef(val actorRef: ActorRef) {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   val f = worker ? request
    *   flow {
+   *     val f = worker ? request
    *     EnrichedRequest(request, f())
    *   } pipeTo nextActor
    * }}}
@@ -69,6 +72,9 @@ class AskableActorRef(val actorRef: ActorRef) {
    */
   def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
 
+  /**
+   * This method is just there to catch 2.0-unsupported usage and print deprecation warnings for it.
+   */
   @deprecated("use ?(msg)(timeout), this method has dangerous ambiguity", "2.0-migration")
   def ?(message: Any, timeout: Timeout)(i: Int = 0): Future[Any] = this.?(message)(timeout)
 }

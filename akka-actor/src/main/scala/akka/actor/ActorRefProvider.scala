@@ -74,12 +74,12 @@ trait ActorRefProvider {
   /**
    * Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
    */
-  def registerTempActor(actorRef: InternalActorRef, path: ActorPath)
+  def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit
 
   /**
    * Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path.
    */
-  def unregisterTempActor(path: ActorPath)
+  def unregisterTempActor(path: ActorPath): Unit
 
   /**
    * Actor factory with create-only semantics: will create an actor as

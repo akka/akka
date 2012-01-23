@@ -19,9 +19,15 @@ class AskTimeoutException(message: String, cause: Throwable) extends TimeoutExce
   def this(message: String) = this(message, null: Throwable)
 }
 
+/**
+ * This object contains implementation details of the “ask” pattern.
+ */
 object AskSupport {
 
-  final class AskableActorRef(val actorRef: ActorRef) {
+  /**
+   * Implementation detail of the “ask” pattern enrichment of ActorRef
+   */
+  private[akka] final class AskableActorRef(val actorRef: ActorRef) {
 
     /**
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
@@ -43,8 +49,8 @@ object AskSupport {
      * <b>Recommended usage:</b>
      *
      * {{{
-     *   val f = worker.ask(request)(timeout)
      *   flow {
+     *     val f = worker.ask(request)(timeout)
      *     EnrichedRequest(request, f())
      *   } pipeTo nextActor
      * }}}
@@ -73,8 +79,8 @@ object AskSupport {
      * <b>Recommended usage:</b>
      *
      * {{{
-     *   val f = worker ? request
      *   flow {
+     *     val f = worker ? request
      *     EnrichedRequest(request, f())
      *   } pipeTo nextActor
      * }}}

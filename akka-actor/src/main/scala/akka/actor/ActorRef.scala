@@ -355,7 +355,7 @@ case class SerializedActorRef(path: String) {
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends InternalActorRef with LocalRef {
+private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def getParent: InternalActorRef = Nobody
 
@@ -381,7 +381,7 @@ trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
 }
 
-object MinimalActorRef {
+private[akka] object MinimalActorRef {
   def apply(_path: ActorPath, _provider: ActorRefProvider)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
     def path = _path
     def provider = _provider
@@ -392,7 +392,7 @@ object MinimalActorRef {
 
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
-object DeadLetterActorRef {
+private[akka] object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters
@@ -401,7 +401,7 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-trait DeadLetterActorRefLike extends MinimalActorRef {
+private[akka] trait DeadLetterActorRefLike extends MinimalActorRef {
 
   def eventStream: EventStream
 
@@ -427,11 +427,9 @@ trait DeadLetterActorRefLike extends MinimalActorRef {
     case d: DeadLetter ⇒ eventStream.publish(d)
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
-
-  // FIXME reimplement behavior of brokenPromise on ask
 }
 
-class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
+private[akka] class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
   @throws(classOf[java.io.ObjectStreamException])
   override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
@@ -440,7 +438,7 @@ class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRe
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
  */
-class EmptyLocalActorRef(
+private[akka] class EmptyLocalActorRef(
   val eventStream: EventStream,
   _provider: ActorRefProvider,
   _dispatcher: MessageDispatcher,
@@ -454,7 +452,10 @@ class EmptyLocalActorRef(
   }
 }
 
-class VirtualPathContainer(
+/**
+ * Internal implementation detail used for paths like “/temp”
+ */
+private[akka] class VirtualPathContainer(
   val provider: ActorRefProvider,
   val path: ActorPath,
   override val getParent: InternalActorRef,
