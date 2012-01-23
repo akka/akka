@@ -288,7 +288,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * User overridable definition the strategy to use for supervising
      * child actors.
      */
-    def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+    def supervisorStrategy(): SupervisorStrategy
   }
 
   /**
@@ -300,7 +300,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * <p/>
      * Is called when an Actor is started by invoking 'actor'.
      */
-    def preStart(): Unit = ()
+    def preStart(): Unit
   }
 
   /**
@@ -312,7 +312,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * <p/>
      * Is called when 'actor.stop()' is invoked.
      */
-    def postStop(): Unit = ()
+    def postStop(): Unit
   }
 
   /**
@@ -326,7 +326,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * up of resources before Actor is terminated.
      * By default it calls postStop()
      */
-    def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
+    def preRestart(reason: Throwable, message: Option[Any]): Unit
   }
 
   trait PostRestart {
@@ -336,7 +336,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
      * By default it calls preStart()
      */
-    def postRestart(reason: Throwable): Unit = ()
+    def postRestart(reason: Throwable): Unit
   }
 
   private[akka] class TypedActorInvocationHandler(val extension: TypedActorExtension, val actorVar: AtomVar[ActorRef], val timeout: Timeout) extends InvocationHandler {
