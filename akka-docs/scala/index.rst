@@ -25,3 +25,4 @@ Scala API
    io
    testing
    extending-akka
+   zeromq
