@@ -22,8 +22,8 @@ anything is able to run again. Therefore we provide a migration kit that
 makes it possible to do the migration changes in smaller steps.
 
 The migration kit only covers the most common usage of Akka. It is not intended
-as a final solution. The whole migration kit is deprecated and will be removed in
-Akka 2.1.
+as a final solution. The whole migration kit is marked as deprecated and will
+be removed in Akka 2.1.
 
 The migration kit is provided in separate jar files. Add the following dependency::
 
@@ -136,7 +136,8 @@ v1.3::
 
 v2.0::
 
-  system.shutdown()
+  system.shutdown() // from outside of this system
+  context.system.shutdown() // from inside any actor
 
 Documentation:
 
@@ -149,7 +150,11 @@ Identifying Actors
 In v1.3 actors have ``uuid`` and ``id`` field. In v2.0 each actor has a unique logical ``path``.
 
 The ``ActorRegistry`` has been replaced by actor paths and lookup with
-``actorFor`` in ``ActorRefProvider`` (``ActorSystem`` or ``ActorContext``).
+``actorFor`` in ``ActorRefProvider`` (``ActorSystem`` or ``ActorContext``). It
+is no longer possible to obtain references to all actors being implemented by a
+certain class (the reason being that this property is not known yet when an
+:class:`ActorRef` is created because instantiation of the actor itself is
+asynchronous).
 
 v1.3::
 
@@ -170,7 +175,9 @@ Reply to messages
 ^^^^^^^^^^^^^^^^^
 
 ``self.channel`` has been replaced with unified reply mechanism using ``sender`` (Scala)
-or ``getSender()`` (Java). This works for both tell (!) and ask (?).
+or ``getSender()`` (Java). This works for both tell (!) and ask (?). Sending to
+an actor reference never throws an exception, hence :meth:`tryTell` and
+:meth:`tryReply` are removed.
 
 v1.3::
 
@@ -199,6 +206,31 @@ determines when the actor will stop itself and hence closes the window for a
 reply to be received; it is independent of the timeout applied when awaiting
 completion of the :class:`Future`, however, the actor will complete the
 :class:`Future` with an :class:`AskTimeoutException` when it stops itself.
+
+Also, since the ``ask`` feature is coupling futures and actors, it is no longer
+offered on the :class:`ActorRef` itself, but instead as a use pattern to be
+imported. While Scala’s implicit conversions enable transparent replacement,
+Java code will have to be changed by more than just adding an import statement.
+
+v1.3::
+
+  actorRef ? message // Scala
+  actorRef.ask(message, timeout); // Java
+
+v2.0 (Scala)::
+
+  import akka.pattern.ask
+
+  actorRef ? message
+  ask(actorRef, message) // will use `akka.actor.timeout` or implicit Timeout
+  ask(actorRef, message)(timeout)
+
+v2.0 (Java)::
+
+  import akka.pattern.Patterns;
+
+  Patterns.ask(actorRef, message) // will use `akka.actor.timeout`
+  Patterns.ask(actorRef, message, timeout)
 
 Documentation:
 
@@ -325,7 +357,8 @@ v2.0::
 
   import akka.event.Logging
 
-  val log = Logging(context.system, this)
+  val log = Logging(context.system, this) // will include system name in message source
+  val log = Logging(system.eventStream, this) // will not include system name
   log.error(exception, message)
   log.warning(message)
   log.info(message)
@@ -501,17 +534,25 @@ Documentation:
 Spawn
 ^^^^^
 
-``spawn`` has been removed and can be implemented like this, if needed. Be careful to not
+``spawn`` has been removed and should be replaced by creating a :class:`Future`. Be careful to not
 access any shared mutable state closed over by the body.
 
-::
+Scala::
 
-  def spawn(body: ⇒ Unit) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) })) ! "go"
-  }
+  Future { doSomething() } // will be executed asynchronously
+
+Java::
+
+  Futures.future<String>(new Callable<String>() {
+    public String call() {
+      doSomething();
+    }
+  }, executionContext);
 
 Documentation:
 
+  * :ref:`futures-scala`
+  * :ref:`futures-java`
   * :ref:`jmm`
 
 HotSwap
@@ -521,7 +562,10 @@ In v2.0 ``become`` and ``unbecome`` metods are located in ``ActorContext``, i.e.
 
 The special ``HotSwap`` and ``RevertHotswap`` messages in v1.3 has been removed. Similar can be
 implemented with your own message and using ``context.become`` and ``context.unbecome``
-in the actor receiving the message.
+in the actor receiving the message. The rationale is that being able to replace
+any actor’s behavior generically is not a good idea because actor implementors
+would have no way to defend against that; hence the change to lay it into the
+hands of the actor itself.
 
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`

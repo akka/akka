@@ -112,13 +112,12 @@ object Patterns {
    * <b>Recommended usage example:</b>
    *
    * {{{
-   *   val f = ask(worker, request)(timeout)
-   *   flow {
-   *     EnrichedRequest(request, f())
-   *   } pipeTo nextActor
+   *   final Future<Object> f = Patterns.ask(worker, request, timeout);
+   *   // apply some transformation (i.e. enrich with request info)
+   *   final Future<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
+   *   // send it on to the next stage
+   *   Patterns.pipeTo(transformed, nextActor);
    * }}}
-   *
-   * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
   def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = akka.pattern.pipeTo(future, actorRef)
 
