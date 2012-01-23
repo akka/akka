@@ -1,8 +1,8 @@
 .. _akka-testkit:
 
-#####################
-Testing Actor Systems
-#####################
+##############################
+Testing Actor Systems (Scala)
+##############################
 
 .. toctree::
 

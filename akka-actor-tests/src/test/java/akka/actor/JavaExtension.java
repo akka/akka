@@ -16,15 +16,13 @@ import static org.junit.Assert.*;
 
 public class JavaExtension {
 
-  static class Provider implements ExtensionIdProvider {
+  static class TestExtensionId extends AbstractExtensionId<TestExtension> implements ExtensionIdProvider {
+    public final static TestExtensionId TestExtensionProvider = new TestExtensionId();
+
     public ExtensionId<TestExtension> lookup() {
-      return defaultInstance;
+      return TestExtensionId.TestExtensionProvider;
     }
-  }
 
-  public final static TestExtensionId defaultInstance = new TestExtensionId();
-
-  static class TestExtensionId extends AbstractExtensionId<TestExtension> {
     public TestExtension createExtension(ActorSystemImpl i) {
       return new TestExtension(i);
     }
@@ -37,11 +35,13 @@ public class JavaExtension {
       system = i;
     }
   }
-  
+
   static class OtherExtension implements Extension {
-    static final ExtensionKey<OtherExtension> key = new ExtensionKey<OtherExtension>(OtherExtension.class) {};
+    static final ExtensionKey<OtherExtension> key = new ExtensionKey<OtherExtension>(OtherExtension.class) {
+    };
 
     public final ActorSystemImpl system;
+
     public OtherExtension(ActorSystemImpl i) {
       system = i;
     }
@@ -51,8 +51,8 @@ public class JavaExtension {
 
   @BeforeClass
   public static void beforeAll() {
-    Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$Provider\" ]").withFallback(
-        AkkaSpec.testConf());
+    Config c = ConfigFactory.parseString("akka.extensions = [ \"akka.actor.JavaExtension$TestExtensionId\" ]")
+        .withFallback(AkkaSpec.testConf());
     system = ActorSystem.create("JavaExtension", c);
   }
 
@@ -64,10 +64,10 @@ public class JavaExtension {
 
   @Test
   public void mustBeAccessible() {
-    assertSame(system.extension(defaultInstance).system, system);
-    assertSame(defaultInstance.apply(system).system, system);
+    assertSame(system.extension(TestExtensionId.TestExtensionProvider).system, system);
+    assertSame(TestExtensionId.TestExtensionProvider.apply(system).system, system);
   }
-  
+
   @Test
   public void mustBeAdHoc() {
     assertSame(OtherExtension.key.apply(system).system, system);

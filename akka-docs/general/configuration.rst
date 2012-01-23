@@ -189,15 +189,15 @@ before or after using them to construct an actor system:
   Welcome to Scala version 2.9.1.final (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
   Type in expressions to have them evaluated.
   Type :help for more information.
-  
+
   scala> import com.typesafe.config._
   import com.typesafe.config._
-  
+
   scala> ConfigFactory.parseString("a.b=12")
   res0: com.typesafe.config.Config = Config(SimpleConfigObject({"a" : {"b" : 12}}))
-  
+
   scala> res0.root.render
-  res1: java.lang.String = 
+  res1: java.lang.String =
   {
       # String: 1
       "a" : {
@@ -217,3 +217,12 @@ and parsed by the actor system can be displayed like this:
   println(system.settings());
   // this is a shortcut for system.settings().config().root().render()
 
+
+Application specific settings
+-----------------------------
+
+The configuration can also be used for application specific settings.
+A good practice is to place those settings in an Extension, as described in:
+
+ * Scala API: :ref:`extending-akka-scala.settings`
+ * Java API: :ref:`extending-akka-java.settings`

@@ -3,16 +3,13 @@
  */
 package akka.docs.extension
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
-
-//#imports
-import akka.actor._
 import java.util.concurrent.atomic.AtomicLong
-
-//#imports
+import akka.actor.Actor
+import akka.testkit.AkkaSpec
 
 //#extension
+import akka.actor.Extension
+
 class CountExtensionImpl extends Extension {
   //Since this Extension is a shared instance
   // per ActorSystem we need to be threadsafe
@@ -24,6 +21,10 @@ class CountExtensionImpl extends Extension {
 //#extension
 
 //#extensionid
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import akka.actor.ActorSystemImpl
+
 object CountExtension
   extends ExtensionId[CountExtensionImpl]
   with ExtensionIdProvider {
@@ -39,39 +40,37 @@ object CountExtension
 }
 //#extensionid
 
-//#extension-usage-actor
-import akka.actor.Actor
+object ExtensionDocSpec {
+  //#extension-usage-actor
 
-class MyActor extends Actor {
-  def receive = {
-    case someMessage ⇒
-      CountExtension(context.system).increment()
+  class MyActor extends Actor {
+    def receive = {
+      case someMessage ⇒
+        CountExtension(context.system).increment()
+    }
   }
-}
-//#extension-usage-actor
+  //#extension-usage-actor
 
-//#extension-usage-actor-trait
-import akka.actor.Actor
+  //#extension-usage-actor-trait
 
-trait Counting { self: Actor ⇒
-  def increment() = CountExtension(context.system).increment()
-}
-class MyCounterActor extends Actor with Counting {
-  def receive = {
-    case someMessage ⇒ increment()
+  trait Counting { self: Actor ⇒
+    def increment() = CountExtension(context.system).increment()
   }
+  class MyCounterActor extends Actor with Counting {
+    def receive = {
+      case someMessage ⇒ increment()
+    }
+  }
+  //#extension-usage-actor-trait
 }
-//#extension-usage-actor-trait
 
-class ExtensionDocSpec extends WordSpec with MustMatchers {
+class ExtensionDocSpec extends AkkaSpec {
+  import ExtensionDocSpec._
 
   "demonstrate how to create an extension in Scala" in {
-    val system: ActorSystem = null
-    intercept[Exception] {
-      //#extension-usage
-      CountExtension(system).increment
-      //#extension-usage
-    }
+    //#extension-usage
+    CountExtension(system).increment
+    //#extension-usage
   }
 
 }
