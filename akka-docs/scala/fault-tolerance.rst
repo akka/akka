@@ -12,8 +12,25 @@ children, and as such each actor is given a fault handling strategy when it is
 created. This strategy cannot be changed afterwards as it is an integral part
 of the actor system’s structure.
 
+Fault Handling in Practice
+--------------------------
+
+First, let us look at a sample that illustrates one way to handle data store errors,
+which is a typical source of failure in real world applications. Of course it depends
+on the actual application what is possible to do when the data store is unavailable,
+but in this sample we use a best effort re-connect approach.
+
+Read the following source code. The inlined comments explain the different pieces of
+the fault handling and why they are added. It is also highly recommended to run this
+sample as it is easy to follow the log output to understand what is happening in runtime.
+
+.. includecode:: code/akka/docs/actor/FaultHandlingDocSample.scala#all
+
 Creating a Fault Handling Strategy
 ----------------------------------
+
+The following sections explain the fault handling mechanism and alternatives
+in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
@@ -35,8 +52,27 @@ which is a ``PartialFunction[Throwable, Action]``, and we need to help out the
 type inferencer a bit here by ascribing that type after the closing brace. This
 is the piece which maps child failure types to their corresponding actions.
 
-Practical Application
----------------------
+Default Fault Handling Strategy
+-------------------------------
+
+``Escalate`` is used if the defined strategy doesn't cover the exception that was thrown.
+
+When the fault handling strategy is not defined for an actor the following
+exceptions are handled by default::
+
+  OneForOneStrategy {
+    case _: ActorInitializationException ⇒ Stop
+    case _: ActorKilledException         ⇒ Stop
+    case _: Exception                    ⇒ Restart
+    case _                               ⇒ Escalate
+  }
+
+If the exception escalate all the way up to the root guardian it will handle it
+in the same way as the default strategy defined above.
+
+
+Test Application
+----------------
 
 The following section shows the effects of the different actions in practice,
 wherefor a test setup is needed. First off, we need a suitable supervisor:
