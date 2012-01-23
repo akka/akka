@@ -213,8 +213,8 @@ processing a message. This restart involves the hooks mentioned above:
 
 
 An actor restart replaces only the actual actor object; the contents of the
-mailbox and the hotswap stack are unaffected by the restart, so processing of
-messages will resume after the :meth:`postRestart` hook returns. The message
+mailbox is unaffected by the restart, so processing of messages will resume
+after the :meth:`postRestart` hook returns. The message
 that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
