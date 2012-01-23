@@ -26,6 +26,9 @@ class RemoteConfigSpec extends AkkaSpec("") {
       getBoolean("akka.remote.server.untrusted-mode") must equal(false)
       getInt("akka.remote.server.backlog") must equal(4096)
 
+      getBoolean("akka.remote.log-received-messages") must equal(false)
+      getBoolean("akka.remote.log-sent-messages") must equal(false)
+
       getMilliseconds("akka.remote.server.execution-pool-keepalive") must equal(60 * 1000)
 
       getInt("akka.remote.server.execution-pool-size") must equal(4)
