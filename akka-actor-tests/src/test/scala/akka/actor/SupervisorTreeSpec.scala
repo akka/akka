@@ -22,11 +22,12 @@ class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeou
       EventFilter[ActorKilledException](occurrences = 1) intercept {
         within(5 seconds) {
           val p = Props(new Actor {
+            override val supervisorStrategy = OneForOneStrategy(List(classOf[Exception]), 3, 1000)
             def receive = {
               case p: Props ⇒ sender ! context.actorOf(p)
             }
             override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.path }
-          }).withFaultHandler(OneForOneStrategy(List(classOf[Exception]), 3, 1000))
+          })
           val headActor = system.actorOf(p)
           val middleActor = Await.result((headActor ? p).mapTo[ActorRef], timeout.duration)
           val lastActor = Await.result((middleActor ? p).mapTo[ActorRef], timeout.duration)

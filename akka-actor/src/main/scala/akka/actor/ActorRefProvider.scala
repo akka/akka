@@ -334,6 +334,16 @@ class LocalActorRefProvider(
    * exceptions which might have occurred.
    */
   private class Guardian extends Actor {
+
+    override val supervisorStrategy = {
+      import akka.actor.SupervisorStrategy._
+      OneForOneStrategy {
+        case _: ActorKilledException         ⇒ Stop
+        case _: ActorInitializationException ⇒ Stop
+        case _: Exception                    ⇒ Restart
+      }
+    }
+
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
       case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e })
@@ -366,16 +376,6 @@ class LocalActorRefProvider(
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
-  private val guardianFaultHandlingStrategy = {
-    import akka.actor.FaultHandlingStrategy._
-    OneForOneStrategy {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-  private val guardianProps = Props(new Guardian).withFaultHandler(guardianFaultHandlingStrategy)
-
   /*
    * The problem is that ActorRefs need a reference to the ActorSystem to
    * provide their service. Hence they cannot be created while the
@@ -400,6 +400,8 @@ class LocalActorRefProvider(
    * or before you start your own auto-spawned actors.
    */
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
+
+  private val guardianProps = Props(new Guardian)
 
   lazy val rootGuardian: InternalActorRef =
     new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {

@@ -403,7 +403,7 @@ v2.0::
 
   context.parent
 
-*Fault handling strategy*
+*Supervisor Strategy*
 
 v1.3::
 
@@ -420,14 +420,18 @@ v1.3::
 
 v2.0::
 
-  val strategy = OneForOneStrategy({
-    case _: ArithmeticException      ⇒ Resume
-    case _: NullPointerException     ⇒ Restart
-    case _: IllegalArgumentException ⇒ Stop
-    case _: Exception                ⇒ Escalate
-  }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+  class MyActor extends Actor {
+    override val supervisorStrategy = OneForOneStrategy({
+        case _: ArithmeticException      ⇒ Resume
+        case _: NullPointerException     ⇒ Restart
+        case _: IllegalArgumentException ⇒ Stop
+        case _: Exception                ⇒ Escalate
+      }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
 
-  val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(strategy), "supervisor")
+    def receive = {
+      case x =>
+    }
+  }
 
 Documentation:
 

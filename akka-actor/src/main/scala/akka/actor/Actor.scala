@@ -141,6 +141,14 @@ object Actor {
  *
  * {{{
  * class ExampleActor extends Actor {
+ *
+ *   override val supervisorStrategy = OneForOneStrategy({
+ *     case _: ArithmeticException      ⇒ Resume
+ *     case _: NullPointerException     ⇒ Restart
+ *     case _: IllegalArgumentException ⇒ Stop
+ *     case _: Exception                ⇒ Escalate
+ *   }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+ *
  *   def receive = {
  *                                      // directly calculated reply
  *     case Request(r)               => sender ! calculate(r)
@@ -223,6 +231,12 @@ trait Actor {
    * with the actor logic.
    */
   protected def receive: Receive
+
+  /**
+   * User overridable definition the strategy to use for supervising
+   * child actors.
+   */
+  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.

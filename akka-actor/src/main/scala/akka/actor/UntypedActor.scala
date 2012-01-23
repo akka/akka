@@ -37,6 +37,26 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *      }
  *    }
  *
+ *   private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+ *     @Override
+ *     public Action apply(Throwable t) {
+ *       if (t instanceof ArithmeticException) {
+ *         return resume();
+ *       } else if (t instanceof NullPointerException) {
+ *         return restart();
+ *       } else if (t instanceof IllegalArgumentException) {
+ *         return stop();
+ *       } else {
+ *         return escalate();
+ *       }
+ *     }
+ *   }, 10, 60000);
+ *
+ *   @Override
+ *   public SupervisorStrategy supervisorStrategy() {
+ *     return strategy;
+ *    }
+ *
  *    public void onReceive(Object message) throws Exception {
  *      if (message instanceof String) {
  *        String msg = (String)message;
@@ -91,6 +111,12 @@ abstract class UntypedActor extends Actor {
    * for the reply, in which case it will be sent to the dead letter mailbox.
    */
   def getSender(): ActorRef = sender
+
+  /**
+   * User overridable definition the strategy to use for supervising
+   * child actors.
+   */
+  override def supervisorStrategy(): SupervisorStrategy = super.supervisorStrategy()
 
   /**
    * User overridable callback.
