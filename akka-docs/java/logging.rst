@@ -40,6 +40,95 @@ treatment of this case, e.g. in the SLF4J event listener which will then use
 the string instead of the class’ name for looking up the logger instance to
 use.
 
+Auxiliary logging options
+-------------------------
+
+Akka has a couple of configuration options for very low level debugging, that makes most sense in
+for developers and not for operations.
+
+This config option is very good if you want to know what config settings are loaded by Akka:
+
+.. code-block:: ruby
+
+    akka {
+      # Log the complete configuration at INFO level when the actor system is started.
+      # This is useful when you are uncertain of what configuration is used.
+      logConfigOnStart = off
+    }
+
+If you want very detailed logging of all automatically received messages that are processed
+by Actors:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
+        autoreceive = off
+      }
+    }
+
+If you want very detailed logging of all lifecycle changes of Actors (restarts, deaths etc):
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of actor lifecycle changes
+        lifecycle = off
+      }
+    }
+
+If you want very detailed logging of all events, transitions and timers of FSM Actors that extend LoggingFSM:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of all LoggingFSMs for events, transitions and timers
+        fsm = off
+      }
+    }
+
+If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.eventStream:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of subscription changes on the eventStream
+        event-stream = off
+      }
+    }
+
+Auxiliary remote logging options
+--------------------------------
+
+If you want to see all messages that are sent through remoting at DEBUG log level:
+(This is logged as they are sent by the transport layer, not by the Actor)
+
+.. code-block:: ruby
+
+    akka {
+      remote {
+        # If this is "on", Akka will log all outbound messages at DEBUG level, if off then they are not logged
+        log-sent-messages = off
+      }
+    }
+
+If you want to see all messages that are received through remoting at DEBUG log level:
+(This is logged as they are received by the transport layer, not by any Actor)
+
+.. code-block:: ruby
+
+    akka {
+      remote {
+        # If this is "on", Akka will log all inbound messages at DEBUG level, if off then they are not logged
+        log-received-messages = off
+      }
+    }
+
+
 Event Handler
 =============
 
