@@ -95,6 +95,16 @@ object FaultHandlingStrategy {
    */
   def escalate = Escalate
 
+  final val defaultFaultHandler: FaultHandlingStrategy = {
+    def defaultDecider: Decider = {
+      case _: ActorInitializationException ⇒ Stop
+      case _: ActorKilledException         ⇒ Stop
+      case _: Exception                    ⇒ Restart
+      case _                               ⇒ Escalate
+    }
+    OneForOneStrategy(defaultDecider, None, None)
+  }
+
   type Decider = PartialFunction[Throwable, Action]
   type JDecider = akka.japi.Function[Throwable, Action]
   type CauseAction = (Class[_ <: Throwable], Action)

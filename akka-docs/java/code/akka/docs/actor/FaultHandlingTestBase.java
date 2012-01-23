@@ -36,6 +36,30 @@ public class FaultHandlingTestBase {
   //#testkit
   //#supervisor
   static public class Supervisor extends UntypedActor {
+
+    //#strategy
+    private static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+      @Override
+      public Action apply(Throwable t) {
+        if (t instanceof ArithmeticException) {
+          return resume();
+        } else if (t instanceof NullPointerException) {
+          return restart();
+        } else if (t instanceof IllegalArgumentException) {
+          return stop();
+        } else {
+          return escalate();
+        }
+      }
+    }, 10, 60000);
+
+    @Override
+    public FaultHandlingStrategy supervisorStrategy() {
+      return strategy;
+    }
+
+    //#strategy
+
     public void onReceive(Object o) {
       if (o instanceof Props) {
         getSender().tell(getContext().actorOf((Props) o));
@@ -44,10 +68,35 @@ public class FaultHandlingTestBase {
       }
     }
   }
+
   //#supervisor
-  
+
   //#supervisor2
   static public class Supervisor2 extends UntypedActor {
+
+    //#strategy2
+    private static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
+      @Override
+      public Action apply(Throwable t) {
+        if (t instanceof ArithmeticException) {
+          return resume();
+        } else if (t instanceof NullPointerException) {
+          return restart();
+        } else if (t instanceof IllegalArgumentException) {
+          return stop();
+        } else {
+          return escalate();
+        }
+      }
+    }, 10, 60000);
+
+    @Override
+    public FaultHandlingStrategy supervisorStrategy() {
+      return strategy;
+    }
+
+    //#strategy2
+
     public void onReceive(Object o) {
       if (o instanceof Props) {
         getSender().tell(getContext().actorOf((Props) o));
@@ -55,18 +104,19 @@ public class FaultHandlingTestBase {
         unhandled(o);
       }
     }
-    
+
     @Override
     public void preRestart(Throwable cause, Option<Object> msg) {
       // do not kill all children, which is the default here
     }
   }
+
   //#supervisor2
-  
+
   //#child
   static public class Child extends UntypedActor {
     int state = 0;
-    
+
     public void onReceive(Object o) throws Exception {
       if (o instanceof Exception) {
         throw (Exception) o;
@@ -79,39 +129,23 @@ public class FaultHandlingTestBase {
       }
     }
   }
+
   //#child
-  
-  //#strategy
-  static FaultHandlingStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
-    @Override
-    public Action apply(Throwable t) {
-      if (t instanceof ArithmeticException) {
-        return resume();
-      } else if (t instanceof NullPointerException) {
-        return restart();
-      } else if (t instanceof IllegalArgumentException) {
-        return stop();
-      } else {
-        return escalate();
-      }
-    }
-  }, 10, 60000);
-  //#strategy
-  
+
   //#testkit
   static ActorSystem system;
   Duration timeout = Duration.create(5, SECONDS);
-  
+
   @BeforeClass
   public static void start() {
     system = ActorSystem.create("test", AkkaSpec.testConf());
   }
-  
+
   @AfterClass
   public static void cleanup() {
     system.shutdown();
   }
-  
+
   @Test
   public void mustEmployFaultHandler() {
     // code here
@@ -122,32 +156,32 @@ public class FaultHandlingTestBase {
     EventFilter ex4 = (EventFilter) new ErrorFilter(Exception.class);
     Seq<EventFilter> ignoreExceptions = seq(ex1, ex2, ex3, ex4);
     system.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
-    
+
     //#create
-    Props superprops = new Props(Supervisor.class).withFaultHandler(strategy);
+    Props superprops = new Props(Supervisor.class);
     ActorRef supervisor = system.actorOf(superprops, "supervisor");
     ActorRef child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
     //#create
-    
+
     //#resume
     child.tell(42);
     assert Await.result(child.ask("get", 5000), timeout).equals(42);
     child.tell(new ArithmeticException());
     assert Await.result(child.ask("get", 5000), timeout).equals(42);
     //#resume
-    
+
     //#restart
     child.tell(new NullPointerException());
     assert Await.result(child.ask("get", 5000), timeout).equals(0);
     //#restart
-    
+
     //#stop
     final TestProbe probe = new TestProbe(system);
     probe.watch(child);
     child.tell(new IllegalArgumentException());
     probe.expectMsg(new Terminated(child));
     //#stop
-    
+
     //#escalate-kill
     child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
     probe.watch(child);
@@ -155,9 +189,9 @@ public class FaultHandlingTestBase {
     child.tell(new Exception());
     probe.expectMsg(new Terminated(child));
     //#escalate-kill
-    
+
     //#escalate-restart
-    superprops = new Props(Supervisor2.class).withFaultHandler(strategy);
+    superprops = new Props(Supervisor2.class);
     supervisor = system.actorOf(superprops, "supervisor2");
     child = (ActorRef) Await.result(supervisor.ask(new Props(Child.class), 5000), timeout);
     child.tell(23);
@@ -167,10 +201,11 @@ public class FaultHandlingTestBase {
     //#escalate-restart
     //#testkit
   }
-//#testkit
+
+  //#testkit
   public <A> Seq<A> seq(A... args) {
     return JavaConverters.collectionAsScalaIterableConverter(java.util.Arrays.asList(args)).asScala().toSeq();
   }
-//#testkit
+  //#testkit
 }
 //#testkit

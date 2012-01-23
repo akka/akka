@@ -374,6 +374,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
         val boss = system.actorOf(Props(new Actor {
 
+          override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), 2, 1000)
+
           val ref = context.actorOf(
             Props(new Actor {
               def receive = { case _ ⇒ }
@@ -382,7 +384,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
             }))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
+        }))
 
         boss ! "sendKill"
         Await.ready(latch, 5 seconds)

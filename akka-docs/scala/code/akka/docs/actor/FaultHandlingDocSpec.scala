@@ -17,6 +17,18 @@ object FaultHandlingDocSpec {
   //#supervisor
   //#supervisor
   class Supervisor extends Actor {
+    //#strategy
+    import akka.actor.OneForOneStrategy
+    import akka.actor.FaultHandlingStrategy._
+
+    override val supervisorStrategy = OneForOneStrategy({
+      case _: ArithmeticException      ⇒ Resume
+      case _: NullPointerException     ⇒ Restart
+      case _: IllegalArgumentException ⇒ Stop
+      case _: Exception                ⇒ Escalate
+    }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+    //#strategy
+
     def receive = {
       case p: Props ⇒ sender ! context.actorOf(p)
     }
@@ -25,6 +37,18 @@ object FaultHandlingDocSpec {
 
   //#supervisor2
   class Supervisor2 extends Actor {
+    //#strategy2
+    import akka.actor.OneForOneStrategy
+    import akka.actor.FaultHandlingStrategy._
+
+    override val supervisorStrategy = OneForOneStrategy({
+      case _: ArithmeticException      ⇒ Resume
+      case _: NullPointerException     ⇒ Restart
+      case _: IllegalArgumentException ⇒ Stop
+      case _: Exception                ⇒ Escalate
+    }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+    //#strategy2
+
     def receive = {
       case p: Props ⇒ sender ! context.actorOf(p)
     }
@@ -56,21 +80,9 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
 
     "apply the chosen strategy for its child" in {
       //#testkit
-      //#strategy
-      import akka.actor.OneForOneStrategy
-      import akka.actor.FaultHandlingStrategy._
 
-      val strategy = OneForOneStrategy({
-        case _: ArithmeticException      ⇒ Resume
-        case _: NullPointerException     ⇒ Restart
-        case _: IllegalArgumentException ⇒ Stop
-        case _: Exception                ⇒ Escalate
-      }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
-
-      //#strategy
       //#create
-      val superprops = Props[Supervisor].withFaultHandler(strategy)
-      val supervisor = system.actorOf(superprops, "supervisor")
+      val supervisor = system.actorOf(Props[Supervisor], "supervisor")
 
       supervisor ! Props[Child]
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
@@ -114,8 +126,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         expectMsg(Terminated(child2))
         //#escalate-kill
         //#escalate-restart
-        val superprops2 = Props[Supervisor2].withFaultHandler(strategy)
-        val supervisor2 = system.actorOf(superprops2, "supervisor2")
+        val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")
 
         supervisor2 ! Props[Child]
         val child3 = expectMsgType[ActorRef]

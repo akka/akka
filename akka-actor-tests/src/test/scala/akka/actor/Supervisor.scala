@@ -3,7 +3,12 @@
  */
 package akka.actor
 
-class Supervisor extends Actor {
+/**
+ * For testing Supervisor behavior, normally you don't supply the strategy
+ * from the outside like this.
+ */
+class Supervisor(override val supervisorStrategy: FaultHandlingStrategy) extends Actor {
+
   def receive = {
     case x: Props ⇒ sender ! context.actorOf(x)
   }

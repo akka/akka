@@ -218,6 +218,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       TypedActor.currentContext set null
     }
 
+    override def supervisorStrategy: FaultHandlingStrategy = me match {
+      case l: SupervisorStrategy ⇒ l.supervisorStrategy
+      case _                     ⇒ super.supervisorStrategy
+    }
+
     override def preStart(): Unit = me match {
       case l: PreStart ⇒ l.preStart()
       case _           ⇒ super.preStart()
@@ -273,6 +278,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           TypedActor.currentContext set null
         }
     }
+  }
+
+  /**
+   * Mix this into your TypedActor to be able to define supervisor strategy
+   */
+  trait SupervisorStrategy {
+    /**
+     * User overridable definition the strategy to use for supervising
+     * child actors.
+     */
+    def supervisorStrategy: FaultHandlingStrategy = FaultHandlingStrategy.defaultFaultHandler
   }
 
   /**
@@ -355,7 +371,6 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 object TypedProps {
 
   val defaultDispatcherId: String = Dispatchers.DefaultDispatcherId
-  val defaultFaultHandler: FaultHandlingStrategy = akka.actor.Props.defaultFaultHandler
   val defaultTimeout: Option[Timeout] = None
   val defaultLoader: Option[ClassLoader] = None
 
@@ -415,7 +430,6 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
-  faultHandler: FaultHandlingStrategy = TypedProps.defaultFaultHandler,
   timeout: Option[Timeout] = TypedProps.defaultTimeout,
   loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
@@ -457,11 +471,6 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String) = copy(dispatcher = d)
-
-  /**
-   * Returns a new Props with the specified faulthandler set.
-   */
-  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
   /**
    * @returns a new Props that will use the specified ClassLoader to create its proxy class in
@@ -512,8 +521,8 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   import akka.actor.{ Props ⇒ ActorProps }
   def actorProps(): ActorProps =
-    if (dispatcher == ActorProps().dispatcher && faultHandler == ActorProps().faultHandler) ActorProps()
-    else ActorProps(dispatcher = dispatcher, faultHandler = faultHandler)
+    if (dispatcher == ActorProps().dispatcher) ActorProps()
+    else ActorProps(dispatcher = dispatcher)
 }
 
 case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext) extends TypedActorFactory {
