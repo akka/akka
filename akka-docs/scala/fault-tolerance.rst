@@ -52,6 +52,25 @@ which is a ``PartialFunction[Throwable, Action]``, and we need to help out the
 type inferencer a bit here by ascribing that type after the closing brace. This
 is the piece which maps child failure types to their corresponding actions.
 
+Default Fault Handling Strategy
+-------------------------------
+
+``Escalate`` is used if the defined strategy doesn't cover the exception that was thrown.
+
+When the fault handling strategy is not defined for an actor the following
+exceptions are handled by default::
+
+  OneForOneStrategy {
+    case _: ActorInitializationException ⇒ Stop
+    case _: ActorKilledException         ⇒ Stop
+    case _: Exception                    ⇒ Restart
+    case _                               ⇒ Escalate
+  }
+
+If the exception escalate all the way up to the root guardian it will handle it
+in the same way as the default strategy defined above.
+
+
 Test Application
 ----------------
 
