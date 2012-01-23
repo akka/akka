@@ -5,6 +5,7 @@ import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import akka.dispatch.Await
+import akka.pattern.ask
 import java.util.concurrent.atomic.AtomicInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

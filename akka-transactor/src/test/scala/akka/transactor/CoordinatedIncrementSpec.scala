@@ -12,6 +12,7 @@ import akka.util.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
+import akka.pattern.ask
 
 object CoordinatedIncrement {
 

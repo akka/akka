@@ -9,7 +9,15 @@ import akka.util.duration._
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.DeathWatch
 
-class Locker(scheduler: Scheduler, period: Duration, val path: ActorPath, val deathWatch: DeathWatch) extends MinimalActorRef {
+/**
+ * Internal implementation detail for disposing of orphaned actors.
+ */
+private[akka] class Locker(
+  scheduler: Scheduler,
+  period: Duration,
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  val deathWatch: DeathWatch) extends MinimalActorRef {
 
   class DavyJones extends Runnable {
     def run = {

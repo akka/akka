@@ -12,6 +12,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, Dispatchers }
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {

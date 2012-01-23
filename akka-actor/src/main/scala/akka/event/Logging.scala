@@ -155,6 +155,7 @@ trait LoggingBus extends ActorEventBus {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
+    import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
         publish(Warning(logName, this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
@@ -648,6 +649,7 @@ object Logging {
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
     val path: ActorPath = new RootActorPath(LocalAddress("all-systems"), "/StandardOutLogger")
+    def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }

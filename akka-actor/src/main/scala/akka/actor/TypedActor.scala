@@ -348,17 +348,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        import akka.pattern.ask
         MethodCall(method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
+          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            val f = actor.?(m, timeout)
+            val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ Await.result(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }

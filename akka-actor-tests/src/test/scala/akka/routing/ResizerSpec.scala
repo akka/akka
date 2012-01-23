@@ -10,6 +10,7 @@ import akka.dispatch.Await
 import akka.util.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
+import akka.pattern.ask
 
 object ResizerSpec {
 

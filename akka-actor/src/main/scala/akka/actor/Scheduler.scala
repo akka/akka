@@ -32,8 +32,8 @@ trait Scheduler {
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
-   * thereafter every 500ms you would set delay = Duration.Zero and frequency
-   * = Duration(500, TimeUnit.MILLISECONDS)
+   * thereafter every 500ms you would set delay=Duration.Zero and
+   * frequency=Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */

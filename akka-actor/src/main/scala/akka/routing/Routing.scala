@@ -4,7 +4,7 @@
 package akka.routing
 
 import akka.actor._
-import akka.dispatch.Future
+import akka.dispatch.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit
@@ -12,6 +12,7 @@ import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
+import akka.pattern.AskSupport
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
@@ -93,11 +94,6 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
       case Nil  ⇒ super.!(message)(s)
       case refs ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
     }
-  }
-
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    resize()
-    super.?(message)(timeout)
   }
 
   def resize() {
@@ -699,10 +695,7 @@ trait BroadcastLike { this: RouterConfig ⇒
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     {
-      case (sender, message) ⇒
-        message match {
-          case _ ⇒ toAll(sender, routeeProvider.routees)
-        }
+      case (sender, message) ⇒ toAll(sender, routeeProvider.routees)
     }
   }
 }
@@ -774,12 +767,10 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
     {
       case (sender, message) ⇒
-        // FIXME avoid this cast
-        val asker = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
+        val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
+        val asker = AskSupport.createAsker(provider, within)
         asker.result.pipeTo(sender)
-        message match {
-          case _ ⇒ toAll(asker, routeeProvider.routees)
-        }
+        toAll(asker, routeeProvider.routees)
     }
   }
 }

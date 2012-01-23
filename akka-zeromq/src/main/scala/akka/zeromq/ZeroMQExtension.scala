@@ -7,6 +7,7 @@ import akka.util.duration._
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Await }
+import akka.pattern.ask
 
 /**
  * A Model to represent a version of the zeromq library

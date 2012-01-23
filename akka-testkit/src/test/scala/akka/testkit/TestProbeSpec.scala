@@ -6,6 +6,7 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.util.duration._
 import akka.dispatch.{ Await, Future }
+import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestProbeSpec extends AkkaSpec with DefaultTimeout {

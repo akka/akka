@@ -12,6 +12,7 @@ import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object ActorLifeCycleSpec {
 

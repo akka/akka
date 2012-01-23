@@ -8,6 +8,7 @@ import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers, Dispatcher }
+import akka.pattern.ask
 
 object DispatcherActorSpec {
   val config = """

@@ -10,6 +10,7 @@ import akka.event.Logging.Warning
 import akka.dispatch.{ Future, Promise, Await }
 import akka.util.duration._
 import akka.actor.ActorSystem
+import akka.pattern.ask
 import akka.dispatch.Dispatcher
 
 /**
