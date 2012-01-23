@@ -49,21 +49,6 @@ object FSM {
     }
   }
 
-  /*
-   * This extractor is just convenience for matching a (S, S) pair, including a
-   * reminder what the new state is.
-   */
-  object -> {
-    def unapply[S](in: (S, S)) = Some(in)
-  }
-
-  /*
-  * With these implicits in scope, you can write "5 seconds" anywhere a
-  * Duration or Option[Duration] is expected. This is conveniently true
-  * for derived classes.
-  */
-  implicit def d2od(d: Duration): Option[Duration] = Some(d)
-
   case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
 
   case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
@@ -208,7 +193,12 @@ trait FSM[S, D] extends Listeners {
    * @param stateTimeout default state timeout for this state
    * @param stateFunction partial function describing response to input
    */
-  protected final def when(stateName: S, stateTimeout: Timeout = None)(stateFunction: StateFunction) = {
+  protected final def when(stateName: S, stateTimeout: Duration = null)(stateFunction: StateFunction) = {
+    register(stateName, stateFunction, Option(stateTimeout))
+  }
+
+  @deprecated("use the more import-friendly variant taking a Duration", "2.0")
+  protected final def when(stateName: S, stateTimeout: Timeout)(stateFunction: StateFunction) = {
     register(stateName, stateFunction, stateTimeout)
   }
 
@@ -310,6 +300,14 @@ trait FSM[S, D] extends Listeners {
    */
   protected final def setStateTimeout(state: S, timeout: Timeout) {
     stateTimeouts(state) = timeout
+  }
+
+  /**
+   * This extractor is just convenience for matching a (S, S) pair, including a
+   * reminder what the new state is.
+   */
+  object -> {
+    def unapply[S](in: (S, S)) = Some(in)
   }
 
   /**
