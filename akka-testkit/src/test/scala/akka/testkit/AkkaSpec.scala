@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -29,6 +29,11 @@ object AkkaSpec {
         actor {
           default-dispatcher {
             core-pool-size-factor = 2
+            core-pool-size-min = 8
+            core-pool-size-max = 8
+            max-pool-size-factor = 2
+            max-pool-size-min = 8
+            max-pool-size-max = 8
           }
         }
       }

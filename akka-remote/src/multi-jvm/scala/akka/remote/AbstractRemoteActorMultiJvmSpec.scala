@@ -23,7 +23,6 @@ trait AbstractRemoteActorMultiJvmSpec {
         akka {
           remote.server.hostname="%s"
           remote.server.port = "%d"
-          cluster.nodename = "node%d"
         }""".format(host, 9990+idx, idx)) withFallback commonConfig
   }
 }

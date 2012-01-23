@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -59,7 +59,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         }
         val log = LoggingReceive("funky")(r)
         log.isDefinedAt("hallo")
-        expectMsg(1 second, Logging.Debug("funky", "received unhandled message hallo"))
+        expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources], "received unhandled message hallo"))
       }
     }
 
@@ -83,7 +83,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val name = actor.path.toString
         actor ! "buh"
         within(1 second) {
-          expectMsg(Logging.Debug(name, "received handled message buh"))
+          expectMsg(Logging.Debug(name, actor.underlyingActor.getClass, "received handled message buh"))
           expectMsg("x")
         }
 
@@ -109,7 +109,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         })
         actor ! "buh"
         within(1 second) {
-          expectMsg(Logging.Debug(actor.path.toString, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh"))
           expectMsg("x")
         }
       }
@@ -130,7 +130,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val name = actor.path.toString
         actor ! PoisonPill
         expectMsgPF() {
-          case Logging.Debug(`name`, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" ⇒ true
+          case Logging.Debug(`name`, _, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" ⇒ true
         }
         awaitCond(actor.isTerminated, 100 millis)
       }
@@ -142,7 +142,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val sys = impl.systemGuardian.path.toString
         ignoreMute(this)
         ignoreMsg {
-          case Logging.Debug(s, _) ⇒ s.contains("MainBusReaper") || s == sys
+          case Logging.Debug(`sys`, _, _) ⇒ true
         }
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
@@ -151,51 +151,53 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           val lname = lifecycleGuardian.path.toString
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
           val sname = supervisor.path.toString
+          val sclass = classOf[TestLogActor]
 
           val supervisorSet = receiveWhile(messages = 2) {
-            case Logging.Debug(`lname`, msg: String) if msg startsWith "now supervising" ⇒ 1
-            case Logging.Debug(`sname`, msg: String) if msg startsWith "started"         ⇒ 2
+            case Logging.Debug(`lname`, _, msg: String) if msg startsWith "now supervising" ⇒ 1
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started"  ⇒ 2
           }.toSet
           expectNoMsg(Duration.Zero)
           assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
           val aname = actor.path.toString
+          val aclass = classOf[TestLogActor]
 
           val set = receiveWhile(messages = 2) {
-            case Logging.Debug(`sname`, msg: String) if msg startsWith "now supervising" ⇒ 1
-            case Logging.Debug(`aname`, msg: String) if msg startsWith "started"         ⇒ 2
+            case Logging.Debug(`sname`, _, msg: String) if msg startsWith "now supervising" ⇒ 1
+            case Logging.Debug(`aname`, `aclass`, msg: String) if msg startsWith "started"  ⇒ 2
           }.toSet
           expectNoMsg(Duration.Zero)
           assert(set == Set(1, 2), set + " was not Set(1, 2)")
 
           supervisor watch actor
           expectMsgPF(hint = "now monitoring") {
-            case Logging.Debug(ref, msg: String) ⇒
+            case Logging.Debug(ref, `sclass`, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
           }
 
           supervisor unwatch actor
           expectMsgPF(hint = "stopped monitoring") {
-            case Logging.Debug(ref, msg: String) ⇒
+            case Logging.Debug(ref, `sclass`, msg: String) ⇒
               ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")
           }
 
           EventFilter[ActorKilledException](occurrences = 1) intercept {
             actor ! Kill
             val set = receiveWhile(messages = 3) {
-              case Logging.Error(_: ActorKilledException, `aname`, "Kill") ⇒ 1
-              case Logging.Debug(`aname`, "restarting")                    ⇒ 2
-              case Logging.Debug(`aname`, "restarted")                     ⇒ 3
+              case Logging.Error(_: ActorKilledException, `aname`, `aclass`, "Kill") ⇒ 1
+              case Logging.Debug(`aname`, `aclass`, "restarting")                    ⇒ 2
+              case Logging.Debug(`aname`, `aclass`, "restarted")                     ⇒ 3
             }.toSet
             expectNoMsg(Duration.Zero)
             assert(set == Set(1, 2, 3), set + " was not Set(1, 2, 3)")
           }
 
           system.stop(supervisor)
-          expectMsg(Logging.Debug(sname, "stopping"))
-          expectMsg(Logging.Debug(aname, "stopped"))
-          expectMsg(Logging.Debug(sname, "stopped"))
+          expectMsg(Logging.Debug(sname, `sclass`, "stopping"))
+          expectMsg(Logging.Debug(aname, `aclass`, "stopped"))
+          expectMsg(Logging.Debug(sname, `sclass`, "stopped"))
         }
       }
     }

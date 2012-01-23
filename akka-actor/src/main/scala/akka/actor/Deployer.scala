@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -13,8 +13,9 @@ import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
+import akka.util.ReflectiveAccess
 
-case class Deploy(path: String, config: Config, recipe: Option[ActorRecipe] = None, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
+case class Deploy(path: String, config: Config, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
 
 case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
 
@@ -55,25 +56,33 @@ class Deployer(val settings: ActorSystem.Settings) {
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
-    val router: RouterConfig = deployment.getString("router") match {
-      case "from-code"      ⇒ NoRouter
-      case "round-robin"    ⇒ RoundRobinRouter(nrOfInstances, routees)
-      case "random"         ⇒ RandomRouter(nrOfInstances, routees)
-      case "scatter-gather" ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within)
-      case "broadcast"      ⇒ BroadcastRouter(nrOfInstances, routees)
-      case x                ⇒ throw new ConfigurationException("unknown router type " + x + " for path " + key)
+    val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
+      Some(DefaultResizer(deployment.getConfig("resizer")))
+    } else {
+      None
     }
 
-    val recipe: Option[ActorRecipe] =
-      deployment.getString("create-as.class") match {
-        case "" ⇒ None
-        case impl ⇒
-          val implementationClass = getClassFor[Actor](impl).fold(e ⇒ throw new ConfigurationException(
-            "Config option [akka.actor.deployment." + key + ".create-as.class] load failed", e), identity)
-          Some(ActorRecipe(implementationClass))
-      }
+    val router: RouterConfig = deployment.getString("router") match {
+      case "from-code"        ⇒ NoRouter
+      case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "smallest-mailbox" ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
+      case fqn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config])
+        ReflectiveAccess.createInstance[RouterConfig](fqn, constructorSignature, Array[AnyRef](deployment)) match {
+          case Right(router) ⇒ router
+          case Left(exception) ⇒
+            throw new IllegalArgumentException(
+              ("Cannot instantiate router [%s], defined in [%s], " +
+                "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
+                "[com.typesafe.config.Config] parameter")
+                .format(fqn, key), exception)
+        }
+    }
 
-    Some(Deploy(key, deployment, recipe, router, LocalScope))
+    Some(Deploy(key, deployment, router, LocalScope))
   }
 
 }

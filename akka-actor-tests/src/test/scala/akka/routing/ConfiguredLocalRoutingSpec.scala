@@ -7,15 +7,28 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 
+object ConfiguredLocalRoutingSpec {
+  val config = """
+    akka {
+      actor {
+        default-dispatcher {
+          core-pool-size-min = 8
+          core-pool-size-max = 16
+        }
+      }
+    }
+  """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfiguredLocalRoutingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
+class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.config) with DefaultTimeout with ImplicitSender {
 
   val deployer = system.asInstanceOf[ActorSystemImpl].provider.deployer
 
   "RouterConfig" must {
 
     "be overridable in config" in {
-      deployer.deploy(Deploy("/config", null, None, RandomRouter(4), LocalScope))
+      deployer.deploy(Deploy("/config", null, RandomRouter(4), LocalScope))
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "get" ⇒ sender ! context.props

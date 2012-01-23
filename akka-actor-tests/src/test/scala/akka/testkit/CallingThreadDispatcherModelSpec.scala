@@ -1,23 +1,43 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
-import akka.actor.dispatch.ActorModelSpec
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import org.junit.{ After, Test }
+import akka.actor.dispatch.ActorModelSpec
 import com.typesafe.config.Config
 import akka.dispatch.DispatcherPrerequisites
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MessageDispatcherConfigurator
 
 object CallingThreadDispatcherModelSpec {
-  val config = """
-    boss {
-      type = PinnedDispatcher
-    }
+  import ActorModelSpec._
+
+  val config = {
     """
+      boss {
+        type = PinnedDispatcher
+      }
+    """ +
+      // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
+      (for (n ← 1 to 30) yield """
+        test-calling-thread-%s {
+          type = "akka.testkit.CallingThreadDispatcherModelSpec$CallingThreadDispatcherInterceptorConfigurator"
+        }""".format(n)).mkString
+  }
+
+  class CallingThreadDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
+    extends MessageDispatcherConfigurator(config, prerequisites) {
+
+    private val instance: MessageDispatcher =
+      new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
+        override def id: String = config.getString("id")
+      }
+
+    override def dispatcher(): MessageDispatcher = instance
+
+  }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -26,17 +46,9 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispa
 
   val dispatcherCount = new AtomicInteger()
 
-  override def registerInterceptedDispatcher(): MessageDispatcherInterceptor = {
-    // use new id for each invocation, since the MessageDispatcherInterceptor holds state
-    val dispatcherId = "test-calling-thread" + dispatcherCount.incrementAndGet()
-    val dispatcherConfigurator = new MessageDispatcherConfigurator(system.dispatchers.defaultDispatcherConfig, system.dispatchers.prerequisites) {
-      val instance = new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
-        override def id: String = dispatcherId
-      }
-      override def dispatcher(): MessageDispatcher = instance
-    }
-    system.dispatchers.register(dispatcherId, dispatcherConfigurator)
-    system.dispatchers.lookup(dispatcherId).asInstanceOf[MessageDispatcherInterceptor]
+  override def interceptedDispatcher(): MessageDispatcherInterceptor = {
+    // use new id for each test, since the MessageDispatcherInterceptor holds state
+    system.dispatchers.lookup("test-calling-thread-" + dispatcherCount.incrementAndGet()).asInstanceOf[MessageDispatcherInterceptor]
   }
   override def dispatcherType = "Calling Thread Dispatcher"
 

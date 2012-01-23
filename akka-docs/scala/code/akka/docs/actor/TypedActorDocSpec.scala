@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.actor
 
 //#imports
 import akka.dispatch.{ Promise, Future, Await }
 import akka.util.duration._
-import akka.actor.{ ActorContext, TypedActor, Props }
+import akka.actor.{ ActorContext, TypedActor, TypedProps }
 
 //#imports
 
@@ -45,7 +45,7 @@ class SquarerImpl(val name: String) extends Squarer {
   //#typed-actor-impl-methods
 }
 //#typed-actor-impl
-
+import java.lang.String.{ valueOf ⇒ println } //Mr funny man avoids printing to stdout AND keeping docs alright
 //#typed-actor-supercharge
 trait Foo {
   def doFoo(times: Int): Unit = println("doFoo(" + times + ")")
@@ -100,14 +100,11 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "create a typed actor" in {
     //#typed-actor-create1
     val mySquarer: Squarer =
-      TypedActor(system).typedActorOf[Squarer, SquarerImpl]()
+      TypedActor(system).typedActorOf(TypedProps[SquarerImpl]())
     //#typed-actor-create1
     //#typed-actor-create2
     val otherSquarer: Squarer =
-      TypedActor(system).typedActorOf(classOf[Squarer],
-        new SquarerImpl("foo"),
-        Props(),
-        "name")
+      TypedActor(system).typedActorOf(TypedProps(classOf[Squarer], new SquarerImpl("foo")), "name")
     //#typed-actor-create2
 
     //#typed-actor-calls
@@ -145,7 +142,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "supercharge" in {
     //#typed-actor-supercharge-usage
-    val awesomeFooBar = TypedActor(system).typedActorOf[Foo with Bar, FooBar]()
+    val awesomeFooBar: Foo with Bar = TypedActor(system).typedActorOf(TypedProps[FooBar]())
 
     awesomeFooBar.doFoo(10)
     val f = awesomeFooBar.doBar("yes")

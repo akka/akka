@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -16,6 +16,7 @@ object ThreadPoolConfig {
   val defaultCorePoolSize: Int = 16
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
+  val defaultRejectionPolicy: RejectedExecutionHandler = new SaneRejectedExecutionHandler()
 
   def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int = {
     import scala.math.{ min, max }
@@ -54,7 +55,7 @@ trait ExecutorServiceFactory {
  * Generic way to specify an ExecutorService to a Dispatcher, create it with the given name if desired
  */
 trait ExecutorServiceFactoryProvider {
-  def createExecutorServiceFactory(name: String): ExecutorServiceFactory
+  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory
 }
 
 /**
@@ -65,16 +66,24 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
                             queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
-                            daemonic: Boolean = false)
+                            rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy)
   extends ExecutorServiceFactoryProvider {
   class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
-      val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory, new SaneRejectedExecutionHandler)
+      val service = new ThreadPoolExecutor(
+        corePoolSize,
+        maxPoolSize,
+        threadTimeout.length,
+        threadTimeout.unit,
+        queueFactory(),
+        threadFactory,
+        rejectionPolicy)
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
       service
     }
   }
-  final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ThreadPoolExecutorServiceFactory(new MonitorableThreadFactory(name, daemonic))
+  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    new ThreadPoolExecutorServiceFactory(threadFactory)
 }
 
 trait DispatcherBuilder {
@@ -90,7 +99,7 @@ object ThreadPoolConfigDispatcherBuilder {
  */
 case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfig) ⇒ MessageDispatcher, config: ThreadPoolConfig) extends DispatcherBuilder {
   import ThreadPoolConfig._
-  def build = dispatcherFactory(config)
+  def build: MessageDispatcher = dispatcherFactory(config)
 
   def withNewThreadPoolWithCustomBlockingQueue(newQueueFactory: QueueFactory): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(queueFactory = newQueueFactory))
@@ -143,16 +152,20 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def configure(fs: Option[Function[ThreadPoolConfigDispatcherBuilder, ThreadPoolConfigDispatcherBuilder]]*): ThreadPoolConfigDispatcherBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
-class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) extends ThreadFactory {
+object MonitorableThreadFactory {
+  val doNothing: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable) = () }
+}
+
+case class MonitorableThreadFactory(name: String,
+                                    daemonic: Boolean,
+                                    exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
+  extends ThreadFactory {
   protected val counter = new AtomicLong
-  protected val doNothing: Thread.UncaughtExceptionHandler =
-    new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable) = {}
-    }
 
   def newThread(runnable: Runnable) = {
     val t = new Thread(runnable, name + counter.incrementAndGet())
-    t.setUncaughtExceptionHandler(doNothing)
+    t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
     t
   }
@@ -203,54 +216,3 @@ class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
     else runnable.run()
   }
 }
-
-/**
- * Commented out pending discussion with Doug Lea
- *
- * case class ForkJoinPoolConfig(targetParallelism: Int = Runtime.getRuntime.availableProcessors()) extends ExecutorServiceFactoryProvider {
- * final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ExecutorServiceFactory {
- * def createExecutorService: ExecutorService = {
- * new ForkJoinPool(targetParallelism) with ExecutorService {
- * setAsyncMode(true)
- * setMaintainsParallelism(true)
- *
- * override final def execute(r: Runnable) {
- * r match {
- * case fjmbox: FJMailbox ⇒
- * //fjmbox.fjTask.reinitialize()
- * Thread.currentThread match {
- * case fjwt: ForkJoinWorkerThread if fjwt.getPool eq this ⇒
- * fjmbox.fjTask.fork() //We should do fjwt.pushTask(fjmbox.fjTask) but it's package protected
- * case _ ⇒ super.execute[Unit](fjmbox.fjTask)
- * }
- * case _ ⇒
- * super.execute(r)
- * }
- * }
- *
- * import java.util.{ Collection ⇒ JCollection }
- *
- * def invokeAny[T](callables: JCollection[_ <: Callable[T]]) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- *
- * def invokeAny[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- *
- * def invokeAll[T](callables: JCollection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) =
- * throw new UnsupportedOperationException("invokeAny. NOT!")
- * }
- * }
- * }
- * }
- *
- * trait FJMailbox { self: Mailbox ⇒
- * final val fjTask = new ForkJoinTask[Unit] with Runnable {
- * private[this] var result: Unit = ()
- * final def getRawResult() = result
- * final def setRawResult(v: Unit) { result = v }
- * final def exec() = { self.run(); true }
- * final def run() { invoke() }
- * }
- * }
- *
- */

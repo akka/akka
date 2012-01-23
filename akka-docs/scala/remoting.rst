@@ -9,11 +9,7 @@ For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 Preparing your ActorSystem for Remoting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Akka remoting is a separate jar file. Make sure that you have a dependency from your project to this jar::
-
-  akka-remote.jar
-
-In you SBT project you should add the following as a dependency::
+The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project::
 
   "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
 
@@ -43,7 +39,8 @@ The example above only illustrates the bare minimum of properties you have to ad
 There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
 
-* `reference.conf of akka-remote <https://github.com/jboner/akka/blob/master/akka-remote/src/main/resources/reference.conf#L39>`_
+.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
+   :language: none
 
 Types of Remote Interaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -127,10 +124,10 @@ This is also done via configuration::
     actor {
       deployment {
         /serviceA/aggregation {
-          router = “round-robin”
+          router = "round-robin"
           nr-of-instances = 10
-          routees {
-            nodes = [“akka://app@10.0.0.2:2552”, “akka://app@10.0.0.3:2552”]
+          target {
+            nodes = ["akka://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
           }
         }
       }

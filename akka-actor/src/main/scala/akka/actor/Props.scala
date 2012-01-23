@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -21,7 +21,6 @@ object Props {
   import FaultHandlingStrategy._
 
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultTimeout: Timeout = Timeout(Duration.MinusInf)
   final val defaultDecider: Decider = {
     case _: ActorInitializationException ⇒ Stop
     case _: ActorKilledException         ⇒ Stop
@@ -95,12 +94,10 @@ object Props {
  *  val props = Props(
  *    creator = ..,
  *    dispatcher = ..,
- *    timeout = ..,
  *    faultHandler = ..,
  *    routerConfig = ..
  *  )
  *  val props = Props().withCreator(new MyActor)
- *  val props = Props[MyActor].withTimeout(timeout)
  *  val props = Props[MyActor].withRouter(RoundRobinRouter(..))
  *  val props = Props[MyActor].withFaultHandler(OneForOneStrategy {
  *    case e: IllegalStateException ⇒ Resume
@@ -117,7 +114,6 @@ object Props {
  *    }
  *  });
  *  Props props = new Props().withCreator(new UntypedActorFactory() { ... });
- *  Props props = new Props(MyActor.class).withTimeout(timeout);
  *  Props props = new Props(MyActor.class).withFaultHandler(new OneForOneStrategy(...));
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
@@ -125,7 +121,6 @@ object Props {
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,
-  timeout: Timeout = Props.defaultTimeout,
   faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
   routerConfig: RouterConfig = Props.defaultRoutedProps) {
 
@@ -135,7 +130,6 @@ case class Props(
   def this() = this(
     creator = Props.defaultCreator,
     dispatcher = Dispatchers.DefaultDispatcherId,
-    timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
   /**
@@ -144,7 +138,6 @@ case class Props(
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
     dispatcher = Dispatchers.DefaultDispatcherId,
-    timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler)
 
   /**
@@ -153,7 +146,6 @@ case class Props(
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = () ⇒ actorClass.newInstance,
     dispatcher = Dispatchers.DefaultDispatcherId,
-    timeout = Props.defaultTimeout,
     faultHandler = Props.defaultFaultHandler,
     routerConfig = Props.defaultRoutedProps)
 
@@ -182,11 +174,6 @@ case class Props(
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String) = copy(dispatcher = d)
-
-  /**
-   * Returns a new Props with the specified timeout set.
-   */
-  def withTimeout(t: Timeout) = copy(timeout = t)
 
   /**
    * Returns a new Props with the specified faulthandler set.

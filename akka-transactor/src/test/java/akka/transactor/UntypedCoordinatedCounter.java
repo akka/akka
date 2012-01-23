@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor;
@@ -7,22 +7,18 @@ package akka.transactor;
 import akka.actor.ActorRef;
 import akka.actor.Actors;
 import akka.actor.UntypedActor;
-import scala.concurrent.stm.*;
+import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.Stm;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class UntypedCoordinatedCounter extends UntypedActor {
     private String name;
-    private Ref<Integer> count = Stm.ref(0);
+    private Ref.View<Integer> count = Stm.newRef(0);
 
     public UntypedCoordinatedCounter(String name) {
         this.name = name;
-    }
-
-    private void increment(InTxn txn) {
-        Integer newValue = count.get(txn) + 1;
-        count.set(newValue, txn);
     }
 
     public void onReceive(Object incoming) throws Exception {
@@ -33,8 +29,8 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                 Increment increment = (Increment) message;
                 List<ActorRef> friends = increment.getFriends();
                 final CountDownLatch latch = increment.getLatch();
-                final CompletionHandler countDown = new CompletionHandler() {
-                    public void handle(Txn.Status status) {
+                final Runnable countDown = new Runnable() {
+                    public void run() {
                         latch.countDown();
                     }
                 };
@@ -42,15 +38,15 @@ public class UntypedCoordinatedCounter extends UntypedActor {
                     Increment coordMessage = new Increment(friends.subList(1, friends.size()), latch);
                     friends.get(0).tell(coordinated.coordinate(coordMessage));
                 }
-                coordinated.atomic(new Atomically() {
-                    public void atomically(InTxn txn) {
-                        increment(txn);
+                coordinated.atomic(new Runnable() {
+                    public void run() {
+                        Stm.increment(count, 1);
                         Stm.afterCompletion(countDown);
                     }
                 });
             }
         } else if ("GetCount".equals(incoming)) {
-            getSender().tell(count.single().get());
+            getSender().tell(count.get());
         }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -147,6 +147,11 @@ class Switch(startAsOn: Boolean = false) {
   def fold[T](on: ⇒ T)(off: ⇒ T) = synchronized {
     if (switch.get) on else off
   }
+
+  /**
+   * Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status.
+   */
+  def locked[T](code: ⇒ T) = synchronized { code }
 
   /**
    * Returns whether the switch is IMMEDIATELY on (no locking)

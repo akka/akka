@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -108,7 +108,7 @@ class BoundedBlockingQueue[E <: AnyRef](
                 throw ie
             }
             false
-          // FIXME catching all and continue isn't good for OOME, ticket #1418
+          // TODO catching all and continue isn't good for OOME, ticket #1418
           case e ⇒
             notFull.signal()
             result = e
@@ -235,7 +235,7 @@ class BoundedBlockingQueue[E <: AnyRef](
       if (backing.removeAll(c)) {
         val sz = backing.size()
         if (sz < maxCapacity) notFull.signal()
-        if (sz > 0) notEmpty.signal() //FIXME needed??
+        if (sz > 0) notEmpty.signal()
         true
       } else false
     } finally {
@@ -248,7 +248,7 @@ class BoundedBlockingQueue[E <: AnyRef](
     try {
       if (backing.retainAll(c)) {
         val sz = backing.size()
-        if (sz < maxCapacity) notFull.signal() //FIXME needed??
+        if (sz < maxCapacity) notFull.signal()
         if (sz > 0) notEmpty.signal()
         true
       } else false

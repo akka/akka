@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -127,9 +127,9 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
    * there is not yet a way to detect these illegal accesses at compile time.
    */
-  def ask(message: AnyRef, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
+  def ask(message: Any, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
 
-  def ask(message: AnyRef, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
+  def ask(message: Any, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -449,7 +449,10 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
+trait DeadLetterActorRefLike extends MinimalActorRef {
+
+  def eventStream: EventStream
+
   @volatile
   private var brokenPromise: Future[Any] = _
   @volatile
@@ -477,7 +480,9 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
     assert(brokenPromise != null)
     brokenPromise
   }
+}
 
+class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
   @throws(classOf[java.io.ObjectStreamException])
   override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
@@ -486,8 +491,8 @@ class DeadLetterActorRef(val eventStream: EventStream) extends MinimalActorRef {
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
  */
-class EmptyLocalActorRef(_eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
-  extends DeadLetterActorRef(_eventStream) {
+class EmptyLocalActorRef(val eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
+  extends DeadLetterActorRefLike {
   init(_dispatcher, _path)
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ // do NOT form endless loops

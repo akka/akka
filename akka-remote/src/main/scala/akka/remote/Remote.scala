@@ -1,22 +1,16 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
 
 import akka.actor._
 import akka.event._
-import akka.actor.Status._
 import akka.util._
 import akka.util.duration._
 import akka.util.Helpers._
-import akka.serialization.Compression.LZF
-import java.net.InetSocketAddress
-import com.eaio.uuid.UUID
-import akka.serialization.{ JavaSerializer, Serialization, Serializer, Compression, SerializationExtension }
-import akka.dispatch.{ Terminate, Dispatchers, Future, PinnedDispatcher, MessageDispatcher }
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
+import akka.dispatch.MessageDispatcher
 import akka.dispatch.SystemMessage
 import scala.annotation.tailrec
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, AkkaRemoteProtocol, RemoteControlProtocol, RemoteMessageProtocol }
@@ -110,7 +104,7 @@ class Remote(val settings: ActorSystem.Settings, val remoteSettings: RemoteSetti
       }
     }
 
-    log.info("Starting remote server on [{}] with node name [{}]", remoteAddress, provider.nodename)
+    log.info("Starting remote server on [{}@{}]", system.name, remoteAddress)
   }
 }
 
@@ -153,7 +147,7 @@ class RemoteSystemDaemon(system: ActorSystemImpl, remote: Remote, _path: ActorPa
 
   override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
     case message: DaemonMsg ⇒
-      log.debug("Received command [\n{}] to RemoteSystemDaemon on [{}]", message, remote.remoteSettings.NodeName)
+      log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address.hostPort)
       message match {
         case DaemonMsgCreate(factory, path, supervisor) ⇒
           import remote.remoteAddress
@@ -245,7 +239,8 @@ trait RemoteMarshallingOps {
   }
 
   def receiveMessage(remoteMessage: RemoteMessage) {
-    log.debug("received message {}", remoteMessage)
+    if (remote.remoteSettings.LogReceivedMessages)
+      log.debug("received message [{}]", remoteMessage)
 
     val remoteDaemon = remote.remoteDaemon
 

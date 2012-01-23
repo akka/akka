@@ -39,7 +39,7 @@ case class RemoteNettyAddress(host: String, ip: Option[InetAddress], port: Int) 
 
 object RemoteNettyAddress {
   def apply(host: String, port: Int): RemoteNettyAddress = {
-    // FIXME this may BLOCK for extended periods of time!
+    // TODO ticket #1639
     val ip = try Some(InetAddress.getByName(host)) catch { case _: UnknownHostException ⇒ None }
     new RemoteNettyAddress(host, ip, port)
   }

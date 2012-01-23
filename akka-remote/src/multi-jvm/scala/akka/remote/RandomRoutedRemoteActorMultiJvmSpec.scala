@@ -10,7 +10,7 @@ object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSp
   override def NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! context.system.nodename
+      case "hit" ⇒ sender ! self.path.address.hostPort
       case "end" ⇒ context.stop(self)
     }
   }
@@ -83,9 +83,9 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRe
       val iterationCount = 10
 
       var replies = Map(
-        "node1" -> 0,
-        "node2" -> 0,
-        "node3" -> 0)
+        "AkkaRemoteSpec@localhost:9991" -> 0,
+        "AkkaRemoteSpec@localhost:9992" -> 0,
+        "AkkaRemoteSpec@localhost:9993" -> 0)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -13,30 +13,32 @@ import akka.util.duration._
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
       akka.actor.deployment {
-        /user/service1 {
+        /service1 {
         }
-        /user/service3 {
-          create-as {
-            class = "akka.actor.DeployerSpec$RecipeActor"
-          }
-        }
-        /user/service-direct {
+        /service-direct {
           router = from-code
         }
-        /user/service-direct2 {
+        /service-direct2 {
           router = from-code
           # nr-of-instances ignored when router = direct
           nr-of-instances = 2
         }
-        /user/service-round-robin {
+        /service-round-robin {
           router = round-robin
         }
-        /user/service-random {
+        /service-random {
           router = random
         }
-        /user/service-scatter-gather {
+        /service-scatter-gather {
           router = scatter-gather
           within = 2 seconds
+        }
+        /service-resizer {
+          router = round-robin
+          resizer {
+            lower-bound = 1
+            upper-bound = 10
+          }
         }
       }
       """, ConfigParseOptions.defaults)
@@ -53,7 +55,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
   "A Deployer" must {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
-      val service = "/user/service1"
+      val service = "/service1"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
 
@@ -61,36 +63,21 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          None,
           NoRouter,
           LocalScope)))
     }
 
     "use None deployment for undefined service" in {
-      val service = "/user/undefined"
+      val service = "/undefined"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be(None)
-    }
-
-    "be able to parse 'akka.actor.deployment._' with recipe" in {
-      val service = "/user/service3"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
-      deployment must be('defined)
-
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          Some(ActorRecipe(classOf[DeployerSpec.RecipeActor])),
-          NoRouter,
-          LocalScope)))
     }
 
     "detect invalid number-of-instances" in {
       intercept[com.typesafe.config.ConfigException.WrongType] {
         val invalidDeployerConf = ConfigFactory.parseString("""
             akka.actor.deployment {
-              /user/service-invalid-number-of-instances {
+              /service-invalid-number-of-instances {
                 router = round-robin
                 nr-of-instances = boom
               }
@@ -102,37 +89,37 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with direct router" in {
-      assertRouting(NoRouter, "/user/service-direct")
+      assertRouting(NoRouter, "/service-direct")
     }
 
     "ignore nr-of-instances with direct router" in {
-      assertRouting(NoRouter, "/user/service-direct2")
+      assertRouting(NoRouter, "/service-direct2")
     }
 
     "be able to parse 'akka.actor.deployment._' with round-robin router" in {
-      assertRouting(RoundRobinRouter(1), "/user/service-round-robin")
+      assertRouting(RoundRobinRouter(1), "/service-round-robin")
     }
 
     "be able to parse 'akka.actor.deployment._' with random router" in {
-      assertRouting(RandomRouter(1), "/user/service-random")
+      assertRouting(RandomRouter(1), "/service-random")
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/user/service-scatter-gather")
+      assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
+    }
+
+    "be able to parse 'akka.actor.deployment._' with router resizer" in {
+      val resizer = DefaultResizer()
+      assertRouting(RoundRobinRouter(resizer = Some(resizer)), "/service-resizer")
     }
 
     def assertRouting(expected: RouterConfig, service: String) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
-
-      deployment must be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          None,
-          expected,
-          LocalScope)))
-
+      deployment.get.path must be(service)
+      deployment.get.routing.getClass must be(expected.getClass)
+      deployment.get.routing.resizer must be(expected.resizer)
+      deployment.get.scope must be(LocalScope)
     }
 
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.actor
 
@@ -7,14 +7,11 @@ package akka.docs.actor
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
-import akka.dispatch.Future
 
 //#imports1
 
-//#imports2
+import akka.dispatch.Future
 import akka.actor.ActorSystem
-//#imports2
-
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
@@ -114,7 +111,6 @@ object SwapperApp extends App {
 //#swapper
 
 //#receive-orElse
-import akka.actor.Actor.Receive
 
 abstract class GenericActor extends Actor {
   // to be defined in subclassing actor
@@ -169,10 +165,10 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.eventStream.subscribe(testActor, classOf[Logging.Info])
 
     myActor ! "test"
-    expectMsgPF(1 second) { case Logging.Info(_, "received test") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received test") ⇒ true }
 
     myActor ! "unknown"
-    expectMsgPF(1 second) { case Logging.Info(_, "received unknown message") ⇒ true }
+    expectMsgPF(1 second) { case Logging.Info(_, _, "received unknown message") ⇒ true }
 
     system.eventStream.unsubscribe(testActor)
     system.eventStream.publish(TestEvent.UnMute(filter))
@@ -201,11 +197,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val props3 = Props(new MyActor)
     val props4 = Props(
       creator = { () ⇒ new MyActor },
-      dispatcher = "my-dispatcher",
-      timeout = Timeout(100))
+      dispatcher = "my-dispatcher")
     val props5 = props1.withCreator(new MyActor)
     val props6 = props5.withDispatcher("my-dispatcher")
-    val props7 = props6.withTimeout(Timeout(100))
     //#creating-props-config
   }
 
@@ -316,5 +310,23 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     implicit val sender = testActor
     a ! "kill"
     expectMsg("finished")
+  }
+
+  "using pattern gracefulStop" in {
+    val actorRef = system.actorOf(Props[MyActor])
+    //#gracefulStop
+    import akka.pattern.gracefulStop
+    import akka.dispatch.Await
+    import akka.actor.ActorTimeoutException
+
+    try {
+      val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)
+      Await.result(stopped, 6 seconds)
+      // the actor has been stopped
+    } catch {
+      case e: ActorTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
+    }
+    //#gracefulStop
+
   }
 }

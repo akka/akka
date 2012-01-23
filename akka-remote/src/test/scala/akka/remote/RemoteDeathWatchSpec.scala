@@ -16,7 +16,6 @@ akka {
             /watchers.remote = "akka://other@127.0.0.1:2666"
         }
     }
-    cluster.nodename = buh
     remote.server {
         hostname = "127.0.0.1"
         port = 2665

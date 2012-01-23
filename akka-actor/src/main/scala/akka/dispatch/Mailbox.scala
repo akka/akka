@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.dispatch
 
@@ -172,35 +172,20 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
 
   /**
    * Process the messages in the mailbox
-   *
-   * @return true if the processing finished before the mailbox was empty, due to the throughput constraint
    */
-  private final def processMailbox() {
+  @tailrec private final def processMailbox(
+    left: Int = java.lang.Math.max(dispatcher.throughput, 1),
+    deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
-      var nextMessage = dequeue()
-      if (nextMessage ne null) { //If we have a message
-        if (dispatcher.isThroughputDefined) { //If we're using throughput, we need to do some book-keeping
-          var processedMessages = 0
-          val deadlineNs = if (dispatcher.isThroughputDeadlineTimeDefined) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0
-          do {
-            if (debug) println(actor.self + " processing message " + nextMessage)
-            actor invoke nextMessage
-            processAllSystemMessages() //After we're done, process all system messages
-
-            nextMessage = if (shouldProcessMessage) { // If we aren't suspended, we need to make sure we're not overstepping our boundaries
-              processedMessages += 1
-              if ((processedMessages >= dispatcher.throughput) || (dispatcher.isThroughputDeadlineTimeDefined && System.nanoTime >= deadlineNs)) // If we're throttled, break out
-                null //We reached our boundaries, abort
-              else dequeue //Dequeue the next message
-            } else null //Abort
-          } while (nextMessage ne null)
-        } else { //If we only run one message per process
-          actor invoke nextMessage //Just run it
-          processAllSystemMessages() //After we're done, process all system messages
-        }
+      val next = dequeue()
+      if (next ne null) {
+        if (Mailbox.debug) println(actor.self + " processing message " + next)
+        actor invoke next
+        processAllSystemMessages()
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+          processMailbox(left - 1, deadlineNs)
       }
     }
-  }
 
   final def processAllSystemMessages() {
     var nextMessage = systemDrain()
@@ -214,7 +199,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
       }
     } catch {
       case e ⇒
-        actor.system.eventStream.publish(Error(e, actor.self.path.toString, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
+        actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
   }
@@ -227,27 +212,28 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
    * called when an actor is unregistered.
    * By default it dequeues all system messages + messages and ships them to the owning actors' systems' DeadLetterMailbox
    */
-  protected[dispatch] def cleanUp(): Unit = if (actor ne null) {
-    val dlq = actor.systemImpl.deadLetterMailbox
-    if (hasSystemMessages) {
-      var message = systemDrain()
-      while (message ne null) {
-        // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        dlq.systemEnqueue(actor.self, message)
-        message = next
+  protected[dispatch] def cleanUp(): Unit =
+    if (actor ne null) { // actor is null for the deadLetterMailbox
+      val dlq = actor.systemImpl.deadLetterMailbox
+      if (hasSystemMessages) {
+        var message = systemDrain()
+        while (message ne null) {
+          // message must be “virgin” before being able to systemEnqueue again
+          val next = message.next
+          message.next = null
+          dlq.systemEnqueue(actor.self, message)
+          message = next
+        }
       }
-    }
 
-    if (hasMessages) {
-      var envelope = dequeue
-      while (envelope ne null) {
-        dlq.enqueue(actor.self, envelope)
-        envelope = dequeue
+      if (hasMessages) {
+        var envelope = dequeue
+        while (envelope ne null) {
+          dlq.enqueue(actor.self, envelope)
+          envelope = dequeue
+        }
       }
     }
-  }
 }
 
 trait MessageQueue {

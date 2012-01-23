@@ -1,7 +1,7 @@
 package akka.actor
 
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
@@ -179,13 +179,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
   def newFooBar(d: Duration): Foo =
-    newFooBar(Props().withTimeout(Timeout(d)))
+    TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
-  def newFooBar(props: Props): Foo =
-    TypedActor(system).typedActorOf(classOf[Foo], classOf[Bar], props)
+  def newFooBar(dispatcher: String, d: Duration): Foo =
+    TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
 
-  def newStacked(props: Props = Props().withTimeout(Timeout(2000))): Stacked =
-    TypedActor(system).typedActorOf(classOf[Stacked], classOf[StackedImpl], props)
+  def newStacked(): Stacked =
+    TypedActor(system).typedActorOf(
+      TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(Timeout(2000)))
 
   def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) must be(true)
 
@@ -298,11 +299,11 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = system.actorOf(Props(context ⇒ {
-          case p: Props ⇒ context.sender ! TypedActor(context).typedActorOf(classOf[Foo], classOf[Bar], p)
+          case p: TypedProps[_] ⇒ context.sender ! TypedActor(context).typedActorOf(p)
         }).withFaultHandler(OneForOneStrategy {
           case e: IllegalStateException if e.getMessage == "expected" ⇒ FaultHandlingStrategy.Resume
         }))
-        val t = Await.result((boss ? Props().withTimeout(2 seconds)).mapTo[Foo], timeout.duration)
+        val t = Await.result((boss ? TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(2 seconds)).mapTo[Foo], timeout.duration)
 
         t.incr()
         t.failingPigdog()
@@ -330,7 +331,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     }
 
     "be able to support implementation only typed actors" in {
-      val t = TypedActor(system).typedActorOf[Foo, Bar](Props())
+      val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
       f2.isCompleted must be(false)
@@ -340,16 +341,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t = TypedActor(system).typedActorOf[Stackable1 with Stackable2, StackedImpl]()
+      val t: Stackable1 with Stackable2 = TypedActor(system).typedActorOf(TypedProps[StackedImpl]())
       t.stackable1 must be("foo")
       t.stackable2 must be("bar")
       mustStop(t)
     }
 
     "be able to use balancing dispatcher" in {
-      val props = Props(timeout = Timeout(6600), dispatcher = "pooled-dispatcher")
-
-      val thais = for (i ← 1 to 60) yield newFooBar(props)
+      val thais = for (i ← 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
       val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200L, i))
@@ -405,7 +404,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to override lifecycle callbacks" in {
       val latch = new CountDownLatch(16)
       val ta = TypedActor(system)
-      val t: LifeCycles = ta.typedActorOf(classOf[LifeCycles], new Creator[LifeCyclesImpl] { def create = new LifeCyclesImpl(latch) }, Props())
+      val t: LifeCycles = ta.typedActorOf(TypedProps[LifeCyclesImpl](classOf[LifeCycles], new LifeCyclesImpl(latch)))
       EventFilter[IllegalStateException]("Crash!", occurrences = 1) intercept {
         t.crash()
       }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -21,17 +21,16 @@ import java.util.concurrent.TimeUnit
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _actor: ActorCell,
-  _name: String,
   _id: String,
   _mailboxType: MailboxType,
-  _shutdownTimeout: Duration)
+  _shutdownTimeout: Duration,
+  _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
   extends Dispatcher(_prerequisites,
-    _name,
     _id,
     Int.MaxValue,
     Duration.Zero,
     _mailboxType,
-    ThreadPoolConfig(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
+    _threadPoolConfig.copy(allowCorePoolTimeout = true, corePoolSize = 1, maxPoolSize = 1),
     _shutdownTimeout) {
 
   @volatile

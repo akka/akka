@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.actor;
 
 //#imports
+
 import akka.dispatch.*;
 import akka.actor.*;
 import akka.japi.*;
@@ -103,15 +104,14 @@ public class TypedActorDocTestBase {
     try {
     //#typed-actor-create1
     Squarer mySquarer =
-      TypedActor.get(system).typedActorOf(Squarer.class, SquarerImpl.class, new Props());
+      TypedActor.get(system).typedActorOf(new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class));
     //#typed-actor-create1
     //#typed-actor-create2
     Squarer otherSquarer =
-      TypedActor.get(system).typedActorOf(Squarer.class,
+      TypedActor.get(system).typedActorOf(new TypedProps<SquarerImpl>(Squarer.class,
         new Creator<SquarerImpl>() {
           public SquarerImpl create() { return new SquarerImpl("foo"); }
-        },
-        new Props(),
+        }),
         "name");
     //#typed-actor-create2
 

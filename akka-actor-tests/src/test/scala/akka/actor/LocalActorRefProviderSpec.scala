@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -9,8 +9,21 @@ import akka.util.duration._
 import akka.util.Timeout
 import akka.dispatch.{ Await, Future }
 
+object LocalActorRefProviderSpec {
+  val config = """
+    akka {
+      actor {
+        default-dispatcher {
+          core-pool-size-min = 16
+          core-pool-size-max = 16
+        }
+      }
+    }
+  """
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class LocalActorRefProviderSpec extends AkkaSpec {
+class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 
     "find actor refs using actorFor" in {

@@ -1,6 +1,5 @@
-
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -96,14 +95,14 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
-    Future.fold(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(zero)(fun.apply _)(executor)
+    Future.fold(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(zero)(fun.apply)(executor)
 
   /**
    * Java API.
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
-  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, T], executor: ExecutionContext): Future[R] =
-    Future.reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)(executor)
+  def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
+    Future.reduce[T, R](scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply)(executor)
 
   /**
    * Java API.
@@ -148,7 +147,7 @@ object Future {
           try {
             Right(body)
           } catch {
-            // FIXME catching all and continue isn't good for OOME, ticket #1418
+            // TODO catching all and continue isn't good for OOME, ticket #1418
             case e ⇒ Left(e)
           }
         }
@@ -224,9 +223,9 @@ object Future {
    *   val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
    * </pre>
    */
-  def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) ⇒ T)(implicit executor: ExecutionContext): Future[R] = {
+  def reduce[T, R >: T](futures: Traversable[Future[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) Promise[R].failure(new NoSuchElementException("reduce attempted on empty collection"))
-    else sequence(futures).map(_ reduce op)
+    else sequence(futures).map(_ reduceLeft op)
   }
   /**
    * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A ⇒ Future[B].
@@ -269,6 +268,11 @@ object Future {
   }
 
   /**
+   * Signals that the current thread of execution will potentially engage
+   * in blocking calls after the call to this method, giving the system a
+   * chance to spawn new threads, reuse old threads or otherwise, to prevent
+   * starvation and/or unfairness.
+   *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
    * executed in the current thread. This is needed if the current task may
@@ -294,48 +298,47 @@ object Future {
    */
   def blocking(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if taskStack.nonEmpty ⇒
-        val tasks = taskStack.elems
-        taskStack.clear()
-        _taskStack set None
-        dispatchTask(() ⇒ _taskStack.get.get.elems = tasks, true)
-      case Some(_) ⇒ _taskStack set None
-      case _       ⇒ // already None
+      case stack if (stack ne null) && stack.nonEmpty ⇒
+        val tasks = stack.elems
+        stack.clear()
+        _taskStack.remove()
+        dispatchTask(() ⇒ _taskStack.get.elems = tasks, true)
+      case _ ⇒ _taskStack.remove()
     }
 
-  private val _taskStack = new ThreadLocal[Option[Stack[() ⇒ Unit]]]() {
-    override def initialValue = None
-  }
+  private val _taskStack = new ThreadLocal[Stack[() ⇒ Unit]]()
 
   /**
    * Internal API, do not call
    */
   private[akka] def dispatchTask(task: () ⇒ Unit, force: Boolean = false)(implicit executor: ExecutionContext): Unit =
     _taskStack.get match {
-      case Some(taskStack) if !force ⇒ taskStack push task
+      case stack if (stack ne null) && !force ⇒ stack push task
       case _ ⇒ executor.execute(
         new Runnable {
           def run =
             try {
+
               val taskStack = Stack.empty[() ⇒ Unit]
               taskStack push task
               _taskStack set Some(taskStack)
+
               while (taskStack.nonEmpty) {
                 val next = taskStack.pop()
                 try {
                   next.apply()
                 } catch {
                   case e ⇒
-                    // FIXME catching all and continue isn't good for OOME, ticket #1418
+                    // TODO catching all and continue isn't good for OOME, ticket #1418
                     executor match {
                       case m: MessageDispatcher ⇒
-                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", e.getMessage))
+                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", this.getClass, e.getMessage))
                       case other ⇒
                         e.printStackTrace()
                     }
                 }
               }
-            } finally { _taskStack set None }
+            } finally { _taskStack.remove() }
         })
     }
 }
@@ -351,6 +354,21 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
+   * @returns a new Future that will contain a tuple containing the successful result of this and that Future.
+   * If this or that fail, they will race to complete the returned Future with their failure.
+   * The returned Future will not be completed if neither this nor that are completed.
+   */
+  def zip[U](that: Future[U]): Future[(T, U)] = {
+    val p = Promise[(T, U)]()
+    onComplete {
+      case Left(t)  ⇒ p failure t
+      case Right(r) ⇒ that onSuccess { case r2 ⇒ p success ((r, r2)) }
+    }
+    that onFailure { case f ⇒ p failure f }
+    p
+  }
+
+  /**
    * For use only within a Future.flow block or another compatible Delimited Continuations reset block.
    *
    * Returns the result of this Future without blocking, by suspending execution and storing it as a
@@ -361,7 +379,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   /**
    * Tests whether this Future has been completed.
    */
-  final def isCompleted: Boolean = value.isDefined
+  def isCompleted: Boolean
 
   /**
    * The contained value of this Future. Before this Future is completed
@@ -424,11 +442,17 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   }
 
   /**
-   * Creates a Future that will be the result of the first completed Future of this and the Future that was passed into this.
-   * This is semantically the same as: Future.firstCompletedOf(Seq(this, that))
+   * Returns a new Future that will either hold the successful value of this Future,
+   * or, it this Future fails, it will hold the result of "that" Future.
    */
-  //FIXME implement as The result of any of the Futures, or if oth failed, the first failure
-  def orElse[A >: T](that: Future[A]): Future[A] = Future.firstCompletedOf(List(this, that)) //TODO Optimize
+  def or[U >: T](that: Future[U]): Future[U] = {
+    val p = Promise[U]()
+    onComplete {
+      case r @ Right(_) ⇒ p complete r
+      case _            ⇒ p completeWith that
+    }
+    p
+  }
 
   /**
    * Creates a new Future that will handle any matching Throwable that this
@@ -570,7 +594,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
 
   protected def logError(msg: String, problem: Throwable): Unit = {
     executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, problem.getMessage))
+      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, this.getClass, problem.getMessage))
       case other                ⇒ problem.printStackTrace()
     }
   }
@@ -674,23 +698,7 @@ trait Promise[T] extends Future[T] {
 
 //Companion object to FState, just to provide a cheap, immutable default entry
 private[dispatch] object DefaultPromise {
-  def EmptyPending[T](): FState[T] = emptyPendingValue.asInstanceOf[FState[T]]
-
-  /**
-   * Represents the internal state of the DefaultCompletableFuture
-   */
-
-  sealed trait FState[+T] { def value: Option[Either[Throwable, T]] }
-  case class Pending[T](listeners: List[Either[Throwable, T] ⇒ Unit] = Nil) extends FState[T] {
-    def value: Option[Either[Throwable, T]] = None
-  }
-  case class Success[T](value: Option[Either[Throwable, T]] = None) extends FState[T] {
-    def result: T = value.get.right.get
-  }
-  case class Failure[T](value: Option[Either[Throwable, T]] = None) extends FState[T] {
-    def exception: Throwable = value.get.left.get
-  }
-  private val emptyPendingValue = Pending[Nothing](Nil)
+  def EmptyPending[T](): List[T] = Nil
 }
 
 /**
@@ -699,28 +707,25 @@ private[dispatch] object DefaultPromise {
 class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] {
   self ⇒
 
-  import DefaultPromise.{ FState, Success, Failure, Pending }
-
   protected final def tryAwait(atMost: Duration): Boolean = {
     Future.blocking
 
     @tailrec
     def awaitUnsafe(waitTimeNanos: Long): Boolean = {
-      if (value.isEmpty && waitTimeNanos > 0) {
+      if (!isCompleted && waitTimeNanos > 0) {
         val ms = NANOSECONDS.toMillis(waitTimeNanos)
         val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
         val start = System.nanoTime()
-        try { synchronized { if (value.isEmpty) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
+        try { synchronized { if (!isCompleted) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
 
         awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
-      } else
-        value.isDefined
+      } else isCompleted
     }
     awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
 
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
-    if (value.isDefined || tryAwait(atMost)) this
+    if (isCompleted || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
   def result(atMost: Duration)(implicit permit: CanAwait): T =
@@ -729,16 +734,24 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
       case Right(r) ⇒ r
     }
 
-  def value: Option[Either[Throwable, T]] = getState.value
+  def value: Option[Either[Throwable, T]] = getState match {
+    case _: List[_]      ⇒ None
+    case c: Either[_, _] ⇒ Some(c.asInstanceOf[Either[Throwable, T]])
+  }
+
+  def isCompleted(): Boolean = getState match {
+    case _: Either[_, _] ⇒ true
+    case _               ⇒ false
+  }
 
   @inline
-  private[this] final def updater = AbstractPromise.updater.asInstanceOf[AtomicReferenceFieldUpdater[AbstractPromise, FState[T]]]
+  private[this] final def updater = AbstractPromise.updater.asInstanceOf[AtomicReferenceFieldUpdater[AbstractPromise, AnyRef]]
 
   @inline
-  protected final def updateState(oldState: FState[T], newState: FState[T]): Boolean = updater.compareAndSet(this, oldState, newState)
+  protected final def updateState(oldState: AnyRef, newState: AnyRef): Boolean = updater.compareAndSet(this, oldState, newState)
 
   @inline
-  protected final def getState: FState[T] = updater.get(this)
+  protected final def getState: AnyRef = updater.get(this)
 
   def tryComplete(value: Either[Throwable, T]): Boolean = {
     val callbacks: List[Either[Throwable, T] ⇒ Unit] = {
@@ -746,9 +759,9 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
         @tailrec
         def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] ⇒ Unit] = {
           getState match {
-            case cur @ Pending(listeners) ⇒
-              if (updateState(cur, if (v.isLeft) Failure(Some(v)) else Success(Some(v)))) listeners
-              else tryComplete(v)
+            case raw: List[_] ⇒
+              val cur = raw.asInstanceOf[List[Either[Throwable, T] ⇒ Unit]]
+              if (updateState(cur, v)) cur else tryComplete(v)
             case _ ⇒ null
           }
         }
@@ -767,22 +780,20 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 
   def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
     @tailrec //Returns whether the future has already been completed or not
-    def tryAddCallback(): Boolean = {
+    def tryAddCallback(): Either[Throwable, T] = {
       val cur = getState
       cur match {
-        case _: Success[_] | _: Failure[_] ⇒ true
-        case p: Pending[_] ⇒
-          val pt = p.asInstanceOf[Pending[T]]
-          if (updateState(pt, pt.copy(listeners = func :: pt.listeners))) false else tryAddCallback()
+        case r: Either[_, _]    ⇒ r.asInstanceOf[Either[Throwable, T]]
+        case listeners: List[_] ⇒ if (updateState(listeners, func :: listeners)) null else tryAddCallback()
       }
     }
 
-    if (tryAddCallback()) {
-      val result = value.get
-      Future.dispatchTask(() ⇒ notifyCompleted(func, result))
+    tryAddCallback() match {
+      case null ⇒ this
+      case completed ⇒
+        Future.dispatchTask(() ⇒ notifyCompleted(func, completed))
+        this
     }
-
-    this
   }
 
   private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
@@ -797,13 +808,13 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContext) extends Promise[T] {
   val value = Some(resolve(suppliedValue))
 
-  def tryComplete(value: Either[Throwable, T]): Boolean = true
+  def tryComplete(value: Either[Throwable, T]): Boolean = false
   def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
     val completedAs = value.get
     Future dispatchTask (() ⇒ func(completedAs))
     this
   }
-
+  def isCompleted(): Boolean = true
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
   def result(atMost: Duration)(implicit permit: CanAwait): T = value.get match {
     case Left(e)  ⇒ throw e

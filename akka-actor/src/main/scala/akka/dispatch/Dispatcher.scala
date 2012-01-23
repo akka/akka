@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -24,7 +24,6 @@ import java.util.concurrent._
  */
 class Dispatcher(
   _prerequisites: DispatcherPrerequisites,
-  val name: String,
   val id: String,
   val throughput: Int,
   val throughputDeadlineTime: Duration,
@@ -33,7 +32,14 @@ class Dispatcher(
   val shutdownTimeout: Duration)
   extends MessageDispatcher(_prerequisites) {
 
-  protected[akka] val executorServiceFactory = executorServiceFactoryProvider.createExecutorServiceFactory(name)
+  protected[akka] val executorServiceFactory: ExecutorServiceFactory =
+    executorServiceFactoryProvider.createExecutorServiceFactory(
+      id,
+      prerequisites.threadFactory match {
+        case m: MonitorableThreadFactory ⇒ m.copy(m.name + "-" + id)
+        case other                       ⇒ other
+      })
+
   protected[akka] val executorService = new AtomicReference[ExecutorService](new ExecutorServiceDelegate {
     lazy val executor = executorServiceFactory.createExecutorService
   })
@@ -59,7 +65,7 @@ class Dispatcher(
           executorService.get() execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Warning("Dispatcher", e2.toString))
+            prerequisites.eventStream.publish(Warning("Dispatcher", this.getClass, e2.toString))
             throw e2
         }
     }
@@ -94,7 +100,7 @@ class Dispatcher(
     } else false
   }
 
-  override val toString = getClass.getSimpleName + "[" + name + "]"
+  override val toString = getClass.getSimpleName + "[" + id + "]"
 }
 
 object PriorityGenerator {

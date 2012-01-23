@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.routing.roundrobin.replicationfactor_1
@@ -17,8 +17,7 @@ object RoundRobin1ReplicaMultiJvmSpec {
 
   class HelloWorld extends Actor with Serializable {
     def receive = {
-      case "Hello" ⇒
-        reply("World from node [" + Config.nodename + "]")
+      case "Hello" ⇒ reply("World from node [" + Config.nodename + "]")
     }
   }
 

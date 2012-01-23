@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.event
 
@@ -38,15 +38,33 @@ object LoggingDocSpec {
 
   class MyEventListener extends Actor {
     def receive = {
-      case InitializeLogger(_)              ⇒ sender ! LoggerInitialized
-      case Error(cause, logSource, message) ⇒ // ...
-      case Warning(logSource, message)      ⇒ // ...
-      case Info(logSource, message)         ⇒ // ...
-      case Debug(logSource, message)        ⇒ // ...
+      case InitializeLogger(_)                        ⇒ sender ! LoggerInitialized
+      case Error(cause, logSource, logClass, message) ⇒ // ...
+      case Warning(logSource, logClass, message)      ⇒ // ...
+      case Info(logSource, logClass, message)         ⇒ // ...
+      case Debug(logSource, logClass, message)        ⇒ // ...
     }
   }
   //#my-event-listener
 
+  //#my-source
+  import akka.event.LogSource
+  import akka.actor.ActorSystem
+
+  object MyType {
+    implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
+      def genString(o: AnyRef): String = o.getClass.getName
+      override def getClazz(o: AnyRef): Class[_] = o.getClass
+    }
+  }
+
+  class MyType(system: ActorSystem) {
+    import MyType._
+    import akka.event.Logging
+
+    val log = Logging(system, this)
+  }
+  //#my-source
 }
 
 class LoggingDocSpec extends AkkaSpec {

@@ -538,6 +538,15 @@ stop the actor when the message is processed. ``PoisonPill`` is enqueued as
 ordinary messages and will be handled after messages that were already queued
 in the mailbox.
 
+Graceful Stop
+-------------
+
+:meth:`gracefulStop` is useful if you need to wait for termination or compose ordered
+termination of several actors:
+
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#gracefulStop
+
+
 .. _Actor.HotSwap:
 
 Become/Unbecome

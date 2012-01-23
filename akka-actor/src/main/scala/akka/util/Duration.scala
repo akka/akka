@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -325,7 +325,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     case Duration(x, NANOSECONDS)  ⇒ x + " nanoseconds"
   }
 
-  def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000. % 60)
+  def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000d % 60)
 
   def compare(other: Duration) =
     if (other.finite_?) {

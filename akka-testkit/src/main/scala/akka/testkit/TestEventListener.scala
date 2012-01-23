@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -254,7 +254,7 @@ case class ErrorFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Error(cause, src, msg) if throwable isInstance cause ⇒
+      case Error(cause, src, _, msg) if throwable isInstance cause ⇒
         (msg == null && cause.getMessage == null && cause.getStackTrace.length == 0) ||
           doMatch(src, msg) || doMatch(src, cause.getMessage)
       case _ ⇒ false
@@ -305,8 +305,8 @@ case class WarningFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Warning(src, msg) ⇒ doMatch(src, msg)
-      case _                 ⇒ false
+      case Warning(src, _, msg) ⇒ doMatch(src, msg)
+      case _                    ⇒ false
     }
   }
 
@@ -348,8 +348,8 @@ case class InfoFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Info(src, msg) ⇒ doMatch(src, msg)
-      case _              ⇒ false
+      case Info(src, _, msg) ⇒ doMatch(src, msg)
+      case _                 ⇒ false
     }
   }
 
@@ -391,8 +391,8 @@ case class DebugFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Debug(src, msg) ⇒ doMatch(src, msg)
-      case _               ⇒ false
+      case Debug(src, _, msg) ⇒ doMatch(src, msg)
+      case _                  ⇒ false
     }
   }
 
@@ -456,15 +456,15 @@ class TestEventListener extends Logging.DefaultLogger {
     case event: LogEvent ⇒ if (!filter(event)) print(event)
     case DeadLetter(msg: SystemMessage, _, rcp) ⇒
       if (!msg.isInstanceOf[Terminate]) {
-        val event = Warning(rcp.path.toString, "received dead system message: " + msg)
+        val event = Warning(rcp.path.toString, rcp.getClass, "received dead system message: " + msg)
         if (!filter(event)) print(event)
       }
     case DeadLetter(msg, snd, rcp) ⇒
       if (!msg.isInstanceOf[Terminated]) {
-        val event = Warning(rcp.path.toString, "received dead letter from " + snd + ": " + msg)
+        val event = Warning(rcp.path.toString, rcp.getClass, "received dead letter from " + snd + ": " + msg)
         if (!filter(event)) print(event)
       }
-    case m ⇒ print(Debug(context.system.name, m))
+    case m ⇒ print(Debug(context.system.name, this.getClass, m))
   }
 
   def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })

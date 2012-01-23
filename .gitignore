@@ -61,3 +61,5 @@ akka.sublime-workspace
 .target
 .multi-jvm
 _mb
+schoir.props
+worker*.log

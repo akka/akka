@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.dispatcher
 
@@ -22,8 +22,6 @@ object DispatcherDocSpec {
     my-dispatcher {
       # Dispatcher is the name of the event-based dispatcher
       type = Dispatcher
-      # Toggles whether the threads created by this dispatcher should be daemons or not
-      daemonic = off
       # minimum number of threads to cap factor-based core number to
       core-pool-size-min = 2
       # No of core threads ... ceil(available processors * factor)
@@ -41,10 +39,8 @@ object DispatcherDocSpec {
       type = Dispatcher
       core-pool-size-factor = 8.0
       max-pool-size-factor  = 16.0
-      # Specifies the bounded capacity of the task queue
-      task-queue-size = 100
-      # Specifies which type of task queue will be used, can be "array" or "linked" (default)
-      task-queue-type = "array"
+      # Specifies the bounded capacity of the mailbox queue
+      mailbox-capacity = 100
       throughput = 3
     }
     //#my-bounded-config

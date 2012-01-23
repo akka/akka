@@ -21,14 +21,12 @@ object MongoBasedMailboxSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoBasedMailboxSpec.config) {
 
-  import org.apache.log4j.{ Logger, Level }
   import com.mongodb.async._
 
   val mongo = MongoConnection("localhost", 27017)("akka")
 
   mongo.dropDatabase() { success ⇒ }
 
-  Logger.getRootLogger.setLevel(Level.DEBUG)
 }
 
 /*object DurableMongoMailboxSpecActorFactory {

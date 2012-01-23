@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.routing
 
@@ -8,6 +8,7 @@ import annotation.tailrec
 import akka.actor.{ Props, Actor }
 import akka.util.duration._
 import akka.dispatch.Await
+import akka.routing.SmallestMailboxRouter
 
 case class FibonacciNumber(nbr: Int)
 
@@ -46,7 +47,7 @@ class ParentActor extends Actor {
     case "rrr" ⇒
       //#roundRobinRouter
       val roundRobinRouter =
-        context.actorOf(Props[PrintlnActor].withRouter(RoundRobinRouter()), "router")
+        context.actorOf(Props[PrintlnActor].withRouter(RoundRobinRouter(5)), "router")
       1 to 10 foreach {
         i ⇒ roundRobinRouter ! i
       }
@@ -54,22 +55,30 @@ class ParentActor extends Actor {
     case "rr" ⇒
       //#randomRouter
       val randomRouter =
-        context.actorOf(Props[PrintlnActor].withRouter(RandomRouter()), "router")
+        context.actorOf(Props[PrintlnActor].withRouter(RandomRouter(5)), "router")
       1 to 10 foreach {
         i ⇒ randomRouter ! i
       }
     //#randomRouter
+    case "smr" ⇒
+      //#smallestMailboxRouter
+      val smallestMailboxRouter =
+        context.actorOf(Props[PrintlnActor].withRouter(SmallestMailboxRouter(5)), "router")
+      1 to 10 foreach {
+        i ⇒ smallestMailboxRouter ! i
+      }
+    //#smallestMailboxRouter
     case "br" ⇒
       //#broadcastRouter
       val broadcastRouter =
-        context.actorOf(Props[PrintlnActor].withRouter(BroadcastRouter()), "router")
+        context.actorOf(Props[PrintlnActor].withRouter(BroadcastRouter(5)), "router")
       broadcastRouter ! "this is a broadcast message"
     //#broadcastRouter
     case "sgfcr" ⇒
       //#scatterGatherFirstCompletedRouter
       val scatterGatherFirstCompletedRouter = context.actorOf(
-        Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter(within = 2 seconds)),
-        "router")
+        Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter(
+          nrOfInstances = 5, within = 2 seconds)), "router")
       implicit val timeout = context.system.settings.ActorTimeout
       val futureResult = scatterGatherFirstCompletedRouter ? FibonacciNumber(10)
       val result = Await.result(futureResult, timeout.duration)

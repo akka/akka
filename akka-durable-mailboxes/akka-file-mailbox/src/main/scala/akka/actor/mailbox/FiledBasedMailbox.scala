@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor.mailbox
@@ -68,7 +68,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
     queue.remove
     true
   } catch {
-    // FIXME catching all and continue isn't good for OOME, ticket #1418
+    // TODO catching all and continue isn't good for OOME, ticket #1418
     case e ⇒ false
   }
 

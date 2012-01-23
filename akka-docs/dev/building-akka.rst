@@ -75,6 +75,15 @@ If compiling and testing are successful then you have everything working for the
 latest Akka development version.
 
 
+Parallel Execution
+------------------
+
+By default the tests are executed sequentially. They can be executed in parallel to reduce build times,
+if hardware can handle the increased memory and cpu usage. Add the following system property to sbt
+launch script to activate parallel execution::
+
+  -Dakka.parallelExecution=true
+
 Publish to local Ivy repository
 -------------------------------
 
