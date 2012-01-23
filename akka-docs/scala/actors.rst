@@ -154,6 +154,7 @@ In addition, it offers:
 
 * :obj:`self` reference to the :class:`ActorRef` of the actor
 * :obj:`sender` reference sender Actor of the last received message, typically used as described in :ref:`Actor.Reply`
+* :obj:`supervisorStrategy` user overridable definition the strategy to use for supervising child actors
 * :obj:`context` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)

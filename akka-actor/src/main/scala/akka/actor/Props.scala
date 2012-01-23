@@ -18,19 +18,11 @@ import akka.routing._
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
 object Props {
-  import FaultHandlingStrategy._
 
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDecider: Decider = {
-    case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: Exception                    ⇒ Restart
-    case _                               ⇒ Escalate
-  }
 
   final val defaultRoutedProps: RouterConfig = NoRouter
 
-  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
@@ -79,8 +71,6 @@ object Props {
   def apply(behavior: ActorContext ⇒ Actor.Receive): Props =
     apply(new Actor { def receive = behavior(context) })
 
-  def apply(faultHandler: FaultHandlingStrategy): Props =
-    apply(new Actor { def receive = { case _ ⇒ } }).withFaultHandler(faultHandler)
 }
 
 /**
@@ -94,14 +84,10 @@ object Props {
  *  val props = Props(
  *    creator = ..,
  *    dispatcher = ..,
- *    faultHandler = ..,
  *    routerConfig = ..
  *  )
  *  val props = Props().withCreator(new MyActor)
  *  val props = Props[MyActor].withRouter(RoundRobinRouter(..))
- *  val props = Props[MyActor].withFaultHandler(OneForOneStrategy {
- *    case e: IllegalStateException ⇒ Resume
- *  })
  * }}}
  *
  * Examples on Java API:
@@ -114,14 +100,12 @@ object Props {
  *    }
  *  });
  *  Props props = new Props().withCreator(new UntypedActorFactory() { ... });
- *  Props props = new Props(MyActor.class).withFaultHandler(new OneForOneStrategy(...));
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,
-  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
   routerConfig: RouterConfig = Props.defaultRoutedProps) {
 
   /**
@@ -129,16 +113,14 @@ case class Props(
    */
   def this() = this(
     creator = Props.defaultCreator,
-    dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler)
+    dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
    * Java API.
    */
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
-    dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler)
+    dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
    * Java API.
@@ -146,7 +128,6 @@ case class Props(
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = () ⇒ actorClass.newInstance,
     dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler,
     routerConfig = Props.defaultRoutedProps)
 
   /**
@@ -174,11 +155,6 @@ case class Props(
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String) = copy(dispatcher = d)
-
-  /**
-   * Returns a new Props with the specified faulthandler set.
-   */
-  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
 
   /**
    * Returns a new Props with the specified router config set.

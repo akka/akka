@@ -1,19 +1,19 @@
 .. _fault-tolerance-scala:
 
-Fault Handling Strategies (Scala)
-=================================
+Fault Tolerance (Scala)
+=======================
 
 .. sidebar:: Contents
 
    .. contents:: :local:
 
 As explained in :ref:`actor-systems` each actor is the supervisor of its
-children, and as such each actor is given a fault handling strategy when it is
-created. This strategy cannot be changed afterwards as it is an integral part
-of the actor system’s structure.
+children, and as such each actor defines fault handling supervisor strategy.
+This strategy cannot be changed afterwards as it is an integral part of the
+actor system’s structure.
 
-Creating a Fault Handling Strategy
-----------------------------------
+Creating a Supervisor Strategy
+------------------------------
 
 For the sake of demonstration let us consider the following strategy:
 
@@ -56,7 +56,7 @@ MustMatchers``
 .. includecode:: code/akka/docs/actor/FaultHandlingDocSpec.scala
    :include: testkit
 
-Using the strategy shown above let us create actors:
+Let us create actors:
 
 .. includecode:: code/akka/docs/actor/FaultHandlingDocSpec.scala
    :include: create
