@@ -321,7 +321,7 @@ object Future {
 
               val taskStack = Stack.empty[() ⇒ Unit]
               taskStack push task
-              _taskStack set Some(taskStack)
+              _taskStack set taskStack
 
               while (taskStack.nonEmpty) {
                 val next = taskStack.pop()
