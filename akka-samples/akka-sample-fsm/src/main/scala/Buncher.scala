@@ -64,7 +64,7 @@ abstract class GenericBuncher[A: Manifest, B](val singleTimeout: Duration, val m
     case Event(Stop, _)  ⇒ stop
   }
 
-  when(Active, stateTimeout = Some(singleTimeout)) {
+  when(Active, stateTimeout = singleTimeout) {
     case Event(Msg(m), acc) ⇒
       stay using merge(acc, m)
     case Event(StateTimeout, acc) ⇒
