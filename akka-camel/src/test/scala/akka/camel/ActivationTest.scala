@@ -7,26 +7,15 @@ package akka.camel
 import org.scalatest.matchers.ShouldMatchers
 import akka.util.duration._
 import org.apache.camel.ProducerTemplate
-import org.scalatest.{BeforeAndAfterEach, FlatSpec}
+import org.scalatest.FlatSpec
 import akka.actor._
 import akka.util.Timeout
 import java.util.concurrent.{TimeUnit, CountDownLatch}
 import TestSupport._
 
-class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEach{
-  implicit var system :ActorSystem = _
+class ActivationTest extends FlatSpec with ShouldMatchers with SharedCamelSystem{
   implicit val timeout = Timeout(10 seconds)
   def template : ProducerTemplate = camel.template
-  def camel : Camel = CamelExtension(system)
-
-
-  override protected def beforeEach() {
-    system = ActorSystem(this.getClass.getSimpleName)
-  }
-
-  override protected def afterEach {
-    system.shutdown()
-  }
 
   def testActorWithEndpoint(uri: String): ActorRef = { system.actorOf(Props(new TestConsumer(uri)))}
 
@@ -68,13 +57,13 @@ class ActivationTest extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
   }
 
   "awaitActivation" should "fail if notification timeout is too short and activation is not complete yet" in {
-    val actor = testActorWithEndpoint("direct:actor-1")
+    val actor = testActorWithEndpoint("direct:actor-4")
     intercept[ActivationTimeoutException]{
       camel.awaitActivation(actor, 0 seconds)
     }
   }
 
-  class TestConsumer(uri:String) extends Actor with Consumer{
+  class TestConsumer(uri:String) extends Consumer{
     def endpointUri = uri
     override def receive = {
       case msg:Message => sender ! "received " + msg.body
