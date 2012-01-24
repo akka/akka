@@ -255,6 +255,10 @@ currently traversed actor, otherwise it will step “down” to the named child.
 It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
 
+If the path being looked up does not exist, a special actor reference is
+returned which behaves like the actor system’s dead letter queue but retains
+its identity (i.e. the path which was looked up).
+
 Remote actor addresses may also be looked up, if remoting is enabled::
 
   getContext().actorFor("akka://app@otherhost:1234/user/serviceB")
