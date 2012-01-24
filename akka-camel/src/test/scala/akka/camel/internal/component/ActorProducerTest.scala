@@ -271,7 +271,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   var exchange : CamelExchangeAdapter = _
   var callback : AsyncCallback = _
 
-  var producer : TestableProducer = _
+  var producer : ConsumerAsyncProcessor = _
   var message : Message = _
   var probe : TestProbe = _
   var asyncCallback : TestAsyncCallback = _
@@ -288,7 +288,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     callback = mock[AsyncCallback]
     actorEndpointPath = mock[ActorEndpointPath]
 
-    producer = new TestableProducer(config(), camel)
+    producer = new ConsumerAsyncProcessor(config(), camel)
     message = Message(null, null, null)
   }
 
@@ -301,7 +301,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def given(actor: ActorRef = probe.ref, outCapable: Boolean, blocking: CommunicationStyle = NonBlocking, autoAck: Boolean = true, outTimeout : Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
-    new TestableProducer(config(isBlocking = blocking, isAutoAck = autoAck, _outTimeout = outTimeout), camel)
+    new ConsumerAsyncProcessor(config(isBlocking = blocking, isAutoAck = autoAck, _outTimeout = outTimeout), camel)
   }
 
   def createAsyncCallback = new TestAsyncCallback
