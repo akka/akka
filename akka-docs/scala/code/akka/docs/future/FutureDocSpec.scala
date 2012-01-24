@@ -131,6 +131,12 @@ class FutureDocSpec extends AkkaSpec {
     val future2 = future1.filter(_ % 2 == 0)
     val result = Await.result(future2, 1 second)
     result must be(4)
+
+    val failedFilter = future1.filter(_ % 2 == 1).recover {
+      case m: MatchError ⇒ 0 //When filter fails, it will have a MatchError
+    }
+    val result2 = Await.result(failedFilter, 1 second)
+    result2 must be(0) //Can only be 0 when there was a MatchError
     //#filter
   }
 
@@ -307,8 +313,8 @@ class FutureDocSpec extends AkkaSpec {
       def doSomethingOnFailure(t: Throwable) = ()
       //#onComplete
       future onComplete {
-        case Right(result) ⇒ doSomethingOnSuccess(result) //Right == Success
-        case Left(failure) ⇒ doSomethingOnFailure(failure) //Left == Failure
+        case Right(result) ⇒ doSomethingOnSuccess(result)
+        case Left(failure) ⇒ doSomethingOnFailure(failure)
       }
       //#onComplete
       Await.result(future, 1 second) must be("foo")

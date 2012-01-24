@@ -164,8 +164,8 @@ But it may be faster to use ``traverse`` as it doesn't have to create an interme
 
 Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``\s and a function
 from the type of the start-value and the type of the futures and returns something with the same type as the start-value,
-and then applies the function to all elements in the sequence of futures, non-blockingly,
-the execution will run on the Thread of the last completing Future in the sequence.
+and then applies the function to all elements in the sequence of futures, asynchronously,
+the execution will start when the last of the Futures is completed.
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: fold
@@ -180,7 +180,7 @@ as the start-value, you can use ``reduce``, it works like this:
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: reduce
 
-Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, `
+Same as with ``fold``, the execution will be done asynchronously when the last of the Future is completed,`
 you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 
 Callbacks
