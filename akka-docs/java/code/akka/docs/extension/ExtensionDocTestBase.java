@@ -42,7 +42,7 @@ public class ExtensionDocTestBase {
 
     //This method will be called by Akka
     // to instantiate our Extension
-    public CountExtensionImpl createExtension(ActorSystemImpl system) {
+    public CountExtensionImpl createExtension(ExtendedActorSystem system) {
       return new CountExtensionImpl();
     }
   }

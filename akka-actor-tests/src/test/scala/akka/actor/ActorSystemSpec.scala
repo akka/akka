@@ -15,11 +15,11 @@ class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this
-  def createExtension(s: ActorSystemImpl) = new TestExtension(s)
+  def createExtension(s: ExtendedActorSystem) = new TestExtension(s)
 }
 
 // Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
-class TestExtension(val system: ActorSystemImpl) extends Extension
+class TestExtension(val system: ExtendedActorSystem) extends Extension
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") {

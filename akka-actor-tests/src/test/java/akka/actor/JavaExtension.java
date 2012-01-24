@@ -23,15 +23,15 @@ public class JavaExtension {
       return TestExtensionId.TestExtensionProvider;
     }
 
-    public TestExtension createExtension(ActorSystemImpl i) {
+    public TestExtension createExtension(ExtendedActorSystem i) {
       return new TestExtension(i);
     }
   }
 
   static class TestExtension implements Extension {
-    public final ActorSystemImpl system;
+    public final ExtendedActorSystem system;
 
-    public TestExtension(ActorSystemImpl i) {
+    public TestExtension(ExtendedActorSystem i) {
       system = i;
     }
   }
