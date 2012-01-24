@@ -12,6 +12,87 @@ Introduction
 
 This documentation is in progress. More to come.
 
+Components
+----------
+
+ByteString
+^^^^^^^^^^
+
+A primary goal of Akka's IO module is to only communicate between actors with immutable objects. When dealing with network IO on the jvm ``Array[Byte]`` and ``ByteBuffer`` are commonly used to represent collections of ``Byte``\s, but they are mutable. Scala's collection library also lacks a suitably efficient immutable collection for ``Byte``\s. Being able to safely and efficiently move ``Byte``\s around is very important for this IO module, so ``ByteString`` was developed.
+
+``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created.
+
+``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones:
+
+copyToBuffer(buffer: ByteBuffer): Int
+    Copy as many bytes as possible to a ``ByteBuffer``, starting from it's current position. This method will not overflow the buffer. It returns the number of bytes copied.
+
+compact: ByteString
+    Creates a new ``ByteString`` with all contents compacted into a single byte array. If the contents of this ``ByteString`` are already compacted it will return itself unchanged.
+
+asByteBuffer: ByteBuffer
+    If possible this will return a read-only ``ByteBuffer`` that wraps the internal byte array. If this ``ByteString`` contains more then one byte array then this method will return the result of ``toByteBuffer``.
+
+toByteBuffer: ByteBuffer
+    Creates a new ByteBuffer with a copy of all bytes contained in this ``ByteString``.
+
+decodeString(charset: String): String
+    Decodes this ``ByteString`` using a charset to produce a ``String``.
+
+utf8String: String
+    Decodes this ``ByteString`` as a UTF-8 encoded String.
+
+There are also several factory methods in the ``ByteString`` companion object to assist in creating a new ``ByteString``. The ``apply`` method accepts ``Array[Byte]``, ``Byte*``, ``ByteBuffer``, ``String``, as well as a ``String`` with a charset. There is also ``fromArray(array, offset, length)`` for creating a ``ByteString`` using only part of an ``Array[Byte]``.
+
+Finally, there is a ``ByteStringBuilder`` to build up a ``ByteString`` using Scala's mutable ``Builder`` concept. It can be especially useful when many ``ByteString``\s need to be concatenated in a performance critical section of a program.
+
+IO.Handle
+^^^^^^^^^
+
+``IO.Handle`` is an immutable reference to a Java NIO ``Channel``. Passing mutable ``Channel``\s between ``Actor``\s could lead to unsafe behavior, so instead subclasses of the ``IO.Handle`` trait are used. Currently there are 2 concrete subclasses: ``IO.SocketHandle`` (representing a ``SocketChannel``) and ``IO.ServerHandle`` (representing a ``ServerSocketChannel``).
+
+IOManager
+^^^^^^^^^
+
+The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are created and sent from certain methods:
+
+IOManager(system).connect(address: SocketAddress): IO.SocketHandle
+    Opens a ``SocketChannel`` and connects to an address. Can also use ``connect(host: String, port: Int)``.
+
+IOManager(system).listen(address: SocketAddress): IO.ServerHandle
+    Opens a ``ServerSocketChannel`` and listens on an address. Can also use ``listen(host: String, port: Int)``.
+
+socketHandle.write(bytes: ByteString)
+    Write to the ``SocketChannel``.
+
+serverHandle.accept(): IO.SocketHandle
+    Accepts an incoming connection, and returns the ``IO.SocketHandle`` for the new connection.
+
+handle.close()
+    Closes the ``Channel``.
+
+Messages that the ``IOManager`` can send to an ``Actor`` are:
+
+IO.Listening(server: IO.ServerHandle, address: SocketAddress)
+    Sent when a ``ServerSocketChannel`` is created. If port 0 (random port) was requested then the address returned here will contain the actual port.
+
+IO.Connected(socket: IO.SocketHandle, address: SocketAddress)
+    Sent after a ``SocketChannel`` has successfully connected.
+
+IO.NewClient(server: IO.ServerHandle)
+    Sent when a new client has connected to a ``ServerSocketChannel``. The ``accept`` method must be called on the ``IO.ServerHandle`` in order to get the ``IO.SocketHandle`` to communicate to the new client.
+
+IO.Read(handle: IO.ReadHandle, bytes: ByteString)
+    Sent when bytes have been read from a ``SocketChannel``. The handle is a ``IO.ReadHandle``, which is a superclass of ``IO.SocketHandle``.
+
+IO.Closed(handle: IO.Handle, cause: Option[Exception])
+    Sent when a ``Channel`` has closed. If an ``Exception`` was thrown due to this ``Channel`` closing it will be contained here.
+
+IO.Iteratee
+^^^^^^^^^^^
+
+See example below.
+
 Examples
 --------
 
