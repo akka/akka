@@ -125,12 +125,28 @@ class FutureDocSpec extends AkkaSpec {
     //#flat-map
   }
 
+  "demonstrate usage of filter" in {
+    //#filter
+    val future1 = Promise.successful(4)
+    val future2 = future1.filter(_ % 2 == 0)
+    val result = Await.result(future2, 1 second)
+    result must be(4)
+
+    val failedFilter = future1.filter(_ % 2 == 1).recover {
+      case m: MatchError ⇒ 0 //When filter fails, it will have a MatchError
+    }
+    val result2 = Await.result(failedFilter, 1 second)
+    result2 must be(0) //Can only be 0 when there was a MatchError
+    //#filter
+  }
+
   "demonstrate usage of for comprehension" in {
     //#for-comprehension
     val f = for {
       a ← Future(10 / 2) // 10 / 2 = 5
       b ← Future(a + 1) //  5 + 1 = 6
       c ← Future(a - 1) //  5 - 1 = 4
+      if c > 3 // Future.filter
     } yield b * c //  6 * 4 = 24
 
     // Note that the execution of futures a, b, and c
@@ -248,6 +264,72 @@ class FutureDocSpec extends AkkaSpec {
     }
     //#recover
     Await.result(future, 1 second) must be(0)
+  }
+
+  "demonstrate usage of zip" in {
+    val future1 = Future { "foo" }
+    val future2 = Future { "bar" }
+    //#zip
+    val future3 = future1 zip future2 map { case (a, b) ⇒ a + " " + b }
+    //#zip
+    Await.result(future3, 1 second) must be("foo bar")
+  }
+
+  "demonstrate usage of or" in {
+    val future1 = Future { "foo" }
+    val future2 = Future { "bar" }
+    val future3 = Future { "pigdog" }
+    //#or
+    val future4 = future1 or future2 or future3
+    //#or
+    Await.result(future4, 1 second) must be("foo")
+  }
+
+  "demonstrate usage of onSuccess & onFailure & onComplete" in {
+    {
+      val future = Future { "foo" }
+      //#onSuccess
+      future onSuccess {
+        case "bar"     ⇒ println("Got my bar alright!")
+        case x: String ⇒ println("Got some random string: " + x)
+      }
+      //#onSuccess
+      Await.result(future, 1 second) must be("foo")
+    }
+    {
+      val future = Promise.failed[String](new IllegalStateException("OHNOES"))
+      //#onFailure
+      future onFailure {
+        case ise: IllegalStateException if ise.getMessage == "OHNOES" ⇒
+        //OHNOES! We are in deep trouble, do something!
+        case e: Exception ⇒
+        //Do something else
+      }
+      //#onFailure
+    }
+    {
+      val future = Future { "foo" }
+      def doSomethingOnSuccess(r: String) = ()
+      def doSomethingOnFailure(t: Throwable) = ()
+      //#onComplete
+      future onComplete {
+        case Right(result) ⇒ doSomethingOnSuccess(result)
+        case Left(failure) ⇒ doSomethingOnFailure(failure)
+      }
+      //#onComplete
+      Await.result(future, 1 second) must be("foo")
+    }
+  }
+
+  "demonstrate usage of Promise.success & Promise.failed" in {
+    //#successful
+    val future = Promise.successful("Yay!")
+    //#successful
+    //#failed
+    val otherFuture = Promise.failed[String](new IllegalArgumentException("Bang!"))
+    //#failed
+    Await.result(future, 1 second) must be("Yay!")
+    intercept[IllegalArgumentException] { Await.result(otherFuture, 1 second) }
   }
 
 }
