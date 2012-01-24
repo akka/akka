@@ -300,7 +300,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to handle exceptions when calling methods" in {
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = system.actorOf(Props(new Actor {
-          override val supervisorStrategy = OneForOneStrategy {
+          override val supervisorStrategy = OneForOneStrategy() {
             case e: IllegalStateException if e.getMessage == "expected" ⇒ SupervisorStrategy.Resume
           }
           def receive = {

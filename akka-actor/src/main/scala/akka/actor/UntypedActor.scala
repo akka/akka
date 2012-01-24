@@ -37,20 +37,21 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *      }
  *    }
  *
- *   private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
- *     @Override
- *     public Action apply(Throwable t) {
- *       if (t instanceof ArithmeticException) {
- *         return resume();
- *       } else if (t instanceof NullPointerException) {
- *         return restart();
- *       } else if (t instanceof IllegalArgumentException) {
- *         return stop();
- *       } else {
- *         return escalate();
+ *   private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+ *     new Function<Throwable, Action>() {
+ *       @Override
+ *       public Action apply(Throwable t) {
+ *         if (t instanceof ArithmeticException) {
+ *           return resume();
+ *         } else if (t instanceof NullPointerException) {
+ *           return restart();
+ *         } else if (t instanceof IllegalArgumentException) {
+ *           return stop();
+ *         } else {
+ *           return escalate();
+ *         }
  *       }
- *     }
- *   }, 10, 60000);
+ *     });
  *
  *   @Override
  *   public SupervisorStrategy supervisorStrategy() {

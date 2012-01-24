@@ -355,7 +355,7 @@ class LocalActorRefProvider(
 
     override val supervisorStrategy = {
       import akka.actor.SupervisorStrategy._
-      OneForOneStrategy {
+      OneForOneStrategy() {
         case _: ActorKilledException         ⇒ Stop
         case _: ActorInitializationException ⇒ Stop
         case _: Exception                    ⇒ Restart
