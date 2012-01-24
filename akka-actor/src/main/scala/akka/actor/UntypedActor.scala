@@ -50,7 +50,7 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *         return escalate();
  *       }
  *     }
- *   }, 10, 60000);
+ *   }, 10, Duration.parse("1 minute");
  *
  *   @Override
  *   public SupervisorStrategy supervisorStrategy() {

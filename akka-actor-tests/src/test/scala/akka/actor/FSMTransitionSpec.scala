@@ -5,8 +5,8 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-
 import FSM._
+import akka.util.Duration
 
 object FSMTransitionSpec {
 
@@ -72,7 +72,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       val fsm = system.actorOf(Props(new MyFSM(testActor)))
       val sup = system.actorOf(Props(new Actor {
         context.watch(fsm)
-        override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), None, None)
+        override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), Duration.Inf)
         def receive = { case _ ⇒ }
       }))
 

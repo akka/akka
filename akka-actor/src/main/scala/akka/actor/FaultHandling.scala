@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.util.Duration
 
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
 
@@ -95,6 +96,13 @@ object SupervisorStrategy {
    */
   def escalate = Escalate
 
+  /**
+   * When supervisorStrategy is not specified for an actor this
+   * is used by default. The child will be stopped when
+   * [[akka.ActorInitializationException]] or [[akka.ActorKilledException]]
+   * is thrown. It will be restarted for other `Exception` types.
+   * The error is escalated if it's a `Throwable`, i.e. `Error`.
+   */
   final val defaultStrategy: SupervisorStrategy = {
     def defaultDecider: Decider = {
       case _: ActorInitializationException ⇒ Stop
@@ -102,7 +110,7 @@ object SupervisorStrategy {
       case _: Exception                    ⇒ Restart
       case _                               ⇒ Escalate
     }
-    OneForOneStrategy(defaultDecider, None, None)
+    OneForOneStrategy(defaultDecider)
   }
 
   type Decider = PartialFunction[Throwable, Action]
@@ -120,14 +128,14 @@ object SupervisorStrategy {
    * Backwards compatible Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: List[Class[_ <: Throwable]]): Decider =
+  def makeDecider(trapExit: Seq[Class[_ <: Throwable]]): Decider =
     { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
 
   /**
    * Backwards compatible Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toList)
+  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toSeq)
 
   /**
    * Decider builder for Iterables of cause-action pairs, e.g. a map obtained
@@ -156,6 +164,11 @@ object SupervisorStrategy {
       }
       buf
     }
+
+  private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
+    if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None
+  private[akka] def maxNrOfRetriesOption(maxNrOfRetries: Int): Option[Int] =
+    if (maxNrOfRetries < 0) None else Some(maxNrOfRetries)
 }
 
 abstract class SupervisorStrategy {
@@ -199,46 +212,41 @@ abstract class SupervisorStrategy {
 }
 
 object AllForOneStrategy {
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): AllForOneStrategy =
-    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): AllForOneStrategy =
+  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration): AllForOneStrategy =
     new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int]): AllForOneStrategy =
-    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, None)
+  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int): AllForOneStrategy =
+    apply(trapExit, maxNrOfRetries, Duration.Inf)
+  def apply(trapExit: Seq[Class[_ <: Throwable]], withinTimeRange: Duration): AllForOneStrategy =
+    apply(trapExit, -1, withinTimeRange)
 }
 
 /**
  * Restart all actors linked to the same supervisor when one fails,
  * trapExit = which Throwables should be intercepted
  * maxNrOfRetries = the number of times an actor is allowed to be restarted
- * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+ * withinTimeRange = duration of the time window for maxNrOfRetries, Duration.Inf means no window
  */
 case class AllForOneStrategy(decider: SupervisorStrategy.Decider,
-                             maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends SupervisorStrategy {
+                             maxNrOfRetries: Int = -1,
+                             withinTimeRange: Duration = Duration.Inf) extends SupervisorStrategy {
 
-  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(decider),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(decider), maxNrOfRetries, withinTimeRange)
 
-  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
 
-  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */
-  val retriesWindow = (maxNrOfRetries, withinTimeRange)
+  private val retriesWindow = (
+    SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
+    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
     children foreach (context.stop(_))
@@ -256,46 +264,41 @@ case class AllForOneStrategy(decider: SupervisorStrategy.Decider,
 }
 
 object OneForOneStrategy {
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int): OneForOneStrategy =
-    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries), if (withinTimeRange < 0) None else Some(withinTimeRange))
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): OneForOneStrategy =
+  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration): OneForOneStrategy =
     new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
-  def apply(trapExit: List[Class[_ <: Throwable]], maxNrOfRetries: Option[Int]): OneForOneStrategy =
-    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, None)
+  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int): OneForOneStrategy =
+    apply(trapExit, maxNrOfRetries, Duration.Inf)
+  def apply(trapExit: Seq[Class[_ <: Throwable]], withinTimeRange: Duration): OneForOneStrategy =
+    apply(trapExit, -1, withinTimeRange)
 }
 
 /**
  * Restart an actor when it fails
  * trapExit = which Throwables should be intercepted
  * maxNrOfRetries = the number of times an actor is allowed to be restarted
- * withinTimeRange = millisecond time window for maxNrOfRetries, negative means no window
+ * withinTimeRange = duration of the time window for maxNrOfRetries, Duration.Inf means no window
  */
 case class OneForOneStrategy(decider: SupervisorStrategy.Decider,
-                             maxNrOfRetries: Option[Int] = None,
-                             withinTimeRange: Option[Int] = None) extends SupervisorStrategy {
+                             maxNrOfRetries: Int = -1,
+                             withinTimeRange: Duration = Duration.Inf) extends SupervisorStrategy {
 
-  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(decider),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(decider), maxNrOfRetries, withinTimeRange)
 
-  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
 
-  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Int) =
-    this(SupervisorStrategy.makeDecider(trapExit),
-      if (maxNrOfRetries < 0) None else Some(maxNrOfRetries),
-      if (withinTimeRange < 0) None else Some(withinTimeRange))
+  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
+    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */
-  val retriesWindow = (maxNrOfRetries, withinTimeRange)
+  private val retriesWindow = (
+    SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
+    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 

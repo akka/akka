@@ -147,7 +147,7 @@ object Actor {
  *     case _: NullPointerException     ⇒ Restart
  *     case _: IllegalArgumentException ⇒ Stop
  *     case _: Exception                ⇒ Escalate
- *   }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+ *   }: Decider, maxNrOfRetries = 10, withinTimeRange = 1 minute))
  *
  *   def receive = {
  *                                      // directly calculated reply

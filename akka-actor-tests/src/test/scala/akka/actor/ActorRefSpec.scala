@@ -376,7 +376,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
         val boss = system.actorOf(Props(new Actor {
 
-          override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), 2, 1000)
+          override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), maxNrOfRetries = 2, withinTimeRange = 1 second)
 
           val ref = context.actorOf(
             Props(new Actor {

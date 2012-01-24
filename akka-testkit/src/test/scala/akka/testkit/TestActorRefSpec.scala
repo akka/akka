@@ -182,7 +182,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
             override def postRestart(reason: Throwable) { counter -= 1 }
           }), self, "child")
 
-          override def supervisorStrategy = OneForOneStrategy(List(classOf[ActorKilledException]), 5, 1000)
+          override def supervisorStrategy = OneForOneStrategy(List(classOf[ActorKilledException]),
+            maxNrOfRetries = 5, withinTimeRange = 1 second)
 
           def receiveT = { case "sendKill" ⇒ ref ! Kill }
         }))
