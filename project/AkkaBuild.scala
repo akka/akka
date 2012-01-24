@@ -190,6 +190,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
+      ivyXML := Dependencies.mongoMailboxExcludes,
       testMongoMailbox := false,
       testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
     )
@@ -428,9 +429,20 @@ object Dependencies {
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
 
-  val redisMailbox = Seq(redis, Test.junit)
+  val redisMailbox = Seq(slf4jApi, redis, Test.junit)
 
-  val mongoMailbox = Seq(mongoAsync, twttrUtilCore, Test.junit)
+  val mongoMailbox = Seq(slf4jApi, commonsPool, mongoAsync, twttrUtilCore, Test.junit)
+
+  val mongoMailboxExcludes = {
+    <dependencies>
+      <dependency org="com.mongodb.async" name="bson-driver_2.9.0-1" rev="0.2.9-1" >
+        <exclude module="netty"/>
+      </dependency>
+      <dependency org="com.mongodb.async" name="mongo-driver_2.9.0-1" rev="0.2.9-1" >
+        <exclude module="netty"/>
+      </dependency>
+    </dependencies>
+  }
 
   val zookeeperMailbox = Seq(zkClient, zookeeper, Test.junit)
 
@@ -478,6 +490,7 @@ object Dependency {
   val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
+  val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
   val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
   val h2Lzf         = "voldemort.store.compress"    % "h2-lzf"                 % "1.0"        // ApacheV2
   val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
