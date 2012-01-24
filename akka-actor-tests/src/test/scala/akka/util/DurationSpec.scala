@@ -53,11 +53,12 @@ class DurationSpec extends WordSpec with MustMatchers {
     "support fromNow" in {
       val dead = 2.seconds.fromNow
       val dead2 = 2 seconds fromNow
-      dead.timeLeft must be > 1.second
-      dead2.timeLeft must be > 1.second
+      // view bounds vs. very local type inference vs. operator precedence: sigh
+      dead.timeLeft must be > (1 second: Duration)
+      dead2.timeLeft must be > (1 second: Duration)
       1.second.sleep
-      dead.timeLeft must be < 1.second
-      dead2.timeLeft must be < 1.second
+      dead.timeLeft must be < (1 second: Duration)
+      dead2.timeLeft must be < (1 second: Duration)
     }
 
   }
