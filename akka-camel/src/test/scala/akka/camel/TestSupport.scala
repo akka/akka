@@ -47,8 +47,8 @@ private[camel] object TestSupport {
 
 
   trait SharedCamelSystem extends BeforeAndAfterAll{ this:Suite =>
-    lazy val system = ActorSystem("test")
-    def camel = CamelExtension(system)
+    implicit lazy val system = ActorSystem("test")
+    implicit def camel = CamelExtension(system)
 
     abstract override protected def afterAll() {
       super.afterAll()
