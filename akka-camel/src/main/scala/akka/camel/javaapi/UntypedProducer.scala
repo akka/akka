@@ -14,16 +14,16 @@ import akka.camel._
  *
  * @author Martin Krasser
  */
-trait UntypedProducer extends ProducerSupport { this: UntypedActor =>
+trait UntypedProducer extends ProducerSupport { this: UntypedActor ⇒
   final override def endpointUri = getEndpointUri
   final override def oneway = isOneway
 
   final override def receiveBeforeProduce = {
-    case msg => onReceiveBeforeProduce(msg)
+    case msg ⇒ onReceiveBeforeProduce(msg)
   }
 
   final override def receiveAfterProduce = {
-    case msg => onReceiveAfterProduce(msg)
+    case msg ⇒ onReceiveAfterProduce(msg)
   }
 
   /**

@@ -15,14 +15,13 @@ import akka.camel._
  *
  * @author Martin Krasser
  */
-trait UntypedConsumer extends Consumer { self: UntypedActor =>
+trait UntypedConsumer extends Consumer { self: UntypedActor ⇒
   final def endpointUri = getEndpointUri
 
   /**
    * Returns the Camel endpoint URI to consume messages from.
    */
   def getEndpointUri(): String
-
 
 }
 

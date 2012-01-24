@@ -4,7 +4,7 @@
 
 package akka.camel
 
-import org.apache.camel.{ Message => CamelMessage, ExchangePattern, AsyncCallback, Exchange}
+import org.apache.camel.{ Message ⇒ CamelMessage, ExchangePattern, AsyncCallback, Exchange }
 import org.apache.camel.processor.SendProcessor
 
 import akka.actor.Actor
@@ -14,8 +14,8 @@ import akka.camel.CamelMessageConversion._
  *
  * @author Martin Krasser
  */
-trait ProducerSupport { this: Actor =>
-  protected [this] val camel = CamelExtension(context.system)
+trait ProducerSupport { this: Actor ⇒
+  protected[this] val camel = CamelExtension(context.system)
 
   /**
    * Message headers to copy by default from request message to response-message.
@@ -31,7 +31,7 @@ trait ProducerSupport { this: Actor =>
   /**
    * <code>SendProcessor</code> for producing messages to <code>endpoint</code>.
    */
-  private lazy val processor ={
+  private lazy val processor = {
     val sendProcessor = new SendProcessor(endpoint)
     sendProcessor.start()
     sendProcessor
@@ -106,10 +106,10 @@ trait ProducerSupport { this: Actor =>
       def done(doneSync: Boolean): Unit = {
         (doneSync, exchange.isFailed) match {
           //TODO this boolean logic is smart, but less readable as opposed to traditional if statement.
-          case (true, true)   => dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
-          case (true, false)  => dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))
-          case (false, true)  => dispatchAsync(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
-          case (false, false) => dispatchAsync(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
+          case (true, true)   ⇒ dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
+          case (true, false)  ⇒ dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))
+          case (false, true)  ⇒ dispatchAsync(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
+          case (false, false) ⇒ dispatchAsync(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
         }
       }
 
@@ -117,7 +117,7 @@ trait ProducerSupport { this: Actor =>
 
       private def dispatchAsync(result: Any) = {
         // preserving the originalSender, so that in overriding receiveAfterProduce it is possible to forward responses to another actor
-        producer.tell(result,originalSender)
+        producer.tell(result, originalSender)
       }
     })
   }
@@ -130,9 +130,9 @@ trait ProducerSupport { this: Actor =>
    * @see Producer#produce(Any, ExchangePattern)
    */
   protected def produce: Receive = {
-    case res: MessageResult => receiveAfterProduce(res.message)
-    case res: FailureResult => receiveAfterProduce(res.failure)
-    case msg => {
+    case res: MessageResult ⇒ receiveAfterProduce(res.message)
+    case res: FailureResult ⇒ receiveAfterProduce(res.failure)
+    case msg ⇒ {
       if (oneway)
         produce(receiveBeforeProduce(msg), ExchangePattern.InOnly)
       else
@@ -146,7 +146,7 @@ trait ProducerSupport { this: Actor =>
    * by subtraits or subclasses.
    */
   protected def receiveBeforeProduce: PartialFunction[Any, Any] = {
-    case msg => msg
+    case msg ⇒ msg
   }
 
   /**
@@ -157,7 +157,7 @@ trait ProducerSupport { this: Actor =>
    * actor).
    */
   protected def receiveAfterProduce: Receive = {
-    case msg => if (!oneway) sender ! msg
+    case msg ⇒ if (!oneway) sender ! msg
   }
 
   /**
@@ -171,7 +171,7 @@ trait ProducerSupport { this: Actor =>
 /**
  * Mixed in by Actor implementations to produce messages to Camel endpoints.
  */
-trait Producer extends ProducerSupport { this: Actor =>
+trait Producer extends ProducerSupport { this: Actor ⇒
 
   /**
    * Default implementation of Actor.receive. Any messages received by this actors
@@ -179,7 +179,6 @@ trait Producer extends ProducerSupport { this: Actor =>
    */
   protected def receive = produce
 }
-
 
 /**
  * @author Martin Krasser
@@ -196,7 +195,7 @@ private[camel] case class FailureResult(failure: Failure)
  *
  * @author Martin Krasser
  */
-trait Oneway extends Producer { this: Actor =>
+trait Oneway extends Producer { this: Actor ⇒
   override def oneway = true
 }
 

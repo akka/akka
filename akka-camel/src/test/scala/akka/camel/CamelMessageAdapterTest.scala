@@ -6,10 +6,10 @@ package akka.camel
 
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import org.apache.camel.impl.{DefaultExchange, DefaultMessage}
-import akka.camel.TestSupport.{SharedCamelSystem, MessageSugar}
+import org.apache.camel.impl.{ DefaultExchange, DefaultMessage }
+import akka.camel.TestSupport.{ SharedCamelSystem, MessageSugar }
 
-class CamelMessageAdapterTest extends JUnitSuite with SharedCamelSystem with MessageSugar{
+class CamelMessageAdapterTest extends JUnitSuite with SharedCamelSystem with MessageSugar {
   import CamelMessageConversion.toMessageAdapter
 
   @Test def shouldOverwriteBodyAndAddHeader = {

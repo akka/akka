@@ -4,18 +4,18 @@
 
 package akka.camel
 
-import internal.component.{CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent}
+import internal.component.{ CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent }
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
-import org.apache.camel.{ProducerTemplate, CamelContext}
+import org.apache.camel.{ ProducerTemplate, CamelContext }
 import akka.util.Duration
-import akka.actor.{ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem}
+import akka.actor.{ ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem }
 import akka.event.Logging.Info
 import DangerousStuff._
 
-trait Camel extends ConsumerRegistry with Extension with Activation{
-  def context : CamelContext
-  def template : ProducerTemplate
+trait Camel extends ConsumerRegistry with Extension with Activation {
+  def context: CamelContext
+  def template: ProducerTemplate
 
   /**
    * Refers back to the associated ActorSystem
@@ -31,8 +31,8 @@ trait Camel extends ConsumerRegistry with Extension with Activation{
  * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the  actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources.
  */
-class DefaultCamel(val system : ActorSystem) extends Camel{
-  lazy val context : CamelContext = {
+class DefaultCamel(val system: ActorSystem) extends Camel {
+  lazy val context: CamelContext = {
     val ctx = new DefaultCamelContext
     ctx.setName(system.name);
     ctx.setStreamCaching(true)
@@ -54,7 +54,7 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
     context.start()
     try_(template.start()) otherwise context.stop()
     //TODO use proper akka logging
-    system.eventStream.publish(Info("Camel", classOf[Camel],String.format("Started CamelContext %s for ActorSystem %s",context.getName, system.name)))
+    system.eventStream.publish(Info("Camel", classOf[Camel], String.format("Started CamelContext %s for ActorSystem %s", context.getName, system.name)))
     this
   }
 
@@ -68,11 +68,11 @@ class DefaultCamel(val system : ActorSystem) extends Camel{
   def shutdown() {
     try context.stop() finally safe(template.stop())
     //TODO use proper akka logging
-    system.eventStream.publish(Info("Camel",classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s",context.getName, system.name)))
+    system.eventStream.publish(Info("Camel", classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s", context.getName, system.name)))
   }
 }
 
-object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
+object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
 
   /**
    * Creates new instance of Camel and makes sure it gets stopped when actor system is shutdown.
@@ -90,14 +90,13 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider{
  * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
  * ActorEndpoint uses it to lookup an actor by its path.
  */
-private[camel] trait ConsumerRegistry{ this:Activation =>
-  def system : ActorSystem
-  def context : CamelContext
+private[camel] trait ConsumerRegistry { this: Activation ⇒
+  def system: ActorSystem
+  def context: CamelContext
 
   private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
 
-
-  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer,  activationTimeout : Duration) = {
+  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) = {
     idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
     awaitActivation(consumer.self, activationTimeout)
   }

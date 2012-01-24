@@ -8,42 +8,41 @@ import org.scalatest.FreeSpec
 import akka.camel.DangerousStuff._
 import org.scalatest.matchers.ShouldMatchers
 
-class DangerousStuffTest extends FreeSpec with ShouldMatchers{
+class DangerousStuffTest extends FreeSpec with ShouldMatchers {
 
-  "Safe" -{
+  "Safe" - {
     "executes block" in {
       var executed = false
-      safe{ executed = true }
-      executed should  be (true)
+      safe { executed = true }
+      executed should be(true)
     }
 
     "swallows exception" in {
       safe(throw new Exception)
     }
   }
-  
+
   "try_ otherwise" - {
 
-    "runs otherwise and throws exception when the first block fails" in{
+    "runs otherwise and throws exception when the first block fails" in {
       var otherwiseCalled = false
-      intercept[Exception]{
-        try_(throw new Exception) otherwise (otherwiseCalled=true)
+      intercept[Exception] {
+        try_(throw new Exception) otherwise (otherwiseCalled = true)
       }
-      otherwiseCalled should be (true)
+      otherwiseCalled should be(true)
     }
 
-    "doesnt throw exception from otherwise" in{
+    "doesnt throw exception from otherwise" in {
       intercept[RuntimeException] {
         try_(throw new RuntimeException("e1")) otherwise (throw new RuntimeException("e2"))
-      }.getMessage should be ("e1")
+      }.getMessage should be("e1")
     }
 
-
-    "doesnt run otherwise if first block doesnt fail" in{
+    "doesnt run otherwise if first block doesnt fail" in {
       var otherwiseCalled = false
-      try_(2+2) otherwise (otherwiseCalled=true)
-      otherwiseCalled should be (false)
+      try_(2 + 2) otherwise (otherwiseCalled = true)
+      otherwiseCalled should be(false)
     }
   }
-  
+
 }

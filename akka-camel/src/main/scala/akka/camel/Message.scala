@@ -4,27 +4,26 @@
 
 package akka.camel
 
-import java.util.{Map => JMap, Set => JSet}
+import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
 
 import scala.collection.JavaConversions._
 
 import org.apache.camel.util.ExchangeHelper
 
-import akka.japi.{Function => JFunction}
-import org.apache.camel.{CamelContext, Exchange, Message => CamelMessage}
-
+import akka.japi.{ Function ⇒ JFunction }
+import org.apache.camel.{ CamelContext, Exchange, Message ⇒ CamelMessage }
 
 /**
  * An immutable representation of a Camel message.
  *
  * @author Martin Krasser
  */
-case class Message(body: Any, headers: Map[String, Any], context :CamelContext){
+case class Message(body: Any, headers: Map[String, Any], context: CamelContext) {
 
-  def this(body: Any, headers: JMap[String, Any], context :CamelContext) = this(body, headers.toMap, context) //for Java
+  def this(body: Any, headers: JMap[String, Any], context: CamelContext) = this(body, headers.toMap, context) //for Java
 
   override def toString = "Message(%s, %s)" format (body, headers)
-  
+
   /**
    * Returns the body of the message converted to the type <code>T</code>. Conversion is done
    * using Camel's type converter. The type converter is obtained from the CamelContext managed
@@ -105,7 +104,7 @@ case class Message(body: Any, headers: Map[String, Any], context :CamelContext){
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
    */
-  def transformBody[A](transformer: A => Any): Message = setBody(transformer(body.asInstanceOf[A]))
+  def transformBody[A](transformer: A ⇒ Any): Message = setBody(transformer(body.asInstanceOf[A]))
 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
@@ -196,9 +195,9 @@ object Message {
    * Message then <code>msg</code> is returned, otherwise <code>msg</code> is set as body of a
    * newly created Message object.
    */
-  def canonicalize(msg: Any , camel : Camel) = msg match {
-    case mobj: Message => mobj
-    case body          => Message(body, Map.empty, camel.context)
+  def canonicalize(msg: Any, camel: Camel) = msg match {
+    case mobj: Message ⇒ mobj
+    case body          ⇒ Message(body, Map.empty, camel.context)
   }
 }
 
@@ -344,14 +343,14 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    */
   def copyContentFrom(m: Message): CamelMessage = {
     cm.setBody(m.body)
-    for (h <- m.headers) cm.getHeaders.put(h._1, h._2.asInstanceOf[AnyRef])
+    for (h ← m.headers) cm.getHeaders.put(h._1, h._2.asInstanceOf[AnyRef])
     cm
   }
 
   /**
    * Creates a new Message object from the adapted Camel message.
    */
-  def toMessage : Message = toMessage(Map.empty)
+  def toMessage: Message = toMessage(Map.empty)
 
   /**
    * Creates a new Message object from the adapted Camel message.

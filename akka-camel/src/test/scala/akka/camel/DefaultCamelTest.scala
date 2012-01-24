@@ -9,15 +9,14 @@ import akka.camel.TestSupport.SharedCamelSystem
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.actor.ActorSystem
-import org.apache.camel.{CamelContext, ProducerTemplate}
+import org.apache.camel.{ CamelContext, ProducerTemplate }
 
-
-class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatchers with MockitoSugar{
+class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatchers with MockitoSugar {
 
   "DefaultCamel" - {
-    import org.mockito.Mockito.{when,  verify}
+    import org.mockito.Mockito.{ when, verify }
 
-    def camelWitMocks = new DefaultCamel(mock[ActorSystem]){
+    def camelWitMocks = new DefaultCamel(mock[ActorSystem]) {
       override lazy val template = mock[ProducerTemplate]
       override lazy val context = mock[CamelContext]
     }
@@ -27,15 +26,15 @@ class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatche
 
       when(camel.context.stop()) thenThrow new RuntimeException("context")
       when(camel.template.stop()) thenThrow new RuntimeException("template")
-      val exception = intercept[RuntimeException]{
+      val exception = intercept[RuntimeException] {
         camel.shutdown()
-      } 
-
-      "throws exception thrown by context.stop()" in{
-        exception.getMessage() should be ("context");
       }
 
-      "tries to stop both template and context" in{
+      "throws exception thrown by context.stop()" in {
+        exception.getMessage() should be("context");
+      }
+
+      "tries to stop both template and context" in {
         verify(camel.template).stop()
         verify(camel.context).stop()
       }
@@ -47,7 +46,7 @@ class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatche
 
       when(camel.template.start()) thenThrow new RuntimeException
 
-      intercept[RuntimeException]{
+      intercept[RuntimeException] {
         camel.start
       }
 
