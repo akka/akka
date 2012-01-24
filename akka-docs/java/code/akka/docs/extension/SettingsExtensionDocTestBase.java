@@ -8,7 +8,7 @@ import akka.actor.Extension;
 import akka.actor.AbstractExtensionId;
 import akka.actor.ExtensionIdProvider;
 import akka.actor.ActorSystem;
-import akka.actor.ActorSystemImpl;
+import akka.actor.ExtendedActorSystem;
 import akka.util.Duration;
 import com.typesafe.config.Config;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ public class SettingsExtensionDocTestBase {
       return Settings.SettingsProvider;
     }
 
-    public SettingsImpl createExtension(ActorSystemImpl system) {
+    public SettingsImpl createExtension(ExtendedActorSystem system) {
       return new SettingsImpl(system.settings().config());
     }
   }

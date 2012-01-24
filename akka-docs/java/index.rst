@@ -21,4 +21,5 @@ Java API
    stm
    agents
    transactors
+   fsm
    extending-akka

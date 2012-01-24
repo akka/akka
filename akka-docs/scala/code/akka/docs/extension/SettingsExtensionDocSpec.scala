@@ -7,7 +7,7 @@ package akka.docs.extension
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.actor.ActorSystemImpl
+import akka.actor.ExtendedActorSystem
 import akka.util.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
@@ -29,7 +29,7 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
 
   override def lookup = Settings
 
-  override def createExtension(system: ActorSystemImpl) = new SettingsImpl(system.settings.config)
+  override def createExtension(system: ExtendedActorSystem) = new SettingsImpl(system.settings.config)
 }
 //#extensionid
 

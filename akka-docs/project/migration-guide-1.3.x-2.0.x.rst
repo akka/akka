@@ -467,7 +467,7 @@ v1.3::
 
   val supervisor = Supervisor(
     SupervisorConfig(
-      AllForOneStrategy(List(classOf[Exception]), 3, 1000),
+      OneForOneStrategy(List(classOf[Exception]), 3, 1000),
       Supervise(
         actorOf[MyActor1],
         Permanent) ::
@@ -479,12 +479,12 @@ v1.3::
 v2.0::
 
   class MyActor extends Actor {
-    override val supervisorStrategy = OneForOneStrategy({
+    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
         case _: ArithmeticException      ⇒ Resume
         case _: NullPointerException     ⇒ Restart
         case _: IllegalArgumentException ⇒ Stop
         case _: Exception                ⇒ Escalate
-      }: Decider, maxNrOfRetries = Some(10), withinTimeRange = Some(60000))
+      }
 
     def receive = {
       case x =>

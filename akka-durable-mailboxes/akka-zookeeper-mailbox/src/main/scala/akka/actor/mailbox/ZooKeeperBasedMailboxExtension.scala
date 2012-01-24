@@ -11,7 +11,7 @@ import akka.actor._
 object ZooKeeperBasedMailboxExtension extends ExtensionId[ZooKeeperBasedMailboxSettings] with ExtensionIdProvider {
   override def get(system: ActorSystem): ZooKeeperBasedMailboxSettings = super.get(system)
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new ZooKeeperBasedMailboxSettings(system.settings.config)
+  def createExtension(system: ExtendedActorSystem) = new ZooKeeperBasedMailboxSettings(system.settings.config)
 }
 class ZooKeeperBasedMailboxSettings(val config: Config) extends Extension {
 
