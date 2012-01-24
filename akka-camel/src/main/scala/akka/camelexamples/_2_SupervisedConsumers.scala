@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.camelexamples
 
 import akka.actor.{PoisonPill, Terminated, Props, ActorSystem, Actor}
