@@ -134,6 +134,12 @@ object IO {
    */
   case class Listen(server: ServerHandle, address: SocketAddress) extends IOMessage
 
+  /**
+   * Message from an [[akka.actor.IOManager]] that the ServerSocketChannel is
+   * now listening for connections.
+   *
+   * No action is required by the receiving [[akka.actor.Actor]].
+   */
   case class Listening(server: ServerHandle, address: SocketAddress) extends IOMessage
 
   /**
@@ -161,8 +167,7 @@ object IO {
    * Message from an [[akka.actor.IOManager]] that the SocketChannel has
    * successfully connected.
    *
-   * No action is required by the receiving [[akka.actor.Actor]], although
-   * the message still needs to be in it's receive method.
+   * No action is required by the receiving [[akka.actor.Actor]].
    */
   case class Connected(socket: SocketHandle, address: SocketAddress) extends IOMessage
 
@@ -178,8 +183,7 @@ object IO {
    * optionally contain the Exception that caused the Channel to close, if
    * applicable.
    *
-   * No action is required by the receiving [[akka.actor.Actor]], although
-   * the message still needs to be in it's receive method.
+   * No action is required by the receiving [[akka.actor.Actor]].
    */
   case class Closed(handle: Handle, cause: Option[Exception]) extends IOMessage
 

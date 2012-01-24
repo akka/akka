@@ -9,18 +9,21 @@ import akka.util.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.{ Await, Future, Promise, ExecutionContext, MessageDispatcher }
-import java.net.{ SocketAddress, InetSocketAddress }
+import java.net.{ SocketAddress }
 import akka.pattern.ask
 
 object IOActorSpec {
 
-  class SimpleEchoServer(host: String, port: Int) extends Actor {
+  class SimpleEchoServer(addressPromise: Promise[SocketAddress]) extends Actor {
 
-    val server = IOManager(context.system) listen (host, port)
+    val server = IOManager(context.system) listen ("localhost", 0)
 
     val state = IO.IterateeRef.Map.sync[IO.Handle]()
 
     def receive = {
+
+      case IO.Listening(`server`, address) ⇒
+        addressPromise success address
 
       case IO.NewClient(`server`) ⇒
         val socket = server.accept()
@@ -40,9 +43,9 @@ object IOActorSpec {
     }
   }
 
-  class SimpleEchoClient(host: String, port: Int) extends Actor {
+  class SimpleEchoClient(address: SocketAddress) extends Actor {
 
-    val socket = IOManager(context.system) connect (host, port)
+    val socket = IOManager(context.system) connect (address)
 
     val state = IO.IterateeRef.sync()
 
@@ -59,8 +62,6 @@ object IOActorSpec {
 
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
-
-      case IO.Connected(`socket`, _) ⇒
 
       case IO.Closed(`socket`, cause) ⇒
         state(IO EOF cause)
@@ -99,7 +100,7 @@ object IOActorSpec {
 
     var kvs: Map[String, String] = Map.empty
 
-    val server = IOManager(context.system) listen (new InetSocketAddress("localhost", 0))
+    val server = IOManager(context.system) listen ("localhost", 0)
 
     val EOL = ByteString("\r\n")
 
@@ -182,8 +183,6 @@ object IOActorSpec {
 
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
-
-      case IO.Connected(`socket`, _) ⇒
 
       case IO.Closed(`socket`, cause) ⇒
         state(IO EOF cause)
@@ -274,8 +273,10 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
   "an IO Actor" must {
     "run echo server" in {
       filterException[java.net.ConnectException] {
-        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8064)))
-        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8064)))
+        val addressPromise = Promise[SocketAddress]()
+        val server = system.actorOf(Props(new SimpleEchoServer(addressPromise)))
+        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val client = system.actorOf(Props(new SimpleEchoClient(address)))
         val f1 = retry() { client ? ByteString("Hello World!1") }
         val f2 = retry() { client ? ByteString("Hello World!2") }
         val f3 = retry() { client ? ByteString("Hello World!3") }
@@ -289,8 +290,10 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     "run echo server under high load" in {
       filterException[java.net.ConnectException] {
-        val server = system.actorOf(Props(new SimpleEchoServer("localhost", 8065)))
-        val client = system.actorOf(Props(new SimpleEchoClient("localhost", 8065)))
+        val addressPromise = Promise[SocketAddress]()
+        val server = system.actorOf(Props(new SimpleEchoServer(addressPromise)))
+        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val client = system.actorOf(Props(new SimpleEchoClient(address)))
         val list = List.range(0, 100)
         val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
         assert(Await.result(f, TestLatch.DefaultTimeout).size === 100)
