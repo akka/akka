@@ -5,15 +5,12 @@
 package akka.camel
 
 import internal.component.ActorEndpointPath
-import org.apache.camel.model.RouteDefinition
 import akka.actor.ActorRef
+import org.apache.camel.model.ProcessorDefinition
 
-object ActorRouteDefinition {
-  implicit def toActorRouteDefinition(rd: RouteDefinition) = new ActorRouteDefinition(rd)
-}
 
-class ActorRouteDefinition(rd: RouteDefinition) {
-  def to(actorRef: ActorRef) = rd.to(ActorEndpointPath(actorRef).toCamelPath())
-  def to(actorRef: ActorRef, conf: ConsumerConfig) = rd.to(ActorEndpointPath(actorRef).toCamelPath(conf))
+class ActorRouteDefinition(definition: ProcessorDefinition[_]) {
+  def to(actorRef: ActorRef) = definition.to(ActorEndpointPath(actorRef).toCamelPath())
+  def to(actorRef: ActorRef, consumerConfig: ConsumerConfig) = definition.to(ActorEndpointPath(actorRef).toCamelPath(consumerConfig))
 }
 
