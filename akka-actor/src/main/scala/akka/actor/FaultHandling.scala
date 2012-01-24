@@ -45,7 +45,16 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
   }
 }
 
-object SupervisorStrategy {
+trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type ⇒
+
+  /**
+   * Implicit conversion from `Seq` of Cause-Action pairs to a `Decider`. See makeDecider(causeAction).
+   */
+  implicit def seqCauseAction2Decider(trapExit: Iterable[CauseAction]): Decider = makeDecider(trapExit)
+  // the above would clash with seqThrowable2Decider for empty lists
+}
+
+object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   sealed trait Action
 
   /**
