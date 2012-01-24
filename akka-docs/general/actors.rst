@@ -32,13 +32,13 @@ State
 
 Actor objects will typically contain some variables which reflect possible
 states the actor may be in. This can be an explicit state machine (e.g. using
-the :ref:`fsm` module), or it could be a counter, set of listeners, pending
-requests, etc. These data are what make an actor valuable, and they must be
-protected from corruption by other actors. The good news is that Akka actors
-conceptually each have their own light-weight thread, which is completely
-shielded from the rest of the system. This means that instead of having to
-synchronize access using locks you can just write your actor code without
-worrying about concurrency at all.
+the :ref:`fsm-scala` module), or it could be a counter, set of listeners,
+pending requests, etc. These data are what make an actor valuable, and they
+must be protected from corruption by other actors. The good news is that Akka
+actors conceptually each have their own light-weight thread, which is
+completely shielded from the rest of the system. This means that instead of
+having to synchronize access using locks you can just write your actor code
+without worrying about concurrency at all.
 
 Behind the scenes Akka will run sets of actors on sets of real threads, where
 typically many actors share one thread, and subsequent invocations of one actor
