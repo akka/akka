@@ -10,7 +10,7 @@ IO (Scala)
 Introduction
 ------------
 
-This documentation is in progress. More to come.
+This documentation is in progress and some sections may be incomplete. More will be coming.
 
 Components
 ----------
@@ -22,29 +22,7 @@ A primary goal of Akka's IO module is to only communicate between actors with im
 
 ``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created.
 
-``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones:
-
-copyToBuffer(buffer: ByteBuffer): Int
-    Copy as many bytes as possible to a ``ByteBuffer``, starting from it's current position. This method will not overflow the buffer. It returns the number of bytes copied.
-
-compact: ByteString
-    Creates a new ``ByteString`` with all contents compacted into a single byte array. If the contents of this ``ByteString`` are already compacted it will return itself unchanged.
-
-asByteBuffer: ByteBuffer
-    If possible this will return a read-only ``ByteBuffer`` that wraps the internal byte array. If this ``ByteString`` contains more then one byte array then this method will return the result of ``toByteBuffer``.
-
-toByteBuffer: ByteBuffer
-    Creates a new ByteBuffer with a copy of all bytes contained in this ``ByteString``.
-
-decodeString(charset: String): String
-    Decodes this ``ByteString`` using a charset to produce a ``String``.
-
-utf8String: String
-    Decodes this ``ByteString`` as a UTF-8 encoded String.
-
-There are also several factory methods in the ``ByteString`` companion object to assist in creating a new ``ByteString``. The ``apply`` method accepts ``Array[Byte]``, ``Byte*``, ``ByteBuffer``, ``String``, as well as a ``String`` with a charset. There is also ``fromArray(array, offset, length)`` for creating a ``ByteString`` using only part of an ``Array[Byte]``.
-
-Finally, there is a ``ByteStringBuilder`` to build up a ``ByteString`` using Scala's mutable ``Builder`` concept. It can be especially useful when many ``ByteString``\s need to be concatenated in a performance critical section of a program.
+``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones. For more information, look up the ``akka.util.ByteString`` class and it's companion object in the `ScalaDoc <scaladoc>`_.
 
 IO.Handle
 ^^^^^^^^^
@@ -54,50 +32,82 @@ IO.Handle
 IOManager
 ^^^^^^^^^
 
-The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are created and sent from certain methods:
+The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are handled automatically when using certain methods and the messagegs sent from an ``IOManager`` are handled within an ``Actor``\'s ``receive`` method.
 
-IOManager(system).connect(address: SocketAddress): IO.SocketHandle
-    Opens a ``SocketChannel`` and connects to an address. Can also use ``connect(host: String, port: Int)``.
+Connecting to a remote host:
 
-IOManager(system).listen(address: SocketAddress): IO.ServerHandle
-    Opens a ``ServerSocketChannel`` and listens on an address. Can also use ``listen(host: String, port: Int)``.
+.. code-block:: scala
 
-socketHandle.write(bytes: ByteString)
-    Write to the ``SocketChannel``.
+  val address = new InetSocketAddress("remotehost", 80)
+  val socket = IOManager(actorSystem).connect(address)
 
-serverHandle.accept(): IO.SocketHandle
-    Accepts an incoming connection, and returns the ``IO.SocketHandle`` for the new connection.
+.. code-block:: scala
 
-handle.close()
-    Closes the ``Channel``.
+  val socket = IOManager(actorSystem).connect("remotehost", 80)
 
-Messages that the ``IOManager`` can send to an ``Actor`` are:
+Creating a server:
 
-IO.Listening(server: IO.ServerHandle, address: SocketAddress)
-    Sent when a ``ServerSocketChannel`` is created. If port 0 (random port) was requested then the address returned here will contain the actual port.
+.. code-block:: scala
 
-IO.Connected(socket: IO.SocketHandle, address: SocketAddress)
-    Sent after a ``SocketChannel`` has successfully connected.
+  val address = new InetSocketAddress("localhost", 80)
+  val serverSocket = IOManager(actorSystem).listen(address)
 
-IO.NewClient(server: IO.ServerHandle)
-    Sent when a new client has connected to a ``ServerSocketChannel``. The ``accept`` method must be called on the ``IO.ServerHandle`` in order to get the ``IO.SocketHandle`` to communicate to the new client.
+.. code-block:: scala
 
-IO.Read(handle: IO.ReadHandle, bytes: ByteString)
-    Sent when bytes have been read from a ``SocketChannel``. The handle is a ``IO.ReadHandle``, which is a superclass of ``IO.SocketHandle``.
+  val serverSocket = IOManager(actorSystem).listen("localhost", 80)
 
-IO.Closed(handle: IO.Handle, cause: Option[Exception])
-    Sent when a ``Channel`` has closed. If an ``Exception`` was thrown due to this ``Channel`` closing it will be contained here.
+Receiving messages from the ``IOManager``:
+
+.. code-block:: scala
+
+  def receive = {
+
+    case IO.Listening(server, address) =>
+      println("The server is listening on socket " + address)
+
+    case IO.Connected(socket, address) =>
+      println("Successfully connected to " + address)
+
+    case IO.NewClient(server) =>
+      println("New incoming connection on server")
+      val socket = server.accept()
+      println("Writing to new client socket")
+      socket.write(bytes)
+      println("Closing socket")
+      socket.close()
+
+    case IO.Read(socket, bytes) =>
+      println("Received incoming data from socket")
+
+    case IO.Closed(socket: IO.SocketHandle, cause) =>
+      println("Socket has closed, cause: " + cause)
+
+    case IO.Closed(server: IO.ServerHandle, cause) =>
+      println("Server socket has closed, cause: " + cause)
+
+  }
 
 IO.Iteratee
 ^^^^^^^^^^^
 
-See example below.
+Included with Akka's IO module is a basic implementation of ``Iteratee``\s. ``Iteratee``\s are an effective way of handling a stream of data without needing to wait for all the data to arrive. This is especially useful when dealing with non blocking IO since we will usually receive data in chunks which may not include enough information to process, or it may contain much more data then we currently need.
+
+This ``Iteratee`` implementation is much more basic then what is usually found. There is only support for ``ByteString`` input, and enumerators aren't used. The reason for this limited implementation is to reduce the amount of explicit type signatures needed and to keep things simple. It is important to note that Akka's ``Iteratee``\s are completely optional, incoming data can be handled in any way, including other ``Iteratee`` libraries.
+
+``Iteratee``\s work by processing the data that it is given and returning either the result (with any unused input) or a continuation if more input is needed. They are monadic, so methods like ``flatMap`` can be used to pass the result of an ``Iteratee`` to another.
+
+The basic ``Iteratee``\s included in the IO module can all be found in the `ScalaDoc <scaladoc>`_ under ``akka.actor.IO``, and some of them are covered in the example below.
 
 Examples
 --------
 
 Http Server
 ^^^^^^^^^^^
+
+This example will create a simple high performance HTTP server. We begin with our imports:
+
+.. includecode:: code/akka/docs/io/HTTPServer.scala
+   :include: imports
 
 Some commonly used constants:
 
@@ -132,7 +142,7 @@ Reading the request URI is a bit more complicated because we want to parse the i
 
 For this example we are only interested in handling absolute paths. To detect if we the URI is an absolute path we use ``IO.peek(length: Int): Iteratee[ByteString]``, which returns a ``ByteString`` of the request length but doesn't actually consume the input. We peek at the next bit of input and see if it matches our ``PATH`` constant (defined above as ``ByteString("/")``). If it doesn't match we throw an error, but for a more robust solution we would want to handle other valid URIs.
 
-Reading the URI path will be our most complex ``Iteratee``. It involves a recursive method that reads in each path segment of the URI:
+Next we handle the path itself:
 
 .. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: read-path
@@ -141,15 +151,41 @@ The ``step`` method is a recursive method that takes a ``List`` of the accumulat
 
 If after reading in a path segment the next input does not start with a path, we reverse the accumulated segments and return it (dropping the last segment if it is blank).
 
+Following the path we read in the query (if it exists):
+
 .. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: read-query
+
+It is much simpler then reading the path since we aren't doing any parsing of the query since there is no standard format of the query string.
+
+Both the path and query used the ``readUriPart`` ``Iteratee``, which is next:
 
 .. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: read-uri-part
 
+Here we have several ``Set``\s that contain valid characters pulled from the URI spec. The ``readUriPart`` method takes a ``Set`` of valid characters (already mapped to ``Byte``\s) and will continue to match characters until it reaches on that is not part of the ``Set``. If it is a percent encoded character then that is handled as a valid character and processing continues, or else we are done collecting this part of the URI.
+
+Headers are next:
+
 .. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: read-headers
+
+And if applicable, we read in the message body:
 
 .. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: read-body
 
+Finally we get to the actual ``Actor``:
+
+.. includecode:: code/akka/docs/io/HTTPServer.scala
+   :include: actor
+
+And it's companion object:
+
+.. includecode:: code/akka/docs/io/HTTPServer.scala
+   :include: actor-companion
+
+A ``main`` method to start everything up:
+
+.. includecode:: code/akka/docs/io/HTTPServer.scala
+   :include: main

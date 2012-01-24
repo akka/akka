@@ -3,10 +3,13 @@
  */
 package akka.docs.io
 
+//#imports
 import akka.actor._
 import akka.util.{ ByteString, ByteStringBuilder }
 import java.net.InetSocketAddress
+//#imports
 
+//#actor
 class HttpServer(port: Int) extends Actor {
 
   val state = IO.IterateeRef.Map.async[IO.Handle]()(context.dispatcher)
@@ -31,7 +34,9 @@ class HttpServer(port: Int) extends Actor {
   }
 
 }
+//#actor
 
+//#actor-companion
 object HttpServer {
   import HttpIteratees._
 
@@ -54,6 +59,7 @@ object HttpServer {
     }
 
 }
+//#actor-companion
 
 //#request-class
 case class Request(meth: String, path: List[String], query: Option[String], httpver: String, headers: List[Header], body: Option[ByteString])
@@ -209,8 +215,10 @@ object OKResponse {
 case class OKResponse(body: ByteString, keepAlive: Boolean)
 //#ok-response
 
+//#main
 object Main extends App {
   val port = Option(System.getenv("PORT")) map (_.toInt) getOrElse 8080
   val system = ActorSystem()
   val server = system.actorOf(Props(new HttpServer(port)))
 }
+//#main
