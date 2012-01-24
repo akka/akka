@@ -59,7 +59,7 @@ Default Supervisor Strategy
 When the supervisor strategy is not defined for an actor the following
 exceptions are handled by default::
 
-  OneForOneStrategy {
+  OneForOneStrategy() {
     case _: ActorInitializationException ⇒ Stop
     case _: ActorKilledException         ⇒ Stop
     case _: Exception                    ⇒ Restart

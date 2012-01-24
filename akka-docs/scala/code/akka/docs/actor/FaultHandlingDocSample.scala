@@ -31,6 +31,7 @@ object FaultHandlingDocSample extends App {
   val system = ActorSystem("FaultToleranceSample", config)
   val worker = system.actorOf(Props[Worker], name = "worker")
 
+  // Create an Actor that start the work and listens to progress
   system.actorOf(Props(new Actor with ActorLogging {
     // If we don't get any progress within 15 seconds then the service is unavailable
     context.setReceiveTimeout(15 seconds)
@@ -76,12 +77,12 @@ class Worker extends Actor with ActorLogging {
   }
 
   // The sender of the initial Start message will continuously be notified about progress
-  var progressListener: ActorRef = _
+  var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
 
   def receive = LoggingReceive(this) {
-    case Start if progressListener eq null ⇒
-      progressListener = sender
+    case Start if progressListener.isEmpty ⇒
+      progressListener = Some(sender)
       context.system.scheduler.schedule(Duration.Zero, 1 second, self, Do)
 
     case Do ⇒
@@ -90,7 +91,7 @@ class Worker extends Actor with ActorLogging {
       counterService ! Increment(1)
 
       // Send current count to the initial sender
-      (counterService ? GetCurrentCount).pipeTo(progressListener)
+      counterService ? GetCurrentCount pipeTo progressListener.get
   }
 }
 
@@ -130,16 +131,18 @@ class CounterService extends Actor {
     initStorage()
   }
 
+  /**
+   * The child storage is restarted in case of failure, but after 3 restarts,
+   * and still failing it will be stopped. Better to back-off than continuously
+   * failing. When it has been stopped we will schedule a Reconnect after a delay.
+   * Watch the child so we receive Terminated message when it has been terminated.
+   */
   def initStorage() {
-    // The child storage is restarted in case of failure, but after 3 restarts,
-    // and still failing it will be stopped. Better to back-off than continuously
-    // failing. When it has been stopped we will schedule a Reconnect after a delay.
-    // Watch the child so we receive Terminated message when it has been terminated.
     storage = Some(context.watch(context.actorOf(Props[Storage], name = "storage")))
     // Tell the counter, if any, to use the new storage
     counter foreach { _ ! UseStorage(storage) }
     // We need the initial value to be able to operate
-    storage foreach { _ ! Get(key) }
+    storage.get ! Get(key)
   }
 
   def receive = LoggingReceive(this) {
