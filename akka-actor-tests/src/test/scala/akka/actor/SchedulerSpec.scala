@@ -134,7 +134,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val restartLatch = new TestLatch
       val pingLatch = new TestLatch(6)
 
-      val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]), 3, 1 second))))
+      val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(3, 1 second)(List(classOf[Exception])))))
       val props = Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()

@@ -81,8 +81,8 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
 
     "should shutdown crashed temporary actor" in {
       filterEvents(EventFilter[Exception]("Expected exception")) {
-        val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]),
-          maxNrOfRetries = 0))))
+        val supervisor = system.actorOf(Props(new Supervisor(
+          OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))
         val actor = Await.result((supervisor ? Props[CrashingActor]).mapTo[ActorRef], timeout.duration)
         actor.isTerminated must be(false)
         actor ! "Die"

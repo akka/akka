@@ -54,7 +54,7 @@ object SupervisorSpec {
 
     var s: ActorRef = _
 
-    override val supervisorStrategy = OneForOneStrategy(List(classOf[Exception]), maxNrOfRetries = 0)
+    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception]))
 
     def receive = {
       case Die                ⇒ temp forward Die
@@ -78,51 +78,51 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
   private def child(supervisor: ActorRef, props: Props): ActorRef = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)
 
   def temporaryActorAllForOne = {
-    val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]), maxNrOfRetries = 0))))
+    val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))
     val temporaryActor = child(supervisor, Props(new PingPongActor(testActor)))
 
     (temporaryActor, supervisor)
   }
 
   def singleActorAllForOne = {
-    val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]),
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val supervisor = system.actorOf(Props(new Supervisor(
+      AllForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(List(classOf[Exception])))))
     val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
 
     (pingpong, supervisor)
   }
 
   def singleActorOneForOne = {
-    val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]),
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val supervisor = system.actorOf(Props(new Supervisor(
+      OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(List(classOf[Exception])))))
     val pingpong = child(supervisor, Props(new PingPongActor(testActor)))
 
     (pingpong, supervisor)
   }
 
   def multipleActorsAllForOne = {
-    val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]),
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val supervisor = system.actorOf(Props(new Supervisor(
+      AllForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(List(classOf[Exception])))))
     val pingpong1, pingpong2, pingpong3 = child(supervisor, Props(new PingPongActor(testActor)))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def multipleActorsOneForOne = {
-    val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]),
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val supervisor = system.actorOf(Props(new Supervisor(
+      OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(List(classOf[Exception])))))
     val pingpong1, pingpong2, pingpong3 = child(supervisor, Props(new PingPongActor(testActor)))
 
     (pingpong1, pingpong2, pingpong3, supervisor)
   }
 
   def nestedSupervisorsAllForOne = {
-    val topSupervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]),
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val topSupervisor = system.actorOf(Props(new Supervisor(
+      AllForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(List(classOf[Exception])))))
     val pingpong1 = child(topSupervisor, Props(new PingPongActor(testActor)))
 
-    val middleSupervisor = child(topSupervisor, Props(new Supervisor(AllForOneStrategy(Nil,
-      maxNrOfRetries = 3, withinTimeRange = DilatedTimeout))))
+    val middleSupervisor = child(topSupervisor, Props(new Supervisor(
+      AllForOneStrategy(maxNrOfRetries = 3, withinTimeRange = DilatedTimeout)(Nil))))
     val pingpong2, pingpong3 = child(middleSupervisor, Props(new PingPongActor(testActor)))
 
     (pingpong1, pingpong2, pingpong3, topSupervisor)
@@ -286,8 +286,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
     "must attempt restart when exception during restart" in {
       val inits = new AtomicInteger(0)
-      val supervisor = system.actorOf(Props(new Supervisor(OneForOneStrategy(classOf[Exception] :: Nil,
-        maxNrOfRetries = 3, withinTimeRange = 10 seconds))))
+      val supervisor = system.actorOf(Props(new Supervisor(
+        OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
 
       val dyingProps = Props(new Actor {
         inits.incrementAndGet

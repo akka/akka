@@ -110,29 +110,35 @@ object SupervisorStrategy {
       case _: Exception                    ⇒ Restart
       case _                               ⇒ Escalate
     }
-    OneForOneStrategy(defaultDecider)
+    OneForOneStrategy()(defaultDecider)
   }
+
+  /**
+   * Implicit conversion from `Seq` of Throwables to a `Decider`.
+   * This maps the given Throwables to restarts, otherwise escalates.
+   */
+  implicit def seqThrowable2Decider(trapExit: Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
 
   type Decider = PartialFunction[Throwable, Action]
   type JDecider = akka.japi.Function[Throwable, Action]
   type CauseAction = (Class[_ <: Throwable], Action)
 
   /**
-   * Backwards compatible Decider builder which just checks whether one of
+   * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: Array[Class[_ <: Throwable]]): Decider =
     { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
 
   /**
-   * Backwards compatible Decider builder which just checks whether one of
+   * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: Seq[Class[_ <: Throwable]]): Decider =
     { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
 
   /**
-   * Backwards compatible Decider builder which just checks whether one of
+   * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toSeq)
@@ -209,35 +215,27 @@ abstract class SupervisorStrategy {
       case Escalate ⇒ false
     }
   }
-}
 
-object AllForOneStrategy {
-  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration): AllForOneStrategy =
-    new AllForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
-  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int): AllForOneStrategy =
-    apply(trapExit, maxNrOfRetries, Duration.Inf)
-  def apply(trapExit: Seq[Class[_ <: Throwable]], withinTimeRange: Duration): AllForOneStrategy =
-    apply(trapExit, -1, withinTimeRange)
 }
 
 /**
  * Restart all actors linked to the same supervisor when one fails,
- * trapExit = which Throwables should be intercepted
- * maxNrOfRetries = the number of times an actor is allowed to be restarted
- * withinTimeRange = duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ * @param maxNrOfRetries the number of times an actor is allowed to be restarted
+ * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
+ *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
-case class AllForOneStrategy(decider: SupervisorStrategy.Decider,
-                             maxNrOfRetries: Int = -1,
-                             withinTimeRange: Duration = Duration.Inf) extends SupervisorStrategy {
+case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
+  extends SupervisorStrategy {
 
-  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(decider), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
-  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
 
-  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: Array[Class[_ <: Throwable]]) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
@@ -263,33 +261,24 @@ case class AllForOneStrategy(decider: SupervisorStrategy.Decider,
   }
 }
 
-object OneForOneStrategy {
-  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration): OneForOneStrategy =
-    new OneForOneStrategy(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
-  def apply(trapExit: Seq[Class[_ <: Throwable]], maxNrOfRetries: Int): OneForOneStrategy =
-    apply(trapExit, maxNrOfRetries, Duration.Inf)
-  def apply(trapExit: Seq[Class[_ <: Throwable]], withinTimeRange: Duration): OneForOneStrategy =
-    apply(trapExit, -1, withinTimeRange)
-}
-
 /**
  * Restart an actor when it fails
- * trapExit = which Throwables should be intercepted
- * maxNrOfRetries = the number of times an actor is allowed to be restarted
- * withinTimeRange = duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ * @param maxNrOfRetries the number of times an actor is allowed to be restarted
+ * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
+ *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
-case class OneForOneStrategy(decider: SupervisorStrategy.Decider,
-                             maxNrOfRetries: Int = -1,
-                             withinTimeRange: Duration = Duration.Inf) extends SupervisorStrategy {
+case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
+  extends SupervisorStrategy {
 
-  def this(decider: SupervisorStrategy.JDecider, maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(decider), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
-  def this(trapExit: JIterable[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
 
-  def this(trapExit: Array[Class[_ <: Throwable]], maxNrOfRetries: Int, withinTimeRange: Duration) =
-    this(SupervisorStrategy.makeDecider(trapExit), maxNrOfRetries, withinTimeRange)
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: Array[Class[_ <: Throwable]]) =
+    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon

@@ -26,7 +26,8 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
   "A supervised actor with lifecycle PERMANENT" should {
     "be able to reply on failure during preRestart" in {
       filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
-        val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]), 5, 10 seconds))))
+        val supervisor = system.actorOf(Props(new Supervisor(
+          AllForOneStrategy(5, 10 seconds)(List(classOf[Exception])))))
         val supervised = Await.result((supervisor ? Props[Supervised]).mapTo[ActorRef], timeout.duration)
 
         supervised.!("test")(testActor)
@@ -37,8 +38,8 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 
     "be able to reply on failure during postStop" in {
       filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
-        val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(List(classOf[Exception]),
-          maxNrOfRetries = 0))))
+        val supervisor = system.actorOf(Props(new Supervisor(
+          AllForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))
         val supervised = Await.result((supervisor ? Props[Supervised]).mapTo[ActorRef], timeout.duration)
 
         supervised.!("test")(testActor)

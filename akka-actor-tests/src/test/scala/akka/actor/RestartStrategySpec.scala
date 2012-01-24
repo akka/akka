@@ -30,8 +30,8 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
   "A RestartStrategy" must {
 
     "ensure that slave stays dead after max restarts within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Throwable]),
-        maxNrOfRetries = 2, withinTimeRange = 1 second))))
+      val boss = system.actorOf(Props(new Supervisor(
+        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -77,7 +77,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
     }
 
     "ensure that slave is immortal without max restarts and time range" in {
-      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Throwable]), Duration.Inf))))
+      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy()(List(classOf[Throwable])))))
 
       val countDownLatch = new TestLatch(100)
 
@@ -99,8 +99,8 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
     }
 
     "ensure that slave restarts after number of crashes not within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Throwable]),
-        maxNrOfRetries = 2, withinTimeRange = 500 millis))))
+      val boss = system.actorOf(Props(new Supervisor(
+        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -157,7 +157,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
     }
 
     "ensure that slave is not restarted after max retries" in {
-      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Throwable]), maxNrOfRetries = 2))))
+      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(maxNrOfRetries = 2)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -212,7 +212,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       val countDownLatch = new TestLatch(2)
 
       val boss = system.actorOf(Props(new Actor {
-        override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), withinTimeRange = 1 second)
+        override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second)(List(classOf[Throwable]))
         def receive = {
           case p: Props      ⇒ sender ! context.watch(context.actorOf(p))
           case t: Terminated ⇒ maxNoOfRestartsLatch.open()

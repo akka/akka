@@ -15,8 +15,8 @@ import akka.actor._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
-    override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]),
-      maxNrOfRetries = 5, withinTimeRange = 5 seconds)
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 5 seconds)(List(classOf[Throwable]))
     def receive = { case _ ⇒ }
   }
 }

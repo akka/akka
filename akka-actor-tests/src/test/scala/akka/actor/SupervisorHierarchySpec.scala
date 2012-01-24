@@ -40,9 +40,9 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
     "restart manager and workers in AllForOne" in {
       val countDown = new CountDownLatch(4)
 
-      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(List(classOf[Exception]), Duration.Inf))))
+      val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy()(List(classOf[Exception])))))
 
-      val managerProps = Props(new CountDownActor(countDown, AllForOneStrategy(List(), Duration.Inf)))
+      val managerProps = Props(new CountDownActor(countDown, AllForOneStrategy()(List())))
       val manager = Await.result((boss ? managerProps).mapTo[ActorRef], timeout.duration)
 
       val workerProps = Props(new CountDownActor(countDown, SupervisorStrategy.defaultStrategy))
@@ -62,7 +62,8 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
       val boss = system.actorOf(Props(new Actor {
-        override val supervisorStrategy = OneForOneStrategy(List(classOf[Throwable]), maxNrOfRetries = 1, withinTimeRange = 5 seconds)
+        override val supervisorStrategy =
+          OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 5 seconds)(List(classOf[Throwable]))
 
         val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages, SupervisorStrategy.defaultStrategy))))
 
