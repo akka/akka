@@ -88,7 +88,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip this
 section and jump to the next one.
 
-Let's get the ``akka-2.0-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.0-M3.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -99,10 +99,10 @@ You need to do one more thing in order to install Akka properly: set the
 I'm opening up a shell, navigating down to the distribution, and setting the
 ``AKKA_HOME`` variable::
 
-    $ cd /Users/jboner/tools/akka-2.0-SNAPSHOT
+    $ cd /Users/jboner/tools/akka-2.0-M3
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-2.0-SNAPSHOT
+    /Users/jboner/tools/akka-2.0-M3
 
 The distribution looks like this::
 
@@ -122,7 +122,7 @@ The distribution looks like this::
 - In the ``src`` directory we have the source JARs for Akka.
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.0-M3.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
@@ -142,10 +142,10 @@ modules are:
 - ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Zookeeper
 
 .. - ``akka-amqp`` -- AMQP integration
-.. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-.. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-.. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-.. - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+.. - ``akka-stm-2.0-M3.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.0-M3.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.0-M3.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.0-M3.jar`` -- Spring framework integration
 
 
 Downloading and installing the Scala IDE for Eclipse
