@@ -1,9 +1,8 @@
-package akka.camel
-
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
+package akka.camel
 
 import org.apache.camel.{ Message => CamelMessage, ExchangePattern, AsyncCallback, Exchange}
 import org.apache.camel.processor.SendProcessor
