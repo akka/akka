@@ -39,20 +39,21 @@ public class FaultHandlingTestBase {
   static public class Supervisor extends UntypedActor {
 
     //#strategy
-    private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
-      @Override
-      public Action apply(Throwable t) {
-        if (t instanceof ArithmeticException) {
-          return resume();
-        } else if (t instanceof NullPointerException) {
-          return restart();
-        } else if (t instanceof IllegalArgumentException) {
-          return stop();
-        } else {
-          return escalate();
-        }
-      }
-    }, 10, 60000);
+    private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+        new Function<Throwable, Action>() {
+          @Override
+          public Action apply(Throwable t) {
+            if (t instanceof ArithmeticException) {
+              return resume();
+            } else if (t instanceof NullPointerException) {
+              return restart();
+            } else if (t instanceof IllegalArgumentException) {
+              return stop();
+            } else {
+              return escalate();
+            }
+          }
+        });
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -76,20 +77,21 @@ public class FaultHandlingTestBase {
   static public class Supervisor2 extends UntypedActor {
 
     //#strategy2
-    private static SupervisorStrategy strategy = new OneForOneStrategy(new Function<Throwable, Action>() {
-      @Override
-      public Action apply(Throwable t) {
-        if (t instanceof ArithmeticException) {
-          return resume();
-        } else if (t instanceof NullPointerException) {
-          return restart();
-        } else if (t instanceof IllegalArgumentException) {
-          return stop();
-        } else {
-          return escalate();
-        }
-      }
-    }, 10, 60000);
+    private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+        new Function<Throwable, Action>() {
+          @Override
+          public Action apply(Throwable t) {
+            if (t instanceof ArithmeticException) {
+              return resume();
+            } else if (t instanceof NullPointerException) {
+              return restart();
+            } else if (t instanceof IllegalArgumentException) {
+              return stop();
+            } else {
+              return escalate();
+            }
+          }
+        });
 
     @Override
     public SupervisorStrategy supervisorStrategy() {

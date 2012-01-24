@@ -31,8 +31,7 @@ that the respective limit does not apply, leaving the possibility to specify an
 absolute upper limit on the restarts or to make the restarts work infinitely.
 
 The match statement which forms the bulk of the body is of type ``Decider``,
-which is a ``PartialFunction[Throwable, Action]``, and we need to help out the
-type inferencer a bit here by ascribing that type after the closing brace. This
+which is a ``PartialFunction[Throwable, Action]``. This
 is the piece which maps child failure types to their corresponding actions.
 
 Practical Application
