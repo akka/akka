@@ -80,7 +80,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
 
   def lookup() = this
-  def createExtension(system: ActorSystemImpl): TypedActorExtension = new TypedActorExtension(system)
+  def createExtension(system: ExtendedActorSystem): TypedActorExtension = new TypedActorExtension(system)
 
   /**
    * Returns a contextual TypedActorFactory of this extension, this means that any TypedActors created by this TypedActorExtension
@@ -531,7 +531,7 @@ case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFac
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
-class TypedActorExtension(system: ActorSystemImpl) extends TypedActorFactory with Extension {
+class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this

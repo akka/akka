@@ -130,6 +130,13 @@ object ActorSystem {
  * }}}
  *
  * Where no name is given explicitly, one will be automatically generated.
+ *
+ * <b><i>Important Notice:</i></o>
+ *
+ * This class is not meant to be extended by user code. If you want to
+ * actually roll your own Akka, it will probably be better to look into
+ * extending [[akka.actor.ExtendedActorSystem]] instead, but beware that you
+ * are completely on your own in that case!
  */
 abstract class ActorSystem extends ActorRefFactory {
   import ActorSystem._
@@ -286,7 +293,40 @@ abstract class ActorSystem extends ActorRefFactory {
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
-class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
+/**
+ * More powerful interface to the actor system’s implementation which is presented to extensions (see [[akka.actor.Extension]]).
+ *
+ * <b><i>Important Notice:</i></o>
+ *
+ * This class is not meant to be extended by user code. If you want to
+ * actually roll your own Akka, beware that you are completely on your own in
+ * that case!
+ */
+abstract class ExtendedActorSystem extends ActorSystem {
+
+  /**
+   * The ActorRefProvider is the only entity which creates all actor references within this actor system.
+   */
+  def provider: ActorRefProvider
+
+  /**
+   * The top-level supervisor of all actors created using system.actorOf(...).
+   */
+  def guardian: InternalActorRef
+
+  /**
+   * The top-level supervisor of all system-internal services like logging.
+   */
+  def systemGuardian: InternalActorRef
+
+  /**
+   * Implementation of the mechanism which is used for watch()/unwatch().
+   */
+  def deathWatch: DeathWatch
+
+}
+
+class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
 
   if (!name.matches("""^\w+$"""))
     throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")

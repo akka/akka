@@ -744,7 +744,7 @@ final class IOManager private (system: ActorSystem) extends Extension {
 
 object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
   override def lookup = this
-  override def createExtension(system: ActorSystemImpl) = new IOManager(system)
+  override def createExtension(system: ExtendedActorSystem) = new IOManager(system)
 }
 
 /**

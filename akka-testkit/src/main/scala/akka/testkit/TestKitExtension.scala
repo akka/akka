@@ -6,11 +6,11 @@ package akka.testkit
 import com.typesafe.config.Config
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.{ ExtensionId, ActorSystem, Extension, ActorSystemImpl }
+import akka.actor.{ ExtensionId, ActorSystem, Extension, ExtendedActorSystem }
 
 object TestKitExtension extends ExtensionId[TestKitSettings] {
   override def get(system: ActorSystem): TestKitSettings = super.get(system)
-  def createExtension(system: ActorSystemImpl): TestKitSettings = new TestKitSettings(system.settings.config)
+  def createExtension(system: ExtendedActorSystem): TestKitSettings = new TestKitSettings(system.settings.config)
 }
 
 class TestKitSettings(val config: Config) extends Extension {
