@@ -1,4 +1,4 @@
-.. _fsm:
+.. _fsm-scala:
 
 ###
 FSM
@@ -21,7 +21,8 @@ A FSM can be described as a set of relations of the form:
 
 These relations are interpreted as meaning:
 
-  *If we are in state S and the event E occurs, we should perform the actions A and make a transition to the state S'.*
+  *If we are in state S and the event E occurs, we should perform the actions A
+  and make a transition to the state S'.*
 
 A Simple Example
 ================
