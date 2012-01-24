@@ -24,14 +24,17 @@ class RemoteSettings(val config: Config, val systemName: String) {
   val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
 
-  // Gossiper
-  val RemoteSystemDaemonAckTimeout = Duration(getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
-  val InitialDelayForGossip = Duration(getMilliseconds("akka.remote.gossip.initialDelay"), MILLISECONDS)
-  val GossipFrequency = Duration(getMilliseconds("akka.remote.gossip.frequency"), MILLISECONDS)
   // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
-  val SeedNodes = Set.empty[Address] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
-    case AddressExtractor(addr) ⇒ addr
+  // cluster config section
+  val UseCluster = getBoolean("akka.cluster.use-cluster")
+  val SeedNodeConnectionTimeout = Duration(config.getMilliseconds("akka.cluster.seed-node-connection-timeout"), MILLISECONDS)
+  val MaxTimeToRetryJoiningCluster = Duration(config.getMilliseconds("akka.cluster.max-time-to-retry-joining-cluster"), MILLISECONDS)
+  val InitalDelayForGossip = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
+  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
+  val SeedNodes = Set.empty[RemoteNettyAddress] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
+    case RemoteAddressExtractor(addr) ⇒ addr.transport
   }
 
+  val RemoteSystemDaemonAckTimeout = Duration(getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
   val UntrustedMode = getBoolean("akka.remote.untrusted-mode")
 }
