@@ -42,6 +42,16 @@ A common use case within Akka is to have some computation performed concurrently
 
 In the above code the block passed to ``Future`` will be executed by the default ``Dispatcher``, with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld"). Unlike a ``Future`` that is returned from an ``Actor``, this ``Future`` is properly typed, and we also avoid the overhead of managing an ``Actor``.
 
+You can also create already completed Futures using the ``Promise`` companion, which can be either successes:
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: successful
+
+Or failures:
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: failed
+
 Functional Futures
 ------------------
 
@@ -67,10 +77,15 @@ The ``map`` method is fine if we are modifying a single ``Future``, but if 2 or 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: flat-map
 
+If you need to do conditional propagation, you can use ``filter``:
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: filter
+
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
 
-Since ``Future`` has a ``map`` and ``flatMap`` method it can be easily used in a 'for comprehension':
+Since ``Future`` has a ``map``, ``filter` and ``flatMap`` method it can be easily used in a 'for comprehension':
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: for-comprehension
@@ -111,7 +126,9 @@ This is the same result as this example:
 
 But it may be faster to use ``traverse`` as it doesn't have to create an intermediate ``List[Future[Int]]``.
 
-Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``\s and a function from the type of the start-value and the type of the futures and returns something with the same type as the start-value, and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
+Then there's a method that's called ``fold`` that takes a start-value, a sequence of ``Future``\s and a function
+from the type of the start-value and the type of the futures and returns something with the same type as the start-value,
+and then applies the function to all elements in the sequence of futures, non-blockingly, the execution will run on the Thread of the last completing Future in the sequence.
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: fold
@@ -119,24 +136,44 @@ Then there's a method that's called ``fold`` that takes a start-value, a sequenc
 That's all it takes!
 
 
-If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be 0. In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence as the start-value, you can use ``reduce``, it works like this:
+If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be 0.
+In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence as the start-value, you can use ``reduce``, it works like this:
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: reduce
 
-Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
+Same as with ``fold``, the execution will be done by the Thread that completes the last of the Futures, `
+you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 
-This is just a sample of what can be done, but to use more advanced techniques it is easier to take advantage of Scalaz.
+Callbacks
+---------
 
+Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new Future, but by side-effecting.
+For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
 
-Scalaz
-^^^^^^
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: onSuccess
 
-There is also an `Akka-Scalaz`_ project created by Derek Williams for a more
-complete support of programming in a functional style.
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: onFailure
 
-.. _Akka-Scalaz: https://github.com/derekjw/akka-scalaz
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: onComplete
 
+Auxiliary methods
+-----------------
+
+``Future`` ``or`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future``
+if the first ``Future`` fails.
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: or
+
+You can also combine two Futures into a new ``Future`` that will hold a tuple of the two Futures successful results,
+using the ``zip`` operation.
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: zip
 
 Exceptions
 ----------
