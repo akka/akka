@@ -19,6 +19,7 @@ import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
+import org.mockito.Mockito
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with ShouldMatchers with ActorProducerFixture {
 
@@ -73,7 +74,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
           "never set the response on exchange" in {
             process()
-            verify(exchange, never()).setResponse(any[Message])
+            verify(exchange, Mockito.never()).setResponse(any[Message])
           }
 
           "set failure message to timeout" in {
