@@ -157,9 +157,9 @@ class CounterService extends Actor {
       backlog foreach { c ! _ }
       backlog = IndexedSeq.empty
 
-    case msg @ Increment(n)    ⇒ forwardOrPlaceInBacklow(msg)
+    case msg @ Increment(n)    ⇒ forwardOrPlaceInBacklog(msg)
 
-    case msg @ GetCurrentCount ⇒ forwardOrPlaceInBacklow(msg)
+    case msg @ GetCurrentCount ⇒ forwardOrPlaceInBacklog(msg)
 
     case Terminated(actorRef) if Some(actorRef) == storage ⇒
       // After 3 restarts the storage child is stopped.
@@ -175,7 +175,7 @@ class CounterService extends Actor {
       initStorage()
   }
 
-  def forwardOrPlaceInBacklow(msg: Any) {
+  def forwardOrPlaceInBacklog(msg: Any) {
     // We need the initial value from storage before we can start delegate to the counter.
     // Before that we place the messages in a backlog, to be sent to the counter when
     // it is initialized.
