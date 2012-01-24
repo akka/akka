@@ -11,7 +11,7 @@ import akka.actor._
 object MongoBasedMailboxExtension extends ExtensionId[MongoBasedMailboxSettings] with ExtensionIdProvider {
   override def get(system: ActorSystem): MongoBasedMailboxSettings = super.get(system)
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new MongoBasedMailboxSettings(system.settings.config)
+  def createExtension(system: ExtendedActorSystem) = new MongoBasedMailboxSettings(system.settings.config)
 }
 
 class MongoBasedMailboxSettings(val config: Config) extends Extension {

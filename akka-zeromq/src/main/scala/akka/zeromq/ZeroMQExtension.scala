@@ -24,7 +24,7 @@ case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
  */
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new ZeroMQExtension(system)
+  def createExtension(system: ExtendedActorSystem) = new ZeroMQExtension(system)
 
   private val minVersionString = "2.1.0"
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
