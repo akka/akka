@@ -12,8 +12,8 @@ class VectorClockException(message: String) extends AkkaException(message)
  * Representation of a Vector-based clock (counting clock), inspired by Lamport logical clocks.
  *
  * Reference:
- *    Leslie Lamport (1978). "Time, clocks, and the ordering of events in a distributed system". Communications of the ACM 21 (7): 558-565.
- *    Friedemann Mattern (1988). "Virtual Time and Global States of Distributed Systems". Workshop on Parallel and Distributed Algorithms: pp. 215-226
+ *    1) Leslie Lamport (1978). "Time, clocks, and the ordering of events in a distributed system". Communications of the ACM 21 (7): 558-565.
+ *    2) Friedemann Mattern (1988). "Virtual Time and Global States of Distributed Systems". Workshop on Parallel and Distributed Algorithms: pp. 215-226
  */
 case class VectorClock(
   versions: Vector[VectorClock.Entry] = Vector.empty[VectorClock.Entry],
@@ -55,9 +55,11 @@ object VectorClock {
   /**
    * The result of comparing two vector clocks.
    * Either:
-   * 1) v1 is BEFORE v2
-   * 2) v1 is AFTER t2
-   * 3) v1 happens CONCURRENTLY to v2
+   * {{
+   *   1) v1 is BEFORE v2
+   *   2) v1 is AFTER t2
+   *   3) v1 happens CONCURRENTLY to v2
+   * }}
    */
   sealed trait Ordering
   case object Before extends Ordering
