@@ -1,22 +1,20 @@
 package akka.camel.internal
 
 import org.scalatest.matchers.MustMatchers
-import akka.testkit.{TestProbe, TestKit}
+import akka.testkit.{ TestProbe, TestKit }
 import akka.util.duration._
-import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec}
-import akka.actor.{Props, ActorSystem}
+import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
+import akka.actor.{ Props, ActorSystem }
 import akka.util.Duration
 
-class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen{
-
+class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
   override protected def afterAll() { system.shutdown() }
 
-  var actor : TestProbe = _
-  var awaiting : Awaiting = _
-  var anotherAwaiting : Awaiting = _
+  var actor: TestProbe = _
+  var awaiting: Awaiting = _
+  var anotherAwaiting: Awaiting = _
   val cause = new Exception("cause of failure")
-
 
   override protected def beforeEach() {
     actor = TestProbe()
@@ -35,7 +33,6 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyActivated()
     anotherAwaiting.verifyActivated()
   }
-
 
   "ActivationTracker send activation message even if activation happened earlier" in {
     publish(EndpointActivated(actor.ref))
@@ -98,14 +95,13 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyDeActivated()
   }
 
-  
   "ActivationTracker sends activation failure when failed to activate" in {
     awaiting.awaitActivation()
     publish(EndpointFailedToActivate(actor.ref, cause))
 
     awaiting.verifyFailedToActivate()
   }
-  
+
   "ActivationTracker sends de-activation failure when failed to de-activate" in {
     publish(EndpointActivated(actor.ref))
     awaiting.awaitDeActivation()
@@ -122,19 +118,19 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyActivated()
   }
 
-  def publish(msg : AnyRef) = system.eventStream.publish(msg)
-  
-  class Awaiting(actor:TestProbe){
+  def publish(msg: AnyRef) = system.eventStream.publish(msg)
+
+  class Awaiting(actor: TestProbe) {
     val probe = TestProbe()
     def awaitActivation() = at.tell(AwaitActivation(actor.ref), probe.ref)
     def awaitDeActivation() = at.tell(AwaitDeActivation(actor.ref), probe.ref)
-    def verifyActivated(timeout : Duration = 50 millis) = within(timeout) {probe.expectMsg(EndpointActivated(actor.ref))}
-    def verifyDeActivated(timeout : Duration = 50 millis) = within(timeout) {probe.expectMsg(EndpointDeActivated(actor.ref))}
+    def verifyActivated(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointActivated(actor.ref)) }
+    def verifyDeActivated(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointDeActivated(actor.ref)) }
 
-    def verifyFailedToActivate(timeout : Duration = 50 millis) = within(timeout) {probe.expectMsg(EndpointFailedToActivate(actor.ref, cause))}
-    def verifyFailedToDeActivate(timeout : Duration = 50 millis) = within(timeout) {probe.expectMsg(EndpointFailedToDeActivate(actor.ref, cause))}
+    def verifyFailedToActivate(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToActivate(actor.ref, cause)) }
+    def verifyFailedToDeActivate(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToDeActivate(actor.ref, cause)) }
 
   }
-  
+
 }
 
