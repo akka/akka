@@ -3,7 +3,7 @@ resolvers += Classpaths.typesafeResolver
 
 addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
 
-//addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.1")
+addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.2")
 
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse" % "1.5.0")
 
