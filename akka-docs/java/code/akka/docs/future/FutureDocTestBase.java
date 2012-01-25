@@ -13,6 +13,7 @@ import akka.dispatch.Future;
 import akka.dispatch.japi.Mapper;
 import akka.dispatch.japi.OnSuccess;
 import akka.dispatch.japi.OnFailure;
+import akka.dispatch.japi.Filter;
 
 //#imports1
 
@@ -207,7 +208,7 @@ public class FutureDocTestBase {
 
     // Find the sum of the odd numbers
     Future<Long> futureSum = futureListOfInts.map(
-      new Function<Iterable<Integer>, Long>() {
+      new Mapper<Iterable<Integer>, Long>() {
           public Long apply(Iterable<Integer> ints) {
             long sum = 0;
             for (Integer i : ints)
@@ -309,13 +310,13 @@ public class FutureDocTestBase {
        //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
     Future<Integer> successfulFilter =
-      future1.filter(new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) { return i % 2 == 0; }
+      future1.filter(new Filter<Integer>() {
+        public boolean filter(Integer i) { return i % 2 == 0; }
       });
 
     Future<Integer> failedFilter =
-      future1.filter(new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) { return i % 2 != 0; }
+      future1.filter(new Filter<Integer>() {
+        public boolean filter(Integer i) { return i % 2 != 0; }
       });
     //When filter fails, the returned Future will be failed with a scala.MatchError
     //#filter
