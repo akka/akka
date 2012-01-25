@@ -6,9 +6,9 @@ package akka.actor
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Duration, Timeout }
+import akka.util.{ Timeout }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import akka.serialization.{ Serializer, Serialization, SerializationExtension }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
 import java.lang.IllegalStateException

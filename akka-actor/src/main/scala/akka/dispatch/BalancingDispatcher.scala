@@ -5,13 +5,9 @@
 package akka.dispatch
 
 import util.DynamicVariable
-import akka.actor.{ ActorCell, Actor, IllegalActorStateException, ActorRef }
+import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
-import java.util.{ Comparator, Queue }
 import annotation.tailrec
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.actor.Scheduler
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.Duration
 

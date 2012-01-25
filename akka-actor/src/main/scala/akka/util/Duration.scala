@@ -6,8 +6,7 @@ package akka.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
-import akka.actor.ActorSystem
+import java.lang.{ Double ⇒ JDouble }
 
 class TimerException(message: String) extends RuntimeException(message)
 

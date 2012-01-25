@@ -4,11 +4,9 @@
 package akka.routing
 
 import akka.actor._
-import akka.dispatch.{ Future, Promise }
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import akka.util.{ Duration, Timeout }
+import akka.util.Duration
 import akka.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
