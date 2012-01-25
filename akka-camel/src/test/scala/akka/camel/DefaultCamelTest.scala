@@ -9,7 +9,8 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.actor.ActorSystem
 import org.apache.camel.{ CamelContext, ProducerTemplate }
-import org.scalatest.{WordSpec, FreeSpec}
+import org.scalatest.WordSpec
+import akka.event.LoggingAdapter
 
 class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
@@ -17,6 +18,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
     import org.mockito.Mockito.{ when, verify }
 
     def camelWitMocks = new DefaultCamel(mock[ActorSystem]) {
+      override val log = mock[LoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
       override lazy val context = mock[CamelContext]
     }

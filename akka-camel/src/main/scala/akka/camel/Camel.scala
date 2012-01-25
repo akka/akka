@@ -12,6 +12,7 @@ import akka.util.Duration
 import akka.actor.{ ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem }
 import akka.event.Logging.Info
 import DangerousStuff._
+import akka.event.Logging
 
 trait Camel extends ConsumerRegistry with Extension with Activation {
   def context: CamelContext
@@ -32,6 +33,8 @@ trait Camel extends ConsumerRegistry with Extension with Activation {
  * Also by not creating extra internal actor system we are conserving resources.
  */
 class DefaultCamel(val system: ActorSystem) extends Camel {
+  private[camel] implicit val log = Logging(system, "Camel")
+
   lazy val context: CamelContext = {
     val ctx = new DefaultCamelContext
     ctx.setName(system.name);

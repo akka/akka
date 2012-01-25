@@ -3,6 +3,7 @@
  */
 
 package akka.camel
+import akka.event.LoggingAdapter
 
 private[camel] object DangerousStuff {
 
@@ -25,15 +26,13 @@ private[camel] object DangerousStuff {
     }
 
   sealed trait Result {
-    def otherwise(onError: ⇒ Unit): Unit
+    def otherwise(onError: ⇒ Unit)(implicit log: LoggingAdapter): Unit = ()
   }
 
-  private[this] case object Ok extends Result {
-    def otherwise(onError: ⇒ Unit) = () /* do nothing */
-  }
+  private[this] case object Ok extends Result
 
   private[this] case class Failed(e: Throwable) extends Result {
-    def otherwise(onError: ⇒ Unit) = {
+    override def otherwise(onError: ⇒ Unit)(implicit log: LoggingAdapter) = {
       safe(onError)
       throw e
     }
@@ -42,12 +41,11 @@ private[camel] object DangerousStuff {
   /**
    * Executes the block and logs the exception, if it's thrown by the block, and swallows the exception.
    */
-  @inline def safe(block: ⇒ Unit) {
+  @inline def safe(block: ⇒ Unit)(implicit log: LoggingAdapter) {
     try {
       block
     } catch {
-      //TODO replace with proper logging
-      case e ⇒ println(e)
+      case e ⇒ log.warning("Safe operation failed. Swallowing exception {}",e)
     }
   }
 
