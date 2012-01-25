@@ -5,7 +5,7 @@
 package akka.camel
 
 import akka.actor._
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the }
 import akka.util.duration._
@@ -15,7 +15,7 @@ import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException 
 import TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 
-class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoSugar with BeforeAndAfterEach {
+class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   implicit var system: ActorSystem = _
 
   override protected def beforeEach() {
@@ -33,10 +33,10 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
 
   //TODO test manualAck
 
-  //TODO: decide on Camel lifecycle. Ideally it should prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
-  it should "fail if camel is not started" in (pending)
+  //TODO: decide on Camel lifecycle. Ideally it must prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
+  it must "fail if camel is not started" in (pending)
 
-  it should "throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
+  it must "throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
     val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
 
     intercept[FailedToCreateRouteException] {
@@ -48,17 +48,17 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     CamelExtension(system)
   }
 
-  it should "support in-out messaging" in {
+  it must "support in-out messaging" in {
     start(new Consumer {
       def endpointUri = "direct:a1"
       protected def receive = {
         case m: Message ⇒ sender ! "received " + m.bodyAs[String]
       }
     })
-    camel.sendTo("direct:a1", msg = "some message") should be("received some message")
+    camel.sendTo("direct:a1", msg = "some message") must be("received some message")
   }
 
-  it should "support blocking, in-out messaging" in {
+  it must "support blocking, in-out messaging" in {
     start(new Consumer {
       def endpointUri = "direct:a1"
       override def communicationStyle = Blocking(200 millis)
@@ -70,10 +70,10 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
         }
       }
     })
-    time(camel.sendTo("direct:a1", msg = "some message")) should be >= (150 millis)
+    time(camel.sendTo("direct:a1", msg = "some message")) must be >= (150 millis)
   }
 
-  it should "time-out if consumer is slow" in {
+  it must "time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
 
@@ -87,10 +87,10 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     val exception = intercept[CamelExecutionException] {
       camel.sendTo("direct:a3", msg = "some msg 3")
     }
-    exception.getCause.getClass should be(classOf[TimeoutException])
+    exception.getCause.getClass must be(classOf[TimeoutException])
   }
 
-  it should "process messages even after actor restart" in {
+  it must "process messages even after actor restart" in {
     val restarted = new CountDownLatch(1)
     val consumer = start(new Consumer {
       def endpointUri = "direct:a2"
@@ -109,19 +109,19 @@ class ConsumerIntegrationTest extends FlatSpec with ShouldMatchers with MockitoS
     if (!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
 
     val response = camel.sendTo("direct:a2", msg = "xyz")
-    response should be("received xyz")
+    response must be("received xyz")
   }
 
-  it should "unregister itself when stopped" in {
+  it must "unregister itself when stopped" in {
     val actorRef = start(new TestActor())
     camel.awaitActivation(actorRef, 1 second)
 
-    camel.routeCount should be > (0)
+    camel.routeCount must be > (0)
 
     system.stop(actorRef)
     camel.awaitDeactivation(actorRef, 1 second)
 
-    camel.routeCount should be(0)
+    camel.routeCount must be(0)
   }
 
 }

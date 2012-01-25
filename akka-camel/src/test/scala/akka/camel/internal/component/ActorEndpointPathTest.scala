@@ -5,12 +5,12 @@
 package akka.camel.internal.component
 
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.MustMatchers
 import akka.camel.TestSupport.SharedCamelSystem
 import org.scalatest.FreeSpec
 import akka.actor.Props
 
-class ActorEndpointPathTest extends FreeSpec with SharedCamelSystem with ShouldMatchers with MockitoSugar {
+class ActorEndpointPathTest extends FreeSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
   "ActorEndpointPath" - {
     def find(path: String) = ActorEndpointPath.fromCamelPath("path:" + path).findActorIn(system)
@@ -18,12 +18,12 @@ class ActorEndpointPathTest extends FreeSpec with SharedCamelSystem with ShouldM
     "findActorIn" - {
       "returns Some(actor ref) if actor exists" in {
         val path = system.actorOf(Props(behavior = ctx ⇒ { case _ ⇒ {} })).path
-        find(path.toString) should be('defined)
+        find(path.toString) must be('defined)
       }
 
       "returns None for" - {
-        "invalid path" in { find("some_invalid_path") should be(None) }
-        "non existing valid path" in { find("akka://system/user/$a") should be(None) }
+        "invalid path" in { find("some_invalid_path") must be(None) }
+        "non existing valid path" in { find("akka://system/user/$a") must be(None) }
       }
     }
   }

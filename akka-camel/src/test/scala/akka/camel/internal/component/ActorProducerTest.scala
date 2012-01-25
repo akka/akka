@@ -4,7 +4,7 @@
 
 package akka.camel.internal.component
 
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the, any }
 import org.mockito.Mockito._
@@ -21,17 +21,17 @@ import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import org.mockito.Mockito
 
-class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with ShouldMatchers with ActorProducerFixture {
+class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
   "ActorProducer" when {
 
-    "consumer actor doesnt exist" should {
+    "consumer actor doesnt exist" must {
       "set failure message on exchange" in (pending)
     }
 
     "synchronous" when {
 
-      "in-only" should {
+      "in-only" must {
         def process() = {
           producer = given(outCapable = false)
           time(producer.process(exchange))
@@ -43,13 +43,13 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
 
         "not expect response and not block" in {
-          process should be < (30 millis)
+          process must be < (30 millis)
         }
 
       }
 
       "out capable" when {
-        "response is sent back by actor" should {
+        "response is sent back by actor" must {
 
           "get a response" in {
             producer = given(actor = echoActor, outCapable = true)
@@ -60,7 +60,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
         }
 
-        "response is not sent by actor" should {
+        "response is not sent by actor" must {
 
           def process() = {
             producer = given(outCapable = true, outTimeout = 100 millis)
@@ -69,7 +69,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
           "timeout after replyTimeout" in {
             val duration = process()
-            duration should (be >= (100 millis) and be < (200 millis))
+            duration must (be >= (100 millis) and be < (200 millis))
           }
 
           "never set the response on exchange" in {
@@ -91,7 +91,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
     "asynchronous" when {
       "out-capable" when {
-        "response is Failure" should {
+        "response is Failure" must {
           "set an exception on exchange" in {
             val failure = Failure(new RuntimeException("some failure"))
 
@@ -109,7 +109,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
         }
 
-        "non blocking" should {
+        "non blocking" must {
           "get a response and async callback as soon as it gets the response (but not before)" in {
             producer = given(outCapable = true, blocking = NonBlocking)
 
@@ -121,7 +121,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
               probe.expectMsgType[Message]
               probe.sender ! "some message"
             }
-            doneSync should be(false); info("done async")
+            doneSync must be(false); info("done async")
 
             asyncCallback.expectDoneAsyncWithin(1 second); info("async callback received")
             verify(exchange).setResponse(msg("some message")); info("response as expected")
@@ -130,21 +130,21 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
 
         "blocking" when {
-          "it gets an output message" should {
+          "it gets an output message" must {
 
             "set a correct response and call sync callback" in {
               producer = given(actor = echoActor, outCapable = true, blocking = Blocking(1 second))
 
               val doneSync = producer.process(exchange, asyncCallback)
 
-              doneSync should be(true); info("done sync")
+              doneSync must be(true); info("done sync")
               //TODO: This is a bit lame test. Happy for any suggestions.
               asyncCallback.expectDoneSyncWithin(0 second); info("callback called immediately")
               verify(exchange).setResponse(msg("received " + message)); info("response as expected")
             }
           }
 
-          "it doesnt get output message" should {
+          "it doesnt get output message" must {
 
             def process() = {
               producer = given(outCapable = true, blocking = Blocking(100 millis), autoAck = false)
@@ -153,7 +153,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             }
 
             "timeout, roughly after time specified by blocking timeout parameter" in {
-              process() should (be >= (100 millis) and be < (200 millis))
+              process() must (be >= (100 millis) and be < (200 millis))
             }
 
             "call a callback" in {
@@ -172,13 +172,13 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
       }
 
       "in-only" when {
-        "autoAck" should {
+        "autoAck" must {
           "get async callback as soon as it sends a message" in {
 
             producer = given(outCapable = false, blocking = NonBlocking, autoAck = true)
             val doneSync = producer.process(exchange, asyncCallback)
 
-            doneSync should be(false); info("done async")
+            doneSync must be(false); info("done async")
             asyncCallback.expectDoneAsyncWithin(1 second); info("async callback called")
             verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
           }
@@ -196,11 +196,11 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "manualAck" when {
 
           //TODO: write this test
-          "expecting Ack or Failure message and some other message is sent as a response" should {
+          "expecting Ack or Failure message and some other message is sent as a response" must {
             "fail" in pending
           }
 
-          "doesnt get Ack within timeout" should {
+          "doesnt get Ack within timeout" must {
             "set failure on exchange" in {
               producer = given(outCapable = false, blocking = Blocking(10 millis), autoAck = false)
 
@@ -211,13 +211,13 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             }
           }
 
-          "non blocking" should {
+          "non blocking" must {
             "get async callback as soon as it gets an Ack message" in {
               producer = given(outCapable = false, blocking = NonBlocking, autoAck = false)
 
               val doneSync = producer.process(exchange, asyncCallback)
 
-              doneSync should be(false)
+              doneSync must be(false)
               within(1 second) {
                 probe.expectMsgType[Message]; info("message sent to consumer")
                 probe.sender ! Ack
@@ -227,7 +227,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             }
           }
 
-          "blocking" should {
+          "blocking" must {
             "get sync callback when it gets an Ack message" in {
 
               producer = given(
@@ -237,9 +237,9 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
               var doneSync = false
               time {
                 doneSync = producer.process(exchange, asyncCallback)
-              } should be < (1 second)
+              } must be < (1 second)
 
-              doneSync should be(true)
+              doneSync must be(true)
               asyncCallback.expectDoneSyncWithin(0 second); info("sync callback received")
               verify(exchange, never()).setFailure(any[Failure]); info("no failure")
               verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
@@ -256,7 +256,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
 }
 
-trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with ShouldMatchers with Suite ⇒
+trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with MustMatchers with Suite ⇒
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _
