@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -221,15 +221,6 @@ object AkkaBuild extends Build {
        libraryDependencies ++= Dependencies.camel
      )
   )
-//  uncomment when akka-camel-typed is migrated, now contains code that does not compile
-//  lazy val camelTyped = Project(
-//     id = "akka-camel-typed",
-//     base = file("akka-camel-typed"),
-//     dependencies = Seq(actor, slf4j,camel, testkit % "test->test"),
-//     settings = defaultSettings ++ Seq(
-//       libraryDependencies ++= Dependencies.camel
-//     )
-//  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
