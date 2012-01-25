@@ -8,19 +8,18 @@ import akka.camel.DangerousStuff._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.event.LoggingAdapter
-import org.scalatest.{BeforeAndAfterEach, WordSpec}
+import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 
-class DangerousStuffTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach{
+class DangerousStuffTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   import org.mockito.Mockito._
   import org.mockito.Matchers._
-  import org.mockito.Matchers.{eq => the}
+  import org.mockito.Matchers.{ eq ⇒ the }
 
-  implicit var log : LoggingAdapter = _
+  implicit var log: LoggingAdapter = _
 
   override def beforeEach() {
     log = mock[LoggingAdapter]
   }
-
 
   "Safe executes block" in {
     var executed = false
@@ -33,7 +32,6 @@ class DangerousStuffTest extends WordSpec with MustMatchers with MockitoSugar wi
     safe(throw new Exception)
     verify(log).warning(any[String], any[Any])
   }
-
 
   "try_ otherwise runs otherwise and throws exception when the first block fails" in {
     var otherwiseCalled = false

@@ -45,7 +45,7 @@ private[camel] object DangerousStuff {
     try {
       block
     } catch {
-      case e ⇒ log.warning("Safe operation failed. Swallowing exception {}",e)
+      case e ⇒ log.warning("Safe operation failed. Swallowing exception {}", e)
     }
   }
 

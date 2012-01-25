@@ -7,7 +7,7 @@ package akka.camel.internal.component
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import akka.camel.{ CommunicationStyle, Blocking, NonBlocking }
-import org.scalatest.{WordSpec, FlatSpec}
+import org.scalatest.WordSpec
 
 class CommunicationStyleTypeConverterTest extends WordSpec with MustMatchers {
 

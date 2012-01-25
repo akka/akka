@@ -55,32 +55,31 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
   def unless[A](condition: Boolean)(block: ⇒ A) = if (!condition) block
   def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
+  class CamelConsumerRegistrator extends Actor {
+    val log = Logging(context.system, this)
 
-  class CamelConsumerRegistrator extends  Actor {
-      val log = Logging(context.system, this)
-
-      def receive = {
-        case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {
-          camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
-          context.sender ! EndpointActivated(consumer)
-          log.debug("Published actor {} at endpoint {}", consumerConfig, endpointUri)
-        }
-
-        case UnregisterConsumer(consumer) ⇒ {
-          camelContext.stopRoute(consumer.path.toString)
-          context.sender ! EndpointDeActivated(consumer)
-          log.debug("Unpublished actor {} from endpoint {}", consumer, consumer.path)
-        }
+    def receive = {
+      case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {
+        camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
+        context.sender ! EndpointActivated(consumer)
+        log.debug("Published actor {} at endpoint {}", consumerConfig, endpointUri)
       }
 
-      override def preRestart(reason: Throwable, message: Option[Any]) {
-        message match {
-          case Some(RegisterConsumer(_, consumer, _)) ⇒ sender ! EndpointFailedToActivate(consumer, reason)
-          case Some(UnregisterConsumer(consumer))     ⇒ sender ! EndpointFailedToDeActivate(consumer, reason)
-          case _                                      ⇒
-        }
+      case UnregisterConsumer(consumer) ⇒ {
+        camelContext.stopRoute(consumer.path.toString)
+        context.sender ! EndpointDeActivated(consumer)
+        log.debug("Unpublished actor {} from endpoint {}", consumer, consumer.path)
       }
     }
+
+    override def preRestart(reason: Throwable, message: Option[Any]) {
+      message match {
+        case Some(RegisterConsumer(_, consumer, _)) ⇒ sender ! EndpointFailedToActivate(consumer, reason)
+        case Some(UnregisterConsumer(consumer))     ⇒ sender ! EndpointFailedToDeActivate(consumer, reason)
+        case _                                      ⇒
+      }
+    }
+  }
 }
 
 private[camel] case class RegisterConsumer(endpointUri: String, actorRef: ActorRef, config: ConsumerConfig)
@@ -120,7 +119,6 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
   }
 
 }
-
 
 /**
  * Super class of all activation messages.

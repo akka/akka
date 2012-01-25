@@ -77,12 +77,12 @@ class ActivationTracker extends Actor {
 
   override def receive = {
     case msg @ ActivationMessage(ref) ⇒ {
-        val state = activations.getOrElseUpdate(ref, new ActivationStateMachine)
-        (state.receive orElse logWarning(ref))(msg)
-      }
+      val state = activations.getOrElseUpdate(ref, new ActivationStateMachine)
+      (state.receive orElse logWarning(ref))(msg)
     }
+  }
 
-  private[this] def logWarning(actorRef : ActorRef) : Receive = {case msg => log.warning("Message {} not expected in current state of actor {}", msg, actorRef)}
+  private[this] def logWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message {} not expected in current state of actor {}", msg, actorRef) }
 }
 
 case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
