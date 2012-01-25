@@ -27,7 +27,7 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMul
           /service-hello.target.nodes = [%s]
         }
       }
-    }""" format (3, specString(3)))
+    }""" format (3, akkaURIs(3)))
 }
 
 class ScatterGatherRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {
@@ -91,7 +91,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(Scatter
 
       val replies = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
         case name: String ⇒ (name, 1)
-      }).foldLeft(Map("AkkaRemoteSpec@localhost:9991" -> 0, "AkkaRemoteSpec@localhost:9992" -> 0, "AkkaRemoteSpec@localhost:9993" -> 0)) {
+      }).foldLeft(Map(akkaSpec(0) -> 0, akkaSpec(1) -> 0, akkaSpec(2) -> 0)) {
         case (m, (n, c)) ⇒ m + (n -> (m(n) + c))
       }
 
