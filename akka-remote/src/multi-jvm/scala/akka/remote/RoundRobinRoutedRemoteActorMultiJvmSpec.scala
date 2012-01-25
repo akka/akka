@@ -1,11 +1,9 @@
 package akka.remote
 
 import akka.actor.{ Actor, Props }
-import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
-import akka.pattern.ask
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 4

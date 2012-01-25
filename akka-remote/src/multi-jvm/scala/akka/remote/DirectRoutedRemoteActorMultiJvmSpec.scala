@@ -1,11 +1,8 @@
 package akka.remote
 
-import akka.remote._
-import akka.routing._
 import akka.actor.{ Actor, Props }
 import akka.testkit._
 import akka.dispatch.Await
-import akka.pattern.ask
 
 object DirectRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2

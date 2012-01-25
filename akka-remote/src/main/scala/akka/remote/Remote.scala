@@ -7,9 +7,7 @@ package akka.remote
 import akka.actor._
 import akka.event._
 import akka.util._
-import akka.util.duration._
-import akka.util.Helpers._
-import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.SystemMessage
 import scala.annotation.tailrec
