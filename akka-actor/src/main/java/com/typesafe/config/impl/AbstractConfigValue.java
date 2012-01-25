@@ -103,6 +103,13 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
         throw badMergeException();
     }
 
+    protected AbstractConfigValue mergedWithNonObject(AbstractConfigValue fallback) {
+        // falling back to a non-object doesn't merge anything, and also
+        // prohibits merging any objects that we fall back to later.
+        // so we have to switch to ignoresFallbacks mode.
+        return newCopy(true /* ignoresFallbacks */, origin);
+    }
+
     public AbstractConfigValue withOrigin(ConfigOrigin origin) {
         if (this.origin == origin)
             return this;
@@ -130,10 +137,7 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
                     return mergedWithObject((AbstractConfigObject) other);
                 }
             } else {
-                // falling back to a non-object doesn't merge anything, and also
-                // prohibits merging any objects that we fall back to later.
-                // so we have to switch to ignoresFallbacks mode.
-                return newCopy(true /* ignoresFallbacks */, origin);
+                return mergedWithNonObject((AbstractConfigValue) other);
             }
         }
     }

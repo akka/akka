@@ -84,18 +84,32 @@ final class ConfigSubstitution extends AbstractConfigValue implements
                 ((AbstractConfigValue) fallback).ignoresFallbacks());
     }
 
-    @Override
-    protected AbstractConfigValue mergedWithObject(AbstractConfigObject fallback) {
+    protected AbstractConfigValue mergedLater(AbstractConfigValue fallback) {
         if (ignoresFallbacks)
             throw new ConfigException.BugOrBroken("should not be reached");
 
-        // if we turn out to be an object, and the fallback also does,
-        // then a merge may be required; delay until we resolve.
         List<AbstractConfigValue> newStack = new ArrayList<AbstractConfigValue>();
         newStack.add(this);
         newStack.add(fallback);
         return new ConfigDelayedMerge(AbstractConfigObject.mergeOrigins(newStack), newStack,
                 fallback.ignoresFallbacks());
+    }
+
+    @Override
+    protected AbstractConfigValue mergedWithObject(AbstractConfigObject fallback) {
+        // if we turn out to be an object, and the fallback also does,
+        // then a merge may be required; delay until we resolve.
+        return mergedLater(fallback);
+    }
+
+    @Override
+    protected AbstractConfigValue mergedWithNonObject(AbstractConfigValue fallback) {
+        // if the optional substitution ends up getting deleted (because it is
+        // not present), we'll have to use the fallback. So delay the merge.
+        if (pieces.size() == 1 && ((SubstitutionExpression) pieces.get(0)).optional())
+            return mergedLater(fallback);
+        else
+            return super.mergedWithNonObject(fallback);
     }
 
     @Override
