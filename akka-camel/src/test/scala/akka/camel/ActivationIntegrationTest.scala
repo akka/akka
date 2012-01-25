@@ -13,7 +13,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import TestSupport._
 import org.scalatest.WordSpec
 
-class ActivationTest extends WordSpec with MustMatchers with SharedCamelSystem {
+class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = Timeout(10 seconds)
   def template: ProducerTemplate = camel.template
 
