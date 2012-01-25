@@ -1,19 +1,19 @@
 /**
- * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009when2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel
 
-import org.scalatest.FreeSpec
 import akka.camel.TestSupport.SharedCamelSystem
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.actor.ActorSystem
 import org.apache.camel.{ CamelContext, ProducerTemplate }
+import org.scalatest.{WordSpec, FreeSpec}
 
-class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatchers with MockitoSugar {
+class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
-  "DefaultCamel" - {
+  "DefaultCamel" when {
     import org.mockito.Mockito.{ when, verify }
 
     def camelWitMocks = new DefaultCamel(mock[ActorSystem]) {
@@ -21,7 +21,7 @@ class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatche
       override lazy val context = mock[CamelContext]
     }
 
-    "during shutdown, when both context and template fail to shutdown" - {
+    "during shutdown, when both context and template fail to shutdown" when {
       val camel = camelWitMocks
 
       when(camel.context.stop()) thenThrow new RuntimeException("context")
@@ -31,7 +31,7 @@ class DefaultCamelTest extends FreeSpec with SharedCamelSystem with ShouldMatche
       }
 
       "throws exception thrown by context.stop()" in {
-        exception.getMessage() should be("context");
+        exception.getMessage() must be("context");
       }
 
       "tries to stop both template and context" in {

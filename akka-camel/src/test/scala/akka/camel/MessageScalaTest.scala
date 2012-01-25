@@ -14,69 +14,69 @@ import org.scalatest.FunSuite
 
 class MessageScalaTest extends FunSuite with SharedCamelSystem with MessageSugar {
 
-  test("shouldConvertDoubleBodyToString") {
+  test("mustConvertDoubleBodyToString") {
     assertEquals("1.4", Message(1.4).bodyAs[String])
   }
 
-  test("shouldThrowExceptionWhenConvertingDoubleBodyToInputStream") {
+  test("mustThrowExceptionWhenConvertingDoubleBodyToInputStream") {
     intercept[NoTypeConversionAvailableException] {
       Message(1.4).bodyAs[InputStream]
     }
   }
 
-  test("shouldReturnDoubleHeader") {
+  test("mustReturnDoubleHeader") {
     val message = Message("test", Map("test" -> 1.4))
     assertEquals(1.4, message.header("test"))
   }
 
-  test("shouldConvertDoubleHeaderToString") {
+  test("mustConvertDoubleHeaderToString") {
     val message = Message("test", Map("test" -> 1.4))
     assertEquals("1.4", message.headerAs[String]("test"))
   }
 
-  test("shouldReturnSubsetOfHeaders") {
+  test("mustReturnSubsetOfHeaders") {
     val message = Message("test", Map("A" -> "1", "B" -> "2"))
     assertEquals(Map("B" -> "2"), message.headers(Set("B")))
   }
 
-  test("shouldTransformBodyAndPreserveHeaders") {
+  test("mustTransformBodyAndPreserveHeaders") {
     assertEquals(
       Message("ab", Map("A" -> "1")),
       Message("a", Map("A" -> "1")).transformBody((body: String) ⇒ body + "b"))
   }
 
-  test("shouldConvertBodyAndPreserveHeaders") {
+  test("mustConvertBodyAndPreserveHeaders") {
     assertEquals(
       Message("1.4", Map("A" -> "1")),
       Message(1.4, Map("A" -> "1")).setBodyAs[String])
   }
 
-  test("shouldSetBodyAndPreserveHeaders") {
+  test("mustSetBodyAndPreserveHeaders") {
     assertEquals(
       Message("test2", Map("A" -> "1")),
       Message("test1", Map("A" -> "1")).setBody("test2"))
   }
 
-  test("shouldSetHeadersAndPreserveBody") {
+  test("mustSetHeadersAndPreserveBody") {
     assertEquals(
       Message("test1", Map("C" -> "3")),
       Message("test1", Map("A" -> "1")).setHeaders(Map("C" -> "3")))
 
   }
 
-  test("shouldAddHeaderAndPreserveBodyAndHeaders") {
+  test("mustAddHeaderAndPreserveBodyAndHeaders") {
     assertEquals(
       Message("test1", Map("A" -> "1", "B" -> "2")),
       Message("test1", Map("A" -> "1")).addHeader("B" -> "2"))
   }
 
-  test("shouldAddHeadersAndPreserveBodyAndHeaders") {
+  test("mustAddHeadersAndPreserveBodyAndHeaders") {
     assertEquals(
       Message("test1", Map("A" -> "1", "B" -> "2")),
       Message("test1", Map("A" -> "1")).addHeaders(Map("B" -> "2")))
   }
 
-  test("shouldRemoveHeadersAndPreserveBodyAndRemainingHeaders") {
+  test("mustRemoveHeadersAndPreserveBodyAndRemainingHeaders") {
     assertEquals(
       Message("test1", Map("A" -> "1")),
       Message("test1", Map("A" -> "1", "B" -> "2")).removeHeader("B"))

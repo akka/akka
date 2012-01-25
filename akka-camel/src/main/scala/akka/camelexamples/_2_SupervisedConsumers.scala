@@ -23,14 +23,12 @@ object SupervisedConsumersExample extends App {
 }
 
 class EndpointManager extends Actor {
+  import context._
 
-  override def preStart() {
-    self ! Props[SysOutConsumer]
-    self ! Props[TroubleMaker]
-  }
+  watch(actorOf(Props[SysOutConsumer]))
+  watch(actorOf(Props[TroubleMaker]))
 
   protected def receive = {
-    case props: Props ⇒ sender ! context.watch(context.actorOf(props))
     case Terminated(ref) ⇒ {
       printf("Hey! One of the endpoints has died: %s. I am doing sepuku...\n", ref)
       self ! PoisonPill

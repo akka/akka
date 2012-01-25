@@ -7,7 +7,7 @@ package akka.camel
 import akka.actor._
 import akka.util.duration._
 import org.scalatest.{ FlatSpec, BeforeAndAfterAll }
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the }
 
@@ -17,7 +17,7 @@ import org.mockito.Matchers.{ eq ⇒ the }
  * @author Martin Krasser
  */
 //TODO: remove this test once all the ideas are moved across to new tests
-class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with ShouldMatchers with MockitoSugar {
+class OldConsumerScalaTest extends FlatSpec with BeforeAndAfterAll with MustMatchers with MockitoSugar {
 
   var service: Camel = _
 
