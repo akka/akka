@@ -3,10 +3,7 @@
  */
 package akka.actor.mailbox
 
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.util.Duration
 import akka.AkkaException
-import org.I0Itec.zkclient.serialize._
 import akka.actor.ActorContext
 import akka.cluster.zookeeper.AkkaZkClient
 import akka.dispatch.Envelope
