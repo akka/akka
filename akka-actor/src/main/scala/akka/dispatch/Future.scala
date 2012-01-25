@@ -10,7 +10,7 @@ import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 
 import scala.util.continuations._
 
-import java.util.concurrent.TimeUnit.{ NANOSECONDS }
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 
