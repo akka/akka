@@ -6,6 +6,47 @@ package akka.dispatch.japi
 import akka.util.Timeout
 import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
+class Callback[-T] extends PartialFunction[T, Unit] {
+  override final def isDefinedAt(t: T): Boolean = true
+  override final def apply(t: T): Unit = on(t)
+  protected def on(result: T): Unit = ()
+}
+
+abstract class OnSuccess[-T] extends Callback[T] {
+  protected final override def on(result: T) = onSuccess(result)
+  def onSuccess(result: T): Unit
+}
+
+abstract class OnFailure extends Callback[Throwable] {
+  protected final override def on(failure: Throwable) = onFailure(failure)
+  def onFailure(failure: Throwable): Unit
+}
+
+abstract class OnComplete[-T] extends Callback[Either[Throwable, T]] {
+  protected final override def on(value: Either[Throwable, T]): Unit = value match {
+    case Left(t)  ⇒ onComplete(t, null.asInstanceOf[T])
+    case Right(r) ⇒ onComplete(null, r)
+  }
+  def onComplete(failure: Throwable, success: T): Unit
+}
+
+abstract class Filter[-T] extends (T ⇒ Boolean) {
+  override final def apply(t: T): Boolean = filter(t)
+  def filter(result: T): Boolean
+}
+
+abstract class Foreach[-T] extends (T ⇒ Unit) {
+  override final def apply(t: T): Unit = each(t)
+  def each(result: T): Unit
+}
+
+abstract class Mapper[-T, +R] extends (T ⇒ R)
+
+/*
+map => A => B
+flatMap => A => F[B]
+foreach
+*/
 /* Java API */
 trait Future[+T] { self: akka.dispatch.Future[T] ⇒
   /**
@@ -50,14 +91,5 @@ trait Future[+T] { self: akka.dispatch.Future[T] ⇒
    */
   private[japi] final def filter[A >: T](p: JFunc[A, java.lang.Boolean]): akka.dispatch.Future[A] =
     self.filter((a: Any) ⇒ p(a.asInstanceOf[A])).asInstanceOf[akka.dispatch.Future[A]]
-
-  /**
-   * Returns a new Future whose value will be of the specified type if it really is
-   * Or a failure with a ClassCastException if it wasn't.
-   */
-  private[japi] final def mapTo[A](clazz: Class[A]): akka.dispatch.Future[A] = {
-    implicit val manifest: Manifest[A] = Manifest.classType(clazz)
-    self.mapTo[A]
-  }
 }
 

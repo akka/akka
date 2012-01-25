@@ -507,13 +507,20 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
    */
-  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
+  final def mapTo[A](implicit m: Manifest[A]): Future[A] =
+    mapTo[A](m.erasure.asInstanceOf[Class[A]])
+
+  /**
+   * Creates a new Future[A] which is completed with this Future's result if
+   * that conforms to A's erased type or a ClassCastException otherwise.
+   */
+  final def mapTo[A](clazz: Class[A]): Future[A] = {
     val fa = Promise[A]()
     onComplete {
       case l: Left[_, _] ⇒ fa complete l.asInstanceOf[Either[Throwable, A]]
       case Right(t) ⇒
         fa complete (try {
-          Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
+          Right(BoxedType(clazz).cast(t).asInstanceOf[A])
         } catch {
           case e: ClassCastException ⇒ Left(e)
         })

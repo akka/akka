@@ -10,6 +10,9 @@ import akka.japi.Procedure2;
 import akka.util.Timeout;
 import akka.dispatch.Await;
 import akka.dispatch.Future;
+import akka.dispatch.japi.Mapper;
+import akka.dispatch.japi.OnSuccess;
+import akka.dispatch.japi.OnFailure;
 
 //#imports1
 
@@ -110,7 +113,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -131,7 +134,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -153,7 +156,7 @@ public class FutureDocTestBase {
 
     Thread.sleep(100);
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -173,7 +176,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.flatMap(new Function<String, Future<Integer>>() {
+    Future<Integer> f2 = f1.flatMap(new Mapper<String, Future<Integer>>() {
       public Future<Integer> apply(final String s) {
         return future(new Callable<Integer>() {
           public Integer call() {
@@ -322,8 +325,8 @@ public class FutureDocTestBase {
       {
       Future<String> future = Futures.successful("foo", system.dispatcher());
       //#onSuccess
-      future.onSuccess(new Procedure<String>() {
-          public void apply(String result) {
+      future.onSuccess(new OnSuccess<String>() {
+          public void onSuccess(String result) {
               if ("bar" == result) {
                   //Do something if it resulted in "bar"
               } else {
@@ -337,8 +340,8 @@ public class FutureDocTestBase {
         Future<String> future =
                 Futures.failed(new IllegalStateException("OHNOES"), system.dispatcher());
         //#onFailure
-      future.onFailure( new Procedure<Throwable>() {
-        public void apply(Throwable failure) {
+      future.onFailure( new OnFailure() {
+        public void onFailure(Throwable failure) {
             if (failure instanceof IllegalStateException) {
                 //Do something if it was this particular failure
             } else {
@@ -370,7 +373,7 @@ public class FutureDocTestBase {
     Future<String> future1 = Futures.successful("foo", system.dispatcher());
     Future<String> future2 = Futures.successful("bar", system.dispatcher());
     Future<String> future3 =
-      future1.zip(future2).map(new Function<scala.Tuple2<String,String>, String>() {
+      future1.zip(future2).map(new Mapper<scala.Tuple2<String,String>, String>() {
         public String apply(scala.Tuple2<String,String> zipped) {
             return zipped._1() + " " + zipped._2();
         }
