@@ -29,7 +29,7 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJ
           /service-hello.target.nodes = [%s]
         }
       }
-    }""" format (3, specString(3)))
+    }""" format (3, akkaURIs(3)))
 }
 
 class RoundRobinRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RoundRobinRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {
@@ -85,9 +85,9 @@ class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RoundRobin
       val iterationCount = 10
 
       var replies = Map(
-        "AkkaRemoteSpec@localhost:9991" -> 0,
-        "AkkaRemoteSpec@localhost:9992" -> 0,
-        "AkkaRemoteSpec@localhost:9993" -> 0)
+        akkaSpec(0) -> 0,
+        akkaSpec(1) -> 0,
+        akkaSpec(2) -> 0)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
