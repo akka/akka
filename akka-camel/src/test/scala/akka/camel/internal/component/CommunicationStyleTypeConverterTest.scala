@@ -5,21 +5,21 @@
 package akka.camel.internal.component
 
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.FlatSpec
 import akka.util.duration._
 import akka.camel.{ CommunicationStyle, Blocking, NonBlocking }
+import org.scalatest.{WordSpec, FlatSpec}
 
-class CommunicationStyleTypeConverterTest extends FlatSpec with MustMatchers {
+class CommunicationStyleTypeConverterTest extends WordSpec with MustMatchers {
 
-  "TypeConverter" must "convert NonBlocking" in {
+  "TypeConverter must convert NonBlocking" in {
     convert("NonBlocking") must be(NonBlocking)
   }
 
-  it must "convert Blocking with seconds" in {
+  "TypeConverter must convert Blocking with seconds" in {
     convert(CommunicationStyleTypeConverter.toString(Blocking(10 seconds))) must be(Blocking(10 seconds))
   }
 
-  it must "convert Blocking with millis" in {
+  "TypeConverter must convert Blocking with millis" in {
     convert(CommunicationStyleTypeConverter.toString(Blocking(10 millis))) must be(Blocking(10 millis))
   }
 

@@ -10,12 +10,12 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the }
 import akka.util.duration._
 import java.util.concurrent.TimeUnit._
-import org.scalatest.{ BeforeAndAfterEach, FlatSpec }
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
+import org.scalatest.{WordSpec, BeforeAndAfterEach, FlatSpec}
 
-class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
+class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   implicit var system: ActorSystem = _
 
   override protected def beforeEach() {
@@ -34,9 +34,9 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
   //TODO test manualAck
 
   //TODO: decide on Camel lifecycle. Ideally it must prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
-  it must "fail if camel is not started" in (pending)
+  "Consumer must fail if camel is not started" in (pending)
 
-  it must "throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
+  "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
     val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
 
     intercept[FailedToCreateRouteException] {
@@ -48,7 +48,7 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
     CamelExtension(system)
   }
 
-  it must "support in-out messaging" in {
+  "Consumer must support in-out messaging" in {
     start(new Consumer {
       def endpointUri = "direct:a1"
       protected def receive = {
@@ -58,7 +58,7 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
     camel.sendTo("direct:a1", msg = "some message") must be("received some message")
   }
 
-  it must "support blocking, in-out messaging" in {
+  "Consumer must support blocking, in-out messaging" in {
     start(new Consumer {
       def endpointUri = "direct:a1"
       override def communicationStyle = Blocking(200 millis)
@@ -73,7 +73,7 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
     time(camel.sendTo("direct:a1", msg = "some message")) must be >= (150 millis)
   }
 
-  it must "time-out if consumer is slow" in {
+  "Consumer must time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis
 
@@ -90,7 +90,7 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
     exception.getCause.getClass must be(classOf[TimeoutException])
   }
 
-  it must "process messages even after actor restart" in {
+  "Consumer must process messages even after actor restart" in {
     val restarted = new CountDownLatch(1)
     val consumer = start(new Consumer {
       def endpointUri = "direct:a2"
@@ -112,7 +112,7 @@ class ConsumerIntegrationTest extends FlatSpec with MustMatchers with MockitoSug
     response must be("received xyz")
   }
 
-  it must "unregister itself when stopped" in {
+  "Consumer must unregister itself when stopped" in {
     val actorRef = start(new TestActor())
     camel.awaitActivation(actorRef, 1 second)
 

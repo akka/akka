@@ -5,28 +5,28 @@
 package akka.camel.internal.component
 
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.FlatSpec
 import akka.util.duration._
 import akka.util.Duration
+import org.scalatest.{WordSpec, FlatSpec}
 
-class DurationConverterTest extends FlatSpec with MustMatchers {
+class DurationConverterTest extends WordSpec with MustMatchers {
   import DurationTypeConverter._
 
-  "DurationTypeConverter" must "convert '10 nanos'" in {
+  "DurationTypeConverter must convert '10 nanos'" in {
     convertTo(classOf[Duration], "10 nanos") must be(10 nanos)
   }
 
-  it must "do the roundtrip" in {
+  "DurationTypeConverter must do the roundtrip" in {
     convertTo(classOf[Duration], DurationTypeConverter.toString(10 seconds)) must be(10 seconds)
   }
 
-  it must "throw if invalid format" in {
+  "DurationTypeConverter must throw if invalid format" in {
     intercept[Exception] {
       convertTo(classOf[Duration], "abc nanos") must be(10 nanos)
     }
   }
 
-  it must "throw if doesn't end with nanos" in {
+  "DurationTypeConverter must throw if doesn't end with nanos" in {
     intercept[Exception] {
       convertTo(classOf[Duration], "10233") must be(10 nanos)
     }

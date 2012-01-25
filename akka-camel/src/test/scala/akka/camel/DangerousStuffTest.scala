@@ -4,13 +4,13 @@
 
 package akka.camel
 
-import org.scalatest.FreeSpec
 import akka.camel.DangerousStuff._
 import org.scalatest.matchers.MustMatchers
+import org.scalatest.WordSpec
 
-class DangerousStuffTest extends FreeSpec with MustMatchers {
+class DangerousStuffTest extends WordSpec with MustMatchers {
 
-  "Safe" - {
+  "Safe" when {
     "executes block" in {
       var executed = false
       safe { executed = true }
@@ -22,7 +22,7 @@ class DangerousStuffTest extends FreeSpec with MustMatchers {
     }
   }
 
-  "try_ otherwise" - {
+  "try_ otherwise" when {
 
     "runs otherwise and throws exception when the first block fails" in {
       var otherwiseCalled = false
