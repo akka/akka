@@ -82,7 +82,7 @@ class ActivationTracker extends Actor {
     }
   }
 
-  private[this] def logWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message {} not expected in current state of actor {}", msg, actorRef) }
+  private[this] def logWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message: {} sent by {} is not expected in current state of actor {}. If you see this message, it means that actor {} of the internal clients of ActivationTracker is using it incorrectly.", msg, sender, actorRef, sender) }
 }
 
 case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
