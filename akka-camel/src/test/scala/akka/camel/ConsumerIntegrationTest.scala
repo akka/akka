@@ -61,7 +61,8 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
   "Consumer must support blocking, in-out messaging" in {
     start(new Consumer {
       def endpointUri = "direct:a1"
-      override def communicationStyle = Blocking(200 millis)
+      override def blocking = true
+      override def replyTimeout = 200 millis
 
       protected def receive = {
         case m: Message ⇒ {
