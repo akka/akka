@@ -3,6 +3,7 @@ package akka.remote
 import akka.actor.{ Actor, Props }
 import akka.testkit._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2
