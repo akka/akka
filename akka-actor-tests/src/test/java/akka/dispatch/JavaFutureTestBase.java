@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.testkit.AkkaSpec;
 
-public class JavaFutureTests {
+public class JavaFutureTestBase {
 
   private static ActorSystem system;
   private static Timeout t;
@@ -260,7 +260,7 @@ public class JavaFutureTests {
         }
       }, system.dispatcher()));
     }
-    final Integer expect = 5;
+    final Option<Integer> expect = Option.some(5);
     Future<Option<Integer>> f = Futures.find(listFutures, new Function<Integer, Boolean>() {
       public Boolean apply(Integer i) {
         return i == 5;
@@ -268,6 +268,29 @@ public class JavaFutureTests {
     }, system.dispatcher());
 
     assertEquals(expect, Await.result(f, timeout));
+  }
+  
+  @Test
+  public void recoverForJavaApiMustWork() {
+    final Exception ex = new Exception("failure");
+    final Future<Integer> f = Futures.future(new Callable<Integer>() {
+      public Integer call() throws Exception {
+        throw ex;
+      }
+    }, system.dispatcher());
+    final Future<Integer> f1 = f.<Integer>recover(new Function<Throwable, Integer>() {
+      public Integer apply(Throwable thr) {
+        return 5;
+      }
+    });
+    final Future<Integer> f2 = f.<Integer>recover(new Function<Throwable, Integer>() {
+      public Integer apply(Throwable thr) throws Throwable {
+        throw thr;
+      }
+    });
+    assertEquals(Await.result(f1, timeout), (Integer) 5);
+    Await.ready(f2, timeout);
+    assertEquals(ex, f2.value().get().left().get());
   }
 
   @Test
