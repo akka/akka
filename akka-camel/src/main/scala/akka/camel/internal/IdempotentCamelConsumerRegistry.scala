@@ -100,7 +100,7 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
     val scheme = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
 
     val route = from(endpointUri).routeId(consumer.path.toString)
-    val converted = Conversions(scheme, route)
+    val converted = Conversions.apply(scheme, route)
     val userCustomized = applyUserRouteCustomization(converted)
     userCustomized.to(targetActorUri)
   }

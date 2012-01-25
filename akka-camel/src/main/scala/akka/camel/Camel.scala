@@ -10,7 +10,6 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 import akka.util.Duration
 import akka.actor.{ ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem }
-import akka.event.Logging.Info
 import DangerousStuff._
 import akka.event.Logging
 
@@ -56,8 +55,7 @@ class DefaultCamel(val system: ActorSystem) extends Camel {
   def start = {
     context.start()
     try_(template.start()) otherwise context.stop()
-    //TODO use proper akka logging
-    system.eventStream.publish(Info("Camel", classOf[Camel], String.format("Started CamelContext %s for ActorSystem %s", context.getName, system.name)))
+    log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }
 
@@ -70,8 +68,7 @@ class DefaultCamel(val system: ActorSystem) extends Camel {
    */
   def shutdown() {
     try context.stop() finally safe(template.stop())
-    //TODO use proper akka logging
-    system.eventStream.publish(Info("Camel", classOf[Camel], String.format("Stopped CamelContext %s for ActorSystem %s", context.getName, system.name)))
+    log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
 }
 
