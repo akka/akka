@@ -4,8 +4,8 @@
 
 package akka
 
-import org.apache.camel.model.RouteDefinition
+import org.apache.camel.model.ProcessorDefinition
 
 package object camel {
-  implicit def toActorRouteDefinition(rd: RouteDefinition) = new ActorRouteDefinition(rd)
+  implicit def toActorRouteDefinition(definition: ProcessorDefinition[_]) = new ActorRouteDefinition(definition)
 }

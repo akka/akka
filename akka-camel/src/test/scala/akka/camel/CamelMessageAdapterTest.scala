@@ -12,20 +12,20 @@ import akka.camel.TestSupport.{ SharedCamelSystem, MessageSugar }
 class CamelMessageAdapterTest extends JUnitSuite with SharedCamelSystem with MessageSugar {
   import CamelMessageConversion.toMessageAdapter
 
-  @Test def shouldOverwriteBodyAndAddHeader = {
+  @Test def mustOverwriteBodyAndAddHeader = {
     val cm = sampleMessage.copyContentFrom(Message("blah", Map("key" -> "baz")))
     assert(cm.getBody === "blah")
     assert(cm.getHeader("foo") === "bar")
     assert(cm.getHeader("key") === "baz")
   }
 
-  @Test def shouldCreateMessageWithBodyAndHeader = {
+  @Test def mustCreateMessageWithBodyAndHeader = {
     val m = sampleMessage.toMessage
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
   }
 
-  @Test def shouldCreateMessageWithBodyAndHeaderAndCustomHeader = {
+  @Test def mustCreateMessageWithBodyAndHeaderAndCustomHeader = {
     val m = sampleMessage.toMessage(Map("key" -> "baz"))
     assert(m.body === "test")
     assert(m.headers("foo") === "bar")
