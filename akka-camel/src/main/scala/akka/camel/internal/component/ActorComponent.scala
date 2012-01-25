@@ -16,7 +16,7 @@ import akka.dispatch.Await
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.TimeoutException
-import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message}
+import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message }
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -133,7 +133,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
 
-    class NonBlocking{ // Default case
+    class NonBlocking { // Default case
       val DoneSync = true
       val DoneAsync = false
       def notifyDoneSynchronously[A](a: A = null) = callback.done(DoneSync)
@@ -163,8 +163,8 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
       }
     }
 
-    class Blocking extends NonBlocking{ // used for debugging
-      override def outCapable: Boolean ={
+    class Blocking extends NonBlocking { // used for debugging
+      override def outCapable: Boolean = {
         sendSync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneSynchronously)
       }
 
@@ -181,14 +181,14 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   }
 
-  private def sendSync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]) : Boolean = {
+  private def sendSync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
     val future = send(message)
     val response = either(Await.result(future, config.replyTimeout))
     onComplete(response)
     true // Done sync
   }
 
-  private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]) : Boolean = {
+  private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
     val future = send(message)
     future.onComplete(onComplete)
     false // Done async
