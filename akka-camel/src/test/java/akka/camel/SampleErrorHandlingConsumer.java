@@ -5,6 +5,7 @@
 package akka.camel;
 
 import akka.camel.javaapi.UntypedConsumerActor;
+import akka.util.Duration;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
@@ -26,9 +27,16 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     }
 
     @Override
-    public CommunicationStyle communicationStyle(){
-        return Blocking.seconds(1);
+    public boolean blocking(){
+        return true;
     }
+
+    @Override
+    public Duration replyTimeout(){
+        return Duration.create(1, "second");
+    }
+
+
 
     public void onReceive(Object message) throws Exception {
         Message msg = (Message) message;
