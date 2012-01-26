@@ -79,7 +79,7 @@ class Worker extends Actor with ActorLogging {
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case Start if progressListener.isEmpty ⇒
       progressListener = Some(sender)
       context.system.scheduler.schedule(Duration.Zero, 1 second, self, Do)
@@ -143,7 +143,7 @@ class CounterService extends Actor {
     storage.get ! Get(key)
   }
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
 
     case Entry(k, v) if k == key && counter == None ⇒
       // Reply from Storage of the initial value, now we can create the Counter
@@ -206,7 +206,7 @@ class Counter(key: String, initialValue: Long) extends Actor {
   var count = initialValue
   var storage: Option[ActorRef] = None
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case UseStorage(s) ⇒
       storage = s
       storeCount()
@@ -246,7 +246,7 @@ class Storage extends Actor {
 
   val db = DummyDB
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case Store(Entry(key, count)) ⇒ db.save(key, count)
     case Get(key)                 ⇒ sender ! Entry(key, db.load(key).getOrElse(0L))
   }

@@ -61,7 +61,7 @@ object TestkitDocSpec {
   class LoggingActor extends Actor {
     //#logging-receive
     import akka.event.LoggingReceive
-    def receive = LoggingReceive(this) {
+    def receive = LoggingReceive {
       case msg ⇒ // Do something...
     }
     //#logging-receive
