@@ -68,7 +68,6 @@ object Worker {
 class Worker extends Actor with ActorLogging {
   import Worker._
   import CounterService._
-  implicit def system = context.system
   implicit val askTimeout = Timeout(5 seconds)
 
   // Stop the CounterService child if it throws ServiceUnavailable
@@ -80,7 +79,7 @@ class Worker extends Actor with ActorLogging {
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case Start if progressListener.isEmpty ⇒
       progressListener = Some(sender)
       context.system.scheduler.schedule(Duration.Zero, 1 second, self, Do)
@@ -113,7 +112,6 @@ class CounterService extends Actor {
   import CounterService._
   import Counter._
   import Storage._
-  implicit def system = context.system
 
   // Restart the storage child when StorageException is thrown.
   // After 3 restarts within 5 seconds it will be stopped.
@@ -145,7 +143,7 @@ class CounterService extends Actor {
     storage.get ! Get(key)
   }
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
 
     case Entry(k, v) if k == key && counter == None ⇒
       // Reply from Storage of the initial value, now we can create the Counter
@@ -204,12 +202,11 @@ class Counter(key: String, initialValue: Long) extends Actor {
   import Counter._
   import CounterService._
   import Storage._
-  implicit def system = context.system
 
   var count = initialValue
   var storage: Option[ActorRef] = None
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case UseStorage(s) ⇒
       storage = s
       storeCount()
@@ -246,11 +243,10 @@ object Storage {
  */
 class Storage extends Actor {
   import Storage._
-  implicit def system = context.system
 
   val db = DummyDB
 
-  def receive = LoggingReceive(this) {
+  def receive = LoggingReceive {
     case Store(Entry(key, count)) ⇒ db.save(key, count)
     case Get(key)                 ⇒ sender ! Entry(key, db.load(key).getOrElse(0L))
   }

@@ -61,8 +61,7 @@ object TestkitDocSpec {
   class LoggingActor extends Actor {
     //#logging-receive
     import akka.event.LoggingReceive
-    implicit def system = context.system
-    def receive = LoggingReceive(this) {
+    def receive = LoggingReceive {
       case msg ⇒ // Do something...
     }
     //#logging-receive
