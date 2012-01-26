@@ -10,6 +10,7 @@ import scala.Some
  * A Function interface. Used to create first-class-functions is Java.
  */
 trait Function[T, R] {
+  @throws(classOf[Throwable])
   def apply(param: T): R
 }
 

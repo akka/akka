@@ -40,9 +40,6 @@ object FutureSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class JavaFutureSpec extends JavaFutureTests with JUnitSuite
-
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with DefaultTimeout {
   import FutureSpec._
 

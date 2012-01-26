@@ -32,6 +32,13 @@ trait Future[+T] { self: akka.dispatch.Future[T] ⇒
   private[japi] final def map[A >: T, B](f: JFunc[A, B]): akka.dispatch.Future[B] = self.map(f(_))
 
   /**
+   * Apply this transformation in case the future is completed with a failure.
+   * The supplied Function should rethrow the exception if recovery is not possible.
+   */
+  private[japi] final def recover[A >: T](f: JFunc[Throwable, A]): akka.dispatch.Future[A] =
+    self recover ({ case x ⇒ f(x) }: PartialFunction[Throwable, A])
+
+  /**
    * Asynchronously applies the provided function to the (if any) successful result of this Future and flattens it.
    * Any failure of this Future will be propagated to the Future returned by this method.
    */
