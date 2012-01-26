@@ -343,7 +343,7 @@ object Future {
     }
 }
 
-sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
+sealed trait Future[+T] extends Await.Awaitable[T] {
 
   implicit def executor: ExecutionContext
 
@@ -828,3 +828,65 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
     case Right(r) ⇒ r
   }
 }
+object japi {
+  @deprecated("Do not use this directly, use subclasses of this", "2.0")
+  class CallbackBridge[-T] extends PartialFunction[T, Unit] {
+    override final def isDefinedAt(t: T): Boolean = true
+    override final def apply(t: T): Unit = internal(t)
+    protected def internal(result: T): Unit = ()
+  }
+
+  @deprecated("Do not use this directly, use 'Recover'", "2.0")
+  class RecoverBridge[+T] extends PartialFunction[Throwable, T] {
+    override final def isDefinedAt(t: Throwable): Boolean = true
+    override final def apply(t: Throwable): T = internal(t)
+    protected def internal(result: Throwable): T = null.asInstanceOf[T]
+  }
+
+  @deprecated("Do not use this directly, use subclasses of this", "2.0")
+  class BooleanFunctionBridge[-T] extends scala.Function1[T, Boolean] {
+    override final def apply(t: T): Boolean = internal(t)
+    protected def internal(result: T): Boolean = false
+  }
+
+  @deprecated("Do not use this directly, use subclasses of this", "2.0")
+  class UnitFunctionBridge[-T] extends (T ⇒ Unit) {
+    override final def apply(t: T): Unit = internal(t)
+    protected def internal(result: T): Unit = ()
+  }
+}
+
+abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
+  protected final override def internal(result: T) = onSuccess(result)
+  def onSuccess(result: T): Unit
+}
+
+abstract class OnFailure extends japi.CallbackBridge[Throwable] {
+  protected final override def internal(failure: Throwable) = onFailure(failure)
+  def onFailure(failure: Throwable): Unit
+}
+
+abstract class OnComplete[-T] extends japi.CallbackBridge[Either[Throwable, T]] {
+  protected final override def internal(value: Either[Throwable, T]): Unit = value match {
+    case Left(t)  ⇒ onComplete(t, null.asInstanceOf[T])
+    case Right(r) ⇒ onComplete(null, r)
+  }
+  def onComplete(failure: Throwable, success: T): Unit
+}
+
+abstract class Recover[+T] extends japi.RecoverBridge[T] {
+  protected final override def internal(result: Throwable): T = recover(result)
+  def recover(failure: Throwable): T
+}
+
+abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
+  override final def internal(t: T): Boolean = filter(t)
+  def filter(result: T): Boolean
+}
+
+abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
+  override final def internal(t: T): Unit = each(t)
+  def each(result: T): Unit
+}
+
+abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R]

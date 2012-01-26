@@ -4,16 +4,10 @@
 package akka.docs.future;
 
 //#imports1
-import akka.dispatch.Promise;
+import akka.dispatch.*;
 import akka.japi.Procedure;
 import akka.japi.Procedure2;
 import akka.util.Timeout;
-import akka.dispatch.Await;
-import akka.dispatch.Future;
-import akka.dispatch.japi.Mapper;
-import akka.dispatch.japi.OnSuccess;
-import akka.dispatch.japi.OnFailure;
-import akka.dispatch.japi.Filter;
 
 //#imports1
 
@@ -61,7 +55,6 @@ import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.dispatch.Futures;
 import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
@@ -355,8 +348,8 @@ public class FutureDocTestBase {
       {
         Future<String> future = Futures.successful("foo", system.dispatcher());
         //#onComplete
-        future.onComplete(new Procedure2<Throwable, String>() {
-           public void apply(Throwable failure, String result) {
+        future.onComplete(new OnComplete<String>() {
+           public void onComplete(Throwable failure, String result) {
                if (failure != null) {
                    //We got a failure, handle it here
                } else {
