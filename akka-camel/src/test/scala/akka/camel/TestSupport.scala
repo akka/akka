@@ -7,8 +7,8 @@ package akka.camel
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.util.Duration
 import akka.util.duration._
-import org.scalatest.{ BeforeAndAfterAll, Suite }
 import java.util.concurrent.{TimeoutException, ExecutionException, TimeUnit}
+import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, Suite}
 
 private[camel] object TestSupport {
 
@@ -53,6 +53,24 @@ private[camel] object TestSupport {
       system.shutdown()
     }
   }
+  
+  trait NonSharedCamelSystem extends  BeforeAndAfterEach { this : Suite =>
+    implicit var system: ActorSystem = _
+    override protected def beforeEach() {
+      super.beforeEach()
+      system = ActorSystem("test")
+    }
+  
+    override protected def afterEach() {
+      system.shutdown()
+      super.afterEach()
+    }
+  
+    def camel: Camel = {
+      CamelExtension(system)
+    }
+  }
+  
 
   def time[A](block: ⇒ A): Duration = {
     val start = System.currentTimeMillis()

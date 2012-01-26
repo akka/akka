@@ -6,43 +6,24 @@ package akka.camel
 
 import akka.actor._
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers.{ eq ⇒ the }
 import akka.util.duration._
 import java.util.concurrent.TimeUnit._
 import TestSupport._
-import org.scalatest.{ WordSpec, BeforeAndAfterEach }
+import org.scalatest.WordSpec
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
 import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
 import java.util.concurrent.{ExecutionException, TimeUnit, TimeoutException, CountDownLatch}
 
-class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
-  implicit var system: ActorSystem = _
-  override protected def beforeEach() {
-    system = ActorSystem("test")
-  }
 
-  override protected def afterEach() {
-    system.shutdown()
-  }
-
-
-  //TODO test manualAck
-
-  //TODO: decide on Camel lifecycle. Ideally it must prevent creating non-started instances, so there is no need to test if consumers fail when Camel is not initialized.
-  "Consumer must fail if camel is not started" in (pending)
+class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem{
 
   "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
     val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
 
     intercept[FailedToCreateRouteException] {
-      CamelExtension(system).awaitActivation(actorRef, 1 second)
+      camel.awaitActivation(actorRef, timeout = 1 second)
     }
-  }
-
-  def camel: Camel = {
-    CamelExtension(system)
   }
 
   "Consumer must support in-out messaging" in {
@@ -159,7 +140,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
     }.getCause.getCause must be (someException)
   }
 
-  "Consumer should time-out if manual Ack not received within replyTimeout and give human readable error message" in  {
+  "Consumer should time-out, if manual Ack not received within replyTimeout and should give a human readable error message" in  {
     start(new ManualAckConsumer(){
       override def replyTimeout = 10 millis
       def endpointUri = "direct:manual-ack"
@@ -169,16 +150,13 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
     intercept[ExecutionException]{
       camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS)
     }.getCause.getCause.getMessage must include ("Failed to get Ack")
-
   }
-
 }
 
 class ErrorThrowingConsumer(override val endpointUri :String) extends Consumer{
   def receive = {
     case msg: Message => throw new Exception("error: %s" format msg.body)
   }
-
 }
 
 class FailingOnceConsumer(override val endpointUri :String) extends Consumer{
@@ -194,7 +172,7 @@ class FailingOnceConsumer(override val endpointUri :String) extends Consumer{
 
 
 
-class TestActor(uri: String = "file://target/abcde") extends Actor with Consumer {
+class TestActor(uri: String = "file://target/abcde") extends Consumer {
   def endpointUri = uri
-  protected def receive = { case _ ⇒ println("foooo..") }
+  protected def receive = { case _ ⇒ /* do nothing */ }
 }
