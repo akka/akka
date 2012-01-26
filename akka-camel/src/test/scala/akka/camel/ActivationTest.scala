@@ -11,7 +11,7 @@ import akka.actor._
 import akka.util.Timeout
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import TestSupport._
-import org.scalatest.{WordSpec, FlatSpec}
+import org.scalatest.WordSpec
 
 class ActivationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = Timeout(10 seconds)

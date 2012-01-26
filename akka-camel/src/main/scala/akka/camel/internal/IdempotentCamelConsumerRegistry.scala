@@ -9,7 +9,6 @@ import component.ActorEndpointPath
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
-import akka.camel.migration.Migration._
 
 import akka.actor._
 import collection.mutable
@@ -29,34 +28,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
 
   val activated = new mutable.HashSet[ActorRef]
 
-  val registrator = context.actorOf(Props(new Actor {
-
-    override def postRestart(reason: Throwable) {
-      println("Restarted registrator")
-    }
-
-    def receive = {
-      case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {
-        camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
-        context.sender ! EndpointActivated(consumer)
-        EventHandler notifyListeners EventHandler.Info(this, "published actor %s at endpoint %s" format (consumerConfig, endpointUri))
-      }
-
-      case UnregisterConsumer(consumer) ⇒ {
-        camelContext.stopRoute(consumer.path.toString)
-        context.sender ! EndpointDeActivated(consumer)
-        EventHandler notifyListeners EventHandler.Info(this, "unpublished actor %s from endpoint %s" format (consumer, consumer.path))
-      }
-    }
-
-    override def preRestart(reason: Throwable, message: Option[Any]) {
-      message match {
-        case Some(RegisterConsumer(_, consumer, _)) ⇒ sender ! EndpointFailedToActivate(consumer, reason)
-        case Some(UnregisterConsumer(consumer))     ⇒ sender ! EndpointFailedToDeActivate(consumer, reason)
-        case _                                      ⇒
-      }
-    }
-  }))
+  val registrator = context.actorOf(Props(new CamelConsumerRegistrator))
 
   def receive = {
     case msg @ RegisterConsumer(_, consumer, _) ⇒ unless(isAlreadyActivated(consumer)) {
@@ -82,7 +54,33 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
   def unless[A](condition: Boolean)(block: ⇒ A) = if (!condition) block
   def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
+  class CamelConsumerRegistrator extends Actor with ActorLogging{
+
+    def receive = {
+      case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {
+        camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
+        context.sender ! EndpointActivated(consumer)
+        log.debug("Published actor [{}] at endpoint [{}]", consumerConfig, endpointUri)
+      }
+
+      case UnregisterConsumer(consumer) ⇒ {
+        camelContext.stopRoute(consumer.path.toString)
+        context.sender ! EndpointDeActivated(consumer)
+        log.debug("Unpublished actor [{}] from endpoint [{}]", consumer, consumer.path)
+      }
+    }
+
+    override def preRestart(reason: Throwable, message: Option[Any]) {
+      message match {
+        case Some(RegisterConsumer(_, consumer, _)) ⇒ sender ! EndpointFailedToActivate(consumer, reason)
+        case Some(UnregisterConsumer(consumer))     ⇒ sender ! EndpointFailedToDeActivate(consumer, reason)
+        case _                                      ⇒
+      }
+    }
+  }
 }
+
+private[camel] case class RegisterConsumer(endpointUri: String, actorRef: ActorRef, config: ConsumerConfig)
 
 /**
  * Abstract builder of a route to a target which can be either an actor or an typed actor method.
@@ -100,7 +98,7 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
     val scheme = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."
 
     val route = from(endpointUri).routeId(consumer.path.toString)
-    val converted = Conversions(scheme, route)
+    val converted = Conversions.apply(scheme, route)
     val userCustomized = applyUserRouteCustomization(converted)
     userCustomized.to(targetActorUri)
   }
@@ -119,8 +117,6 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
   }
 
 }
-
-private[camel] case class RegisterConsumer(endpointUri: String, actorRef: ActorRef, config: ConsumerConfig)
 
 /**
  * Super class of all activation messages.
