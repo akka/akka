@@ -10,16 +10,15 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the }
 import akka.util.duration._
 import java.util.concurrent.TimeUnit._
-import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import TestSupport._
-import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import org.scalatest.{ WordSpec, BeforeAndAfterEach }
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
+import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
+import java.util.concurrent.{ExecutionException, TimeUnit, TimeoutException, CountDownLatch}
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   implicit var system: ActorSystem = _
-
   override protected def beforeEach() {
     system = ActorSystem("test")
   }
@@ -138,6 +137,39 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
       }
     })
     camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+  }
+
+  "Consumer supports manual Ack" in  {
+    start(new ManualAckConsumer(){
+      def endpointUri = "direct:manual-ack"
+      protected def receive = {case _ => sender ! Ack}
+    })
+    camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS) must be (null) //should not timeout
+  }
+
+  "Consumer handles manual Ack failure" in  {
+    val someException = new Exception("e1")
+    start(new ManualAckConsumer(){
+      def endpointUri = "direct:manual-ack"
+      protected def receive = {case _ => sender ! Failure(someException)}
+    })
+
+    intercept[ExecutionException]{
+      camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS)
+    }.getCause.getCause must be (someException)
+  }
+
+  "Consumer should time-out if manual Ack not received within replyTimeout and give human readable error message" in  {
+    start(new ManualAckConsumer(){
+      override def replyTimeout = 10 millis
+      def endpointUri = "direct:manual-ack"
+      protected def receive = {case _ => }
+    })
+
+    intercept[ExecutionException]{
+      camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS)
+    }.getCause.getCause.getMessage must include ("Failed to get Ack")
+
   }
 
 }

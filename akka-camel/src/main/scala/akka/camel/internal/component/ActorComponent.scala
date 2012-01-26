@@ -213,6 +213,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
     case Right(Ack)              ⇒ { /* no response message to set */ }
     case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
     case Right(msg)              ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
+    case Left(e: TimeoutException) ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
     case Left(throwable)         ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
