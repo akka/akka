@@ -23,6 +23,11 @@ import static akka.actor.SupervisorStrategy.*;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipeTo;
 
+import static akka.docs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
+import static akka.docs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
+import static akka.docs.actor.japi.FaultHandlingDocSample.CounterApi.*;
+import static akka.docs.actor.japi.FaultHandlingDocSample.StorageApi.*;
+
 //#imports
 
 public class FaultHandlingDocSample {
@@ -31,16 +36,14 @@ public class FaultHandlingDocSample {
    * Runs the sample
    */
   public static void main(String... args) {
-    Config config = ConfigFactory.parseString(
-        "akka.loglevel = DEBUG \n" +
-        "akka.actor.debug { \n" +
-        "  lifecycle = on \n" +
-        "}");
+    Config config = ConfigFactory.parseString("akka.loglevel = DEBUG \n" + "akka.actor.debug.lifecycle = on");
 
     ActorSystem system = ActorSystem.create("FaultToleranceSample", config);
     ActorRef worker = system.actorOf(new Props(Worker.class), "worker");
     ActorRef listener = system.actorOf(new Props(Listener.class), "listener");
     // start the work and listen on progress
+    // note that the listener is used as sender of the tell,
+    // i.e. it will receive replies from the worker
     worker.tell(Start, listener);
   }
 
@@ -75,6 +78,14 @@ public class FaultHandlingDocSample {
       }
     }
   }
+
+  //#messages
+  public interface WorkerApi {
+    public static final Object Start = "Start";
+    public static final Object Do = "Do";
+  }
+
+  //#messages
 
   /**
    * Worker performs some work when it receives the Start message. It will
@@ -125,12 +136,56 @@ public class FaultHandlingDocSample {
     }
   }
 
+  //#messages
+  public interface CounterServiceApi {
+
+    public static final Object GetCurrentCount = "GetCurrentCount";
+
+    public static class CurrentCount {
+      public final String key;
+      public final long count;
+
+      public CurrentCount(String key, long count) {
+        this.key = key;
+        this.count = count;
+      }
+
+      public String toString() {
+        return String.format("%s(%s, %s)", getClass().getSimpleName(), key, count);
+      }
+    }
+
+    public static class Increment {
+      public final long n;
+
+      public Increment(long n) {
+        this.n = n;
+      }
+
+      public String toString() {
+        return String.format("%s(%s)", getClass().getSimpleName(), n);
+      }
+    }
+
+    public static class ServiceUnavailable extends RuntimeException {
+      public ServiceUnavailable(String msg) {
+        super(msg);
+      }
+    }
+
+  }
+
+  //#messages
+
   /**
    * Adds the value received in Increment message to a persistent counter.
    * Replies with CurrentCount when it is asked for CurrentCount. CounterService
    * supervise Storage and Counter.
    */
   public static class CounterService extends UntypedActor {
+
+    // Reconnect message
+    static final Object Reconnect = "Reconnect";
 
     private static class SenderMsgPair {
       final ActorRef sender;
@@ -241,6 +296,23 @@ public class FaultHandlingDocSample {
     }
   }
 
+  //#messages
+  public interface CounterApi {
+    public static class UseStorage {
+      public final ActorRef storage;
+
+      public UseStorage(ActorRef storage) {
+        this.storage = storage;
+      }
+
+      public String toString() {
+        return String.format("%s(%s)", getClass().getSimpleName(), storage);
+      }
+    }
+  }
+
+  //#messages
+
   /**
    * The in memory count variable that will send current value to the Storage,
    * if there is any storage available at the moment.
@@ -281,6 +353,56 @@ public class FaultHandlingDocSample {
     }
   }
 
+  //#messages
+  public interface StorageApi {
+
+    public static class Store {
+      public final Entry entry;
+
+      public Store(Entry entry) {
+        this.entry = entry;
+      }
+
+      public String toString() {
+        return String.format("%s(%s)", getClass().getSimpleName(), entry);
+      }
+    }
+
+    public static class Entry {
+      public final String key;
+      public final long value;
+
+      public Entry(String key, long value) {
+        this.key = key;
+        this.value = value;
+      }
+
+      public String toString() {
+        return String.format("%s(%s, %s)", getClass().getSimpleName(), key, value);
+      }
+    }
+
+    public static class Get {
+      public final String key;
+
+      public Get(String key) {
+        this.key = key;
+      }
+
+      public String toString() {
+        return String.format("%s(%s)", getClass().getSimpleName(), key);
+      }
+    }
+
+    public static class StorageException extends RuntimeException {
+      public StorageException(String msg) {
+        super(msg);
+      }
+    }
+  }
+
+  //#messages
+
   /**
    * Saves key/value pairs to persistent storage when receiving Store message.
    * Replies with current value when receiving Get message. Will throw
@@ -306,102 +428,6 @@ public class FaultHandlingDocSample {
       }
     }
   }
-
-  //#messages
-  public static final Object Start = "Start";
-  public static final Object Do = "Do";
-  public static final Object GetCurrentCount = "GetCurrentCount";
-  public static final Object Reconnect = "Reconnect";
-
-  public static class CurrentCount {
-    public final String key;
-    public final long count;
-
-    public CurrentCount(String key, long count) {
-      this.key = key;
-      this.count = count;
-    }
-
-    public String toString() {
-      return String.format("%s(%s, %s)", getClass().getSimpleName(), key, count);
-    }
-  }
-
-  public static class Increment {
-    public final long n;
-
-    public Increment(long n) {
-      this.n = n;
-    }
-
-    public String toString() {
-      return String.format("%s(%s)", getClass().getSimpleName(), n);
-    }
-  }
-
-  public static class UseStorage {
-    public final ActorRef storage;
-
-    public UseStorage(ActorRef storage) {
-      this.storage = storage;
-    }
-
-    public String toString() {
-      return String.format("%s(%s)", getClass().getSimpleName(), storage);
-    }
-  }
-
-  public static class ServiceUnavailable extends RuntimeException {
-    public ServiceUnavailable(String msg) {
-      super(msg);
-    }
-  }
-
-  public static class StorageException extends RuntimeException {
-    public StorageException(String msg) {
-      super(msg);
-    }
-  }
-
-  public static class Store {
-    public final Entry entry;
-
-    public Store(Entry entry) {
-      this.entry = entry;
-    }
-
-    public String toString() {
-      return String.format("%s(%s)", getClass().getSimpleName(), entry);
-    }
-  }
-
-  public static class Entry {
-    public final String key;
-    public final long value;
-
-    public Entry(String key, long value) {
-      this.key = key;
-      this.value = value;
-    }
-
-    public String toString() {
-      return String.format("%s(%s, %s)", getClass().getSimpleName(), key, value);
-    }
-  }
-
-  public static class Get {
-    public final String key;
-
-    public Get(String key) {
-      this.key = key;
-    }
-
-    public String toString() {
-      return String.format("%s(%s)", getClass().getSimpleName(), key);
-    }
-  }
-
-  //#messages
 
   //#dummydb
   public static class DummyDB {

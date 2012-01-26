@@ -33,6 +33,8 @@ object FaultHandlingDocSample extends App {
   val worker = system.actorOf(Props[Worker], name = "worker")
   val listener = system.actorOf(Props[Listener], name = "listener")
   // start the work and listen on progress
+  // note that the listener is used as sender of the tell,
+  // i.e. it will receive replies from the worker
   worker.tell(Start, sender = listener)
 }
 
@@ -107,8 +109,9 @@ object CounterService {
   case class Increment(n: Int)
   case object GetCurrentCount
   case class CurrentCount(key: String, count: Long)
-  case object Reconnect
   class ServiceUnavailable(msg: String) extends RuntimeException(msg)
+
+  private case object Reconnect
 }
 //#messages
 
