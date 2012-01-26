@@ -120,7 +120,10 @@ object Option {
   implicit def scala2JavaOption[A](o: scala.Option[A]): Option[A] = if (o.isDefined) some(o.get) else none
 }
 
-object util {
+/**
+ * This class hold common utilities for Java
+ */
+object Util {
   /**
    * Given a Class returns a Scala Manifest of that Class
    */

@@ -505,7 +505,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * that conforms to A's erased type or a ClassCastException otherwise.
    *
    * When used from Java, to create the Manifest, use:
-   * import static akka.japi.util.manifest;
+   * import static akka.japi.Util.manifest;
    * future.mapTo(manifest(MyClass.class));
    */
   final def mapTo[A](implicit m: Manifest[A]): Future[A] = {

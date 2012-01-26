@@ -14,7 +14,7 @@ import java.util.LinkedList;
 import java.lang.Iterable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import static akka.japi.util.manifest;
+import static akka.japi.Util.manifest;
 
 import akka.testkit.AkkaSpec;
 
@@ -272,7 +272,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void BlockMustBeCallable() {
+  public void blockMustBeCallable() {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
@@ -281,7 +281,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void MapToMustBeCallable() {
+  public void mapToMustBeCallable() {
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<String> f = p.future().mapTo(manifest(String.class));
     Duration d = Duration.create(1, TimeUnit.SECONDS);
@@ -291,7 +291,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void RecoverToMustBeCallable() {
+  public void recoverToMustBeCallable() {
     final IllegalStateException fail = new IllegalStateException("OHNOES");
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<Object> f = p.future().recover(new Recover<Object>() {
