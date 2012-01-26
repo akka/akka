@@ -4,6 +4,7 @@
 package akka.docs.actor
 
 //#all
+//#imports
 import akka.actor._
 import akka.actor.SupervisorStrategy._
 import akka.util.duration._
@@ -12,13 +13,13 @@ import akka.util.Timeout
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
+//#imports
 
 /**
  * Runs the sample
  */
 object FaultHandlingDocSample extends App {
   import Worker._
-  import CounterService._
 
   val config = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
@@ -30,35 +31,43 @@ object FaultHandlingDocSample extends App {
 
   val system = ActorSystem("FaultToleranceSample", config)
   val worker = system.actorOf(Props[Worker], name = "worker")
-
-  // Create an Actor that start the work and listens to progress
-  system.actorOf(Props(new Actor with ActorLogging {
-    // If we don't get any progress within 15 seconds then the service is unavailable
-    context.setReceiveTimeout(15 seconds)
-    worker ! Start
-
-    def receive = {
-      case CurrentCount(key, count) ⇒
-        log.info("Current count for [{}] is [{}]", key, count)
-        if (count > 50) {
-          log.info("That's enough, shutting down")
-          system.shutdown()
-        }
-
-      case ReceiveTimeout ⇒
-        // No progress within 15 seconds, ServiceUnavailable
-        log.error("Shutting down due to unavailable service")
-        system.shutdown()
-    }
-  }))
-
+  val listener = system.actorOf(Props[Listener], name = "listener")
+  // start the work and listen on progress
+  // note that the listener is used as sender of the tell,
+  // i.e. it will receive replies from the worker
+  worker.tell(Start, sender = listener)
 }
 
+/**
+ * Listens on progress from the worker and shuts down the system when enough
+ * work has been done.
+ */
+class Listener extends Actor with ActorLogging {
+  import CounterService._
+  // If we don't get any progress within 15 seconds then the service is unavailable
+  context.setReceiveTimeout(15 seconds)
+
+  def receive = {
+    case CurrentCount(key, count) ⇒
+      log.info("Current count for [{}] is [{}]", key, count)
+      if (count > 50) {
+        log.info("That's enough, shutting down")
+        context.system.shutdown()
+      }
+
+    case ReceiveTimeout ⇒
+      // No progress within 15 seconds, ServiceUnavailable
+      log.error("Shutting down due to unavailable service")
+      context.system.shutdown()
+  }
+}
+
+//#messages
 object Worker {
-  // Messages
   case object Start
   case object Do
 }
+//#messages
 
 /**
  * Worker performs some work when it receives the `Start` message.
@@ -94,14 +103,16 @@ class Worker extends Actor with ActorLogging {
   }
 }
 
+//#messages
 object CounterService {
-  // Messages
   case class Increment(n: Int)
   case object GetCurrentCount
   case class CurrentCount(key: String, count: Long)
-  case object Reconnect
   class ServiceUnavailable(msg: String) extends RuntimeException(msg)
+
+  private case object Reconnect
 }
+//#messages
 
 /**
  * Adds the value received in `Increment` message to a persistent
@@ -119,10 +130,10 @@ class CounterService extends Actor {
     case _: Storage.StorageException ⇒ Restart
   }
 
-  val key = context.self.path.name
+  val key = self.path.name
   var storage: Option[ActorRef] = None
   var counter: Option[ActorRef] = None
-  var backlog = IndexedSeq.empty[Any]
+  var backlog = IndexedSeq.empty[(ActorRef, Any)]
   val MaxBacklog = 10000
 
   override def preStart() {
@@ -152,7 +163,7 @@ class CounterService extends Actor {
       // Tell the counter to use current storage
       c ! UseStorage(storage)
       // and send the buffered backlog to the counter
-      backlog foreach { c ! _ }
+      for ((replyTo, msg) ← backlog) c.tell(msg, sender = replyTo)
       backlog = IndexedSeq.empty
 
     case msg @ Increment(n)    ⇒ forwardOrPlaceInBacklog(msg)
@@ -182,16 +193,17 @@ class CounterService extends Actor {
       case None ⇒
         if (backlog.size >= MaxBacklog)
           throw new ServiceUnavailable("CounterService not available, lack of initial value")
-        backlog = backlog :+ msg
+        backlog = backlog :+ (sender, msg)
     }
   }
 
 }
 
+//#messages
 object Counter {
-  // Messages
   case class UseStorage(storage: Option[ActorRef])
 }
+//#messages
 
 /**
  * The in memory count variable that will send current
@@ -228,13 +240,14 @@ class Counter(key: String, initialValue: Long) extends Actor {
 
 }
 
+//#messages
 object Storage {
-  // Messages
   case class Store(entry: Entry)
   case class Get(key: String)
   case class Entry(key: String, value: Long)
   class StorageException(msg: String) extends RuntimeException(msg)
 }
+//#messages
 
 /**
  * Saves key/value pairs to persistent storage when receiving `Store` message.
@@ -252,9 +265,10 @@ class Storage extends Actor {
   }
 }
 
+//#dummydb
 object DummyDB {
   import Storage.StorageException
-  var db = Map[String, Long]()
+  private var db = Map[String, Long]()
 
   @throws(classOf[StorageException])
   def save(key: String, value: Long): Unit = synchronized {
@@ -267,4 +281,5 @@ object DummyDB {
     db.get(key)
   }
 }
+//#dummydb
 //#all

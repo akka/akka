@@ -12,8 +12,30 @@ children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the
 actor system’s structure.
 
+Fault Handling in Practice
+--------------------------
+
+First, let us look at a sample that illustrates one way to handle data store errors,
+which is a typical source of failure in real world applications. Of course it depends
+on the actual application what is possible to do when the data store is unavailable,
+but in this sample we use a best effort re-connect approach.
+
+Read the following source code. The inlined comments explain the different pieces of
+the fault handling and why they are added. It is also highly recommended to run this
+sample as it is easy to follow the log output to understand what is happening in runtime.
+
+.. toctree::
+
+   fault-tolerance-sample
+
+.. includecode:: code/akka/docs/actor/japi/FaultHandlingDocSample.java#all
+   :exclude: imports,messages,dummydb
+
 Creating a Supervisor Strategy
 ------------------------------
+
+The following sections explain the fault handling mechanism and alternatives
+in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
@@ -26,12 +48,28 @@ First off, it is a one-for-one strategy, meaning that each child is treated
 separately (an all-for-one strategy works very similarly, the only difference
 is that any decision is applied to all children of the supervisor, not only the
 failing one). There are limits set on the restart frequency, namely maximum 10
-restarts per minute; each of these settings could be left out, which means
-that the respective limit does not apply, leaving the possibility to specify an
-absolute upper limit on the restarts or to make the restarts work infinitely.
+restarts per minute. ``-1`` and ``Duration.Inf()`` means that the respective limit
+does not apply, leaving the possibility to specify an absolute upper limit on the
+restarts or to make the restarts work infinitely.
 
-Practical Application
----------------------
+Default Supervisor Strategy
+---------------------------
+
+``Escalate`` is used if the defined strategy doesn't cover the exception that was thrown.
+
+When the supervisor strategy is not defined for an actor the following
+exceptions are handled by default:
+
+* ``ActorInitializationException`` will stop the failing child actor
+* ``ActorKilledException`` will stop the failing child actor
+* ``Exception`` will restart the failing child actor
+* Other types of ``Throwable`` will be escalated to parent actor
+
+If the exception escalate all the way up to the root guardian it will handle it
+in the same way as the default strategy defined above.
+
+Test Application
+----------------
 
 The following section shows the effects of the different actions in practice,
 wherefor a test setup is needed. First off, we need a suitable supervisor:
