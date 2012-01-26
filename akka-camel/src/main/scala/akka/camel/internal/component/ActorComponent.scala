@@ -16,7 +16,7 @@ import akka.dispatch.Await
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.TimeoutException
-import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message }
+import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure => CamelFailure, Message }
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -133,6 +133,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
 
+    //TODO: if Blocking is no longer need (to be confirmed by Martin) than we can get rid of lot of complexity here.
     class NonBlocking { // Default case
       val DoneSync = true
       val DoneAsync = false
@@ -202,17 +203,17 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
   }
 
   private[this] def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: Failure)   ⇒ exchange.setFailure(failure);
+    case Right(failure: CamelFailure)   ⇒ exchange.setFailure(failure);
     case Right(msg)                ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e: TimeoutException) ⇒ exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
-    case Left(throwable)           ⇒ exchange.setFailure(Failure(throwable))
+    case Left(e: TimeoutException) ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
+    case Left(throwable)           ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(Ack)              ⇒ { /* no response message to set */ }
-    case Right(failure: Failure) ⇒ exchange.setFailure(failure)
-    case Right(msg)              ⇒ exchange.setFailure(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
-    case Left(throwable)         ⇒ exchange.setFailure(Failure(throwable))
+    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
+    case Right(msg)              ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
+    case Left(throwable)         ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   private[this] def either[T](block: ⇒ T): Either[Throwable, T] = try { Right(block) } catch { case e ⇒ Left(e) }

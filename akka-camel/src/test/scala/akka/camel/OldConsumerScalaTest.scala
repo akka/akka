@@ -269,30 +269,3 @@ class TestConsumer(uri: String) extends Actor with Consumer {
 //    }
 //  }
 //
-//  class RedeliveringConsumer extends Actor with BlockingConsumer {
-//    def endpointUri = "direct:redelivery-test"
-//
-//    onRouteDefinition {rd: RouteDefinition =>
-//      rd.onException(classOf[Exception]).maximumRedeliveries(1).end
-//    }
-//
-//    //
-//    // first message to this actor is not valid and will be rejected
-//    //
-//
-//    var valid = false
-//
-//    protected def receive = {
-//      case msg: Message => try {
-//        respondTo(msg)
-//      } finally {
-//        valid = true
-//      }
-//    }
-//
-//    private def respondTo(msg: Message) =
-//      if (valid) self.reply("accepted: %s" format msg.body)
-//      else throw new Exception("rejected: %s" format msg.body)
-//
-//  }
-//}

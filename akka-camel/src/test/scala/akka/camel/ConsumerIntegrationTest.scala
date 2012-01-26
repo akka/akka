@@ -14,6 +14,8 @@ import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException 
 import TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import org.scalatest.{ WordSpec, BeforeAndAfterEach }
+import org.apache.camel.model.RouteDefinition
+import org.apache.camel.builder.Builder
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   implicit var system: ActorSystem = _
@@ -26,10 +28,6 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
     system.shutdown()
   }
 
-  class TestActor(uri: String = "file://target/abcde") extends Actor with Consumer {
-    def endpointUri = uri
-    protected def receive = { case _ ⇒ println("foooo..") }
-  }
 
   //TODO test manualAck
 
@@ -102,27 +100,69 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSug
       }
 
       override def postRestart(reason: Throwable) {
-        println("RESTARTED!!!")
         restarted.countDown()
       }
     })
     consumer ! "throw"
-    if (!restarted.await(5, SECONDS)) fail("Actor failed to restart!")
+    if (!restarted.await(1, SECONDS)) fail("Actor failed to restart!")
 
     val response = camel.sendTo("direct:a2", msg = "xyz")
     response must be("received xyz")
   }
 
   "Consumer must unregister itself when stopped" in {
-    val actorRef = start(new TestActor())
-    camel.awaitActivation(actorRef, 1 second)
+    val consumer = start(new TestActor())
+    camel.awaitActivation(consumer, 1 second)
 
     camel.routeCount must be > (0)
 
-    system.stop(actorRef)
-    camel.awaitDeactivation(actorRef, 1 second)
+    system.stop(consumer)
+    camel.awaitDeactivation(consumer, 1 second)
 
     camel.routeCount must be(0)
   }
 
+  "Error passing consumer supports error handling through route modification" in {
+    start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing{
+      override def onRouteDefinition(rd: RouteDefinition) = {
+        rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+      }
+    })
+    camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
+  }
+
+  "Error passing consumer supports redelivery through route modification" in {
+    start(new FailingOnceConsumer("direct:failing-once-concumer") with ErrorPassing{
+      override def onRouteDefinition(rd: RouteDefinition) = {
+        rd.onException(classOf[Exception]).maximumRedeliveries(1).end
+      }
+    })
+    camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+  }
+
+}
+
+class ErrorThrowingConsumer(override val endpointUri :String) extends Consumer{
+  def receive = {
+    case msg: Message => throw new Exception("error: %s" format msg.body)
+  }
+
+}
+
+class FailingOnceConsumer(override val endpointUri :String) extends Consumer{
+
+  def receive = {
+    case msg: Message =>
+      if (msg.containsHeader("CamelRedelivered") && msg.headerAs[Boolean]("CamelRedelivered"))
+        sender ! ("accepted: %s" format msg.body)
+      else
+        throw new Exception("rejected: %s" format msg.body)
+  }
+}
+
+
+
+class TestActor(uri: String = "file://target/abcde") extends Actor with Consumer {
+  def endpointUri = uri
+  protected def receive = { case _ ⇒ println("foooo..") }
 }

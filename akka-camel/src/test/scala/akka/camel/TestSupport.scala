@@ -7,8 +7,8 @@ package akka.camel
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.util.Duration
 import akka.util.duration._
-import java.util.concurrent.{ ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
+import java.util.concurrent.{TimeoutException, ExecutionException, TimeUnit}
 
 private[camel] object TestSupport {
 
@@ -30,7 +30,8 @@ private[camel] object TestSupport {
       try {
         camel.template.asyncRequestBody(to, msg).get(timeout.toNanos, TimeUnit.NANOSECONDS)
       } catch {
-        case e: ExecutionException ⇒ throw e.getCause
+        case e:ExecutionException => throw e.getCause
+        case e:TimeoutException ⇒ throw new AssertionError("Failed to get response to message [%s], send to endpoint [%s], within [%s]" format (msg, to, timeout), e)
       }
     }
 
