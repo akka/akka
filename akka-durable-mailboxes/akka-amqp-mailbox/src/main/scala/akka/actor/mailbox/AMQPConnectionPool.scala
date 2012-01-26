@@ -16,7 +16,7 @@ private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String
 
   private val log = LoggerFactory.getLogger(classOf[AMQPChannelFactory])
 
-  def makeObject = {
+  def makeObject(): Object = {
     try {
       createChannel
     } catch {
