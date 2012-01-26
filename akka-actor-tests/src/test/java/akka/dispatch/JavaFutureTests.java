@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.lang.Iterable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import static akka.japi.util.manifest;
 
 import akka.testkit.AkkaSpec;
 
@@ -275,6 +276,32 @@ public class JavaFutureTests {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
+    Await.ready(p, d);
+    assertEquals(Await.result(p, d), "foo");
+  }
+
+  @Test
+  public void MapToMustBeCallable() {
+    Promise<Object> p = Futures.promise(system.dispatcher());
+    Future<String> f = p.future().mapTo(manifest(String.class));
+    Duration d = Duration.create(1, TimeUnit.SECONDS);
+    p.success("foo");
+    Await.ready(p, d);
+    assertEquals(Await.result(p, d), "foo");
+  }
+
+  @Test
+  public void RecoverToMustBeCallable() {
+    final IllegalStateException fail = new IllegalStateException("OHNOES");
+    Promise<Object> p = Futures.promise(system.dispatcher());
+    Future<Object> f = p.future().recover(new Recover<Object>() {
+      public Object recover(Throwable t) throws Throwable {
+        if (t == fail) return "foo";
+        else throw t;
+      }
+    });
+    Duration d = Duration.create(1, TimeUnit.SECONDS);
+    p.failure(fail);
     Await.ready(p, d);
     assertEquals(Await.result(p, d), "foo");
   }

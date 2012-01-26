@@ -503,21 +503,18 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
   /**
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
+   *
+   * When used from Java, to create the Manifest, use:
+   * import static akka.japi.util.manifest;
+   * future.mapTo(manifest(MyClass.class));
    */
-  final def mapTo[A](implicit m: Manifest[A]): Future[A] =
-    mapTo[A](m.erasure.asInstanceOf[Class[A]])
-
-  /**
-   * Creates a new Future[A] which is completed with this Future's result if
-   * that conforms to A's erased type or a ClassCastException otherwise.
-   */
-  final def mapTo[A](clazz: Class[A]): Future[A] = {
+  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
     val fa = Promise[A]()
     onComplete {
       case l: Left[_, _] ⇒ fa complete l.asInstanceOf[Either[Throwable, A]]
       case Right(t) ⇒
         fa complete (try {
-          Right(BoxedType(clazz).cast(t).asInstanceOf[A])
+          Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
         } catch {
           case e: ClassCastException ⇒ Left(e)
         })
@@ -825,6 +822,11 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
     case Right(r) ⇒ r
   }
 }
+
+/**
+ * This class contains bridge classes between Scala and Java.
+ * Internal use only.
+ */
 object japi {
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class CallbackBridge[-T] extends PartialFunction[T, Unit] {
@@ -853,37 +855,125 @@ object japi {
   }
 }
 
+/**
+ * Callback for when a Future is completed successfully
+ * SAM (Single Abstract Method) class
+ *
+ * Java API
+ */
 abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
   protected final override def internal(result: T) = onSuccess(result)
+
+  /**
+   * This method will be invoked once when/if a Future that this callback is registered on
+   * becomes successfully completed
+   */
   def onSuccess(result: T): Unit
 }
 
+/**
+ * Callback for when a Future is completed with a failure
+ * SAM (Single Abstract Method) class
+ *
+ * Java API
+ */
 abstract class OnFailure extends japi.CallbackBridge[Throwable] {
   protected final override def internal(failure: Throwable) = onFailure(failure)
+
+  /**
+   * This method will be invoked once when/if a Future that this callback is registered on
+   * becomes completed with a failure
+   */
   def onFailure(failure: Throwable): Unit
 }
 
+/**
+ * Callback for when a Future is completed with either failure or a success
+ * SAM (Single Abstract Method) class
+ *
+ * Java API
+ */
 abstract class OnComplete[-T] extends japi.CallbackBridge[Either[Throwable, T]] {
   protected final override def internal(value: Either[Throwable, T]): Unit = value match {
     case Left(t)  ⇒ onComplete(t, null.asInstanceOf[T])
     case Right(r) ⇒ onComplete(null, r)
   }
+
+  /**
+   * This method will be invoked once when/if a Future that this callback is registered on
+   * becomes completed with a failure or a success.
+   * In the case of success then "failure" will be null, and in the case of failure the "success" will be null.
+   */
   def onComplete(failure: Throwable, success: T): Unit
 }
 
+/**
+ * Callback for the Future.recover operation that conditionally turns failures into successes.
+ *
+ * SAM (Single Abstract Method) class
+ *
+ * Java API
+ */
 abstract class Recover[+T] extends japi.RecoverBridge[T] {
   protected final override def internal(result: Throwable): T = recover(result)
+
+  /**
+   * This method will be invoked once when/if the Future this recover callback is registered on
+   * becomes completed with a failure.
+   *
+   * @returns a successful value for the passed in failure
+   * @throws the passed in failure to propagate it.
+   *
+   * Java API
+   */
+  @throws(classOf[Throwable])
   def recover(failure: Throwable): T
 }
 
+/**
+ * Callback for the Future.filter operation that creates a new Future which will
+ * conditionally contain the success of another Future.
+ *
+ * SAM (Single Abstract Method) class
+ * Java API
+ */
 abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
   override final def internal(t: T): Boolean = filter(t)
+
+  /**
+   * This method will be invoked once when/if a Future that this callback is registered on
+   * becomes completed with a success.
+   *
+   * @returns true if the successful value should be propagated to the new Future or not
+   */
   def filter(result: T): Boolean
 }
 
+/**
+ * Callback for the Future.foreach operation that will be invoked if the Future that this callback
+ * is registered on becomes completed with a success. This method is essentially the same operation
+ * as onSuccess.
+ *
+ * SAM (Single Abstract Method) class
+ * Java API
+ */
 abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
   override final def internal(t: T): Unit = each(t)
+
+  /**
+   * This method will be invoked once when/if a Future that this callback is registered on
+   * becomes successfully completed
+   */
   def each(result: T): Unit
 }
 
+/**
+ * Callback for the Future.map and Future.flatMap operations that will be invoked
+ * if the Future that this callback is registered on becomes completed with a success.
+ * This callback is the equivalent of an akka.japi.Function
+ *
+ * SAM (Single Abstract Method) class
+ *
+ * Java API
+ */
 abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R]
