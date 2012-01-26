@@ -68,7 +68,6 @@ object Worker {
 class Worker extends Actor with ActorLogging {
   import Worker._
   import CounterService._
-  implicit def system = context.system
   implicit val askTimeout = Timeout(5 seconds)
 
   // Stop the CounterService child if it throws ServiceUnavailable
@@ -113,7 +112,6 @@ class CounterService extends Actor {
   import CounterService._
   import Counter._
   import Storage._
-  implicit def system = context.system
 
   // Restart the storage child when StorageException is thrown.
   // After 3 restarts within 5 seconds it will be stopped.
@@ -204,7 +202,6 @@ class Counter(key: String, initialValue: Long) extends Actor {
   import Counter._
   import CounterService._
   import Storage._
-  implicit def system = context.system
 
   var count = initialValue
   var storage: Option[ActorRef] = None
@@ -246,7 +243,6 @@ object Storage {
  */
 class Storage extends Actor {
   import Storage._
-  implicit def system = context.system
 
   val db = DummyDB
 
