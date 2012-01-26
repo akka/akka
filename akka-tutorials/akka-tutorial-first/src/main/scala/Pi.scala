@@ -4,9 +4,10 @@
 package akka.tutorial.first.scala
 
 //#imports
-import java.util.concurrent.CountDownLatch
 import akka.actor._
 import akka.routing._
+import akka.util.Duration
+import akka.util.duration._
 //#imports
 
 //#app
@@ -20,6 +21,7 @@ object Pi extends App {
   case object Calculate extends PiMessage
   case class Work(start: Int, nrOfElements: Int) extends PiMessage
   case class Result(value: Double) extends PiMessage
+  case class PiEstimate(pi: Double, duration: Duration)
   //#messages
 
   //#worker
@@ -42,17 +44,16 @@ object Pi extends App {
   //#worker
 
   //#master
-  class Master(
-    nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, latch: CountDownLatch)
+  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, listener: ActorRef)
     extends Actor {
 
     var pi: Double = _
     var nrOfResults: Int = _
-    var start: Long = _
+    val start: Long = System.currentTimeMillis
 
     //#create-router
     val router = context.actorOf(
-      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), "pi")
+      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workers")
     //#create-router
 
     //#master-receive
@@ -63,45 +64,47 @@ object Pi extends App {
       case Result(value) ⇒
         pi += value
         nrOfResults += 1
-        // Stops this actor and all its supervised children
-        if (nrOfResults == nrOfMessages) context.stop(self)
+        if (nrOfResults == nrOfMessages) {
+          // Send the result to the listener
+          listener ! PiEstimate(pi, duration = (System.currentTimeMillis - start).millis)
+          // Stops this actor and all its supervised children
+          context.stop(self)
+        }
       //#handle-messages
     }
     //#master-receive
 
-    override def preStart() {
-      start = System.currentTimeMillis
-    }
-
-    override def postStop() {
-      println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s millis"
-        .format(pi, (System.currentTimeMillis - start)))
-      latch.countDown()
-    }
   }
   //#master
+
+  //#result-listener
+  class Listener extends Actor {
+    def receive = {
+      case PiEstimate(pi, duration) ⇒
+        println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s"
+          .format(pi, duration))
+        context.system.shutdown()
+    }
+  }
+  //#result-listener
+
   //#actors-and-messages
 
   def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
     // Create an Akka system
     val system = ActorSystem("PiSystem")
 
-    // this latch is only plumbing to know when the calculation is completed
-    val latch = new CountDownLatch(1)
+    // create the result listener, which will print the result and shutdown the system
+    val listener = system.actorOf(Props[Listener])
 
     // create the master
     val master = system.actorOf(Props(new Master(
-      nrOfWorkers, nrOfMessages, nrOfElements, latch)),
-      "master")
+      nrOfWorkers, nrOfMessages, nrOfElements, listener)),
+      name = "master")
 
     // start the calculation
     master ! Calculate
 
-    // wait for master to shut down
-    latch.await()
-
-    // Shut down the system
-    system.shutdown()
   }
 }
 //#app
