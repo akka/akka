@@ -14,7 +14,6 @@ import akka.actor._
 import collection.mutable
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.CamelContext
-import akka.event.Logging
 
 /**
  * Guarantees idempotent registration of camel consumer endpoints.
@@ -55,20 +54,19 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
   def unless[A](condition: Boolean)(block: ⇒ A) = if (!condition) block
   def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
-  class CamelConsumerRegistrator extends Actor {
-    val log = Logging(context.system, this)
+  class CamelConsumerRegistrator extends Actor with ActorLogging{
 
     def receive = {
       case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {
         camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig))
         context.sender ! EndpointActivated(consumer)
-        log.debug("Published actor {} at endpoint {}", consumerConfig, endpointUri)
+        log.debug("Published actor [{}] at endpoint [{}]", consumerConfig, endpointUri)
       }
 
       case UnregisterConsumer(consumer) ⇒ {
         camelContext.stopRoute(consumer.path.toString)
         context.sender ! EndpointDeActivated(consumer)
-        log.debug("Unpublished actor {} from endpoint {}", consumer, consumer.path)
+        log.debug("Unpublished actor [{}] from endpoint [{}]", consumer, consumer.path)
       }
     }
 

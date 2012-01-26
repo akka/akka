@@ -6,10 +6,8 @@ package akka.camel.internal
 
 import akka.actor._
 import collection.mutable.WeakHashMap
-import akka.event.Logging
 
-class ActivationTracker extends Actor {
-  val log = Logging(context.system, this)
+class ActivationTracker extends Actor with ActorLogging{
   val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
 
   class ActivationStateMachine {
@@ -78,11 +76,11 @@ class ActivationTracker extends Actor {
   override def receive = {
     case msg @ ActivationMessage(ref) ⇒ {
       val state = activations.getOrElseUpdate(ref, new ActivationStateMachine)
-      (state.receive orElse logWarning(ref))(msg)
+      (state.receive orElse logStateWarning(ref))(msg)
     }
   }
 
-  private[this] def logWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message {} not expected in current state of actor {}", msg, actorRef) }
+  private[this] def logStateWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef) }
 }
 
 case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
