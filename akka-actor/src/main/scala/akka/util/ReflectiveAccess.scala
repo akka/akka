@@ -4,7 +4,6 @@
 
 package akka.util
 
-import akka.actor._
 import java.lang.reflect.InvocationTargetException
 
 object ReflectiveAccess {

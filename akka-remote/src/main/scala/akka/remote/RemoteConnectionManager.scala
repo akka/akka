@@ -6,7 +6,6 @@ package akka.remote
 
 import akka.actor._
 import akka.routing._
-import akka.actor.ActorSystem
 import akka.event.Logging
 
 import scala.collection.immutable.Map

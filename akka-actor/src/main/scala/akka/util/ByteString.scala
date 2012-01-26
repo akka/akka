@@ -1,12 +1,11 @@
 package akka.util
 
 import java.nio.ByteBuffer
-import java.nio.charset.Charset
 
-import scala.collection.{ IndexedSeqOptimized, LinearSeq }
-import scala.collection.mutable.{ Builder, ArrayBuilder, WrappedArray }
+import scala.collection.IndexedSeqOptimized
+import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
-import scala.collection.generic.{ CanBuildFrom, GenericCompanion }
+import scala.collection.generic.CanBuildFrom
 
 object ByteString {
 

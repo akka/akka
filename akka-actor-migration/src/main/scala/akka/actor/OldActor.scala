@@ -9,7 +9,6 @@ import akka.dispatch.Future
 import akka.dispatch.OldFuture
 import akka.util.Duration
 import java.util.concurrent.TimeUnit
-import java.net.InetSocketAddress
 import akka.migration.AskableActorRef
 
 /**

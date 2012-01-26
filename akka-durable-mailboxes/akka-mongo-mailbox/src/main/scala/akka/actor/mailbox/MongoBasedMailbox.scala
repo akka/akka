@@ -10,7 +10,7 @@ import org.bson.collection._
 import akka.actor.ActorContext
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.{ Await, Promise, Envelope, DefaultPromise }
+import akka.dispatch.{ Await, Promise, Envelope }
 import java.util.concurrent.TimeoutException
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config

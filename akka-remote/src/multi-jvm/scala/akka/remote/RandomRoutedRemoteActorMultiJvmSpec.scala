@@ -1,7 +1,6 @@
 package akka.remote
 
 import akka.actor.{ Actor, Props }
-import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await

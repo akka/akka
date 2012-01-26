@@ -21,7 +21,7 @@ package object migration {
   implicit def actorRef2OldActorRef(actorRef: ActorRef) = new OldActorRef(actorRef)
 
   class OldActorRef(actorRef: ActorRef) {
-    @deprecated("Actors are automatically started when creatd, i.e. remove old call to start()", "2.0")
+    @deprecated("Actors are automatically started when created, i.e. remove old call to start()", "2.0")
     def start(): ActorRef = actorRef
 
     @deprecated("Stop with ActorSystem or ActorContext instead", "2.0")

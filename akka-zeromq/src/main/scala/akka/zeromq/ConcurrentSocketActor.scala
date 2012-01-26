@@ -8,7 +8,6 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Promise, Future }
 import akka.event.Logging
-import akka.util.duration._
 import annotation.tailrec
 import akka.util.Duration
 import java.util.concurrent.TimeUnit

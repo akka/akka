@@ -6,16 +6,9 @@ package akka.remote
 
 import akka.actor._
 import akka.dispatch._
-import akka.util.duration._
-import akka.util.Timeout
-import akka.config.ConfigurationException
 import akka.event.{ DeathWatch, Logging }
-import akka.serialization.Compression.LZF
-import com.google.protobuf.ByteString
 import akka.event.EventStream
-import akka.dispatch.Promise
 import akka.config.ConfigurationException
-import java.util.concurrent.{ TimeoutException }
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.

@@ -9,12 +9,9 @@ import akka.util.{ Duration, ReflectiveAccess }
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
-import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.config.ConfigurationException
 import akka.event.Logging.Warning
-import akka.actor.Props
 import java.util.concurrent.{ ThreadFactory, TimeUnit, ConcurrentHashMap }
 
 trait DispatcherPrerequisites {

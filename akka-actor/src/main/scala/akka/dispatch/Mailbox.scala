@@ -10,7 +10,6 @@ import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
-import com.typesafe.config.Config
 import akka.actor.ActorContext
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)

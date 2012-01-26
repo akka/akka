@@ -14,10 +14,9 @@ import org.bson.BSONSerializer
 import org.bson.DefaultBSONDeserializer
 import org.bson.DefaultBSONSerializer
 
-import akka.actor.SerializedActorRef
 import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
-import akka.actor.{ ActorSystem, ActorSystemImpl, Props }
+import akka.actor.{ ActorSystem, ActorSystemImpl }
 
 class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 

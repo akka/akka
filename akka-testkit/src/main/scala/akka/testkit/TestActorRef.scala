@@ -6,11 +6,7 @@ package akka.testkit
 
 import akka.actor._
 import akka.util.{ ReflectiveAccess, Duration }
-import com.eaio.uuid.UUID
-import akka.actor.Props._
-import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicLong
-import akka.event.EventStream
 import scala.collection.immutable.Stack
 import akka.dispatch._
 import akka.pattern.ask

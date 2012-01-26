@@ -4,20 +4,9 @@
 
 package akka.actor
 
-import akka.dispatch._
-import akka.routing._
-import akka.util.Duration
-import akka.japi.{ Creator, Procedure }
-import akka.serialization.{ Serializer, Serialization }
-import akka.event.Logging.Debug
-import akka.event.LogSource
-import akka.experimental
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-import com.eaio.uuid.UUID
-import java.util.concurrent.TimeUnit
-import java.util.{ Collection ⇒ JCollection }
 import java.util.regex.Pattern
 
 /**

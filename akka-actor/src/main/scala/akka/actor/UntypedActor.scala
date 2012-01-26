@@ -4,8 +4,7 @@
 
 package akka.actor
 
-import akka.japi.{ Creator, Procedure }
-import akka.dispatch.{ MessageDispatcher, Promise }
+import akka.japi.{ Creator }
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
