@@ -6,6 +6,7 @@ package akka.dispatch.japi
 import akka.util.Timeout
 import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
+@deprecated("Do not use this directly, use subclasses of this", "2.0")
 class Callback[-T] extends PartialFunction[T, Unit] {
   override final def isDefinedAt(t: T): Boolean = true
   override final def apply(t: T): Unit = on(t)
@@ -28,6 +29,18 @@ abstract class OnComplete[-T] extends Callback[Either[Throwable, T]] {
     case Right(r) ⇒ onComplete(null, r)
   }
   def onComplete(failure: Throwable, success: T): Unit
+}
+
+@deprecated("Do not use this directly, use 'Recover'", "2.0")
+class RecoverBridge[+T] extends PartialFunction[Throwable, T] {
+  override final def isDefinedAt(t: Throwable): Boolean = true
+  override final def apply(t: Throwable): T = on(t)
+  protected def on(result: Throwable): T = null.asInstanceOf[T]
+}
+
+abstract class Recover[+T] extends RecoverBridge[T] {
+  protected final override def on(result: Throwable): T = recover(result)
+  def recover(failure: Throwable): T
 }
 
 abstract class Filter[-T] extends (T ⇒ Boolean) {
