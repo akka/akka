@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -138,11 +138,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    *  Creates and returns a mailbox for the given actor.
    */
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
-
-  /**
-   * Name of this dispatcher.
-   */
-  def name: String
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
@@ -287,8 +282,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   @inline
   protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
-  @inline
-  protected[akka] final val isThroughputDefined = throughput > 1
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 
@@ -347,7 +340,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
     //Apply the following options to the config if they are present in the config
 
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(daemonic = config getBoolean "daemonic"))
+    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")

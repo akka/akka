@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.testkit
 
@@ -7,6 +7,7 @@ package akka.docs.testkit
 import akka.testkit.TestProbe
 import akka.util.duration._
 import akka.actor._
+import akka.dispatch.Futures
 
 //#imports-test-probe
 
@@ -119,6 +120,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestActorRef
     import akka.util.duration._
     import akka.dispatch.Await
+    import akka.pattern.ask
 
     val actorRef = TestActorRef(new MyActor)
     // hypothetical message stimulating a '42' answer
@@ -132,7 +134,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestActorRef
     system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
     val ref = TestActorRef[MyActor]
-    ref(Unknown)
+    ref.receive(Unknown)
     expectMsg(1 second, UnhandledMessage(Unknown, system.deadLetters, ref))
     //#test-unhandled
   }
@@ -146,7 +148,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         case boom ⇒ throw new IllegalArgumentException("boom")
       }
     })
-    intercept[IllegalArgumentException] { actorRef("hello") }
+    intercept[IllegalArgumentException] { actorRef.receive("hello") }
     //#test-expecting-exceptions
   }
 
@@ -202,6 +204,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
     import akka.util.duration._
+    import akka.pattern.ask
     //#test-probe-reply
     val probe = TestProbe()
     val future = probe.ref ? "hello"

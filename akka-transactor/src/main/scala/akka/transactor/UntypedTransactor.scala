@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
 
 import akka.actor.{ UntypedActor, ActorRef }
 import scala.collection.JavaConversions._
-import scala.concurrent.stm.InTxn
 import java.util.{ Set ⇒ JSet }
 
 /**
@@ -25,7 +24,7 @@ abstract class UntypedTransactor extends UntypedActor {
           sendTo.actor.tell(coordinated(sendTo.message.getOrElse(message)))
         }
         before(message)
-        coordinated.atomic { txn ⇒ atomically(txn, message) }
+        coordinated.atomic { txn ⇒ atomically(message) }
         after(message)
       }
       case message ⇒ {
@@ -84,7 +83,7 @@ abstract class UntypedTransactor extends UntypedActor {
    * The Receive block to run inside the coordinated transaction.
    */
   @throws(classOf[Exception])
-  def atomically(txn: InTxn, message: Any) {}
+  def atomically(message: Any)
 
   /**
    * A Receive block that runs after the coordinated transaction.

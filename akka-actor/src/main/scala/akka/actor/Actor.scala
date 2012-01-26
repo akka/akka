@@ -1,23 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import akka.dispatch._
-import akka.routing._
-import akka.util.Duration
-import akka.japi.{ Creator, Procedure }
-import akka.serialization.{ Serializer, Serialization }
-import akka.event.Logging.Debug
-import akka.event.LogSource
-import akka.experimental
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-import com.eaio.uuid.UUID
-import java.util.concurrent.TimeUnit
-import java.util.{ Collection ⇒ JCollection }
 import java.util.regex.Pattern
 
 /**
@@ -141,6 +130,14 @@ object Actor {
  *
  * {{{
  * class ExampleActor extends Actor {
+ *
+ *   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+ *     case _: ArithmeticException      ⇒ Resume
+ *     case _: NullPointerException     ⇒ Restart
+ *     case _: IllegalArgumentException ⇒ Stop
+ *     case _: Exception                ⇒ Escalate
+ *   }
+ *
  *   def receive = {
  *                                      // directly calculated reply
  *     case Request(r)               => sender ! calculate(r)
@@ -223,6 +220,12 @@ trait Actor {
    * with the actor logic.
    */
   protected def receive: Receive
+
+  /**
+   * User overridable definition the strategy to use for supervising
+   * child actors.
+   */
+  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.

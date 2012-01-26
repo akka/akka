@@ -1,13 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
-import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
-import akka.actor.ActorSystem
+import java.lang.{ Double ⇒ JDouble }
 
 class TimerException(message: String) extends RuntimeException(message)
 
@@ -51,11 +50,11 @@ object Deadline {
 object Duration {
   implicit def timeLeft(implicit d: Deadline): Duration = d.timeLeft
 
-  def apply(length: Long, unit: TimeUnit): Duration = new FiniteDuration(length, unit)
-  def apply(length: Double, unit: TimeUnit): Duration = fromNanos(unit.toNanos(1) * length)
-  def apply(length: Long, unit: String): Duration = new FiniteDuration(length, timeUnit(unit))
+  def apply(length: Long, unit: TimeUnit): FiniteDuration = new FiniteDuration(length, unit)
+  def apply(length: Double, unit: TimeUnit): FiniteDuration = fromNanos(unit.toNanos(1) * length)
+  def apply(length: Long, unit: String): FiniteDuration = new FiniteDuration(length, timeUnit(unit))
 
-  def fromNanos(nanos: Long): Duration = {
+  def fromNanos(nanos: Long): FiniteDuration = {
     if (nanos % 86400000000000L == 0) {
       Duration(nanos / 86400000000000L, DAYS)
     } else if (nanos % 3600000000000L == 0) {
@@ -73,7 +72,7 @@ object Duration {
     }
   }
 
-  def fromNanos(nanos: Double): Duration = fromNanos((nanos + 0.5).asInstanceOf[Long])
+  def fromNanos(nanos: Double): FiniteDuration = fromNanos((nanos + 0.5).asInstanceOf[Long])
 
   /**
    * Construct a Duration by parsing a String. In case of a format error, a
@@ -132,7 +131,7 @@ object Duration {
     case "ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds"     ⇒ NANOSECONDS
   }
 
-  val Zero: Duration = new FiniteDuration(0, NANOSECONDS)
+  val Zero: FiniteDuration = new FiniteDuration(0, NANOSECONDS)
   val Undefined: Duration = new Duration with Infinite {
     override def toString = "Duration.Undefined"
     override def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
@@ -205,10 +204,14 @@ object Duration {
   }
 
   // Java Factories
-  def create(length: Long, unit: TimeUnit): Duration = apply(length, unit)
-  def create(length: Double, unit: TimeUnit): Duration = apply(length, unit)
-  def create(length: Long, unit: String): Duration = apply(length, unit)
+  def create(length: Long, unit: TimeUnit): FiniteDuration = apply(length, unit)
+  def create(length: Double, unit: TimeUnit): FiniteDuration = apply(length, unit)
+  def create(length: Long, unit: String): FiniteDuration = apply(length, unit)
   def parse(s: String): Duration = unapply(s).get
+
+  implicit object DurationIsOrdered extends Ordering[Duration] {
+    def compare(a: Duration, b: Duration) = a compare b
+  }
 }
 
 /**
@@ -292,6 +295,12 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def div(other: Duration) = this / other
   def neg() = -this
   def isFinite() = finite_?
+}
+
+object FiniteDuration {
+  implicit object FiniteDurationIsOrdered extends Ordering[FiniteDuration] {
+    def compare(a: FiniteDuration, b: FiniteDuration) = a compare b
+  }
 }
 
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
@@ -549,6 +558,7 @@ case class Timeout(duration: Duration) {
 }
 
 object Timeout {
+
   /**
    * A timeout with zero duration, will cause most requests to always timeout.
    */
@@ -568,4 +578,3 @@ object Timeout {
   implicit def intToTimeout(timeout: Int) = new Timeout(timeout)
   implicit def longToTimeout(timeout: Long) = new Timeout(timeout)
 }
-

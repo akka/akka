@@ -37,6 +37,117 @@ The source object is translated to a String according to the following rules:
 The log message may contain argument placeholders ``{}``, which will be substituted if the log level
 is enabled.
 
+Auxiliary logging options
+-------------------------
+
+Akka has a couple of configuration options for very low level debugging, that makes most sense in
+for developers and not for operations.
+
+You almost definitely need to have logging set to DEBUG to use any of the options below:
+
+.. code-block:: ruby
+
+    akka {
+      loglevel = DEBUG
+    }
+
+This config option is very good if you want to know what config settings are loaded by Akka:
+
+.. code-block:: ruby
+
+    akka {
+      # Log the complete configuration at INFO level when the actor system is started.
+      # This is useful when you are uncertain of what configuration is used.
+      logConfigOnStart = on
+    }
+
+If you want very detailed logging of all user-level messages that are processed
+by Actors that use akka.event.LoggingReceive:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable function of LoggingReceive, which is to log any received message at
+        # DEBUG level
+        receive = on
+      }
+    }
+
+If you want very detailed logging of all automatically received messages that are processed
+by Actors:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
+        autoreceive = on
+      }
+    }
+
+If you want very detailed logging of all lifecycle changes of Actors (restarts, deaths etc):
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of actor lifecycle changes
+        lifecycle = on
+      }
+    }
+
+If you want very detailed logging of all events, transitions and timers of FSM Actors that extend LoggingFSM:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of all LoggingFSMs for events, transitions and timers
+        fsm = on
+      }
+    }
+
+If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.eventStream:
+
+.. code-block:: ruby
+
+    akka {
+      debug {
+        # enable DEBUG logging of subscription changes on the eventStream
+        event-stream = on
+      }
+    }
+
+Auxiliary remote logging options
+--------------------------------
+
+If you want to see all messages that are sent through remoting at DEBUG log level:
+(This is logged as they are sent by the transport layer, not by the Actor)
+
+.. code-block:: ruby
+
+    akka {
+      remote {
+        # If this is "on", Akka will log all outbound messages at DEBUG level, if off then they are not logged
+        log-sent-messages = on
+      }
+    }
+
+If you want to see all messages that are received through remoting at DEBUG log level:
+(This is logged as they are received by the transport layer, not by any Actor)
+
+.. code-block:: ruby
+
+    akka {
+      remote {
+        # If this is "on", Akka will log all inbound messages at DEBUG level, if off then they are not logged
+        log-received-messages = on
+      }
+    }
+
+Also see the logging options for TestKit: :ref:`actor.logging`.
+
 Translating Log Source to String and Class
 ------------------------------------------
 

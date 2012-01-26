@@ -1,10 +1,9 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
 
-import akka.actor._
 import java.lang.reflect.InvocationTargetException
 
 object ReflectiveAccess {

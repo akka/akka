@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2011 Typesafe <http://typesafe.com/>
+ *  Copyright (C) 2011-2012 Typesafe <http://typesafe.com/>
  */
 
 package akka.sbt
@@ -11,7 +11,6 @@ import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
 import sbt.CommandSupport._
 import java.io.File
-import scala.collection.mutable.{ Set ⇒ MutableSet }
 
 object AkkaKernelPlugin extends Plugin {
 

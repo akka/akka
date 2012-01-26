@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.serialization
@@ -13,6 +13,7 @@ import akka.util.Timeout
 import akka.util.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
+import akka.pattern.ask
 
 class ProtobufSerializer extends Serializer {
   val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])

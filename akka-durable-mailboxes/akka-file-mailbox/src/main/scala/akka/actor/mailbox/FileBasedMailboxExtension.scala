@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
@@ -11,7 +11,7 @@ import akka.actor._
 object FileBasedMailboxExtension extends ExtensionId[FileBasedMailboxSettings] with ExtensionIdProvider {
   override def get(system: ActorSystem): FileBasedMailboxSettings = super.get(system)
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new FileBasedMailboxSettings(system.settings.config)
+  def createExtension(system: ExtendedActorSystem) = new FileBasedMailboxSettings(system.settings.config)
 }
 
 class FileBasedMailboxSettings(val config: Config) extends Extension {

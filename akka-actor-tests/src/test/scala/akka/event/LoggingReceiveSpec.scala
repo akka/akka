@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -15,6 +15,8 @@ import akka.actor._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 5 seconds)(List(classOf[Throwable]))
     def receive = { case _ ⇒ }
   }
 }
@@ -149,7 +151,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         within(3 seconds) {
           val lifecycleGuardian = appLifecycle.asInstanceOf[ActorSystemImpl].guardian
           val lname = lifecycleGuardian.path.toString
-          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
           val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 

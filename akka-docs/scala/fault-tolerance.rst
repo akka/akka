@@ -1,19 +1,36 @@
 .. _fault-tolerance-scala:
 
-Fault Handling Strategies (Scala)
-=================================
+Fault Tolerance (Scala)
+=======================
 
 .. sidebar:: Contents
 
    .. contents:: :local:
 
 As explained in :ref:`actor-systems` each actor is the supervisor of its
-children, and as such each actor is given a fault handling strategy when it is
-created. This strategy cannot be changed afterwards as it is an integral part
-of the actor system’s structure.
+children, and as such each actor defines fault handling supervisor strategy.
+This strategy cannot be changed afterwards as it is an integral part of the
+actor system’s structure.
 
-Creating a Fault Handling Strategy
-----------------------------------
+Fault Handling in Practice
+--------------------------
+
+First, let us look at a sample that illustrates one way to handle data store errors,
+which is a typical source of failure in real world applications. Of course it depends
+on the actual application what is possible to do when the data store is unavailable,
+but in this sample we use a best effort re-connect approach.
+
+Read the following source code. The inlined comments explain the different pieces of
+the fault handling and why they are added. It is also highly recommended to run this
+sample as it is easy to follow the log output to understand what is happening in runtime.
+
+.. includecode:: code/akka/docs/actor/FaultHandlingDocSample.scala#all
+
+Creating a Supervisor Strategy
+------------------------------
+
+The following sections explain the fault handling mechanism and alternatives
+in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
@@ -31,12 +48,30 @@ that the respective limit does not apply, leaving the possibility to specify an
 absolute upper limit on the restarts or to make the restarts work infinitely.
 
 The match statement which forms the bulk of the body is of type ``Decider``,
-which is a ``PartialFunction[Throwable, Action]``, and we need to help out the
-type inferencer a bit here by ascribing that type after the closing brace. This
+which is a ``PartialFunction[Throwable, Action]``. This
 is the piece which maps child failure types to their corresponding actions.
 
-Practical Application
----------------------
+Default Supervisor Strategy
+---------------------------
+
+``Escalate`` is used if the defined strategy doesn't cover the exception that was thrown.
+
+When the supervisor strategy is not defined for an actor the following
+exceptions are handled by default::
+
+  OneForOneStrategy() {
+    case _: ActorInitializationException ⇒ Stop
+    case _: ActorKilledException         ⇒ Stop
+    case _: Exception                    ⇒ Restart
+    case _                               ⇒ Escalate
+  }
+
+If the exception escalate all the way up to the root guardian it will handle it
+in the same way as the default strategy defined above.
+
+
+Test Application
+----------------
 
 The following section shows the effects of the different actions in practice,
 wherefor a test setup is needed. First off, we need a suitable supervisor:
@@ -56,7 +91,7 @@ MustMatchers``
 .. includecode:: code/akka/docs/actor/FaultHandlingDocSpec.scala
    :include: testkit
 
-Using the strategy shown above let us create actors:
+Let us create actors:
 
 .. includecode:: code/akka/docs/actor/FaultHandlingDocSpec.scala
    :include: create

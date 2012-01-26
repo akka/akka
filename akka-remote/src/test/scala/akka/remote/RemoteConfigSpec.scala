@@ -4,15 +4,22 @@
 package akka.remote
 
 import akka.testkit.AkkaSpec
+import akka.actor.ExtendedActorSystem
 import akka.util.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RemoteConfigSpec extends AkkaSpec("") {
+class RemoteConfigSpec extends AkkaSpec(
+  """
+  akka {
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
+    }
+  }
+  """) {
 
   "RemoteExtension" must {
     "be able to parse remote and cluster config elements" in {
-
-      val settings = new RemoteSettings(system.settings.config, "")
+      val settings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
       import settings._
 
       RemoteTransport must be("akka.remote.netty.NettyRemoteTransport")
@@ -25,7 +32,6 @@ class RemoteConfigSpec extends AkkaSpec("") {
       InitialDelayForGossip must be(5 seconds)
       GossipFrequency must be(1 second)
       SeedNodes must be(Set())
-
     }
   }
 }

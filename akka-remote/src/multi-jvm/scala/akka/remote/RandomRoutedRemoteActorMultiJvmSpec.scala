@@ -1,10 +1,10 @@
 package akka.remote
 
 import akka.actor.{ Actor, Props }
-import akka.remote._
 import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 4
@@ -27,7 +27,7 @@ object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSp
           /service-hello.target.nodes = [%s]
         }
       }
-    }""" format (3, specString(3)))
+    }""" format (3, akkaURIs(3)))
 }
 
 class RandomRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(RandomRoutedRemoteActorMultiJvmSpec.nodeConfigs(0)) {
@@ -83,9 +83,9 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRe
       val iterationCount = 10
 
       var replies = Map(
-        "AkkaRemoteSpec@localhost:9991" -> 0,
-        "AkkaRemoteSpec@localhost:9992" -> 0,
-        "AkkaRemoteSpec@localhost:9993" -> 0)
+        akkaSpec(0) -> 0,
+        akkaSpec(1) -> 0,
+        akkaSpec(2) -> 0)
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {

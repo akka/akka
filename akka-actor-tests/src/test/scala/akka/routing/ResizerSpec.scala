@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -10,6 +10,7 @@ import akka.dispatch.Await
 import akka.util.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
+import akka.pattern.ask
 
 object ResizerSpec {
 

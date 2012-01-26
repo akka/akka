@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -8,8 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
 import System.{ currentTimeMillis ⇒ newTimestamp }
-import akka.actor.ActorSystem
-import akka.actor.Address
+import akka.actor.{ ActorSystem, Address }
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:

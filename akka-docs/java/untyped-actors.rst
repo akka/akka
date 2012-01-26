@@ -129,6 +129,7 @@ In addition, it offers:
 
 * :obj:`getSelf()` reference to the :class:`ActorRef` of the actor
 * :obj:`getSender()` reference sender Actor of the last received message, typically used as described in :ref:`UntypedActor.Reply`
+* :obj:`supervisorStrategy()` user overridable definition the strategy to use for supervising child actors
 * :obj:`getContext()` exposes contextual information for the actor and the current message, such as:
 
   * factory methods to create child actors (:meth:`actorOf`)
@@ -213,8 +214,8 @@ processing a message. This restart involves the hooks mentioned above:
 
 
 An actor restart replaces only the actual actor object; the contents of the
-mailbox and the hotswap stack are unaffected by the restart, so processing of
-messages will resume after the :meth:`postRestart` hook returns. The message
+mailbox is unaffected by the restart, so processing of messages will resume
+after the :meth:`postRestart` hook returns. The message
 that triggered the exception will not be received again. Any message
 sent to an actor while it is being restarted will be queued to its mailbox as
 usual.
@@ -253,6 +254,10 @@ is absolute and the look-up starts at the root guardian (which is the parent of
 currently traversed actor, otherwise it will step “down” to the named child.
 It should be noted that the ``..`` in actor paths here always means the logical
 structure, i.e. the supervisor.
+
+If the path being looked up does not exist, a special actor reference is
+returned which behaves like the actor system’s dead letter queue but retains
+its identity (i.e. the path which was looked up).
 
 Remote actor addresses may also be looked up, if remoting is enabled::
 
@@ -315,26 +320,37 @@ If invoked without the sender parameter the sender will be
 Ask: Send-And-Receive-Future
 ----------------------------
 
-Using ``?`` will send a message to the receiving Actor asynchronously and
-will immediately return a :class:`Future` which will be completed with
-an ``akka.actor.AskTimeoutException`` after the specified timeout:
+The ``ask`` pattern involves actors as well as futures, hence it is offered as
+a use pattern rather than a method on :class:`ActorRef`:
 
-.. code-block:: java
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#import-askPipeTo
 
-  long timeoutMillis = 1000;
-  Future future = actorRef.ask("Hello", timeoutMillis);
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#ask-pipeTo
 
-The receiving actor should reply to this message, which will complete the
-future with the reply message as value; ``getSender.tell(result)``.
+This example demonstrates ``ask`` together with the ``pipeTo`` pattern on
+futures, because this is likely to be a common combination. Please note that
+all of the above is completely non-blocking and asynchronous: ``ask`` produces
+a :class:`Future`, two of which are composed into a new future using the
+:meth:`Futures.sequence` and :meth:`map` methods and then ``pipeTo`` installs
+an ``onComplete``-handler on the future to effect the submission of the
+aggregated :class:`Result` to another actor.
+
+Using ``ask`` will send a message to the receiving Actor as with ``tell``, and
+the receiving actor must reply with ``getSender().tell(reply)`` in order to
+complete the returned :class:`Future` with a value. The ``ask`` operation
+involves creating an internal actor for handling this reply, which needs to
+have a timeout after which it is destroyed in order not to leak resources; see
+more below.
 
 To complete the future with an exception you need send a Failure message to the sender.
-This is not done automatically when an actor throws an exception while processing a
+This is *not done automatically* when an actor throws an exception while processing a
 message.
 
 .. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
-specified as parameter to the ``ask`` method.
+specified as parameter to the ``ask`` method; this will complete the
+:class:`Future` with an :class:`AskTimeoutException`.
 
 See :ref:`futures-java` for more information on how to await or query a
 future.
@@ -352,15 +368,6 @@ Gives you a way to avoid blocking.
   the callback will be scheduled concurrently to the enclosing actor. Unfortunately
   there is not yet a way to detect these illegal accesses at compile time. See also:
   :ref:`jmm-shared-state`
-
-The future returned from the ``ask`` method can conveniently be passed around or
-chained with further processing steps, but sometimes you just need the value,
-even if that entails waiting for it (but keep in mind that waiting inside an
-actor is prone to dead-locks, e.g. if obtaining the result depends on
-processing another message on this actor).
-
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
-   :include: import-future,using-ask
 
 Forward message
 ---------------

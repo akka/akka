@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object ActorLookupSpec {
 
@@ -39,11 +40,13 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
   val c2 = system.actorOf(p, "c2")
   val c21 = Await.result((c2 ? Create("c21")).mapTo[ActorRef], timeout.duration)
 
-  val user = system.asInstanceOf[ActorSystemImpl].guardian
-  val syst = system.asInstanceOf[ActorSystemImpl].systemGuardian
-  val root = system.asInstanceOf[ActorSystemImpl].lookupRoot
+  val sysImpl = system.asInstanceOf[ActorSystemImpl]
 
-  def empty(path: String) = new EmptyLocalActorRef(system.eventStream, system.dispatcher, path match {
+  val user = sysImpl.guardian
+  val syst = sysImpl.systemGuardian
+  val root = sysImpl.lookupRoot
+
+  def empty(path: String) = new EmptyLocalActorRef(system.eventStream, sysImpl.provider, system.dispatcher, path match {
     case RelativeActorPath(elems) ⇒ system.actorFor("/").path / elems
   })
 

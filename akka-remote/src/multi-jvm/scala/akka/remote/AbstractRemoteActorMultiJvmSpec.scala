@@ -6,15 +6,15 @@ trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
   def commonConfig: Config
 
-  def remotes: Seq[String] = {
-    val arrayOpt = Option(AkkaRemoteSpec.testNodes).map(_ split ",")
-    (arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")).toSeq
+  private[this] val remotes: IndexedSeq[String] = {
+    val nodesOpt = Option(AkkaRemoteSpec.testNodes).map(_.split(",").toIndexedSeq)
+    nodesOpt getOrElse IndexedSeq.fill(NrOfNodes)("localhost")
   }
 
-  def specString(count: Int): String = {
-    val specs = for ((host, idx) <- remotes.take(count).zipWithIndex) yield
-      "\"akka://AkkaRemoteSpec@%s:%d\"".format(host, 9991+idx)
-    specs.mkString(",")
+	def akkaSpec(idx: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(idx), 9991+idx)
+
+  def akkaURIs(count: Int): String = {
+    0 until count map {idx => "\"akka://" + akkaSpec(idx) + "\""} mkString ","
   }
 
   val nodeConfigs = ((1 to NrOfNodes).toList zip remotes) map {

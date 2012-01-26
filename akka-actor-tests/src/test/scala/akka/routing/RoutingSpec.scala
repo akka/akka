@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -12,6 +12,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.config.ConfigurationException
 import com.typesafe.config.ConfigFactory
+import akka.pattern.ask
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 
@@ -31,10 +32,7 @@ object RoutingSpec {
     """
 
   class TestActor extends Actor {
-    def receive = {
-      case _ ⇒
-        println("Hello")
-    }
+    def receive = { case _ ⇒ }
   }
 
   class Echo extends Actor {

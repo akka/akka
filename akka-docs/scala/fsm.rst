@@ -1,4 +1,4 @@
-.. _fsm:
+.. _fsm-scala:
 
 ###
 FSM
@@ -21,141 +21,100 @@ A FSM can be described as a set of relations of the form:
 
 These relations are interpreted as meaning:
 
-  *If we are in state S and the event E occurs, we should perform the actions A and make a transition to the state S'.*
+  *If we are in state S and the event E occurs, we should perform the actions A
+  and make a transition to the state S'.*
 
 A Simple Example
 ================
 
-To demonstrate the usage of states we start with a simple FSM without state
-data. The state can be of any type so for this example we create the states A,
-B and C.
+To demonstrate most of the features of the :class:`FSM` trait, consider an
+actor which shall receive and queue messages while they arrive in a burst and
+send them on after the burst ended or a flush request is received.
 
-.. code-block:: scala
+First, consider all of the below to use these import statements:
 
-  sealed trait ExampleState
-  case object A extends ExampleState
-  case object B extends ExampleState
-  case object C extends ExampleState
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-imports
 
-Now lets create an object representing the FSM and defining the behavior.
+The contract of our “Buncher” actor is that is accepts or produces the following messages:
 
-.. code-block:: scala
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-events
 
-  import akka.actor.{Actor, FSM}
-  import akka.util.duration._
+``SetTarget`` is needed for starting it up, setting the destination for the
+``Batches`` to be passed on; ``Queue`` will add to the internal queue while
+``Flush`` will mark the end of a burst.
 
-  case object Move
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-state
 
-  class ABC extends Actor with FSM[ExampleState, Unit] {
+The actor can be in two states: no message queued (aka ``Idle``) or some
+message queued (aka ``Active``). It will stay in the active state as long as
+messages keep arriving and no flush is requested. The internal state data of
+the actor is made up of the target actor reference to send the batches to and
+the actual queue of messages.
 
-    import FSM._
+Now let’s take a look at the skeleton for our FSM actor:
 
-    startWith(A, Unit)
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+   :include: simple-fsm
+   :exclude: transition-elided,unhandled-elided
 
-    when(A) {
-      case Ev(Move) =>
-        log.info(this, "Go to B and move on after 5 seconds")
-        goto(B) forMax (5 seconds)
-    }
+The basic strategy is to declare the actor, mixing in the :class:`FSM` trait
+and specifying the possible states and data values as type paramters. Within
+the body of the actor a DSL is used for declaring the state machine:
 
-    when(B) {
-      case Ev(StateTimeout) =>
-        log.info(this, "Moving to C")
-        goto(C)
-    }
+ * :meth:`startsWith` defines the initial state and initial data
+ * then there is one :meth:`when(<state>) { ... }` declaration per state to be
+   handled (could potentially be multiple ones, the passed
+   :class:`PartialFunction` will be concatenated using :meth:`orElse`)
+ * finally starting it up using :meth:`initialize`, which performs the
+   transition into the initial state and sets up timers (if required).
 
-    when(C) {
-      case Ev(Move) =>
-        log.info(this, "Stopping")
-        stop
-    }
+In this case, we start out in the ``Idle`` and ``Uninitialized`` state, where
+only the ``SetTarget()`` message is handled; ``stay`` prepares to end this
+event’s processing for not leaving the current state, while the ``using``
+modifier makes the FSM replace the internal state (which is ``Uninitialized``
+at this point) with a fresh ``Todo()`` object containing the target actor
+reference. The ``Active`` state has a state timeout declared, which means that
+if no message is received for 1 second, a ``FSM.StateTimeout`` message will be
+generated. This has the same effect as receiving the ``Flush`` command in this
+case, namely to transition back into the ``Idle`` state and resetting the
+internal queue to the empty vector. But how do messages get queued? Since this
+shall work identically in both states, we make use of the fact that any event
+which is not handled by the ``when()`` block is passed to the
+``whenUnhandled()`` block:
 
-    initialize // this checks validity of the initial state and sets up timeout if needed
-  }
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#unhandled-elided
 
-Each state is described by one or more :func:`when(state)` blocks; if more than
-one is given for the same state, they are tried in the order given until the
-first is found which matches the incoming event. Events are matched using
-either :func:`Ev(msg)` (if no state data are to be extracted) or
-:func:`Event(msg, data)`, see below. The statements for each case are the
-actions to be taken, where the final expression must describe the transition
-into the next state. This can either be :func:`stay` when no transition is
-needed or :func:`goto(target)` for changing into the target state. The
-transition may be annotated with additional properties, where this example
-includes a state timeout of 5 seconds after the transition into state B:
-:func:`forMax(duration)` arranges for a :obj:`StateTimeout` message to be
-scheduled, unless some other message is received first. The construction of the
-FSM is finished by calling the :func:`initialize` method as last part of the
-ABC constructor.
+The first case handled here is adding ``Queue()`` requests to the internal
+queue and going to the ``Active`` state (this does the obvious thing of staying
+in the ``Active`` state if already there), but only if the FSM data are not
+``Uninitialized`` when the ``Queue()`` event is received. Otherwise—and in all
+other non-handled cases—the second case just logs a warning and does not change
+the internal state.
 
-State Data
-==========
+The only missing piece is where the ``Batches`` are actually sent to the
+target, for which we use the ``onTransition`` mechanism: you can declare
+multiple such blocks and all of them will be tried for matching behavior in
+case a state transition occurs (i.e. only when the state actually changes).
 
-The FSM can also hold state data associated with the internal state of the
-state machine. The state data can be of any type but to demonstrate let's look
-at a lock with a :class:`String` as state data holding the entered unlock code.
-First we need two states for the lock:
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#transition-elided
 
-.. code-block:: scala
+The transition callback is a partial function which takes as input a pair of
+states—the current and the next state. The FSM trait includes a convenience
+extractor for these in form of an arrow operator, which conveniently reminds
+you of the direction of the state change which is being matched. During the
+state change, the old state data is available via ``stateData`` as shown, and
+the new state data would be available as ``nextStateData``.
 
-  sealed trait LockState
-  case object Locked extends LockState
-  case object Open extends LockState
+To verify that this buncher actually works, it is quite easy to write a test
+using the :ref:`akka-testkit`, which is conveniently bundled with ScalaTest traits
+into ``AkkaSpec``:
 
-Now we can create a lock FSM that takes :class:`LockState` as a state and a
-:class:`String` as state data:
-
-.. code-block:: scala
-
-  import akka.actor.{Actor, FSM}
-
-  class Lock(code: String) extends Actor with FSM[LockState, String] {
-
-    import FSM._
-
-    val emptyCode = ""
-
-    startWith(Locked, emptyCode)
-
-    when(Locked) {
-      // receive a digit and the code that we have so far
-      case Event(digit: Char, soFar) => {
-        // add the digit to what we have
-        soFar + digit match {
-          case incomplete if incomplete.length < code.length =>
-            // not enough digits yet so stay using the
-            // incomplete code as the new state data
-            stay using incomplete
-          case `code` =>
-            // code matched the one from the lock
-            // so go to Open state and reset the state data
-            goto(Open) using emptyCode forMax (1 seconds)
-          case wrong =>
-            // wrong code, stay Locked and reset the state data
-            stay using emptyCode
-        }
-      }
-    }
-
-    when(Open) {
-      case Ev(StateTimeout, _) => {
-        // after the timeout, go back to Locked state
-        goto(Locked)
-      }
-    }
-
-    initialize
-  }
-
-This very simple example shows how the complete state of the FSM is encoded in
-the :obj:`(State, Data)` pair and only explicitly updated during transitions.
-This encapsulation is what makes state machines a powerful abstraction, e.g.
-for handling socket states in a network server application.
+.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+   :include: test-code
+   :exclude: fsm-code-elided
 
 Reference
 =========
-
-This section describes the DSL in a more formal way, refer to `Examples`_ for more sample material.
 
 The FSM Trait and Object
 ------------------------
@@ -163,9 +122,9 @@ The FSM Trait and Object
 The :class:`FSM` trait may only be mixed into an :class:`Actor`. Instead of
 extending :class:`Actor`, the self type approach was chosen in order to make it
 obvious that an actor is actually created.  Importing all members of the
-:obj:`FSM` object is recommended to receive useful implicits and directly
-access the symbols like :obj:`StateTimeout`. This import is usually placed
-inside the state machine definition:
+:obj:`FSM` object is recommended if you want to directly access the symbols
+like :obj:`StateTimeout`. This import is usually placed inside the state
+machine definition:
 
 .. code-block:: scala
 
@@ -191,15 +150,6 @@ The :class:`FSM` trait takes two type parameters:
    the state machine; if you stick to this scheme and do not add mutable fields
    to the FSM class you have the advantage of making all changes of the
    internal state explicit in a few well-known places.
-
-Defining Timeouts
------------------
-
-The :class:`FSM` module uses :ref:`Duration` for all timing configuration.
-Several methods, like :func:`when()` and :func:`startWith()` take a
-:class:`FSM.Timeout`, which is an alias for :class:`Option[Duration]`. There is
-an implicit conversion available in the :obj:`FSM` object which makes this
-transparent, just import it into your FSM body.
 
 Defining States
 ---------------

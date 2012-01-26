@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -15,6 +15,7 @@ import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
+import akka.pattern.ask
 
 object ActorRefSpec {
 
@@ -287,7 +288,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val baos = new ByteArrayOutputStream(8192 * 32)
       val out = new ObjectOutputStream(baos)
 
-      val addr = system.asInstanceOf[ActorSystemImpl].provider.rootPath.address
+      val sysImpl = system.asInstanceOf[ActorSystemImpl]
+      val addr = sysImpl.provider.rootPath.address
       val serialized = SerializedActorRef(addr + "/non-existing")
 
       out.writeObject(serialized)
@@ -295,9 +297,9 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       out.flush
       out.close
 
-      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      Serialization.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === new EmptyLocalActorRef(system.eventStream, system.dispatcher, system.actorFor("/").path / "non-existing")
+        in.readObject must be === new EmptyLocalActorRef(system.eventStream, sysImpl.provider, system.dispatcher, system.actorFor("/").path / "non-existing")
       }
     }
 
@@ -358,8 +360,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         }
       }))
 
-      val ffive = (ref ? (5, timeout)).mapTo[String]
-      val fnull = (ref ? (null, timeout)).mapTo[String]
+      val ffive = (ref.ask(5)(timeout)).mapTo[String]
+      val fnull = (ref.ask(null)(timeout)).mapTo[String]
       ref ! PoisonPill
 
       Await.result(ffive, timeout.duration) must be("five")
@@ -374,6 +376,9 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
         val boss = system.actorOf(Props(new Actor {
 
+          override val supervisorStrategy =
+            OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable]))
+
           val ref = context.actorOf(
             Props(new Actor {
               def receive = { case _ ⇒ }
@@ -382,7 +387,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
             }))
 
           protected def receive = { case "sendKill" ⇒ ref ! Kill }
-        }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 2, 1000)))
+        }))
 
         boss ! "sendKill"
         Await.ready(latch, 5 seconds)

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.docs.transactor
@@ -141,6 +141,7 @@ class TransactorDocSpec extends AkkaSpec {
     import akka.dispatch.Await
     import akka.util.duration._
     import akka.util.Timeout
+    import akka.pattern.ask
 
     val system = ActorSystem("app")
 

@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
 import java.util.Collection
-import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
+import java.util.concurrent.atomic.AtomicLong
 import akka.util.Duration
 import java.util.concurrent._
 
@@ -16,6 +16,7 @@ object ThreadPoolConfig {
   val defaultCorePoolSize: Int = 16
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
+  val defaultRejectionPolicy: RejectedExecutionHandler = new SaneRejectedExecutionHandler()
 
   def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int = {
     import scala.math.{ min, max }
@@ -54,7 +55,7 @@ trait ExecutorServiceFactory {
  * Generic way to specify an ExecutorService to a Dispatcher, create it with the given name if desired
  */
 trait ExecutorServiceFactoryProvider {
-  def createExecutorServiceFactory(name: String): ExecutorServiceFactory
+  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory
 }
 
 /**
@@ -65,16 +66,24 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
                             queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
-                            daemonic: Boolean = false)
+                            rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy)
   extends ExecutorServiceFactoryProvider {
   class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
-      val service = new ThreadPoolExecutor(corePoolSize, maxPoolSize, threadTimeout.length, threadTimeout.unit, queueFactory(), threadFactory, new SaneRejectedExecutionHandler)
+      val service = new ThreadPoolExecutor(
+        corePoolSize,
+        maxPoolSize,
+        threadTimeout.length,
+        threadTimeout.unit,
+        queueFactory(),
+        threadFactory,
+        rejectionPolicy)
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
       service
     }
   }
-  final def createExecutorServiceFactory(name: String): ExecutorServiceFactory = new ThreadPoolExecutorServiceFactory(new MonitorableThreadFactory(name, daemonic))
+  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    new ThreadPoolExecutorServiceFactory(threadFactory)
 }
 
 trait DispatcherBuilder {
@@ -143,16 +152,20 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def configure(fs: Option[Function[ThreadPoolConfigDispatcherBuilder, ThreadPoolConfigDispatcherBuilder]]*): ThreadPoolConfigDispatcherBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
-class MonitorableThreadFactory(val name: String, val daemonic: Boolean = false) extends ThreadFactory {
+object MonitorableThreadFactory {
+  val doNothing: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable) = () }
+}
+
+case class MonitorableThreadFactory(name: String,
+                                    daemonic: Boolean,
+                                    exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
+  extends ThreadFactory {
   protected val counter = new AtomicLong
-  protected val doNothing: Thread.UncaughtExceptionHandler =
-    new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable) = {}
-    }
 
   def newThread(runnable: Runnable) = {
     val t = new Thread(runnable, name + counter.incrementAndGet())
-    t.setUncaughtExceptionHandler(doNothing)
+    t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
     t
   }

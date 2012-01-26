@@ -1,10 +1,9 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.dispatch.japi
 
-import akka.util.Timeout
-import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc, Option ⇒ JOption }
+import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc }
 
 /* Java API */
 trait Future[+T] { self: akka.dispatch.Future[T] ⇒

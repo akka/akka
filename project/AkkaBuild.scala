@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -190,10 +190,22 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
+      ivyXML := Dependencies.mongoMailboxExcludes,
       testMongoMailbox := false,
       testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
     )
   )
+
+
+  lazy val zeroMQ = Project(
+    id = "akka-zeromq",
+    base = file("akka-zeromq"),
+    dependencies = Seq(actor, testkit % "test;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.zeroMQ
+    )
+  )
+
 
   // lazy val spring = Project(
   //   id = "akka-spring",
@@ -417,9 +429,20 @@ object Dependencies {
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
 
-  val redisMailbox = Seq(redis, Test.junit)
+  val redisMailbox = Seq(slf4jApi, redis, Test.junit)
 
-  val mongoMailbox = Seq(mongoAsync, twttrUtilCore, Test.junit)
+  val mongoMailbox = Seq(slf4jApi, commonsPool, mongoAsync, twttrUtilCore, Test.junit)
+
+  val mongoMailboxExcludes = {
+    <dependencies>
+      <dependency org="com.mongodb.async" name="bson-driver_2.9.0-1" rev="0.2.9-1" >
+        <exclude module="netty"/>
+      </dependency>
+      <dependency org="com.mongodb.async" name="mongo-driver_2.9.0-1" rev="0.2.9-1" >
+        <exclude module="netty"/>
+      </dependency>
+    </dependencies>
+  }
 
   val zookeeperMailbox = Seq(zkClient, zookeeper, Test.junit)
 
@@ -434,6 +457,8 @@ object Dependencies {
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit)
+
+  val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
 }
 
 object Dependency {
@@ -447,7 +472,7 @@ object Dependency {
     val Jersey       = "1.3"
     val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
-    val Netty        = "3.2.5.Final"
+    val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
     val Rabbit       = "2.3.1"
     val ScalaStm     = "0.4"
@@ -465,6 +490,7 @@ object Dependency {
   val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
+  val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
   val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
   val h2Lzf         = "voldemort.store.compress"    % "h2-lzf"                 % "1.0"        // ApacheV2
   val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
@@ -474,7 +500,7 @@ object Dependency {
   val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"          % V.Jetty      // Eclipse license
   val log4j         = "log4j"                       % "log4j"                  % "1.2.14"     // ApacheV2
   val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
-  val netty         = "org.jboss.netty"             % "netty"                  % V.Netty      // ApacheV2
+  val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
@@ -489,6 +515,7 @@ object Dependency {
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
 
   // Provided
 

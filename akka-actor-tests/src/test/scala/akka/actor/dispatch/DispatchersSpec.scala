@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -58,11 +58,6 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
       dispatcher.throughput must be(17)
     }
 
-    "use specific name" in {
-      val dispatcher = lookup("myapp.mydispatcher")
-      dispatcher.name must be("mydispatcher")
-    }
-
     "use specific id" in {
       val dispatcher = lookup("myapp.mydispatcher")
       dispatcher.id must be("myapp.mydispatcher")
@@ -95,7 +90,6 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
       d1 must be === d2
-      d1.name must be("mydispatcher")
     }
 
   }

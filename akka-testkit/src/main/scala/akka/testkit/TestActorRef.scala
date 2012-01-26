@@ -1,18 +1,15 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
 
 import akka.actor._
 import akka.util.{ ReflectiveAccess, Duration }
-import com.eaio.uuid.UUID
-import akka.actor.Props._
-import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicLong
-import akka.event.EventStream
 import scala.collection.immutable.Stack
 import akka.dispatch._
+import akka.pattern.ask
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -30,7 +27,9 @@ class TestActorRef[T <: Actor](
   name: String)
   extends LocalActorRef(
     _system,
-    _props.withDispatcher(CallingThreadDispatcher.Id),
+    _props.withDispatcher(
+      if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
+      else _props.dispatcher),
     _supervisor,
     _supervisor.path / name,
     false) {
@@ -58,7 +57,7 @@ class TestActorRef[T <: Actor](
    * thrown will be available to you, while still being able to use
    * become/unbecome.
    */
-  def apply(o: Any) { underlyingActor.apply(o) }
+  def receive(o: Any) { underlyingActor.apply(o) }
 
   /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the
@@ -71,7 +70,7 @@ class TestActorRef[T <: Actor](
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
         val t = underlying.system.settings.ActorTimeout
-        Await.result(?(InternalGetActor)(t), t.duration).asInstanceOf[T]
+        Await.result(this.?(InternalGetActor)(t), t.duration).asInstanceOf[T]
       case ref ⇒ ref
     }
   }

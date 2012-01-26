@@ -30,7 +30,7 @@ it's located in ``akka.actor.TypedActor``.
    :include: typed-actor-extension-tools
 
 .. warning::
-    
+
     Same as not exposing ``this`` of an Akka Actor, it's important not to expose ``this`` of a Typed Actor,
     instead you should pass the external proxy reference, which is obtained from within your Typed Actor as
     ``TypedActor.self``, this is your external identity, as the ``ActorRef`` is the external identity of
@@ -127,7 +127,7 @@ Request-reply-with-future message send
 .. includecode:: code/akka/docs/actor/TypedActorDocSpec.scala
    :include: typed-actor-call-future
 
-This call is asynchronous, and the Future returned can be used for asynchronous composition. 
+This call is asynchronous, and the Future returned can be used for asynchronous composition.
 
 Stopping Typed Actors
 ---------------------
@@ -152,6 +152,13 @@ Since you can obtain a contextual Typed Actor Extension by passing in an ``Actor
 you can create child Typed Actors by invoking ``typedActorOf(..)`` on that.
 
 This also works for creating child Typed Actors in regular Akka Actors.
+
+Supervisor Strategy
+-------------------
+
+By having your Typed Actor implementation class implement ``TypedActor.Supervisor``
+you can define the strategy to use for supervising child actors, as described in
+:ref:`supervision` and :ref:`fault-tolerance-scala`.
 
 Lifecycle callbacks
 -------------------

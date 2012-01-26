@@ -50,12 +50,17 @@ depending on the configuration of the actor system:
 - There are several special types of actor references which behave like local
   actor references for all practical purposes:
 
-  - :class:`AskActorRef` is the special representation of a :meth:`Promise` for
+  - :class:`PromiseActorRef` is the special representation of a :meth:`Promise` for
     the purpose of being completed by the response from an actor; it is created
     by the :meth:`ActorRef.ask` invocation.
   - :class:`DeadLetterActorRef` is the default implementation of the dead
     letters service, where all messages are re-routed whose routees are shut
     down or non-existent.
+  - :class:`EmptyLocalActorRef` is what is returned when looking up a
+    non-existing local actor path: it is equivalent to a
+    :class:`DeadLetterActorRef`, but it retains its path so that it can be sent
+    over the network and compared to other existing actor refs for that path,
+    some of which might have been obtained before the actor stopped existing.
 
 - And then there are some one-off internal implementations which you should
   never really see:
@@ -308,13 +313,4 @@ other actors are found. The next level consists of the following:
   those which are used in the implementation of :meth:`ActorRef.ask`.
 - ``"/remote"`` is an artificial path below which all actors reside whose
   supervisors are remote actor references
-
-Future extensions:
-
-- ``"/service"`` is an artificial path below which actors can be presented by
-  means of configuration, i.e. deployed at system start-up or just-in-time
-  (triggered by look-up)
-- ``"/alias"`` is an artificial path below which other actors may be “mounted”
-  (as in the Unix file-system sense) by path—local or remote—to give them
-  logical names.
 

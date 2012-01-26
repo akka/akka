@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -20,6 +20,7 @@ import akka.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
 import akka.util.Duration
+import akka.pattern.ask
 
 object ActorModelSpec {
 
@@ -450,7 +451,6 @@ object DispatcherModelSpec {
     private val instance: MessageDispatcher = {
       configureThreadPool(config,
         threadPoolConfig ⇒ new Dispatcher(prerequisites,
-          config.getString("name"),
           config.getString("id"),
           config.getInt("throughput"),
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
@@ -525,7 +525,6 @@ object BalancingDispatcherModelSpec {
     private val instance: MessageDispatcher = {
       configureThreadPool(config,
         threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-          config.getString("name"),
           config.getString("id"),
           config.getInt("throughput"),
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),

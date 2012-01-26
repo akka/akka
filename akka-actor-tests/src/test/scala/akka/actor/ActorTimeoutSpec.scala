@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -10,6 +10,7 @@ import akka.testkit.DefaultTimeout
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
 import akka.util.Timeout
+import akka.pattern.{ ask, AskTimeoutException }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeout {
@@ -44,7 +45,7 @@ class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeo
     "use explicitly supplied timeout" in {
       within(testTimeout - 100.millis, testTimeout + 300.millis) {
         val echo = system.actorOf(Props.empty)
-        val f = echo.?("hallo", testTimeout)
+        val f = echo.?("hallo")(testTimeout)
         try {
           intercept[AskTimeoutException] { Await.result(f, testTimeout + 300.millis) }
         } finally { system.stop(echo) }

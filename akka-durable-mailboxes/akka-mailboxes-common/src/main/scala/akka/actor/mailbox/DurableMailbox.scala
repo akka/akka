@@ -1,16 +1,12 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
-import akka.actor.ActorContext
-import akka.actor.ActorRef
-import akka.dispatch.Envelope
-import akka.dispatch.DefaultSystemMessageQueue
-import akka.dispatch.CustomMailbox
+import akka.actor.{ ActorContext, ActorRef }
+import akka.dispatch.{ Envelope, DefaultSystemMessageQueue, CustomMailbox }
 import akka.remote.MessageSerializer
-import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.remote.RemoteProtocol.RemoteMessageProtocol
+import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r

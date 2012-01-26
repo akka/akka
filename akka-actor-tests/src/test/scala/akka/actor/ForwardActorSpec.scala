@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -9,6 +9,7 @@ import akka.util.duration._
 import Actor._
 import akka.util.Duration
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
@@ -46,7 +47,7 @@ class ForwardActorSpec extends AkkaSpec {
 
     "forward actor reference when invoking forward on ask" in {
       val chain = createForwardingChain(system)
-      chain.ask(ExpectedMessage, 5000) onSuccess { case ExpectedMessage ⇒ testActor ! ExpectedMessage }
+      chain.ask(ExpectedMessage)(5 seconds) onSuccess { case ExpectedMessage ⇒ testActor ! ExpectedMessage }
       expectMsg(5 seconds, ExpectedMessage)
     }
   }

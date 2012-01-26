@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -17,6 +17,7 @@ import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
 import akka.dispatch.Dispatchers
+import akka.pattern.ask
 
 object TimingTest extends Tag("timing")
 

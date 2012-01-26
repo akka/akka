@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-
 import FSM._
+import akka.util.Duration
 
 object FSMTransitionSpec {
 
@@ -72,8 +72,9 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       val fsm = system.actorOf(Props(new MyFSM(testActor)))
       val sup = system.actorOf(Props(new Actor {
         context.watch(fsm)
+        override val supervisorStrategy = OneForOneStrategy(withinTimeRange = Duration.Inf)(List(classOf[Throwable]))
         def receive = { case _ ⇒ }
-      }).withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), None, None)))
+      }))
 
       within(300 millis) {
         fsm ! SubscribeTransitionCallBack(forward)

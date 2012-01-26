@@ -1,12 +1,10 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
 import com.surftools.BeanstalkClient._
 import com.surftools.BeanstalkClientImpl._
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.util.Duration
 import akka.AkkaException
 import akka.actor.ActorContext
 import akka.dispatch.Envelope

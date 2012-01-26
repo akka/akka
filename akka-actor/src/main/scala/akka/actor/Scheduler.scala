@@ -13,7 +13,7 @@
 package akka.actor
 
 import akka.util.Duration
-import org.jboss.netty.akka.util.{ Timer, TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
+import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
@@ -32,8 +32,8 @@ trait Scheduler {
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
-   * thereafter every 500ms you would set delay = Duration.Zero and frequency
-   * = Duration(500, TimeUnit.MILLISECONDS)
+   * thereafter every 500ms you would set delay=Duration.Zero and
+   * frequency=Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */
@@ -123,7 +123,9 @@ trait Cancellable {
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
  * returned from stop().
  */
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
+                       log: LoggingAdapter,
+                       dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
   def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
     val continuousCancellable = new ContinuousCancellable

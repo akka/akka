@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -8,7 +8,6 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
 import akka.config.ConfigurationException
-import com.eaio.uuid.UUID
 import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressExtractor
@@ -33,5 +32,4 @@ class RemoteSettings(val config: Config, val systemName: String) {
   }
 
   val UntrustedMode = getBoolean("akka.remote.untrusted-mode")
-
 }

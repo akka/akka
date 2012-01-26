@@ -1,15 +1,10 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import collection.immutable.Seq
-import akka.event.Logging
-import akka.AkkaException
-import akka.config.ConfigurationException
 import akka.util.Duration
-import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
