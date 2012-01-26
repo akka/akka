@@ -4,7 +4,6 @@
 package akka.actor
 
 import java.util.concurrent.TimeUnit
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }

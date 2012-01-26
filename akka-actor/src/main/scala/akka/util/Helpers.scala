@@ -3,7 +3,6 @@
  */
 package akka.util
 
-import java.io.{ PrintWriter, StringWriter }
 import java.util.Comparator
 import scala.annotation.tailrec
 import java.util.regex.Pattern

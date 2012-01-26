@@ -9,7 +9,6 @@ import akka.actor.Status._
 import akka.event.Logging
 import akka.util.Duration
 import akka.config.ConfigurationException
-import akka.serialization.SerializationExtension
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit.SECONDS
@@ -19,7 +18,6 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
-import com.google.protobuf.ByteString
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
 import akka.pattern.ask

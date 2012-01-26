@@ -11,8 +11,6 @@ import scala.annotation.tailrec
 
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
-import akka.actor.ActorSystem
-
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]

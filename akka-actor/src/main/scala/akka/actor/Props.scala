@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.dispatch._
 import akka.japi.Creator
-import akka.util._
 import collection.immutable.Stack
 import akka.routing._
 

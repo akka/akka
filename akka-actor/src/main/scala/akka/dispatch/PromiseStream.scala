@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.continuations._
-import scala.annotation.{ tailrec }
+import scala.annotation.tailrec
 import akka.util.Timeout
 
 object PromiseStream {

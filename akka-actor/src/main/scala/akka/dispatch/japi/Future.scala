@@ -3,8 +3,7 @@
  */
 package akka.dispatch.japi
 
-import akka.util.Timeout
-import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc, Option ⇒ JOption }
+import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc }
 
 /* Java API */
 trait Future[+T] { self: akka.dispatch.Future[T] ⇒

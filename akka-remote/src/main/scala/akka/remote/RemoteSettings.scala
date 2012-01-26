@@ -8,7 +8,6 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
 import akka.config.ConfigurationException
-import com.eaio.uuid.UUID
 import scala.collection.JavaConverters._
 
 class RemoteSettings(val config: Config, val systemName: String) {

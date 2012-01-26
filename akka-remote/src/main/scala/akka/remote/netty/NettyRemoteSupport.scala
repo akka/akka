@@ -4,7 +4,7 @@
 
 package akka.remote.netty
 
-import akka.actor.{ ActorRef, IllegalActorStateException, simpleName }
+import akka.actor.{ ActorRef, simpleName }
 import akka.remote._
 import RemoteProtocol._
 import akka.util._
@@ -25,7 +25,6 @@ import akka.actor.ActorSystemImpl
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
 import java.util.concurrent._
 import locks.ReentrantReadWriteLock
-import akka.dispatch.MonitorableThreadFactory
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
