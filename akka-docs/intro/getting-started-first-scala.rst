@@ -265,14 +265,14 @@ work and sent back results for aggregation. When computation is completed the
 master sends the result to the ``Listener``, which prints out the result.
 
 With this in mind, let's now create the messages that we want to have flowing in
-the system. We need three different messages:
+the system. We need four different messages:
 
 - ``Calculate`` -- sent to the ``Master`` actor to start the calculation
 - ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing
   the work assignment
 - ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor
   containing the result from the worker's calculation
-- ``PiEstimate`` -- sent from the ``Master`` actor to the
+- ``PiApproximation`` -- sent from the ``Master`` actor to the
   ``Listener`` actor containing the the final pi result and how long time
   the calculation took
 
@@ -361,7 +361,7 @@ Let's capture this in code:
 Creating the result listener
 ============================
 
-The listener is straightforward. When it receives the ``PiEstimate`` from the ``Master`` it
+The listener is straightforward. When it receives the ``PiApproximation`` from the ``Master`` it
 prints the result and shuts down the ``ActorSystem``.
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#result-listener
@@ -418,8 +418,8 @@ compiled ourselves::
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
-    Pi estimate:        3.1435501812459323
-    Calculation time:   553 millis
+    Pi approximation:   3.1435501812459323
+    Calculation time:   359 millis
 
 Yippee! It is working.
 
@@ -437,8 +437,8 @@ When this in done we can run our application directly inside SBT::
 
     > run
     ...
-    Pi estimate:        3.1435501812459323
-    Calculation time:   531 millis
+    Pi approximation:   3.1435501812459323
+    Calculation time:   359 millis
 
 Yippee! It is working.
 

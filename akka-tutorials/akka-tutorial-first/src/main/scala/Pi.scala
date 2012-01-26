@@ -5,7 +5,7 @@ package akka.tutorial.first.scala
 
 //#imports
 import akka.actor._
-import akka.routing._
+import akka.routing.RoundRobinRouter
 import akka.util.Duration
 import akka.util.duration._
 //#imports
@@ -21,7 +21,7 @@ object Pi extends App {
   case object Calculate extends PiMessage
   case class Work(start: Int, nrOfElements: Int) extends PiMessage
   case class Result(value: Double) extends PiMessage
-  case class PiEstimate(pi: Double, duration: Duration)
+  case class PiApproximation(pi: Double, duration: Duration)
   //#messages
 
   //#worker
@@ -52,21 +52,21 @@ object Pi extends App {
     val start: Long = System.currentTimeMillis
 
     //#create-router
-    val router = context.actorOf(
-      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workers")
+    val workerRouter = context.actorOf(
+      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
     //#create-router
 
     //#master-receive
     def receive = {
       //#handle-messages
       case Calculate ⇒
-        for (i ← 0 until nrOfMessages) router ! Work(i * nrOfElements, nrOfElements)
+        for (i ← 0 until nrOfMessages) workerRouter ! Work(i * nrOfElements, nrOfElements)
       case Result(value) ⇒
         pi += value
         nrOfResults += 1
         if (nrOfResults == nrOfMessages) {
           // Send the result to the listener
-          listener ! PiEstimate(pi, duration = (System.currentTimeMillis - start).millis)
+          listener ! PiApproximation(pi, duration = (System.currentTimeMillis - start).millis)
           // Stops this actor and all its supervised children
           context.stop(self)
         }
@@ -80,8 +80,8 @@ object Pi extends App {
   //#result-listener
   class Listener extends Actor {
     def receive = {
-      case PiEstimate(pi, duration) ⇒
-        println("\n\tPi estimate: \t\t%s\n\tCalculation time: \t%s"
+      case PiApproximation(pi, duration) ⇒
+        println("\n\tPi approximation: \t\t%s\n\tCalculation time: \t%s"
           .format(pi, duration))
         context.system.shutdown()
     }
