@@ -438,7 +438,7 @@ object Dependencies {
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
-  val amqpMailbox = Seq(rabbit, commonsPool, Test.junit)
+  val amqpMailbox = Seq(rabbit, commonsPool, slf4jApi, Test.junit)
 
   val fileMailbox = Seq(Test.scalatest, Test.junit)
 
@@ -489,7 +489,7 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
+    val Rabbit       = "2.7.1"
     val ScalaStm     = "0.4"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"

@@ -3,7 +3,6 @@
  */
 package akka.actor.mailbox
 
-import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.GetResponse
 import com.rabbitmq.client.MessageProperties
 
@@ -26,10 +25,10 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
 
   private var pool = connect()
 
-  val log = Logging(system, "AMQPBasedMailbox")
+  private val log = Logging(system, "AMQPBasedMailbox")
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in amqp-based mailbox [%s]".format(envelope))
+    log.debug("ENQUEUING message in amqp-based mailbox [{}]", envelope)
     withErrorHandling {
       pool.withChannel { channel ⇒
         channel.basicPublish("", name, MessageProperties.PERSISTENT_BASIC, serialize(envelope))
@@ -38,41 +37,28 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   }
 
   def dequeue(): Envelope = withErrorHandling {
-    try {
-      pool.withChannel { channel ⇒
-        channel.basicGet(name, true) match {
-          case response: GetResponse ⇒ {
-            val envelope = deserialize(response.getBody)
-            log.debug("DEQUEUING message in amqp-based mailbox [%s]".format(envelope))
-            envelope
-          }
-          case _ ⇒ null
+    pool.withChannel { channel ⇒
+      channel.basicGet(name, true) match {
+        case response: GetResponse ⇒ {
+          val envelope = deserialize(response.getBody)
+          log.debug("DEQUEUING message in amqp-based mailbox [{}]", envelope)
+          envelope
         }
+        case _ ⇒ null
       }
-    } catch {
-      case e ⇒
-        log.error(e, "Couldn't dequeue from amqp-based mailbox")
-        throw e
     }
   }
 
   def numberOfMessages: Int = withErrorHandling {
-    pool.withChannel { channel ⇒
-      channel.queueDeclare(name, true, false, false, null).getMessageCount
-    }
+    pool.withChannel { _.queueDeclare(name, true, false, false, null).getMessageCount }
   }
 
+  // check by message count because rabbit library does not
+  // provide a call to check if messages are in the queue
   def hasMessages: Boolean = numberOfMessages > 0
 
   private[akka] def connect() = {
-    import settings._
-    val factory = new ConnectionFactory
-    factory.setUsername(User)
-    factory.setPassword(Password)
-    factory.setVirtualHost(VirtualHost)
-    factory.setHost(Hostname)
-    factory.setPort(Port)
-    new AMQPChannelPool(factory, name)
+    new AMQPChannelPool(settings.Factory, name)
   }
 
   private def withErrorHandling[T](body: ⇒ T): T = {
@@ -80,14 +66,16 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
       body
     } catch {
       case e: java.io.IOException ⇒ {
-        pool.close
-        pool = connect()
-        body
+        log.error("Communication with AMQP server failed, retrying operation.", e)
+        try {
+          pool.close
+          pool = connect()
+          body
+        } catch {
+          case e: java.io.IOException ⇒
+            throw new AMQPBasedMailboxException("AMQP server seems to be offline.")
+        }
       }
-      case e ⇒
-        val error = new AMQPBasedMailboxException("Could not connect to AMQP server, due to: " + e.getMessage)
-        log.error(error, error.getMessage)
-        throw error
     }
   }
 }

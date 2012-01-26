@@ -3,20 +3,25 @@
  */
 package akka.actor.mailbox
 
+import akka.actor.ActorSystem
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Channel
+import org.slf4j.LoggerFactory
 
 private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String) extends PoolableObjectFactory {
 
   private var connection = factory.newConnection
 
+  private val log = LoggerFactory.getLogger(classOf[AMQPChannelFactory])
+
   def makeObject = {
     try {
       createChannel
     } catch {
-      case _ ⇒ {
+      case e: java.io.IOException ⇒ {
+        log.error("Could not create a channel. Will retry after reconnecting to AMQP Server.", e)
         connection.close
         connection = factory.newConnection
         createChannel
@@ -31,21 +36,21 @@ private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String
     channel
   }
 
-  def destroyObject(rc: Object): Unit = {
-    rc.asInstanceOf[Channel].close
+  def destroyObject(channel: Object): Unit = {
+    channel.asInstanceOf[Channel].close
   }
 
-  def passivateObject(rc: Object): Unit = {}
-  def validateObject(rc: Object) = {
+  def passivateObject(channel: Object): Unit = {}
+  def validateObject(channel: Object) = {
     try {
-      rc.asInstanceOf[Channel].basicQos(1)
+      channel.asInstanceOf[Channel].basicQos(1)
       true
     } catch {
       case _ ⇒ false
     }
   }
 
-  def activateObject(rc: Object): Unit = {}
+  def activateObject(channel: Object): Unit = {}
 }
 
 class AMQPChannelPool(factory: ConnectionFactory, queue: String) {
