@@ -6,7 +6,6 @@ package akka.transactor
 
 import akka.actor.{ UntypedActor, ActorRef }
 import scala.collection.JavaConversions._
-import scala.concurrent.stm.InTxn
 import java.util.{ Set ⇒ JSet }
 
 /**

@@ -4,25 +4,22 @@
 
 package akka.dispatch
 
-import akka.AkkaException
 import akka.event.Logging.Error
-import akka.util.Timeout
 import scala.Option
-import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
+import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 
 import scala.util.continuations._
 
-import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
+import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-import akka.util.{ Switch, Duration, BoxedType }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
+import akka.util.{ Duration, BoxedType }
+import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger }
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._
-import akka.actor.ActorSystem
 
 object Await {
   sealed trait CanAwait

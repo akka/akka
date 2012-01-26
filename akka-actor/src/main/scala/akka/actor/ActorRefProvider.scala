@@ -5,11 +5,10 @@
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
-import akka.config.ConfigurationException
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
-import akka.util.{ Duration, Switch, Helpers, Timeout }
+import akka.util.{ Switch, Helpers }
 import akka.event._
 
 /**

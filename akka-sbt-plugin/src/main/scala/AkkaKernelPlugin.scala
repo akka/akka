@@ -11,7 +11,6 @@ import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
 import sbt.CommandSupport._
 import java.io.File
-import scala.collection.mutable.{ Set ⇒ MutableSet }
 
 object AkkaKernelPlugin extends Plugin {
 

@@ -6,10 +6,7 @@ package akka.testkit
 
 import akka.actor._
 import akka.util._
-import com.eaio.uuid.UUID
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.dispatch.{ DispatcherPrerequisites, Mailbox }
+import akka.dispatch.DispatcherPrerequisites
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and

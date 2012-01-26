@@ -6,11 +6,6 @@ package akka.routing
 
 import akka.actor._
 
-import scala.annotation.tailrec
-
-import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
-import collection.JavaConverters
-
 /**
  * An Iterable that also contains a version.
  */

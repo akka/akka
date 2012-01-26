@@ -7,13 +7,10 @@ package akka.remote
 import akka.actor._
 import akka.AkkaException
 import scala.reflect.BeanProperty
-import java.io.{ PrintWriter, PrintStream }
-import java.net.InetSocketAddress
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.InetAddress
 import java.net.UnknownHostException
-import java.net.UnknownServiceException
 import akka.event.Logging
 
 /**

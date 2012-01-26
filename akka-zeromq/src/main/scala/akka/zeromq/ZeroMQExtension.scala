@@ -3,7 +3,6 @@
  */
 package akka.zeromq
 
-import akka.util.duration._
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Await }

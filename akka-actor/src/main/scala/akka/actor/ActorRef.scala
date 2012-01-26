@@ -9,13 +9,10 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
-import java.util.concurrent.TimeUnit
 import akka.event.EventStream
-import akka.event.DeathWatch
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
+import java.util.concurrent.{ ConcurrentHashMap }
 import akka.event.LoggingAdapter
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside

@@ -7,7 +7,6 @@ import akka.util._
 
 import scala.collection.mutable
 import akka.event.Logging
-import akka.util.Duration._
 import akka.routing.{ Deafen, Listen, Listeners }
 
 object FSM {

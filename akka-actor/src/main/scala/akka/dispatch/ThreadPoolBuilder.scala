@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import java.util.Collection
-import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
+import java.util.concurrent.atomic.AtomicLong
 import akka.util.Duration
 import java.util.concurrent._
 
