@@ -8,7 +8,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.matchers.MustMatchers
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
-import org.scalatest.{WordSpec}
+import org.scalatest.WordSpec
 
 class ActorEndpointPathTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 

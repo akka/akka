@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit._
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import org.scalatest.{WordSpec, BeforeAndAfterEach, FlatSpec}
+import org.scalatest.{ WordSpec, BeforeAndAfterEach }
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   implicit var system: ActorSystem = _

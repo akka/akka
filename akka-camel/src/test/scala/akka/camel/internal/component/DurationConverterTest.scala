@@ -7,7 +7,7 @@ package akka.camel.internal.component
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import akka.util.Duration
-import org.scalatest.{WordSpec, FlatSpec}
+import org.scalatest.WordSpec
 
 class DurationConverterTest extends WordSpec with MustMatchers {
   import DurationTypeConverter._
