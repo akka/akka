@@ -81,13 +81,6 @@ trait ActorEndpointConfig {
   @BeanProperty var replyTimeout: Duration = 1 minute
 
   /**
-   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
-   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
-   * <code>false</code>.
-   */
-  @BeanProperty var blocking: Boolean = false
-
-  /**
    * TODO fix it
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
    * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
@@ -97,6 +90,7 @@ trait ActorEndpointConfig {
   @BeanProperty var autoack: Boolean = true
 }
 
+//FIXME: rewrite this doc
 /**
  * Sends the in-message of an exchange to an (untyped) actor, identified by an
  * actor endpoint URI or by a <code>CamelActorIdentifier</code> message header.
@@ -133,52 +127,31 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
 
-    //TODO: if Blocking is no longer need (to be confirmed by Martin) than we can get rid of lot of complexity here.
-    class NonBlocking { // Default case
-      val DoneSync = true
-      val DoneAsync = false
-      def notifyDoneSynchronously[A](a: A = null) = callback.done(DoneSync)
-      def notifyDoneAsynchronously[A](a: A = null) = callback.done(DoneAsync)
-      def message = messageFor(exchange)
+    val DoneSync = true
+    val DoneAsync = false
+    def notifyDoneSynchronously[A](a: A = null) = callback.done(DoneSync)
+    def notifyDoneAsynchronously[A](a: A = null) = callback.done(DoneAsync)
+    def message = messageFor(exchange)
 
-      def outCapable: Boolean = {
-        sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
-      }
-
-      def inOnlyAutoAck: Boolean = {
-        fireAndForget(exchange)
-        notifyDoneSynchronously()
-        true // done sync
-      }
-
-      def inOnlyManualAck: Boolean = {
-        sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
-      }
-
-      def consume = {
-        if (exchange.isOutCapable) {
-          outCapable
-        } else {
-          if (config.autoack) inOnlyAutoAck else inOnlyManualAck
-        }
-      }
+    def outCapable: Boolean = {
+      sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
     }
 
-    class Blocking extends NonBlocking { // used for debugging
-      override def outCapable: Boolean = {
-        sendSync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneSynchronously)
-      }
-
-      override def inOnlyAutoAck: Boolean = {
-        throw new IllegalStateException("Cannot be blocking and autoack for in-only message exchanges.")
-      }
-
-      override def inOnlyManualAck: Boolean = {
-        sendSync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneSynchronously)
-      }
+    def inOnlyAutoAck: Boolean = {
+      fireAndForget(exchange)
+      notifyDoneSynchronously()
+      true // done sync
     }
 
-    (if (config.blocking) new Blocking else new NonBlocking).consume
+    def inOnlyManualAck: Boolean = {
+      sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
+    }
+
+    if (exchange.isOutCapable) {
+      outCapable
+    } else {
+      if (config.autoack) inOnlyAutoAck else inOnlyManualAck
+    }
 
   }
 

@@ -36,22 +36,6 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
     camel.sendTo("direct:a1", msg = "some message") must be("received some message")
   }
 
-  "Consumer must support blocking, in-out messaging" in {
-    start(new Consumer {
-      def endpointUri = "direct:a1"
-      override def blocking = true
-      override def replyTimeout = 200 millis
-
-      protected def receive = {
-        case m: Message ⇒ {
-          Thread.sleep(150)
-          sender ! "received " + m.bodyAs[String]
-        }
-      }
-    })
-    time(camel.sendTo("direct:a1", msg = "some message")) must be >= (150 millis)
-  }
-
   "Consumer must time-out if consumer is slow" in {
     val SHORT_TIMEOUT = 10 millis
     val LONG_WAIT = 200 millis

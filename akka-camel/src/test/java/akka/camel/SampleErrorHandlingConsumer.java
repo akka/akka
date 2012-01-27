@@ -27,11 +27,6 @@ public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     }
 
     @Override
-    public boolean blocking(){
-        return true;
-    }
-
-    @Override
     public Duration replyTimeout(){
         return Duration.create(1, "second");
     }

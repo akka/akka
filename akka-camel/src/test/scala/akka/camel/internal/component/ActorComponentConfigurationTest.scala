@@ -17,12 +17,11 @@ class ActorComponentConfigurationTest extends JUnitSuite with MustMatchers with 
   val component: Component = camel.context.getComponent("actor")
 
   @Test def configurationSanityTest = {
-    val actorEndpointConfig = component.createEndpoint("actor://path:akka://test/user/$a?autoack=false&blocking=true&replyTimeout=987000000+nanos").asInstanceOf[ActorEndpointConfig]
+    val actorEndpointConfig = component.createEndpoint("actor://path:akka://test/user/$a?autoack=false&replyTimeout=987000000+nanos").asInstanceOf[ActorEndpointConfig]
 
     actorEndpointConfig must have(
-      'endpointUri("actor://path:akka://test/user/$a?autoack=false&blocking=true&replyTimeout=987000000+nanos"),
+      'endpointUri("actor://path:akka://test/user/$a?autoack=false&replyTimeout=987000000+nanos"),
       'path(ActorEndpointPath.fromCamelPath("path:akka://test/user/$a")),
-      'blocking(true),
       'autoack(false),
       'replyTimeout(987000000 nanos))
   }
