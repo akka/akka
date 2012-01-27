@@ -3,6 +3,7 @@
  */
 package akka.actor
 import scala.annotation.tailrec
+import java.net.MalformedURLException
 
 object ActorPath {
   def split(s: String): List[String] = {
@@ -14,6 +15,11 @@ object ActorPath {
       if (from == -1) l else rec(from, l)
     }
     rec(s.length, Nil)
+  }
+
+  def fromString(s: String): ActorPath = s match {
+    case ActorPathExtractor(addr, elems) ⇒ RootActorPath(addr) / elems
+    case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
   val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
