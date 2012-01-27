@@ -335,7 +335,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
   def configureThreadPool(
     config: Config,
-    createDispatcher: ⇒ (ExecutorServiceFactoryProvider) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+    createDispatcher: ⇒ (ExecutorServiceFactoryProvider) ⇒ MessageDispatcher): MessageDispatcher = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
@@ -354,6 +354,6 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
               case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
             }
           case _ ⇒ None
-        })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
+        })(queueFactory ⇒ _.setQueueFactory(queueFactory))).build
   }
 }

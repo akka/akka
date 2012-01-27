@@ -456,7 +456,7 @@ object DispatcherModelSpec {
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
           mailboxType,
           threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
+          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor)
     }
 
     override def dispatcher(): MessageDispatcher = instance
@@ -530,7 +530,7 @@ object BalancingDispatcherModelSpec {
           Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
           mailboxType,
           threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
+          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor)
     }
 
     override def dispatcher(): MessageDispatcher = instance

@@ -164,7 +164,7 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
         threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -187,7 +187,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
         config.getInt("throughput"),
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType, threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -220,6 +220,6 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
             config.getString("id"))))
       createPinnedDispatcherWith(ThreadPoolConfig())
-  }).build
+  })
 
 }
