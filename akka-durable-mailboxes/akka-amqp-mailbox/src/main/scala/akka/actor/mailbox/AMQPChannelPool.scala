@@ -3,18 +3,24 @@
  */
 package akka.actor.mailbox
 
+import akka.AkkaException
 import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Channel
-import org.slf4j.LoggerFactory
 
-private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String) extends PoolableObjectFactory {
+class AMQPConnectionException(message: String) extends AkkaException(message)
 
-  private var connection = factory.newConnection
+private[akka] class AMQPChannelFactory(factory: ConnectionFactory, log: LoggingAdapter) extends PoolableObjectFactory {
 
-  private val log = LoggerFactory.getLogger(classOf[AMQPChannelFactory])
+  private var connection = try {
+    factory.newConnection
+  } catch {
+    case e: java.net.ConnectException ⇒
+      throw new AMQPConnectionException("Could not connect to AMQP broker: " + e.getMessage)
+  }
 
   def makeObject(): Object = {
     try {
@@ -32,7 +38,6 @@ private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String
   private def createChannel = {
     val channel = connection.createChannel
     channel.basicQos(1)
-    channel.queueDeclare(queue, true, false, false, null)
     channel
   }
 
@@ -53,8 +58,8 @@ private[akka] class AMQPChannelFactory(factory: ConnectionFactory, queue: String
   def activateObject(channel: Object): Unit = {}
 }
 
-class AMQPChannelPool(factory: ConnectionFactory, queue: String) {
-  val pool = new StackObjectPool(new AMQPChannelFactory(factory, queue))
+class AMQPChannelPool(factory: ConnectionFactory, log: LoggingAdapter) {
+  val pool = new StackObjectPool(new AMQPChannelFactory(factory, log))
 
   def withChannel[T](body: Channel ⇒ T) = {
     val channel = pool.borrowObject.asInstanceOf[Channel]

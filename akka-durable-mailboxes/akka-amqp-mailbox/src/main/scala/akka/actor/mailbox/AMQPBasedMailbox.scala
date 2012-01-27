@@ -27,6 +27,10 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
 
   private val log = Logging(system, "AMQPBasedMailbox")
 
+  withErrorHandling {
+    pool.withChannel { _.queueDeclare(name, true, false, false, null) }
+  }
+
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     log.debug("ENQUEUING message in amqp-based mailbox [{}]", envelope)
     withErrorHandling {
@@ -58,7 +62,7 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   def hasMessages: Boolean = numberOfMessages > 0
 
   private[akka] def connect() = {
-    new AMQPChannelPool(settings.Factory, name)
+    settings.ChannelPool
   }
 
   private def withErrorHandling[T](body: ⇒ T): T = {
@@ -68,8 +72,6 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
       case e: java.io.IOException ⇒ {
         log.error("Communication with AMQP server failed, retrying operation.", e)
         try {
-          pool.close
-          pool = connect()
           body
         } catch {
           case e: java.io.IOException ⇒
