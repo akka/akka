@@ -71,9 +71,7 @@ trait ManualAckConsumer extends Consumer{
 }
 
 trait ErrorPassing { self : Actor =>
-
   final override def preRestart(reason: Throwable, message: Option[Any]) {
     sender ! Failure(reason)
   }
-  
 }
