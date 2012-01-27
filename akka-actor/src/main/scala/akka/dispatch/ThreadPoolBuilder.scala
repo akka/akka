@@ -8,6 +8,7 @@ import java.util.Collection
 import java.util.concurrent.atomic.AtomicLong
 import akka.util.Duration
 import java.util.concurrent._
+import akka.jsr166y._
 
 object ThreadPoolConfig {
   type QueueFactory = () ⇒ BlockingQueue[Runnable]
@@ -160,8 +161,14 @@ object MonitorableThreadFactory {
 case class MonitorableThreadFactory(name: String,
                                     daemonic: Boolean,
                                     exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
-  extends ThreadFactory {
+  extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
   protected val counter = new AtomicLong
+
+  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
+    val t = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool)
+    t.setDaemon(daemonic)
+    t
+  }
 
   def newThread(runnable: Runnable) = {
     val t = new Thread(runnable, name + counter.incrementAndGet())
