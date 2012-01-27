@@ -74,14 +74,17 @@ case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to sup
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
 
-final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
+//FIXME #1310 Not sure if it is ok to add ExecutionContext param
+final case class TaskInvocation(eventStream: EventStream, executionContext: ExecutionContext, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
   def run() {
     try {
       runnable.run()
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
+      case e ⇒
+        executionContext.reportFailure(e)
+        eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
+      //FIXME #1310 now we run cleanup even though reportFailure throws, hmmm
       cleanup()
     }
   }
@@ -100,9 +103,9 @@ object ExecutionContext {
    */
   def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
 
-  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
+  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext with DefaultFailureReporter
 
-  private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+  private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext with DefaultFailureReporter {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
   }
 }
@@ -118,6 +121,20 @@ trait ExecutionContext {
    * Submits the runnable for execution
    */
   def execute(runnable: Runnable): Unit
+
+  def reportFailure(t: Throwable): Unit
+}
+
+trait DefaultFailureReporter { this: ExecutionContext ⇒
+  override def reportFailure(t: Throwable): Unit = t match {
+    // VirtualMachineError includes OutOfMemoryError, StackOverflowError and other fatal errors
+    case e: VirtualMachineError ⇒ throw e
+    // FIXME #1510 How should we handle InterruptedException,
+    // it is already handled in ActorCell.invoke, but what about other places
+    //case e: InterruptedException ⇒ throw e
+    case e: ThreadDeath         ⇒ throw e
+    case _                      ⇒
+  }
 }
 
 object MessageDispatcher {
@@ -128,7 +145,8 @@ object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable with Executor with ExecutionContext {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher
+  with Serializable with Executor with ExecutionContext with DefaultFailureReporter {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsUpdater, shutdownScheduleUpdater }
@@ -160,7 +178,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   final def execute(runnable: Runnable) {
-    val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
+    val invocation = TaskInvocation(eventStream, this, runnable, taskCleanup)
     inhabitantsUpdater.incrementAndGet(this)
     try {
       executeTask(invocation)

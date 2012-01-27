@@ -332,7 +332,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   import ActorSystem._
 
   final val settings = new Settings(applicationConfig, name)
-  final val threadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
+
+  protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() {
+      def uncaughtException(thread: Thread, cause: Throwable): Unit = {
+        // FIXME #1310 Not sure what we should do here...
+        log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+        cause match {
+          case e: VirtualMachineError ⇒ shutdown()
+          case _                      ⇒
+        }
+      }
+    }
+  final val threadFactory = new MonitorableThreadFactory(name, settings.Daemonicity, uncaughtExceptionHandler)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -581,7 +593,11 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
       @tailrec def runNext(c: Stack[Runnable]): Stack[Runnable] = c.headOption match {
         case None ⇒ Stack.empty[Runnable]
         case Some(callback) ⇒
-          try callback.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+          try callback.run() catch {
+            case e ⇒
+              ExecutionContext.defaultExecutionContext(ActorSystemImpl.this).reportFailure(e)
+              log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage)
+          }
           runNext(c.pop)
       }
       try { callbacks = runNext(callbacks) } finally latch.countDown()

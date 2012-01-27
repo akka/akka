@@ -108,7 +108,6 @@ class BoundedBlockingQueue[E <: AnyRef](
                 throw ie
             }
             false
-          // TODO catching all and continue isn't good for OOME, ticket #1418
           case e ⇒
             notFull.signal()
             result = e

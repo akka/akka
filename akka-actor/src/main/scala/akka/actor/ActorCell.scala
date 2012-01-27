@@ -363,8 +363,8 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
       case e ⇒
+        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
@@ -397,14 +397,15 @@ private[akka] class ActorCell(
 
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ try {
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
-        // prevent any further messages to be processed until the actor has been restarted
-        dispatcher.suspend(this)
-      } finally {
-        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
-      }
+      case e ⇒
+        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+        try {
+          system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
+          // prevent any further messages to be processed until the actor has been restarted
+          dispatcher.suspend(this)
+        } finally {
+          parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
+        }
     }
 
     def suspend(): Unit = dispatcher suspend this
@@ -462,7 +463,8 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case e ⇒ //Should we really catch everything here?
+      case e ⇒
+        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
         //TODO FIXME How should problems here be handled???
         throw e
@@ -478,16 +480,20 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+            // FIXME #1310 actor can be null when creation fails with rethrown, not sure how we should handle it
+            case msg if actor == null     ⇒
             case msg                      ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
           case e ⇒
+            ExecutionContext.defaultExecutionContext(system).reportFailure(e)
             system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
 
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
 
+            //FIXME #1510 How should we handle InterruptedException in reportFailure
             // make sure that InterruptedException does not leave this thread
             if (e.isInstanceOf[InterruptedException]) {
               val ex = ActorInterruptedException(e)
@@ -503,6 +509,7 @@ private[akka] class ActorCell(
         }
       } catch {
         case e ⇒
+          ExecutionContext.defaultExecutionContext(system).reportFailure(e)
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
           throw e
       }
