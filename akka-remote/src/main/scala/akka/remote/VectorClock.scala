@@ -8,6 +8,20 @@ import akka.AkkaException
 
 class VectorClockException(message: String) extends AkkaException(message)
 
+trait Versioned {
+  def version: VectorClock
+}
+
+object Versioned {
+  def latestVersionOf[T <: Versioned](versioned1: T, versioned2: T): T = {
+    (versioned1.version compare versioned2.version) match {
+      case VectorClock.Before     ⇒ versioned2 // version 1 is BEFORE (older), use version 2
+      case VectorClock.After      ⇒ versioned1 // version 1 is AFTER (newer), use version 1
+      case VectorClock.Concurrent ⇒ versioned1 // can't establish a causal relationship between versions => conflict - keeping version 1
+    }
+  }
+}
+
 /**
  * Representation of a Vector-based clock (counting clock), inspired by Lamport logical clocks.
  *
