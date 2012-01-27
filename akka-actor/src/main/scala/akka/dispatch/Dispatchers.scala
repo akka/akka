@@ -205,10 +205,19 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   /**
    * Creates new dispatcher for each invocation.
    */
-  override def dispatcher(): MessageDispatcher = configureThreadPool(config,
-    threadPoolConfig ⇒
-      new PinnedDispatcher(prerequisites, null, config.getString("id"), mailboxType,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
-        threadPoolConfig)).build
+  override def dispatcher(): MessageDispatcher = configureThreadPool(config, {
+    case t: ThreadPoolConfig ⇒ new PinnedDispatcher(
+      prerequisites, null, config.getString("id"), mailboxType,
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), t)
+    case other ⇒
+      prerequisites.eventStream.publish(
+        Warning("PinnedDispatcherConfigurator",
+          this.getClass,
+          "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
+            config.getString("id"))))
+      new PinnedDispatcher(
+        prerequisites, null, config.getString("id"), mailboxType,
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), ThreadPoolConfig())
+  }).build
 
 }

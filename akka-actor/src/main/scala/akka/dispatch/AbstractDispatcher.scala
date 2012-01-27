@@ -335,7 +335,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
   def configureThreadPool(
     config: Config,
-    createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
+    createDispatcher: ⇒ (ExecutorServiceFactoryProvider) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
     import ThreadPoolConfigDispatcherBuilder.conf_?
 
     //Apply the following options to the config if they are present in the config
