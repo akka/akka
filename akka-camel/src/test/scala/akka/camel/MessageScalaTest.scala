@@ -26,12 +26,12 @@ class MessageScalaTest extends FunSuite with SharedCamelSystem with MessageSugar
 
   test("mustReturnDoubleHeader") {
     val message = Message("test", Map("test" -> 1.4))
-    assertEquals(1.4, message.header("test"))
+    assertEquals(1.4, message.header("test").get)
   }
 
   test("mustConvertDoubleHeaderToString") {
     val message = Message("test", Map("test" -> 1.4))
-    assertEquals("1.4", message.headerAs[String]("test"))
+    assertEquals("1.4", message.headerAs[String]("test").get)
   }
 
   test("mustReturnSubsetOfHeaders") {
