@@ -92,7 +92,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
     "asynchronous" when {
       "out-capable" when {
 
-        "response is ok" must  {
+        "response is ok" must {
           "get a response and async callback as soon as it gets the response (but not before)" in {
             producer = given(outCapable = true)
 
@@ -129,11 +129,9 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
         }
 
-
         "no response is sent within timeout" must {
           "set failure on exchange" in pending
         }
-
 
       }
 

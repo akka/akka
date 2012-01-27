@@ -54,7 +54,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
   def unless[A](condition: Boolean)(block: ⇒ A) = if (!condition) block
   def isAlreadyActivated(ref: ActorRef): Boolean = activated.contains(ref)
 
-  class CamelConsumerRegistrator extends Actor with ActorLogging{
+  class CamelConsumerRegistrator extends Actor with ActorLogging {
 
     def receive = {
       case RegisterConsumer(endpointUri, consumer, consumerConfig) ⇒ {

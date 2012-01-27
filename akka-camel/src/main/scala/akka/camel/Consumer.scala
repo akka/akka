@@ -55,11 +55,11 @@ trait ConsumerConfig {
   private[camel] def toCamelParameters: String = "autoack=%s&replyTimeout=%s" format (autoack, DurationTypeConverter.toString(replyTimeout))
 }
 
-trait ManualAckConsumer extends Consumer{
+trait ManualAckConsumer extends Consumer {
   override def autoack = false
 }
 
-trait ErrorPassing { self : Actor =>
+trait ErrorPassing { self: Actor ⇒
   final override def preRestart(reason: Throwable, message: Option[Any]) {
     sender ! Failure(reason)
   }

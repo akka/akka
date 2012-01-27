@@ -24,10 +24,9 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * @return true if message contains header of given name.
    * @param headerName header name
    */
-  def containsHeader(headerName: String) : Boolean = {
+  def containsHeader(headerName: String): Boolean = {
     headers.contains(headerName)
   }
-
 
   def this(body: Any, headers: JMap[String, Any], context: CamelContext) = this(body, headers.toMap, context) //for Java
 

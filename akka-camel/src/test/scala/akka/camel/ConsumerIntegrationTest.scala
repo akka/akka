@@ -12,11 +12,10 @@ import TestSupport._
 import org.scalatest.WordSpec
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
-import org.apache.camel.{FailedToCreateRouteException, CamelExecutionException}
-import java.util.concurrent.{ExecutionException, TimeUnit, TimeoutException, CountDownLatch}
+import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
+import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException, CountDownLatch }
 
-
-class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem{
+class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {
 
   "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
     val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
@@ -87,7 +86,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
   }
 
   "Error passing consumer supports error handling through route modification" in {
-    start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing{
+    start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing {
       override def onRouteDefinition(rd: RouteDefinition) = {
         rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
       }
@@ -96,7 +95,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
   }
 
   "Error passing consumer supports redelivery through route modification" in {
-    start(new FailingOnceConsumer("direct:failing-once-concumer") with ErrorPassing{
+    start(new FailingOnceConsumer("direct:failing-once-concumer") with ErrorPassing {
       override def onRouteDefinition(rd: RouteDefinition) = {
         rd.onException(classOf[Exception]).maximumRedeliveries(1).end
       }
@@ -104,57 +103,55 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
     camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
   }
 
-  "Consumer supports manual Ack" in  {
-    start(new ManualAckConsumer(){
+  "Consumer supports manual Ack" in {
+    start(new ManualAckConsumer() {
       def endpointUri = "direct:manual-ack"
-      protected def receive = {case _ => sender ! Ack}
+      protected def receive = { case _ ⇒ sender ! Ack }
     })
-    camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS) must be (null) //should not timeout
+    camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS) must be(null) //should not timeout
   }
 
-  "Consumer handles manual Ack failure" in  {
+  "Consumer handles manual Ack failure" in {
     val someException = new Exception("e1")
-    start(new ManualAckConsumer(){
+    start(new ManualAckConsumer() {
       def endpointUri = "direct:manual-ack"
-      protected def receive = {case _ => sender ! Failure(someException)}
+      protected def receive = { case _ ⇒ sender ! Failure(someException) }
     })
 
-    intercept[ExecutionException]{
+    intercept[ExecutionException] {
       camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS)
-    }.getCause.getCause must be (someException)
+    }.getCause.getCause must be(someException)
   }
 
-  "Consumer should time-out, if manual Ack not received within replyTimeout and should give a human readable error message" in  {
-    start(new ManualAckConsumer(){
+  "Consumer should time-out, if manual Ack not received within replyTimeout and should give a human readable error message" in {
+    start(new ManualAckConsumer() {
       override def replyTimeout = 10 millis
       def endpointUri = "direct:manual-ack"
-      protected def receive = {case _ => }
+      protected def receive = { case _ ⇒ }
     })
 
-    intercept[ExecutionException]{
+    intercept[ExecutionException] {
       camel.template.asyncSendBody("direct:manual-ack", "some message").get(1, TimeUnit.SECONDS)
-    }.getCause.getCause.getMessage must include ("Failed to get Ack")
+    }.getCause.getCause.getMessage must include("Failed to get Ack")
   }
 }
 
-class ErrorThrowingConsumer(override val endpointUri :String) extends Consumer{
+class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
-    case msg: Message => throw new Exception("error: %s" format msg.body)
+    case msg: Message ⇒ throw new Exception("error: %s" format msg.body)
   }
 }
 
-class FailingOnceConsumer(override val endpointUri :String) extends Consumer{
+class FailingOnceConsumer(override val endpointUri: String) extends Consumer {
 
   def receive = {
-    case msg: Message =>
+    case msg: Message ⇒
       if (msg.containsHeader("CamelRedelivered") && msg.headerAs[Boolean]("CamelRedelivered"))
         sender ! ("accepted: %s" format msg.body)
       else
         throw new Exception("rejected: %s" format msg.body)
   }
 }
-
-
 
 class TestActor(uri: String = "file://target/abcde") extends Consumer {
   def endpointUri = uri

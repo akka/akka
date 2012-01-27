@@ -16,7 +16,7 @@ import akka.dispatch.Await
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.TimeoutException
-import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure => CamelFailure, Message }
+import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message }
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -176,18 +176,18 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
   }
 
   private[this] def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: CamelFailure)   ⇒ exchange.setFailure(failure);
-    case Right(msg)                ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e: TimeoutException) ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
-    case Left(throwable)           ⇒ exchange.setFailure(CamelFailure(throwable))
+    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure);
+    case Right(msg)                   ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
+    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(Ack)              ⇒ { /* no response message to set */ }
+    case Right(Ack)                   ⇒ { /* no response message to set */ }
     case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
-    case Right(msg)              ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
-    case Left(e: TimeoutException) ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
-    case Left(throwable)         ⇒ exchange.setFailure(CamelFailure(throwable))
+    case Right(msg)                   ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
+    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   private[this] def either[T](block: ⇒ T): Either[Throwable, T] = try { Right(block) } catch { case e ⇒ Left(e) }

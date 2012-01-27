@@ -7,8 +7,8 @@ package akka.camel
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.util.Duration
 import akka.util.duration._
-import java.util.concurrent.{TimeoutException, ExecutionException, TimeUnit}
-import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, Suite}
+import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
+import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 
 private[camel] object TestSupport {
 
@@ -30,8 +30,8 @@ private[camel] object TestSupport {
       try {
         camel.template.asyncRequestBody(to, msg).get(timeout.toNanos, TimeUnit.NANOSECONDS)
       } catch {
-        case e:ExecutionException => throw e.getCause
-        case e:TimeoutException ⇒ throw new AssertionError("Failed to get response to message [%s], send to endpoint [%s], within [%s]" format (msg, to, timeout), e)
+        case e: ExecutionException ⇒ throw e.getCause
+        case e: TimeoutException   ⇒ throw new AssertionError("Failed to get response to message [%s], send to endpoint [%s], within [%s]" format (msg, to, timeout), e)
       }
     }
 
@@ -53,24 +53,23 @@ private[camel] object TestSupport {
       system.shutdown()
     }
   }
-  
-  trait NonSharedCamelSystem extends  BeforeAndAfterEach { this : Suite =>
+
+  trait NonSharedCamelSystem extends BeforeAndAfterEach { this: Suite ⇒
     implicit var system: ActorSystem = _
     override protected def beforeEach() {
       super.beforeEach()
       system = ActorSystem("test")
     }
-  
+
     override protected def afterEach() {
       system.shutdown()
       super.afterEach()
     }
-  
+
     def camel: Camel = {
       CamelExtension(system)
     }
   }
-  
 
   def time[A](block: ⇒ A): Duration = {
     val start = System.currentTimeMillis()
