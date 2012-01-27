@@ -20,14 +20,6 @@ import org.apache.camel.{ CamelContext, Exchange, Message ⇒ CamelMessage }
  */
 case class Message(body: Any, headers: Map[String, Any], context: CamelContext) {
 
-  /**
-   * @return true if message contains header of given name.
-   * @param headerName header name
-   */
-  def containsHeader(headerName: String): Boolean = {
-    headers.contains(headerName)
-  }
-
   def this(body: Any, headers: JMap[String, Any], context: CamelContext) = this(body, headers.toMap, context) //for Java
 
   override def toString = "Message(%s, %s)" format (body, headers)
@@ -83,7 +75,7 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * Returns the header with given <code>name</code>. Throws <code>NoSuchElementException</code>
    * if the header doesn't exist.
    */
-  def header(name: String): Any = headers(name)
+  def header(name: String): Option[Any] = headers.get(name)
 
   /**
    * Returns the header with given <code>name</code>. Throws <code>NoSuchElementException</code>
@@ -91,14 +83,13 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def getHeader(name: String): Any = header(name)
+  def getHeader(name: String): Any = headers(name)
 
   /**
    * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
    * <code>NoSuchElementException</code> if the header doesn't exist.
    */
-  def headerAs[T](name: String)(implicit m: Manifest[T]): T =
-    getHeaderAs(name, m.erasure.asInstanceOf[Class[T]])
+  def headerAs[T](name: String)(implicit m: Manifest[T]): Option[T] = header(name).map(context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], _))
 
   /**
    * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
@@ -106,8 +97,7 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T]): T =
-    context.getTypeConverter.mandatoryConvertTo[T](clazz, header(name))
+  def getHeaderAs[T](name: String, clazz: Class[T]) = headerAs[T](name)(Manifest.classType(clazz)).get
 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
