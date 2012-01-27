@@ -4,6 +4,8 @@
 
 package akka.remote.netty
 
+import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.Executors
@@ -21,7 +23,7 @@ import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
 
 /**
  * Provides the implementation of the Netty remote support
@@ -55,11 +57,24 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     case ex ⇒ shutdown(); throw ex
   }
 
-  val address = Address("akka", remoteSettings.systemName, Some(settings.Hostname), Some(settings.Port))
+  // the address is set in start() or from the RemoteServerHandler, whichever comes first
+  private val _address = new AtomicReference[Address]
+  private[akka] def setAddressFromChannel(ch: Channel) = {
+    val addr = ch.getLocalAddress match {
+      case sa: InetSocketAddress ⇒ sa
+      case x                     ⇒ throw new RemoteTransportException("unknown local address type " + x.getClass, null)
+    }
+    _address.compareAndSet(null, Address("akka", remoteSettings.systemName, Some(settings.Hostname), Some(addr.getPort)))
+  }
+
+  def address = _address.get
 
   val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
 
-  def start(): Unit = server.start()
+  def start(): Unit = {
+    server.start()
+    setAddressFromChannel(server.channel)
+  }
 
   def shutdown(): Unit = {
     clientsLock.writeLock().lock()

@@ -38,14 +38,7 @@ class NettySettings(config: Config, val systemName: String) {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress
     case value ⇒ value
   }
-  val Port = getInt("port") match {
-    case 0 ⇒
-      try {
-        val s = new java.net.ServerSocket(0)
-        try s.getLocalPort finally s.close()
-      } catch { case e ⇒ throw new ConfigurationException("Unable to obtain random port", e) }
-    case other ⇒ other
-  }
+  val Port = getInt("port")
 
   val ConnectionTimeout = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
 

@@ -18,7 +18,7 @@ akka {
     }
     remote.netty {
         hostname = "127.0.0.1"
-        port = 2665
+        port = 0
     }
 }
 """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {

@@ -20,6 +20,7 @@ import akka.actor.Address
 import java.net.InetAddress
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.channel.ChannelLocal
+import org.jboss.netty.channel.ChannelEvent
 
 class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
@@ -45,8 +46,12 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("reuseAddress", true)
 
+  @volatile
+  private[akka] var channel: Channel = _
+
   def start(): Unit = {
-    openChannels.add(bootstrap.bind(new InetSocketAddress(ip, settings.Port)))
+    channel = bootstrap.bind(new InetSocketAddress(ip, settings.Port))
+    openChannels.add(channel)
     netty.notifyListeners(RemoteServerStarted(netty))
   }
 
@@ -131,6 +136,16 @@ class RemoteServerHandler(
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {
 
   import netty.settings
+
+  private var addressToSet = true
+
+  override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
+    if (addressToSet) {
+      netty.setAddressFromChannel(event.getChannel)
+      addressToSet = false
+    }
+    super.handleUpstream(ctx, event)
+  }
 
   /**
    * ChannelOpen overridden to store open channels for a clean postStop of a node.
