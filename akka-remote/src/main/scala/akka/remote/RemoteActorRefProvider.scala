@@ -82,16 +82,15 @@ class RemoteActorRefProvider(
 
     _transport = {
       val fqn = remoteSettings.RemoteTransport
-      // TODO check if this classloader is the right one; hint: this class was loaded by contextClassLoader if that was not null
-      ReflectiveAccess.createInstance[RemoteTransport](
-        fqn,
-        Seq(classOf[RemoteSettings] -> remoteSettings,
-          classOf[ActorSystemImpl] -> system,
-          classOf[RemoteActorRefProvider] -> this),
-        getClass.getClassLoader) match {
-          case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
-          case Right(remote) ⇒ remote
-        }
+      val args = Seq(
+        classOf[RemoteSettings] -> remoteSettings,
+        classOf[ActorSystemImpl] -> system,
+        classOf[RemoteActorRefProvider] -> this)
+
+      ReflectiveAccess.createInstance[RemoteTransport](fqn, args, getClass.getClassLoader) match {
+        case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
+        case Right(remote) ⇒ remote
+      }
     }
 
     _log = Logging(eventStream, "RemoteActorRefProvider(" + transport.address + ")")
@@ -164,7 +163,7 @@ class RemoteActorRefProvider(
           else {
             val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
             useActorOnNode(rpath, props.creator, supervisor)
-            new RemoteActorRef(this, transport, rpath, supervisor, None)
+            new RemoteActorRef(this, transport, rpath, supervisor)
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment)
@@ -174,12 +173,12 @@ class RemoteActorRefProvider(
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.address == rootPath.address || path.address == transport.address) actorFor(rootGuardian, path.elements)
-    else new RemoteActorRef(this, transport, path, Nobody, None)
+    else new RemoteActorRef(this, transport, path, Nobody)
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (address == rootPath.address || address == transport.address) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody, None)
+      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody)
     case _ ⇒ local.actorFor(ref, path)
   }
 
@@ -208,8 +207,7 @@ private[akka] class RemoteActorRef private[akka] (
   val provider: RemoteActorRefProvider,
   remote: RemoteTransport,
   val path: ActorPath,
-  val getParent: InternalActorRef,
-  loader: Option[ClassLoader])
+  val getParent: InternalActorRef)
   extends InternalActorRef with RemoteRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
@@ -217,7 +215,7 @@ private[akka] class RemoteActorRef private[akka] (
     s.headOption match {
       case None       ⇒ this
       case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody, loader)
+      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody)
     }
   }
 
@@ -226,9 +224,9 @@ private[akka] class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = !running
 
-  def sendSystemMessage(message: SystemMessage): Unit = remote.send(message, None, this, loader)
+  def sendSystemMessage(message: SystemMessage): Unit = remote.send(message, None, this)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this, loader)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this)
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

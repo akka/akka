@@ -4,31 +4,24 @@
 
 package akka.remote.netty
 
-import java.net.{ UnknownHostException, InetAddress }
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.Executors
+
 import scala.collection.mutable.HashMap
+
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.{ ChannelHandlerContext, ChannelFutureListener, ChannelFuture, Channel }
+import org.jboss.netty.channel.{ ChannelHandlerContext, Channel }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor
 import org.jboss.netty.util.HashedWheelTimer
-import akka.actor.{ ActorSystemImpl, ActorRef, simpleName }
+
+import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransport, RemoteMarshallingOps, RemoteClientWriteFailed, RemoteClientException, RemoteClientError, RemoteActorRef }
-import akka.util.Switch
-import akka.AkkaException
-import com.typesafe.config.Config
-import akka.remote.RemoteSettings
-import akka.actor.Address
-import java.net.InetSocketAddress
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteActorRefProvider
-import akka.event.LoggingAdapter
+import akka.remote.{ RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
 
 /**
  * Provides the implementation of the Netty remote support
@@ -38,7 +31,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
 
-  val threadFactory = new MonitorableThreadFactory("NettyRemoteTransport", settings.Daemonic)
+  val threadFactory = new MonitorableThreadFactory("NettyRemoteTransport", settings.Daemonic, Some(getClass.getClassLoader))
   val timer: HashedWheelTimer = new HashedWheelTimer(threadFactory)
 
   val executor = new OrderedMemoryAwareThreadPoolExecutor(
@@ -58,7 +51,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   override protected def useUntrustedMode = remoteSettings.UntrustedMode
 
-  val server = try new NettyRemoteServer(this, Some(getClass.getClassLoader)) catch {
+  val server = try new NettyRemoteServer(this) catch {
     case ex ⇒ shutdown(); throw ex
   }
 
@@ -94,8 +87,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   protected[akka] def send(
     message: Any,
     senderOption: Option[ActorRef],
-    recipient: RemoteActorRef,
-    loader: Option[ClassLoader]): Unit = {
+    recipient: RemoteActorRef): Unit = {
 
     val recipientAddress = recipient.path.address
 
@@ -112,7 +104,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
                 //Recheck for addition, race between upgrades
                 case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(this, recipientAddress, address, loader)
+                  val client = new ActiveRemoteClient(this, recipientAddress, address)
                   client.connect()
                   remoteClients += recipientAddress -> client
                   client

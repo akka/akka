@@ -159,6 +159,7 @@ object MonitorableThreadFactory {
 
 case class MonitorableThreadFactory(name: String,
                                     daemonic: Boolean,
+                                    contextClassLoader: Option[ClassLoader],
                                     exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
   extends ThreadFactory {
   protected val counter = new AtomicLong
@@ -167,6 +168,7 @@ case class MonitorableThreadFactory(name: String,
     val t = new Thread(runnable, name + counter.incrementAndGet())
     t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
+    contextClassLoader foreach (t.setContextClassLoader(_))
     t
   }
 }

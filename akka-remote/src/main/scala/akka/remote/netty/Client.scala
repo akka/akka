@@ -100,8 +100,7 @@ abstract class RemoteClient private[akka] (
 class ActiveRemoteClient private[akka] (
   netty: NettyRemoteTransport,
   remoteAddress: Address,
-  localAddress: Address,
-  val loader: Option[ClassLoader] = None)
+  localAddress: Address)
   extends RemoteClient(netty, remoteAddress) {
 
   import netty.settings
@@ -253,7 +252,7 @@ class ActiveRemoteClientHandler(
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-          client.netty.receiveMessage(new RemoteMessage(arp.getMessage, client.netty.system, client.loader))
+          client.netty.receiveMessage(new RemoteMessage(arp.getMessage, client.netty.system))
 
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.netty, client.remoteAddress)

@@ -332,7 +332,9 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   import ActorSystem._
 
   final val settings: Settings = new Settings(applicationConfig, name)
-  final val threadFactory: MonitorableThreadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
+
+  final val threadFactory: MonitorableThreadFactory =
+    MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader))
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -391,10 +393,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler)
 
-    val loader = Thread.currentThread.getContextClassLoader match {
-      case null ⇒ getClass.getClassLoader
-      case l    ⇒ l
-    }
+    val loader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
 
     ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, loader) match {
       case Left(e)  ⇒ throw e
@@ -534,9 +533,10 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   private def loadExtensions() {
     import scala.collection.JavaConversions._
+    val loader = Option(Thread.currentThread.getContextClassLoader) getOrElse this.getClass.getClassLoader
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      import ReflectiveAccess._
-      getObjectFor[AnyRef](fqcn).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+      import ReflectiveAccess.{ getObjectFor, createInstance, noParams, noArgs }
+      getObjectFor[AnyRef](fqcn, loader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)

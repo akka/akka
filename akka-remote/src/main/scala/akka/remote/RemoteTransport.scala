@@ -217,8 +217,7 @@ abstract class RemoteTransport {
 
   protected[akka] def send(message: Any,
                            senderOption: Option[ActorRef],
-                           recipient: RemoteActorRef,
-                           loader: Option[ClassLoader]): Unit
+                           recipient: RemoteActorRef): Unit
 
   protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
     system.eventStream.publish(message)
@@ -228,7 +227,7 @@ abstract class RemoteTransport {
   override def toString = address.toString
 }
 
-class RemoteMessage(input: RemoteMessageProtocol, system: ActorSystemImpl, classLoader: Option[ClassLoader]) {
+class RemoteMessage(input: RemoteMessageProtocol, system: ActorSystemImpl) {
 
   def originalReceiver = input.getRecipient.getPath
 
@@ -238,7 +237,7 @@ class RemoteMessage(input: RemoteMessageProtocol, system: ActorSystemImpl, class
 
   lazy val recipient: InternalActorRef = system.provider.actorFor(system.provider.rootGuardian, originalReceiver)
 
-  lazy val payload: AnyRef = MessageSerializer.deserialize(system, input.getMessage, classLoader)
+  lazy val payload: AnyRef = MessageSerializer.deserialize(system, input.getMessage, getClass.getClassLoader)
 
   override def toString = "RemoteMessage: " + payload + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
 }

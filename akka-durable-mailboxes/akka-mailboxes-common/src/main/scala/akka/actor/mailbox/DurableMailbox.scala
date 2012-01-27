@@ -44,7 +44,7 @@ trait DurableMessageSerialization {
     def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = owner.system.actorFor(refProtocol.getPath)
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
-    val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage)
+    val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage, getClass.getClassLoader)
     val sender = deserializeActorRef(durableMessage.getSender)
 
     new Envelope(message, sender)(owner.system)

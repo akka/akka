@@ -21,9 +21,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.channel.ChannelLocal
 
-class NettyRemoteServer(
-  val netty: NettyRemoteTransport,
-  val loader: Option[ClassLoader]) {
+class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   import netty.settings
 
@@ -40,7 +38,7 @@ class NettyRemoteServer(
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
-  val pipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, loader, netty)
+  val pipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, netty)
   bootstrap.setPipelineFactory(pipelineFactory)
   bootstrap.setOption("backlog", settings.Backlog)
   bootstrap.setOption("tcpNoDelay", true)
@@ -79,7 +77,6 @@ class NettyRemoteServer(
 class RemoteServerPipelineFactory(
   val openChannels: ChannelGroup,
   val executionHandler: ExecutionHandler,
-  val loader: Option[ClassLoader],
   val netty: NettyRemoteTransport) extends ChannelPipelineFactory {
 
   import netty.settings
@@ -91,7 +88,7 @@ class RemoteServerPipelineFactory(
     val messageEnc = new RemoteMessageEncoder(netty)
 
     val authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
-    val remoteServer = new RemoteServerHandler(openChannels, loader, netty)
+    val remoteServer = new RemoteServerHandler(openChannels, netty)
     val stages: List[ChannelHandler] = lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
     new StaticChannelPipeline(stages: _*)
   }
@@ -131,7 +128,6 @@ object ChannelLocalSystem extends ChannelLocal[ActorSystemImpl] {
 @ChannelHandler.Sharable
 class RemoteServerHandler(
   val openChannels: ChannelGroup,
-  val applicationLoader: Option[ClassLoader],
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {
 
   import netty.settings
@@ -164,7 +160,7 @@ class RemoteServerHandler(
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
-        netty.receiveMessage(new RemoteMessage(remote.getMessage, netty.system, applicationLoader))
+        netty.receiveMessage(new RemoteMessage(remote.getMessage, netty.system))
 
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         val instruction = remote.getInstruction

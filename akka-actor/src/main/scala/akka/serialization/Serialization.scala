@@ -81,10 +81,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   def deserialize(bytes: Array[Byte],
                   serializerId: Int,
                   clazz: Option[Class[_]],
-                  classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
+                  classLoader: ClassLoader): Either[Exception, AnyRef] =
     try {
       currentSystem.withValue(system) {
-        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, classLoader))
+        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, Some(classLoader)))
       }
     } catch { case e: Exception ⇒ Left(e) }
 
