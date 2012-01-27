@@ -202,22 +202,24 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
  */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
+
+  def createPinnedDispatcherWith(tpc: ThreadPoolConfig): PinnedDispatcher =
+    new PinnedDispatcher(
+      prerequisites, null, config.getString("id"), mailboxType,
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), tpc)
+
   /**
    * Creates new dispatcher for each invocation.
    */
   override def dispatcher(): MessageDispatcher = configureThreadPool(config, {
-    case t: ThreadPoolConfig ⇒ new PinnedDispatcher(
-      prerequisites, null, config.getString("id"), mailboxType,
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), t)
+    case t: ThreadPoolConfig ⇒ createPinnedDispatcherWith(t)
     case other ⇒
       prerequisites.eventStream.publish(
         Warning("PinnedDispatcherConfigurator",
           this.getClass,
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
             config.getString("id"))))
-      new PinnedDispatcher(
-        prerequisites, null, config.getString("id"), mailboxType,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), ThreadPoolConfig())
+      createPinnedDispatcherWith(ThreadPoolConfig())
   }).build
 
 }
