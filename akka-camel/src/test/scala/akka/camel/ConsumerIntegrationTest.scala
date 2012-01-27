@@ -146,7 +146,7 @@ class FailingOnceConsumer(override val endpointUri: String) extends Consumer {
 
   def receive = {
     case msg: Message ⇒
-      if (msg.containsHeader("CamelRedelivered") && msg.headerAs[Boolean]("CamelRedelivered"))
+      if (msg.headerAs[Boolean]("CamelRedelivered").getOrElse(false))
         sender ! ("accepted: %s" format msg.body)
       else
         throw new Exception("rejected: %s" format msg.body)
