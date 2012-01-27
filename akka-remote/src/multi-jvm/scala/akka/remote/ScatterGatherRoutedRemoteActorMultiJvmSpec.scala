@@ -1,6 +1,6 @@
 package akka.remote
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing._
 import akka.testkit._
 import akka.util.duration._
@@ -9,7 +9,7 @@ object ScatterGatherRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMul
   override def NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! self.path.address.hostPort
+      case "hit" ⇒ sender ! self
       case "end" ⇒ context.stop(self)
     }
   }
@@ -89,7 +89,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(Scatter
       }
 
       val replies = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-        case name: String ⇒ (name, 1)
+        case ref: ActorRef ⇒ (ref.asInstanceOf[ActorRef].path.address.hostPort, 1)
       }).foldLeft(Map(akkaSpec(0) -> 0, akkaSpec(1) -> 0, akkaSpec(2) -> 0)) {
         case (m, (n, c)) ⇒ m + (n -> (m(n) + c))
       }

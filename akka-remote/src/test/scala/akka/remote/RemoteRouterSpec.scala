@@ -11,7 +11,7 @@ import com.typesafe.config._
 object RemoteRouterSpec {
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender ! self.path
+      case _ ⇒ sender ! self
     }
   }
 }
@@ -56,26 +56,26 @@ akka {
     "deploy its children on remote host driven by configuration" in {
       val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2)), "blub")
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub/c1"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub/c1"
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub/c2"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub/c2"
     }
 
     "deploy its children on remote host driven by programatic definition" in {
       val router = system.actorOf(Props[Echo].withRouter(new RemoteRouterConfig(RoundRobinRouter(2),
         Seq("akka://remote_sys@localhost:12346"))), "blub2")
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub2/c1"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub2/c1"
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub2/c2"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/blub2/c2"
     }
 
     "deploy dynamic resizable number of children on remote host driven by configuration" in {
       val router = system.actorOf(Props[Echo].withRouter(FromConfig), "elastic-blub")
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/elastic-blub/c1"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/elastic-blub/c1"
       router ! ""
-      expectMsgType[ActorPath].toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/elastic-blub/c2"
+      expectMsgType[ActorRef].path.toString must be === "akka://remote_sys@localhost:12346/remote/RemoteRouterSpec@localhost:12345/user/elastic-blub/c2"
     }
 
   }

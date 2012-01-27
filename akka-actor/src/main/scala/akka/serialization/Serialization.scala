@@ -9,7 +9,7 @@ import akka.util.ReflectiveAccess
 import scala.util.DynamicVariable
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.actor.{ Extension, ActorSystem, ExtendedActorSystem }
+import akka.actor.{ Extension, ActorSystem, ExtendedActorSystem, Address }
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -26,6 +26,12 @@ object Serialization {
    * }
    */
   val currentSystem = new DynamicVariable[ActorSystem](null)
+
+  /**
+   * This holds a reference to the current transport address to be inserted
+   * into local actor refs during serialization.
+   */
+  val currentTransportAddress = new DynamicVariable[Address](null)
 
   class Settings(val config: Config) {
 

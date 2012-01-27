@@ -17,6 +17,8 @@ class RemoteSettings(val config: Config, val systemName: String) {
   import config._
 
   val RemoteTransport = getString("akka.remote.transport")
+  val LogReceive = getBoolean("akka.remote.log-received-messages")
+  val LogSend = getBoolean("akka.remote.log-sent-messages")
 
   // AccrualFailureDetector
   val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")

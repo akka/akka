@@ -34,9 +34,20 @@ trait ActorRefProvider {
   def systemGuardian: InternalActorRef
 
   /**
+   * Dead letter destination for this provider.
+   */
+  def deadLetters: ActorRef
+
+  /**
    * Reference to the death watch service.
    */
   def deathWatch: DeathWatch
+
+  /**
+   * Care-taker of actor refs which await final termination but cannot be kept
+   * in their parent’s children list because the name shall be freed.
+   */
+  def locker: Locker
 
   /**
    * The root path for all actors within this actor system, including remote
@@ -281,24 +292,28 @@ class LocalActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val deadLetters: InternalActorRef,
-  val rootPath: ActorPath,
   val deployer: Deployer) extends ActorRefProvider {
 
+  // this is the constructor needed for reflectively instantiating the provider
   def this(_systemName: String,
            settings: ActorSystem.Settings,
            eventStream: EventStream,
-           scheduler: Scheduler,
-           deadLetters: InternalActorRef) =
+           scheduler: Scheduler) =
     this(_systemName,
       settings,
       eventStream,
       scheduler,
-      deadLetters,
-      new RootActorPath(Address("akka", _systemName)),
       new Deployer(settings))
 
+  val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
+
   val log = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
+
+  val deadLetters = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
+
+  val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
+
+  val locker: Locker = new Locker(scheduler, settings.ReaperInterval, this, rootPath / "locker", deathWatch)
 
   /*
    * generate name for temporary actor refs
@@ -455,8 +470,6 @@ class LocalActorRefProvider(
     tempContainer.removeChild(path.name)
   }
 
-  val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
-
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
@@ -492,7 +505,7 @@ class LocalActorRefProvider(
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
         log.debug("look-up of path sequence '{}' failed", path)
-        new EmptyLocalActorRef(eventStream, system.provider, dispatcher, ref.path / path)
+        new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
       case x ⇒ x
     }
 

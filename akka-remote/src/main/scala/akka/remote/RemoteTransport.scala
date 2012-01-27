@@ -5,12 +5,12 @@
 package akka.remote
 
 import scala.reflect.BeanProperty
-
 import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressExtractor, Address, ActorSystemImpl, ActorSystem, ActorRef }
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
 import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, RemoteControlProtocol, AkkaRemoteProtocol, ActorRefProtocol }
 import akka.AkkaException
+import akka.serialization.Serialization
 
 /**
  * Remote life-cycle events.
@@ -199,9 +199,9 @@ abstract class RemoteTransport {
   def system: ActorSystem
 
   /**
-   *  Starts up the remoting
+   * Start up the transport, i.e. enable incoming connections.
    */
-  def start(system: ActorSystemImpl, provider: RemoteActorRefProvider): Unit
+  def start(): Unit
 
   /**
    * Shuts down a specific client connected to the supplied remote address returns true if successful
@@ -251,6 +251,8 @@ trait RemoteMarshallingOps {
 
   def provider: RemoteActorRefProvider
 
+  def address: Address
+
   protected def useUntrustedMode: Boolean
 
   def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
@@ -269,7 +271,7 @@ trait RemoteMarshallingOps {
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol = {
-    ActorRefProtocol.newBuilder.setPath(actor.path.toString).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(address)).build
   }
 
   def createRemoteMessageProtocolBuilder(
@@ -278,20 +280,21 @@ trait RemoteMarshallingOps {
     senderOption: Option[ActorRef]): RemoteMessageProtocol.Builder = {
 
     val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(toRemoteActorRefProtocol(recipient))
-    messageBuilder.setMessage(MessageSerializer.serialize(system, message.asInstanceOf[AnyRef]))
-
     if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
+
+    Serialization.currentTransportAddress.withValue(address) {
+      messageBuilder.setMessage(MessageSerializer.serialize(system, message.asInstanceOf[AnyRef]))
+    }
 
     messageBuilder
   }
 
   def receiveMessage(remoteMessage: RemoteMessage) {
-    log.debug("received message {}", remoteMessage)
-
     val remoteDaemon = provider.remoteDaemon
 
     remoteMessage.recipient match {
       case `remoteDaemon` ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", remoteMessage)
         remoteMessage.payload match {
           case m @ (_: DaemonMsg | _: Terminated) ⇒
             try remoteDaemon ! m catch {
@@ -300,6 +303,7 @@ trait RemoteMarshallingOps {
           case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
         }
       case l: LocalRef ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
           case msg: SystemMessage ⇒
             if (useUntrustedMode)
@@ -309,9 +313,11 @@ trait RemoteMarshallingOps {
             throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
           case m ⇒ l.!(m)(remoteMessage.sender)
         }
-      case r: RemoteActorRef ⇒
+      case r: RemoteRef ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
           case AddressExtractor(address) if address == provider.transport.address ⇒
+            // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
           case r ⇒ log.error("dropping message {} for non-local recipient {}", remoteMessage.payload, r)
         }

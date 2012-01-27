@@ -44,17 +44,12 @@ class NettyRemoteServer(
   bootstrap.setPipelineFactory(pipelineFactory)
   bootstrap.setOption("backlog", settings.Backlog)
   bootstrap.setOption("tcpNoDelay", true)
-  bootstrap.setOption("keepAlive", true)
+  bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("reuseAddress", true)
 
-  val channel = bootstrap.bind(new InetSocketAddress(ip, settings.Port))
-
-  openChannels.add(channel)
-
-  def start(system: ActorSystemImpl) {
+  def start(): Unit = {
+    openChannels.add(bootstrap.bind(new InetSocketAddress(ip, settings.Port)))
     netty.notifyListeners(RemoteServerStarted(netty))
-    // TODO uncork the pipeline, which was ...
-    // TODO ... corked before in order not to allow anything through before init is complete
   }
 
   def shutdown() {

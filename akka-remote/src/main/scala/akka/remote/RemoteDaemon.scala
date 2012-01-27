@@ -18,7 +18,7 @@ case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMs
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
-class RemoteSystemDaemon(system: ActorSystemImpl, address: Address, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
+class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   /**
@@ -52,7 +52,8 @@ class RemoteSystemDaemon(system: ActorSystemImpl, address: Address, _path: Actor
       message match {
         case DaemonMsgCreate(factory, path, supervisor) ⇒
           path match {
-            case ActorPathExtractor(`address`, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+            case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+              // TODO RK currently the extracted “address” is just ignored, is that okay?
               // TODO RK canonicalize path so as not to duplicate it always #1446
               val subpath = elems.drop(1)
               val path = this.path / subpath

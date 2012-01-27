@@ -267,7 +267,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
-  def shutdown()
+  def shutdown(): Unit
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -331,8 +331,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   import ActorSystem._
 
-  final val settings = new Settings(applicationConfig, name)
-  final val threadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
+  final val settings: Settings = new Settings(applicationConfig, name)
+  final val threadFactory: MonitorableThreadFactory = new MonitorableThreadFactory(name, settings.Daemonicity)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -377,35 +377,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
-  val eventStream = new EventStream(DebugEventStream)
+  val eventStream: EventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
 
-  // unfortunately we need logging before we know the rootpath address, which wants to be inserted here
-  @volatile
-  private var _log = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
-  def log = _log
+  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
 
-  val scheduler = createScheduler()
-
-  val deadLetters = new DeadLetterActorRef(eventStream)
-  val deadLetterMailbox = new Mailbox(null) {
-    becomeClosed()
-    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
-    override def dequeue() = null
-    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
-  }
+  val scheduler: Scheduler = createScheduler()
 
   val provider: ActorRefProvider = {
     val arguments = Seq(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler,
-      classOf[InternalActorRef] -> deadLetters)
+      classOf[Scheduler] -> scheduler)
 
     val loader = Thread.currentThread.getContextClassLoader match {
       case null ⇒ getClass.getClassLoader
@@ -418,8 +402,23 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
     }
   }
 
-  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(threadFactory, eventStream, deadLetterMailbox, scheduler))
-  val dispatcher = dispatchers.defaultGlobalDispatcher
+  def deadLetters: ActorRef = provider.deadLetters
+
+  val deadLetterMailbox: Mailbox = new Mailbox(null) {
+    becomeClosed()
+    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    override def dequeue() = null
+    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
+    override def systemDrain(): SystemMessage = null
+    override def hasMessages = false
+    override def hasSystemMessages = false
+    override def numberOfMessages = 0
+  }
+
+  def locker: Locker = provider.locker
+
+  val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(threadFactory, eventStream, deadLetterMailbox, scheduler))
+  val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
@@ -433,21 +432,13 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
-    _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
-    deadLetters.init(provider, lookupRoot.path / "deadLetters")
     registerOnTermination(stopScheduler())
-    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
-    _locker = new Locker(scheduler, ReaperInterval, provider, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
   }
 
-  @volatile
-  private var _locker: Locker = _ // initialized in start()
-  def locker = _locker
-
-  def start() = _start
+  def start(): this.type = _start
 
   private lazy val terminationCallbacks = {
     val callbacks = new TerminationCallbacks
@@ -459,9 +450,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
   def awaitTermination() = awaitTermination(Duration.Inf)
 
-  def shutdown() {
-    stop(guardian)
-  }
+  def shutdown(): Unit = stop(guardian)
 
   /**
    * Create the scheduler service. This one needs one special behavior: if
@@ -557,7 +546,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
     }
   }
 
-  override def toString = lookupRoot.path.root.address.toString
+  override def toString: String = lookupRoot.path.root.address.toString
 
   final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
     private val lock = new ReentrantGuard

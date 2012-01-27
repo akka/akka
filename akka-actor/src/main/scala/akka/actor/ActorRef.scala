@@ -329,13 +329,13 @@ private[akka] class LocalActorRef private[akka] (
   def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
+  protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-case class SerializedActorRef(path: String) {
+case class SerializedActorRef private (path: String) {
   import akka.serialization.Serialization.currentSystem
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -346,6 +346,15 @@ case class SerializedActorRef(path: String) {
           " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒
       someSystem.actorFor(path)
+  }
+}
+
+object SerializedActorRef {
+  def apply(path: ActorPath): SerializedActorRef = {
+    Serialization.currentTransportAddress.value match {
+      case null ⇒ new SerializedActorRef(path.toString)
+      case addr ⇒ new SerializedActorRef(path.toStringWithAddress(addr))
+    }
   }
 }
 
@@ -375,7 +384,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   def restart(cause: Throwable): Unit = ()
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
+  protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
 private[akka] object MinimalActorRef {
@@ -398,55 +407,37 @@ private[akka] object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-private[akka] trait DeadLetterActorRefLike extends MinimalActorRef {
-
-  def eventStream: EventStream
-
-  @volatile
-  private var _path: ActorPath = _
-  def path: ActorPath = {
-    assert(_path != null)
-    _path
-  }
-
-  @volatile
-  private var _provider: ActorRefProvider = _
-  def provider = _provider
-
-  private[akka] def init(provider: ActorRefProvider, path: ActorPath) {
-    _path = path
-    _provider = provider
-  }
-
-  override def isTerminated(): Boolean = true
-
-  override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case d: DeadLetter ⇒ eventStream.publish(d)
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
-  }
-}
-
-private[akka] class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
-  @throws(classOf[java.io.ObjectStreamException])
-  override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
-}
-
 /**
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
  */
 private[akka] class EmptyLocalActorRef(
-  val eventStream: EventStream,
-  _provider: ActorRefProvider,
-  _dispatcher: MessageDispatcher,
-  _path: ActorPath) extends DeadLetterActorRefLike {
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  val eventStream: EventStream) extends MinimalActorRef {
 
-  init(_provider, _path)
+  override def isTerminated(): Boolean = true
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops
+    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
+}
+
+/**
+ * Internal implementation of the dead letter destination: will publish any
+ * received message to the eventStream, wrapped as [[akka.actor.DeadLetter]].
+ */
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
+  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+
+  override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
+    case d: DeadLetter ⇒ eventStream.publish(d)
+    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  @throws(classOf[java.io.ObjectStreamException])
+  override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
 /**

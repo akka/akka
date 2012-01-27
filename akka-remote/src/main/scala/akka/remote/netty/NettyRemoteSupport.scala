@@ -33,7 +33,7 @@ import akka.event.LoggingAdapter
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteTransport(val remoteSettings: RemoteSettings)
+class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: ActorSystemImpl, val provider: RemoteActorRefProvider)
   extends RemoteTransport with RemoteMarshallingOps {
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
@@ -62,33 +62,11 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings)
     case ex ⇒ shutdown(); throw ex
   }
 
-  val address = {
-    server.channel.getLocalAddress match {
-      case ia: InetSocketAddress ⇒ Address("akka", remoteSettings.systemName, Some(ia.getHostName), Some(ia.getPort))
-      case x ⇒
-        shutdown()
-        throw new IllegalArgumentException("unknown address format " + x + ":" + x.getClass)
-    }
-  }
+  val address = Address("akka", remoteSettings.systemName, Some(settings.Hostname), Some(settings.Port))
 
-  @volatile
-  private var _system: ActorSystemImpl = _
-  def system = _system
+  val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
 
-  @volatile
-  private var _provider: RemoteActorRefProvider = _
-  def provider = _provider
-
-  @volatile
-  private var _log: LoggingAdapter = _
-  def log = _log
-
-  def start(system: ActorSystemImpl, provider: RemoteActorRefProvider): Unit = {
-    _system = system
-    _provider = provider
-    _log = Logging(system, "NettyRemoteTransport")
-    server.start(system)
-  }
+  def start(): Unit = server.start()
 
   def shutdown(): Unit = {
     clientsLock.writeLock().lock()

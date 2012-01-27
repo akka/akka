@@ -46,9 +46,10 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
   val syst = sysImpl.systemGuardian
   val root = sysImpl.lookupRoot
 
-  def empty(path: String) = new EmptyLocalActorRef(system.eventStream, sysImpl.provider, system.dispatcher, path match {
-    case RelativeActorPath(elems) ⇒ system.actorFor("/").path / elems
-  })
+  def empty(path: String) =
+    new EmptyLocalActorRef(sysImpl.provider, path match {
+      case RelativeActorPath(elems) ⇒ system.actorFor("/").path / elems
+    }, system.eventStream)
 
   "An ActorSystem" must {
 
