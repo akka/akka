@@ -38,6 +38,12 @@ trait ExtensionId[T <: Extension] {
   /**
    * Returns an instance of the extension identified by this ExtensionId instance.
    * Java API
+   * For extensions written in Scala that are to be used used from Java also,
+   * this method should be overridden to get correct return type.
+   * {{{
+   * override def get(system: ActorSystem): TheExtension = super.get(system)
+   * }}}
+   *
    */
   def get(system: ActorSystem): T = apply(system)
 
