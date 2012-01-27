@@ -11,16 +11,11 @@ import org.apache.commons.pool.impl._
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Channel
 
-class AMQPConnectionException(message: String) extends AkkaException(message)
+class AMQPConnectException(message: String) extends AkkaException(message)
 
 private[akka] class AMQPChannelFactory(factory: ConnectionFactory, log: LoggingAdapter) extends PoolableObjectFactory {
 
-  private var connection = try {
-    factory.newConnection
-  } catch {
-    case e: java.net.ConnectException ⇒
-      throw new AMQPConnectionException("Could not connect to AMQP broker: " + e.getMessage)
-  }
+  private var connection = createConnection
 
   def makeObject(): Object = {
     try {
@@ -29,9 +24,18 @@ private[akka] class AMQPChannelFactory(factory: ConnectionFactory, log: LoggingA
       case e: java.io.IOException ⇒ {
         log.error("Could not create a channel. Will retry after reconnecting to AMQP Server.", e)
         connection.close
-        connection = factory.newConnection
+        connection = createConnection
         createChannel
       }
+    }
+  }
+
+  private def createConnection = {
+    try {
+      factory.newConnection
+    } catch {
+      case e: java.net.ConnectException ⇒
+        throw new AMQPConnectException("Could not connect to AMQP broker: " + e.getMessage)
     }
   }
 

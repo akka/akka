@@ -23,7 +23,7 @@ class AMQPBasedMailboxType(config: Config) extends MailboxType {
 class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
   private val settings = AMQPBasedMailboxExtension(owner.system)
 
-  private var pool = connect()
+  private val pool = settings.ChannelPool
 
   private val log = Logging(system, "AMQPBasedMailbox")
 
@@ -60,10 +60,6 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   // check by message count because rabbit library does not
   // provide a call to check if messages are in the queue
   def hasMessages: Boolean = numberOfMessages > 0
-
-  private[akka] def connect() = {
-    settings.ChannelPool
-  }
 
   private def withErrorHandling[T](body: ⇒ T): T = {
     try {
