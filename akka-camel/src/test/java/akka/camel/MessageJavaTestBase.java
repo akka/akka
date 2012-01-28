@@ -83,43 +83,43 @@ public class MessageJavaTestBase {
     @Test public void shouldTransformBodyAndPreserveHeaders() {
       assertEquals(
           message("ab", createMap("A", "1")),
-          message("a" , createMap("A", "1")).transformBody((Function)new TestTransformer()));
+          message("a" , createMap("A", "1")).mapBody((Function) new TestTransformer()));
     }
 
     @Test public void shouldConvertBodyAndPreserveHeaders() {
         assertEquals(
             message("1.4", createMap("A", "1")),
-            message(1.4  , createMap("A", "1"), camel).setBodyAs(String.class));
+            message(1.4  , createMap("A", "1"), camel).withBodyAs(String.class));
     }
 
     @Test public void shouldSetBodyAndPreserveHeaders() {
         assertEquals(
             message("test2" , createMap("A", "1")),
-            message("test1" , createMap("A", "1")).setBody("test2"));
+            message("test1" , createMap("A", "1")).withBody("test2"));
     }
 
     @Test public void shouldSetHeadersAndPreserveBody() {
         assertEquals(
             message("test1" , createMap("C", "3")),
-            message("test1" , createMap("A", "1")).setHeaders(createMap("C", "3")));
+            message("test1" , createMap("A", "1")).withHeaders(createMap("C", "3")));
     }
 
     @Test public void shouldAddHeaderAndPreserveBodyAndHeaders() {
         assertEquals(
             message("test1" , createMap("A", "1", "B", "2")),
-            message("test1" , createMap("A", "1")).addHeader("B", "2"));
+            message("test1" , createMap("A", "1")).plusHeader("B", "2"));
     }
 
     @Test public void shouldAddHeadersAndPreserveBodyAndHeaders() {
         assertEquals(
             message("test1" , createMap("A", "1", "B", "2")),
-            message("test1" , createMap("A", "1")).addHeaders(createMap("B", "2")));
+            message("test1" , createMap("A", "1")).plusHeaders(createMap("B", "2")));
     }
 
     @Test public void shouldRemoveHeadersAndPreserveBodyAndRemainingHeaders() {
         assertEquals(
             message("test1" , createMap("A", "1")),
-            message("test1" , createMap("A", "1", "B", "2")).removeHeader("B"));
+            message("test1" , createMap("A", "1", "B", "2")).withoutHeader("B"));
     }
 
     private static Set<String> createSet(String... entries) {
