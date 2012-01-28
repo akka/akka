@@ -16,7 +16,7 @@ import akka.dispatch.Await
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.TimeoutException
-import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure, Message, CommunicationStyle, Blocking, NonBlocking }
+import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message }
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -81,13 +81,6 @@ trait ActorEndpointConfig {
   @BeanProperty var replyTimeout: Duration = 1 minute
 
   /**
-   * Whether to block caller thread during two-way message exchanges with (untyped) actors. This is
-   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
-   * <code>false</code>.
-   */
-  @BeanProperty var communicationStyle: CommunicationStyle = NonBlocking
-
-  /**
    * TODO fix it
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
    * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
@@ -97,6 +90,7 @@ trait ActorEndpointConfig {
   @BeanProperty var autoack: Boolean = true
 }
 
+//FIXME: rewrite this doc
 /**
  * Sends the in-message of an exchange to an (untyped) actor, identified by an
  * actor endpoint URI or by a <code>CamelActorIdentifier</code> message header.
@@ -126,55 +120,31 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   def process(exchange: CamelExchangeAdapter) {
     if (exchange.isOutCapable)
-      sendSync(exchange, config.replyTimeout, forwardResponseTo(exchange))
+      sendSync(onComplete = forwardResponseTo(exchange), message = messageFor(exchange))
     else
       fireAndForget(exchange)
   }
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
-    // Following 4 methods are here to make the rest of the code more readable.
-    def notifyDoneSynchronously[A](a: A = null) = callback.done(true)
-    def notifyDoneAsynchronously[A](a: A = null) = callback.done(false)
+
     val DoneSync = true
     val DoneAsync = false
+    def notifyDoneSynchronously[A](a: A = null) = callback.done(DoneSync)
+    def notifyDoneAsynchronously[A](a: A = null) = callback.done(DoneAsync)
+    def message = messageFor(exchange)
 
     def outCapable: Boolean = {
-      config.communicationStyle match {
-        case Blocking(timeout) ⇒ {
-          sendSync(exchange, timeout, onComplete = forwardResponseTo(exchange))
-          notifyDoneSynchronously()
-          DoneSync
-        }
-        case NonBlocking ⇒ {
-          sendAsync(exchange, config.replyTimeout, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
-          DoneAsync
-        }
-      }
+      sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
     }
 
     def inOnlyAutoAck: Boolean = {
-      config.communicationStyle match {
-        case NonBlocking ⇒ {
-          fireAndForget(exchange)
-          notifyDoneAsynchronously()
-          DoneAsync
-        }
-        case Blocking(_) ⇒ throw new IllegalStateException("Cannot be blocking and autoack for in-only message exchanges.")
-      }
+      fireAndForget(exchange)
+      notifyDoneSynchronously()
+      true // done sync
     }
 
     def inOnlyManualAck: Boolean = {
-      config.communicationStyle match {
-        case NonBlocking ⇒ {
-          sendAsync(exchange, config.replyTimeout, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
-          DoneAsync
-        }
-        case Blocking(timeout) ⇒ {
-          sendSync(exchange, timeout, onComplete = forwardAckTo(exchange))
-          notifyDoneSynchronously()
-          DoneSync
-        }
-      }
+      sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
     }
 
     if (exchange.isOutCapable) {
@@ -182,39 +152,42 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
     } else {
       if (config.autoack) inOnlyAutoAck else inOnlyManualAck
     }
+
   }
 
-  private def sendSync(exchange: CamelExchangeAdapter, timeout: Duration, onComplete: PartialFunction[Either[Throwable, Any], Unit]) {
-    val future = send(exchange, timeout)
-    val response = either(Await.result(future, timeout))
+  private def sendSync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
+    val future = send(message)
+    val response = either(Await.result(future, config.replyTimeout))
     onComplete(response)
+    true // Done sync
   }
 
-  private def sendAsync(exchange: CamelExchangeAdapter, timeout: Duration, onComplete: PartialFunction[Either[Throwable, Any], Unit]) {
-    val future = send(exchange, timeout)
+  private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
+    val future = send(message)
     future.onComplete(onComplete)
+    false // Done async
   }
 
   private def fireAndForget(exchange: CamelExchangeAdapter) { actorFor(config.path) ! messageFor(exchange) }
 
-  private[this] def send(exchange: CamelExchangeAdapter, timeout: Duration) = {
+  private[this] def send(message: Message) = {
     val actor = actorFor(config.path)
-    val message = messageFor(exchange)
-    actor ? (message, new Timeout(timeout))
+    actor ? (message, new Timeout(config.replyTimeout))
   }
 
   private[this] def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: Failure)   ⇒ exchange.setFailure(failure);
-    case Right(msg)                ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e: TimeoutException) ⇒ exchange.setFailure(Failure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
-    case Left(throwable)           ⇒ exchange.setFailure(Failure(throwable))
+    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure);
+    case Right(msg)                   ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
+    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(Ack)              ⇒ { /* no response message to set */ }
-    case Right(failure: Failure) ⇒ exchange.setFailure(failure)
-    case Right(msg)              ⇒ exchange.setFailure(Failure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
-    case Left(throwable)         ⇒ exchange.setFailure(Failure(throwable))
+    case Right(Ack)                   ⇒ { /* no response message to set */ }
+    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
+    case Right(msg)                   ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
+    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   private[this] def either[T](block: ⇒ T): Either[Throwable, T] = try { Right(block) } catch { case e ⇒ Left(e) }
@@ -244,26 +217,6 @@ private[camel] object DurationTypeConverter extends CamelTypeConverter {
   }
 
   def toString(duration: Duration) = duration.toNanos + " nanos"
-}
-
-/**
- * Converter required by akka
- */
-private[camel] object CommunicationStyleTypeConverter extends CamelTypeConverter {
-  import akka.util.duration._
-  val blocking = """Blocking\((\d+) nanos\)""".r
-  def convertTo[T](`type`: Class[T], value: AnyRef) = `type` match {
-    case c if c == classOf[CommunicationStyle] ⇒ value.toString match {
-      case blocking(timeout) ⇒ Blocking(timeout.toLong nanos).asInstanceOf[T]
-      case "NonBlocking"     ⇒ NonBlocking.asInstanceOf[T]
-    }
-  }
-
-  def toString(b: CommunicationStyle) = b match {
-    case NonBlocking       ⇒ NonBlocking.toString
-    case Blocking(timeout) ⇒ "Blocking(%d nanos)".format(timeout.toNanos)
-  }
-
 }
 
 private[camel] abstract class CamelTypeConverter extends TypeConverter {

@@ -7,7 +7,7 @@ package akka.camel.internal
 import akka.actor._
 import collection.mutable.WeakHashMap
 
-class ActivationTracker extends Actor with ActorLogging{
+class ActivationTracker extends Actor with ActorLogging {
   val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
 
   class ActivationStateMachine {

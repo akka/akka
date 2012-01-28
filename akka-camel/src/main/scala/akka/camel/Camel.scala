@@ -4,7 +4,7 @@
 
 package akka.camel
 
-import internal.component.{ CommunicationStyleTypeConverter, DurationTypeConverter, ActorComponent }
+import internal.component.{ DurationTypeConverter, ActorComponent }
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ ProducerTemplate, CamelContext }
@@ -39,7 +39,6 @@ class DefaultCamel(val system: ActorSystem) extends Camel {
     ctx.setName(system.name);
     ctx.setStreamCaching(true)
     ctx.addComponent("actor", new ActorComponent(this))
-    ctx.getTypeConverterRegistry.addTypeConverter(classOf[CommunicationStyle], classOf[String], CommunicationStyleTypeConverter)
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)
     ctx
   }

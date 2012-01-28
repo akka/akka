@@ -5,6 +5,8 @@
 package akka.camel;
 
 import akka.camel.javaapi.UntypedConsumerActor;
+import akka.util.Duration;
+
 
 /**
  * @author Martin Krasser
@@ -15,8 +17,8 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         return "direct:test-untyped-consumer-blocking";
     }
 
-    public CommunicationStyle communicationStyle() {
-        return Blocking.seconds(1);
+    public Duration replyTimeout(){
+        return Duration.create(1, "second");
     }
 
     public void onReceive(Object message) {
