@@ -250,12 +250,6 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
   def getHeaders: JMap[String, Any] = headers
 }
 
-object Failure {
-  //  def fromMessage(m:Message) : Failure = {
-  //    m.to
-  //  }
-}
-
 /**
  *  Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
  *
