@@ -273,7 +273,7 @@ object ProducerFeatureTest {
     def endpointUri = uri
 
     override protected def receiveBeforeProduce = {
-      case msg: Message ⇒ if (upper) msg.transformBody {
+      case msg: Message ⇒ if (upper) msg.mapBody {
         body: String ⇒ body.toUpperCase
       }
       else msg
@@ -295,7 +295,7 @@ object ProducerFeatureTest {
           context.sender ! (Failure(new Exception("failure"), msg.headers))
         }
         case bod: Any ⇒ {
-          context.sender ! (msg.transformBody {
+          context.sender ! (msg.mapBody {
             body: String ⇒ "received %s" format body
           })
         }
@@ -306,7 +306,7 @@ object ProducerFeatureTest {
   class ReplyingForwardTarget extends Actor {
     protected def receive = {
       case msg: Message ⇒
-        context.sender ! (msg.addHeader("test" -> "result"))
+        context.sender ! (msg.plusHeader("test" -> "result"))
       case msg: Failure ⇒
         context.sender ! (Failure(msg.cause, msg.headers + ("test" -> "failure")))
     }
