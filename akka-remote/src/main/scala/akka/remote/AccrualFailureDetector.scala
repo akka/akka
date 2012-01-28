@@ -10,6 +10,9 @@ import scala.annotation.tailrec
 import System.{ currentTimeMillis ⇒ newTimestamp }
 import akka.actor.{ ActorSystem, Address }
 
+import akka.actor.ActorSystem
+import akka.event.Logging
+
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
@@ -20,11 +23,13 @@ import akka.actor.{ ActorSystem, Address }
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000) {
+class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000, system: ActorSystem) {
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
   private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
+
+  private val log = Logging(system, "FailureDetector")
 
   /**
    * Implement using optimistic lockless concurrency, all state is represented
@@ -49,6 +54,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    */
   @tailrec
   final def heartbeat(connection: Address) {
+    log.info("Heartbeat from connection [{}] ", connection)
     val oldState = state.get
 
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -132,12 +138,15 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
   def phi(connection: Address): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
-    if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
-    else {
-      val timestampDiff = newTimestamp - oldTimestamp.get
-      val mean = oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
-      PhiFactor * timestampDiff / mean
-    }
+    val phi =
+      if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
+      else {
+        val timestampDiff = newTimestamp - oldTimestamp.get
+        val mean = oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
+        PhiFactor * timestampDiff / mean
+      }
+    log.debug("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
+    phi
   }
 
   /**
