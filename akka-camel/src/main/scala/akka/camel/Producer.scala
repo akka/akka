@@ -94,7 +94,7 @@ trait ProducerSupport { this: Actor ⇒
    * @param pattern exchange pattern
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
-    val cmsg = Message.canonicalize(msg, camel)
+    val cmsg = Message.canonicalize(msg)
     val exchange = createExchangeFor(pattern).setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self

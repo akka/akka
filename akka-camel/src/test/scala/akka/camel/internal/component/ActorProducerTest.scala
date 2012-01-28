@@ -218,14 +218,14 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     actorEndpointPath = mock[ActorEndpointPath]
 
     producer = new ConsumerAsyncProcessor(config(), camel)
-    message = Message(null, null, null)
+    message = Message(null, null)
   }
 
   override protected def afterAll() {
     system.shutdown()
   }
 
-  def msg(s: String) = Message(s, Map.empty, camel.context)
+  def msg(s: String) = Message(s, Map.empty)
 
   def given(actor: ActorRef = probe.ref, outCapable: Boolean, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)

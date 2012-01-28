@@ -36,10 +36,10 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       given("a registered two-way producer")
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2", true)))
       when("a test message is sent to the producer with ?")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
       then("a normal response must have been returned by the producer")
-      val expected = Message("received TEST", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val expected = Message("received TEST", Map(Message.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
         case result: Message ⇒ assert(result === expected)
         case unexpected      ⇒ fail("Actor responded with unexpected message:" + unexpected)
@@ -51,7 +51,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2")))
 
       when("a test message causing an exception is sent to the producer with ?")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
       Await.result(future, timeout) match {
         case result: Failure ⇒ {
@@ -71,7 +71,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("TEST")
-      producer ! Message("test", Map(), camelContext)
+      producer ! Message("test", Map())
 
       then("the test message must have been sent to mock:mock")
       mockEndpoint.assertIsSatisfied()
@@ -83,7 +83,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("test")
-      producer ! Message("test", Map(), camelContext)
+      producer ! Message("test", Map())
 
       then("there must be only a warning that there's no sender reference")
       mockEndpoint.assertIsSatisfied()
@@ -97,13 +97,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")))
 
       when("a test message is sent to the producer with ?")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
 
       Await.result(future, timeout) match {
         case result: Message ⇒ {
           then("a normal response must have been returned by the producer")
-          val expected = Message("received test", Map(Message.MessageExchangeId -> "123"), camelContext)
+          val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
           assert(result === expected)
         }
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
@@ -115,7 +115,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")))
 
       when("a test message causing an exception is sent to the producer with ?")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
       Await.result(future, timeout) match {
         case result: Failure ⇒ {
@@ -135,13 +135,13 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
       when("a test message is sent to the producer with ?")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
 
       Await.result(future, timeout) match {
         case result: Message ⇒ {
           then("a normal response must have been returned by the forward target")
-          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"), camelContext)
+          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
           assert(result === expected)
         }
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
@@ -154,7 +154,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)))
 
       when("a test message causing an exception is sent to the producer with ?")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
       Await.result(future, timeout) match {
         case failure: Failure ⇒ {
@@ -175,7 +175,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      producer.tell(Message("test", Map(), camelContext), producer)
+      producer.tell(Message("test", Map()), producer)
 
       then("a normal response must have been produced by the forward target")
       mockEndpoint.assertIsSatisfied()
@@ -190,7 +190,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
       mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
-      producer.tell(Message("fail", Map(), camelContext), producer)
+      producer.tell(Message("fail", Map()), producer)
 
       then("a failure response must have been produced by the forward target")
       mockEndpoint.assertIsSatisfied()
@@ -202,14 +202,14 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
       when("a test message is sent to the producer with ?")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
 
       val future = producer ? (message, timeout)
 
       then("a normal response must have been returned by the forward target")
       Await.result(future, timeout) match {
         case message: Message ⇒ {
-          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"), camelContext)
+          val expected = Message("received test", Map(Message.MessageExchangeId -> "123", "test" -> "result"))
           assert(message === expected)
         }
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
@@ -222,7 +222,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
       when("a test message causing an exception is sent to the producer with !!")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"), camelContext)
+      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
       val future = producer ? (message, timeout)
       Await.result(future, timeout) match {
         case failure: Failure ⇒ {
@@ -243,7 +243,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      producer.tell(Message("test", Map(), camelContext), producer)
+      producer.tell(Message("test", Map()), producer)
 
       then("a normal response must have been produced by the forward target")
       mockEndpoint.assertIsSatisfied()
@@ -257,7 +257,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
       mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
-      producer.tell(Message("fail", Map(), camelContext), producer)
+      producer.tell(Message("fail", Map()), producer)
 
       then("a failure response must have been produced by the forward target")
       mockEndpoint.assertIsSatisfied()

@@ -35,18 +35,20 @@ public class MessageJavaTestBase {
         system.shutdown();
     }
 
-    Message message(Object body){ return new Message(body, new HashMap(), camel.context()); }
-    Message message(Object body, Map<String, Object> headers){ return new Message(body, headers, camel.context()); }
-    Message message(Object body, Map<String, Object> headers, Camel camel){ return new Message(body, headers, camel.context()); }
+    Message message(Object body){ return new Message(body, new HashMap()); }
+    Message message(Object body, Map<String, Object> headers){ return new Message(body, headers); }
+    private RichMessage rich(Message message) { return new RichMessage(message, camel.context()); }
+
 
     @Test public void shouldConvertDoubleBodyToString() {
-        assertEquals("1.4", message("1.4", empty, camel).getBodyAs(String.class));
+        assertEquals("1.4", rich(message("1.4", empty)).getBodyAs(String.class));
     }
 
     @Test(expected=NoTypeConversionAvailableException.class)
     public void shouldThrowExceptionWhenConvertingDoubleBodyToInputStream() {
-        message(1.4).getBodyAs(InputStream.class);
+        rich(message(1.4)).getBodyAs(InputStream.class);
     }
+
 
     @Test public void shouldReturnDoubleHeader() {
         Message message = message("test" , createMap("test", 1.4));
@@ -55,7 +57,7 @@ public class MessageJavaTestBase {
 
     @Test public void shouldConvertDoubleHeaderToString() {
         Message message = message("test" , createMap("test", 1.4));
-        assertEquals("1.4", message.getHeaderAs("test", String.class));
+        assertEquals("1.4", rich(message).getHeaderAs("test", String.class));
     }
 
     @Test public void shouldReturnSubsetOfHeaders() {
@@ -83,13 +85,13 @@ public class MessageJavaTestBase {
     @Test public void shouldTransformBodyAndPreserveHeaders() {
       assertEquals(
           message("ab", createMap("A", "1")),
-          message("a" , createMap("A", "1")).mapBody((Function) new TestTransformer()));
+          message("a" , createMap("A", "1")).mapBody(new TestTransformer()));
     }
 
     @Test public void shouldConvertBodyAndPreserveHeaders() {
         assertEquals(
             message("1.4", createMap("A", "1")),
-            message(1.4  , createMap("A", "1"), camel).withBodyAs(String.class));
+            rich(message(1.4  , createMap("A", "1"))).withBodyAs(String.class));
     }
 
     @Test public void shouldSetBodyAndPreserveHeaders() {
