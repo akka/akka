@@ -18,40 +18,16 @@ import org.apache.camel.{ CamelContext, Exchange, Message ⇒ CamelMessage }
  *
  * @author Martin Krasser
  */
-case class Message(body: Any, headers: Map[String, Any], context: CamelContext) {
+case class Message(body: Any, headers: Map[String, Any]) {
 
-  def this(body: Any, headers: JMap[String, Any], context: CamelContext) = this(body, headers.toMap, context) //for Java
+  def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
 
   override def toString = "Message(%s, %s)" format (body, headers)
 
   /**
-   * Returns the body of the message converted to the type <code>T</code>. Conversion is done
-   * using Camel's type converter. The type converter is obtained from the CamelContext managed
-   * by CamelContextManager. Applications have to ensure proper initialization of
-   * CamelContextManager.
-   *
-   * @see CamelContextManager.
-   */
-
-  def bodyAs[T](implicit m: Manifest[T]): T = getBodyAs(m.erasure.asInstanceOf[Class[T]])
-
-  /**
-   * Returns the body of the message converted to the type as given by the <code>clazz</code>
-   * parameter. Conversion is done using Camel's type converter. The type converter is obtained
-   * from the CamelContext managed by CamelContextManager. Applications have to ensure proper
-   * initialization of CamelContextManager.
-   * <p>
-   * Java API
-   *
-   * @see CamelContextManager.
-   */
-  def getBodyAs[T](clazz: Class[T]): T =
-    context.getTypeConverter.mandatoryConvertTo[T](clazz, body)
-
-  /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
    */
-  def headers(names: Set[String]): Map[String, Any] = headers.filter(names contains _._1)
+  def headers(names: Set[String]): Map[String, Any] = headers.filterKeys(names contains _)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -60,7 +36,7 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def getHeaders(names: JSet[String]): JMap[String, Any] = headers.filter(names contains _._1)
+  def getHeaders(names: JSet[String]): JMap[String, Any] = headers(names.toSet)
 
   /**
    * Returns all headers from this message. The returned headers map is backed up by this
@@ -86,64 +62,38 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
   def getHeader(name: String): Any = headers(name)
 
   /**
-   * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
-   * <code>NoSuchElementException</code> if the header doesn't exist.
-   */
-  def headerAs[T](name: String)(implicit m: Manifest[T]): Option[T] = header(name).map(context.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], _))
-
-  /**
-   * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
-   * parameter. Throws <code>NoSuchElementException</code> if the header doesn't exist.
-   * <p>
-   * Java API
-   */
-  def getHeaderAs[T](name: String, clazz: Class[T]) = headerAs[T](name)(Manifest.classType(clazz)).get
-
-  /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
    */
-  def mapBody[A](transformer: A ⇒ Any): Message = withBody(transformer(body.asInstanceOf[A]))
+  def mapBody[A, B](transformer: A ⇒ B): Message = withBody(transformer(body.asInstanceOf[A]))
 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
    * <p>
    * Java API
    */
-  def mapBody[A](transformer: JFunction[A, Any]): Message = withBody(transformer(body.asInstanceOf[A]))
-
-  /**
-   * Creates a Message with current <code>body</code> converted to type <code>T</code>.
-   */
-  def withBodyAs[T](implicit m: Manifest[T]): Message = withBodyAs(m.erasure.asInstanceOf[Class[T]])
-
-  /**
-   * Creates a Message with current <code>body</code> converted to type <code>clazz</code>.
-   * <p>
-   * Java API
-   */
-  def withBodyAs[T](clazz: Class[T]): Message = withBody(getBodyAs(clazz))
+  def mapBody[A, B](transformer: JFunction[A, B]): Message = withBody(transformer(body.asInstanceOf[A]))
 
   /**
    * Creates a Message with a given <code>body</code>.
    */
-  def withBody(body: Any) = Message(body, this.headers, context)
+  def withBody(body: Any) = Message(body, this.headers)
 
   /**
    * Creates a new Message with given <code>headers</code>.
    */
-  def withHeaders(headers: Map[String, Any]): Message = copy(this.body, headers)
+  def withHeaders[A](headers: Map[String, A]): Message = copy(this.body, headers)
 
   /**
    * Creates a new Message with given <code>headers</code>. A copy of the headers map is made.
    * <p>
    * Java API
    */
-  def withHeaders(headers: JMap[String, Any]): Message = withHeaders(headers.toMap)
+  def withHeaders[A](headers: JMap[String, A]): Message = withHeaders(headers.toMap)
 
   /**
    * Creates a new Message with given <code>headers</code> added to the current headers.
    */
-  def plusHeaders(headers: Map[String, Any]): Message = copy(this.body, this.headers ++ headers)
+  def plusHeaders[A](headers: Map[String, A]): Message = copy(this.body, this.headers ++ headers)
 
   /**
    * Creates a new Message with given <code>headers</code> added to the current headers.
@@ -151,7 +101,7 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def plusHeaders(headers: JMap[String, Any]): Message = plusHeaders(headers.toMap)
+  def plusHeaders[A](headers: JMap[String, A]): Message = plusHeaders(headers.toMap)
 
   /**
    * Creates a new Message with the given <code>header</code> added to the current headers.
@@ -171,6 +121,59 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * the existing headers.
    */
   def withoutHeader(headerName: String) = copy(this.body, this.headers - headerName)
+}
+
+class RichMessage(message: Message, camelContext: CamelContext) {
+  /**
+   * Returns the body of the message converted to the type <code>T</code>. Conversion is done
+   * using Camel's type converter. The type converter is obtained from the CamelContext managed
+   * by CamelContextManager. Applications have to ensure proper initialization of
+   * CamelContextManager.
+   *
+   * @see CamelContextManager.
+   */
+
+  def bodyAs[T](implicit m: Manifest[T]): T = getBodyAs(m.erasure.asInstanceOf[Class[T]])
+
+  /**
+   * Returns the body of the message converted to the type as given by the <code>clazz</code>
+   * parameter. Conversion is done using Camel's type converter. The type converter is obtained
+   * from the CamelContext managed by CamelContextManager. Applications have to ensure proper
+   * initialization of CamelContextManager.
+   * <p>
+   * Java API
+   *
+   * @see CamelContextManager.
+   */
+  def getBodyAs[T](clazz: Class[T]): T =
+    camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, message.body)
+
+  /**
+   * Creates a Message with current <code>body</code> converted to type <code>T</code>.
+   */
+  def withBodyAs[T](implicit m: Manifest[T]): Message = withBodyAs(m.erasure.asInstanceOf[Class[T]])
+
+  /**
+   * Creates a Message with current <code>body</code> converted to type <code>clazz</code>.
+   * <p>
+   * Java API
+   */
+  def withBodyAs[T](clazz: Class[T]): Message = message.withBody(getBodyAs(clazz))
+
+  /**
+   * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
+   * <code>NoSuchElementException</code> if the header doesn't exist.
+   */
+  def headerAs[T](name: String)(implicit m: Manifest[T]): Option[T] = message.header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], _))
+
+  /**
+   * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
+   * parameter. Throws <code>NoSuchElementException</code> if the header doesn't exist.
+   * <p>
+   * Java API
+   */
+  def getHeaderAs[T](name: String, clazz: Class[T]) = headerAs[T](name)(Manifest.classType(clazz)).get
+
 }
 
 /**
@@ -193,9 +196,9 @@ object Message {
    * Message then <code>msg</code> is returned, otherwise <code>msg</code> is set as body of a
    * newly created Message object.
    */
-  def canonicalize(msg: Any, camel: Camel) = msg match {
+  def canonicalize(msg: Any) = msg match {
     case mobj: Message ⇒ mobj
-    case body          ⇒ Message(body, Map.empty, camel.context)
+    case body          ⇒ Message(body, Map.empty)
   }
 }
 
@@ -362,7 +365,7 @@ class CamelMessageAdapter(val cm: CamelMessage) {
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.
    */
-  def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm), cm.getExchange.getContext)
+  def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm))
 
   private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) = headers ++ cm.getHeaders
 }

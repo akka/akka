@@ -4,7 +4,7 @@
 
 package akka.camelexamples
 
-import akka.camel.{ Consumer, Message }
+import akka.camel._
 import akka.util.duration._
 import akka.actor.{ Actor, OneForOneStrategy }
 
@@ -30,7 +30,7 @@ class TroubleMaker extends Consumer {
   protected def receive = { case _ ⇒ }
 }
 
-class SysOutActor extends Actor {
+class SysOutActor(implicit camel: Camel) extends Actor {
   protected def receive = {
     case msg: Message ⇒ {
       printf("Received '%s'\n", msg.bodyAs[String])

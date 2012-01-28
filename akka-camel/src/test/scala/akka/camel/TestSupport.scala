@@ -38,15 +38,15 @@ private[camel] object TestSupport {
     def routeCount = camel.context.getRoutes().size()
   }
 
+  @deprecated
   trait MessageSugar {
-    def camel: Camel
-    def Message(body: Any) = akka.camel.Message(body, Map.empty, camel.context)
-    def Message(body: Any, headers: Map[String, Any]) = akka.camel.Message(body, headers, camel.context)
+    def Message(body: Any) = akka.camel.Message(body, Map.empty)
+    def Message(body: Any, headers: Map[String, Any]) = akka.camel.Message(body, headers)
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒
     implicit lazy val system = ActorSystem("test")
-    implicit def camel = CamelExtension(system)
+    implicit lazy val camel = CamelExtension(system)
 
     abstract override protected def afterAll() {
       super.afterAll()
@@ -56,9 +56,12 @@ private[camel] object TestSupport {
 
   trait NonSharedCamelSystem extends BeforeAndAfterEach { this: Suite ⇒
     implicit var system: ActorSystem = _
+    implicit var camel: Camel = _
+
     override protected def beforeEach() {
       super.beforeEach()
       system = ActorSystem("test")
+      camel = CamelExtension(system)
     }
 
     override protected def afterEach() {
@@ -66,11 +69,7 @@ private[camel] object TestSupport {
       super.afterEach()
     }
 
-    def camel: Camel = {
-      CamelExtension(system)
-    }
   }
-
   def time[A](block: ⇒ A): Duration = {
     val start = System.currentTimeMillis()
     block
