@@ -17,10 +17,6 @@ public class SampleUntypedConsumerBlocking extends UntypedConsumerActor {
         return "direct:test-untyped-consumer-blocking";
     }
 
-    public boolean blocking() {
-        return true;
-    }
-    
     public Duration replyTimeout(){
         return Duration.create(1, "second");
     }
