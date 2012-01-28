@@ -102,48 +102,48 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
    */
-  def transformBody[A](transformer: A ⇒ Any): Message = setBody(transformer(body.asInstanceOf[A]))
+  def mapBody[A](transformer: A ⇒ Any): Message = withBody(transformer(body.asInstanceOf[A]))
 
   /**
    * Creates a Message with a transformed body using a <code>transformer</code> function.
    * <p>
    * Java API
    */
-  def transformBody[A](transformer: JFunction[A, Any]): Message = setBody(transformer(body.asInstanceOf[A]))
+  def mapBody[A](transformer: JFunction[A, Any]): Message = withBody(transformer(body.asInstanceOf[A]))
 
   /**
    * Creates a Message with current <code>body</code> converted to type <code>T</code>.
    */
-  def setBodyAs[T](implicit m: Manifest[T]): Message = setBodyAs(m.erasure.asInstanceOf[Class[T]])
+  def withBodyAs[T](implicit m: Manifest[T]): Message = withBodyAs(m.erasure.asInstanceOf[Class[T]])
 
   /**
    * Creates a Message with current <code>body</code> converted to type <code>clazz</code>.
    * <p>
    * Java API
    */
-  def setBodyAs[T](clazz: Class[T]): Message = setBody(getBodyAs(clazz))
+  def withBodyAs[T](clazz: Class[T]): Message = withBody(getBodyAs(clazz))
 
   /**
    * Creates a Message with a given <code>body</code>.
    */
-  def setBody(body: Any) = Message(body, this.headers, context)
+  def withBody(body: Any) = Message(body, this.headers, context)
 
   /**
    * Creates a new Message with given <code>headers</code>.
    */
-  def setHeaders(headers: Map[String, Any]): Message = copy(this.body, headers)
+  def withHeaders(headers: Map[String, Any]): Message = copy(this.body, headers)
 
   /**
    * Creates a new Message with given <code>headers</code>. A copy of the headers map is made.
    * <p>
    * Java API
    */
-  def setHeaders(headers: JMap[String, Any]): Message = setHeaders(headers.toMap)
+  def withHeaders(headers: JMap[String, Any]): Message = withHeaders(headers.toMap)
 
   /**
    * Creates a new Message with given <code>headers</code> added to the current headers.
    */
-  def addHeaders(headers: Map[String, Any]): Message = copy(this.body, this.headers ++ headers)
+  def plusHeaders(headers: Map[String, Any]): Message = copy(this.body, this.headers ++ headers)
 
   /**
    * Creates a new Message with given <code>headers</code> added to the current headers.
@@ -151,12 +151,12 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def addHeaders(headers: JMap[String, Any]): Message = addHeaders(headers.toMap)
+  def plusHeaders(headers: JMap[String, Any]): Message = plusHeaders(headers.toMap)
 
   /**
    * Creates a new Message with the given <code>header</code> added to the current headers.
    */
-  def addHeader(header: (String, Any)): Message = copy(this.body, this.headers + header)
+  def plusHeader(header: (String, Any)): Message = copy(this.body, this.headers + header)
 
   /**
    * Creates a new Message with the given header, represented by <code>name</code> and
@@ -164,13 +164,13 @@ case class Message(body: Any, headers: Map[String, Any], context: CamelContext) 
    * <p>
    * Java API
    */
-  def addHeader(name: String, value: Any): Message = addHeader((name, value))
+  def plusHeader(name: String, value: Any): Message = plusHeader((name, value))
 
   /**
    * Creates a new Message where the header with given <code>headerName</code> is removed from
    * the existing headers.
    */
-  def removeHeader(headerName: String) = copy(this.body, this.headers - headerName)
+  def withoutHeader(headerName: String) = copy(this.body, this.headers - headerName)
 }
 
 /**
@@ -245,6 +245,12 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
    * Java API
    */
   def getHeaders: JMap[String, Any] = headers
+}
+
+object Failure {
+  //  def fromMessage(m:Message) : Failure = {
+  //    m.to
+  //  }
 }
 
 /**
