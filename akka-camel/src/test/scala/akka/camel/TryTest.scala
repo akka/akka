@@ -4,13 +4,13 @@
 
 package akka.camel
 
-import akka.camel.DangerousStuff._
+import akka.camel.Try._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.event.LoggingAdapter
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 
-class DangerousStuffTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
+class TryTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
   import org.mockito.Mockito._
   import org.mockito.Matchers._
   import org.mockito.Matchers.{ eq ⇒ the }
@@ -33,26 +33,26 @@ class DangerousStuffTest extends WordSpec with MustMatchers with MockitoSugar wi
     verify(log).warning(any[String], any[Any])
   }
 
-  "try_ otherwise runs otherwise and throws exception when the first block fails" in {
+  "Try-otherwise runs otherwise and throws exception when the first block fails" in {
     var otherwiseCalled = false
     intercept[Exception] {
-      try_(throw new Exception) otherwise (otherwiseCalled = true)
+      Try(throw new Exception) otherwise (otherwiseCalled = true)
     }
     otherwiseCalled must be(true)
     verifyNoMoreInteractions(log)
   }
 
-  "try_ otherwise swallows exception thrown in otherwise clause and logs it" in {
+  "Try-otherwise swallows exception thrown in otherwise clause and logs it" in {
     val exceptionFromOtherwise = new RuntimeException("e2")
     intercept[RuntimeException] {
-      try_(throw new RuntimeException("e1")) otherwise (throw exceptionFromOtherwise)
+      Try(throw new RuntimeException("e1")) otherwise (throw exceptionFromOtherwise)
     }.getMessage must be("e1")
     verify(log, only()).warning(any[String], the(exceptionFromOtherwise))
   }
 
-  "try_ otherwise doesnt run otherwise if first block doesnt fail" in {
+  "Try-otherwise doesnt run otherwise if first block doesnt fail" in {
     var otherwiseCalled = false
-    try_(2 + 2) otherwise (otherwiseCalled = true)
+    Try(2 + 2) otherwise (otherwiseCalled = true)
     otherwiseCalled must be(false)
     verifyNoMoreInteractions(log)
   }

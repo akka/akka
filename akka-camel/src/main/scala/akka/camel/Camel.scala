@@ -10,7 +10,7 @@ import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 import akka.util.Duration
 import akka.actor.{ ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem }
-import DangerousStuff._
+import Try._
 import akka.event.Logging
 
 trait Camel extends ConsumerRegistry with Extension with Activation {
@@ -53,7 +53,7 @@ class DefaultCamel(val system: ActorSystem) extends Camel {
   //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
-    try_(template.start()) otherwise context.stop()
+    Try(template.start()) otherwise context.stop()
     log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }
