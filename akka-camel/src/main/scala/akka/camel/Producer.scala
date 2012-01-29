@@ -4,11 +4,10 @@
 
 package akka.camel
 
-import org.apache.camel.{ Message ⇒ CamelMessage, ExchangePattern, AsyncCallback, Exchange }
-import org.apache.camel.processor.SendProcessor
-
 import akka.actor.Actor
 import akka.camel.CamelMessageConversion._
+import org.apache.camel.{ ExchangePattern, AsyncCallback }
+
 /**
  * Support trait for producing messages to Camel endpoints.
  *
@@ -16,26 +15,12 @@ import akka.camel.CamelMessageConversion._
  */
 trait ProducerSupport { this: Actor ⇒
   protected[this] val camel = CamelExtension(context.system)
+  protected[this] lazy val (endpoint, processor) = camel.registerProducer(self, endpointUri)
 
   /**
    * Message headers to copy by default from request message to response-message.
    */
   private val headersToCopyDefault = Set(Message.MessageExchangeId)
-
-  /**
-   * <code>Endpoint</code> object resolved from the current CamelContext with
-   * <code>endpointUri</code>.
-   */
-  private lazy val endpoint = camel.context.getEndpoint(endpointUri)
-
-  /**
-   * <code>SendProcessor</code> for producing messages to <code>endpoint</code>.
-   */
-  private lazy val processor = {
-    val sendProcessor = new SendProcessor(endpoint)
-    sendProcessor.start()
-    sendProcessor
-  }
 
   /**
    * If set to false (default), this producer expects a response message from the Camel endpoint.
@@ -57,36 +42,14 @@ trait ProducerSupport { this: Actor ⇒
   def headersToCopy: Set[String] = headersToCopyDefault
 
   /**
-   * Default implementation of <code>Actor.preRestart</code> for freeing resources needed
-   * to actually send messages to <code>endpointUri</code>.
-   */
-  override def preRestart(reason: Throwable, message: Option[Any]) {
-    try { preRestartProducer(reason) } finally { processor.stop }
-  }
-
-  /**
-   * Does nothing by default. Can be overridden by concrete producers for implementing a
-   * pre-restart callback handler.
-   */
-  def preRestartProducer(reason: Throwable) {}
-
-  /**
-   * Default implementation of <code>Actor.postStop</code> for freeing resources needed
-   * to actually send messages to <code>endpointUri</code>.
-   */
-  override def postStop {
-    processor.stop
-  }
-
-  /**
    * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
    * <code>endpointUri</code>. The in-message of the initiated exchange is the canonical form
    * of <code>msg</code>. After sending the in-message, the processing result (response) is passed
    * as argument to <code>receiveAfterProduce</code>. If the response is received synchronously from
    * the endpoint then <code>receiveAfterProduce</code> is called synchronously as well. If the
    * response is received asynchronously, the <code>receiveAfterProduce</code> is called
-   * asynchronously. This is done by forwarding the result. The original
-   * sender and senderFuture are thereby preserved.
+   * asynchronously. The original
+   * sender and senderFuture are preserved.
    *
    * @see Message#canonicalize(Any)
    *
@@ -95,30 +58,21 @@ trait ProducerSupport { this: Actor ⇒
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     val cmsg = Message.canonicalize(msg, camel)
-    val exchange = createExchangeFor(pattern).setRequest(cmsg)
+    val exchange = endpoint.createExchange(pattern).setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
       // Need copies of sender reference here since the callback could be done
       // later by another thread.
-      //
       val originalSender = sender
 
       def done(doneSync: Boolean): Unit = {
-        (doneSync, exchange.isFailed) match {
-          //TODO this boolean logic is smart, but less readable as opposed to traditional if statement.
-          case (true, true)   ⇒ dispatchSync(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
-          case (true, false)  ⇒ dispatchSync(exchange.toResponseMessage(cmsg.headers(headersToCopy)))
-          case (false, true)  ⇒ dispatchAsync(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
-          case (false, false) ⇒ dispatchAsync(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
+        if (exchange.isFailed) {
+          dispatch(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
+        } else {
+          dispatch(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
         }
       }
-
-      private def dispatchSync(result: Any) = receiveAfterProduce(result)
-
-      private def dispatchAsync(result: Any) = {
-        // preserving the originalSender, so that in overriding receiveAfterProduce it is possible to forward responses to another actor
-        producer.tell(result, originalSender)
-      }
+      private def dispatch(result: Any) { producer.tell(result, originalSender) }
     })
   }
 
@@ -159,12 +113,6 @@ trait ProducerSupport { this: Actor ⇒
   protected def receiveAfterProduce: Receive = {
     case msg ⇒ if (!oneway) sender ! msg
   }
-
-  /**
-   * Creates a new Exchange of given <code>pattern</code> from the endpoint specified by
-   * <code>endpointUri</code>.
-   */
-  private def createExchangeFor(pattern: ExchangePattern): Exchange = endpoint.createExchange(pattern)
 
 }
 
