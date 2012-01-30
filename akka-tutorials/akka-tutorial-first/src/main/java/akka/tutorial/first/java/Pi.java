@@ -180,7 +180,7 @@ public class Pi {
     ActorSystem system = ActorSystem.create("PiSystem");
 
     // create the result listener, which will print the result and shutdown the system
-    final ActorRef listener = system.actorOf(new Props(Listener.class));
+    final ActorRef listener = system.actorOf(new Props(Listener.class), "listener");
 
     // create the master
     ActorRef master = system.actorOf(new Props(new UntypedActorFactory() {

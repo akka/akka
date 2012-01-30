@@ -1,6 +1,6 @@
 package akka.remote
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.testkit._
 import akka.dispatch.Await
 import akka.pattern.ask
@@ -10,7 +10,7 @@ object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "identify" ⇒ sender ! self.path.address.hostPort
+      case "identify" ⇒ sender ! self
     }
   }
 
@@ -53,7 +53,7 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(NewRemoteActorMultiJvmS
       barrier("start")
 
       val actor = system.actorOf(Props[SomeActor], "service-hello")
-      Await.result(actor ? "identify", timeout.duration) must equal(akkaSpec(0))
+      Await.result(actor ? "identify", timeout.duration).asInstanceOf[ActorRef].path.address.hostPort must equal(akkaSpec(0))
 
       barrier("done")
     }
