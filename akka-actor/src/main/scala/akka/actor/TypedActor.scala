@@ -270,7 +270,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
                 sender ! m(me)
               }
             } catch {
-              case t: Throwable ⇒ sender ! Status.Failure(t); throw t
+              case t: Throwable ⇒
+                dispatcher.reportFailure(t)
+                sender ! Status.Failure(t); throw t
             }
           }
         } finally {

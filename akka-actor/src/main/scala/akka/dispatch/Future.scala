@@ -144,8 +144,9 @@ object Future {
           try {
             Right(body)
           } catch {
-            // TODO catching all and continue isn't good for OOME, ticket #1418
-            case e ⇒ Left(e)
+            case e ⇒
+              executor.reportFailure(e)
+              Left(e)
           }
         }
     })
@@ -326,11 +327,12 @@ object Future {
                   next.apply()
                 } catch {
                   case e ⇒
-                    // TODO catching all and continue isn't good for OOME, ticket #1418
+                    executor.reportFailure(e)
                     executor match {
                       case m: MessageDispatcher ⇒
                         m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", this.getClass, e.getMessage))
                       case other ⇒
+                        // TODO what is this?
                         e.printStackTrace()
                     }
                 }
@@ -493,6 +495,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
           Right(f(res))
         } catch {
           case e ⇒
+            executor.reportFailure(e)
             logError("Future.map", e)
             Left(e)
         })
@@ -542,6 +545,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
           p completeWith f(r)
         } catch {
           case e ⇒
+            executor.reportFailure(e)
             p complete Left(e)
             logError("Future.flatMap", e)
         }
@@ -582,6 +586,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
         if (pred(res)) r else Left(new MatchError(res))
       } catch {
         case e ⇒
+          executor.reportFailure(e)
           logError("Future.filter", e)
           Left(e)
       })
@@ -592,7 +597,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
   protected def logError(msg: String, problem: Throwable): Unit = {
     executor match {
       case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, this.getClass, problem.getMessage))
-      case other                ⇒ problem.printStackTrace()
+      case other                ⇒ problem.printStackTrace() //TODO what is this?
     }
   }
 }
@@ -670,6 +675,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(thisPromise)
       } catch {
         case e ⇒
+          executor.reportFailure(e)
           logError("Promise.completeWith", e)
           fr failure e
       }
@@ -685,6 +691,7 @@ trait Promise[T] extends Future[T] {
         fr completeWith cont(f)
       } catch {
         case e ⇒
+          executor.reportFailure(e)
           logError("Promise.completeWith", e)
           fr failure e
       }
@@ -794,7 +801,11 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
   }
 
   private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
-    try { func(result) } catch { case e ⇒ logError("Future onComplete-callback raised an exception", e) }
+    try { func(result) } catch {
+      case e ⇒
+        executor.reportFailure(e)
+        logError("Future onComplete-callback raised an exception", e)
+    }
   }
 }
 
