@@ -160,14 +160,11 @@ case class MonitorableThreadFactory(name: String,
   extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
   protected val counter = new AtomicLong
 
-  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
-    val t = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool)
-    t.setDaemon(daemonic)
-    t
-  }
+  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = wire(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool))
 
-  def newThread(runnable: Runnable) = {
-    val t = new Thread(runnable, name + counter.incrementAndGet())
+  def newThread(runnable: Runnable): Thread = wire(new Thread(runnable, name + counter.incrementAndGet()))
+
+  protected def wire[T <: Thread](t: T): T = {
     t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
     contextClassLoader foreach (t.setContextClassLoader(_))

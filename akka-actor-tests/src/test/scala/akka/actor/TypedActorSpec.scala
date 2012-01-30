@@ -25,10 +25,13 @@ object TypedActorSpec {
   val config = """
     pooled-dispatcher {
       type = BalancingDispatcher
-      core-pool-size-min = 60
-      core-pool-size-max = 60
-      max-pool-size-min = 60
-      max-pool-size-max = 60
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        core-pool-size-min = 60
+        core-pool-size-max = 60
+        max-pool-size-min = 60
+        max-pool-size-max = 60
+      }
     }
     """
 

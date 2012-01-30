@@ -21,19 +21,28 @@ object BenchmarkConfig {
       useDummyOrderbook = false
 
       client-dispatcher {
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
+        executor = "thread-pool-executor"
+        thread-pool-executor {
+          core-pool-size-min = ${benchmark.maxClients}
+          core-pool-size-max = ${benchmark.maxClients}
+        }
       }
 
       destination-dispatcher {
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
+        executor = "thread-pool-executor"
+        thread-pool-executor {
+          core-pool-size-min = ${benchmark.maxClients}
+          core-pool-size-max = ${benchmark.maxClients}
+        }
       }
 
       high-throughput-dispatcher {
         throughput = 10000
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
+        executor = "thread-pool-executor"
+        thread-pool-executor {
+          core-pool-size-min = ${benchmark.maxClients}
+          core-pool-size-max = ${benchmark.maxClients}
+        }
       }
 
       pinned-dispatcher {
@@ -42,8 +51,11 @@ object BenchmarkConfig {
 
       latency-dispatcher {
         throughput = 1
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
+        executor = "thread-pool-executor"
+        thread-pool-executor {
+          core-pool-size-min = ${benchmark.maxClients}
+          core-pool-size-max = ${benchmark.maxClients}
+        }
       }
     }
     """)
