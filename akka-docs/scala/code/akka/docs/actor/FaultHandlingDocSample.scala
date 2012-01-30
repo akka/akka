@@ -43,15 +43,15 @@ object FaultHandlingDocSample extends App {
  * work has been done.
  */
 class Listener extends Actor with ActorLogging {
-  import CounterService._
+  import Worker._
   // If we don't get any progress within 15 seconds then the service is unavailable
   context.setReceiveTimeout(15 seconds)
 
   def receive = {
-    case CurrentCount(key, count) ⇒
-      log.info("Current count for [{}] is [{}]", key, count)
-      if (count > 50) {
-        log.info("That's enough, shutting down")
+    case Progress(percent) ⇒
+      log.info("Current progress: {} %", percent)
+      if (percent >= 100.0) {
+        log.info("That's all, shutting down")
         context.system.shutdown()
       }
 
@@ -66,13 +66,14 @@ class Listener extends Actor with ActorLogging {
 object Worker {
   case object Start
   case object Do
+  case class Progress(percent: Double)
 }
 //#messages
 
 /**
  * Worker performs some work when it receives the `Start` message.
  * It will continuously notify the sender of the `Start` message
- * of current progress. The `Worker` supervise the `CounterService`.
+ * of current ``Progress``. The `Worker` supervise the `CounterService`.
  */
 class Worker extends Actor with ActorLogging {
   import Worker._
@@ -87,6 +88,7 @@ class Worker extends Actor with ActorLogging {
   // The sender of the initial Start message will continuously be notified about progress
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
+  val totalCount = 51
 
   def receive = LoggingReceive {
     case Start if progressListener.isEmpty ⇒
@@ -98,8 +100,10 @@ class Worker extends Actor with ActorLogging {
       counterService ! Increment(1)
       counterService ! Increment(1)
 
-      // Send current count to the initial sender
-      counterService ? GetCurrentCount pipeTo progressListener.get
+      // Send current progress to the initial sender
+      counterService ? GetCurrentCount map {
+        case CurrentCount(_, count) ⇒ Progress(100.0 * count / totalCount)
+      } pipeTo progressListener.get
   }
 }
 

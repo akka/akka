@@ -35,7 +35,7 @@ public class FaultHandlingDocSample {
   /**
    * Runs the sample
    */
-  public static void main(String... args) {
+  public static void main(String[] args) {
     Config config = ConfigFactory.parseString("akka.loglevel = DEBUG \n" + "akka.actor.debug.lifecycle = on");
 
     ActorSystem system = ActorSystem.create("FaultToleranceSample", config);
@@ -62,11 +62,11 @@ public class FaultHandlingDocSample {
 
     public void onReceive(Object msg) {
       log.debug("received message {}", msg);
-      if (msg instanceof CurrentCount) {
-        CurrentCount current = (CurrentCount) msg;
-        log.info("Current count for [{}] is [{}]", current.key, current.count);
-        if (current.count > 50) {
-          log.info("That's enough, shutting down");
+      if (msg instanceof Progress) {
+        Progress progress = (Progress) msg;
+        log.info("Current progress: {} %", progress.percent);
+        if (progress.percent >= 100.0) {
+          log.info("That's all, shutting down");
           getContext().system().shutdown();
         }
       } else if (msg == Actors.receiveTimeout()) {
@@ -83,13 +83,25 @@ public class FaultHandlingDocSample {
   public interface WorkerApi {
     public static final Object Start = "Start";
     public static final Object Do = "Do";
+
+    public static class Progress {
+      public final double percent;
+
+      public Progress(double percent) {
+        this.percent = percent;
+      }
+
+      public String toString() {
+        return String.format("%s(%s)", getClass().getSimpleName(), percent);
+      }
+    }
   }
 
   //#messages
 
   /**
    * Worker performs some work when it receives the Start message. It will
-   * continuously notify the sender of the Start message of current progress.
+   * continuously notify the sender of the Start message of current Progress.
    * The Worker supervise the CounterService.
    */
   public static class Worker extends UntypedActor {
@@ -99,6 +111,7 @@ public class FaultHandlingDocSample {
     // The sender of the initial Start message will continuously be notified about progress
     ActorRef progressListener;
     final ActorRef counterService = getContext().actorOf(new Props(CounterService.class), "counter");
+    final int totalCount = 51;
 
     // Stop the CounterService child if it throws ServiceUnavailable
     private static SupervisorStrategy strategy = new OneForOneStrategy(-1, Duration.Inf(),
@@ -128,8 +141,12 @@ public class FaultHandlingDocSample {
         counterService.tell(new Increment(1), getSelf());
         counterService.tell(new Increment(1), getSelf());
 
-        // Send current count to the initial sender
-        pipeTo(ask(counterService, GetCurrentCount, askTimeout), progressListener);
+        // Send current progress to the initial sender
+        pipeTo(ask(counterService, GetCurrentCount, askTimeout).map(new Function<CurrentCount, Progress>() {
+          public Progress apply(CurrentCount c) {
+            return new Progress(100.0 * c.count / totalCount);
+          }
+        }), progressListener);
       } else {
         unhandled(msg);
       }
