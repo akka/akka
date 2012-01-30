@@ -41,9 +41,8 @@ class TestActorRef[T <: Actor](
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration],
-    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap) {
+    receiveTimeout: Option[Duration]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
           case InternalGetActor ⇒ sender ! actor

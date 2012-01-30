@@ -7,6 +7,7 @@ package akka.actor
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
+import scala.collection.immutable.Stack
 import java.util.regex.Pattern
 
 /**
@@ -112,6 +113,8 @@ object Actor {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
+
+  private final val emptyBehaviourStack: Stack[Actor.Receive] = Stack.empty
 }
 
 /**
@@ -172,7 +175,7 @@ trait Actor {
   type Receive = Actor.Receive
 
   /**
-   * Stores the context for this actor, including self, sender, and hotswap.
+   * Stores the context for this actor, including self, and sender.
    * It is implicit to support operations such as `forward`.
    *
    * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
@@ -282,7 +285,6 @@ trait Actor {
   // =========================================
 
   private[akka] final def apply(msg: Any) = {
-    val behaviorStack = context.asInstanceOf[ActorCell].hotswap
     msg match {
       case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
       case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
@@ -291,5 +293,18 @@ trait Actor {
   }
 
   private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
+
+  private[akka] def pushBehavior(behavior: Receive): Unit = {
+    behaviorStack = behaviorStack.push(behavior)
+  }
+
+  private[akka] def popBehavior(): Unit = {
+    val stack = behaviorStack
+    if (stack.nonEmpty) behaviorStack = stack.pop
+  }
+
+  private[akka] def clearBehaviorStack(): Unit = { behaviorStack = emptyBehaviourStack }
+
+  private var behaviorStack: Stack[PartialFunction[Any, Unit]] = emptyBehaviourStack
 }
 

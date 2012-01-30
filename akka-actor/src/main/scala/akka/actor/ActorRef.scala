@@ -224,8 +224,7 @@ private[akka] class LocalActorRef private[akka] (
   _supervisor: InternalActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  _receiveTimeout: Option[Duration] = None,
-  _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
+  _receiveTimeout: Option[Duration] = None)
   extends InternalActorRef with LocalRef {
 
   /*
@@ -238,7 +237,7 @@ private[akka] class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout, _hotswap)
+  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout)
   actorCell.start()
 
   protected def newActorCell(
@@ -246,9 +245,8 @@ private[akka] class LocalActorRef private[akka] (
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration],
-    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap)
+    receiveTimeout: Option[Duration]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout)
 
   protected def actorContext: ActorContext = actorCell
 
