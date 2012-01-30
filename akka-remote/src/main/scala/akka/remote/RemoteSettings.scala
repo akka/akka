@@ -20,13 +20,11 @@ class RemoteSettings(val config: Config, val systemName: String) {
   val LogReceive = getBoolean("akka.remote.log-received-messages")
   val LogSend = getBoolean("akka.remote.log-sent-messages")
 
-  // AccrualFailureDetector
-  val FailureDetectorThreshold = getInt("akka.remote.failure-detector.threshold")
-  val FailureDetectorMaxSampleSize = getInt("akka.remote.failure-detector.max-sample-size")
-
   // TODO cluster config will go into akka-cluster/reference.conf when we enable that module
   // cluster config section
   val UseCluster = getBoolean("akka.cluster.use-cluster")
+  val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
+  val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
   val SeedNodeConnectionTimeout = Duration(config.getMilliseconds("akka.cluster.seed-node-connection-timeout"), MILLISECONDS)
   val MaxTimeToRetryJoiningCluster = Duration(config.getMilliseconds("akka.cluster.max-time-to-retry-joining-cluster"), MILLISECONDS)
   val InitialDelayForGossip = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
