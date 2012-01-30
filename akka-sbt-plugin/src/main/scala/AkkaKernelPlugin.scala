@@ -126,7 +126,7 @@ object AkkaKernelPlugin extends Plugin {
       """|#!/bin/sh
     |
     |AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
-    |AKKA_CLASSPATH="$AKKA_HOME/lib/*:$AKKA_HOME/config"
+    |AKKA_CLASSPATH="$AKKA_HOME/config:$AKKA_HOME/lib/*"
     |JAVA_OPTS="%s"
     |
     |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s "$@"
@@ -135,7 +135,7 @@ object AkkaKernelPlugin extends Plugin {
     private def distBatScript =
       """|@echo off
     |set AKKA_HOME=%%~dp0..
-    |set AKKA_CLASSPATH=%%AKKA_HOME%%\lib\*;%%AKKA_HOME%%\config
+    |set AKKA_CLASSPATH=%%AKKA_HOME%%\config;%%AKKA_HOME%%\lib\*
     |set JAVA_OPTS=%s
     |
     |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s %%*

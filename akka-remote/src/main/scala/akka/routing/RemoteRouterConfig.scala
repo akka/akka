@@ -12,7 +12,7 @@ import akka.actor.InternalActorRef
 import akka.actor.Props
 import akka.config.ConfigurationException
 import akka.remote.RemoteScope
-import akka.remote.RemoteAddressExtractor
+import akka.actor.AddressExtractor
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -46,8 +46,8 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter = {
     val nodeAddresses = nodes map {
-      case RemoteAddressExtractor(a) ⇒ a
-      case x                         ⇒ throw new ConfigurationException("unparseable remote node " + x)
+      case AddressExtractor(a) ⇒ a
+      case x                   ⇒ throw new ConfigurationException("unparseable remote node " + x)
     }
     Stream.continually(nodeAddresses).flatten.iterator
   }

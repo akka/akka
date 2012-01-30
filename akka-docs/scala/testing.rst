@@ -600,9 +600,6 @@ options:
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#logging-receive
 
 .
-  The first argument to :meth:`LoggingReceive` defines the source to be used in the
-  logging events, which should be the current actor.
-
   If the abovementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.

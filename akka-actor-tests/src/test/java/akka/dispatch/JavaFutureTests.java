@@ -268,7 +268,7 @@ public class JavaFutureTests {
       }
     }, system.dispatcher());
 
-    assertEquals(expect, Await.result(f, timeout));
+    assertEquals(expect, Await.result(f, timeout).get());
   }
 
   @Test
@@ -302,7 +302,21 @@ public class JavaFutureTests {
     });
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.failure(fail);
-    Await.ready(p, d);
-    assertEquals(Await.result(p, d), "foo");
+    assertEquals(Await.result(f, d), "foo");
+  }
+
+  @Test
+  public void tryRecoverToMustBeCallable() {
+    final IllegalStateException fail = new IllegalStateException("OHNOES");
+    Promise<Object> p = Futures.promise(system.dispatcher());
+    Future<Object> f = p.future().tryRecover(new Recover<Future<Object>>() {
+      public Future<Object> recover(Throwable t) throws Throwable {
+        if (t == fail) return Futures.<Object>successful("foo", system.dispatcher()).future();
+        else throw t;
+      }
+    });
+    Duration d = Duration.create(1, TimeUnit.SECONDS);
+    p.failure(fail);
+    assertEquals(Await.result(f, d), "foo");
   }
 }

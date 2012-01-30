@@ -212,16 +212,17 @@ public class UntypedActorDocTestBase {
     //#gracefulStop
     system.shutdown();
   }
-  
+
   class Result {
     final int x;
     final String s;
+
     public Result(int x, String s) {
       this.x = x;
       this.s = s;
     }
   }
-  
+
   @Test
   public void usePatternsAskPipeTo() {
     ActorSystem system = ActorSystem.create("MySystem");
@@ -230,11 +231,11 @@ public class UntypedActorDocTestBase {
     ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
     //#ask-pipeTo
     final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
-    
+
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
     futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
     futures.add(ask(actorB, "reqeest", t)); // using timeout from above
-    
+
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
     
     final Future<Result> transformed = aggregate.map(new Mapper<Iterable<Object>, Result>() {
@@ -245,9 +246,10 @@ public class UntypedActorDocTestBase {
         return new Result(x, s);
       }
     });
-    
+
     pipeTo(transformed, actorC);
     //#ask-pipeTo
+    system.shutdown();
   }
 
   public static class MyActor extends UntypedActor {

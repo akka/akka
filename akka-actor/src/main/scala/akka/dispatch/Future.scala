@@ -342,7 +342,7 @@ object Future {
 
 sealed trait Future[+T] extends Await.Awaitable[T] {
 
-  implicit def executor: ExecutionContext
+  protected implicit def executor: ExecutionContext
 
   protected final def resolve[X](source: Either[Throwable, X]): Either[Throwable, X] = source match {
     case Left(t: scala.runtime.NonLocalReturnControl[_]) ⇒ Right(t.value.asInstanceOf[X])
@@ -469,6 +469,32 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case otherwise                   ⇒ future complete otherwise
     }
     future
+  }
+
+  /**
+   * Creates a new future that will handle any matching throwable that this
+   *  future might contain by assigning it a value of another future.
+   *
+   *  If there is no match, or if this future contains
+   *  a valid result then the new future will contain the same result.
+   *
+   *  Example:
+   *
+   *  {{{
+   *  val f = Future { Int.MaxValue }
+   *  future (6 / 0) tryRecover { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  }}}
+   */
+  def tryRecover[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
+    val p = Promise[U]()
+
+    onComplete {
+      case Left(t) if pf isDefinedAt t ⇒
+        try { p completeWith pf(t) } catch { case t: Throwable ⇒ p complete resolve(Left(t)) }
+      case otherwise ⇒ p complete otherwise
+    }
+
+    p.future
   }
 
   /**

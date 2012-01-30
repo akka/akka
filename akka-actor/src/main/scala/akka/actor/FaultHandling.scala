@@ -227,8 +227,8 @@ abstract class SupervisorStrategy {
 }
 
 /**
- * Restart all actors linked to the same supervisor when one fails,
- * @param maxNrOfRetries the number of times an actor is allowed to be restarted
+ * Restart all child actors when one fails
+ * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
@@ -270,8 +270,8 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
 }
 
 /**
- * Restart an actor when it fails
- * @param maxNrOfRetries the number of times an actor is allowed to be restarted
+ * Restart a child actor when it fails
+ * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.

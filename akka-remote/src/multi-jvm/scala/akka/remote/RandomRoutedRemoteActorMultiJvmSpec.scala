@@ -1,6 +1,6 @@
 package akka.remote
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
@@ -10,7 +10,7 @@ object RandomRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSp
   override def NrOfNodes = 4
   class SomeActor extends Actor with Serializable {
     def receive = {
-      case "hit" ⇒ sender ! self.path.address.hostPort
+      case "hit" ⇒ sender ! self
       case "end" ⇒ context.stop(self)
     }
   }
@@ -89,7 +89,7 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRe
 
       for (i ← 0 until iterationCount) {
         for (k ← 0 until connectionCount) {
-          val nodeName = Await.result(actor ? "hit", timeout.duration).toString
+          val nodeName = Await.result(actor ? "hit", timeout.duration).asInstanceOf[ActorRef].path.address.hostPort
           replies = replies + (nodeName -> (replies(nodeName) + 1))
         }
       }

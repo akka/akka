@@ -321,8 +321,8 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
           BoundedMailbox(capacity, duration)
         }
       case fqcn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config])
-        ReflectiveAccess.createInstance[MailboxType](fqcn, constructorSignature, Array[AnyRef](config)) match {
+        val args = Seq(classOf[Config] -> config)
+        ReflectiveAccess.createInstance[MailboxType](fqcn, args, prerequisites.classloader) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
