@@ -364,7 +364,7 @@ private[akka] class ActorCell(
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case e ⇒
-        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+        dispatcher.reportFailure(e)
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
@@ -398,7 +398,7 @@ private[akka] class ActorCell(
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
       case e ⇒
-        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+        dispatcher.reportFailure(e)
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
@@ -464,7 +464,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case e ⇒
-        ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+        dispatcher.reportFailure(e)
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
         //TODO FIXME How should problems here be handled???
         throw e
@@ -487,7 +487,7 @@ private[akka] class ActorCell(
           currentMessage = null // reset current message after successful invocation
         } catch {
           case e ⇒
-            ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+            dispatcher.reportFailure(e)
             system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
 
             // prevent any further messages to be processed until the actor has been restarted
@@ -509,7 +509,7 @@ private[akka] class ActorCell(
         }
       } catch {
         case e ⇒
-          ExecutionContext.defaultExecutionContext(system).reportFailure(e)
+          dispatcher.reportFailure(e)
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
           throw e
       }

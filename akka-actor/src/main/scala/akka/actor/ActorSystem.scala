@@ -595,7 +595,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
         case Some(callback) ⇒
           try callback.run() catch {
             case e ⇒
-              ExecutionContext.defaultExecutionContext(ActorSystemImpl.this).reportFailure(e)
+              dispatcher.reportFailure(e)
               log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage)
           }
           runNext(c.pop)
