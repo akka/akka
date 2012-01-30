@@ -8,7 +8,8 @@ import internal.component.{ DurationTypeConverter, ActorComponent }
 import internal._
 import org.apache.camel.impl.DefaultCamelContext
 import akka.util.Duration
-import DangerousStuff._
+import akka.actor.{ ExtensionIdProvider, ActorSystemImpl, ExtensionId, Extension, Props, ActorSystem }
+import Try._
 import akka.event.Logging
 import akka.actor._
 import java.util.concurrent.ConcurrentHashMap
@@ -55,7 +56,7 @@ class DefaultCamel(val system: ActorSystem) extends Camel {
   //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
-    try_(template.start()) otherwise context.stop()
+    Try(template.start()) otherwise context.stop()
     log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }

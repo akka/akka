@@ -12,11 +12,10 @@ import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponen
 import akka.actor._
 
 import scala.reflect.BeanProperty
-import akka.dispatch.Await
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
-import java.util.concurrent.TimeoutException
 import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message }
+import java.util.concurrent.{ TimeoutException, CountDownLatch }
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -119,78 +118,56 @@ class ActorProducer(val ep: ActorEndpoint, camel: Camel) extends DefaultProducer
 class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
 
   def process(exchange: CamelExchangeAdapter) {
-    if (exchange.isOutCapable)
-      sendSync(onComplete = forwardResponseTo(exchange), message = messageFor(exchange))
-    else
-      fireAndForget(exchange)
+    val isDone = new CountDownLatch(1)
+    process(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
+    isDone.await() // this should never wait forever as the process(exchange, callback) method guarantees that.
   }
 
   def process(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
 
-    val DoneSync = true
-    val DoneAsync = false
-    def notifyDoneSynchronously[A](a: A = null) = callback.done(DoneSync)
-    def notifyDoneAsynchronously[A](a: A = null) = callback.done(DoneAsync)
+    // this notify methods are just a syntax sugar
+    def notifyDoneSynchronously[A](a: A = null) = callback.done(true)
+    def notifyDoneAsynchronously[A](a: A = null) = callback.done(false)
+
     def message = messageFor(exchange)
 
-    def outCapable: Boolean = {
+    if (exchange.isOutCapable) { //InOut
       sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
+    } else { // inOnly
+      if (config.autoack) { //autoAck
+        fireAndForget(message)
+        notifyDoneSynchronously()
+        true // done sync
+      } else { //manualAck
+        sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
+      }
     }
 
-    def inOnlyAutoAck: Boolean = {
-      fireAndForget(exchange)
-      notifyDoneSynchronously()
-      true // done sync
-    }
-
-    def inOnlyManualAck: Boolean = {
-      sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
-    }
-
-    if (exchange.isOutCapable) {
-      outCapable
-    } else {
-      if (config.autoack) inOnlyAutoAck else inOnlyManualAck
-    }
-
-  }
-
-  private def sendSync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
-    val future = send(message)
-    val response = either(Await.result(future, config.replyTimeout))
-    onComplete(response)
-    true // Done sync
   }
 
   private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
-    val future = send(message)
+    val actor = actorFor(config.path)
+    val future = actor ? (message, new Timeout(config.replyTimeout))
     future.onComplete(onComplete)
     false // Done async
   }
 
-  private def fireAndForget(exchange: CamelExchangeAdapter) { actorFor(config.path) ! messageFor(exchange) }
-
-  private[this] def send(message: Message) = {
-    val actor = actorFor(config.path)
-    actor ? (message, new Timeout(config.replyTimeout))
-  }
+  private def fireAndForget(message: Message) { actorFor(config.path) ! message }
 
   private[this] def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure);
-    case Right(msg)                   ⇒ exchange.setResponse(Message.canonicalize(msg, camel))
-    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor within timeout. Check replyTimeout and blocking settings.")))
+    case Right(msg)                   ⇒ exchange.setResponse(Message.canonicalize(msg))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
     case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
 
   def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(Ack)                   ⇒ { /* no response message to set */ }
     case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
-    case Right(msg)                   ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: " + msg)))
+    case Right(msg)                   ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, config.path))))
     case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (config.path, config.replyTimeout, config))))
     case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
   }
-
-  private[this] def either[T](block: ⇒ T): Either[Throwable, T] = try { Right(block) } catch { case e ⇒ Left(e) }
 
   private[this] def actorFor(path: ActorEndpointPath): ActorRef =
     path.findActorIn(camel.system) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
@@ -207,7 +184,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
  * @author Martin Krasser
  */
 class ActorNotRegisteredException(uri: String) extends RuntimeException {
-  override def getMessage = "Actor '%s' doesn't exist" format uri
+  override def getMessage = "Actor [%s] doesn't exist" format uri
 }
 
 private[camel] object DurationTypeConverter extends CamelTypeConverter {
