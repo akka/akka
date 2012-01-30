@@ -36,6 +36,8 @@ trait NodeMembershipChangeListener {
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
  */
+sealed trait ClusterMessage extends Serializable
+
 /**
  * Command to join the cluster.
  */
@@ -116,7 +118,7 @@ final class ClusterDaemon(system: ActorSystem, gossiper: Gossiper) extends Actor
  *       gossip to random seed with certain probability depending on number of unreachable, seed and live members.
  * </pre>
  */
-case class Gossiper(remote: Remote, system: ActorSystemImpl) {
+case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
 
   /**
    * Represents the state for this Gossiper. Implemented using optimistic lockless concurrency,
@@ -128,10 +130,15 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
   // configuration
   private val remoteSettings = remote.remoteSettings
+
+  private val protocol = "akka" // TODO should this be hardcoded?
+  private val address = remote.transport.address
+  private val memberFingerprint = address.##
+
   private val serialization = remote.serialization
   private val failureDetector = remote.failureDetector
 
-  private val initalDelayForGossip = remoteSettings.InitalDelayForGossip
+  private val initialDelayForGossip = remoteSettings.InitialDelayForGossip
   private val gossipFrequency = remoteSettings.GossipFrequency
 
   implicit val seedNodeConnectionTimeout = remoteSettings.SeedNodeConnectionTimeout
@@ -139,17 +146,9 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
   // seed members
   private val seeds: Set[Member] = {
-    val seeds = remoteSettings.SeedNodes flatMap {
-      case uta: UnparsedTransportAddress ⇒
-        uta.parse(remote.transports) match {
-          case pta: Address ⇒ Some(Member(pta, MemberStatus.Up()))
-          case _                           ⇒ None
-        }
-      case _ ⇒ None
-    }
     if (remoteSettings.SeedNodes.isEmpty) throw new ConfigurationException(
       "At least one seed member must be defined in the configuration [akka.cluster.seed-members]")
-    else remoteSettings.SeedNodes
+    else remoteSettings.SeedNodes map (address ⇒ Member(address, MemberStatus.Up()))
   }
 
   private val isRunning = new AtomicBoolean(true)
@@ -168,17 +167,17 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
 
   // start periodic gossip and cluster scrutinization
   val initateGossipCanceller = system.scheduler.schedule(
-    Duration(initalDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(initateGossip())
+    Duration(initialDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(initateGossip())
 
   val scrutinizeCanceller = system.scheduler.schedule(
-    Duration(initalDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(scrutinize())
+    Duration(initialDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(scrutinize())
 
   /**
    * Shuts down all connections to other members, the cluster daemon and the periodic gossip and cleanup tasks.
    */
   def shutdown() {
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Shutting down Gossiper for [{}]", remoteAddress)
+      log.info("Shutting down Gossiper for [{}]", address)
       connectionManager.shutdown()
       system.stop(clusterDaemon)
       initateGossipCanceller.cancel()
@@ -322,7 +321,6 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
           //   1. Gossiper is shut down
           //   2. The connection time window has expired
           if (isRunning.get) {
-            println("=======>>> isRun: " + isRunning.get + " " + remoteAddress)
             if (timer.timeLeft.toMillis > 0) joinCluster(timer) // recur
             else throw new RemoteConnectionException(
               "Could not join cluster (any of the seed members) - giving up after trying for " +
@@ -357,7 +355,7 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
     }
 
     // 3. gossip to a seed for facilitating partition healing
-    if ((!gossipedToSeed || oldMembersSize < 1) && (seeds.head != remoteAddress)) {
+    if ((!gossipedToSeed || oldMembersSize < 1) && (seeds.head != address)) {
       if (oldMembersSize == 0) gossipToRandomNodeOf(seeds)
       else {
         val probability = 1.0 / oldMembersSize + oldUnavailableMembersSize
@@ -372,7 +370,7 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
    * @returns 'true' if it gossiped to a "seed" member.
    */
   private def gossipToRandomNodeOf(members: Set[Member]): Boolean = {
-    val peers = members filter (_.address != remoteAddress) // filter out myself
+    val peers = members filter (_.address != address) // filter out myself
     val peer = selectRandomNode(peers)
     val oldState = state.get
     val oldGossip = oldState.currentGossip
@@ -419,7 +417,7 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
       Some(
         connectionManager.putIfAbsent(
           address,
-          () ⇒ system.actorFor(RootActorPath(RemoteSystemAddress(system.name, address)) / "system" / "cluster")))
+          () ⇒ system.actorFor(RootActorPath(Address(protocol, system.name)) / "system" / "cluster")))
     } catch {
       case e: Exception ⇒ None
     }
@@ -432,9 +430,7 @@ case class Gossiper(remote: Remote, system: ActorSystemImpl) {
     from copy (version = newVersion)
   }
 
-  private def seedNodesWithoutMyself: List[Member] = seeds.filter(_ != remoteAddress.transport).toList
+  private def seedNodesWithoutMyself: List[Member] = seeds.filter(_.address != address).toList
 
-  private def selectRandomNode(members: Set[Member]): Member = {
-    members.toList(random.nextInt(members.size))
-  }
+  private def selectRandomNode(members: Set[Member]): Member = members.toList(random.nextInt(members.size))
 }
