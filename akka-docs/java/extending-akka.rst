@@ -54,6 +54,12 @@ Loading from Configuration
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either ``ExtensionId`` or ``ExtensionIdProvider``
 in the "akka.extensions" section of the config you provide to your ``ActorSystem``.
 
+::
+
+    akka {
+      extensions = ["akka.docs.extension.ExtensionDocTestBase.CountExtension"]
+    }
+
 Applicability
 =============
 
