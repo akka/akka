@@ -19,13 +19,15 @@ trait DispatcherPrerequisites {
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
+  def classloader: ClassLoader
 }
 
 case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
-  val scheduler: Scheduler) extends DispatcherPrerequisites
+  val scheduler: Scheduler,
+  val classloader: ClassLoader) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -134,8 +136,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator(cfg, prerequisites)
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
-        ReflectiveAccess.createInstance[MessageDispatcherConfigurator](fqn, constructorSignature, Array[AnyRef](cfg, prerequisites)) match {
+        val args = Seq(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
+        ReflectiveAccess.createInstance[MessageDispatcherConfigurator](fqn, args, prerequisites.classloader) match {
           case Right(configurator) ⇒ configurator
           case Left(exception) ⇒
             throw new IllegalArgumentException(

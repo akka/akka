@@ -290,7 +290,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       val sysImpl = system.asInstanceOf[ActorSystemImpl]
       val addr = sysImpl.provider.rootPath.address
-      val serialized = SerializedActorRef(addr + "/non-existing")
+      val serialized = SerializedActorRef(RootActorPath(addr, "/non-existing"))
 
       out.writeObject(serialized)
 
@@ -299,7 +299,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
       Serialization.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
-        in.readObject must be === new EmptyLocalActorRef(system.eventStream, sysImpl.provider, system.dispatcher, system.actorFor("/").path / "non-existing")
+        in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, system.actorFor("/").path / "non-existing", system.eventStream)
       }
     }
 
