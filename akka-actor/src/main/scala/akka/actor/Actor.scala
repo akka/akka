@@ -9,7 +9,6 @@ import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import scala.collection.immutable.Stack
 import java.util.regex.Pattern
-import scala.annotation.tailrec
 
 /**
  * Marker trait to show which Messages are automatically handled by Akka
