@@ -209,10 +209,10 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  final var receiveTimeoutData: (Long, Cancellable) =
+  var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
-  final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
+  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -255,16 +255,16 @@ private[akka] class ActorCell(
     a.stop()
   }
 
-  final var currentMessage: Envelope = null
+  var currentMessage: Envelope = null
 
-  final var actor: Actor = _
+  var actor: Actor = _
 
-  final var stopping = false
+  var stopping = false
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
-  final var nextNameSequence: Long = 0
+  var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
   final protected def randomName(): String = {
