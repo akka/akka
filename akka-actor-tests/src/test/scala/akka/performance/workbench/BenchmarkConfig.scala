@@ -20,41 +20,30 @@ object BenchmarkConfig {
       resultDir = "target/benchmark"
       useDummyOrderbook = false
 
-      client-dispatcher {
-        executor = "thread-pool-executor"
-        thread-pool-executor {
-          core-pool-size-min = ${benchmark.maxClients}
-          core-pool-size-max = ${benchmark.maxClients}
+      throughput-dispatcher {
+        throughput = 5
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
         }
-      }
-
-      destination-dispatcher {
-        executor = "thread-pool-executor"
-        thread-pool-executor {
-          core-pool-size-min = ${benchmark.maxClients}
-          core-pool-size-max = ${benchmark.maxClients}
-        }
-      }
-
-      high-throughput-dispatcher {
-        throughput = 10000
-        executor = "thread-pool-executor"
-        thread-pool-executor {
-          core-pool-size-min = ${benchmark.maxClients}
-          core-pool-size-max = ${benchmark.maxClients}
-        }
-      }
-
-      pinned-dispatcher {
-        type = PinnedDispatcher
       }
 
       latency-dispatcher {
         throughput = 1
-        executor = "thread-pool-executor"
-        thread-pool-executor {
-          core-pool-size-min = ${benchmark.maxClients}
-          core-pool-size-max = ${benchmark.maxClients}
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
+        }
+      }
+
+      trading-dispatcher {
+        throughput = 5
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
         }
       }
     }
@@ -62,8 +51,9 @@ object BenchmarkConfig {
   private val longRunningBenchmarkConfig = ConfigFactory.parseString("""
     benchmark {
       longRunning = true
+      minClients = 4
       maxClients = 48
-      repeatFactor = 150
+      repeatFactor = 2000
       maxRunDuration = 120 seconds
       useDummyOrderbook = true
     }
