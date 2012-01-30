@@ -49,7 +49,7 @@ object Dependencies {
 object Dependency {
   // Versions
   object V {
-    val Akka      = "2.0-M3"
+    val Akka      = "2.0-SNAPSHOT"
   }
 
   val akkaKernel        = "com.typesafe.akka" % "akka-kernel"        % V.Akka
