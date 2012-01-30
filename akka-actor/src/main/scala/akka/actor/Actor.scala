@@ -9,6 +9,7 @@ import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import scala.collection.immutable.Stack
 import java.util.regex.Pattern
+import scala.annotation.tailrec
 
 /**
  * Marker trait to show which Messages are automatically handled by Akka
@@ -114,7 +115,6 @@ object Actor {
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
 
-  private final val emptyBehaviourStack: Stack[Actor.Receive] = Stack.empty
 }
 
 /**
@@ -284,27 +284,37 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
+  /**
+   * For Akka internal use only.
+   */
   private[akka] final def apply(msg: Any) = {
     msg match {
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-      case unknown ⇒ unhandled(unknown)
+      case msg if behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
+      case unknown                                    ⇒ unhandled(unknown)
     }
   }
 
-  private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
-
+  /**
+   * For Akka internal use only.
+   */
   private[akka] def pushBehavior(behavior: Receive): Unit = {
     behaviorStack = behaviorStack.push(behavior)
   }
 
+  /**
+   * For Akka internal use only.
+   */
   private[akka] def popBehavior(): Unit = {
-    val stack = behaviorStack
-    if (stack.nonEmpty) behaviorStack = stack.pop
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
   }
 
-  private[akka] def clearBehaviorStack(): Unit = { behaviorStack = emptyBehaviourStack }
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def clearBehaviorStack(): Unit = Stack.empty[Receive].push(behaviorStack.last)
 
-  private var behaviorStack: Stack[PartialFunction[Any, Unit]] = emptyBehaviourStack
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
 
