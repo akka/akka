@@ -156,15 +156,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance =
-    configureThreadPool(config,
-      threadPoolConfig ⇒ new Dispatcher(prerequisites,
-        config.getString("id"),
-        config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)))
+  private val instance = new Dispatcher(
+    prerequisites,
+    config.getString("id"),
+    config.getInt("throughput"),
+    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    mailboxType,
+    configureExecutor(),
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -180,14 +179,13 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
 class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance =
-    configureThreadPool(config,
-      threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-        config.getString("id"),
-        config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType, threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)))
+  private val instance = new BalancingDispatcher(
+    prerequisites,
+    config.getString("id"),
+    config.getInt("throughput"),
+    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    mailboxType, configureExecutor(),
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -203,23 +201,22 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  def createPinnedDispatcherWith(tpc: ThreadPoolConfig): PinnedDispatcher =
-    new PinnedDispatcher(
-      prerequisites, null, config.getString("id"), mailboxType,
-      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), tpc)
-
-  /**
-   * Creates new dispatcher for each invocation.
-   */
-  override def dispatcher(): MessageDispatcher = configureThreadPool(config, {
-    case t: ThreadPoolConfig ⇒ createPinnedDispatcherWith(t)
+  val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
+    case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
     case other ⇒
       prerequisites.eventStream.publish(
         Warning("PinnedDispatcherConfigurator",
           this.getClass,
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
             config.getString("id"))))
-      createPinnedDispatcherWith(ThreadPoolConfig())
-  })
+      ThreadPoolConfig()
+  }
+  /**
+   * Creates new dispatcher for each invocation.
+   */
+  override def dispatcher(): MessageDispatcher =
+    new PinnedDispatcher(
+      prerequisites, null, config.getString("id"), mailboxType,
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
 
 }

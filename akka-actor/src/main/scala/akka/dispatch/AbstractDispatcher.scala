@@ -292,6 +292,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def shutdown(): Unit
 }
 
+abstract class ExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceFactoryProvider
+
 /**
  * Base class to be used for hooking in new dispatchers into Dispatchers.
  */
@@ -333,14 +335,32 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
     }
   }
 
-  def configureThreadPool(
-    config: Config,
-    createDispatcher: ⇒ (ExecutorServiceFactoryProvider) ⇒ MessageDispatcher): MessageDispatcher = {
-    import ThreadPoolConfigDispatcherBuilder.conf_?
+  def configureExecutor(): ExecutorServiceConfigurator = {
+    config.getString("executor") match {
+      case null | ""              ⇒ throw new IllegalArgumentException("""Missing "executor" in config file for dispatcher [%s]""".format(config.getString("id")))
+      case "thread-pool-executor" ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
+      //case "fork-join-executor" => new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case fqcn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
+        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites)) match {
+          case Right(instance) ⇒ instance
+          case Left(exception) ⇒
+            throw new IllegalArgumentException(
+              ("Cannot instantiate ExecutorServiceConfigurator (\"executor = [%s]\"), defined in [%s], " +
+                "make sure it has an accessible constructor with a [%s,%s] signature")
+                .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
+        }
+    }
+  }
+}
 
-    //Apply the following options to the config if they are present in the config
+class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+  import ThreadPoolConfigBuilder.conf_?
 
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig())
+  val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
+
+  def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
+    ThreadPoolConfigBuilder(ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
@@ -354,6 +374,9 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
               case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
             }
           case _ ⇒ None
-        })(queueFactory ⇒ _.setQueueFactory(queueFactory))).build
+        })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
+
+  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
 }
