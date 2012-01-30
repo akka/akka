@@ -881,7 +881,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
     "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
     "return result with 'get'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
-    "return result with 'Await.sync'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
+    "return result with 'Await.result'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ Await.ready(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
@@ -932,7 +932,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       })
     }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
-    "throw exception with 'Await.sync'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
+    "throw exception with 'Await.result'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
         (evaluating { Await.result(future filter (_ ⇒ true), timeout.duration) } must produce[E]).getMessage must be(message)
