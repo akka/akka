@@ -2,11 +2,12 @@ package akka.remote
 
 import java.net.InetSocketAddress
 import akka.testkit.AkkaSpec
+import akka.actor.Address
 
 class AccrualFailureDetectorSpec extends AkkaSpec {
 
   "An AccrualFailureDetector" must {
-    val conn = RemoteNettyAddress("localhost", 2552)
+    val conn = Address("akka", "", Some("localhost"), Some(2552))
 
     "mark node as available after a series of successful heartbeats" in {
       val fd = new AccrualFailureDetector()

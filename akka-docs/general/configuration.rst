@@ -217,6 +217,20 @@ and parsed by the actor system can be displayed like this:
   println(system.settings());
   // this is a shortcut for system.settings().config().root().render()
 
+A Word About ClassLoaders
+-------------------------
+
+In several places of the configuration file it is possible to specify the
+fully-qualified class name of something to be instantiated by Akka. This is
+done using Java reflection, which in turn uses a :class:`ClassLoader`. Getting
+the right one in challenging environments like application containers or OSGi
+bundles is not always trivial, the current approach of Akka is that each
+:class:`ActorSystem` implementation stores the current thread’s context class
+loader (if available, otherwise just its own loader as in
+``this.getClass.getClassLoader``) and uses that for all reflective accesses.
+This implies that putting Akka on the boot class path will yield
+:class:`NullPointerException` from strange places: this is simply not
+supported.
 
 Application specific settings
 -----------------------------
