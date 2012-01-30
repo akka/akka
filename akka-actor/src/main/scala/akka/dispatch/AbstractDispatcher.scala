@@ -14,6 +14,7 @@ import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
+import akka.jsr166y.ForkJoinPool
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -339,7 +340,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
     config.getString("executor") match {
       case null | ""              ⇒ throw new IllegalArgumentException("""Missing "executor" in config file for dispatcher [%s]""".format(config.getString("id")))
       case "thread-pool-executor" ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
-      //case "fork-join-executor" => new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case "fork-join-executor"   ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case fqcn ⇒
         val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
         ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites)) match {
@@ -359,7 +360,7 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 
   val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
 
-  def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
+  protected def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
     ThreadPoolConfigBuilder(ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
@@ -379,4 +380,29 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 
   def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
     threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
+}
+
+/*int parallelism,
+                        ForkJoinWorkerThreadFactory factory,
+                        Thread.UncaughtExceptionHandler handler,
+                        boolean asyncMode*/
+
+class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+
+  def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = prerequisites.threadFactory match {
+    case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
+    case x ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
+  }
+
+  class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+                                       val parallelism: Int) extends ExecutorServiceFactory {
+    def createExecutorService: ExecutorService = new ForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, true)
+  }
+  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    new ForkJoinExecutorServiceFactory(
+      validate(threadFactory),
+      ThreadPoolConfig.scaledPoolSize(
+        config.getInt("parallelism-min"),
+        config.getDouble("parallelism-factor"),
+        config.getInt("parallelism-max")))
 }
