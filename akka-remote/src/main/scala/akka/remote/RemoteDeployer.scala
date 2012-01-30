@@ -10,7 +10,7 @@ import akka.config.ConfigurationException
 
 case class RemoteScope(node: Address) extends Scope
 
-class RemoteDeployer(_settings: ActorSystem.Settings) extends Deployer(_settings) {
+class RemoteDeployer(_settings: ActorSystem.Settings, _classloader: ClassLoader) extends Deployer(_settings, _classloader) {
 
   override protected def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._

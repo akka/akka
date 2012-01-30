@@ -29,28 +29,29 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
   val ip = InetAddress.getByName(settings.Hostname)
 
   private val factory = new NioServerSocketChannelFactory(
-    Executors.newCachedThreadPool(netty.threadFactory),
-    Executors.newCachedThreadPool(netty.threadFactory))
-
-  private val bootstrap = new ServerBootstrap(factory)
+    Executors.newCachedThreadPool(netty.system.threadFactory),
+    Executors.newCachedThreadPool(netty.system.threadFactory))
 
   private val executionHandler = new ExecutionHandler(netty.executor)
 
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
-  val pipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, netty)
-  bootstrap.setPipelineFactory(pipelineFactory)
-  bootstrap.setOption("backlog", settings.Backlog)
-  bootstrap.setOption("tcpNoDelay", true)
-  bootstrap.setOption("child.keepAlive", true)
-  bootstrap.setOption("reuseAddress", true)
+  private val bootstrap = {
+    val b = new ServerBootstrap(factory)
+    b.setPipelineFactory(new RemoteServerPipelineFactory(openChannels, executionHandler, netty))
+    b.setOption("backlog", settings.Backlog)
+    b.setOption("tcpNoDelay", true)
+    b.setOption("child.keepAlive", true)
+    b.setOption("reuseAddress", true)
+    b
+  }
 
   @volatile
   private[akka] var channel: Channel = _
 
   def start(): Unit = {
-    channel = bootstrap.bind(new InetSocketAddress(ip, settings.Port))
+    channel = bootstrap.bind(new InetSocketAddress(ip, settings.DesiredPortFromConfig))
     openChannels.add(channel)
     netty.notifyListeners(RemoteServerStarted(netty))
   }
@@ -62,7 +63,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
           .setSystem(settings.systemName)
           .setHostname(settings.Hostname)
-          .setPort(settings.Port)
+          .setPort(settings.DesiredPortFromConfig)
           .build)
         if (settings.SecureCookie.nonEmpty)
           b.setCookie(settings.SecureCookie.get)
@@ -139,6 +140,7 @@ class RemoteServerHandler(
 
   private var addressToSet = true
 
+  // TODO look into moving that into onBind or similar, but verify that that is guaranteed to be the first to be called
   override def handleUpstream(ctx: ChannelHandlerContext, event: ChannelEvent) = {
     if (addressToSet) {
       netty.setAddressFromChannel(event.getChannel)

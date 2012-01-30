@@ -322,6 +322,14 @@ abstract class ExtendedActorSystem extends ActorSystem {
    */
   def deathWatch: DeathWatch
 
+  /**
+   * ClassLoader which is used for reflective accesses internally. This is set
+   * to the context class loader, if one is set, or the class loader which
+   * loaded the ActorSystem implementation. The context class loader is also
+   * set on all threads created by the ActorSystem, if one was set during
+   * creation.
+   */
+  def internalClassLoader: ClassLoader
 }
 
 class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
@@ -386,16 +394,17 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   val scheduler: Scheduler = createScheduler()
 
+  val internalClassLoader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
+
   val provider: ActorRefProvider = {
     val arguments = Seq(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler)
+      classOf[Scheduler] -> scheduler,
+      classOf[ClassLoader] -> internalClassLoader)
 
-    val loader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
-
-    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, loader) match {
+    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, internalClassLoader) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }
@@ -416,7 +425,9 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   def locker: Locker = provider.locker
 
-  val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(threadFactory, eventStream, deadLetterMailbox, scheduler))
+  val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
+    threadFactory, eventStream, deadLetterMailbox, scheduler, internalClassLoader))
+
   val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
@@ -533,10 +544,9 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   private def loadExtensions() {
     import scala.collection.JavaConversions._
-    val loader = Option(Thread.currentThread.getContextClassLoader) getOrElse this.getClass.getClassLoader
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
       import ReflectiveAccess.{ getObjectFor, createInstance, noParams, noArgs }
-      getObjectFor[AnyRef](fqcn, loader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+      getObjectFor[AnyRef](fqcn, internalClassLoader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)

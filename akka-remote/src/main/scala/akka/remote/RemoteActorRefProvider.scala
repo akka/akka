@@ -22,11 +22,12 @@ class RemoteActorRefProvider(
   val systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
-  val scheduler: Scheduler) extends ActorRefProvider {
+  val scheduler: Scheduler,
+  val classloader: ClassLoader) extends ActorRefProvider {
 
   val remoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer = new RemoteDeployer(settings)
+  val deployer = new RemoteDeployer(settings, classloader)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, deployer)
 
@@ -87,7 +88,7 @@ class RemoteActorRefProvider(
         classOf[ActorSystemImpl] -> system,
         classOf[RemoteActorRefProvider] -> this)
 
-      ReflectiveAccess.createInstance[RemoteTransport](fqn, args, getClass.getClassLoader) match {
+      ReflectiveAccess.createInstance[RemoteTransport](fqn, args, system.internalClassLoader) match {
         case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
         case Right(remote) ⇒ remote
       }

@@ -89,7 +89,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(Scatter
       }
 
       val replies = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-        case ref: ActorRef ⇒ (ref.asInstanceOf[ActorRef].path.address.hostPort, 1)
+        case ref: ActorRef ⇒ (ref.path.address.hostPort, 1)
       }).foldLeft(Map(akkaSpec(0) -> 0, akkaSpec(1) -> 0, akkaSpec(2) -> 0)) {
         case (m, (n, c)) ⇒ m + (n -> (m(n) + c))
       }

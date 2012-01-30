@@ -158,11 +158,12 @@ class ActiveRemoteClient private[akka] (
 
       executionHandler = new ExecutionHandler(netty.executor)
 
-      bootstrap = new ClientBootstrap(netty.clientChannelFactory)
-      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, bootstrap, executionHandler, remoteAddress, this))
-      bootstrap.setOption("tcpNoDelay", true)
-      bootstrap.setOption("keepAlive", true)
-      bootstrap.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+      val b = new ClientBootstrap(netty.clientChannelFactory)
+      b.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, b, executionHandler, remoteAddress, this))
+      b.setOption("tcpNoDelay", true)
+      b.setOption("keepAlive", true)
+      b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+      bootstrap = b
 
       val remoteIP = InetAddress.getByName(remoteAddress.host.get)
       log.debug("Starting remote client connection to [{}|{}]", remoteAddress, remoteIP)

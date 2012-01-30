@@ -17,8 +17,10 @@ case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMs
  * Internal system "daemon" actor for remote internal communication.
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
+ *
+ * INTERNAL USE ONLY!
  */
-class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
+private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   /**

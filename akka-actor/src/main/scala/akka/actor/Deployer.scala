@@ -23,7 +23,7 @@ case object LocalScope extends Scope
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings) {
+class Deployer(val settings: ActorSystem.Settings, val classloader: ClassLoader) {
 
   import scala.collection.JavaConverters._
 
@@ -41,7 +41,6 @@ class Deployer(val settings: ActorSystem.Settings) {
   def deploy(d: Deploy): Unit = deployments.put(d.path, d)
 
   protected def parseConfig(key: String, config: Config): Option[Deploy] = {
-    import akka.util.ReflectiveAccess.getClassFor
 
     val deployment = config.withFallback(default)
 
@@ -65,8 +64,8 @@ class Deployer(val settings: ActorSystem.Settings) {
       case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case fqn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config])
-        ReflectiveAccess.createInstance[RouterConfig](fqn, constructorSignature, Array[AnyRef](deployment)) match {
+        val args = Seq(classOf[Config] -> deployment)
+        ReflectiveAccess.createInstance[RouterConfig](fqn, args, classloader) match {
           case Right(router) ⇒ router
           case Left(exception) ⇒
             throw new IllegalArgumentException(

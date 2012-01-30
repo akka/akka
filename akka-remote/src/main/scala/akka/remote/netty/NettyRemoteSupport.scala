@@ -33,20 +33,19 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
 
-  val threadFactory = new MonitorableThreadFactory("NettyRemoteTransport", settings.Daemonic, Some(getClass.getClassLoader))
-  val timer: HashedWheelTimer = new HashedWheelTimer(threadFactory)
+  val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
 
   val executor = new OrderedMemoryAwareThreadPoolExecutor(
     settings.ExecutionPoolSize,
     settings.MaxChannelMemorySize,
     settings.MaxTotalMemorySize,
-    settings.ExecutionPoolKeepAlive.length,
-    settings.ExecutionPoolKeepAlive.unit,
-    threadFactory)
+    settings.ExecutionPoolKeepalive.length,
+    settings.ExecutionPoolKeepalive.unit,
+    system.threadFactory)
 
   val clientChannelFactory = new NioClientSocketChannelFactory(
-    Executors.newCachedThreadPool(threadFactory),
-    Executors.newCachedThreadPool(threadFactory))
+    Executors.newCachedThreadPool(system.threadFactory),
+    Executors.newCachedThreadPool(system.threadFactory))
 
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
@@ -79,7 +78,11 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   def shutdown(): Unit = {
     clientsLock.writeLock().lock()
     try {
-      remoteClients foreach { case (_, client) ⇒ client.shutdown() }
+      remoteClients foreach {
+        case (_, client) ⇒ try client.shutdown() catch {
+          case e ⇒ log.error(e, "failure while shutting down [{}]", client)
+        }
+      }
       remoteClients.clear()
     } finally {
       clientsLock.writeLock().unlock()

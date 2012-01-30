@@ -6,6 +6,8 @@ package akka.remote
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import akka.util.duration._
+import akka.util.Duration
+import akka.remote.netty.NettyRemoteTransport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
@@ -17,8 +19,9 @@ class RemoteConfigSpec extends AkkaSpec(
   }
   """) {
 
-  "RemoteExtension" must {
-    "be able to parse remote and cluster config elements" in {
+  "Remoting" must {
+
+    "be able to parse generic remote config elements" in {
       val settings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
       import settings._
 
@@ -33,5 +36,32 @@ class RemoteConfigSpec extends AkkaSpec(
       GossipFrequency must be(1 second)
       SeedNodes must be(Set())
     }
+
+    "be able to parse Netty config elements" in {
+      val settings =
+        system.asInstanceOf[ExtendedActorSystem]
+          .provider.asInstanceOf[RemoteActorRefProvider]
+          .transport.asInstanceOf[NettyRemoteTransport]
+          .settings
+      import settings._
+
+      BackoffTimeout must be(Duration.Zero)
+      SecureCookie must be(None)
+      RequireCookie must be(false)
+      UsePassiveConnections must be(true)
+      Hostname must not be "" // will be set to the local IP
+      DesiredPortFromConfig must be(2552)
+      MessageFrameSize must be(1048576)
+      ConnectionTimeout must be(2 minutes)
+      Backlog must be(4096)
+      ExecutionPoolKeepalive must be(1 minute)
+      ExecutionPoolSize must be(4)
+      MaxChannelMemorySize must be(0)
+      MaxTotalMemorySize must be(0)
+      ReconnectDelay must be(5 seconds)
+      ReadTimeout must be(1 hour)
+      ReconnectionTimeWindow must be(10 minutes)
+    }
+
   }
 }

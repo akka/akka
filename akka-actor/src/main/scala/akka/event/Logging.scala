@@ -101,7 +101,7 @@ trait LoggingBus extends ActorEventBus {
         if loggerName != StandardOutLoggerName
       } yield {
         try {
-          ReflectiveAccess.getClassFor[Actor](loggerName) match {
+          ReflectiveAccess.getClassFor[Actor](loggerName, system.internalClassLoader) match {
             case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
             case Left(exception)   ⇒ throw exception
           }

@@ -13,7 +13,6 @@ class NettySettings(config: Config, val systemName: String) {
 
   import config._
 
-  val Daemonic = getBoolean("daemonic")
   val BackoffTimeout = Duration(getMilliseconds("backoff-timeout"), MILLISECONDS)
 
   val SecureCookie: Option[String] = getString("secure-cookie") match {
@@ -38,13 +37,13 @@ class NettySettings(config: Config, val systemName: String) {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress
     case value ⇒ value
   }
-  val Port = getInt("port")
+  val DesiredPortFromConfig = getInt("port")
 
   val ConnectionTimeout = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
 
   val Backlog = getInt("backlog")
 
-  val ExecutionPoolKeepAlive = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
+  val ExecutionPoolKeepalive = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
 
   val ExecutionPoolSize = getInt("execution-pool-size") match {
     case sz if sz < 1 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 1")

@@ -322,8 +322,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         }
       case fqcn ⇒
         val args = Seq(classOf[Config] -> config)
-        val loader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
-        ReflectiveAccess.createInstance[MailboxType](fqcn, args, loader) match {
+        ReflectiveAccess.createInstance[MailboxType](fqcn, args, prerequisites.classloader) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
