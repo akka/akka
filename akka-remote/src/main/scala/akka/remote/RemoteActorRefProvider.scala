@@ -4,6 +4,7 @@
 
 package akka.remote
 
+import akka.AkkaException
 import akka.actor._
 import akka.dispatch._
 import akka.event.{ DeathWatch, Logging, LoggingAdapter }
@@ -14,6 +15,10 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
+
+class RemoteException(msg: String) extends AkkaException(msg)
+class RemoteCommunicationException(msg: String) extends RemoteException(msg)
+class RemoteConnectionException(msg: String) extends RemoteException(msg)
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -41,8 +46,6 @@ class RemoteActorRefProvider(
 
   val deathWatch = new RemoteDeathWatch(local.deathWatch, this)
 
-  val failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize)
-
   // these are only available after init()
   def rootGuardian = local.rootGuardian
   def guardian = local.guardian
@@ -53,6 +56,10 @@ class RemoteActorRefProvider(
   def unregisterTempActor(path: ActorPath) = local.unregisterTempActor(path)
   def tempPath() = local.tempPath()
   def tempContainer = local.tempContainer
+
+  @volatile
+  private var _failureDetector: AccrualFailureDetector = _
+  def failureDetector: AccrualFailureDetector = _failureDetector
 
   @volatile
   private var _transport: RemoteTransport = _
@@ -72,6 +79,8 @@ class RemoteActorRefProvider(
 
   def init(system: ActorSystemImpl) {
     local.init(system)
+
+    _failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize, system)
 
     _remoteDaemon = new RemoteSystemDaemon(system, rootPath / "remote", rootGuardian, log)
     local.registerExtraNames(Map(("remote", remoteDaemon)))
