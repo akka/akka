@@ -11,7 +11,7 @@ import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 object ConcurrentSocketActorSpec {
   val config = """
 akka {
-  extensions = []
+  extensions = ["akka.zeromq.ZeroMQExtension"]
 }
 """
 }
