@@ -362,7 +362,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case Right(r) ⇒ that onSuccess { case r2 ⇒ p success ((r, r2)) }
     }
     that onFailure { case f ⇒ p failure f }
-    p
+    p.future
   }
 
   /**
@@ -435,7 +435,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case Left(t)  ⇒ p success t
       case Right(r) ⇒ p failure new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + r)
     }
-    p
+    p.future
   }
 
   /**
@@ -448,7 +448,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case r @ Right(_) ⇒ p complete r
       case _            ⇒ p completeWith that
     }
-    p
+    p.future
   }
 
   /**
@@ -463,26 +463,26 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * </pre>
    */
   final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
-    val future = Promise[A]()
+    val p = Promise[A]()
     onComplete {
-      case Left(e) if pf isDefinedAt e ⇒ future.complete(try { Right(pf(e)) } catch { case x: Exception ⇒ Left(x) })
-      case otherwise                   ⇒ future complete otherwise
+      case Left(e) if pf isDefinedAt e ⇒ p.complete(try { Right(pf(e)) } catch { case x: Exception ⇒ Left(x) })
+      case otherwise                   ⇒ p complete otherwise
     }
-    future
+    p.future
   }
 
   /**
-   * Creates a new future that will handle any matching throwable that this
-   *  future might contain by assigning it a value of another future.
+   * Returns a new Future that will, in case this future fails,
+   * be completed with the resulting Future of the given PartialFunction,
+   * if the given PartialFunction matches the failure of the original Future.
    *
-   *  If there is no match, or if this future contains
-   *  a valid result then the new future will contain the same result.
+   * If the PartialFunction throws, that Throwable will be propagated to the returned Future.
    *
    *  Example:
    *
    *  {{{
    *  val f = Future { Int.MaxValue }
-   *  future (6 / 0) tryRecover { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  Future (6 / 0) tryRecover { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
   def tryRecover[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
@@ -494,6 +494,27 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case otherwise ⇒ p complete otherwise
     }
 
+    p.future
+  }
+
+  /**
+   * Returns a new Future that will contain the completed result of this Future,
+   * and which will invoke the supplied PartialFunction when completed.
+   *
+   * This allows for establishing order of side-effects.
+   *
+   *  {{{
+   *  Future { 5 } andThen {
+   *    case something => assert(something is awesome)
+   *  } andThen {
+   *    case Left(t) => handleProblem(t)
+   *    case Right(v) => dealWithSuccess(v)
+   *  }
+   *  }}}
+   */
+  def andThen[U](pf: PartialFunction[Either[Throwable, T], U]): Future[T] = {
+    val p = Promise[T]()
+    onComplete { case r ⇒ try if (pf isDefinedAt r) pf(r) finally p complete r }
     p.future
   }
 
@@ -545,7 +566,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
           case e: ClassCastException ⇒ Left(e)
         })
     }
-    fa
+    fa.future
   }
 
   /**
@@ -576,7 +597,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
             logError("Future.flatMap", e)
         }
     }
-    p
+    p.future
   }
 
   /**
@@ -616,7 +637,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
           Left(e)
       })
     }
-    p
+    p.future
   }
 
   protected def logError(msg: String, problem: Throwable): Unit = {

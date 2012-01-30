@@ -13,10 +13,10 @@ import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
-import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
+import java.util.concurrent._
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -299,6 +299,32 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           Await.result(future11, timeout.duration) must be("Oops!")
 
           system.stop(actor)
+        }
+      }
+
+      "tryRecover from exceptions" in {
+        val o = new IllegalStateException("original")
+        val r = new IllegalStateException("recovered")
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](o) tryRecover { case _ if false == true ⇒ Promise.successful("yay!") }, timeout.duration)
+        } must be(o)
+
+        Await.result(Promise.failed[String](o) tryRecover { case _ ⇒ Promise.successful("yay!") }, timeout.duration) must equal("yay!")
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](o) tryRecover { case _ ⇒ Promise.failed[String](r) }, timeout.duration)
+        } must be(r)
+      }
+
+      "andThen like a boss" in {
+        val q = new LinkedBlockingQueue[Int]
+        for (i ← 1 to 1000) {
+          Await.result(Future { q.add(1); 3 } andThen { case _ ⇒ q.add(2) } andThen { case Right(0) ⇒ q.add(Int.MaxValue) } andThen { case _ ⇒ q.add(3); }, timeout.duration) must be(3)
+          q.poll() must be(1)
+          q.poll() must be(2)
+          q.poll() must be(3)
+          q.clear()
         }
       }
 
