@@ -32,7 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-import org.omg.CORBA.portable.IDLEntity;
+//import org.omg.CORBA.portable.IDLEntity;
 
 import com.eaio.util.lang.Hex;
 
