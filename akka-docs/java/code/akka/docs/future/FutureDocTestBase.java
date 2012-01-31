@@ -382,7 +382,7 @@ public class FutureDocTestBase {
     }
 
     {
-        //#or
+        //#fallback-to
         Future<String> future1 =
                 Futures.failed(new IllegalStateException("OHNOES1"), system.dispatcher());
         Future<String> future2 =
@@ -390,10 +390,10 @@ public class FutureDocTestBase {
         Future<String> future3 =
                 Futures.successful("bar", system.dispatcher());
         Future<String> future4 =
-                future1.or(future2).or(future3); // Will have "bar" in this case
+                future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
         String result = Await.result(future4,  Duration.create(1, SECONDS));
         assertEquals("bar", result);
-        //#or
+        //#fallback-to
     }
 
   }

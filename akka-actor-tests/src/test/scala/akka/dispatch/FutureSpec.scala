@@ -55,11 +55,11 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val empty = Promise[String]()
         val timedOut = Promise.successful[String]("Timedout")
 
-        Await.result(failure or timedOut, timeout.duration) must be("Timedout")
-        Await.result(timedOut or empty, timeout.duration) must be("Timedout")
-        Await.result(failure or failure or timedOut, timeout.duration) must be("Timedout")
+        Await.result(failure fallbackTo timedOut, timeout.duration) must be("Timedout")
+        Await.result(timedOut fallbackTo empty, timeout.duration) must be("Timedout")
+        Await.result(failure fallbackTo failure fallbackTo timedOut, timeout.duration) must be("Timedout")
         intercept[RuntimeException] {
-          Await.result(failure or otherFailure, timeout.duration)
+          Await.result(failure fallbackTo otherFailure, timeout.duration)
         }.getMessage must be("last")
       }
     }

@@ -275,13 +275,13 @@ class FutureDocSpec extends AkkaSpec {
     Await.result(future3, 1 second) must be("foo bar")
   }
 
-  "demonstrate usage of or" in {
+  "demonstrate usage of fallbackTo" in {
     val future1 = Future { "foo" }
     val future2 = Future { "bar" }
     val future3 = Future { "pigdog" }
-    //#or
-    val future4 = future1 or future2 or future3
-    //#or
+    //#fallback-to
+    val future4 = future1 fallbackTo future2 fallbackTo future3
+    //#fallback-to
     Await.result(future4, 1 second) must be("foo")
   }
 

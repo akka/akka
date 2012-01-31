@@ -201,11 +201,11 @@ For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which
 Auxiliary methods
 -----------------
 
-``Future`` ``or`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future`
+``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future`
 if the first ``Future`` fails.
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
-   :include: or
+   :include: fallback-to
 
 You can also combine two Futures into a new ``Future`` that will hold a tuple of the two Futures successful results,
 using the ``zip`` operation.
