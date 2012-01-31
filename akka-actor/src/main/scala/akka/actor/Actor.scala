@@ -7,6 +7,7 @@ package akka.actor
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
+import scala.collection.immutable.Stack
 import java.util.regex.Pattern
 
 /**
@@ -112,6 +113,7 @@ object Actor {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
+
 }
 
 /**
@@ -172,7 +174,7 @@ trait Actor {
   type Receive = Actor.Receive
 
   /**
-   * Stores the context for this actor, including self, sender, and hotswap.
+   * Stores the context for this actor, including self, and sender.
    * It is implicit to support operations such as `forward`.
    *
    * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
@@ -281,15 +283,37 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
+  /**
+   * For Akka internal use only.
+   */
   private[akka] final def apply(msg: Any) = {
-    val behaviorStack = context.asInstanceOf[ActorCell].hotswap
-    msg match {
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-      case unknown ⇒ unhandled(unknown)
-    }
+    // TODO would it be more efficient to assume that most messages are matched and catch MatchError instead of using isDefinedAt?
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
   }
 
-  private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def pushBehavior(behavior: Receive): Unit = {
+    behaviorStack = behaviorStack.push(behavior)
+  }
+
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def popBehavior(): Unit = {
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
+  }
+
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def clearBehaviorStack(): Unit =
+    behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
+
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
 
