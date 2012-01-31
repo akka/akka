@@ -431,6 +431,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
+  deploy: Deploy = Props.defaultDeploy,
   timeout: Option[Timeout] = TypedProps.defaultTimeout,
   loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
@@ -469,12 +470,17 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
       creator = () ⇒ implementation.newInstance())
 
   /**
-   * Returns a new Props with the specified dispatcher set.
+   * Returns a new TypedProps with the specified dispatcher set.
    */
   def withDispatcher(d: String) = copy(dispatcher = d)
 
   /**
-   * @return a new Props that will use the specified ClassLoader to create its proxy class in
+   * Returns a new TypedProps with the specified deployment configuration.
+   */
+  def withDeploy(d: Deploy) = copy(deploy = d)
+
+  /**
+   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Java API
@@ -482,7 +488,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @return a new Props that will use the specified ClassLoader to create its proxy class in
+   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -490,7 +496,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @return a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Java API
@@ -498,7 +504,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @return a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Scala API
@@ -506,7 +512,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withTimeout(timeout: Option[Timeout]): TypedProps[T] = this.copy(timeout = timeout)
 
   /**
-   * Returns a new Props that has the specified interface,
+   * Returns a new TypedProps that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
    */
@@ -514,7 +520,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
     this.copy(interfaces = interfaces ++ TypedProps.extractInterfaces(interface))
 
   /**
-   * Returns a new Props without the specified interface,
+   * Returns a new TypedProps without the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements.
    */
   def withoutInterface(interface: Class[_ >: T]): TypedProps[T] =

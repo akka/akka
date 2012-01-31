@@ -22,6 +22,8 @@ object Props {
 
   final val defaultRoutedProps: RouterConfig = NoRouter
 
+  final val defaultDeploy = Deploy()
+
   final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
@@ -105,7 +107,8 @@ object Props {
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,
-  routerConfig: RouterConfig = Props.defaultRoutedProps) {
+  routerConfig: RouterConfig = Props.defaultRoutedProps,
+  deploy: Deploy = Props.defaultDeploy) {
 
   /**
    * No-args constructor that sets all the default values.
@@ -159,4 +162,9 @@ case class Props(
    * Returns a new Props with the specified router config set.
    */
   def withRouter(r: RouterConfig) = copy(routerConfig = r)
+
+  /**
+   * Returns a new Props with the specified deployment configuration.
+   */
+  def withDeploy(d: Deploy) = copy(deploy = d)
 }

@@ -4,6 +4,7 @@
 package akka.actor
 import java.net.URI
 import java.net.URISyntaxException
+import java.net.MalformedURLException
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -56,6 +57,9 @@ object RelativeActorPath {
   }
 }
 
+/**
+ * This object serves as extractor for Scala and as address parser for Java.
+ */
 object AddressExtractor {
   def unapply(addr: String): Option[Address] = {
     try {
@@ -71,6 +75,19 @@ object AddressExtractor {
       case _: URISyntaxException ⇒ None
     }
   }
+
+  /**
+   * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
+   */
+  def apply(addr: String): Address = addr match {
+    case AddressExtractor(address) ⇒ address
+    case _                         ⇒ throw new MalformedURLException
+  }
+
+  /**
+   * Java API: Try to construct an Address from the given String or throw a java.net.MalformedURLException.
+   */
+  def parse(addr: String): Address = apply(addr)
 }
 
 object ActorPathExtractor {
