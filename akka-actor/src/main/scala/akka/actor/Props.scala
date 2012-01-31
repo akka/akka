@@ -22,7 +22,6 @@ object Props {
 
   final val defaultRoutedProps: RouterConfig = NoRouter
 
-  final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
   /**
