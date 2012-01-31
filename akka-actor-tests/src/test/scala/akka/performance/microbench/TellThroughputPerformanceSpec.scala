@@ -16,10 +16,10 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
 
   "Tell" must {
     "warmup" in {
-      runScenario(4, warmup = true)
+      runScenario(8, warmup = true)
     }
     "warmup more" in {
-      runScenario(4, warmup = true)
+      runScenario(8, warmup = true)
     }
     "perform with load 1" in {
       runScenario(1)
@@ -48,19 +48,66 @@ class TellThroughputPerformanceSpec extends PerformanceSpec {
     "perform with load 16" in {
       runScenario(16)
     }
+    "perform with load 18" in {
+      runScenario(18)
+    }
+    "perform with load 20" in {
+      runScenario(20)
+    }
+    "perform with load 22" in {
+      runScenario(22)
+    }
+    "perform with load 24" in {
+      runScenario(24)
+    }
+    "perform with load 26" in {
+      runScenario(26)
+    }
+    "perform with load 28" in {
+      runScenario(28)
+    }
+    "perform with load 30" in {
+      runScenario(30)
+    }
+    "perform with load 32" in {
+      runScenario(32)
+    }
+    "perform with load 34" in {
+      runScenario(34)
+    }
+    "perform with load 36" in {
+      runScenario(36)
+    }
+    "perform with load 38" in {
+      runScenario(38)
+    }
+    "perform with load 40" in {
+      runScenario(40)
+    }
+    "perform with load 42" in {
+      runScenario(42)
+    }
+    "perform with load 44" in {
+      runScenario(44)
+    }
+    "perform with load 46" in {
+      runScenario(46)
+    }
+    "perform with load 48" in {
+      runScenario(48)
+    }
 
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
 
-        val clientDispatcher = "benchmark.client-dispatcher"
-        val destinationDispatcher = "benchmark.destination-dispatcher"
+        val throughputDispatcher = "benchmark.throughput-dispatcher"
 
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(destinationDispatcher))
+          yield system.actorOf(Props(new Destination).withDispatcher(throughputDispatcher))
         val clients = for (dest ← destinations)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
+          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(throughputDispatcher))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)

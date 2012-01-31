@@ -81,7 +81,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
       } yield Bid(s + i, 100 - i, 1000)
       val orders = askOrders.zip(bidOrders).map(x ⇒ Seq(x._1, x._2)).flatten
 
-      val clientDispatcher = "benchmark.client-dispatcher"
+      val throughputDispatcher = "benchmark.trading-dispatcher"
 
       val ordersPerClient = repeat * orders.size / numberOfClients
       val totalNumberOfOrders = ordersPerClient * numberOfClients
@@ -90,7 +90,7 @@ class TradingThroughputPerformanceSpec extends PerformanceSpec {
       val start = System.nanoTime
       val clients = (for (i ← 0 until numberOfClients) yield {
         val receiver = receivers(i % receivers.size)
-        val props = Props(new Client(receiver, orders, latch, ordersPerClient)).withDispatcher(clientDispatcher)
+        val props = Props(new Client(receiver, orders, latch, ordersPerClient)).withDispatcher(throughputDispatcher)
         system.actorOf(props)
       })
 
