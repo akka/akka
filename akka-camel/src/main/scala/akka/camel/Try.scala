@@ -5,20 +5,20 @@
 package akka.camel
 import akka.event.LoggingAdapter
 
-private[camel] object DangerousStuff {
+private[camel] object Try {
 
   /**
    * Tries to execute body.
    *
    * Example below tries to start template and if it's unsuccessful it stops context in a safe way, by logging exceptions and then it rethrows exception thrown by template.start()
-   * <pre> try_(template.start()) otherwise context.stop() </pre>
+   * <pre> Try(template.start()) otherwise context.stop() </pre>
    *
    * @param body block of code to execute.
    * @return Ok, if no exception is thrown by body.
    * @return Failed, if exception was thrown by body.
    *
    */
-  @inline def try_(body: ⇒ Unit): Result =
+  def apply(body: ⇒ Unit): Result =
     try {
       body; Ok
     } catch {
