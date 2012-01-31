@@ -58,10 +58,6 @@ class RemoteActorRefProvider(
   def tempContainer = local.tempContainer
 
   @volatile
-  private var _failureDetector: AccrualFailureDetector = _
-  def failureDetector: AccrualFailureDetector = _failureDetector
-
-  @volatile
   private var _transport: RemoteTransport = _
   def transport: RemoteTransport = _transport
 
@@ -79,8 +75,6 @@ class RemoteActorRefProvider(
 
   def init(system: ActorSystemImpl) {
     local.init(system)
-
-    _failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize, system)
 
     _remoteDaemon = new RemoteSystemDaemon(system, rootPath / "remote", rootGuardian, log)
     local.registerExtraNames(Map(("remote", remoteDaemon)))
