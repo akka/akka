@@ -47,36 +47,36 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
 trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type ⇒
 
   /**
-   * Implicit conversion from `Seq` of Cause-Action pairs to a `Decider`. See makeDecider(causeAction).
+   * Implicit conversion from `Seq` of Cause-Directive pairs to a `Decider`. See makeDecider(causeDirective).
    */
-  implicit def seqCauseAction2Decider(trapExit: Iterable[CauseAction]): Decider = makeDecider(trapExit)
+  implicit def seqCauseDirective2Decider(trapExit: Iterable[CauseDirective]): Decider = makeDecider(trapExit)
   // the above would clash with seqThrowable2Decider for empty lists
 }
 
 object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
-  sealed trait Action
+  sealed trait Directive
 
   /**
    * Resumes message processing for the failed Actor
    */
-  case object Resume extends Action
+  case object Resume extends Directive
 
   /**
    * Discards the old Actor instance and replaces it with a new,
    * then resumes message processing.
    */
-  case object Restart extends Action
+  case object Restart extends Directive
 
   /**
    * Stops the Actor
    */
-  case object Stop extends Action
+  case object Stop extends Directive
 
   /**
    * Escalates the failure to the supervisor of the supervisor,
    * by rethrowing the cause of the failure.
    */
-  case object Escalate extends Action
+  case object Escalate extends Directive
 
   /**
    * Resumes message processing for the failed Actor
@@ -127,9 +127,9 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    */
   implicit def seqThrowable2Decider(trapExit: Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
 
-  type Decider = PartialFunction[Throwable, Action]
-  type JDecider = akka.japi.Function[Throwable, Action]
-  type CauseAction = (Class[_ <: Throwable], Action)
+  type Decider = PartialFunction[Throwable, Directive]
+  type JDecider = akka.japi.Function[Throwable, Directive]
+  type CauseDirective = (Class[_ <: Throwable], Directive)
 
   /**
    * Decider builder which just checks whether one of
@@ -152,14 +152,14 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toSeq)
 
   /**
-   * Decider builder for Iterables of cause-action pairs, e.g. a map obtained
+   * Decider builder for Iterables of cause-directive pairs, e.g. a map obtained
    * from configuration; will sort the pairs so that the most specific type is
    * checked before all its subtypes, allowing carving out subtrees of the
    * Throwable hierarchy.
    */
-  def makeDecider(flat: Iterable[CauseAction]): Decider = {
-    val actions = sort(flat)
-    return { case x ⇒ actions find (_._1 isInstance x) map (_._2) getOrElse Escalate }
+  def makeDecider(flat: Iterable[CauseDirective]): Decider = {
+    val directives = sort(flat)
+    return { case x ⇒ directives find (_._1 isInstance x) map (_._2) getOrElse Escalate }
   }
 
   def makeDecider(func: JDecider): Decider = {
@@ -170,8 +170,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Sort so that subtypes always precede their supertypes, but without
    * obeying any order between unrelated subtypes (insert sort).
    */
-  def sort(in: Iterable[CauseAction]): Seq[CauseAction] =
-    (new ArrayBuffer[CauseAction](in.size) /: in) { (buf, ca) ⇒
+  def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
+    (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
@@ -215,8 +215,8 @@ abstract class SupervisorStrategy {
    * Returns whether it processed the failure or not
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    val action = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
-    action match {
+    val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
+    directive match {
       case Resume   ⇒ child.asInstanceOf[InternalActorRef].resume(); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
       case Stop     ⇒ processFailure(context, false, child, cause, stats, children); true
@@ -230,7 +230,7 @@ abstract class SupervisorStrategy {
  * Restart all child actors when one fails
  * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
- * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
+ * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
 case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
@@ -273,7 +273,7 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
  * Restart a child actor when it fails
  * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
- * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Action]], you can also use a
+ * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
 case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
