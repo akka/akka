@@ -174,11 +174,16 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
    */
   def shutdown() {
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Shutting down Gossiper for [{}]", address)
-      connectionManager.shutdown()
-      system.stop(clusterDaemon)
-      initateGossipCanceller.cancel()
-      scrutinizeCanceller.cancel()
+      log.info("Shutting down Gossiper for [{}]...", address)
+      try connectionManager.shutdown() finally {
+        try system.stop(clusterDaemon) finally {
+          try initateGossipCanceller.cancel() finally {
+            try scrutinizeCanceller.cancel() finally {
+              log.info("Gossiper for [{}] is shut down", address)
+            }
+          }
+        }
+      }
     }
   }
 
