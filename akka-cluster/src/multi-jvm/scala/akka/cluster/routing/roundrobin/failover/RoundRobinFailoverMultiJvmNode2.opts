@@ -1,1 +1,0 @@
--Dakka.cluster.nodename=node2 -Dakka.remote.port=9992 -Dakka.event.force-sync=true

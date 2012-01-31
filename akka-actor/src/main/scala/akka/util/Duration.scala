@@ -17,30 +17,35 @@ class TimerException(message: String) extends RuntimeException(message)
  *   import akka.util.duration._
  *   import akka.util.Timer
  *
- *   val timer = Timer(30.seconds)
+ *   val timer = Timer(30 seconds)
  *   while (timer.isTicking) { ... }
  * </pre>
  */
-case class Timer(duration: Duration, throwExceptionOnTimeout: Boolean = false) {
-  val startTimeInMillis = System.currentTimeMillis
-  val timeoutInMillis = duration.toMillis
+case class Timer(timeout: Duration, throwExceptionOnTimeout: Boolean = false) {
+  val startTime = Duration(System.nanoTime, NANOSECONDS)
+
+  def timeLeft: Duration = {
+    val time = timeout.toNanos - (System.nanoTime - startTime.toNanos)
+    if (time <= 0) Duration(0, NANOSECONDS)
+    else Duration(time, NANOSECONDS)
+  }
 
   /**
    * Returns true while the timer is ticking. After that it either throws and exception or
    * returns false. Depending on if the 'throwExceptionOnTimeout' argument is true or false.
    */
   def isTicking: Boolean = {
-    if (!(timeoutInMillis > (System.currentTimeMillis - startTimeInMillis))) {
-      if (throwExceptionOnTimeout) throw new TimerException("Time out after " + duration)
+    if (!(timeout.toNanos > (System.nanoTime - startTime.toNanos))) {
+      if (throwExceptionOnTimeout) throw new TimerException("Time out after " + timeout)
       else false
     } else true
   }
 }
 
-case class Deadline(d: Duration) {
-  def +(other: Duration): Deadline = copy(d = d + other)
-  def -(other: Duration): Deadline = copy(d = d - other)
-  def -(other: Deadline): Duration = d - other.d
+case class Deadline(time: Duration) {
+  def +(other: Duration): Deadline = copy(time = time + other)
+  def -(other: Duration): Deadline = copy(time = time - other)
+  def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
 }
 object Deadline {

@@ -4,6 +4,7 @@
 
 package akka.remote
 
+import akka.AkkaException
 import akka.actor._
 import akka.dispatch._
 import akka.event.{ DeathWatch, Logging, LoggingAdapter }
@@ -14,6 +15,10 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
+
+class RemoteException(msg: String) extends AkkaException(msg)
+class RemoteCommunicationException(msg: String) extends RemoteException(msg)
+class RemoteConnectionException(msg: String) extends RemoteException(msg)
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -40,8 +45,6 @@ class RemoteActorRefProvider(
   def deadLetters = local.deadLetters
 
   val deathWatch = new RemoteDeathWatch(local.deathWatch, this)
-
-  val failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize)
 
   // these are only available after init()
   def rootGuardian = local.rootGuardian

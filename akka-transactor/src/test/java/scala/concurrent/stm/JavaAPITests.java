@@ -27,9 +27,9 @@ public class JavaAPITests {
     public void atomicWithRunnable() {
         final Ref.View<Integer> ref = newRef(0);
         atomic(new Runnable() {
-        	public void run() {
-        		ref.set(10);
-        	}
+                public void run() {
+                        ref.set(10);
+                }
         });
         int value = ref.get();
         assertEquals(10, value);
@@ -39,9 +39,9 @@ public class JavaAPITests {
     public void atomicWithCallable() {
         final Ref.View<Integer> ref = newRef(0);
         int oldValue = atomic(new Callable<Integer>() {
-        	public Integer call() {
-        		return ref.swap(10);
-        	}
+                public Integer call() {
+                        return ref.swap(10);
+                }
         });
         assertEquals(0, oldValue);
         int newValue = ref.get();
@@ -53,10 +53,10 @@ public class JavaAPITests {
         final Ref.View<Integer> ref = newRef(0);
         try {
             atomic(new Runnable() {
-            	public void run() {
-        		    ref.set(10);
-        		    throw new TestException();
-        	    }
+                public void run() {
+                            ref.set(10);
+                            throw new TestException();
+                    }
             });
         } catch (TestException e) {
             int value = ref.get();
@@ -69,9 +69,9 @@ public class JavaAPITests {
     public void transformInteger() {
         Ref.View<Integer> ref = newRef(0);
         transform(ref, new AbstractFunction1<Integer, Integer>() {
-        	public Integer apply(Integer i) {
-        		return i + 10;
-        	}
+                public Integer apply(Integer i) {
+                        return i + 10;
+                }
         });
         int value = ref.get();
         assertEquals(10, value);
@@ -110,13 +110,13 @@ public class JavaAPITests {
         final Map<Integer, String> map = newMap();
         try {
             atomic(new Runnable() {
-            	public void run() {
-        		    map.put(1, "one");
+                public void run() {
+                            map.put(1, "one");
                     map.put(2, "two");
                     assertTrue(map.containsKey(1));
                     assertTrue(map.containsKey(2));
-        		    throw new TestException();
-        	    }
+                            throw new TestException();
+                    }
             });
         } catch (TestException e) {
             assertFalse(map.containsKey(1));

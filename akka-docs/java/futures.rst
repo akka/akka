@@ -67,7 +67,7 @@ These allow you to create 'pipelines' or 'streams' that the result will travel t
 Future is a Monad
 ^^^^^^^^^^^^^^^^^
 
-The first method for working with ``Future`` functionally is ``map``. This method takes a ``Function`` which performs
+The first method for working with ``Future`` functionally is ``map``. This method takes a ``Mapper`` which performs
 some operation on the result of the ``Future``, and returning a new result.
 The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
@@ -176,6 +176,18 @@ For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which
 .. includecode:: code/akka/docs/future/FutureDocTestBase.java
    :include: onComplete
 
+Ordering
+--------
+
+Since callbacks are executed in any order and potentially in parallel,
+it can be tricky at the times when you need sequential ordering of operations.
+But there's a solution! And it's name is ``andThen``, and it creates a new Future with
+the specified callback, a Future that will have the same result as the Future it's called on,
+which allows for ordering like in the following sample:
+
+.. includecode:: code/akka/docs/future/FutureDocTestBase.java
+   :include: and-then
+
 Auxiliary methods
 -----------------
 
@@ -198,3 +210,21 @@ Since the result of a ``Future`` is created concurrently to the rest of the prog
 It doesn't matter if an ``UntypedActor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught
 the ``Future`` will contain it instead of a valid result. If a ``Future`` does contain an ``Exception``,
 calling ``Await.result`` will cause it to be thrown again so it can be handled properly.
+
+It is also possible to handle an ``Exception`` by returning a different result.
+This is done with the ``recover`` method. For example:
+
+.. includecode:: code/akka/docs/future/FutureDocTestBase.java
+   :include: recover
+
+In this example, if the actor replied with a ``akka.actor.Status.Failure`` containing the ``ArithmeticException``,
+our ``Future`` would have a result of 0. The ``recover`` method works very similarly to the standard try/catch blocks,
+so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way
+it will behave as if we hadn't used the ``recover`` method.
+
+You can also use the ``tryRecover`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
+and is use like this:
+
+.. includecode:: code/akka/docs/future/FutureDocTestBase.java
+   :include: try-recover
+

@@ -12,6 +12,7 @@ import akka.actor.Props;
 //#import-future
 import akka.dispatch.Future;
 import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
 import akka.dispatch.Await;
 import akka.util.Duration;
 import akka.util.Timeout;
@@ -236,8 +237,8 @@ public class UntypedActorDocTestBase {
     futures.add(ask(actorB, "reqeest", t)); // using timeout from above
 
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
-
-    final Future<Result> transformed = aggregate.map(new akka.japi.Function<Iterable<Object>, Result>() {
+    
+    final Future<Result> transformed = aggregate.map(new Mapper<Iterable<Object>, Result>() {
       public Result apply(Iterable<Object> coll) {
         final Iterator<Object> it = coll.iterator();
         final String s = (String) it.next();

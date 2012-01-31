@@ -13,6 +13,7 @@ import akka.dispatch.Future
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.dispatch.Promise
+import java.lang.IllegalStateException
 
 object FutureDocSpec {
 
@@ -266,6 +267,19 @@ class FutureDocSpec extends AkkaSpec {
     Await.result(future, 1 second) must be(0)
   }
 
+  "demonstrate usage of tryRecover" in {
+    implicit val timeout = system.settings.ActorTimeout
+    val actor = system.actorOf(Props[MyActor])
+    val msg1 = -1
+    //#try-recover
+    val future = akka.pattern.ask(actor, msg1) tryRecover {
+      case e: ArithmeticException        ⇒ Promise.successful(0)
+      case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!"))
+    }
+    //#try-recover
+    Await.result(future, 1 second) must be(0)
+  }
+
   "demonstrate usage of zip" in {
     val future1 = Future { "foo" }
     val future2 = Future { "bar" }
@@ -273,6 +287,21 @@ class FutureDocSpec extends AkkaSpec {
     val future3 = future1 zip future2 map { case (a, b) ⇒ a + " " + b }
     //#zip
     Await.result(future3, 1 second) must be("foo bar")
+  }
+
+  "demonstrate usage of andThen" in {
+    def loadPage(s: String) = s
+    val url = "foo bar"
+    def log(cause: Throwable) = ()
+    def watchSomeTV = ()
+    //#and-then
+    val result = Future { loadPage(url) } andThen {
+      case Left(exception) ⇒ log(exception)
+    } andThen {
+      case _ ⇒ watchSomeTV
+    }
+    //#and-then
+    Await.result(result, 1 second) must be("foo bar")
   }
 
   "demonstrate usage of fallbackTo" in {

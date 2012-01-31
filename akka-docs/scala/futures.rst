@@ -198,6 +198,18 @@ For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: onComplete
 
+Ordering
+--------
+
+Since callbacks are executed in any order and potentially in parallel,
+it can be tricky at the times when you need sequential ordering of operations.
+But there's a solution! And it's name is ``andThen``, and it creates a new Future with
+the specified callback, a Future that will have the same result as the Future it's called on,
+which allows for ordering like in the following sample:
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: and-then
+
 Auxiliary methods
 -----------------
 
@@ -231,4 +243,10 @@ In this example, if the actor replied with a ``akka.actor.Status.Failure`` conta
 our ``Future`` would have a result of 0. The ``recover`` method works very similarly to the standard try/catch blocks,
 so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way
 it will behave as if we hadn't used the ``recover`` method.
+
+You can also use the ``tryRecover`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
+and is use like this:
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: try-recover
 
