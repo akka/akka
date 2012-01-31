@@ -7,7 +7,6 @@ package akka.actor
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute
-import FSM._
 import akka.util.duration._
 import akka.event._
 import com.typesafe.config.ConfigFactory
@@ -52,7 +51,7 @@ object FSMActorSpec {
         }
       }
       case Event("hello", _) ⇒ stay replying "world"
-      case Event("bye", _)   ⇒ stop(Shutdown)
+      case Event("bye", _)   ⇒ stop(FSM.Shutdown)
     }
 
     when(Open) {
@@ -63,7 +62,7 @@ object FSMActorSpec {
     }
 
     whenUnhandled {
-      case Ev(msg) ⇒ {
+      case Event(msg, _) ⇒ {
         log.warning("unhandled event " + msg + " in state " + stateName + " with data " + stateData)
         unhandledLatch.open
         stay
@@ -82,7 +81,7 @@ object FSMActorSpec {
     }
 
     onTermination {
-      case StopEvent(Shutdown, Locked, _) ⇒
+      case StopEvent(FSM.Shutdown, Locked, _) ⇒
         // stop is called from lockstate with shutdown as reason...
         terminatedLatch.open
     }
@@ -109,6 +108,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
   "An FSM Actor" must {
 
     "unlock the lock" in {
+
+      import FSM.{ Transition, CurrentState, SubscribeTransitionCallBack }
 
       val latches = new Latches
       import latches._
@@ -163,7 +164,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       val fsm = TestActorRef(new Actor with FSM[Int, Null] {
         startWith(1, null)
         when(1) {
-          case Ev("go") ⇒ goto(2)
+          case Event("go", _) ⇒ goto(2)
         }
       })
       val name = fsm.path.toString
@@ -182,7 +183,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       lazy val fsm = new Actor with FSM[Int, Null] {
         override def preStart = { started.countDown }
         startWith(1, null)
-        when(1) { NullFunction }
+        when(1) { FSM.NullFunction }
         onTermination {
           case x ⇒ testActor ! x
         }
@@ -190,7 +191,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       val ref = system.actorOf(Props(fsm))
       Await.ready(started, timeout.duration)
       system.stop(ref)
-      expectMsg(1 second, fsm.StopEvent(Shutdown, 1, null))
+      expectMsg(1 second, fsm.StopEvent(FSM.Shutdown, 1, null))
     }
 
     "log events and transitions if asked to do so" in {
@@ -204,12 +205,12 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
               startWith(1, null)
               when(1) {
-                case Ev("go") ⇒
-                  setTimer("t", Shutdown, 1.5 seconds, false)
+                case Event("go", _) ⇒
+                  setTimer("t", FSM.Shutdown, 1.5 seconds, false)
                   goto(2)
               }
               when(2) {
-                case Ev("stop") ⇒
+                case Event("stop", _) ⇒
                   cancelTimer("t")
                   stop
               }
@@ -230,7 +231,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             expectMsgPF(1 second, hint = "processing Event(stop,null)") {
               case Logging.Debug(`name`, `fsmClass`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") ⇒ true
             }
-            expectMsgAllOf(1 second, Logging.Debug(name, fsmClass, "canceling timer 't'"), Normal)
+            expectMsgAllOf(1 second, Logging.Debug(name, fsmClass, "canceling timer 't'"), FSM.Normal)
             expectNoMsg(1 second)
             system.eventStream.unsubscribe(testActor)
           }
@@ -251,6 +252,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       })
       fsmref ! "log"
       val fsm = fsmref.underlyingActor
+      import FSM.LogEntry
       expectMsg(1 second, IndexedSeq(LogEntry(1, 0, "log")))
       fsmref ! "count"
       fsmref ! "log"
