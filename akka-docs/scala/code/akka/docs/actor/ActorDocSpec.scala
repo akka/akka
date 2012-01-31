@@ -314,7 +314,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using pattern ask / pipeTo" in {
     val actorA, actorB, actorC, actorD = system.actorOf(Props.empty)
     //#ask-pipeTo
-    import akka.pattern.{ ask, pipeTo }
+    import akka.pattern.{ ask, pipeTo, pipe }
 
     case class Result(x: Int, s: String, d: Double)
     case object Request
@@ -329,7 +329,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       } yield Result(x, s, d)
 
     f pipeTo actorD // .. or ..
-    pipeTo(f, actorD)
+    pipe(f, actorD)
     //#ask-pipeTo
   }
 

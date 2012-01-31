@@ -323,15 +323,15 @@ Ask: Send-And-Receive-Future
 The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#import-askPipeTo
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#import-askPipe
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#ask-pipeTo
+.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#ask-pipe
 
-This example demonstrates ``ask`` together with the ``pipeTo`` pattern on
+This example demonstrates ``ask`` together with the ``pipe`` pattern on
 futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: ``ask`` produces
 a :class:`Future`, two of which are composed into a new future using the
-:meth:`Futures.sequence` and :meth:`map` methods and then ``pipeTo`` installs
+:meth:`Futures.sequence` and :meth:`map` methods and then ``pipe`` installs
 an ``onComplete``-handler on the future to effect the submission of the
 aggregated :class:`Result` to another actor.
 

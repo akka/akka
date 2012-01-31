@@ -9,7 +9,7 @@ import akka.dispatch.Future
 object PipeToSupport {
 
   class PipeableFuture[T](val future: Future[T]) {
-    def pipeTo(actorRef: ActorRef): Future[T] = akka.pattern.pipeTo(future, actorRef)
+    def pipeTo(actorRef: ActorRef): Future[T] = akka.pattern.pipe(future, actorRef)
   }
 
 }

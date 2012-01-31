@@ -83,10 +83,10 @@ object Patterns {
    *   // apply some transformation (i.e. enrich with request info)
    *   final Future<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
    *   // send it on to the next stage
-   *   Patterns.pipeTo(transformed, nextActor);
+   *   Patterns.pipe(transformed, nextActor);
    * }}}
    */
-  def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = akka.pattern.pipeTo(future, actorRef)
+  def pipe[T](future: Future[T], recipient: ActorRef): Future[T] = akka.pattern.pipe(future, recipient)
 
   /**
    * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when

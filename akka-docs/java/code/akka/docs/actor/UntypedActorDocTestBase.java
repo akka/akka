@@ -38,16 +38,16 @@ import akka.util.Duration;
 import akka.actor.ActorTimeoutException;
 //#import-gracefulStop
 
-//#import-askPipeTo
+//#import-askPipe
 import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipeTo;
+import static akka.pattern.Patterns.pipe;
 import akka.dispatch.Future;
 import akka.dispatch.Futures;
 import akka.util.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
-//#import-askPipeTo
+//#import-askPipe
 
 import akka.actor.Props;
 import akka.actor.UntypedActor;
@@ -224,12 +224,12 @@ public class UntypedActorDocTestBase {
   }
 
   @Test
-  public void usePatternsAskPipeTo() {
+  public void usePatternsAskPipe() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorA = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorB = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
-    //#ask-pipeTo
+    //#ask-pipe
     final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
@@ -247,8 +247,8 @@ public class UntypedActorDocTestBase {
       }
     });
 
-    pipeTo(transformed, actorC);
-    //#ask-pipeTo
+    pipe(transformed, actorC);
+    //#ask-pipe
     system.shutdown();
   }
 

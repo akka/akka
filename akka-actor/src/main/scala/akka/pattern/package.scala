@@ -131,13 +131,11 @@ package object pattern {
    *
    * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
-  def pipeTo[T](future: Future[T], actorRef: ActorRef): Future[T] = {
+  def pipe[T](future: Future[T], recipient: ActorRef): Future[T] =
     future onComplete {
-      case Right(r) ⇒ actorRef ! r
-      case Left(f)  ⇒ actorRef ! Status.Failure(f)
+      case Right(r) ⇒ recipient ! r
+      case Left(f)  ⇒ recipient ! Status.Failure(f)
     }
-    future
-  }
 
   /**
    * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when

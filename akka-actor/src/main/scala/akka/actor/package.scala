@@ -27,15 +27,4 @@ package object actor {
     val i = n.lastIndexOf('.')
     n.substring(i + 1)
   }
-
-  implicit def future2actor[T](f: akka.dispatch.Future[T]) = new {
-    def pipeTo(actor: ActorRef): this.type = {
-      f onComplete {
-        case Right(r) ⇒ actor ! r
-        case Left(f)  ⇒ actor ! Status.Failure(f)
-      }
-      this
-    }
-  }
-
 }
