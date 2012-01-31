@@ -41,6 +41,15 @@ object CountExtension
 //#extensionid
 
 object ExtensionDocSpec {
+
+  val config = """
+    //#config
+    akka {
+      extensions = ["akka.docs.extension.CountExtension$"]
+    }
+    //#config
+    """
+
   //#extension-usage-actor
 
   class MyActor extends Actor {
@@ -64,13 +73,19 @@ object ExtensionDocSpec {
   //#extension-usage-actor-trait
 }
 
-class ExtensionDocSpec extends AkkaSpec {
+class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
   import ExtensionDocSpec._
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage
     CountExtension(system).increment
     //#extension-usage
+  }
+
+  "demonstrate how to lookup a configured extension in Scala" in {
+    //#extension-lookup
+    system.extension(CountExtension)
+    //#extension-lookup
   }
 
 }

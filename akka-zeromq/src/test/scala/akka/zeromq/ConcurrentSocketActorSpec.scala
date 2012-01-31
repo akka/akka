@@ -9,11 +9,7 @@ import akka.util.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 
 object ConcurrentSocketActorSpec {
-  val config = """
-akka {
-  extensions = []
-}
-"""
+  val config = ""
 }
 
 class ConcurrentSocketActorSpec
@@ -23,7 +19,7 @@ class ConcurrentSocketActorSpec
 
   val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
-  def zmq = system.extension(ZeroMQExtension)
+  def zmq = ZeroMQExtension(system)
 
   "ConcurrentSocketActor" should {
     "support pub-sub connections" in {
