@@ -100,15 +100,14 @@ class TellThroughputComputationPerformanceSpec extends PerformanceSpec {
     def runScenario(numberOfClients: Int, warmup: Boolean = false) {
       if (acceptClients(numberOfClients)) {
 
-        val clientDispatcher = "benchmark.client-dispatcher"
-        val destinationDispatcher = "benchmark.destination-dispatcher"
+        val throughputDispatcher = "benchmark.throughput-dispatcher"
 
         val latch = new CountDownLatch(numberOfClients)
         val repeatsPerClient = repeat / numberOfClients
         val destinations = for (i ← 0 until numberOfClients)
-          yield system.actorOf(Props(new Destination).withDispatcher(destinationDispatcher))
+          yield system.actorOf(Props(new Destination).withDispatcher(throughputDispatcher))
         val clients = for (dest ← destinations)
-          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(clientDispatcher))
+          yield system.actorOf(Props(new Client(dest, latch, repeatsPerClient)).withDispatcher(throughputDispatcher))
 
         val start = System.nanoTime
         clients.foreach(_ ! Run)

@@ -22,12 +22,17 @@ object DispatcherDocSpec {
     my-dispatcher {
       # Dispatcher is the name of the event-based dispatcher
       type = Dispatcher
-      # minimum number of threads to cap factor-based core number to
-      core-pool-size-min = 2
-      # No of core threads ... ceil(available processors * factor)
-      core-pool-size-factor = 2.0
-      # maximum number of threads to cap factor-based number to
-      core-pool-size-max = 10
+      # What kind of ExecutionService to use
+      executor = "thread-pool-executor"
+      # Configuration for the thread pool
+      thread-pool-executor {
+        # minimum number of threads to cap factor-based core number to
+        core-pool-size-min = 2
+        # No of core threads ... ceil(available processors * factor)
+        core-pool-size-factor = 2.0
+        # maximum number of threads to cap factor-based number to
+        core-pool-size-max = 10
+      }
       # Throughput defines the number of messages that are processed in a batch before the
       # thread is returned to the pool. Set to 1 for as fair as possible.
       throughput = 100
@@ -37,8 +42,11 @@ object DispatcherDocSpec {
     //#my-bounded-config
     my-dispatcher-bounded-queue {
       type = Dispatcher
-      core-pool-size-factor = 8.0
-      max-pool-size-factor  = 16.0
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        core-pool-size-factor = 8.0
+        max-pool-size-factor  = 16.0
+      }
       # Specifies the bounded capacity of the mailbox queue
       mailbox-capacity = 100
       throughput = 3
@@ -48,6 +56,11 @@ object DispatcherDocSpec {
     //#my-balancing-config
     my-balancing-dispatcher {
       type = BalancingDispatcher
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        core-pool-size-factor = 8.0
+        max-pool-size-factor  = 16.0
+      }
     }
     //#my-balancing-config
 

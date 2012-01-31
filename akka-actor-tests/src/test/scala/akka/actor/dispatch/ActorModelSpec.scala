@@ -448,16 +448,14 @@ object DispatcherModelSpec {
   class MessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
-    private val instance: MessageDispatcher = {
-      configureThreadPool(config,
-        threadPoolConfig ⇒ new Dispatcher(prerequisites,
-          config.getString("id"),
-          config.getInt("throughput"),
-          Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-          mailboxType,
-          threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
-    }
+    private val instance: MessageDispatcher =
+      new Dispatcher(prerequisites,
+        config.getString("id"),
+        config.getInt("throughput"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        mailboxType,
+        configureExecutor(),
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
@@ -522,16 +520,14 @@ object BalancingDispatcherModelSpec {
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
-    private val instance: MessageDispatcher = {
-      configureThreadPool(config,
-        threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-          config.getString("id"),
-          config.getInt("throughput"),
-          Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-          mailboxType,
-          threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
-    }
+    private val instance: MessageDispatcher =
+      new BalancingDispatcher(prerequisites,
+        config.getString("id"),
+        config.getInt("throughput"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        mailboxType,
+        configureExecutor(),
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
