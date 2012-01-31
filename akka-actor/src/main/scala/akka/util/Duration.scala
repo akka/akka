@@ -42,10 +42,10 @@ case class Timer(timeout: Duration, throwExceptionOnTimeout: Boolean = false) {
   }
 }
 
-case class Deadline(d: Duration) {
-  def +(other: Duration): Deadline = copy(d = d + other)
-  def -(other: Duration): Deadline = copy(d = d - other)
-  def -(other: Deadline): Duration = d - other.d
+case class Deadline(time: Duration) {
+  def +(other: Duration): Deadline = copy(time = time + other)
+  def -(other: Duration): Deadline = copy(time = time - other)
+  def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
 }
 object Deadline {

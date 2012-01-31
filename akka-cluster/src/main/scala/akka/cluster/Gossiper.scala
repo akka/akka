@@ -127,28 +127,27 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
     currentGossip: Gossip,
     memberMembershipChangeListeners: Set[NodeMembershipChangeListener] = Set.empty[NodeMembershipChangeListener])
 
-  // configuration
-  private val remoteSettings = remote.remoteSettings
+  val remoteSettings = new RemoteSettings(system.settings.config, system.name)
+  val clusterSettings = new ClusterSettings(system.settings.config, system.name)
 
-  private val protocol = "akka" // TODO should this be hardcoded?
-  private val address = remote.transport.address
-  private val memberFingerprint = address.##
+  val protocol = "akka" // TODO should this be hardcoded?
+  val address = remote.transport.address
 
-  private val serialization = remote.serialization
-  private val failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize, system)
-
-  private val initialDelayForGossip = remoteSettings.InitialDelayForGossip
-  private val gossipFrequency = remoteSettings.GossipFrequency
-
-  implicit val seedNodeConnectionTimeout = remoteSettings.SeedNodeConnectionTimeout
+  val memberFingerprint = address.##
+  val initialDelayForGossip = clusterSettings.InitialDelayForGossip
+  val gossipFrequency = clusterSettings.GossipFrequency
+  implicit val seedNodeConnectionTimeout = clusterSettings.SeedNodeConnectionTimeout
   implicit val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
   // seed members
   private val seeds: Set[Member] = {
-    if (remoteSettings.SeedNodes.isEmpty) throw new ConfigurationException(
+    if (clusterSettings.SeedNodes.isEmpty) throw new ConfigurationException(
       "At least one seed member must be defined in the configuration [akka.cluster.seed-members]")
-    else remoteSettings.SeedNodes map (address ⇒ Member(address, MemberStatus.Up()))
+    else clusterSettings.SeedNodes map (address ⇒ Member(address, MemberStatus.Up()))
   }
+
+  private val serialization = remote.serialization
+  private val failureDetector = new AccrualFailureDetector(system, clusterSettings.FailureDetectorThreshold, clusterSettings.FailureDetectorMaxSampleSize)
 
   private val isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Gossiper")
@@ -164,14 +163,11 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
   log.info("Starting cluster Gossiper...")
 
   // join the cluster by connecting to one of the seed members and retrieve current cluster state (Gossip)
-  joinCluster(Timer(remoteSettings.MaxTimeToRetryJoiningCluster))
+  joinCluster(Deadline(clusterSettings.MaxTimeToRetryJoiningCluster))
 
   // start periodic gossip and cluster scrutinization
-  val initateGossipCanceller = system.scheduler.schedule(
-    Duration(initialDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(initateGossip())
-
-  val scrutinizeCanceller = system.scheduler.schedule(
-    Duration(initialDelayForGossip.toSeconds, SECONDS), Duration(gossipFrequency.toSeconds, SECONDS))(scrutinize())
+  val initateGossipCanceller = system.scheduler.schedule(initialDelayForGossip, gossipFrequency)(initateGossip())
+  val scrutinizeCanceller = system.scheduler.schedule(initialDelayForGossip, gossipFrequency)(scrutinize())
 
   /**
    * Shuts down all connections to other members, the cluster daemon and the periodic gossip and cleanup tasks.
@@ -293,7 +289,7 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
   /**
    * Joins the cluster by connecting to one of the seed members and retrieve current cluster state (Gossip).
    */
-  private def joinCluster(timer: Timer) {
+  private def joinCluster(deadline: Deadline) {
     val seedNodes = seedNodesWithoutMyself // filter out myself
 
     if (!seedNodes.isEmpty) { // if we have seed members to contact
@@ -316,16 +312,16 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
         case e: Exception ⇒
           log.error(
             "Could not join cluster through any of the seed members - retrying for another {} seconds",
-            timer.timeLeft.toSeconds)
+            deadline.timeLeft.toSeconds)
 
           // retry joining the cluster unless
           //   1. Gossiper is shut down
           //   2. The connection time window has expired
           if (isRunning.get) {
-            if (timer.timeLeft.toMillis > 0) joinCluster(timer) // recur
+            if (deadline.timeLeft.toMillis > 0) joinCluster(deadline) // recur
             else throw new RemoteConnectionException(
               "Could not join cluster (any of the seed members) - giving up after trying for " +
-                timer.timeout.toSeconds + " seconds")
+                deadline.time.toSeconds + " seconds")
           }
       }
     }

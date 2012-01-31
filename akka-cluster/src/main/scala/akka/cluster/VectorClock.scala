@@ -8,10 +8,16 @@ import akka.AkkaException
 
 class VectorClockException(message: String) extends AkkaException(message)
 
+/**
+ * Trait to be extended by classes that wants to be versioned using a VectorClock.
+ */
 trait Versioned {
   def version: VectorClock
 }
 
+/**
+ * Utility methods for comparing Versioned instances.
+ */
 object Versioned {
   def latestVersionOf[T <: Versioned](versioned1: T, versioned2: T): T = {
     (versioned1.version compare versioned2.version) match {
@@ -24,10 +30,11 @@ object Versioned {
 
 /**
  * Representation of a Vector-based clock (counting clock), inspired by Lamport logical clocks.
- *
+ * {{
  * Reference:
  *    1) Leslie Lamport (1978). "Time, clocks, and the ordering of events in a distributed system". Communications of the ACM 21 (7): 558-565.
  *    2) Friedemann Mattern (1988). "Virtual Time and Global States of Distributed Systems". Workshop on Parallel and Distributed Algorithms: pp. 215-226
+ * }}
  */
 case class VectorClock(
   versions: Vector[VectorClock.Entry] = Vector.empty[VectorClock.Entry],
@@ -90,9 +97,11 @@ object VectorClock {
   /**
    * Compare two vector clocks. The outcomes will be one of the following:
    * <p/>
-   * 1. Clock 1 is BEFORE clock 2 if there exists an i such that c1(i) <= c(2) and there does not exist a j such that c1(j) > c2(j).
-   * 2. Clock 1 is CONCURRENT to clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
-   * 3. Clock 1 is AFTER clock 2 otherwise.
+   * {{
+   *   1. Clock 1 is BEFORE clock 2 if there exists an i such that c1(i) <= c(2) and there does not exist a j such that c1(j) > c2(j).
+   *   2. Clock 1 is CONCURRENT to clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
+   *   3. Clock 1 is AFTER clock 2 otherwise.
+   * }}
    *
    * @param v1 The first VectorClock
    * @param v2 The second VectorClock

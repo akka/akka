@@ -23,7 +23,7 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 1000, system: ActorSystem) {
+class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val maxSampleSize: Int = 1000) {
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -54,7 +54,7 @@ class AccrualFailureDetector(val threshold: Int = 8, val maxSampleSize: Int = 10
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    log.info("Heartbeat from connection [{}] ", connection)
+    log.debug("Heartbeat from connection [{}] ", connection)
     val oldState = state.get
 
     val latestTimestamp = oldState.timestamps.get(connection)
