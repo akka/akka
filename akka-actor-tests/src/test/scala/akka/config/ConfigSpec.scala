@@ -39,9 +39,11 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       {
         val c = config.getConfig("akka.actor.default-dispatcher")
 
+        //General dispatcher config
+
         {
           c.getString("type") must equal("Dispatcher")
-          c.getString("executor") must equal("thread-pool-executor")
+          c.getString("executor") must equal("fork-join-executor")
           c.getInt("mailbox-capacity") must equal(-1)
           c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
           c.getString("mailboxType") must be("")
@@ -49,6 +51,17 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
           c.getInt("throughput") must equal(5)
           c.getMilliseconds("throughput-deadline-time") must equal(0)
         }
+
+        //Fork join executor config
+
+        {
+          val pool = c.getConfig("fork-join-executor")
+          pool.getInt("parallelism-min") must equal(8)
+          pool.getDouble("parallelism-factor") must equal(3.0)
+          pool.getInt("parallelism-max") must equal(64)
+        }
+
+        //Thread pool executor config
 
         {
           val pool = c.getConfig("thread-pool-executor")

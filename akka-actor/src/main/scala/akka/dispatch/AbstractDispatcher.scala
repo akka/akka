@@ -338,17 +338,16 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 
   def configureExecutor(): ExecutorServiceConfigurator = {
     config.getString("executor") match {
-      case null | "" | "thread-pool-executor" ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
-      case "fork-join-executor"               ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
         val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
         ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites)) match {
           case Right(instance) ⇒ instance
-          case Left(exception) ⇒
-            throw new IllegalArgumentException(
-              ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
+          case Left(exception) ⇒ throw new IllegalArgumentException(
+            ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
-                .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
+              .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
         }
     }
   }
