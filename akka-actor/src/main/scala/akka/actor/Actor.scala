@@ -287,10 +287,9 @@ trait Actor {
    * For Akka internal use only.
    */
   private[akka] final def apply(msg: Any) = {
-    msg match {
-      case msg if behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case unknown                                    ⇒ unhandled(unknown)
-    }
+    // TODO would it be more efficient to assume that most messages are matched and catch MatchError instead of using isDefinedAt?
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
   }
 
   /**
@@ -312,7 +311,8 @@ trait Actor {
   /**
    * For Akka internal use only.
    */
-  private[akka] def clearBehaviorStack(): Unit = Stack.empty[Receive].push(behaviorStack.last)
+  private[akka] def clearBehaviorStack(): Unit =
+    behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
 
   private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
