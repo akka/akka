@@ -89,10 +89,10 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val fsm = TestFSMRef(new Actor with FSM[Int, String] {
       startWith(1, "")
       when(1) {
-        case Ev("go") ⇒ goto(2) using "go"
+        case Event("go", _) ⇒ goto(2) using "go"
       }
       when(2) {
-        case Ev("back") ⇒ goto(1) using "back"
+        case Event("back", _) ⇒ goto(1) using "back"
       }
     })
 

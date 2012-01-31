@@ -48,6 +48,14 @@ object FSM {
     }
   }
 
+  /**
+   * This extractor is just convenience for matching a (S, S) pair, including a
+   * reminder what the new state is.
+   */
+  object -> {
+    def unapply[S](in: (S, S)) = Some(in)
+  }
+
   case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
 
   case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
@@ -174,6 +182,10 @@ trait FSM[S, D] extends Listeners {
   type Timeout = Option[Duration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
+  // “import” so that it is visible without an import
+  val -> = FSM.->
+  val StateTimeout = FSM.StateTimeout
+
   val log = Logging(context.system, this)
 
   /**
@@ -283,14 +295,6 @@ trait FSM[S, D] extends Listeners {
    * state handler.
    */
   protected final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
-
-  /**
-   * This extractor is just convenience for matching a (S, S) pair, including a
-   * reminder what the new state is.
-   */
-  object -> {
-    def unapply[S](in: (S, S)) = Some(in)
-  }
 
   /**
    * Set handler which is called upon each state transition, i.e. not when
@@ -533,9 +537,6 @@ trait FSM[S, D] extends Listeners {
   }
 
   case class Event(event: Any, stateData: D)
-  object Ev {
-    def unapply[D](e: Event): Option[Any] = Some(e.event)
-  }
 
   case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
 }

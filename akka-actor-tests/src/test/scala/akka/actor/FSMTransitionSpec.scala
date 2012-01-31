@@ -5,7 +5,6 @@ package akka.actor
 
 import akka.testkit._
 import akka.util.duration._
-import FSM._
 import akka.util.Duration
 
 object FSMTransitionSpec {
@@ -17,13 +16,13 @@ object FSMTransitionSpec {
   class MyFSM(target: ActorRef) extends Actor with FSM[Int, Unit] {
     startWith(0, Unit)
     when(0) {
-      case Ev("tick") ⇒ goto(1)
+      case Event("tick", _) ⇒ goto(1)
     }
     when(1) {
-      case Ev("tick") ⇒ goto(0)
+      case Event("tick", _) ⇒ goto(0)
     }
     whenUnhandled {
-      case Ev("reply") ⇒ stay replying "reply"
+      case Event("reply", _) ⇒ stay replying "reply"
     }
     initialize
     override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
@@ -32,10 +31,10 @@ object FSMTransitionSpec {
   class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {
     startWith(0, 0)
     when(0) {
-      case Ev("tick") ⇒ goto(1) using (1)
+      case Event("tick", _) ⇒ goto(1) using (1)
     }
     when(1) {
-      case Ev(_) ⇒ stay
+      case _ ⇒ stay
     }
     onTransition {
       case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
@@ -56,6 +55,8 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
   "A FSM transition notifier" must {
 
     "notify listeners" in {
+      import FSM.{ SubscribeTransitionCallBack, CurrentState, Transition }
+
       val fsm = system.actorOf(Props(new MyFSM(testActor)))
       within(1 second) {
         fsm ! SubscribeTransitionCallBack(testActor)
@@ -77,8 +78,8 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       }))
 
       within(300 millis) {
-        fsm ! SubscribeTransitionCallBack(forward)
-        expectMsg(CurrentState(fsm, 0))
+        fsm ! FSM.SubscribeTransitionCallBack(forward)
+        expectMsg(FSM.CurrentState(fsm, 0))
         system.stop(forward)
         fsm ! "tick"
         expectNoMsg
