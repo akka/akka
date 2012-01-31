@@ -44,7 +44,7 @@ public class AgentDocTest {
 
   @Test
   public void createAndClose() {
-  	//#create
+        //#create
     ActorSystem system = ActorSystem.create("app");
 
     Agent<Integer> agent = new Agent<Integer>(5, system);
