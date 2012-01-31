@@ -15,6 +15,7 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.jsr166y.ForkJoinPool
+import akka.util.NonFatal
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -80,8 +81,8 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     try {
       runnable.run()
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
+      case NonFatal(e) ⇒
+        eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()
     }
@@ -166,9 +167,9 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     try {
       executeTask(invocation)
     } catch {
-      case e ⇒
+      case t ⇒
         inhabitantsUpdater.decrementAndGet(this)
-        throw e
+        throw t
     }
   }
 

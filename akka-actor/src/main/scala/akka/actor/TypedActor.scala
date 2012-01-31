@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Timeout }
+import akka.util.{ Timeout, NonFatal }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
@@ -270,7 +270,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
                 sender ! m(me)
               }
             } catch {
-              case t: Throwable ⇒ sender ! Status.Failure(t); throw t
+              case NonFatal(e) ⇒
+                sender ! Status.Failure(e)
+                throw e
             }
           }
         } finally {
