@@ -315,6 +315,69 @@ public class FutureDocTestBase {
     //#filter
   }
 
+  public void sendToTheInternetz(String s) {
+
+  }
+
+  public void sendToIssueTracker(Throwable t) {
+
+  }
+
+   @Test public void useAndThen() {
+    //#and-then
+    Future<String> future1 = Futures.successful("value", system.dispatcher()).
+       andThen(new OnComplete<String>() {
+       public void onComplete(Throwable failure, String result) {
+           if (failure != null) sendToIssueTracker(failure);
+       }
+    }).andThen(new OnComplete<String>() {
+       public void onComplete(Throwable failure, String result) {
+           if (result != null) sendToTheInternetz(result);
+       }
+    });
+    //#and-then
+  }
+
+  @Test public void useRecover() {
+    //#recover
+    Future<Integer> future = future(new Callable<Integer>() {
+      public Integer call() {
+        return 1 / 0;
+      }
+    }, system.dispatcher()).recover(new Recover<Integer>() {
+        public Integer recover(Throwable problem) throws Throwable {
+            if (problem instanceof ArithmeticException) return 0;
+            else throw problem;
+        }
+    });
+    int result = Await.result(future, Duration.create(1, SECONDS));
+    assertEquals(result, 0);
+    //#recover
+  }
+
+  @Test public void useTryRecover() {
+    //#try-recover
+    Future<Integer> future = future(new Callable<Integer>() {
+      public Integer call() {
+        return 1 / 0;
+      }
+    }, system.dispatcher()).tryRecover(new Recover<Future<Integer>>() {
+        public Future<Integer> recover(Throwable problem) throws Throwable {
+            if (problem instanceof ArithmeticException) {
+                return future(new Callable<Integer>() {
+                  public Integer call() {
+                    return 0;
+                  }
+                }, system.dispatcher());
+            }
+            else throw problem;
+        }
+    });
+    int result = Await.result(future, Duration.create(1, SECONDS));
+    assertEquals(result, 0);
+    //#try-recover
+  }
+
   @Test public void useOnSuccessOnFailureAndOnComplete() {
       {
       Future<String> future = Futures.successful("foo", system.dispatcher());
