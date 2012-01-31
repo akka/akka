@@ -342,7 +342,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
         val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
-        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites)) match {
+        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites), prerequisites.classloader) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
@@ -379,11 +379,6 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
   def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
     threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
 }
-
-/*int parallelism,
-                        ForkJoinWorkerThreadFactory factory,
-                        Thread.UncaughtExceptionHandler handler,
-                        boolean asyncMode*/
 
 class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
 
