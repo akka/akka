@@ -9,7 +9,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import akka.remote.netty.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteTransport
 import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
 
 import java.util.concurrent.CountDownLatch
@@ -23,15 +23,15 @@ import akka.actor.Actor._
 @RunWith(classOf[JUnitRunner])
 class UntypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with BeforeAndAfterAll {
 
-  var optimizeLocal_? = remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
+  var optimizeLocal_? = remote.asInstanceOf[NettyRemoteTransport].optimizeLocalScoped_?
 
   override def beforeAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
+    remote.asInstanceOf[NettyRemoteTransport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
     remote.start("localhost", 9990)
   }
 
   override def afterAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
+    remote.asInstanceOf[NettyRemoteTransport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
 
     remote.shutdown
     Thread.sleep(1000)

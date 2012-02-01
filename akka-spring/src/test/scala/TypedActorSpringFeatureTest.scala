@@ -13,7 +13,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.ClassPathXmlApplicationContext
 import org.springframework.core.io.{ ClassPathResource, Resource }
 import org.scalatest.{ BeforeAndAfterAll, FeatureSpec }
-import akka.remote.netty.NettyRemoteSupport
+import akka.remote.netty.NettyRemoteTransport
 import akka.actor._
 import akka.actor.Actor._
 import java.util.concurrent.{TimeoutException, CountDownLatch}
@@ -36,17 +36,17 @@ object RemoteTypedActorLog {
 @RunWith(classOf[JUnitRunner])
 class TypedActorSpringFeatureTest extends FeatureSpec with ShouldMatchers with BeforeAndAfterAll {
 
-  var optimizeLocal_? = remote.asInstanceOf[NettyRemoteSupport].optimizeLocalScoped_?
+  var optimizeLocal_? = remote.asInstanceOf[NettyRemoteTransport].optimizeLocalScoped_?
 
   override def beforeAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
+    remote.asInstanceOf[NettyRemoteTransport].optimizeLocal.set(false) //Can't run the test if we're eliminating all remote calls
     remote.start("localhost", 9990)
     val typedActor = TypedActor.newInstance(classOf[RemoteTypedActorOne], classOf[RemoteTypedActorOneImpl], 1000)
     remote.registerTypedActor("typed-actor-service", typedActor)
   }
 
   override def afterAll {
-    remote.asInstanceOf[NettyRemoteSupport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
+    remote.asInstanceOf[NettyRemoteTransport].optimizeLocal.set(optimizeLocal_?) //Reset optimizelocal after all tests
 
     remote.shutdown
     Thread.sleep(1000)
