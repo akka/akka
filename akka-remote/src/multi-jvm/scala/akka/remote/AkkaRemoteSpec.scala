@@ -30,6 +30,4 @@ object AkkaRemoteSpec {
 
 abstract class AkkaRemoteSpec(config: Config)
   extends AkkaSpec(config.withFallback(AkkaRemoteSpec.testConf))
-  with MultiJvmSync {
-
-}
+  with MultiJvmSync

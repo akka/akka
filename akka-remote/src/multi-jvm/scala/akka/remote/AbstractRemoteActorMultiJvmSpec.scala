@@ -5,16 +5,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
   def commonConfig: Config
+  def PortRangeStart = 1990
 
   private[this] val remotes: IndexedSeq[String] = {
     val nodesOpt = Option(AkkaRemoteSpec.testNodes).map(_.split(",").toIndexedSeq)
     nodesOpt getOrElse IndexedSeq.fill(NrOfNodes)("localhost")
-  }
-
-        def akkaSpec(idx: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(idx), 9991+idx)
-
-  def akkaURIs(count: Int): String = {
-    0 until count map {idx => "\"akka://" + akkaSpec(idx) + "\""} mkString ","
   }
 
   val nodeConfigs = ((1 to NrOfNodes).toList zip remotes) map {
@@ -23,6 +18,9 @@ trait AbstractRemoteActorMultiJvmSpec {
         akka {
           remote.netty.hostname="%s"
           remote.netty.port = "%d"
-        }""".format(host, 9990+idx, idx)) withFallback commonConfig
+        }""".format(host, PortRangeStart + idx, idx)) withFallback commonConfig
   }
+
+  def akkaSpec(idx: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(idx), PortRangeStart + 1 + idx)
+  def akkaURIs(count: Int): String = 0 until count map {idx => "\"akka://" + akkaSpec(idx) + "\""} mkString ","
 }
