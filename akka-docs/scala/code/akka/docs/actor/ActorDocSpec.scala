@@ -133,6 +133,29 @@ class SpecificActor extends GenericActor {
 case class MyMsg(subject: String)
 //#receive-orElse
 
+//#receive-orElse2
+trait ComposableActor extends Actor {
+  private var receives: List[Receive] = List()
+  protected def registerReceive(receive: Receive) {
+    receives = receive :: receives
+  }
+
+  def receive = receives reduce { _ orElse _ }
+}
+
+class MyComposableActor extends ComposableActor {
+  override def preStart() {
+    registerReceive({
+      case "foo" ⇒ /* Do something */
+    })
+
+    registerReceive({
+      case "bar" ⇒ /* Do something */
+    })
+  }
+}
+
+//#receive-orElse2
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {
