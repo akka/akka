@@ -7,6 +7,26 @@ package akka
 import akka.actor.newUuid
 import java.net.{ InetAddress, UnknownHostException }
 
+object AkkaException {
+  val hostname = try InetAddress.getLocalHost.getHostAddress catch { case e: UnknownHostException ⇒ "unknown" }
+
+  def toStringWithStackTrace(throwable: Throwable): String = {
+    if (throwable eq null) "Unknown Exception"
+    throwable match {
+      case ae: AkkaException ⇒ ae.toLongString
+      case e                 ⇒ "%s:%s\n%s" format (e.getClass.getName, e.getMessage, stackTraceToString(e))
+    }
+  }
+
+  def stackTraceToString(throwable: Throwable): String = {
+    val trace = throwable.getStackTrace
+    val sb = new StringBuilder
+    for (i ← 0 until trace.length)
+      sb.append("\tat %s\n" format trace(i))
+    sb.toString
+  }
+}
+
 /**
  * Akka base Exception. Each Exception gets:
  * <ul>
@@ -19,26 +39,12 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
 
   override lazy val toString =
-    "%s: %s\n[%s]".format(getClass.getName, message, uuid)
+    "%s:%s\n[%s]".format(getClass.getName, message, uuid)
 
   lazy val toLongString =
-    "%s: %s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
+    "%s:%s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
   def this(msg: String) = this(msg, null);
 
-  def stackTraceToString = {
-    val trace = getStackTrace
-    val sb = new StringBuilder
-    for (i ← 0 until trace.length)
-      sb.append("\tat %s\n" format trace(i))
-    sb.toString
-  }
-}
-
-object AkkaException {
-  val hostname = try {
-    InetAddress.getLocalHost.getHostAddress
-  } catch {
-    case e: UnknownHostException ⇒ "unknown"
-  }
+  def stackTraceToString = AkkaException.stackTraceToString(this)
 }

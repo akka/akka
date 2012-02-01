@@ -32,11 +32,7 @@ case class RemoteClientError(
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
-    "RemoteClientError@" +
-      remoteAddress +
-      ": Error[" +
-      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
-      "]"
+    "RemoteClientError@" + remoteAddress + ": Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
 }
 
 case class RemoteClientDisconnected(
@@ -78,13 +74,9 @@ case class RemoteClientWriteFailed(
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.WarningLevel
   override def toString =
-    "RemoteClientWriteFailed@" +
-      remoteAddress +
-      ": MessageClass[" +
-      (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" +
-      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
-      "]"
+    "RemoteClientWriteFailed@" + remoteAddress +
+      ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
+      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
 }
 
 /**
@@ -111,11 +103,7 @@ case class RemoteServerError(
   @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
-    "RemoteServerError@" +
-      remote +
-      ": Error[" +
-      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
-      "]"
+    "RemoteServerError@" + remote + "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
 }
 
 case class RemoteServerClientConnected(
@@ -123,11 +111,8 @@ case class RemoteServerClientConnected(
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
-    "RemoteServerClientConnected@" +
-      remote +
-      ": Client[" +
-      (if (clientAddress.isDefined) clientAddress.get else "no address") +
-      "]"
+    "RemoteServerClientConnected@" + remote +
+      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
 }
 
 case class RemoteServerClientDisconnected(
@@ -135,11 +120,8 @@ case class RemoteServerClientDisconnected(
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
-    "RemoteServerClientDisconnected@" +
-      remote +
-      ": Client[" +
-      (if (clientAddress.isDefined) clientAddress.get else "no address") +
-      "]"
+    "RemoteServerClientDisconnected@" + remote +
+      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
 }
 
 case class RemoteServerClientClosed(
@@ -147,11 +129,8 @@ case class RemoteServerClientClosed(
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
-    "RemoteServerClientClosed@" +
-      remote +
-      ": Client[" +
-      (if (clientAddress.isDefined) clientAddress.get else "no address") +
-      "]"
+    "RemoteServerClientClosed@" + remote +
+      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
 }
 
 case class RemoteServerWriteFailed(
@@ -161,15 +140,10 @@ case class RemoteServerWriteFailed(
   @BeanProperty remoteAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.WarningLevel
   override def toString =
-    "RemoteServerWriteFailed@" +
-      remote +
-      ": ClientAddress[" +
-      remoteAddress +
-      "] MessageClass[" +
-      (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" +
-      (if (cause ne null) cause.getClass.getName + ": " + cause.getMessage else "unknown") +
-      "]"
+    "RemoteServerWriteFailed@" + remote +
+      ": ClientAddress[" + remoteAddress +
+      "] MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
+      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
 }
 
 /**
