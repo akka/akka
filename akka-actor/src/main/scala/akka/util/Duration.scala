@@ -10,43 +10,12 @@ import java.lang.{ Double ⇒ JDouble }
 
 class TimerException(message: String) extends RuntimeException(message)
 
-/**
- * Simple timer class.
- * Usage:
- * <pre>
- *   import akka.util.duration._
- *   import akka.util.Timer
- *
- *   val timer = Timer(30 seconds)
- *   while (timer.isTicking) { ... }
- * </pre>
- */
-case class Timer(timeout: Duration, throwExceptionOnTimeout: Boolean = false) {
-  val startTime = Duration(System.nanoTime, NANOSECONDS)
-
-  def timeLeft: Duration = {
-    val time = timeout.toNanos - (System.nanoTime - startTime.toNanos)
-    if (time <= 0) Duration(0, NANOSECONDS)
-    else Duration(time, NANOSECONDS)
-  }
-
-  /**
-   * Returns true while the timer is ticking. After that it either throws and exception or
-   * returns false. Depending on if the 'throwExceptionOnTimeout' argument is true or false.
-   */
-  def isTicking: Boolean = {
-    if (!(timeout.toNanos > (System.nanoTime - startTime.toNanos))) {
-      if (throwExceptionOnTimeout) throw new TimerException("Time out after " + timeout)
-      else false
-    } else true
-  }
-}
-
 case class Deadline(time: Duration) {
   def +(other: Duration): Deadline = copy(time = time + other)
   def -(other: Duration): Deadline = copy(time = time - other)
   def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
+  def isOverdue(): Boolean = timeLeft < Duration.Zero
 }
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
