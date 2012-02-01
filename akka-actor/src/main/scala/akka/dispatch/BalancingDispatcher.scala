@@ -9,7 +9,7 @@ import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import annotation.tailrec
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed

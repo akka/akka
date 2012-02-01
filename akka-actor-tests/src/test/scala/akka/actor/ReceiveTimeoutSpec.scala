@@ -5,7 +5,7 @@
 package akka.actor
 
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 
 import java.util.concurrent.atomic.AtomicInteger
 import akka.dispatch.Await

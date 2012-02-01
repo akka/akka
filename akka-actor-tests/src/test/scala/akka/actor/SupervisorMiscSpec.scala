@@ -9,7 +9,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
-import akka.util.duration._
+import scala.util.duration._
 
 object SupervisorMiscSpec {
   val config = """

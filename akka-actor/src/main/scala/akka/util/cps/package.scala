@@ -4,6 +4,7 @@
 
 package akka.util
 
+import scala.util.Timeout
 import scala.util.continuations._
 import akka.dispatch.MessageDispatcher
 

@@ -4,8 +4,8 @@
 package akka.actor
 
 import akka.testkit._
-import akka.util.duration._
-import akka.util.Duration
+import scala.util.duration._
+import scala.util.Duration
 
 object FSMTransitionSpec {
 

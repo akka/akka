@@ -23,7 +23,7 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
-import akka.util.Timeout;
+import scala.util.Timeout;
 
 import java.util.Arrays;
 import java.util.ArrayList;

@@ -5,7 +5,7 @@
 package akka.remote
 
 import akka.testkit.AkkaSpec
-import akka.util.Duration
+import scala.util.Duration
 
 trait MultiJvmSync extends AkkaSpec {
   def nodes: Int

@@ -4,11 +4,10 @@
 package akka.actor
 
 import akka.util._
-
 import scala.collection.mutable
 import akka.event.Logging
 import akka.routing.{ Deafen, Listen, Listeners }
-
+import scala.util.Duration
 object FSM {
 
   object NullFunction extends PartialFunction[Any, Nothing] {

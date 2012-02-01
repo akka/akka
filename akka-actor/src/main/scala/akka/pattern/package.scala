@@ -5,7 +5,7 @@ package akka
 
 import akka.actor._
 import akka.dispatch.{ Future, Promise }
-import akka.util.{ Timeout, Duration }
+import scala.util.{ Timeout, Duration }
 
 /**
  * == Commonly Used Patterns With Akka ==
@@ -43,3 +43,4 @@ import akka.util.{ Timeout, Duration }
 package object pattern extends PipeToSupport with AskSupport with GracefulStopSupport {
 
 }
+

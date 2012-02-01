@@ -5,7 +5,8 @@
 package akka.dispatch
 
 import akka.actor.newUuid
-import akka.util.{ Duration, ReflectiveAccess }
+import scala.util.{ Duration }
+import akka.util.{ ReflectiveAccess }
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler

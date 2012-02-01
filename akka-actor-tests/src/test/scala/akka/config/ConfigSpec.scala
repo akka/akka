@@ -7,8 +7,8 @@ package akka.config
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import akka.util.duration._
-import akka.util.Duration
+import scala.util.duration._
+import scala.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {

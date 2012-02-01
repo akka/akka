@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.util.Duration
+import scala.util.Duration
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }

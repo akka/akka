@@ -10,7 +10,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor.PoisonPill
 import akka.dispatch.MessageDispatcherConfigurator
 import akka.dispatch.MessageDispatcher

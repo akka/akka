@@ -13,7 +13,7 @@ Ray Roestenburg's example code from `his blog <http://roestenburg.agilesquad.com
    import org.scalatest.matchers.ShouldMatchers
    import org.scalatest.{WordSpec, BeforeAndAfterAll}
    import akka.actor.Actor._
-   import akka.util.duration._
+   import scala.util.duration._
    import akka.testkit.TestKit
    import java.util.concurrent.TimeUnit
    import akka.actor.{ActorRef, Actor}

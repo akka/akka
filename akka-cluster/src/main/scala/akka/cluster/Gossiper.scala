@@ -11,6 +11,7 @@ import akka.event.Logging
 import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util._
+import scala.util.{ Deadline, Timeout }
 import akka.config.ConfigurationException
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }

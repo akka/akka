@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.util
+package scala.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
@@ -16,6 +16,7 @@ case class Deadline private (time: Duration) {
   def hasTimeLeft(): Boolean = !isOverdue() //Code reuse FTW
   def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
 }
+
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
 }
@@ -26,6 +27,67 @@ object Duration {
   def apply(length: Long, unit: TimeUnit): FiniteDuration = new FiniteDuration(length, unit)
   def apply(length: Double, unit: TimeUnit): FiniteDuration = fromNanos(unit.toNanos(1) * length)
   def apply(length: Long, unit: String): FiniteDuration = new FiniteDuration(length, timeUnit(unit))
+
+  /**
+   * Construct a Duration by parsing a String. In case of a format error, a
+   * RuntimeException is thrown. See `unapply(String)` for more information.
+   */
+  def apply(s: String): Duration = unapply(s) getOrElse sys.error("format error " + s)
+
+  private val RE = ("""^\s*([\+|-]?\d+(?:\.\d+)?)\s*""" + // length part
+    "(?:" + // units are distinguished in separate match groups
+    "(d|day|days)|" +
+    "(h|hour|hours)|" +
+    "(min|minute|minutes)|" +
+    "(s|sec|second|seconds)|" +
+    "(ms|milli|millis|millisecond|milliseconds)|" +
+    "(µs|micro|micros|microsecond|microseconds)|" +
+    "(ns|nano|nanos|nanosecond|nanoseconds)" +
+    """)\s*$""").r // close the non-capturing group
+  private val REinf = """^\s*(?:\+|Plus)?Inf\s*$""".r
+  private val REminf = """^\s*(?:-|Minus)Inf\s*""".r
+
+  /**
+   * Deconstruct a Duration into length and unit if it is finite.
+   */
+  def unapply(d: Duration): Option[(Long, TimeUnit)] = {
+    if (d.finite_?) {
+      Some((d.length, d.unit))
+    } else {
+      None
+    }
+  }
+
+  /**
+   * Parse String, return None if no match. Format is `"<length><unit>"`, where
+   * whitespace is allowed before, between and after the parts. Infinities are
+   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
+   */
+  def unapply(s: String): Option[Duration] = s match {
+    case RE(length, d, h, m, s, ms, mus, ns) ⇒
+      if (d ne null)
+        Some(Duration(JDouble.parseDouble(length), DAYS))
+      else if (h ne null)
+        Some(Duration(JDouble.parseDouble(length), HOURS))
+      else if (m ne null)
+        Some(Duration(JDouble.parseDouble(length), MINUTES))
+      else if (s ne null)
+        Some(Duration(JDouble.parseDouble(length), SECONDS))
+      else if (ms ne null)
+        Some(Duration(JDouble.parseDouble(length), MILLISECONDS))
+      else if (mus ne null)
+        Some(Duration(JDouble.parseDouble(length), MICROSECONDS))
+      else if (ns ne null)
+        Some(Duration(JDouble.parseDouble(length), NANOSECONDS))
+      else
+        sys.error("made some error in regex (should not be possible)")
+    case REinf()  ⇒ Some(Inf)
+    case REminf() ⇒ Some(MinusInf)
+    case _        ⇒ None
+  }
+
+  def fromNanos(nanos: Double): FiniteDuration =
+    fromNanos((nanos + 0.5).asInstanceOf[Long])
 
   def fromNanos(nanos: Long): FiniteDuration = {
     if (nanos % 86400000000000L == 0) {
@@ -43,52 +105,6 @@ object Duration {
     } else {
       Duration(nanos, NANOSECONDS)
     }
-  }
-
-  def fromNanos(nanos: Double): FiniteDuration = fromNanos((nanos + 0.5).asInstanceOf[Long])
-
-  /**
-   * Construct a Duration by parsing a String. In case of a format error, a
-   * RuntimeException is thrown. See `unapply(String)` for more information.
-   */
-  def apply(s: String): Duration = unapply(s) getOrElse sys.error("format error")
-
-  /**
-   * Deconstruct a Duration into length and unit if it is finite.
-   */
-  def unapply(d: Duration): Option[(Long, TimeUnit)] = {
-    if (d.finite_?) {
-      Some((d.length, d.unit))
-    } else {
-      None
-    }
-  }
-
-  private val RE = ("""^\s*(\d+(?:\.\d+)?)\s*""" + // length part
-    "(?:" + // units are distinguished in separate match groups
-    "(d|day|days)|" +
-    "(h|hour|hours)|" +
-    "(min|minute|minutes)|" +
-    "(s|sec|second|seconds)|" +
-    "(ms|milli|millis|millisecond|milliseconds)|" +
-    "(µs|micro|micros|microsecond|microseconds)|" +
-    "(ns|nano|nanos|nanosecond|nanoseconds)" +
-    """)\s*$""").r // close the non-capturing group
-  private val REinf = """^\s*Inf\s*$""".r
-  private val REminf = """^\s*(?:-\s*|Minus)Inf\s*""".r
-
-  /**
-   * Parse String, return None if no match. Format is `"<length><unit>"`, where
-   * whitespace is allowed before, between and after the parts. Infinities are
-   * designated by `"Inf"` and `"-Inf"` or `"MinusInf"`.
-   */
-  def unapply(s: String): Option[Duration] = s match {
-    case RE(length, d, h, m, s, ms, mus, ns) ⇒
-      if (d ne null) Some(Duration(JDouble.parseDouble(length), DAYS)) else if (h ne null) Some(Duration(JDouble.parseDouble(length), HOURS)) else if (m ne null) Some(Duration(JDouble.parseDouble(length), MINUTES)) else if (s ne null) Some(Duration(JDouble.parseDouble(length), SECONDS)) else if (ms ne null) Some(Duration(JDouble.parseDouble(length), MILLISECONDS)) else if (mus ne null) Some(Duration(JDouble.parseDouble(length), MICROSECONDS)) else if (ns ne null) Some(Duration(JDouble.parseDouble(length), NANOSECONDS)) else
-        sys.error("made some error in regex (should not be possible)")
-    case REinf()  ⇒ Some(Inf)
-    case REminf() ⇒ Some(MinusInf)
-    case _        ⇒ None
   }
 
   /**
@@ -153,7 +169,6 @@ object Duration {
     def toDays: Long = throw new IllegalArgumentException("toDays not allowed on infinite Durations")
     def toUnit(unit: TimeUnit): Double = throw new IllegalArgumentException("toUnit not allowed on infinite Durations")
 
-    def printHMS = toString
   }
 
   /**
@@ -193,7 +208,7 @@ object Duration {
  * <p/>
  * Examples of usage from Java:
  * <pre>
- * import akka.util.FiniteDuration;
+ * import scala.util.FiniteDuration;
  * import java.util.concurrent.TimeUnit;
  *
  * Duration duration = new FiniteDuration(100, MILLISECONDS);
@@ -205,7 +220,7 @@ object Duration {
  * <p/>
  * Examples of usage from Scala:
  * <pre>
- * import akka.util.Duration
+ * import scala.util.Duration
  * import java.util.concurrent.TimeUnit
  *
  * val duration = Duration(100, MILLISECONDS)
@@ -219,7 +234,7 @@ object Duration {
  * <p/>
  * Implicits are also provided for Int, Long and Double. Example usage:
  * <pre>
- * import akka.util.duration._
+ * import scala.util.duration._
  *
  * val duration = 100 millis
  * </pre>
@@ -243,7 +258,7 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def toHours: Long
   def toDays: Long
   def toUnit(unit: TimeUnit): Double
-  def printHMS: String
+
   def +(other: Duration): Duration
   def -(other: Duration): Duration
   def *(factor: Double): Duration
@@ -253,7 +268,6 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def finite_? : Boolean
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
-  def sleep(): Unit = Thread.sleep(toMillis)
   def fromNow: Deadline = Deadline.now + this
 
   // Java API
@@ -306,8 +320,6 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     case Duration(1, NANOSECONDS)  ⇒ "1 nanosecond"
     case Duration(x, NANOSECONDS)  ⇒ x + " nanoseconds"
   }
-
-  def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000d % 60)
 
   def compare(other: Duration) =
     if (other.finite_?) {

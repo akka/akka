@@ -7,10 +7,11 @@ package akka.actor
 import akka.dispatch._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Stack, TreeMap }
+import scala.util.{ Duration }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
-import akka.util.{ Duration, Helpers }
+import akka.util.{ Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension

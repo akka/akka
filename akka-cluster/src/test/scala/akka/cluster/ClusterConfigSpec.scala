@@ -5,8 +5,8 @@
 package akka.cluster
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
-import akka.util.Duration
+import scala.util.duration._
+import scala.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec(

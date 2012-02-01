@@ -19,6 +19,7 @@ import akka.dispatch.Await.Awaitable
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
 import akka.util._
+import scala.util.{ Timeout, Duration }
 import collection.immutable.Stack
 
 object ActorSystem {

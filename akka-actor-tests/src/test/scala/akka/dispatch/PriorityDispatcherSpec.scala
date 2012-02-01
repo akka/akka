@@ -3,7 +3,7 @@ package akka.dispatch
 import akka.actor.{ Props, LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 import akka.pattern.ask
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit.DefaultTimeout
 import com.typesafe.config.Config
 

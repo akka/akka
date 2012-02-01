@@ -5,7 +5,8 @@ package akka.util
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import duration._
+import scala.util.duration._
+import scala.util.Duration
 
 class DurationSpec extends WordSpec with MustMatchers {
 
@@ -56,11 +57,28 @@ class DurationSpec extends WordSpec with MustMatchers {
       // view bounds vs. very local type inference vs. operator precedence: sigh
       dead.timeLeft must be > (1 second: Duration)
       dead2.timeLeft must be > (1 second: Duration)
-      1.second.sleep
+      Thread.sleep(1.second.toMillis)
       dead.timeLeft must be < (1 second: Duration)
       dead2.timeLeft must be < (1 second: Duration)
     }
 
+    "parse negative and positive time strings" in {
+      import java.util.concurrent.TimeUnit._
+
+      Duration("-1 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * -1d))
+      Duration("+1 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * 1d))
+      Duration(" +1.2 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * 1.2d))
+      Duration("-1.2 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * -1.2d))
+
+      // infinities      
+      assert(Duration.Inf == Duration("PlusInf"))
+      assert(Duration.Inf == Duration("+Inf"))
+      assert(Duration.Inf == Duration("Inf"))
+
+      assert(Duration.MinusInf == Duration("MinusInf"))
+      assert(Duration.MinusInf == Duration("-Inf"))
+
+    }
   }
 
 }

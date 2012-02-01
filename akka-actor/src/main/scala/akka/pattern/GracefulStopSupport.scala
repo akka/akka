@@ -6,7 +6,7 @@ package akka.pattern
 
 import akka.actor.{ ActorRef, Actor, ActorSystem, Props, PoisonPill, Terminated, ReceiveTimeout, ActorTimeoutException }
 import akka.dispatch.{ Promise, Future }
-import akka.util.Duration
+import scala.util.Duration
 
 trait GracefulStopSupport {
   /**

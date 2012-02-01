@@ -7,9 +7,9 @@ package akka.docs.actor
 //#imports
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import akka.util.duration._
-import akka.util.Duration
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Duration
+import scala.util.Timeout
 import akka.event.LoggingReceive
 import akka.pattern.{ ask, pipe }
 import com.typesafe.config.ConfigFactory

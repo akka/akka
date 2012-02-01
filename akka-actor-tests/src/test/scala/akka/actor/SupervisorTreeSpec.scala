@@ -5,7 +5,7 @@ package akka.actor
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
 import akka.testkit.AkkaSpec

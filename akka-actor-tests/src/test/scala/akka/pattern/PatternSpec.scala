@@ -9,14 +9,14 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorTimeoutException
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 
 object PatternSpec {
   case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case Work(duration) ⇒ duration.sleep()
+      case Work(duration) ⇒ Thread.sleep(duration.toMillis)
     }
   }
 }

@@ -5,7 +5,7 @@ package akka.docs.actor
 
 //#imports
 import akka.dispatch.{ Promise, Future, Await }
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 
 //#imports

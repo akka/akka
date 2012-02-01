@@ -8,7 +8,7 @@ import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 import akka.actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException }
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import akka.testkit.DefaultTimeout

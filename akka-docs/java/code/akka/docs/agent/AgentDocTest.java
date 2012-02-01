@@ -23,7 +23,7 @@ import akka.japi.Function;
 //#import-function
 
 //#import-timeout
-import akka.util.Timeout;
+import scala.util.Timeout;
 import static java.util.concurrent.TimeUnit.SECONDS;
 //#import-timeout
 

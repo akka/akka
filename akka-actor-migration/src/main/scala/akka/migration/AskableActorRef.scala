@@ -5,7 +5,7 @@ package akka.migration
 
 import akka.actor.ActorRef
 import akka.dispatch.Future
-import akka.util.Timeout
+import scala.util.Timeout
 
 /**
  * Implementation detail of the “ask” pattern enrichment of ActorRef

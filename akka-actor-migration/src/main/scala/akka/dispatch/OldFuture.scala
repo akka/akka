@@ -6,7 +6,7 @@ package akka.dispatch
 import java.util.concurrent.TimeoutException
 import akka.AkkaException
 import akka.util.BoxedType
-import akka.util.Duration
+import scala.util.Duration
 import akka.actor.GlobalActorSystem
 
 /**

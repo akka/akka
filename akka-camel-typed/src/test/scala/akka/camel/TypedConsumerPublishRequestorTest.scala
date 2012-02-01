@@ -4,7 +4,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import org.junit.{ Before, After, Test }
 import org.scalatest.junit.JUnitSuite
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor._
 import akka.actor.Actor._
 import akka.camel.TypedCamelTestSupport.{ SetExpectedMessageCount ⇒ SetExpectedTestMessageCount, _ }

@@ -4,10 +4,10 @@
 package akka.actor
 
 import akka.japi.Creator
-import akka.util.Timeout
+import scala.util.Timeout
 import akka.dispatch.Future
 import akka.dispatch.OldFuture
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.migration.AskableActorRef
 

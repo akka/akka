@@ -9,7 +9,7 @@ import akka.actor._
 import akka.dispatch.{ Promise, Future }
 import akka.event.Logging
 import annotation.tailrec
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit
 
 private[zeromq] sealed trait PollLifeCycle
