@@ -245,12 +245,12 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
     val promise = Promise[T]()(executor)
 
     val timer: Option[Deadline] = timeout match {
-      case Some(duration) ⇒ Some(Deadline(duration))
+      case Some(duration) ⇒ Some(duration fromNow)
       case None           ⇒ None
     }
 
     def check(n: Int, e: Throwable): Boolean =
-      (count.isEmpty || (n < count.get)) && (timer.isEmpty || !timer.get.isOverdue()) && (filter.isEmpty || filter.get(e))
+      (count.isEmpty || (n < count.get)) && (timer.isEmpty || timer.get.hasTimeLeft()) && (filter.isEmpty || filter.get(e))
 
     def run(n: Int) {
       future onComplete {

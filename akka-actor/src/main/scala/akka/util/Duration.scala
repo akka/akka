@@ -8,14 +8,13 @@ import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Double ⇒ JDouble }
 
-class TimerException(message: String) extends RuntimeException(message)
-
-case class Deadline(time: Duration) {
+case class Deadline private (time: Duration) {
   def +(other: Duration): Deadline = copy(time = time + other)
   def -(other: Duration): Deadline = copy(time = time - other)
   def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
-  def isOverdue(): Boolean = timeLeft < Duration.Zero
+  def hasTimeLeft(): Boolean = !isOverdue() //Code reuse FTW
+  def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
 }
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))

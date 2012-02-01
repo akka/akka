@@ -163,7 +163,7 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
   log.info("Starting cluster Gossiper...")
 
   // join the cluster by connecting to one of the seed members and retrieve current cluster state (Gossip)
-  joinCluster(Deadline(clusterSettings.MaxTimeToRetryJoiningCluster))
+  joinCluster(clusterSettings.MaxTimeToRetryJoiningCluster fromNow)
 
   // start periodic gossip and cluster scrutinization
   val initateGossipCanceller = system.scheduler.schedule(initialDelayForGossip, gossipFrequency)(initateGossip())
