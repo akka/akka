@@ -53,7 +53,7 @@ object ActorRefSpec {
     }
 
     private def work {
-      1.second.dilated.sleep
+      Thread.sleep(1.second.dilated.toMillis)
     }
   }
 

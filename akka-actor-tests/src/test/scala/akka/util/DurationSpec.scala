@@ -57,7 +57,7 @@ class DurationSpec extends WordSpec with MustMatchers {
       // view bounds vs. very local type inference vs. operator precedence: sigh
       dead.timeLeft must be > (1 second: Duration)
       dead2.timeLeft must be > (1 second: Duration)
-      1.second.sleep
+      Thread.sleep(1.second.toMillis)
       dead.timeLeft must be < (1 second: Duration)
       dead2.timeLeft must be < (1 second: Duration)
     }

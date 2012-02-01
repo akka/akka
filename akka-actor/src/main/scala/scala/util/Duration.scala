@@ -167,7 +167,6 @@ object Duration {
     def toDays: Long = throw new IllegalArgumentException("toDays not allowed on infinite Durations")
     def toUnit(unit: TimeUnit): Double = throw new IllegalArgumentException("toUnit not allowed on infinite Durations")
 
-    def printHMS = toString
   }
 
   /**
@@ -257,7 +256,7 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def toHours: Long
   def toDays: Long
   def toUnit(unit: TimeUnit): Double
-  def printHMS: String
+
   def +(other: Duration): Duration
   def -(other: Duration): Duration
   def *(factor: Double): Duration
@@ -267,7 +266,6 @@ abstract class Duration extends Serializable with Ordered[Duration] {
   def finite_? : Boolean
   def min(other: Duration): Duration = if (this < other) this else other
   def max(other: Duration): Duration = if (this > other) this else other
-  def sleep(): Unit = Thread.sleep(toMillis)
   def fromNow: Deadline = Deadline.now + this
 
   // Java API
@@ -320,8 +318,6 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     case Duration(1, NANOSECONDS)  ⇒ "1 nanosecond"
     case Duration(x, NANOSECONDS)  ⇒ x + " nanoseconds"
   }
-
-  def printHMS = "%02d:%02d:%06.3f".format(toHours, toMinutes % 60, toMillis / 1000d % 60)
 
   def compare(other: Duration) =
     if (other.finite_?) {

@@ -42,7 +42,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
       for (i ← 1 to count) {
         system2.registerOnTermination {
-          (i % 3).millis.dilated.sleep()
+          Thread.sleep((i % 3).millis.dilated.toMillis)
           result add i
           latch.countDown()
         }
@@ -64,7 +64,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       var callbackWasRun = false
 
       system2.registerOnTermination {
-        50.millis.dilated.sleep()
+        Thread.sleep(50.millis.dilated.toMillis)
         callbackWasRun = true
       }
 
