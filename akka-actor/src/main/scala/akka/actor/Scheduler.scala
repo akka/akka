@@ -126,7 +126,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         receiver ! message
         // Check if the receiver is still alive and kicking before reschedule the task
         if (receiver.isTerminated) {
-          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
+          log.debug("Could not reschedule message to be sent because receiving actor has been terminated.")
         } else {
           scheduleNext(timeout, delay, continuousCancellable)
         }
