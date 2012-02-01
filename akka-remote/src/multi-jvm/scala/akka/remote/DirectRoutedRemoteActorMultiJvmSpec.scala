@@ -7,6 +7,7 @@ import akka.pattern.ask
 
 object DirectRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2
+//  override def PortRangeStart = 3990
 
   class SomeActor extends Actor with Serializable {
     def receive = {
