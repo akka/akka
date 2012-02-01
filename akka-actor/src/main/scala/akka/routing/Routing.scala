@@ -10,7 +10,7 @@ import akka.util.Duration
 import akka.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.pattern.AskSupport
+import akka.pattern.pipe
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
@@ -766,7 +766,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
-        val asker = AskSupport.createAsker(provider, within)
+        val asker = akka.pattern.createAsker(provider, within)
         asker.result.pipeTo(sender)
         toAll(asker, routeeProvider.routees)
     }
