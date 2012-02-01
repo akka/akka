@@ -69,10 +69,6 @@ class RemoteActorRefProvider(
   private var _remoteDaemon: InternalActorRef = _
   def remoteDaemon = _remoteDaemon
 
-  @volatile
-  private var _networkEventStream: NetworkEventStream = _
-  def networkEventStream = _networkEventStream
-
   def init(system: ActorSystemImpl) {
     local.init(system)
 
@@ -80,9 +76,6 @@ class RemoteActorRefProvider(
     local.registerExtraNames(Map(("remote", remoteDaemon)))
 
     _serialization = SerializationExtension(system)
-
-    _networkEventStream = new NetworkEventStream(system)
-    system.eventStream.subscribe(networkEventStream.sender, classOf[RemoteLifeCycleEvent])
 
     _transport = {
       val fqn = remoteSettings.RemoteTransport
