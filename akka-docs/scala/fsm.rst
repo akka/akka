@@ -178,7 +178,7 @@ demonstrated below:
 .. code-block:: scala
 
   when(Idle) {
-    case Ev(Start(msg)) => // convenience extractor when state data not needed
+    case Event(Start(msg), _) =>
       goto(Timer) using (msg, sender)
   }
 
@@ -188,9 +188,8 @@ demonstrated below:
       goto(Idle)
   }
 
-The :class:`Event(msg, data)` case class may be used directly in the pattern as
-shown in state Idle, or you may use the extractor :obj:`Ev(msg)` when the state
-data are not needed.
+The :class:`Event(msg: Any, data: D)` case class is parameterized with the data
+type held by the FSM for convenient pattern matching.
 
 Defining the Initial State
 --------------------------
@@ -216,7 +215,7 @@ do something else in this case you can specify that with
     case Event(x : X, data) =>
       log.info(this, "Received unhandled event: " + x)
       stay
-    case Ev(msg) =>
+    case Event(msg, _) =>
       log.warn(this, "Received unknown event: " + x)
       goto(Error)
   }
@@ -259,7 +258,7 @@ All modifier can be chained to achieve a nice and concise description:
 .. code-block:: scala
 
   when(State) {
-    case Ev(msg) =>
+    case Event(msg, _) =>
       goto(Processing) using (msg) forMax (5 seconds) replying (WillDo)
   }
 
@@ -396,7 +395,7 @@ state data which is available during termination handling.
 .. code-block:: scala
 
    when(A) {
-     case Ev(Stop) =>
+     case Event(Stop, _) =>
        doCleanup()
        stop()
    }

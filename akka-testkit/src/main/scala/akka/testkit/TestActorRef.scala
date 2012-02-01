@@ -34,7 +34,7 @@ class TestActorRef[T <: Actor](
     _supervisor.path / name,
     false) {
 
-  private case object InternalGetActor extends AutoReceivedMessage
+  import TestActorRef.InternalGetActor
 
   override def newActorCell(
     system: ActorSystemImpl,
@@ -97,6 +97,8 @@ class TestActorRef[T <: Actor](
 }
 
 object TestActorRef {
+
+  private case object InternalGetActor extends AutoReceivedMessage
 
   private val number = new AtomicLong
   private[testkit] def randomName: String = {
