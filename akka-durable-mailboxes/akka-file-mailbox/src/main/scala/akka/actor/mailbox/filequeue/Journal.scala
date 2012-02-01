@@ -21,7 +21,7 @@ import java.io._
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
 import akka.event.LoggingAdapter
-import akka.util.Harmless
+import akka.util.NonFatal
 
 // returned from journal replay
 sealed trait JournalItem
@@ -100,7 +100,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) 
       close()
       queueFile.delete
     } catch {
-      case Harmless(_) ⇒
+      case NonFatal(_) ⇒
     }
   }
 

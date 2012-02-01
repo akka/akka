@@ -17,7 +17,7 @@ import akka.util.{ Duration, BoxedType }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger }
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._
-import akka.util.Harmless
+import akka.util.NonFatal
 
 object Await {
   sealed trait CanAwait
@@ -142,7 +142,7 @@ object Future {
           try {
             Right(body)
           } catch {
-            case Harmless(e) ⇒ Left(e)
+            case NonFatal(e) ⇒ Left(e)
           }
         }
     })
@@ -322,16 +322,19 @@ object Future {
                 try {
                   next.apply()
                 } catch {
-                  case Harmless(e) ⇒ logError("Future.dispatchTask", e)
+                  case NonFatal(e) ⇒ logError(e)
                 }
               }
             } finally { _taskStack.remove() }
         })
     }
 
-  private def logError(logSource: String, problem: Throwable)(implicit executor: ExecutionContext): Unit = {
+  /**
+   * Internal API, do not call
+   */
+  private[akka] def logError(problem: Throwable)(implicit executor: ExecutionContext): Unit = {
     executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, logSource, this.getClass, problem.getMessage))
+      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, "Future", this.getClass, problem.getMessage))
       case other                ⇒ problem.printStackTrace()
     }
   }
@@ -489,7 +492,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
         future complete (try {
           Right(f(res))
         } catch {
-          case Harmless(e) ⇒ Left(e)
+          case NonFatal(e) ⇒ Left(e)
         })
     }
     future
@@ -536,7 +539,7 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
         try {
           p completeWith f(r)
         } catch {
-          case Harmless(e) ⇒ p complete Left(e)
+          case NonFatal(e) ⇒ p complete Left(e)
           case t           ⇒ p complete Left(new ExecutionException(t)); throw t
         }
     }
@@ -575,18 +578,12 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
       case r @ Right(res) ⇒ p complete (try {
         if (pred(res)) r else Left(new MatchError(res))
       } catch {
-        case Harmless(e) ⇒ Left(e)
+        case NonFatal(e) ⇒ Left(e)
       })
     }
     p
   }
 
-  protected def logError(logSource: String, problem: Throwable): Unit = {
-    executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, logSource, this.getClass, problem.getMessage))
-      case other                ⇒ problem.printStackTrace()
-    }
-  }
 }
 
 object Promise {
@@ -661,7 +658,7 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(thisPromise)
       } catch {
-        case Harmless(e) ⇒ fr failure e
+        case NonFatal(e) ⇒ fr failure e
       }
     }
     fr
@@ -674,7 +671,7 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(f)
       } catch {
-        case Harmless(e) ⇒ fr failure e
+        case NonFatal(e) ⇒ fr failure e
       }
     }
     fr
@@ -782,7 +779,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
   }
 
   private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
-    try { func(result) } catch { case Harmless(e) ⇒ logError("Future.onComplete", e) }
+    try { func(result) } catch { case NonFatal(e) ⇒ Future.logError(e) }
   }
 }
 

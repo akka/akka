@@ -4,7 +4,7 @@
 package akka.util
 
 /**
- * Extractor of harmless Throwables. Will not match fatal errors
+ * Extractor of non-fatal Throwables. Will not match fatal errors
  * like VirtualMachineError (OutOfMemoryError, StackOverflowError)
  * ThreadDeath, and InterruptedException.
  *
@@ -13,11 +13,11 @@ package akka.util
  *   try {
  *     // dangerous stuff
  *   } catch {
- *     case Harmless(e) => log.error(e, "Something not that bad")
+ *     case NonFatal(e) => log.error(e, "Something not that bad")
  *   }
  * }}}
  */
-object Harmless {
+object NonFatal {
 
   def unapply(t: Throwable): Option[Throwable] = t match {
     // VirtualMachineError includes OutOfMemoryError, StackOverflowError and other fatal errors

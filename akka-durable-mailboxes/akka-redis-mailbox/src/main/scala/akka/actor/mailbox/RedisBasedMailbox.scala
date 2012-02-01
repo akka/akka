@@ -11,7 +11,7 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.Harmless
+import akka.util.NonFatal
 
 class RedisBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -48,7 +48,7 @@ class RedisBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) w
       envelope
     } catch {
       case e: java.util.NoSuchElementException ⇒ null
-      case Harmless(e) ⇒
+      case NonFatal(e) ⇒
         log.error(e, "Couldn't dequeue from Redis-based mailbox")
         throw e
     }
@@ -74,7 +74,7 @@ class RedisBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) w
         clients = connect()
         body
       }
-      case Harmless(e) ⇒
+      case NonFatal(e) ⇒
         val error = new RedisBasedMailboxException("Could not connect to Redis server, due to: " + e.getMessage)
         log.error(error, error.getMessage)
         throw error

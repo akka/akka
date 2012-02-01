@@ -11,7 +11,7 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.Harmless
+import akka.util.NonFatal
 
 class FileBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: ActorContext) = new FileBasedMailbox(owner)
@@ -25,7 +25,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   val queuePath = settings.QueuePath
 
   private val queue = try {
-    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case Harmless(_) ⇒ {} }
+    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case NonFatal(_) ⇒ {} }
     val queue = new filequeue.PersistentQueue(queuePath, name, settings, log)
     queue.setup // replays journal
     queue.discardExpired
@@ -69,7 +69,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
     queue.remove
     true
   } catch {
-    case Harmless(_) ⇒ false
+    case NonFatal(_) ⇒ false
   }
 
 }

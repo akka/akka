@@ -21,7 +21,7 @@ import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
-import akka.util.Harmless
+import akka.util.NonFatal
 
 /**
  * Provides the implementation of the Netty remote support
@@ -78,7 +78,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     try {
       remoteClients foreach {
         case (_, client) ⇒ try client.shutdown() catch {
-          case Harmless(e) ⇒ log.error(e, "failure while shutting down [{}]", client)
+          case NonFatal(e) ⇒ log.error(e, "failure while shutting down [{}]", client)
         }
       }
       remoteClients.clear()

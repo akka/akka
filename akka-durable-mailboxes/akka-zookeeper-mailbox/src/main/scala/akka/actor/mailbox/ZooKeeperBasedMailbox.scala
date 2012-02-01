@@ -12,7 +12,7 @@ import akka.cluster.zookeeper.ZooKeeperQueue
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.Harmless
+import akka.util.NonFatal
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -46,7 +46,7 @@ class ZooKeeperBasedMailbox(val owner: ActorContext) extends DurableMailbox(owne
   } catch {
     case e: java.util.NoSuchElementException ⇒ null
     case e: InterruptedException             ⇒ null
-    case Harmless(e) ⇒
+    case NonFatal(e) ⇒
       log.error(e, "Couldn't dequeue from ZooKeeper-based mailbox, due to: " + e.getMessage)
       throw e
   }

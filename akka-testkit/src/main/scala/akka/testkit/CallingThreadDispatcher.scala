@@ -12,7 +12,7 @@ import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSy
 import akka.dispatch.{ TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
 import akka.util.duration.intToDurationInt
 import akka.util.{ Switch, Duration }
-import akka.util.Harmless
+import akka.util.NonFatal
 
 /*
  * Locking rules:
@@ -223,7 +223,7 @@ class CallingThreadDispatcher(
             Thread.currentThread().interrupt()
             intex = ie
             true
-          case Harmless(e) ⇒
+          case NonFatal(e) ⇒
             log.error(e, "Error during message processing")
             queue.leave
             false
@@ -233,7 +233,7 @@ class CallingThreadDispatcher(
         false
       } else false
     } catch {
-      case Harmless(e) ⇒ queue.leave; throw e
+      case NonFatal(e) ⇒ queue.leave; throw e
     } finally {
       mbox.ctdLock.unlock
     }

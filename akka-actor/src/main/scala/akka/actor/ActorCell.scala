@@ -14,7 +14,7 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
-import akka.util.Harmless
+import akka.util.NonFatal
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -363,7 +363,7 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      case Harmless(e) ⇒
+      case NonFatal(e) ⇒
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
@@ -395,7 +395,7 @@ private[akka] class ActorCell(
 
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
-      case Harmless(e) ⇒ try {
+      case NonFatal(e) ⇒ try {
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
@@ -459,7 +459,7 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case Harmless(e) ⇒
+      case NonFatal(e) ⇒
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
         //TODO FIXME How should problems here be handled???
         throw e
@@ -475,19 +475,23 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            // actor can be null when creation fails fatal error
-            case msg if actor == null     ⇒
-            case msg                      ⇒ actor(msg)
+            // FIXME: actor can be null when creation fails with fatal error, why?
+            case msg if actor == null ⇒
+              system.eventStream.publish(Warning(self.path.toString, this.getClass, "Ignoring message due to null actor [%s]" format msg))
+            case msg ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
           case e: InterruptedException ⇒
+            system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
             // make sure that InterruptedException does not leave this thread
             val ex = ActorInterruptedException(e)
             actor.supervisorStrategy.handleSupervisorFailing(self, children)
             parent.tell(Failed(ex), self)
             throw e //Re-throw InterruptedExceptions as expected
-          case Harmless(e) ⇒
+          case NonFatal(e) ⇒
             system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
@@ -497,7 +501,7 @@ private[akka] class ActorCell(
           checkReceiveTimeout // Reschedule receive timeout
         }
       } catch {
-        case Harmless(e) ⇒
+        case NonFatal(e) ⇒
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
           throw e
       }

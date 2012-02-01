@@ -346,7 +346,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
         log.error(cause, "Uncaught error from thread [{}]", thread.getName)
         cause match {
-          case Harmless(_) | _: InterruptedException ⇒
+          case NonFatal(_) | _: InterruptedException ⇒
           case _                                     ⇒ shutdown()
         }
       }
