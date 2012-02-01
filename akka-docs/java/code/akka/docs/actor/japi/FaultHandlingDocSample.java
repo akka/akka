@@ -118,9 +118,9 @@ public class FaultHandlingDocSample {
 
     // Stop the CounterService child if it throws ServiceUnavailable
     private static SupervisorStrategy strategy = new OneForOneStrategy(-1, Duration.Inf(),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof ServiceUnavailable) {
               return stop();
             } else {
@@ -229,9 +229,9 @@ public class FaultHandlingDocSample {
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
     private static SupervisorStrategy strategy = new OneForOneStrategy(3, Duration.parse("5 seconds"),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof StorageException) {
               return restart();
             } else {

@@ -8,6 +8,6 @@ AKKA_HOME="$(cd "$SAMPLE"/../../../..; pwd)"
 
 [ -n "$AKKA_CLASSPATH" ] || AKKA_CLASSPATH="$AKKA_HOME/lib/scala-library.jar:$AKKA_HOME/lib/akka/*"
 
-SAMPLE_CLASSPATH="$AKKA_CLASSPATH:$SAMPLE/lib/*:$SAMPLE/config"
+SAMPLE_CLASSPATH="$SAMPLE/config:$AKKA_CLASSPATH:$SAMPLE/lib/*"
 
 java $JAVA_OPTS -cp "$SAMPLE_CLASSPATH" -Dakka.home="$SAMPLE" akka.kernel.Main
