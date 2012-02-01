@@ -183,7 +183,10 @@ trait AskSupport {
     }
   }
 
-  def createAsker(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
+  /**
+   * INTERNAL AKKA USE ONLY
+   */
+  private[akka] def createAsker(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
     val path = provider.tempPath()
     val result = Promise[Any]()(provider.dispatcher)
     val a = new PromiseActorRef(provider, path, provider.tempContainer, result, provider.deathWatch)

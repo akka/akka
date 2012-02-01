@@ -25,9 +25,14 @@ trait PipeToSupport {
    * Import this implicit conversion to gain the `pipeTo` method on [[akka.dispatch.Future]]:
    *
    * {{{
-   * import akka.pattern.pipeTo
+   * import akka.pattern.pipe
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
+   *
+   * or
+   *
+   * pipe(someFuture) to nextActor
+   *
    * }}}
    */
   implicit def pipe[T](future: Future[T]): PipeableFuture[T] = new PipeableFuture(future)

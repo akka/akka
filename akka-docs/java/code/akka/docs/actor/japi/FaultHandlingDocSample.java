@@ -151,7 +151,8 @@ public class FaultHandlingDocSample {
             public Progress apply(CurrentCount c) {
                 return new Progress(100.0 * c.count / totalCount);
             }
-        }), progressListener);
+        }))
+        .to(progressListener);
       } else {
         unhandled(msg);
       }
