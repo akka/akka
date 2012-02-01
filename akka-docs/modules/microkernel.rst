@@ -24,7 +24,7 @@ command (on a unix-based system):
 
 .. code-block:: none
 
-   bin/start sample.kernel.hello.HelloKernel
+   bin/akka sample.kernel.hello.HelloKernel
 
 Use ``Ctrl-C`` to interrupt and exit the microkernel.
 
