@@ -41,6 +41,7 @@ message RemoteControlProtocol {
 enum CommandType {
   CONNECT = 1;
   SHUTDOWN = 2;
+  HEARTBEAT = 3;
 }
 
 /**
