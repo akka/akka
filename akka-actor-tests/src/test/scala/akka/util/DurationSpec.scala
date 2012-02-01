@@ -62,6 +62,23 @@ class DurationSpec extends WordSpec with MustMatchers {
       dead2.timeLeft must be < (1 second: Duration)
     }
 
+    "parse negative and positive time strings" in {
+      import java.util.concurrent.TimeUnit._
+
+      Duration("-1 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * -1d))
+      Duration("+1 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * 1d))
+      Duration(" +1.2 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * 1.2d))
+      Duration("-1.2 millis") must be(Duration.fromNanos(MILLISECONDS.toNanos(1) * -1.2d))
+
+      // infinities      
+      assert(Duration.Inf == Duration("PlusInf"))
+      assert(Duration.Inf == Duration("+Inf"))
+      assert(Duration.Inf == Duration("Inf"))
+
+      assert(Duration.MinusInf == Duration("MinusInf"))
+      assert(Duration.MinusInf == Duration("-Inf"))
+
+    }
   }
 
 }
