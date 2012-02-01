@@ -14,8 +14,8 @@ import akka.cluster.LocalCluster._
 import akka.actor._
 import akka.actor.Actor._
 import akka.config.Config
-import akka.util.duration._
-import akka.util.{ Duration, Timer }
+import scala.util.duration._
+import scala.util.{ Duration, Timer }
 import akka.cluster.LocalCluster._
 
 import java.util.concurrent.atomic.AtomicInteger

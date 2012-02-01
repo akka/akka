@@ -4,7 +4,7 @@ import akka.actor.{ Actor, Props }
 import akka.remote._
 import akka.routing._
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 import akka.dispatch.Await
 import akka.pattern.ask
 

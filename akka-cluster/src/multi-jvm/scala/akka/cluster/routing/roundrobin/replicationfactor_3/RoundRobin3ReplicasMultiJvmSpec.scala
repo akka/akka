@@ -11,8 +11,8 @@
 // import akka.cluster._
 // import akka.actor._
 // import akka.actor.Actor._
-// import akka.util.duration._
-// import akka.util.{ Duration, Timer }
+// import scala.util.duration._
+// import scala.util.{ Duration, Timer }
 // import akka.config.Config
 // import akka.cluster.LocalCluster._
 // import Cluster._

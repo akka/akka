@@ -5,7 +5,7 @@
 package akka.transactor
 
 import akka.AkkaException
-import akka.util.Timeout
+import scala.util.Timeout
 import scala.concurrent.stm.{ CommitBarrier, InTxn }
 import java.util.concurrent.Callable
 

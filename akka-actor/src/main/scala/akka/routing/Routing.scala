@@ -8,8 +8,8 @@ import akka.dispatch.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit
-import akka.util.{ Duration, Timeout }
-import akka.util.duration._
+import scala.util.{ Duration, Timeout }
+import scala.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.pattern.AskSupport

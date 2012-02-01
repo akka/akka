@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
-import akka.util.Duration
+import scala.util.Duration
 
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
 

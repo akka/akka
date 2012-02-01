@@ -4,7 +4,7 @@ import akka.actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 import akka.dispatch.Await
 import akka.pattern.ask
 

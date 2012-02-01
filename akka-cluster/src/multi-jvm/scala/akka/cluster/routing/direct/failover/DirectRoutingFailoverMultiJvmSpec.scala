@@ -4,8 +4,8 @@ import akka.config.Config
 import scala.Predef._
 import akka.cluster.{ ClusterActorRef, Cluster, MasterClusterTestNode, ClusterTestNode }
 import akka.actor.{ ActorInitializationException, Actor, ActorRef }
-import akka.util.duration._
-import akka.util.{ Duration, Timer }
+import scala.util.duration._
+import scala.util.{ Duration, Timer }
 import akka.event.EventHandler
 import akka.testkit.{ EventFilter, TestEvent }
 import java.net.ConnectException

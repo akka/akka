@@ -4,7 +4,7 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.concurrent.ConcurrentLinkedQueue
 import akka.util._
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit.AkkaSpec
 import akka.actor.ActorRef
 import akka.actor.ActorContext

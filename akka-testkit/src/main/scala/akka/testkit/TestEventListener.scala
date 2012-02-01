@@ -10,7 +10,7 @@ import akka.dispatch.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
 import akka.testkit.TestEvent.{ UnMute, Mute }
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`

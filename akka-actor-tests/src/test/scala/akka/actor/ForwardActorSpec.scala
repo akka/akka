@@ -5,9 +5,9 @@
 package akka.actor
 
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 import Actor._
-import akka.util.Duration
+import scala.util.Duration
 import akka.dispatch.Await
 import akka.pattern.ask
 

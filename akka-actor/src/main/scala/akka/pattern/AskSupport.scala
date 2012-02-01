@@ -9,7 +9,7 @@ import akka.actor.{ Terminated, Status, MinimalActorRef, InternalActorRef, Actor
 import akka.dispatch.{ Promise, Terminate, SystemMessage, Future }
 import akka.event.DeathWatch
 import akka.actor.ActorRefProvider
-import akka.util.Timeout
+import scala.util.Timeout
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,

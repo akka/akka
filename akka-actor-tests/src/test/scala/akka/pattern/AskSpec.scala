@@ -4,7 +4,7 @@
 package akka.pattern
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
+import scala.util.duration._
 
 class AskSpec extends AkkaSpec {
 

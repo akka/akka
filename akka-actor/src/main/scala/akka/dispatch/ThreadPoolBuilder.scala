@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.Collection
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent._
 
 object ThreadPoolConfig {

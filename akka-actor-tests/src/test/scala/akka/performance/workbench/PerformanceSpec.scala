@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterEach
 import akka.actor.simpleName
 import akka.testkit.AkkaSpec
 import akka.actor.ActorSystem
-import akka.util.Duration
+import scala.util.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
 

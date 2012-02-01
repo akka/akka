@@ -7,14 +7,14 @@ package akka.docs.future;
 import akka.dispatch.Promise;
 import akka.japi.Procedure;
 import akka.japi.Procedure2;
-import akka.util.Timeout;
+import scala.util.Timeout;
 import akka.dispatch.Await;
 import akka.dispatch.Future;
 
 //#imports1
 
 //#imports2
-import akka.util.Duration;
+import scala.util.Duration;
 import akka.japi.Function;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;

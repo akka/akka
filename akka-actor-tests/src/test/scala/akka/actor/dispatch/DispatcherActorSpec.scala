@@ -4,8 +4,8 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
 import akka.actor.{ Props, Actor }
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.pattern.ask

@@ -5,7 +5,8 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.{ ReflectiveAccess, Duration }
+import scala.util.Duration
+import akka.util.{ ReflectiveAccess }
 import com.eaio.uuid.UUID
 import akka.actor.Props._
 import akka.actor.ActorSystem

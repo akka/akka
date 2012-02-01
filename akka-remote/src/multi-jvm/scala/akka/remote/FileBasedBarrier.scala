@@ -4,8 +4,8 @@
 
 package akka.remote
 
-import akka.util.duration._
-import akka.util.Duration
+import scala.util.duration._
+import scala.util.Duration
 import System.{ currentTimeMillis ⇒ now }
 
 import java.io.File

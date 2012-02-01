@@ -10,7 +10,7 @@ import akka.actor.Props
 import akka.dispatch.Await
 import akka.testkit.AkkaSpec
 import akka.testkit.TestLatch
-import akka.util.duration._
+import scala.util.duration._
 
 object DurableMailboxSpecActorFactory {
 

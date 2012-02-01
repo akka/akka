@@ -9,7 +9,7 @@ import akka.actor.ActorCell
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit
 
 /**

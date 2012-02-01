@@ -4,10 +4,10 @@
 package akka.actor
 
 import akka.util._
-
 import scala.collection.mutable
 import akka.event.Logging
-import akka.util.Duration._
+import scala.util.Duration._
+import scala.util.Duration
 import akka.routing.{ Deafen, Listen, Listeners }
 
 object FSM {

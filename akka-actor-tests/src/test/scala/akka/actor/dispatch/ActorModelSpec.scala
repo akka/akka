@@ -6,7 +6,7 @@ package akka.actor.dispatch
 import org.scalatest.Assertions._
 import akka.testkit._
 import akka.dispatch._
-import akka.util.Timeout
+import scala.util.Timeout
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
@@ -16,10 +16,10 @@ import org.junit.{ After, Test }
 import akka.actor._
 import util.control.NoStackTrace
 import akka.actor.ActorSystem
-import akka.util.duration._
+import scala.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.util.Duration
 import akka.pattern.ask
 
 object ActorModelSpec {

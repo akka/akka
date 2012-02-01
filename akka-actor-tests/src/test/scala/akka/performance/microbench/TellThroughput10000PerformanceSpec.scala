@@ -8,8 +8,8 @@ import akka.dispatch._
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

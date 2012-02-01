@@ -16,7 +16,7 @@
 package org.jboss.netty.akka.util;
 
 import akka.event.LoggingAdapter;
-import akka.util.Duration;
+import scala.util.Duration;
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap;
 import org.jboss.netty.akka.util.internal.ReusableIterator;
 

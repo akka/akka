@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
   import Actor._
-  import akka.util.Duration
+  import scala.util.Duration
 
   val BytesPerSecond = "60KByte/s"
   val DelayMillis = "350ms"

@@ -8,8 +8,8 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
 import akka.dispatch.Await
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Timeout
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._

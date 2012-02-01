@@ -5,7 +5,8 @@ package akka.util
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import duration._
+import scala.util.duration._
+import scala.util.Duration
 
 class DurationSpec extends WordSpec with MustMatchers {
 

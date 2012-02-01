@@ -13,7 +13,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.japi.Creator;
 import akka.routing.*;
-import akka.util.Timeout;
+import scala.util.Timeout;
 
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;

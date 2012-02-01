@@ -7,7 +7,7 @@ package akka.remote
 import akka.actor._
 import akka.actor.Status._
 import akka.event.Logging
-import akka.util.Duration
+import scala.util.Duration
 import akka.config.ConfigurationException
 import akka.serialization.SerializationExtension
 

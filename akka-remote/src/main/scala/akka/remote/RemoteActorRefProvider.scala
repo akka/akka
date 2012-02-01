@@ -6,8 +6,8 @@ package akka.remote
 
 import akka.actor._
 import akka.dispatch._
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Timeout
 import akka.config.ConfigurationException
 import akka.event.{ DeathWatch, Logging }
 import akka.serialization.Compression.LZF

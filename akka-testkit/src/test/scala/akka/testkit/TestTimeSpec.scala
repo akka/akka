@@ -2,7 +2,7 @@ package akka.testkit
 
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
-import akka.util.Duration
+import scala.util.Duration
 import com.typesafe.config.Config
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

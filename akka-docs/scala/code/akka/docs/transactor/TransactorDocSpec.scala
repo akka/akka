@@ -6,8 +6,8 @@ package akka.docs.transactor
 
 import akka.actor._
 import akka.transactor._
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
 
@@ -139,8 +139,8 @@ class TransactorDocSpec extends AkkaSpec {
 
     //#run-coordinated-example
     import akka.dispatch.Await
-    import akka.util.duration._
-    import akka.util.Timeout
+    import scala.util.duration._
+    import scala.util.Timeout
     import akka.pattern.ask
 
     val system = ActorSystem("app")
@@ -166,8 +166,8 @@ class TransactorDocSpec extends AkkaSpec {
     import CoordinatedApi._
 
     //#implicit-timeout
-    import akka.util.duration._
-    import akka.util.Timeout
+    import scala.util.duration._
+    import scala.util.Timeout
 
     implicit val timeout = Timeout(5 seconds)
     //#implicit-timeout

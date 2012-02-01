@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
-import akka.util.duration._
+import scala.util.duration._
 import akka.dispatch.Await
 import akka.pattern.ask
 

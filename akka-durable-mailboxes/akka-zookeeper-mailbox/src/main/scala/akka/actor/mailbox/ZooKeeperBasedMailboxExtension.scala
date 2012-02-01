@@ -4,7 +4,7 @@
 package akka.actor.mailbox
 
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor._
 

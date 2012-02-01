@@ -1,9 +1,9 @@
 package akka.agent
 
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.Duration
+import scala.util.duration._
+import scala.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
 import java.util.concurrent.CountDownLatch

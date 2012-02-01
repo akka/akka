@@ -1,7 +1,7 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.util.duration._
+import scala.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import akka.dispatch.Await

@@ -4,8 +4,8 @@ import akka.config.Config
 import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
 import akka.event.EventHandler
-import akka.util.duration._
-import akka.util.{ Duration, Timer }
+import scala.util.duration._
+import scala.util.{ Duration, Timer }
 import akka.testkit.{ EventFilter, TestEvent }
 import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException

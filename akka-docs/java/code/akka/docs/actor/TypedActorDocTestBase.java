@@ -8,7 +8,7 @@ package akka.docs.actor;
 import akka.dispatch.*;
 import akka.actor.*;
 import akka.japi.*;
-import akka.util.Duration;
+import scala.util.Duration;
 import java.util.concurrent.TimeUnit;
 
 //#imports

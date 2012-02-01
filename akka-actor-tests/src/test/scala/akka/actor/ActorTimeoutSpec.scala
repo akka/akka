@@ -4,12 +4,12 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterAll
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
-import akka.util.Timeout
+import scala.util.Timeout
 import akka.pattern.{ ask, AskTimeoutException }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

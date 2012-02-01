@@ -9,8 +9,8 @@ import akka.actor._
 import Actor._
 import Cluster._
 import akka.dispatch._
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 import akka.cluster.metrics._
 import java.util.concurrent.atomic.AtomicInteger
 

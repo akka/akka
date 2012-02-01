@@ -7,7 +7,7 @@ package akka.cluster.sample
 import akka.cluster._
 
 import akka.actor._
-import akka.util.duration._
+import scala.util.duration._
 
 object PingPongMultiJvmExample {
   val PING_ADDRESS = "ping"

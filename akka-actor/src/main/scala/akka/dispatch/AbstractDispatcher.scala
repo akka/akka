@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent._
 import akka.event.Logging.Error
-import akka.util.Duration
+import scala.util.Duration
 import akka.actor._
 import akka.actor.ActorSystem
 import scala.annotation.tailrec

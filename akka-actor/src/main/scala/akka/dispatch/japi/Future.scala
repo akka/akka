@@ -3,7 +3,7 @@
  */
 package akka.dispatch.japi
 
-import akka.util.Timeout
+import scala.util.Timeout
 import akka.japi.{ Procedure2, Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
 /* Java API */

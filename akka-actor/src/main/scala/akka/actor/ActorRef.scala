@@ -7,6 +7,7 @@ package akka.actor
 import akka.dispatch._
 import akka.util._
 import scala.collection.immutable.Stack
+import scala.util.{ Duration, Timeout }
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
 import java.util.concurrent.TimeUnit

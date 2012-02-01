@@ -6,7 +6,7 @@ package akka.dispatch
 
 import akka.AkkaException
 import akka.event.Logging.Error
-import akka.util.Timeout
+import scala.util.Timeout
 import scala.Option
 import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
 
@@ -18,7 +18,8 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-import akka.util.{ Switch, Duration, BoxedType }
+import scala.util.{ Duration }
+import akka.util.{ Switch, BoxedType }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._

@@ -7,8 +7,9 @@ import akka.config.ConfigurationException
 import akka.event._
 import akka.dispatch._
 import akka.pattern.ask
-import akka.util.duration._
-import akka.util.Timeout._
+import scala.util.duration._
+import scala.util.Timeout._
+import scala.util.{ Duration, Timeout }
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.Config

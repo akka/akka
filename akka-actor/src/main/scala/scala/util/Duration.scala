@@ -2,41 +2,12 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.util
+package scala.util
 
 import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Long ⇒ JLong, Double ⇒ JDouble }
 import akka.actor.ActorSystem
-
-class TimerException(message: String) extends RuntimeException(message)
-
-/**
- * Simple timer class.
- * Usage:
- * <pre>
- *   import akka.util.duration._
- *   import akka.util.Timer
- *
- *   val timer = Timer(30.seconds)
- *   while (timer.isTicking) { ... }
- * </pre>
- */
-case class Timer(duration: Duration, throwExceptionOnTimeout: Boolean = false) {
-  val startTimeInMillis = System.currentTimeMillis
-  val timeoutInMillis = duration.toMillis
-
-  /**
-   * Returns true while the timer is ticking. After that it either throws and exception or
-   * returns false. Depending on if the 'throwExceptionOnTimeout' argument is true or false.
-   */
-  def isTicking: Boolean = {
-    if (!(timeoutInMillis > (System.currentTimeMillis - startTimeInMillis))) {
-      if (throwExceptionOnTimeout) throw new TimerException("Time out after " + duration)
-      else false
-    } else true
-  }
-}
 
 case class Deadline(d: Duration) {
   def +(other: Duration): Deadline = copy(d = d + other)
@@ -221,7 +192,7 @@ object Duration {
  * <p/>
  * Examples of usage from Java:
  * <pre>
- * import akka.util.FiniteDuration;
+ * import scala.util.FiniteDuration;
  * import java.util.concurrent.TimeUnit;
  *
  * Duration duration = new FiniteDuration(100, MILLISECONDS);
@@ -233,7 +204,7 @@ object Duration {
  * <p/>
  * Examples of usage from Scala:
  * <pre>
- * import akka.util.Duration
+ * import scala.util.Duration
  * import java.util.concurrent.TimeUnit
  *
  * val duration = Duration(100, MILLISECONDS)
@@ -247,7 +218,7 @@ object Duration {
  * <p/>
  * Implicits are also provided for Int, Long and Double. Example usage:
  * <pre>
- * import akka.util.duration._
+ * import scala.util.duration._
  *
  * val duration = 100 millis
  * </pre>

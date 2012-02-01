@@ -7,7 +7,7 @@ import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
 import akka.dispatch.Await
-import akka.util.duration._
+import scala.util.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
 

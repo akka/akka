@@ -5,7 +5,7 @@ package sample.fsm.buncher
 
 import akka.actor.ActorRefFactory
 import scala.reflect.ClassManifest
-import akka.util.Duration
+import scala.util.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
 
 /*

@@ -4,8 +4,8 @@
 package akka.docs.agent
 
 import akka.agent.Agent
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Timeout
 import akka.testkit._
 
 class AgentDocSpec extends AkkaSpec {
@@ -97,8 +97,8 @@ class AgentDocSpec extends AkkaSpec {
     val agent = Agent(0)
 
     //#read-await
-    import akka.util.duration._
-    import akka.util.Timeout
+    import scala.util.duration._
+    import scala.util.Timeout
 
     implicit val timeout = Timeout(5 seconds)
     val result = agent.await
@@ -124,8 +124,8 @@ class AgentDocSpec extends AkkaSpec {
   "transfer example" in {
     //#transfer-example
     import akka.agent.Agent
-    import akka.util.duration._
-    import akka.util.Timeout
+    import scala.util.duration._
+    import scala.util.Timeout
     import scala.concurrent.stm._
 
     def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {

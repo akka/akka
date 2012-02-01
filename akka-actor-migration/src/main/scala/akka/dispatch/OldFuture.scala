@@ -4,10 +4,10 @@
 package akka.dispatch
 
 import java.util.concurrent.TimeoutException
-import akka.util.duration._
+import scala.util.duration._
 import akka.AkkaException
 import akka.util.BoxedType
-import akka.util.Duration
+import scala.util.Duration
 import akka.actor.GlobalActorSystem
 
 /**

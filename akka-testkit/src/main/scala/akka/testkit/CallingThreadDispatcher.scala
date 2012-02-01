@@ -14,8 +14,9 @@ import com.typesafe.config.Config
 import CallingThreadDispatcher.Id
 import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
-import akka.util.duration.intToDurationInt
-import akka.util.{ Switch, Duration }
+import scala.util.duration.intToDurationInt
+import scala.util.Duration
+import akka.util.{ Switch }
 
 /*
  * Locking rules:

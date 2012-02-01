@@ -7,7 +7,7 @@ object Patterns {
   import akka.actor.{ ActorRef, ActorSystem }
   import akka.dispatch.Future
   import akka.pattern.{ ask ⇒ scalaAsk }
-  import akka.util.{ Timeout, Duration }
+  import scala.util.{ Timeout, Duration }
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>

@@ -11,7 +11,7 @@ import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.dispatch.Future
 import akka.dispatch.Await
-import akka.util.duration._
+import scala.util.duration._
 import akka.dispatch.Promise
 
 object FutureDocSpec {
@@ -70,7 +70,7 @@ class FutureDocSpec extends AkkaSpec {
     //#future-eval
     import akka.dispatch.Await
     import akka.dispatch.Future
-    import akka.util.duration._
+    import scala.util.duration._
 
     val future = Future {
       "Hello" + "World"

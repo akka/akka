@@ -3,8 +3,8 @@
  */
 package akka.cluster.zookeeper
 
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 
 import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.exception._

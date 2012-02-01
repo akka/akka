@@ -4,7 +4,7 @@
 package akka.actor.mailbox
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.util.Duration
+import scala.util.Duration
 import akka.AkkaException
 import org.I0Itec.zkclient.serialize._
 import akka.actor.ActorContext

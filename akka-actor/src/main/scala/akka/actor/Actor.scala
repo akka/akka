@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.dispatch._
 import akka.routing._
-import akka.util.Duration
+import scala.util.Duration
 import akka.japi.{ Creator, Procedure }
 import akka.serialization.{ Serializer, Serialization }
 import akka.event.Logging.Debug

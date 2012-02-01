@@ -8,7 +8,7 @@ import collection.immutable.Seq
 import akka.event.Logging
 import akka.AkkaException
 import akka.config.ConfigurationException
-import akka.util.Duration
+import scala.util.Duration
 import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._

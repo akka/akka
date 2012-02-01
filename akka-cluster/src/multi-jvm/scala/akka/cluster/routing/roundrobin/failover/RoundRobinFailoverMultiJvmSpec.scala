@@ -5,8 +5,8 @@ import akka.cluster._
 import akka.actor.{ ActorRef, Actor }
 import akka.event.EventHandler
 import akka.testkit.{ EventFilter, TestEvent }
-import akka.util.duration._
-import akka.util.{ Duration, Timer }
+import scala.util.duration._
+import scala.util.{ Duration, Timer }
 import java.util.{ Collections, Set ⇒ JSet }
 import java.net.ConnectException
 import java.nio.channels.NotYetConnectedException

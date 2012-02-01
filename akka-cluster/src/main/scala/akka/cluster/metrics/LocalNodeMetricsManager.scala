@@ -13,9 +13,10 @@ import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 import java.util.concurrent.atomic.AtomicReference
-import akka.util.{ Duration, Switch }
+import scala.util.Duration
+import akka.util.Switch
 import akka.util.Helpers._
-import akka.util.duration._
+import scala.util.duration._
 import org.I0Itec.zkclient.exception.ZkNoNodeException
 import akka.event.EventHandler
 

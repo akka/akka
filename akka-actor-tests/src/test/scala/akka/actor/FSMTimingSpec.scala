@@ -5,8 +5,8 @@
 package akka.actor
 
 import akka.testkit._
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 import akka.event.Logging
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

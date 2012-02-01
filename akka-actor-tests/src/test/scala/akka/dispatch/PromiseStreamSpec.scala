@@ -2,8 +2,8 @@ package akka.dispatch
 
 import Future.flow
 import akka.util.cps._
-import akka.util.Timeout
-import akka.util.duration._
+import scala.util.Timeout
+import scala.util.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 
