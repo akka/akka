@@ -51,7 +51,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
   private[akka] var channel: Channel = _
 
   def start(): Unit = {
-    channel = bootstrap.bind(new InetSocketAddress(ip, settings.DesiredPortFromConfig))
+    channel = bootstrap.bind(new InetSocketAddress(ip, settings.PortSelector))
     openChannels.add(channel)
     netty.notifyListeners(RemoteServerStarted(netty))
   }
@@ -61,9 +61,9 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
       val shutdownSignal = {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-          .setSystem(settings.systemName)
-          .setHostname(settings.Hostname)
-          .setPort(settings.DesiredPortFromConfig)
+          .setSystem(netty.address.system)
+          .setHostname(netty.address.host.get)
+          .setPort(netty.address.port.get)
           .build)
         if (settings.SecureCookie.nonEmpty)
           b.setCookie(settings.SecureCookie.get)
@@ -187,8 +187,9 @@ class RemoteServerHandler(
             val inbound = Address("akka", origin.getSystem, Some(origin.getHostname), Some(origin.getPort))
             val client = new PassiveRemoteClient(event.getChannel, netty, inbound)
             netty.bindClient(inbound, client)
-          case CommandType.SHUTDOWN ⇒ //Will be unbound in channelClosed
-          case _                    ⇒ //Unknown command
+          case CommandType.SHUTDOWN  ⇒ //Will be unbound in channelClosed
+          case CommandType.HEARTBEAT ⇒ //Other guy is still alive
+          case _                     ⇒ //Unknown command
         }
       case _ ⇒ //ignore
     }

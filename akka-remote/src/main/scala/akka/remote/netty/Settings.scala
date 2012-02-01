@@ -30,6 +30,8 @@ class NettySettings(config: Config, val systemName: String) {
 
   val ReconnectionTimeWindow = Duration(getMilliseconds("reconnection-time-window"), MILLISECONDS)
   val ReadTimeout = Duration(getMilliseconds("read-timeout"), MILLISECONDS)
+  val WriteTimeout = Duration(getMilliseconds("write-timeout"), MILLISECONDS)
+  val AllTimeout = Duration(getMilliseconds("all-timeout"), MILLISECONDS)
   val ReconnectDelay = Duration(getMilliseconds("reconnect-delay"), MILLISECONDS)
   val MessageFrameSize = getBytes("message-frame-size").toInt
 
@@ -37,7 +39,9 @@ class NettySettings(config: Config, val systemName: String) {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress
     case value ⇒ value
   }
-  val DesiredPortFromConfig = getInt("port")
+
+  @deprecated("WARNING: This should only be used by professionals.")
+  val PortSelector = getInt("port")
 
   val ConnectionTimeout = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
 
