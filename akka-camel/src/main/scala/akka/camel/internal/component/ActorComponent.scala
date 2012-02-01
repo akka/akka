@@ -14,8 +14,8 @@ import akka.actor._
 import scala.reflect.BeanProperty
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
-import akka.camel.{ ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message }
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
+import akka.camel.{ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message}
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.
@@ -135,7 +135,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
       sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
     } else { // inOnly
       if (config.autoack) { //autoAck
-        fireAndForget(message)
+        fireAndForget(message, exchange)
         notifyDoneSynchronously()
         true // done sync
       } else { //manualAck
@@ -146,13 +146,24 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
   }
 
   private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
-    val actor = actorFor(config.path)
-    val future = actor ? (message, new Timeout(config.replyTimeout))
-    future.onComplete(onComplete)
+    try {
+      val actor = actorFor(config.path)
+      val future = actor ?(message, new Timeout(config.replyTimeout))
+      future.onComplete(onComplete)
+    }
+    catch {
+      case e => onComplete(Left(e))
+    }
     false // Done async
   }
 
-  private def fireAndForget(message: Message) { actorFor(config.path) ! message }
+  private def fireAndForget(message: Message, exchange : CamelExchangeAdapter) {
+    try {
+      actorFor(config.path) ! message
+    } catch {
+      case e => exchange.setFailure(new CamelFailure(e))
+    }
+  }
 
   private[this] def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure);
