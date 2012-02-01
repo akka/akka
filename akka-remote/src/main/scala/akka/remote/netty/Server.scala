@@ -62,7 +62,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
         val b = RemoteControlProtocol.newBuilder.setCommandType(CommandType.SHUTDOWN)
         b.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
           .setSystem(netty.address.system)
-          .setHostname(netty.address.host.get) //FIXME Should probably be settings.host
+          .setHostname(netty.address.host.get)
           .setPort(netty.address.port.get)
           .build)
         if (settings.SecureCookie.nonEmpty)

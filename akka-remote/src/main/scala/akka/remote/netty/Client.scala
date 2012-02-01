@@ -259,9 +259,8 @@ class ActiveRemoteClientHandler(
     }
 
     e.getState match {
-      case READER_IDLE ⇒ e.getChannel.close()
-      case WRITER_IDLE ⇒ e.getChannel.write(createHeartBeat(localAddress, client.netty.settings.SecureCookie))
-      case ALL_IDLE    ⇒ e.getChannel.close()
+      case READER_IDLE | ALL_IDLE ⇒ runOnceNow { client.netty.shutdownClientConnection(remoteAddress) }
+      case WRITER_IDLE            ⇒ e.getChannel.write(createHeartBeat(localAddress, client.netty.settings.SecureCookie))
     }
   }
 
