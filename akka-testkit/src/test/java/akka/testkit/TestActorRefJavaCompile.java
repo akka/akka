@@ -7,12 +7,9 @@ package akka.testkit;
 import org.junit.Test;
 import akka.actor.Props;
 
-import static org.junit.Assert.*;
+public class TestActorRefJavaCompile {
 
-public class TestActorRefJavaSpec {
-
-  @Test
-  public void shouldBeAbleToUseApply() {
+  public void shouldBeAbleToCompileWhenUsingApply() {
   	//Just a dummy call to make sure it compiles
     TestActorRef ref = TestActorRef.apply(new Props(), null);
   }
