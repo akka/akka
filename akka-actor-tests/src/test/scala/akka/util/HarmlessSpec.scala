@@ -7,15 +7,15 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class NonFatalSpec extends AkkaSpec with MustMatchers {
+class HarmlessSpec extends AkkaSpec with MustMatchers {
 
-  "A NonFatal extractor" must {
+  "A Harmless extractor" must {
 
     "match ordinary RuntimeException" in {
       try {
         throw new RuntimeException("Boom")
       } catch {
-        case NonFatal(e) ⇒ // as expected
+        case Harmless(e) ⇒ // as expected
       }
     }
 
@@ -29,7 +29,7 @@ class NonFatalSpec extends AkkaSpec with MustMatchers {
         try {
           blowUp(0)
         } catch {
-          case NonFatal(e) ⇒ assert(false)
+          case Harmless(e) ⇒ assert(false)
         }
       }
     }
@@ -39,22 +39,26 @@ class NonFatalSpec extends AkkaSpec with MustMatchers {
         try {
           throw new InterruptedException("Simulated InterruptedException")
         } catch {
-          case NonFatal(e) ⇒ assert(false)
+          case Harmless(e) ⇒ assert(false)
         }
       }
     }
 
-  }
-
-  "A NonFatalOrInterrupted extractor" must {
-
-    "match InterruptedException" in {
+    "be used together with InterruptedException" in {
       try {
         throw new InterruptedException("Simulated InterruptedException")
       } catch {
-        case NonFatalOrInterrupted(e) ⇒ // as expected
+        case _: InterruptedException ⇒ // as expected
+        case Harmless(e)             ⇒ assert(false)
+      }
+
+      try {
+        throw new RuntimeException("Simulated RuntimeException")
+      } catch {
+        case Harmless(_) | _: InterruptedException ⇒ // as expected
       }
     }
 
   }
+
 }

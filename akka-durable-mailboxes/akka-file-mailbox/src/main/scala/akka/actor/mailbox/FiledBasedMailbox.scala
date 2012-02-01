@@ -11,6 +11,7 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.util.Harmless
 
 class FileBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: ActorContext) = new FileBasedMailbox(owner)
@@ -24,7 +25,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   val queuePath = settings.QueuePath
 
   private val queue = try {
-    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case e ⇒ {} }
+    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case Harmless(_) ⇒ {} }
     val queue = new filequeue.PersistentQueue(queuePath, name, settings, log)
     queue.setup // replays journal
     queue.discardExpired
@@ -68,8 +69,7 @@ class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
     queue.remove
     true
   } catch {
-    // TODO catching all and continue isn't good for OOME, ticket #1418
-    case e ⇒ false
+    case Harmless(_) ⇒ false
   }
 
 }

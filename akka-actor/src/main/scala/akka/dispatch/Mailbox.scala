@@ -197,7 +197,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
         if (nextMessage eq null) nextMessage = systemDrain()
       }
     } catch {
-      case NonFatal(e) ⇒
+      case Harmless(e) ⇒
         actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }

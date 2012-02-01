@@ -15,7 +15,7 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.jsr166y.ForkJoinPool
-import akka.util.NonFatal
+import akka.util.Harmless
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -81,7 +81,7 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     try {
       runnable.run()
     } catch {
-      case NonFatal(e) ⇒
+      case Harmless(e) ⇒
         eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()

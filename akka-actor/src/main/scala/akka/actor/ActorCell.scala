@@ -14,8 +14,7 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
-import akka.util.NonFatal
-import akka.util.NonFatalOrInterrupted
+import akka.util.Harmless
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -364,7 +363,7 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      case NonFatal(e) ⇒
+      case Harmless(e) ⇒
         try {
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
           // prevent any further messages to be processed until the actor has been restarted
@@ -396,7 +395,7 @@ private[akka] class ActorCell(
 
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
-      case NonFatal(e) ⇒ try {
+      case Harmless(e) ⇒ try {
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
@@ -460,7 +459,7 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case NonFatal(e) ⇒
+      case Harmless(e) ⇒
         system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
         //TODO FIXME How should problems here be handled???
         throw e
@@ -482,26 +481,23 @@ private[akka] class ActorCell(
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
-          case NonFatalOrInterrupted(e) ⇒
+          case e: InterruptedException ⇒
+            // make sure that InterruptedException does not leave this thread
+            val ex = ActorInterruptedException(e)
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(ex), self)
+            throw e //Re-throw InterruptedExceptions as expected
+          case Harmless(e) ⇒
             system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
-            e match {
-              case ie: InterruptedException ⇒
-                // make sure that InterruptedException does not leave this thread
-                val ex = ActorInterruptedException(ie)
-                actor.supervisorStrategy.handleSupervisorFailing(self, children)
-                parent.tell(Failed(ex), self)
-                throw ie //Re-throw InterruptedExceptions as expected
-              case _ ⇒
-                actor.supervisorStrategy.handleSupervisorFailing(self, children)
-                parent.tell(Failed(e), self)
-            }
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(e), self)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
         }
       } catch {
-        case NonFatal(e) ⇒
+        case Harmless(e) ⇒
           system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
           throw e
       }
