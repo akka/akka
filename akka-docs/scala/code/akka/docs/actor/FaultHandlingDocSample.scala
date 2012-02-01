@@ -11,7 +11,7 @@ import akka.util.duration._
 import akka.util.Duration
 import akka.util.Timeout
 import akka.event.LoggingReceive
-import akka.pattern.{ ask, pipeTo }
+import akka.pattern.{ ask, pipe }
 import com.typesafe.config.ConfigFactory
 //#imports
 

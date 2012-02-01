@@ -6,7 +6,7 @@ package akka.pattern
 object Patterns {
   import akka.actor.{ ActorRef, ActorSystem }
   import akka.dispatch.Future
-  import akka.pattern.{ ask ⇒ scalaAsk }
+  import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe }
   import akka.util.{ Timeout, Duration }
 
   /**
@@ -86,7 +86,7 @@ object Patterns {
    *   Patterns.pipe(transformed, nextActor);
    * }}}
    */
-  def pipe[T](future: Future[T], recipient: ActorRef): Future[T] = akka.pattern.pipe(future, recipient)
+  def pipe[T](future: Future[T], recipient: ActorRef): Future[T] = scalaPipe(future) pipeTo recipient
 
   /**
    * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when
@@ -98,7 +98,6 @@ object Patterns {
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
    * is completed with failure [[akka.actor.ActorTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: Duration, system: ActorSystem): Future[java.lang.Boolean] = {
+  def gracefulStop(target: ActorRef, timeout: Duration, system: ActorSystem): Future[java.lang.Boolean] =
     akka.pattern.gracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]
-  }
 }

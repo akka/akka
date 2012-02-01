@@ -10,7 +10,7 @@ import akka.util.Duration
 import akka.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.pattern.{ AskSupport, pipeTo }
+import akka.pattern.pipe
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
