@@ -14,6 +14,24 @@ import akka.actor._
 import collection.mutable
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.CamelContext
+import akka.util.Duration
+
+
+/**
+ * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
+ * ActorEndpoint uses it to lookup an actor by its path.
+ */
+private[camel] trait ConsumerRegistry { this: Activation ⇒
+  def system: ActorSystem
+  def context: CamelContext
+
+  private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
+
+  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) = {
+    idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
+    awaitActivation(consumer.self, activationTimeout)
+  }
+}
 
 /**
  * Guarantees idempotent registration of camel consumer endpoints.

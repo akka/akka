@@ -4,6 +4,7 @@
 
 package akka.camel
 
+import internal.Try
 import akka.camel.Try._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
