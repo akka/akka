@@ -45,6 +45,7 @@ final case class Address(protocol: String, system: String, host: Option[String],
 
 object Address {
   def apply(protocol: String, system: String) = new Address(protocol, system)
+  def apply(protocol: String, system: String, host: String, port: Int) = new Address(protocol, system, Some(host), Some(port))
 }
 
 object RelativeActorPath {

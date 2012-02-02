@@ -33,6 +33,7 @@ final case class Deploy(
 
   def this(routing: RouterConfig) = this("", ConfigFactory.empty, routing)
   def this(routing: RouterConfig, scope: Scope) = this("", ConfigFactory.empty, routing, scope)
+  def this(scope: Scope) = this("", ConfigFactory.empty, NoRouter, scope)
 
   /**
    * Do a merge between this and the other Deploy, where values from “this” take

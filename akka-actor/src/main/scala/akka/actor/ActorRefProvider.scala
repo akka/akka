@@ -134,6 +134,14 @@ trait ActorRefProvider {
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
   def terminationFuture: Future[Unit]
+
+  /**
+   * Obtain the address which is to be used within sender references when
+   * sending to the given other address or none if the other address cannot be
+   * reached from this system (i.e. no means of communication known; no
+   * attempt is made to verify actual reachability).
+   */
+  def getExternalAddressFor(addr: Address): Option[Address]
 }
 
 /**
@@ -529,6 +537,8 @@ class LocalActorRefProvider(
         new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
     }
   }
+
+  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
 
 class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {

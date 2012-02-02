@@ -206,6 +206,16 @@ class RemoteActorRefProvider(
     // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
     actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
   }
+
+  def getExternalAddressFor(addr: Address): Option[Address] = {
+    val ta = transport.address
+    val ra = rootPath.address
+    addr match {
+      case `ta` | `ra`                          ⇒ Some(rootPath.address)
+      case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.address)
+      case _                                    ⇒ None
+    }
+  }
 }
 
 trait RemoteRef extends ActorRefScope {
