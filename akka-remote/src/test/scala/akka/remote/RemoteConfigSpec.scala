@@ -13,9 +13,8 @@ import akka.remote.netty.NettyRemoteTransport
 class RemoteConfigSpec extends AkkaSpec(
   """
   akka {
-    actor {
-      provider = "akka.remote.RemoteActorRefProvider"
-    }
+    actor.provider = "akka.remote.RemoteActorRefProvider"
+    remote.netty.port = 0
   }
   """) {
 
@@ -43,7 +42,7 @@ class RemoteConfigSpec extends AkkaSpec(
       RequireCookie must be(false)
       UsePassiveConnections must be(true)
       Hostname must not be "" // will be set to the local IP
-      PortSelector must be(2552)
+      PortSelector must be(0)
       MessageFrameSize must be(1048576)
       ConnectionTimeout must be(2 minutes)
       Backlog must be(4096)

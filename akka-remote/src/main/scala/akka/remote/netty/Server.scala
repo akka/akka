@@ -15,7 +15,7 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBa
 import org.jboss.netty.handler.execution.ExecutionHandler
 import akka.event.Logging
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
-import akka.remote.{ RemoteServerStarted, RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
+import akka.remote.{ RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
 import akka.actor.Address
 import java.net.InetAddress
 import akka.actor.ActorSystemImpl
@@ -53,7 +53,6 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
   def start(): Unit = {
     channel = bootstrap.bind(new InetSocketAddress(ip, settings.PortSelector))
     openChannels.add(channel)
-    netty.notifyListeners(RemoteServerStarted(netty))
   }
 
   def shutdown() {

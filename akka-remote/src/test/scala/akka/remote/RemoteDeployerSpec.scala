@@ -18,6 +18,7 @@ object RemoteDeployerSpec {
           remote = "akka://sys@wallace:2552"
         }
       }
+      akka.remote.netty.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {

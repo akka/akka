@@ -23,7 +23,7 @@ import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 
 /**
  * Provides the implementation of the Netty remote support
@@ -73,6 +73,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   def start(): Unit = {
     server.start()
     setAddressFromChannel(server.channel)
+    notifyListeners(RemoteServerStarted(this))
   }
 
   def shutdown(): Unit = {
