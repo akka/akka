@@ -52,7 +52,7 @@ trait BoundedMessageQueueSemantics extends MessageQueue { self: BlockingQueue[Me
   final def enqueue(handle: MessageInvocation) {
     if (pushTimeOut.length > 0) {
       this.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message to " + handle.receiver + " from " + handle.channel)
       }
     } else this put handle
   }
