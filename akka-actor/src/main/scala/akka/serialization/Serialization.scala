@@ -10,6 +10,8 @@ import scala.util.DynamicVariable
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.actor.{ Extension, ActorSystem, ExtendedActorSystem, Address }
+import java.util.concurrent.ConcurrentHashMap
+import akka.event.Logging
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -65,6 +67,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.settings.config)
+  val log = Logging(system, getClass.getName)
 
   /**
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
@@ -111,10 +114,45 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Returns the configured Serializer for the given Class, falls back to the Serializer named "default"
+   * Returns the configured Serializer for the given Class, falls back to the Serializer named "default".
+   * It traverses interfaces and super classes to find any configured Serializer that match
+   * the class name.
    */
-  def serializerFor(clazz: Class[_]): Serializer = //TODO fall back on BestMatchClass THEN default AND memoize the lookups
-    serializerMap.get(clazz.getName).getOrElse(serializers("default"))
+  def serializerFor(clazz: Class[_]): Serializer = {
+
+    def lookup(c: Class[_]): Option[Serializer] = {
+      val className = c.getName
+      serializerMap.get(className) match {
+        case null       ⇒ bindings.get(className) map serializers
+        case serializer ⇒ Some(serializer)
+      }
+    }
+
+    def resolve(c: Class[_]): Option[Serializer] = {
+      lookup(c) match {
+        case x @ Some(_) ⇒ x
+        case None ⇒
+          val classes = c.getInterfaces.toList ::: Option(c.getSuperclass).toList
+          classes flatMap resolve headOption
+      }
+    }
+
+    if (bindings.isEmpty) {
+      // quick path to default when no bindings are registered
+      serializers("default")
+    } else {
+      val className = clazz.getName
+      serializerMap.get(className) match {
+        case null ⇒
+          val ser = resolve(clazz).getOrElse(serializers("default"))
+          // memorize the lookups for performance
+          log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, className)
+          serializerMap.put(className, ser)
+          ser
+        case ser ⇒ ser
+      }
+    }
+  }
 
   /**
    * Tries to load the specified Serializer by the FQN
@@ -146,9 +184,15 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * serializerMap is a Map whose keys = FQN of class that is serializable and values = the FQN of the serializer to be used for that class
+   * serializerMap is a Map whose keys = FQN of class that is serializable and values is the serializer to be used for that class
    */
-  lazy val serializerMap: Map[String, Serializer] = bindings mapValues serializers
+  private lazy val serializerMap: ConcurrentHashMap[String, Serializer] = {
+    val serializerMap = new ConcurrentHashMap[String, Serializer]
+    for (s ← bindings.values) {
+      serializerMap.put(s, serializers(s))
+    }
+    serializerMap
+  }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
