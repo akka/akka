@@ -448,14 +448,14 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
 
 trait RandomLike { this: RouterConfig ⇒
 
-  import java.security.SecureRandom
+  import java.util.Random
 
   def nrOfInstances: Int
 
   def routees: Iterable[String]
 
-  private val random = new ThreadLocal[SecureRandom] {
-    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
+  private val random = new ThreadLocal[Random] {
+    override def initialValue = new Random
   }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
