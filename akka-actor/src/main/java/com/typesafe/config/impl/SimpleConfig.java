@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigValueType;
  * with a one-level java.util.Map from paths to non-null values. Null values are
  * not "in" the map.
  */
-final class SimpleConfig implements Config, MergeableValue {
+final class SimpleConfig implements Config, MergeableValue, java.io.Serializable {
 
     final private AbstractConfigObject object;
 

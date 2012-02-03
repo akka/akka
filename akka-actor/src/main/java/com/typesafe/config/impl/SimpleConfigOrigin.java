@@ -17,7 +17,7 @@ import com.typesafe.config.ConfigOrigin;
 
 // it would be cleaner to have a class hierarchy for various origin types,
 // but was hoping this would be enough simpler to be a little messy. eh.
-final class SimpleConfigOrigin implements ConfigOrigin {
+final class SimpleConfigOrigin implements ConfigOrigin, java.io.Serializable {
     final private String description;
     final private int lineNumber;
     final private int endLineNumber;
