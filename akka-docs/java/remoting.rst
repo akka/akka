@@ -25,7 +25,7 @@ to your ``application.conf`` file::
       provider = "akka.remote.RemoteActorRefProvider"
     }
     remote {
-      transport = "akka.remote.netty.NettyRemoteSupport"
+      transport = "akka.remote.netty.NettyRemoteTransport"
       server {
         hostname = "127.0.0.1"
         port = 2552
@@ -36,8 +36,12 @@ to your ``application.conf`` file::
 As you can see in the example above there are four things you need to add to get started:
 
 * Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
-* Add host name - the machine you want to run the actor system on
-* Add port number - the port the actor system should listen on
+* Add host name - the machine you want to run the actor system on; this host
+  name is exactly what is passed to remote systems in order to identify this
+  system and consequently used for connecting back to this system if need be,
+  hence set it to a reachable IP address or resolvable name in case you want to
+  communicate across the network.
+* Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 There are lots of more properties that are related to remoting in Akka. We refer to the following
@@ -63,7 +67,7 @@ Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 The configuration below instructs the system to deploy the actor "retrieval” on the specific host "app@10.0.0.1".
-The "app" in this case refers to the name of the ``ActorSystem``::
+The "app" in this case refers to the name of the ``ActorSystem`` (only showing deployment section)::
 
   akka {
     actor {
@@ -87,6 +91,27 @@ This will obtain an ``ActorRef`` on a remote node:
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
+
+Programmatic Remote Deployment
+------------------------------
+
+To allow dynamically deployed systems, it is also possible to include
+deployment configuration in the :class:`Props` which are used to create an
+actor: this information is the equivalent of a deployment section from the
+configuration file, and if both are given, the external configuration takes
+precedence.
+
+With these imports:
+
+.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#import
+
+and a remote address like this:
+
+.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
+
+you can advise the system to create a child on that remote node like so:
+
+.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
 
 Serialization
 ^^^^^^^^^^^^^
@@ -122,9 +147,12 @@ the two given target nodes.
 Description of the Remoting Sample
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The sample application included with the Akka sources demonstrates both, remote
-deployment and look-up of remote actors. First, let us have a look at the
-common setup for both scenarios (this is ``common.conf``):
+There is a more extensive remote example that comes with the Akka distribution.
+Please have a look here for more information: `Remote Sample
+<https://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote>`_
+This sample demonstrates both, remote deployment and look-up of remote actors.
+First, let us have a look at the common setup for both scenarios (this is
+``common.conf``):
 
 .. includecode:: ../../akka-samples/akka-sample-remote/src/main/resources/common.conf
 

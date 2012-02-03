@@ -226,7 +226,7 @@ private[akka] class ActorCell(
         }
       }
     }
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
+    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
   }

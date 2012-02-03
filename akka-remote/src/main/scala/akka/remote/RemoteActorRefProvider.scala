@@ -4,6 +4,7 @@
 
 package akka.remote
 
+import akka.AkkaException
 import akka.actor._
 import akka.dispatch._
 import akka.event.{ DeathWatch, Logging, LoggingAdapter }
@@ -14,6 +15,10 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
+
+class RemoteException(msg: String) extends AkkaException(msg)
+class RemoteCommunicationException(msg: String) extends RemoteException(msg)
+class RemoteConnectionException(msg: String) extends RemoteException(msg)
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -41,8 +46,6 @@ class RemoteActorRefProvider(
 
   val deathWatch = new RemoteDeathWatch(local.deathWatch, this)
 
-  val failureDetector = new AccrualFailureDetector(remoteSettings.FailureDetectorThreshold, remoteSettings.FailureDetectorMaxSampleSize)
-
   // these are only available after init()
   def rootGuardian = local.rootGuardian
   def guardian = local.guardian
@@ -66,10 +69,6 @@ class RemoteActorRefProvider(
   private var _remoteDaemon: InternalActorRef = _
   def remoteDaemon = _remoteDaemon
 
-  @volatile
-  private var _networkEventStream: NetworkEventStream = _
-  def networkEventStream = _networkEventStream
-
   def init(system: ActorSystemImpl) {
     local.init(system)
 
@@ -77,9 +76,6 @@ class RemoteActorRefProvider(
     local.registerExtraNames(Map(("remote", remoteDaemon)))
 
     _serialization = SerializationExtension(system)
-
-    _networkEventStream = new NetworkEventStream(system)
-    system.eventStream.subscribe(networkEventStream.sender, classOf[RemoteLifeCycleEvent])
 
     _transport = {
       val fqn = remoteSettings.RemoteTransport
@@ -112,8 +108,9 @@ class RemoteActorRefProvider(
     terminationFuture.onComplete(_ ⇒ transport.shutdown())
   }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
-    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy)
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
+    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy)
     else {
 
       /*
@@ -152,22 +149,33 @@ class RemoteActorRefProvider(
       }
 
       val elems = path.elements
-      val deployment = deploy orElse (elems.head match {
-        case "user"   ⇒ deployer.lookup(elems.drop(1).mkString("/", "/", ""))
-        case "remote" ⇒ lookupRemotes(elems)
-        case _        ⇒ None
-      })
+      val lookup =
+        if (lookupDeploy)
+          elems.head match {
+            case "user"   ⇒ deployer.lookup(elems.drop(1).mkString("/", "/", ""))
+            case "remote" ⇒ lookupRemotes(elems)
+            case _        ⇒ None
+          }
+        else None
 
-      deployment match {
-        case Some(Deploy(_, _, _, RemoteScope(addr))) ⇒
-          if (addr == rootPath.address) local.actorOf(system, props, supervisor, path, false, deployment)
-          else {
+      val deployment = {
+        deploy.toList ::: lookup.toList match {
+          case Nil ⇒ Nil
+          case l   ⇒ List(l reduce ((a, b) ⇒ b withFallback a))
+        }
+      }
+
+      Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
+        case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
+          if (addr == rootPath.address || addr == transport.address) {
+            local.actorOf(system, props, supervisor, path, false, deployment.headOption, false)
+          } else {
             val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
-            useActorOnNode(rpath, props.creator, supervisor)
+            useActorOnNode(rpath, props, d, supervisor)
             new RemoteActorRef(this, transport, rpath, supervisor)
           }
 
-        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment)
+        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false)
       }
     }
   }
@@ -188,11 +196,21 @@ class RemoteActorRefProvider(
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(path: ActorPath, actorFactory: () ⇒ Actor, supervisor: ActorRef) {
+  def useActorOnNode(path: ActorPath, props: Props, deploy: Deploy, supervisor: ActorRef) {
     log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, path)
 
     // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
-    actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(actorFactory, path.toString, supervisor)
+    actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
+  }
+
+  def getExternalAddressFor(addr: Address): Option[Address] = {
+    val ta = transport.address
+    val ra = rootPath.address
+    addr match {
+      case `ta` | `ra`                          ⇒ Some(rootPath.address)
+      case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.address)
+      case _                                    ⇒ None
+    }
   }
 }
 

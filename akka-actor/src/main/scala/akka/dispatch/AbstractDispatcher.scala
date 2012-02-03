@@ -90,6 +90,21 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
   }
 }
 
+/**
+ * Java API to create ExecutionContexts
+ */
+object ExecutionContexts {
+  /**
+   * Creates an ExecutionContext from the given ExecutorService
+   */
+  def fromExecutorService(e: ExecutorService): ExecutionContext = new ExecutionContext.WrappedExecutorService(e)
+
+  /**
+   * Creates an ExecutionContext from the given Executor
+   */
+  def fromExecutor(e: Executor): ExecutionContext = new ExecutionContext.WrappedExecutor(e)
+}
+
 object ExecutionContext {
   implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
 
@@ -103,14 +118,20 @@ object ExecutionContext {
    */
   def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
 
-  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+  /**
+   * Internal Akka use only
+   */
+  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()
       case _                    ⇒ t.printStackTrace()
     }
   }
 
-  private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+  /**
+   * Internal Akka use only
+   */
+  private[akka] class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()

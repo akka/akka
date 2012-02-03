@@ -657,3 +657,7 @@ extend that, either through inheritance or delegation, is to use
 ``PartialFunction.orElse`` chaining.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse
+
+Or:
+
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse2

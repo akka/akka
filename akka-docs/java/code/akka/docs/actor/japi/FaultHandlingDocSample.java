@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import akka.actor.*;
+import akka.dispatch.Mapper;
 import akka.japi.Function;
 import akka.util.Duration;
 import akka.util.Timeout;
@@ -19,9 +20,11 @@ import akka.event.LoggingAdapter;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import static akka.japi.Util.manifest;
+
 import static akka.actor.SupervisorStrategy.*;
 import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipeTo;
+import static akka.pattern.Patterns.pipe;
 
 import static akka.docs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
 import static akka.docs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
@@ -115,9 +118,9 @@ public class FaultHandlingDocSample {
 
     // Stop the CounterService child if it throws ServiceUnavailable
     private static SupervisorStrategy strategy = new OneForOneStrategy(-1, Duration.Inf(),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof ServiceUnavailable) {
               return stop();
             } else {
@@ -142,11 +145,14 @@ public class FaultHandlingDocSample {
         counterService.tell(new Increment(1), getSelf());
 
         // Send current progress to the initial sender
-        pipeTo(ask(counterService, GetCurrentCount, askTimeout).map(new Function<CurrentCount, Progress>() {
-          public Progress apply(CurrentCount c) {
-            return new Progress(100.0 * c.count / totalCount);
-          }
-        }), progressListener);
+        pipe(ask(counterService, GetCurrentCount, askTimeout)
+               .mapTo(manifest(CurrentCount.class))
+               .map(new Mapper<CurrentCount, Progress>() {
+            public Progress apply(CurrentCount c) {
+                return new Progress(100.0 * c.count / totalCount);
+            }
+        }))
+        .to(progressListener);
       } else {
         unhandled(msg);
       }
@@ -224,9 +230,9 @@ public class FaultHandlingDocSample {
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
     private static SupervisorStrategy strategy = new OneForOneStrategy(3, Duration.parse("5 seconds"),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof StorageException) {
               return restart();
             } else {

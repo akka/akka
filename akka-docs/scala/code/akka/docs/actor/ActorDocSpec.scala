@@ -133,6 +133,29 @@ class SpecificActor extends GenericActor {
 case class MyMsg(subject: String)
 //#receive-orElse
 
+//#receive-orElse2
+trait ComposableActor extends Actor {
+  private var receives: List[Receive] = List()
+  protected def registerReceive(receive: Receive) {
+    receives = receive :: receives
+  }
+
+  def receive = receives reduce { _ orElse _ }
+}
+
+class MyComposableActor extends ComposableActor {
+  override def preStart() {
+    registerReceive({
+      case "foo" ⇒ /* Do something */
+    })
+
+    registerReceive({
+      case "bar" ⇒ /* Do something */
+    })
+  }
+}
+
+//#receive-orElse2
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {
@@ -314,7 +337,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using pattern ask / pipeTo" in {
     val actorA, actorB, actorC, actorD = system.actorOf(Props.empty)
     //#ask-pipeTo
-    import akka.pattern.{ ask, pipeTo }
+    import akka.pattern.{ ask, pipe }
 
     case class Result(x: Int, s: String, d: Double)
     case object Request
@@ -329,7 +352,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       } yield Result(x, s, d)
 
     f pipeTo actorD // .. or ..
-    pipeTo(f, actorD)
+    pipe(f) to actorD
     //#ask-pipeTo
   }
 

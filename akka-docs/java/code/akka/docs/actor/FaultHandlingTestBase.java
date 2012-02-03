@@ -40,9 +40,9 @@ public class FaultHandlingTestBase {
 
     //#strategy
     private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof ArithmeticException) {
               return resume();
             } else if (t instanceof NullPointerException) {
@@ -78,9 +78,9 @@ public class FaultHandlingTestBase {
 
     //#strategy2
     private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
-        new Function<Throwable, Action>() {
+        new Function<Throwable, Directive>() {
           @Override
-          public Action apply(Throwable t) {
+          public Directive apply(Throwable t) {
             if (t instanceof ArithmeticException) {
               return resume();
             } else if (t instanceof NullPointerException) {

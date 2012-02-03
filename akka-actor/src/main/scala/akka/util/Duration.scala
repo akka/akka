@@ -8,40 +8,13 @@ import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Double ⇒ JDouble }
 
-class TimerException(message: String) extends RuntimeException(message)
-
-/**
- * Simple timer class.
- * Usage:
- * <pre>
- *   import akka.util.duration._
- *   import akka.util.Timer
- *
- *   val timer = Timer(30.seconds)
- *   while (timer.isTicking) { ... }
- * </pre>
- */
-case class Timer(duration: Duration, throwExceptionOnTimeout: Boolean = false) {
-  val startTimeInMillis = System.currentTimeMillis
-  val timeoutInMillis = duration.toMillis
-
-  /**
-   * Returns true while the timer is ticking. After that it either throws and exception or
-   * returns false. Depending on if the 'throwExceptionOnTimeout' argument is true or false.
-   */
-  def isTicking: Boolean = {
-    if (!(timeoutInMillis > (System.currentTimeMillis - startTimeInMillis))) {
-      if (throwExceptionOnTimeout) throw new TimerException("Time out after " + duration)
-      else false
-    } else true
-  }
-}
-
-case class Deadline(d: Duration) {
-  def +(other: Duration): Deadline = copy(d = d + other)
-  def -(other: Duration): Deadline = copy(d = d - other)
-  def -(other: Deadline): Duration = d - other.d
+case class Deadline private (time: Duration) {
+  def +(other: Duration): Deadline = copy(time = time + other)
+  def -(other: Duration): Deadline = copy(time = time - other)
+  def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
+  def hasTimeLeft(): Boolean = !isOverdue() //Code reuse FTW
+  def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
 }
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))

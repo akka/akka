@@ -57,7 +57,7 @@ import akka.event.LoggingAdapter
  *
  *     } else if (o instanceof Request3) {
  *       val msg = ((Request3) o).getMsg();
- *       getSender().tell(other.ask(msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
+ *       getSender().tell(ask(other, msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
  *
  *     } else {
  *       unhandled(o);

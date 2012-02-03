@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.util.{ ByteString, Duration, Timer }
+import akka.util.{ ByteString, Duration, Deadline }
 import akka.util.duration._
 import scala.util.continuations._
 import akka.testkit._
@@ -244,13 +244,13 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     val promise = Promise[T]()(executor)
 
-    val timer = timeout match {
-      case Some(duration) ⇒ Some(Timer(duration))
+    val timer: Option[Deadline] = timeout match {
+      case Some(duration) ⇒ Some(duration fromNow)
       case None           ⇒ None
     }
 
     def check(n: Int, e: Throwable): Boolean =
-      (count.isEmpty || (n < count.get)) && (timer.isEmpty || timer.get.isTicking) && (filter.isEmpty || filter.get(e))
+      (count.isEmpty || (n < count.get)) && (timer.isEmpty || timer.get.hasTimeLeft()) && (filter.isEmpty || filter.get(e))
 
     def run(n: Int) {
       future onComplete {

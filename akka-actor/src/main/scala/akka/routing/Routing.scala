@@ -10,7 +10,7 @@ import akka.util.Duration
 import akka.util.duration._
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.pattern.AskSupport
+import akka.pattern.pipe
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
@@ -133,13 +133,10 @@ trait RouterConfig {
 
   def createActor(): Router = new Router {}
 
-  def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
-    deploy match {
-      case Some(Deploy(_, _, NoRouter, _)) ⇒ this
-      case Some(Deploy(_, _, r, _))        ⇒ r
-      case _                               ⇒ this
-    }
-  }
+  /**
+   * Overridable merge strategy, by default completely prefers “this” (i.e. no merge).
+   */
+  def withFallback(other: RouterConfig): RouterConfig = this
 
   protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
 
@@ -291,11 +288,14 @@ case class RouterRoutees(routees: Iterable[ActorRef])
 case class Destination(sender: ActorRef, recipient: ActorRef)
 
 /**
- * Routing configuration that indicates no routing.
- * Oxymoron style.
+ * Routing configuration that indicates no routing; this is also the default
+ * value which hence overrides the merge strategy in order to accept values
+ * from lower-precendence sources. The decision whether or not to create a
+ * router is taken in the LocalActorRefProvider based on Props.
  */
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  override def withFallback(other: RouterConfig): RouterConfig = other
 }
 
 /**
@@ -766,7 +766,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
-        val asker = AskSupport.createAsker(provider, within)
+        val asker = akka.pattern.createAsker(provider, within)
         asker.result.pipeTo(sender)
         toAll(asker, routeeProvider.routees)
     }

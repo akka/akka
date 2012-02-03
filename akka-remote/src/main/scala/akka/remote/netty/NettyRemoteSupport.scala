@@ -20,7 +20,7 @@ import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
 
 /**
@@ -71,6 +71,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   def start(): Unit = {
     server.start()
     setAddressFromChannel(server.channel)
+    notifyListeners(RemoteServerStarted(this))
   }
 
   def shutdown(): Unit = {
@@ -155,7 +156,10 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   def unbindClient(remoteAddress: Address): Unit = {
     clientsLock.writeLock().lock()
     try {
-      remoteClients.foreach { case (k, v) ⇒ if (v.isBoundTo(remoteAddress)) { v.shutdown(); remoteClients.remove(k) } }
+      remoteClients foreach {
+        case (k, v) ⇒
+          if (v.isBoundTo(remoteAddress)) { v.shutdown(); remoteClients.remove(k) }
+      }
     } finally {
       clientsLock.writeLock().unlock()
     }
@@ -225,7 +229,8 @@ class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(na
   override def close(): ChannelGroupFuture = {
     guard.writeLock().lock()
     try {
-      if (open.getAndSet(false)) super.close() else throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
+      if (open.getAndSet(false)) super.close()
+      else throw new IllegalStateException("ChannelGroup already closed, cannot add new channel")
     } finally {
       guard.writeLock().unlock()
     }

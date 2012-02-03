@@ -11,7 +11,7 @@ trait AbstractRemoteActorMultiJvmSpec {
     nodesOpt getOrElse IndexedSeq.fill(NrOfNodes)("localhost")
   }
 
-	def akkaSpec(idx: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(idx), 9991+idx)
+        def akkaSpec(idx: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(idx), 9991+idx)
 
   def akkaURIs(count: Int): String = {
     0 until count map {idx => "\"akka://" + akkaSpec(idx) + "\""} mkString ","

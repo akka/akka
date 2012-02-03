@@ -13,9 +13,8 @@ import akka.remote.netty.NettyRemoteTransport
 class RemoteConfigSpec extends AkkaSpec(
   """
   akka {
-    actor {
-      provider = "akka.remote.RemoteActorRefProvider"
-    }
+    actor.provider = "akka.remote.RemoteActorRefProvider"
+    remote.netty.port = 0
   }
   """) {
 
@@ -28,13 +27,6 @@ class RemoteConfigSpec extends AkkaSpec(
       RemoteTransport must be("akka.remote.netty.NettyRemoteTransport")
       UntrustedMode must be(false)
       RemoteSystemDaemonAckTimeout must be(30 seconds)
-
-      FailureDetectorThreshold must be(8)
-      FailureDetectorMaxSampleSize must be(1000)
-
-      InitialDelayForGossip must be(5 seconds)
-      GossipFrequency must be(1 second)
-      SeedNodes must be(Set())
     }
 
     "be able to parse Netty config elements" in {
@@ -50,7 +42,7 @@ class RemoteConfigSpec extends AkkaSpec(
       RequireCookie must be(false)
       UsePassiveConnections must be(true)
       Hostname must not be "" // will be set to the local IP
-      DesiredPortFromConfig must be(2552)
+      PortSelector must be(0)
       MessageFrameSize must be(1048576)
       ConnectionTimeout must be(2 minutes)
       Backlog must be(4096)
@@ -59,7 +51,9 @@ class RemoteConfigSpec extends AkkaSpec(
       MaxChannelMemorySize must be(0)
       MaxTotalMemorySize must be(0)
       ReconnectDelay must be(5 seconds)
-      ReadTimeout must be(1 hour)
+      ReadTimeout must be(0 millis)
+      WriteTimeout must be(10 seconds)
+      AllTimeout must be(0 millis)
       ReconnectionTimeWindow must be(10 minutes)
     }
 
