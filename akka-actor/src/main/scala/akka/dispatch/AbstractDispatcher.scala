@@ -16,6 +16,7 @@ import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.jsr166y.ForkJoinPool
 import akka.util.NonFatal
+import akka.event.Logging.LogEventException
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -102,10 +103,13 @@ object ExecutionContext {
    */
   def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
 
-  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
+  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+    override def reportFailure(t: Throwable): Unit = t.printStackTrace()
+  }
 
   private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
+    override def reportFailure(t: Throwable): Unit = t.printStackTrace()
   }
 }
 
@@ -120,6 +124,13 @@ trait ExecutionContext {
    * Submits the runnable for execution
    */
   def execute(runnable: Runnable): Unit
+
+  /**
+   * Failed tasks should call reportFailure to let the ExecutionContext
+   * log the problem or whatever is appropriate for the implementation.
+   */
+  def reportFailure(t: Throwable): Unit
+
 }
 
 object MessageDispatcher {
@@ -171,6 +182,11 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
         inhabitantsUpdater.decrementAndGet(this)
         throw t
     }
+  }
+
+  def reportFailure(t: Throwable): Unit = t match {
+    case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
+    case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec

@@ -543,8 +543,8 @@ object TransactionLog {
 
   private[akka] def await[T](future: Promise[T]): T = {
     future.await.value.get match {
-      case Right(result) => result
-      case Left(throwable) => handleError(throwable)
+      case Right(result)   ⇒ result
+      case Left(throwable) ⇒ handleError(throwable)
     }
   }
 

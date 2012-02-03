@@ -322,22 +322,13 @@ object Future {
                 try {
                   next.apply()
                 } catch {
-                  case NonFatal(e) ⇒ logError(e)
+                  case NonFatal(e) ⇒ executor.reportFailure(e)
                 }
               }
             } finally { _taskStack.remove() }
         })
     }
 
-  /**
-   * Internal API, do not call
-   */
-  private[akka] def logError(problem: Throwable)(implicit executor: ExecutionContext): Unit = {
-    executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, "Future", this.getClass, problem.getMessage))
-      case other                ⇒ problem.printStackTrace()
-    }
-  }
 }
 
 sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
@@ -779,7 +770,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
   }
 
   private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
-    try { func(result) } catch { case NonFatal(e) ⇒ Future.logError(e) }
+    try { func(result) } catch { case NonFatal(e) ⇒ executor.reportFailure(e) }
   }
 }
 
