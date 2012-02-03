@@ -102,7 +102,7 @@ object Status {
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system, context.self)
+  val log = akka.event.Logging(context.system, this)
 }
 
 object Actor {
