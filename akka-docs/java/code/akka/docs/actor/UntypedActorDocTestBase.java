@@ -12,6 +12,7 @@ import akka.actor.Props;
 //#import-future
 import akka.dispatch.Future;
 import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
 import akka.dispatch.Await;
 import akka.util.Duration;
 import akka.util.Timeout;
@@ -37,16 +38,16 @@ import akka.util.Duration;
 import akka.actor.ActorTimeoutException;
 //#import-gracefulStop
 
-//#import-askPipeTo
+//#import-askPipe
 import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipeTo;
+import static akka.pattern.Patterns.pipe;
 import akka.dispatch.Future;
 import akka.dispatch.Futures;
 import akka.util.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
-//#import-askPipeTo
+//#import-askPipe
 
 import akka.actor.Props;
 import akka.actor.UntypedActor;
@@ -223,12 +224,12 @@ public class UntypedActorDocTestBase {
   }
 
   @Test
-  public void usePatternsAskPipeTo() {
+  public void usePatternsAskPipe() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorA = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorB = system.actorOf(new Props(MyUntypedActor.class));
     ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
-    //#ask-pipeTo
+    //#ask-pipe
     final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
@@ -236,8 +237,8 @@ public class UntypedActorDocTestBase {
     futures.add(ask(actorB, "reqeest", t)); // using timeout from above
 
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
-
-    final Future<Result> transformed = aggregate.map(new akka.japi.Function<Iterable<Object>, Result>() {
+    
+    final Future<Result> transformed = aggregate.map(new Mapper<Iterable<Object>, Result>() {
       public Result apply(Iterable<Object> coll) {
         final Iterator<Object> it = coll.iterator();
         final String s = (String) it.next();
@@ -246,8 +247,8 @@ public class UntypedActorDocTestBase {
       }
     });
 
-    pipeTo(transformed, actorC);
-    //#ask-pipeTo
+    pipe(transformed).to(actorC);
+    //#ask-pipe
     system.shutdown();
   }
 

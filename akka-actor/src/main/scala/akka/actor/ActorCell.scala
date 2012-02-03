@@ -174,8 +174,7 @@ private[akka] class ActorCell(
   val self: InternalActorRef,
   val props: Props,
   @volatile var parent: InternalActorRef,
-  /*no member*/ _receiveTimeout: Option[Duration],
-  var hotswap: Stack[PartialFunction[Any, Unit]]) extends UntypedActorContext {
+  /*no member*/ _receiveTimeout: Option[Duration]) extends UntypedActorContext {
 
   import ActorCell._
 
@@ -209,10 +208,10 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  final var receiveTimeoutData: (Long, Cancellable) =
+  var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
-  final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
+  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -255,16 +254,16 @@ private[akka] class ActorCell(
     a.stop()
   }
 
-  final var currentMessage: Envelope = null
+  var currentMessage: Envelope = null
 
-  final var actor: Actor = _
+  var actor: Actor = _
 
-  final var stopping = false
+  var stopping = false
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
-  final var nextNameSequence: Long = 0
+  var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
   final protected def randomName(): String = {
@@ -389,7 +388,6 @@ private[akka] class ActorCell(
         }
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
-      hotswap = Props.noHotSwap // Reset the behavior
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
 
@@ -509,9 +507,9 @@ private[akka] class ActorCell(
     }
   }
 
-  def become(behavior: Actor.Receive, discardOld: Boolean = true) {
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    hotswap = hotswap.push(behavior)
+    actor.pushBehavior(behavior)
   }
 
   /**
@@ -527,10 +525,7 @@ private[akka] class ActorCell(
     become(newReceive, discardOld)
   }
 
-  def unbecome() {
-    val h = hotswap
-    if (h.nonEmpty) hotswap = h.pop
-  }
+  def unbecome(): Unit = actor.popBehavior()
 
   def autoReceiveMessage(msg: Envelope) {
     if (system.settings.DebugAutoReceive)
@@ -547,9 +542,9 @@ private[akka] class ActorCell(
   }
 
   private def doTerminate() {
+    val a = actor
     try {
       try {
-        val a = actor
         if (a ne null) a.postStop()
       } finally {
         dispatcher.detach(this)
@@ -563,7 +558,7 @@ private[akka] class ActorCell(
       } finally {
         currentMessage = null
         clearActorFields()
-        hotswap = Props.noHotSwap
+        if (a ne null) a.clearBehaviorStack()
       }
     }
   }

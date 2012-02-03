@@ -20,8 +20,11 @@ object CoordinatedIncrement {
     akka {
       actor {
         default-dispatcher {
-          core-pool-size-min = 5
-          core-pool-size-max = 16
+          executor = "thread-pool-executor"
+          thread-pool-executor {
+            core-pool-size-min = 5
+            core-pool-size-max = 16
+          }
         }
       }
     }

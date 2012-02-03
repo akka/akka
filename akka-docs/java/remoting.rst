@@ -25,7 +25,7 @@ to your ``application.conf`` file::
       provider = "akka.remote.RemoteActorRefProvider"
     }
     remote {
-      transport = "akka.remote.netty.NettyRemoteSupport"
+      transport = "akka.remote.netty.NettyRemoteTransport"
       server {
         hostname = "127.0.0.1"
         port = 2552

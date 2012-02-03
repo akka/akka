@@ -34,16 +34,15 @@ class TestActorRef[T <: Actor](
     _supervisor.path / name,
     false) {
 
-  private case object InternalGetActor extends AutoReceivedMessage
+  import TestActorRef.InternalGetActor
 
   override def newActorCell(
     system: ActorSystemImpl,
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration],
-    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap) {
+    receiveTimeout: Option[Duration]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
           case InternalGetActor ⇒ sender ! actor
@@ -98,6 +97,8 @@ class TestActorRef[T <: Actor](
 }
 
 object TestActorRef {
+
+  private case object InternalGetActor extends AutoReceivedMessage
 
   private val number = new AtomicLong
   private[testkit] def randomName: String = {

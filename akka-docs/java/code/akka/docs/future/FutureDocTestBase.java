@@ -4,12 +4,10 @@
 package akka.docs.future;
 
 //#imports1
-import akka.dispatch.Promise;
+import akka.dispatch.*;
 import akka.japi.Procedure;
 import akka.japi.Procedure2;
 import akka.util.Timeout;
-import akka.dispatch.Await;
-import akka.dispatch.Future;
 
 //#imports1
 
@@ -57,7 +55,6 @@ import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.dispatch.Futures;
 import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
@@ -110,7 +107,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -131,7 +128,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -153,7 +150,7 @@ public class FutureDocTestBase {
 
     Thread.sleep(100);
 
-    Future<Integer> f2 = f1.map(new Function<String, Integer>() {
+    Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
         return s.length();
       }
@@ -173,7 +170,7 @@ public class FutureDocTestBase {
       }
     }, system.dispatcher());
 
-    Future<Integer> f2 = f1.flatMap(new Function<String, Future<Integer>>() {
+    Future<Integer> f2 = f1.flatMap(new Mapper<String, Future<Integer>>() {
       public Future<Integer> apply(final String s) {
         return future(new Callable<Integer>() {
           public Integer call() {
@@ -204,7 +201,7 @@ public class FutureDocTestBase {
 
     // Find the sum of the odd numbers
     Future<Long> futureSum = futureListOfInts.map(
-      new Function<Iterable<Integer>, Long>() {
+      new Mapper<Iterable<Integer>, Long>() {
           public Long apply(Iterable<Integer> ints) {
             long sum = 0;
             for (Integer i : ints)
@@ -306,24 +303,87 @@ public class FutureDocTestBase {
        //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
     Future<Integer> successfulFilter =
-      future1.filter(new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) { return i % 2 == 0; }
+      future1.filter(new Filter<Integer>() {
+        public boolean filter(Integer i) { return i % 2 == 0; }
       });
 
     Future<Integer> failedFilter =
-      future1.filter(new Function<Integer, Boolean>() {
-        public Boolean apply(Integer i) { return i % 2 != 0; }
+      future1.filter(new Filter<Integer>() {
+        public boolean filter(Integer i) { return i % 2 != 0; }
       });
     //When filter fails, the returned Future will be failed with a scala.MatchError
     //#filter
+  }
+
+  public void sendToTheInternetz(String s) {
+
+  }
+
+  public void sendToIssueTracker(Throwable t) {
+
+  }
+
+   @Test public void useAndThen() {
+    //#and-then
+    Future<String> future1 = Futures.successful("value", system.dispatcher()).
+       andThen(new OnComplete<String>() {
+       public void onComplete(Throwable failure, String result) {
+           if (failure != null) sendToIssueTracker(failure);
+       }
+    }).andThen(new OnComplete<String>() {
+       public void onComplete(Throwable failure, String result) {
+           if (result != null) sendToTheInternetz(result);
+       }
+    });
+    //#and-then
+  }
+
+  @Test public void useRecover() {
+    //#recover
+    Future<Integer> future = future(new Callable<Integer>() {
+      public Integer call() {
+        return 1 / 0;
+      }
+    }, system.dispatcher()).recover(new Recover<Integer>() {
+        public Integer recover(Throwable problem) throws Throwable {
+            if (problem instanceof ArithmeticException) return 0;
+            else throw problem;
+        }
+    });
+    int result = Await.result(future, Duration.create(1, SECONDS));
+    assertEquals(result, 0);
+    //#recover
+  }
+
+  @Test public void useTryRecover() {
+    //#try-recover
+    Future<Integer> future = future(new Callable<Integer>() {
+      public Integer call() {
+        return 1 / 0;
+      }
+    }, system.dispatcher()).recoverWith(new Recover<Future<Integer>>() {
+        public Future<Integer> recover(Throwable problem) throws Throwable {
+            if (problem instanceof ArithmeticException) {
+                return future(new Callable<Integer>() {
+                  public Integer call() {
+                    return 0;
+                  }
+                }, system.dispatcher());
+            }
+            else throw problem;
+        }
+    });
+    int result = Await.result(future, Duration.create(1, SECONDS));
+    assertEquals(result, 0);
+    //#try-recover
   }
 
   @Test public void useOnSuccessOnFailureAndOnComplete() {
       {
       Future<String> future = Futures.successful("foo", system.dispatcher());
       //#onSuccess
-      future.onSuccess(new Procedure<String>() {
-          public void apply(String result) {
+      future.onSuccess(new OnSuccess<String>() {
+          public void onSuccess(String result) {
               if ("bar" == result) {
                   //Do something if it resulted in "bar"
               } else {
@@ -337,8 +397,8 @@ public class FutureDocTestBase {
         Future<String> future =
                 Futures.failed(new IllegalStateException("OHNOES"), system.dispatcher());
         //#onFailure
-      future.onFailure( new Procedure<Throwable>() {
-        public void apply(Throwable failure) {
+      future.onFailure( new OnFailure() {
+        public void onFailure(Throwable failure) {
             if (failure instanceof IllegalStateException) {
                 //Do something if it was this particular failure
             } else {
@@ -351,8 +411,8 @@ public class FutureDocTestBase {
       {
         Future<String> future = Futures.successful("foo", system.dispatcher());
         //#onComplete
-        future.onComplete(new Procedure2<Throwable, String>() {
-           public void apply(Throwable failure, String result) {
+        future.onComplete(new OnComplete<String>() {
+           public void onComplete(Throwable failure, String result) {
                if (failure != null) {
                    //We got a failure, handle it here
                } else {
@@ -370,7 +430,7 @@ public class FutureDocTestBase {
     Future<String> future1 = Futures.successful("foo", system.dispatcher());
     Future<String> future2 = Futures.successful("bar", system.dispatcher());
     Future<String> future3 =
-      future1.zip(future2).map(new Function<scala.Tuple2<String,String>, String>() {
+      future1.zip(future2).map(new Mapper<scala.Tuple2<String,String>, String>() {
         public String apply(scala.Tuple2<String,String> zipped) {
             return zipped._1() + " " + zipped._2();
         }
@@ -382,7 +442,7 @@ public class FutureDocTestBase {
     }
 
     {
-        //#or
+        //#fallback-to
         Future<String> future1 =
                 Futures.failed(new IllegalStateException("OHNOES1"), system.dispatcher());
         Future<String> future2 =
@@ -390,10 +450,10 @@ public class FutureDocTestBase {
         Future<String> future3 =
                 Futures.successful("bar", system.dispatcher());
         Future<String> future4 =
-                future1.or(future2).or(future3); // Will have "bar" in this case
+                future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
         String result = Await.result(future4,  Duration.create(1, SECONDS));
         assertEquals("bar", result);
-        //#or
+        //#fallback-to
     }
 
   }

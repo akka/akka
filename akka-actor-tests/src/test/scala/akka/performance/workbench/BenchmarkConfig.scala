@@ -20,38 +20,40 @@ object BenchmarkConfig {
       resultDir = "target/benchmark"
       useDummyOrderbook = false
 
-      client-dispatcher {
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
-      }
-
-      destination-dispatcher {
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
-      }
-
-      high-throughput-dispatcher {
-        throughput = 10000
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
-      }
-
-      pinned-dispatcher {
-        type = PinnedDispatcher
+      throughput-dispatcher {
+        throughput = 5
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
+        }
       }
 
       latency-dispatcher {
         throughput = 1
-        core-pool-size-min = ${benchmark.maxClients}
-        core-pool-size-max = ${benchmark.maxClients}
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
+        }
+      }
+
+      trading-dispatcher {
+        throughput = 5
+        executor = "fork-join-executor"
+        fork-join-executor {
+          parallelism-min = ${benchmark.maxClients}
+          parallelism-max = ${benchmark.maxClients}
+        }
       }
     }
     """)
   private val longRunningBenchmarkConfig = ConfigFactory.parseString("""
     benchmark {
       longRunning = true
+      minClients = 4
       maxClients = 48
-      repeatFactor = 150
+      repeatFactor = 2000
       maxRunDuration = 120 seconds
       useDummyOrderbook = true
     }

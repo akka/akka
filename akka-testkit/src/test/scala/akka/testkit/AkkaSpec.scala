@@ -29,12 +29,12 @@ object AkkaSpec {
         stdout-loglevel = "WARNING"
         actor {
           default-dispatcher {
-            core-pool-size-factor = 2
-            core-pool-size-min = 8
-            core-pool-size-max = 8
-            max-pool-size-factor = 2
-            max-pool-size-min = 8
-            max-pool-size-max = 8
+            executor = "fork-join-executor"
+            fork-join-executor {
+              parallelism-min = 8
+              parallelism-factor = 2.0
+              parallelism-max = 8
+            }
           }
         }
       }

@@ -13,10 +13,10 @@ import akka.testkit.AkkaSpec
 import org.scalatest.junit.JUnitSuite
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
-import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
+import java.util.concurrent._
 
 object FutureSpec {
   class TestActor extends Actor {
@@ -39,7 +39,6 @@ object FutureSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class JavaFutureSpec extends JavaFutureTests with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -55,11 +54,11 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         val empty = Promise[String]()
         val timedOut = Promise.successful[String]("Timedout")
 
-        Await.result(failure or timedOut, timeout.duration) must be("Timedout")
-        Await.result(timedOut or empty, timeout.duration) must be("Timedout")
-        Await.result(failure or failure or timedOut, timeout.duration) must be("Timedout")
+        Await.result(failure fallbackTo timedOut, timeout.duration) must be("Timedout")
+        Await.result(timedOut fallbackTo empty, timeout.duration) must be("Timedout")
+        Await.result(failure fallbackTo failure fallbackTo timedOut, timeout.duration) must be("Timedout")
         intercept[RuntimeException] {
-          Await.result(failure or otherFailure, timeout.duration)
+          Await.result(failure fallbackTo otherFailure, timeout.duration)
         }.getMessage must be("last")
       }
     }
@@ -300,6 +299,32 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           Await.result(future11, timeout.duration) must be("Oops!")
 
           system.stop(actor)
+        }
+      }
+
+      "recoverWith from exceptions" in {
+        val o = new IllegalStateException("original")
+        val r = new IllegalStateException("recovered")
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](o) recoverWith { case _ if false == true ⇒ Promise.successful("yay!") }, timeout.duration)
+        } must be(o)
+
+        Await.result(Promise.failed[String](o) recoverWith { case _ ⇒ Promise.successful("yay!") }, timeout.duration) must equal("yay!")
+
+        intercept[IllegalStateException] {
+          Await.result(Promise.failed[String](o) recoverWith { case _ ⇒ Promise.failed[String](r) }, timeout.duration)
+        } must be(r)
+      }
+
+      "andThen like a boss" in {
+        val q = new LinkedBlockingQueue[Int]
+        for (i ← 1 to 1000) {
+          Await.result(Future { q.add(1); 3 } andThen { case _ ⇒ q.add(2) } andThen { case Right(0) ⇒ q.add(Int.MaxValue) } andThen { case _ ⇒ q.add(3); }, timeout.duration) must be(3)
+          q.poll() must be(1)
+          q.poll() must be(2)
+          q.poll() must be(3)
+          q.clear()
         }
       }
 
@@ -856,7 +881,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
     "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
     "return result with 'get'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
-    "return result with 'Await.sync'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
+    "return result with 'Await.result'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ Await.ready(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
@@ -907,7 +932,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       })
     }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
-    "throw exception with 'Await.sync'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
+    "throw exception with 'Await.result'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[E]).getMessage must be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
         (evaluating { Await.result(future filter (_ ⇒ true), timeout.duration) } must produce[E]).getMessage must be(message)

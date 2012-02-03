@@ -303,7 +303,7 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   final def enqueue(receiver: ActorRef, handle: Envelope) {
     if (pushTimeOut.length > 0) {
       queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
       }
     } else queue put handle
   }

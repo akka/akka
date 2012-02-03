@@ -24,7 +24,6 @@ object Props {
 
   final val defaultDeploy = Deploy()
 
-  final val noHotSwap: Stack[Actor.Receive] = Stack.empty
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
   /**
