@@ -8,8 +8,8 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
-import akka.util.Timeout
-import akka.util.duration._
+import scala.util.Timeout
+import scala.util.duration._
 import java.lang.IllegalStateException
 import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
@@ -53,7 +53,7 @@ object ActorRefSpec {
     }
 
     private def work {
-      1.second.dilated.sleep
+      Thread.sleep(1.second.dilated.toMillis)
     }
   }
 

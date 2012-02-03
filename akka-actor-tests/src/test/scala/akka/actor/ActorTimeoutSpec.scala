@@ -3,10 +3,10 @@
  */
 package akka.actor
 
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit._
 import akka.dispatch.Await
-import akka.util.Timeout
+import scala.util.Timeout
 import akka.pattern.{ ask, AskTimeoutException }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

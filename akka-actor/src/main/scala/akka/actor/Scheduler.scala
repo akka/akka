@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.util.Duration
+import scala.util.Duration
 import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher

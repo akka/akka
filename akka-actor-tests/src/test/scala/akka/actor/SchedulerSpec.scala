@@ -1,7 +1,7 @@
 package akka.actor
 
 import org.scalatest.BeforeAndAfterEach
-import akka.util.duration._
+import scala.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import akka.dispatch.Await
@@ -101,9 +101,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val timeout = collectCancellable(system.scheduler.schedule(initialDelay, delay) {
         ticks.incrementAndGet()
       })
-      10.milliseconds.dilated.sleep()
+      Thread.sleep(10.milliseconds.dilated.toMillis)
       timeout.cancel()
-      (initialDelay + 100.milliseconds.dilated).sleep()
+      Thread.sleep((initialDelay + 100.milliseconds.dilated).toMillis)
 
       ticks.get must be(0)
     }
@@ -116,9 +116,9 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val timeout = collectCancellable(system.scheduler.schedule(initialDelay, delay) {
         ticks.incrementAndGet()
       })
-      (initialDelay + 100.milliseconds.dilated).sleep()
+      Thread.sleep((initialDelay + 100.milliseconds.dilated).toMillis)
       timeout.cancel()
-      (delay + 100.milliseconds.dilated).sleep()
+      Thread.sleep((delay + 100.milliseconds.dilated).toMillis)
 
       ticks.get must be(1)
     }

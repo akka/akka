@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import akka.actor.ActorCell
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.

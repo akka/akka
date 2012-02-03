@@ -4,7 +4,7 @@
 package akka.actor
 
 import java.util.concurrent.TimeUnit
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * Migration replacement for `object akka.actor.Scheduler`.

@@ -4,8 +4,9 @@
 
 package akka.actor
 
-import akka.util.{ ByteString, Duration, Deadline }
-import akka.util.duration._
+import scala.util.{ Duration, Deadline }
+import akka.util.ByteString
+import scala.util.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.{ Await, Future, Promise, ExecutionContext, MessageDispatcher }

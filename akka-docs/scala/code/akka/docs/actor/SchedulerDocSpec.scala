@@ -6,7 +6,7 @@ package akka.docs.actor
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
-import akka.util.duration._
+import scala.util.duration._
 
 //#imports1
 

@@ -6,8 +6,8 @@ package akka.routing
 import akka.actor._
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.duration._
+import scala.util.Duration
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.pattern.pipe

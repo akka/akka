@@ -16,7 +16,8 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-import akka.util.{ Duration, BoxedType }
+import scala.util.{ Duration }
+import akka.util.{ BoxedType }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger }
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._

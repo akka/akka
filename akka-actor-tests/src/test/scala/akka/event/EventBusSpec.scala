@@ -6,7 +6,7 @@ package akka.event
 
 import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 import java.util.concurrent.atomic._
 import akka.actor.{ Props, Actor, ActorRef, ActorSystem }
 import java.util.Comparator

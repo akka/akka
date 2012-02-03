@@ -390,7 +390,7 @@ taken from one of the following locations in order of precedence:
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-explicit-timeout
 
-2. implicit argument of type :class:`akka.util.Timeout`, e.g.
+2. implicit argument of type :class:`scala.util.Timeout`, e.g.
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#using-implicit-timeout
 
@@ -659,5 +659,6 @@ extend that, either through inheritance or delegation, is to use
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse
 
 Or:
+
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse2

@@ -4,10 +4,10 @@
 package akka.event
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.util.duration._
+import scala.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.util.Duration
+import scala.util.Duration
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import java.util.Properties

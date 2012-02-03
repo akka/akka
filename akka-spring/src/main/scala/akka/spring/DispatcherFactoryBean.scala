@@ -10,7 +10,7 @@ import akka.actor.ActorRef
 import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ThreadPoolExecutor.{ DiscardPolicy, DiscardOldestPolicy, CallerRunsPolicy, AbortPolicy }
 import akka.dispatch._
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * Reusable factory method for dispatchers.

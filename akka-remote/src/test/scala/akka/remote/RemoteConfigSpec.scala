@@ -5,8 +5,8 @@ package akka.remote
 
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
-import akka.util.duration._
-import akka.util.Duration
+import scala.util.duration._
+import scala.util.Duration
 import akka.remote.netty.NettyRemoteTransport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

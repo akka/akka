@@ -5,8 +5,8 @@ package sample.fsm.dining.fsm
 
 import akka.actor._
 import akka.actor.FSM._
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 
 /*
 * Some messages for the chopstick

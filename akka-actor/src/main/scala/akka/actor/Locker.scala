@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.dispatch._
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.DeathWatch
 

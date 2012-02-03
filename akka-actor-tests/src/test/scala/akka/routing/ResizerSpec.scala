@@ -7,7 +7,7 @@ import akka.actor.Actor
 import akka.testkit._
 import akka.actor.Props
 import akka.dispatch.Await
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
@@ -167,7 +167,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(Props(new Actor {
         def receive = {
           case (n: Int, latch: TestLatch, count: AtomicInteger) ⇒
-            (n millis).dilated.sleep
+            Thread.sleep((n millis).dilated.toMillis)
             count.incrementAndGet
             latch.countDown()
         }
@@ -179,10 +179,10 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
       def loop(loops: Int, t: Int, latch: TestLatch, count: AtomicInteger) = {
-        (10 millis).dilated.sleep
+        Thread.sleep((10 millis).dilated.toMillis)
         for (m ← 0 until loops) {
           router.!((t, latch, count))
-          (10 millis).dilated.sleep
+          Thread.sleep((10 millis).dilated.toMillis)
         }
       }
 
@@ -220,25 +220,25 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(Props(new Actor {
         def receive = {
           case n: Int ⇒
-            (n millis).dilated.sleep
+            Thread.sleep((n millis).dilated.toMillis)
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
       // put some pressure on the router
       for (m ← 0 to 5) {
         router ! 100
-        (5 millis).dilated.sleep
+        Thread.sleep((5 millis).dilated.toMillis)
       }
 
       val z = Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size
       z must be >= (2)
 
-      (300 millis).dilated.sleep
+      Thread.sleep((300 millis).dilated.toMillis)
 
       // let it cool down
       for (m ← 0 to 3) {
         router ! 1
-        (200 millis).dilated.sleep
+        Thread.sleep((200 millis).dilated.toMillis)
       }
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be < (z)

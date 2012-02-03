@@ -4,7 +4,7 @@
 package akka.remote
 
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
 import akka.config.ConfigurationException

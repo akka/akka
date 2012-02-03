@@ -7,7 +7,7 @@ package akka.docs.actor;
 import akka.actor.Actors;
 import akka.actor.ReceiveTimeout;
 import akka.actor.UntypedActor;
-import akka.util.Duration;
+import scala.util.Duration;
 
 public class MyReceivedTimeoutUntypedActor extends UntypedActor {
 

@@ -6,7 +6,7 @@ package akka.cluster.zookeeper
 import org.I0Itec.zkclient._
 import org.I0Itec.zkclient.serialize._
 import org.I0Itec.zkclient.exception._
-import akka.util.Duration
+import scala.util.Duration
 
 /**
  * ZooKeeper client. Holds the ZooKeeper connection and manages its session.

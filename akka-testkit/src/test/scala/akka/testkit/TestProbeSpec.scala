@@ -4,7 +4,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import akka.util.duration._
+import scala.util.duration._
 import akka.dispatch.{ Await, Future }
 import akka.pattern.ask
 

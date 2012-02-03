@@ -6,8 +6,9 @@ package akka.tutorial.first.scala
 //#imports
 import akka.actor._
 import akka.routing.RoundRobinRouter
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
+
 //#imports
 
 //#app

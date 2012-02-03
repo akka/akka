@@ -5,7 +5,7 @@ package akka
 
 import akka.dispatch.Future
 import akka.dispatch.OldFuture
-import akka.util.Timeout
+import scala.util.Timeout
 import akka.actor.GlobalActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.actor.ActorRef

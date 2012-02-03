@@ -7,7 +7,7 @@ package sample.fsm.dining.become
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
 import akka.actor._
-import akka.util.duration._
+import scala.util.duration._
 
 /*
 * First we define our messages, they basically speak for themselves

@@ -5,8 +5,8 @@
 package akka.actor
 
 import akka.testkit._
-import akka.util.duration._
-import akka.util.Timeout
+import scala.util.duration._
+import scala.util.Timeout
 import akka.dispatch.{ Await, Future }
 
 object LocalActorRefProviderSpec {

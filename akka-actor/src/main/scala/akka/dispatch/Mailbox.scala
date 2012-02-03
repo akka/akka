@@ -3,6 +3,7 @@
  */
 package akka.dispatch
 
+import scala.util.Duration
 import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue, Queue }
 import akka.util._

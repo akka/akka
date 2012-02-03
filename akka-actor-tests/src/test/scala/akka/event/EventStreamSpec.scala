@@ -4,7 +4,7 @@
 package akka.event
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
+import scala.util.duration._
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._

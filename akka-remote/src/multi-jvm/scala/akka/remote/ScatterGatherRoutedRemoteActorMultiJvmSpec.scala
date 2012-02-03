@@ -3,7 +3,7 @@ package akka.remote
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing._
 import akka.testkit._
-import akka.util.duration._
+import scala.util.duration._
 
 object ScatterGatherRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 4

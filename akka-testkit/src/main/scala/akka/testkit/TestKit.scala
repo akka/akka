@@ -5,8 +5,8 @@ package akka.testkit
 
 import akka.actor._
 import Actor._
-import akka.util.Duration
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec

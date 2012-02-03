@@ -8,7 +8,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.util.duration._
+import scala.util.duration._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill

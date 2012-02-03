@@ -4,7 +4,7 @@
 package akka.cluster
 
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.config.ConfigurationException
 import scala.collection.JavaConverters._

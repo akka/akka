@@ -5,9 +5,9 @@ package akka.actor
  */
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.util.Duration
-import akka.util.Timeout
-import akka.util.duration._
+import scala.util.Duration
+import scala.util.Timeout
+import scala.util.duration._
 import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec

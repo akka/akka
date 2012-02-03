@@ -15,7 +15,7 @@
  */
 package org.jboss.netty.akka.util;
 
-import akka.util.Duration;
+import scala.util.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 

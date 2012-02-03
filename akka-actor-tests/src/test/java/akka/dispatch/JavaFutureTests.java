@@ -1,10 +1,10 @@
 package akka.dispatch;
 
-import akka.util.Timeout;
+import scala.util.Timeout;
 import akka.actor.ActorSystem;
 
 import akka.japi.*;
-import akka.util.Duration;
+import scala.util.Duration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
