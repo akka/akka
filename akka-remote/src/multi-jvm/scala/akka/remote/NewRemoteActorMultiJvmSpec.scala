@@ -8,6 +8,8 @@ import akka.pattern.ask
 object NewRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2
 
+  override def PortRangeStart = 2990
+
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "identify" ⇒ sender ! self
