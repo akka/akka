@@ -18,7 +18,7 @@ package com.typesafe.config;
  * interface is likely to grow new methods over time, so third-party
  * implementations will break.
  */
-public interface ConfigValue extends ConfigMergeable, java.io.Serializable {
+public interface ConfigValue extends ConfigMergeable {
     /**
      * The origin of the value (file, line number, etc.), for debugging and
      * error messages.
