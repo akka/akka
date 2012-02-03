@@ -9,9 +9,9 @@ import scala.annotation.tailrec
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor }
 import akka.event.LoggingAdapter
 
-sealed trait DaemonMsg
-case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
-case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
+private[akka] sealed trait DaemonMsg
+private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
+private[akka] case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
 
 /**
  * Internal system "daemon" actor for remote internal communication.

@@ -472,12 +472,12 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   /**
    * Returns a new TypedProps with the specified dispatcher set.
    */
-  def withDispatcher(d: String) = copy(dispatcher = d)
+  def withDispatcher(d: String): TypedProps[T] = copy(dispatcher = d)
 
   /**
    * Returns a new TypedProps with the specified deployment configuration.
    */
-  def withDeploy(d: Deploy) = copy(deploy = d)
+  def withDeploy(d: Deploy): TypedProps[T] = copy(deploy = d)
 
   /**
    * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in

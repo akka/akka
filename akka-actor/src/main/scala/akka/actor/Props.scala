@@ -137,34 +137,34 @@ case class Props(
    *
    * Scala API.
    */
-  def withCreator(c: ⇒ Actor) = copy(creator = () ⇒ c)
+  def withCreator(c: ⇒ Actor): Props = copy(creator = () ⇒ c)
 
   /**
    * Returns a new Props with the specified creator set.
    *
    * Java API.
    */
-  def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
+  def withCreator(c: Creator[Actor]): Props = copy(creator = () ⇒ c.create)
 
   /**
    * Returns a new Props with the specified creator set.
    *
    * Java API.
    */
-  def withCreator(c: Class[_ <: Actor]) = copy(creator = () ⇒ c.newInstance)
+  def withCreator(c: Class[_ <: Actor]): Props = copy(creator = () ⇒ c.newInstance)
 
   /**
    * Returns a new Props with the specified dispatcher set.
    */
-  def withDispatcher(d: String) = copy(dispatcher = d)
+  def withDispatcher(d: String): Props = copy(dispatcher = d)
 
   /**
    * Returns a new Props with the specified router config set.
    */
-  def withRouter(r: RouterConfig) = copy(routerConfig = r)
+  def withRouter(r: RouterConfig): Props = copy(routerConfig = r)
 
   /**
    * Returns a new Props with the specified deployment configuration.
    */
-  def withDeploy(d: Deploy) = copy(deploy = d)
+  def withDeploy(d: Deploy): Props = copy(deploy = d)
 }

@@ -64,7 +64,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           NoRouter,
-          NoScope)))
+          NoScopeGiven)))
     }
 
     "use None deployment for undefined service" in {
@@ -119,7 +119,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.path must be(service)
       deployment.get.routerConfig.getClass must be(expected.getClass)
       deployment.get.routerConfig.resizer must be(expected.resizer)
-      deployment.get.scope must be(NoScope)
+      deployment.get.scope must be(NoScopeGiven)
     }
 
   }

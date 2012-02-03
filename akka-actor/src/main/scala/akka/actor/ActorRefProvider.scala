@@ -96,7 +96,10 @@ trait ActorRefProvider {
    * Actor factory with create-only semantics: will create an actor as
    * described by props with the given supervisor and path (may be different
    * in case of remote supervision). If systemService is true, deployment is
-   * bypassed (local-only).
+   * bypassed (local-only). If ``Some(deploy)`` is passed in, it should be
+   * regarded as taking precedence over the nominally applicable settings,
+   * but it should be overridable from external configuration; the lookup of
+   * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
   def actorOf(
     system: ActorSystemImpl,
@@ -532,8 +535,8 @@ class LocalActorRefProvider(
       case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path.elements.drop(1).mkString("/", "/", "")) else None
-        val fromProps = props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router) :: Nil
-        val d = lookup.toList ::: deploy.toList ::: fromProps reduceRight (_ withFallback _)
+        val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
+        val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
         new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
     }
   }

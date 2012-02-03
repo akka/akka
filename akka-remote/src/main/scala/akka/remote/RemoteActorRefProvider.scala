@@ -163,13 +163,13 @@ class RemoteActorRefProvider(
         else None
 
       val deployment = {
-        lookup.toList ::: deploy.toList ::: Nil match {
+        deploy.toList ::: lookup.toList match {
           case Nil ⇒ Nil
-          case l   ⇒ List(l reduceRight (_ withFallback _))
+          case l   ⇒ List(l reduce ((a, b) ⇒ b withFallback a))
         }
       }
 
-      deployment ::: props.deploy :: Nil reduceRight (_ withFallback _) match {
+      Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
           if (addr == rootPath.address || addr == transport.address) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false)

@@ -29,7 +29,7 @@ final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
   routerConfig: RouterConfig = NoRouter,
-  scope: Scope = NoScope) {
+  scope: Scope = NoScopeGiven) {
 
   def this(routing: RouterConfig) = this("", ConfigFactory.empty, routing)
   def this(routing: RouterConfig, scope: Scope) = this("", ConfigFactory.empty, routing, scope)
@@ -40,11 +40,25 @@ final case class Deploy(
    * precedence. The “path” of the other Deploy is not taken into account. All
    * other members are merged using ``<X>.withFallback(other.<X>)``.
    */
-  def withFallback(other: Deploy) =
+  def withFallback(other: Deploy): Deploy =
     Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope))
 }
 
+/**
+ * The scope of a [[akka.actor.Deploy]] serves two purposes: as a marker for
+ * pattern matching the “scope” (i.e. local/remote/cluster) as well as for
+ * extending the information carried by the final Deploy class. Scopes can be
+ * used in conjunction with a custom [[akka.actor.ActorRefProvider]], making
+ * Akka actors fully extensible.
+ */
 trait Scope {
+  /**
+   * When merging [[akka.actor.Deploy]] instances using ``withFallback()`` on
+   * the left one, this is propagated to “merging” scopes in the same way.
+   * The setup is biased towards preferring the callee over the argument, i.e.
+   * ``a.withFallback(b)`` is called expecting that ``a`` should in general take
+   * precedence.
+   */
   def withFallback(other: Scope): Scope
 }
 
@@ -52,7 +66,7 @@ case object LocalScope extends Scope {
   /**
    * Java API
    */
-  def scope = this
+  def scope: Scope = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -60,7 +74,7 @@ case object LocalScope extends Scope {
 /**
  * This is the default value and as such allows overrides.
  */
-case object NoScope extends Scope {
+case object NoScopeGiven extends Scope {
   def withFallback(other: Scope): Scope = other
 }
 
@@ -122,7 +136,7 @@ class Deployer(val settings: ActorSystem.Settings, val classloader: ClassLoader)
         }
     }
 
-    Some(Deploy(key, deployment, router, NoScope))
+    Some(Deploy(key, deployment, router, NoScopeGiven))
   }
 
 }
