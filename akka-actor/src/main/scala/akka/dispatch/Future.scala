@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger 
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._
 import akka.util.NonFatal
+import akka.event.Logging.LogEventException
+import akka.event.Logging.Debug
 
 object Await {
   sealed trait CanAwait
@@ -142,7 +144,9 @@ object Future {
           try {
             Right(body)
           } catch {
-            case NonFatal(e) ⇒ Left(e)
+            case NonFatal(e) ⇒
+              executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+              Left(e)
           }
         }
     })
@@ -483,7 +487,9 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
         future complete (try {
           Right(f(res))
         } catch {
-          case NonFatal(e) ⇒ Left(e)
+          case NonFatal(e) ⇒
+            executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+            Left(e)
         })
     }
     future
@@ -530,8 +536,11 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
         try {
           p completeWith f(r)
         } catch {
-          case NonFatal(e) ⇒ p complete Left(e)
-          case t           ⇒ p complete Left(new ExecutionException(t)); throw t
+          case NonFatal(e) ⇒
+            executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+            p complete Left(e)
+          case t ⇒
+            p complete Left(new ExecutionException(t)); throw t
         }
     }
     p
@@ -569,7 +578,9 @@ sealed trait Future[+T] extends japi.Future[T] with Await.Awaitable[T] {
       case r @ Right(res) ⇒ p complete (try {
         if (pred(res)) r else Left(new MatchError(res))
       } catch {
-        case NonFatal(e) ⇒ Left(e)
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+          Left(e)
       })
     }
     p
@@ -649,7 +660,9 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(thisPromise)
       } catch {
-        case NonFatal(e) ⇒ fr failure e
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+          fr failure e
       }
     }
     fr
@@ -662,7 +675,9 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(f)
       } catch {
-        case NonFatal(e) ⇒ fr failure e
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+          fr failure e
       }
     }
     fr

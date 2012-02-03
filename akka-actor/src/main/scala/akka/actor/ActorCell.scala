@@ -366,7 +366,7 @@ private[akka] class ActorCell(
     } catch {
       case NonFatal(e) ⇒
         try {
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor")))
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
@@ -397,7 +397,7 @@ private[akka] class ActorCell(
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
       case NonFatal(e) ⇒ try {
-        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor")))
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
@@ -461,7 +461,7 @@ private[akka] class ActorCell(
       }
     } catch {
       case NonFatal(e) ⇒
-        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message)))
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
         //TODO FIXME How should problems here be handled???
         throw e
     }
@@ -484,7 +484,7 @@ private[akka] class ActorCell(
           currentMessage = null // reset current message after successful invocation
         } catch {
           case e: InterruptedException ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage)))
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
             // make sure that InterruptedException does not leave this thread
@@ -493,7 +493,7 @@ private[akka] class ActorCell(
             parent.tell(Failed(ex), self)
             throw e //Re-throw InterruptedExceptions as expected
           case NonFatal(e) ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage)))
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
             actor.supervisorStrategy.handleSupervisorFailing(self, children)
@@ -503,7 +503,7 @@ private[akka] class ActorCell(
         }
       } catch {
         case NonFatal(e) ⇒
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage)))
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
           throw e
       }
     }

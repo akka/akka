@@ -501,8 +501,9 @@ object Logging {
   /**
    * Exception that wraps a LogEvent.
    */
-  class LogEventException(val event: LogEvent) extends NoStackTrace {
+  class LogEventException(val event: LogEvent, cause: Throwable) extends NoStackTrace {
     override def getMessage: String = event.toString
+    override def getCause: Throwable = cause
   }
 
   /**
