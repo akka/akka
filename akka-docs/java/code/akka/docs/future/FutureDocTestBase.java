@@ -361,7 +361,7 @@ public class FutureDocTestBase {
       public Integer call() {
         return 1 / 0;
       }
-    }, system.dispatcher()).tryRecover(new Recover<Future<Integer>>() {
+    }, system.dispatcher()).recoverWith(new Recover<Future<Integer>>() {
         public Future<Integer> recover(Throwable problem) throws Throwable {
             if (problem instanceof ArithmeticException) {
                 return future(new Callable<Integer>() {

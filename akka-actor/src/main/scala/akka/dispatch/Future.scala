@@ -482,10 +482,10 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *
    *  {{{
    *  val f = Future { Int.MaxValue }
-   *  Future (6 / 0) tryRecover { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  Future (6 / 0) recoverWith { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
-  def tryRecover[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
+  def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
     val p = Promise[U]()
 
     onComplete {
@@ -603,7 +603,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
   /**
    * Same as onSuccess { case r => f(r) } but is also used in for-comprehensions
    */
-  final def foreach(f: T ⇒ Unit): Unit = onComplete {
+  final def foreach[U](f: T ⇒ U): Unit = onComplete {
     case Right(r) ⇒ f(r)
     case _        ⇒
   }

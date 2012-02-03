@@ -244,7 +244,7 @@ our ``Future`` would have a result of 0. The ``recover`` method works very simil
 so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way
 it will behave as if we hadn't used the ``recover`` method.
 
-You can also use the ``tryRecover`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
+You can also use the ``recoverWith`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
 and is use like this:
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala

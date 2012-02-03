@@ -302,18 +302,18 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
       }
 
-      "tryRecover from exceptions" in {
+      "recoverWith from exceptions" in {
         val o = new IllegalStateException("original")
         val r = new IllegalStateException("recovered")
 
         intercept[IllegalStateException] {
-          Await.result(Promise.failed[String](o) tryRecover { case _ if false == true ⇒ Promise.successful("yay!") }, timeout.duration)
+          Await.result(Promise.failed[String](o) recoverWith { case _ if false == true ⇒ Promise.successful("yay!") }, timeout.duration)
         } must be(o)
 
-        Await.result(Promise.failed[String](o) tryRecover { case _ ⇒ Promise.successful("yay!") }, timeout.duration) must equal("yay!")
+        Await.result(Promise.failed[String](o) recoverWith { case _ ⇒ Promise.successful("yay!") }, timeout.duration) must equal("yay!")
 
         intercept[IllegalStateException] {
-          Await.result(Promise.failed[String](o) tryRecover { case _ ⇒ Promise.failed[String](r) }, timeout.duration)
+          Await.result(Promise.failed[String](o) recoverWith { case _ ⇒ Promise.failed[String](r) }, timeout.duration)
         } must be(r)
       }
 

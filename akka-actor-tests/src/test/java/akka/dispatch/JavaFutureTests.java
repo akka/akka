@@ -306,10 +306,10 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void tryRecoverToMustBeCallable() {
+  public void recoverWithToMustBeCallable() {
     final IllegalStateException fail = new IllegalStateException("OHNOES");
     Promise<Object> p = Futures.promise(system.dispatcher());
-    Future<Object> f = p.future().tryRecover(new Recover<Future<Object>>() {
+    Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {
       public Future<Object> recover(Throwable t) throws Throwable {
         if (t == fail) return Futures.<Object>successful("foo", system.dispatcher()).future();
         else throw t;
