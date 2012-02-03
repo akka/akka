@@ -197,7 +197,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
         if (nextMessage eq null) nextMessage = systemDrain()
       }
     } catch {
-      case e ⇒
+      case NonFatal(e) ⇒
         actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
         throw e
     }
@@ -303,7 +303,7 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   final def enqueue(receiver: ActorRef, handle: Envelope) {
     if (pushTimeOut.length > 0) {
       queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + toString)
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
       }
     } else queue put handle
   }

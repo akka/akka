@@ -24,7 +24,7 @@ import static akka.japi.Util.manifest;
 
 import static akka.actor.SupervisorStrategy.*;
 import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipeTo;
+import static akka.pattern.Patterns.pipe;
 
 import static akka.docs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
 import static akka.docs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
@@ -145,13 +145,14 @@ public class FaultHandlingDocSample {
         counterService.tell(new Increment(1), getSelf());
 
         // Send current progress to the initial sender
-        pipeTo(ask(counterService, GetCurrentCount, askTimeout)
+        pipe(ask(counterService, GetCurrentCount, askTimeout)
                .mapTo(manifest(CurrentCount.class))
                .map(new Mapper<CurrentCount, Progress>() {
             public Progress apply(CurrentCount c) {
                 return new Progress(100.0 * c.count / totalCount);
             }
-        }), progressListener);
+        }))
+        .to(progressListener);
       } else {
         unhandled(msg);
       }

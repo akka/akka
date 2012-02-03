@@ -64,7 +64,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           NoRouter,
-          LocalScope)))
+          NoScopeGiven)))
     }
 
     "use None deployment for undefined service" in {
@@ -117,9 +117,9 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service)
       deployment must be('defined)
       deployment.get.path must be(service)
-      deployment.get.routing.getClass must be(expected.getClass)
-      deployment.get.routing.resizer must be(expected.resizer)
-      deployment.get.scope must be(LocalScope)
+      deployment.get.routerConfig.getClass must be(expected.getClass)
+      deployment.get.routerConfig.resizer must be(expected.resizer)
+      deployment.get.scope must be(NoScopeGiven)
     }
 
   }

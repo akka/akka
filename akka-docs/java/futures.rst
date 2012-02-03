@@ -14,6 +14,14 @@ In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a da
 to retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor`` or
 by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
 
+Execution Contexts
+------------------
+
+In order to execute callbacks and operations, Futures need something called an ``ExecutionContext``,
+which is very similar to a ``java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
+it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
+by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
+
 Use with Actors
 ---------------
 
@@ -191,7 +199,7 @@ which allows for ordering like in the following sample:
 Auxiliary methods
 -----------------
 
-``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future`
+``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future``
 if the first ``Future`` fails.
 
 .. includecode:: code/akka/docs/future/FutureDocTestBase.java
@@ -222,7 +230,7 @@ our ``Future`` would have a result of 0. The ``recover`` method works very simil
 so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way
 it will behave as if we hadn't used the ``recover`` method.
 
-You can also use the ``tryRecover`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
+You can also use the ``recoverWith`` method, which has the same relationship to ``recover`` as ``flatMap`` has to ``map``,
 and is use like this:
 
 .. includecode:: code/akka/docs/future/FutureDocTestBase.java

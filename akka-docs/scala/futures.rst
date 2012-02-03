@@ -14,7 +14,15 @@ In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a da
 retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor``
 or by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
 
-Use with Actors
+Execution Contexts
+------------------
+
+In order to execute callbacks and operations, Futures need something called an ``ExecutionContext``,
+which is very similar to a `java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
+it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
+by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
+
+Use With Actors
 ---------------
 
 There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``),
@@ -97,6 +105,9 @@ but if 2 or more ``Future``\s are involved ``map`` will not allow you to combine
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: flat-map
 
+Composing futures using nested combinators it can sometimes become quite complicated and hard read, in these cases using Scala's
+'for comprehensions' usually yields more readable code. See next section for examples.
+
 If you need to do conditional propagation, you can use ``filter``:
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
@@ -105,7 +116,7 @@ If you need to do conditional propagation, you can use ``filter``:
 For Comprehensions
 ^^^^^^^^^^^^^^^^^^
 
-Since ``Future`` has a ``map``, ``filter` and ``flatMap`` method it can be easily used in a 'for comprehension':
+Since ``Future`` has a ``map``, ``filter`` and ``flatMap`` method it can be easily used in a 'for comprehension':
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: for-comprehension
@@ -180,7 +191,7 @@ as the start-value, you can use ``reduce``, it works like this:
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: reduce
 
-Same as with ``fold``, the execution will be done asynchronously when the last of the Future is completed,`
+Same as with ``fold``, the execution will be done asynchronously when the last of the Future is completed,
 you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 
 Callbacks
@@ -198,22 +209,22 @@ For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: onComplete
 
-Ordering
---------
+Define Ordering
+---------------
 
 Since callbacks are executed in any order and potentially in parallel,
 it can be tricky at the times when you need sequential ordering of operations.
-But there's a solution! And it's name is ``andThen``, and it creates a new Future with
-the specified callback, a Future that will have the same result as the Future it's called on,
+But there's a solution and it's name is ``andThen``. It creates a new ``Future`` with
+the specified callback, a ``Future`` that will have the same result as the ``Future`` it's called on,
 which allows for ordering like in the following sample:
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
    :include: and-then
 
-Auxiliary methods
+Auxiliary Methods
 -----------------
 
-``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future`
+``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future``
 if the first ``Future`` fails.
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala
@@ -244,7 +255,7 @@ our ``Future`` would have a result of 0. The ``recover`` method works very simil
 so multiple ``Exception``\s can be handled in this manner, and if an ``Exception`` is not handled this way
 it will behave as if we hadn't used the ``recover`` method.
 
-You can also use the ``tryRecover`` method, which has the same relationship to ``recover`` as ``flatMap` has to ``map``,
+You can also use the ``recoverWith`` method, which has the same relationship to ``recover`` as ``flatMap`` has to ``map``,
 and is use like this:
 
 .. includecode:: code/akka/docs/future/FutureDocSpec.scala

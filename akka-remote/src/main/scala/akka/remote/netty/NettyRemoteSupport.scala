@@ -9,21 +9,19 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.Executors
-
 import scala.collection.mutable.HashMap
-
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel.{ ChannelHandlerContext, Channel }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor
 import org.jboss.netty.util.HashedWheelTimer
-
 import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef }
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
+import akka.util.NonFatal
 
 /**
  * Provides the implementation of the Netty remote support
@@ -73,6 +71,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   def start(): Unit = {
     server.start()
     setAddressFromChannel(server.channel)
+    notifyListeners(RemoteServerStarted(this))
   }
 
   def shutdown(): Unit = {
@@ -80,7 +79,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     try {
       remoteClients foreach {
         case (_, client) ⇒ try client.shutdown() catch {
-          case e ⇒ log.error(e, "failure while shutting down [{}]", client)
+          case NonFatal(e) ⇒ log.error(e, "failure while shutting down [{}]", client)
         }
       }
       remoteClients.clear()

@@ -10,6 +10,7 @@ import akka.routing._
 import akka.AkkaException
 import akka.util.{ Switch, Helpers }
 import akka.event._
+import com.typesafe.config.ConfigFactory
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -95,9 +96,19 @@ trait ActorRefProvider {
    * Actor factory with create-only semantics: will create an actor as
    * described by props with the given supervisor and path (may be different
    * in case of remote supervision). If systemService is true, deployment is
-   * bypassed (local-only).
+   * bypassed (local-only). If ``Some(deploy)`` is passed in, it should be
+   * regarded as taking precedence over the nominally applicable settings,
+   * but it should be overridable from external configuration; the lookup of
+   * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef
+  def actorOf(
+    system: ActorSystemImpl,
+    props: Props,
+    supervisor: InternalActorRef,
+    path: ActorPath,
+    systemService: Boolean,
+    deploy: Option[Deploy],
+    lookupDeploy: Boolean): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -126,6 +137,14 @@ trait ActorRefProvider {
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
   def terminationFuture: Future[Unit]
+
+  /**
+   * Obtain the address which is to be used within sender references when
+   * sending to the given other address or none if the other address cannot be
+   * reached from this system (i.e. no means of communication known; no
+   * attempt is made to verify actual reachability).
+   */
+  def getExternalAddressFor(addr: Address): Option[Address]
 }
 
 /**
@@ -454,10 +473,10 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None)
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None)
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -510,17 +529,19 @@ class LocalActorRefProvider(
       case x ⇒ x
     }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath, systemService: Boolean, deploy: Option[Deploy]): InternalActorRef = {
+  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
     props.routerConfig match {
       case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case router ⇒
-        val depl = deploy orElse {
-          val lookupPath = path.elements.drop(1).mkString("/", "/", "")
-          deployer.lookup(lookupPath)
-        }
-        new RoutedActorRef(system, props.withRouter(router.adaptFromDeploy(depl)), supervisor, path)
+        val lookup = if (lookupDeploy) deployer.lookup(path.elements.drop(1).mkString("/", "/", "")) else None
+        val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
+        val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
+        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
     }
   }
+
+  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
 
 class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {

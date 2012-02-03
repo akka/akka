@@ -6,12 +6,12 @@ package akka.remote
 
 import scala.annotation.tailrec
 
-import akka.actor.{ VirtualPathContainer, Terminated, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor }
+import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor }
 import akka.event.LoggingAdapter
 
-sealed trait DaemonMsg
-case class DaemonMsgCreate(factory: () ⇒ Actor, path: String, supervisor: ActorRef) extends DaemonMsg
-case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
+private[akka] sealed trait DaemonMsg
+private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
+private[akka] case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
 
 /**
  * Internal system "daemon" actor for remote internal communication.
@@ -52,17 +52,15 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
-        case DaemonMsgCreate(factory, path, supervisor) ⇒
+        case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
           path match {
             case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
               // TODO RK currently the extracted “address” is just ignored, is that okay?
               // TODO RK canonicalize path so as not to duplicate it always #1446
               val subpath = elems.drop(1)
               val path = this.path / subpath
-              val actor = system.provider.actorOf(system,
-                Props(creator = factory),
-                supervisor.asInstanceOf[InternalActorRef],
-                path, true, None)
+              val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
+                path, false, Some(deploy), true)
               addChild(subpath.mkString("/"), actor)
               system.deathWatch.subscribe(this, actor)
             case _ ⇒

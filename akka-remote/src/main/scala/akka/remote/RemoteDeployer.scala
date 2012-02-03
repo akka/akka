@@ -8,7 +8,9 @@ import akka.routing._
 import com.typesafe.config._
 import akka.config.ConfigurationException
 
-case class RemoteScope(node: Address) extends Scope
+case class RemoteScope(node: Address) extends Scope {
+  def withFallback(other: Scope): Scope = this
+}
 
 class RemoteDeployer(_settings: ActorSystem.Settings, _classloader: ClassLoader) extends Deployer(_settings, _classloader) {
 
@@ -22,8 +24,8 @@ class RemoteDeployer(_settings: ActorSystem.Settings, _classloader: ClassLoader)
           case str ⇒
             if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
             val nodes = deploy.config.getStringList("target.nodes").asScala
-            if (nodes.isEmpty || deploy.routing == NoRouter) d
-            else Some(deploy.copy(routing = new RemoteRouterConfig(deploy.routing, nodes)))
+            if (nodes.isEmpty || deploy.routerConfig == NoRouter) d
+            else Some(deploy.copy(routerConfig = RemoteRouterConfig(deploy.routerConfig, nodes)))
         }
       case None ⇒ None
     }

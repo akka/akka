@@ -17,6 +17,9 @@ object ActorPath {
     rec(s.length, Nil)
   }
 
+  /**
+   * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
+   */
   def fromString(s: String): ActorPath = s match {
     case ActorPathExtractor(addr, elems) ⇒ RootActorPath(addr) / elems
     case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)

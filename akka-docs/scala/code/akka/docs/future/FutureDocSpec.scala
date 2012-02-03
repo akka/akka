@@ -267,12 +267,12 @@ class FutureDocSpec extends AkkaSpec {
     Await.result(future, 1 second) must be(0)
   }
 
-  "demonstrate usage of tryRecover" in {
+  "demonstrate usage of recoverWith" in {
     implicit val timeout = system.settings.ActorTimeout
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#try-recover
-    val future = akka.pattern.ask(actor, msg1) tryRecover {
+    val future = akka.pattern.ask(actor, msg1) recoverWith {
       case e: ArithmeticException        ⇒ Promise.successful(0)
       case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!"))
     }

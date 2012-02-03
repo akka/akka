@@ -14,6 +14,8 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
+import akka.util.NonFatal
+import akka.event.Logging.LogEventException
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -224,7 +226,7 @@ private[akka] class ActorCell(
         }
       }
     }
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
+    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
   }
@@ -362,10 +364,9 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒
+      case NonFatal(e) ⇒
         try {
-          system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
@@ -395,9 +396,8 @@ private[akka] class ActorCell(
 
       actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ try {
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
+      case NonFatal(e) ⇒ try {
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
@@ -460,8 +460,8 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case e ⇒ //Should we really catch everything here?
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
+      case NonFatal(e) ⇒
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
         //TODO FIXME How should problems here be handled???
         throw e
     }
@@ -476,32 +476,34 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg                      ⇒ actor(msg)
+            // FIXME: actor can be null when creation fails with fatal error, why?
+            case msg if actor == null ⇒
+              system.eventStream.publish(Warning(self.path.toString, this.getClass, "Ignoring message due to null actor [%s]" format msg))
+            case msg ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
-          case e ⇒
-            system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
-
+          case e: InterruptedException ⇒
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
-
             // make sure that InterruptedException does not leave this thread
-            if (e.isInstanceOf[InterruptedException]) {
-              val ex = ActorInterruptedException(e)
-              actor.supervisorStrategy.handleSupervisorFailing(self, children)
-              parent.tell(Failed(ex), self)
-              throw e //Re-throw InterruptedExceptions as expected
-            } else {
-              actor.supervisorStrategy.handleSupervisorFailing(self, children)
-              parent.tell(Failed(e), self)
-            }
+            val ex = ActorInterruptedException(e)
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(ex), self)
+            throw e //Re-throw InterruptedExceptions as expected
+          case NonFatal(e) ⇒
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(e), self)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
         }
       } catch {
-        case e ⇒
-          system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
+        case NonFatal(e) ⇒
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
           throw e
       }
     }

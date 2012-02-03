@@ -1,12 +1,19 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.routing
 
-import akka.actor._
-import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.testkit._
-import akka.util.duration._
+
+import org.junit.runner.RunWith
+
+import akka.actor.actorRef2Scala
+import akka.actor.{ Props, LocalActorRef, Deploy, Actor }
+import akka.config.ConfigurationException
 import akka.dispatch.Await
 import akka.pattern.ask
+import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
+import akka.util.duration.intToDurationInt
 
 object ConfiguredLocalRoutingSpec {
   val config = """
@@ -19,6 +26,12 @@ object ConfiguredLocalRoutingSpec {
             core-pool-size-max = 16
           }
         }
+        deployment {
+          /config {
+            router = random
+            nr-of-instances = 4
+          }
+        }
       }
     }
   """
@@ -27,18 +40,52 @@ object ConfiguredLocalRoutingSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.config) with DefaultTimeout with ImplicitSender {
 
-  val deployer = system.asInstanceOf[ActorSystemImpl].provider.deployer
-
   "RouterConfig" must {
 
+    "be picked up from Props" in {
+      val actor = system.actorOf(Props(new Actor {
+        def receive = {
+          case "get" ⇒ sender ! context.props
+        }
+      }).withRouter(RoundRobinRouter(12)), "someOther")
+      actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RoundRobinRouter(12)
+      system.stop(actor)
+    }
+
     "be overridable in config" in {
-      deployer.deploy(Deploy("/config", null, RandomRouter(4), LocalScope))
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case "get" ⇒ sender ! context.props
         }
       }).withRouter(RoundRobinRouter(12)), "config")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RandomRouter(4)
+      system.stop(actor)
+    }
+
+    "be overridable in explicit deployment" in {
+      val actor = system.actorOf(Props(new Actor {
+        def receive = {
+          case "get" ⇒ sender ! context.props
+        }
+      }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
+      actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RoundRobinRouter(12)
+      system.stop(actor)
+    }
+
+    "be overridable in config even with explicit deployment" in {
+      val actor = system.actorOf(Props(new Actor {
+        def receive = {
+          case "get" ⇒ sender ! context.props
+        }
+      }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
+      actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RandomRouter(4)
+      system.stop(actor)
+    }
+
+    "fail with an exception if not correct" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props.empty.withRouter(FromConfig))
+      }
     }
 
   }

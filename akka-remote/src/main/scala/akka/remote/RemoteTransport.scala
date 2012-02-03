@@ -8,9 +8,9 @@ import scala.reflect.BeanProperty
 import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressExtractor, Address, ActorSystemImpl, ActorSystem, ActorRef }
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
-import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, RemoteControlProtocol, AkkaRemoteProtocol, ActorRefProtocol }
 import akka.AkkaException
 import akka.serialization.Serialization
+import akka.remote.RemoteProtocol._
 
 /**
  * Remote life-cycle events.
