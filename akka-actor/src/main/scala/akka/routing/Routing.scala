@@ -4,14 +4,20 @@
 package akka.routing
 
 import akka.actor._
-import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
-import java.util.concurrent.TimeUnit
 import akka.util.Duration
 import akka.util.duration._
-import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.pattern.pipe
+import akka.pattern.AskSupport
+
+import com.typesafe.config.Config
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
+
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
+import java.util.concurrent.TimeUnit
+
+import akka.jsr166y.ThreadLocalRandom
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -447,23 +453,16 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
 }
 
 trait RandomLike { this: RouterConfig ⇒
-
-  import java.util.Random
-
   def nrOfInstances: Int
 
   def routees: Iterable[String]
-
-  private val random = new ThreadLocal[Random] {
-    override def initialValue = new Random
-  }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
       val _routees = routeeProvider.routees
-      _routees(random.get.nextInt(_routees.size))
+      _routees(ThreadLocalRandom.current.nextInt(_routees.size))
     }
 
     {
@@ -711,11 +710,13 @@ object ScatterGatherFirstCompletedRouter {
 }
 /**
  * Simple router that broadcasts the message to all routees, and replies with the first response.
- * <br>
+ * <br/>
+ * You have to defin the 'within: Duration' parameter (f.e: within = 10 seconds).
+ * <br/>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
  * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
+ * <br/>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
