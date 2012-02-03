@@ -76,7 +76,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(Scatter
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       barrier("start")
-      val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
+      val actor = system.actorOf(Props[SomeActor].withRouter(ScatterGatherFirstCompletedRouter(within = 10 seconds)), "service-hello")
       actor.isInstanceOf[RoutedActorRef] must be(true)
 
       val connectionCount = NrOfNodes - 1
