@@ -6,15 +6,13 @@ package akka.testkit
 import java.lang.ref.WeakReference
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
-
 import scala.annotation.tailrec
-
 import com.typesafe.config.Config
-
 import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
 import akka.util.duration.intToDurationInt
 import akka.util.{ Switch, Duration }
+import akka.util.NonFatal
 
 /*
  * Locking rules:
@@ -225,7 +223,7 @@ class CallingThreadDispatcher(
             Thread.currentThread().interrupt()
             intex = ie
             true
-          case e ⇒
+          case NonFatal(e) ⇒
             log.error(e, "Error during message processing")
             queue.leave
             false
@@ -235,7 +233,7 @@ class CallingThreadDispatcher(
         false
       } else false
     } catch {
-      case e ⇒ queue.leave; throw e
+      case NonFatal(e) ⇒ queue.leave; throw e
     } finally {
       mbox.ctdLock.unlock
     }
@@ -294,8 +292,8 @@ class CallingThreadMailbox(_receiver: ActorCell) extends Mailbox(_receiver) with
 
   override def cleanUp(): Unit = {
     /*
-     * This is called from dispatcher.unregister, i.e. under this.lock. If 
-     * another thread obtained a reference to this mailbox and enqueues after 
+     * This is called from dispatcher.unregister, i.e. under this.lock. If
+     * another thread obtained a reference to this mailbox and enqueues after
      * the gather operation, tough luck: no guaranteed delivery to deadLetters.
      */
     suspendSwitch.locked {
