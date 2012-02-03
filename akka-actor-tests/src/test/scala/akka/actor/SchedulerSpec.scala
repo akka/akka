@@ -43,21 +43,21 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
     }
 
-    "should stop continuous scheduling if the receiving actor has been terminated" in {
+    "should stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case x => testActor ! x
+          case x ⇒ testActor ! x
         }
       }))
-      
+
       // run immediately and then every 100 milliseconds
       collectCancellable(system.scheduler.schedule(0 milliseconds, 100 milliseconds, actor, "msg"))
+      expectNoMsg(1 second)
 
       // stop the actor and, hence, the continuous messaging from happening
       actor ! PoisonPill
 
       expectMsg("msg")
-      expectNoMsg(1 second)
     }
 
     "schedule once" in {
