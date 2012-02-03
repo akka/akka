@@ -41,11 +41,16 @@ guarantee!).
 How is Remoting Used?
 ---------------------
 
-We took the idea of transparency to the limit in that there is no API for the
-remoting layer of Akka: it is purely driven by configuration. Just write your
-application according to the principles outlined in the previous sections, then
-specify remote deployment of actor sub-trees in the configuration file. This
-way, your application can be scaled out without having to touch the code.
+We took the idea of transparency to the limit in that there is nearly no API
+for the remoting layer of Akka: it is purely driven by configuration. Just
+write your application according to the principles outlined in the previous
+sections, then specify remote deployment of actor sub-trees in the
+configuration file. This way, your application can be scaled out without having
+to touch the code. The only piece of the API which allows programmatic
+influence on remote deployment is that :class:`Props` contain a field which may
+be set to a specific :class:`Deploy` instance; this has the same effect as
+putting an equivalent deployment into the configuration file (if both are
+given, configuration file wins).
 
 Marking Points for Scaling Up with Routers
 ------------------------------------------

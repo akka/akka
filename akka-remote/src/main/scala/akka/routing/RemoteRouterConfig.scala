@@ -20,7 +20,7 @@ import akka.actor.AddressExtractor
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
+case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
 
   override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
 
@@ -32,6 +32,10 @@ class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends R
 
   override def resizer: Option[Resizer] = local.resizer
 
+  override def withFallback(other: RouterConfig): RouterConfig = other match {
+    case RemoteRouterConfig(local, nodes) ⇒ copy(local = this.local.withFallback(local))
+    case _                                ⇒ this
+  }
 }
 
 /**
@@ -62,7 +66,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + i
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
+          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy), false)
         })
 
       case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
