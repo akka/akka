@@ -3,6 +3,7 @@
  */
 package com.typesafe.config.impl;
 
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -283,5 +284,15 @@ final class ConfigSubstitution extends AbstractConfigValue implements
                 sb.append(ConfigImplUtil.renderJsonString((String) p));
             }
         }
+    }
+
+    // This ridiculous hack is because some JDK versions apparently can't
+    // serialize an array, which is used to implement ArrayList and EmptyList.
+    // maybe
+    // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6446627
+    private Object writeReplace() throws ObjectStreamException {
+        // switch to LinkedList
+        return new ConfigSubstitution(origin(), new java.util.LinkedList<Object>(pieces),
+                prefixLength, ignoresFallbacks);
     }
 }

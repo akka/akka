@@ -3,6 +3,8 @@
  */
 package com.typesafe.config.impl;
 
+import java.io.Serializable;
+
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigMergeable;
 import com.typesafe.config.ConfigOrigin;
@@ -16,7 +18,7 @@ import com.typesafe.config.ConfigValue;
  * improperly-factored and non-modular code. Please don't add parent().
  *
  */
-abstract class AbstractConfigValue implements ConfigValue, MergeableValue {
+abstract class AbstractConfigValue implements ConfigValue, MergeableValue, Serializable {
 
     final private SimpleConfigOrigin origin;
 

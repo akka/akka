@@ -22,8 +22,16 @@ import akka.event.Logging.LogEventException
 import akka.event.Logging.Debug
 
 object Await {
+
+  /**
+   * Internal Akka use only
+   */
   sealed trait CanAwait
 
+  /**
+   * Classes that implement Awaitable can be used with Await,
+   * this is used to do blocking operations (blocking in the "pause this thread" sense)
+   */
   trait Awaitable[+T] {
     /**
      * Should throw [[java.util.concurrent.TimeoutException]] if times out
@@ -40,7 +48,22 @@ object Await {
 
   private[this] implicit final val permit = new CanAwait {}
 
+  /**
+   * Blocks the current Thread to wait for the given awaitable to be ready.
+   * WARNING: Blocking operation, use with caution.
+   *
+   * @throws [[java.util.concurrent.TimeoutException]] if times out
+   * @returns The returned value as returned by Awaitable.ready
+   */
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
+
+  /**
+   * Blocks the current Thread to wait for the given awaitable to have a result.
+   * WARNING: Blocking operation, use with caution.
+   *
+   * @throws [[java.util.concurrent.TimeoutException]] if times out
+   * @returns The returned value as returned by Awaitable.result
+   */
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
 
