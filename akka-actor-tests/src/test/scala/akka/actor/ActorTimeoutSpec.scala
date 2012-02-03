@@ -13,6 +13,7 @@ import akka.pattern.{ ask, AskTimeoutException }
 class ActorTimeoutSpec extends AkkaSpec {
 
   val testTimeout = 200.millis.dilated
+  val leeway = 500.millis.dilated
 
   "An Actor-based Future" must {
 
@@ -20,13 +21,13 @@ class ActorTimeoutSpec extends AkkaSpec {
       implicit val timeout = Timeout(testTimeout)
       val echo = system.actorOf(Props.empty)
       val f = (echo ? "hallo")
-      intercept[AskTimeoutException] { Await.result(f, testTimeout * 2) }
+      intercept[AskTimeoutException] { Await.result(f, testTimeout + leeway) }
     }
 
     "use explicitly supplied timeout" in {
       val echo = system.actorOf(Props.empty)
       val f = echo.?("hallo")(testTimeout)
-      intercept[AskTimeoutException] { Await.result(f, testTimeout * 2) }
+      intercept[AskTimeoutException] { Await.result(f, testTimeout + leeway) }
     }
   }
 }
