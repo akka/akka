@@ -342,8 +342,19 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   final val settings: Settings = new Settings(applicationConfig, name)
 
+  protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() {
+      def uncaughtException(thread: Thread, cause: Throwable): Unit = {
+        log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+        cause match {
+          case NonFatal(_) | _: InterruptedException ⇒
+          case _                                     ⇒ shutdown()
+        }
+      }
+    }
+
   final val threadFactory: MonitorableThreadFactory =
-    MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader))
+    MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader), uncaughtExceptionHandler)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 

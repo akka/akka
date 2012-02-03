@@ -499,6 +499,14 @@ object Logging {
   class EventHandlerException extends AkkaException
 
   /**
+   * Exception that wraps a LogEvent.
+   */
+  class LogEventException(val event: LogEvent, cause: Throwable) extends NoStackTrace {
+    override def getMessage: String = event.toString
+    override def getCause: Throwable = cause
+  }
+
+  /**
    * Base type of LogEvents
    */
   sealed trait LogEvent {

@@ -15,6 +15,8 @@ import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.jsr166y.ForkJoinPool
+import akka.util.NonFatal
+import akka.event.Logging.LogEventException
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -80,8 +82,8 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     try {
       runnable.run()
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
+      case NonFatal(e) ⇒
+        eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()
     }
@@ -119,13 +121,22 @@ object ExecutionContext {
   /**
    * Internal Akka use only
    */
-  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
+  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+    override def reportFailure(t: Throwable): Unit = t match {
+      case e: LogEventException ⇒ e.getCause.printStackTrace()
+      case _                    ⇒ t.printStackTrace()
+    }
+  }
 
   /**
    * Internal Akka use only
    */
   private[akka] class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
+    override def reportFailure(t: Throwable): Unit = t match {
+      case e: LogEventException ⇒ e.getCause.printStackTrace()
+      case _                    ⇒ t.printStackTrace()
+    }
   }
 }
 
@@ -140,6 +151,13 @@ trait ExecutionContext {
    * Submits the runnable for execution
    */
   def execute(runnable: Runnable): Unit
+
+  /**
+   * Failed tasks should call reportFailure to let the ExecutionContext
+   * log the problem or whatever is appropriate for the implementation.
+   */
+  def reportFailure(t: Throwable): Unit
+
 }
 
 object MessageDispatcher {
@@ -187,10 +205,15 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     try {
       executeTask(invocation)
     } catch {
-      case e ⇒
+      case t ⇒
         inhabitantsUpdater.decrementAndGet(this)
-        throw e
+        throw t
     }
+  }
+
+  def reportFailure(t: Throwable): Unit = t match {
+    case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
+    case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec

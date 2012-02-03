@@ -7,19 +7,19 @@ package akka.dispatch
 import akka.event.Logging.Error
 import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
-
 import scala.util.continuations._
-
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
-
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Duration, BoxedType }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger }
 import akka.dispatch.Await.CanAwait
 import java.util.concurrent._
+import akka.util.NonFatal
+import akka.event.Logging.LogEventException
+import akka.event.Logging.Debug
 
 object Await {
 
@@ -167,8 +167,9 @@ object Future {
           try {
             Right(body)
           } catch {
-            // TODO catching all and continue isn't good for OOME, ticket #1418
-            case e ⇒ Left(e)
+            case NonFatal(e) ⇒
+              executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
+              Left(e)
           }
         }
     })
@@ -348,19 +349,13 @@ object Future {
                 try {
                   next.apply()
                 } catch {
-                  case e ⇒
-                    // TODO catching all and continue isn't good for OOME, ticket #1418
-                    executor match {
-                      case m: MessageDispatcher ⇒
-                        m.prerequisites.eventStream.publish(Error(e, "Future.dispatchTask", this.getClass, e.getMessage))
-                      case other ⇒
-                        e.printStackTrace()
-                    }
+                  case NonFatal(e) ⇒ executor.reportFailure(e)
                 }
               }
             } finally { _taskStack.remove() }
         })
     }
+
 }
 
 sealed trait Future[+T] extends Await.Awaitable[T] {
@@ -513,7 +508,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
 
     onComplete {
       case Left(t) if pf isDefinedAt t ⇒
-        try { p completeWith pf(t) } catch { case t: Throwable ⇒ p complete resolve(Left(t)) }
+        try { p completeWith pf(t) } catch { case NonFatal(t) ⇒ p complete resolve(Left(t)) }
       case otherwise ⇒ p complete otherwise
     }
 
@@ -562,8 +557,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
         future complete (try {
           Right(f(res))
         } catch {
-          case e ⇒
-            logError("Future.map", e)
+          case NonFatal(e) ⇒
+            executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
             Left(e)
         })
     }
@@ -615,9 +610,11 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
         try {
           p completeWith f(r)
         } catch {
-          case e ⇒
+          case NonFatal(e) ⇒
+            executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
             p complete Left(e)
-            logError("Future.flatMap", e)
+          case t ⇒
+            p complete Left(new ExecutionException(t)); throw t
         }
     }
     p.future
@@ -655,20 +652,14 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case r @ Right(res) ⇒ p complete (try {
         if (pred(res)) r else Left(new MatchError(res))
       } catch {
-        case e ⇒
-          logError("Future.filter", e)
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
           Left(e)
       })
     }
     p.future
   }
 
-  protected def logError(msg: String, problem: Throwable): Unit = {
-    executor match {
-      case m: MessageDispatcher ⇒ m.prerequisites.eventStream.publish(Error(problem, msg, this.getClass, problem.getMessage))
-      case other                ⇒ problem.printStackTrace()
-    }
-  }
 }
 
 object Promise {
@@ -743,8 +734,8 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(thisPromise)
       } catch {
-        case e ⇒
-          logError("Promise.completeWith", e)
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
           fr failure e
       }
     }
@@ -758,8 +749,8 @@ trait Promise[T] extends Future[T] {
       try {
         fr completeWith cont(f)
       } catch {
-        case e ⇒
-          logError("Promise.completeWith", e)
+        case NonFatal(e) ⇒
+          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
           fr failure e
       }
     }
@@ -868,7 +859,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
   }
 
   private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
-    try { func(result) } catch { case e ⇒ logError("Future onComplete-callback raised an exception", e) }
+    try { func(result) } catch { case NonFatal(e) ⇒ executor.reportFailure(e) }
   }
 }
 
