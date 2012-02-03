@@ -194,7 +194,7 @@ More fine grained log levels can be defined in the configuration of the SLF4J ba
   }
 
 The SLF4J logger selected for each log event is chosen based on the
-:class:`Class[_]` of the log source specified when creating the
+:class:`Class` of the log source specified when creating the
 :class:`LoggingAdapter`, unless that was given directly as a string in which
 case that string is used (i.e. ``LoggerFactory.getLogger(Class c)`` is used in
 the first case and ``LoggerFactory.getLogger(String s)`` in the second).
