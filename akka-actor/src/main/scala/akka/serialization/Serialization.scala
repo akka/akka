@@ -120,35 +120,31 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def serializerFor(clazz: Class[_]): Serializer = {
 
-    def lookup(c: Class[_]): Option[Serializer] = {
-      val className = c.getName
-      serializerMap.get(className) match {
-        case null       ⇒ bindings.get(className) map serializers
-        case serializer ⇒ Some(serializer)
-      }
-    }
-
-    def resolve(c: Class[_]): Option[Serializer] = {
-      lookup(c) match {
-        case x @ Some(_) ⇒ x
-        case None ⇒
-          val classes = c.getInterfaces.toList ::: Option(c.getSuperclass).toList
+    def resolve(c: Class[_]): Option[Serializer] = if (c ne null) {
+      serializerMap.get(c.getName) match {
+        case null ⇒
+          val classes = c.getInterfaces ++ Seq(c.getSuperclass)
           classes flatMap resolve headOption
+        case x ⇒ Some(x)
       }
+    } else {
+      None
     }
 
     if (bindings.isEmpty) {
       // quick path to default when no bindings are registered
       serializers("default")
     } else {
-      val className = clazz.getName
-      serializerMap.get(className) match {
+      serializerMap.get(clazz.getName) match {
         case null ⇒
           val ser = resolve(clazz).getOrElse(serializers("default"))
           // memorize the lookups for performance
-          log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, className)
-          serializerMap.put(className, ser)
-          ser
+          serializerMap.putIfAbsent(clazz.getName, ser) match {
+            case null ⇒
+              log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
+              ser
+            case some ⇒ some
+          }
         case ser ⇒ ser
       }
     }
@@ -188,8 +184,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private lazy val serializerMap: ConcurrentHashMap[String, Serializer] = {
     val serializerMap = new ConcurrentHashMap[String, Serializer]
-    for (s ← bindings.values) {
-      serializerMap.put(s, serializers(s))
+    for ((k, v) ← bindings) {
+      serializerMap.put(k, serializers(v))
     }
     serializerMap
   }
