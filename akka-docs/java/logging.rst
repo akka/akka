@@ -208,7 +208,7 @@ the first case and ``LoggerFactory.getLogger(String s)`` in the second).
 
 .. code-block:: scala
 
-  final LoggingAdapter log = Logging.getLogger(system.eventStream, "my.nice.string");
+  final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.nice.string");
 
 Logging Thread and Akka Source in MDC
 -------------------------------------
