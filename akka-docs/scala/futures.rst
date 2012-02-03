@@ -14,6 +14,14 @@ In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a da
 retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor``
 or by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
 
+Execution Contexts
+------------------
+
+In order to execute callbacks and operations, Futures need something called an ``ExecutionContext``,
+which is very similar to a `java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
+it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
+by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
+
 Use with Actors
 ---------------
 
