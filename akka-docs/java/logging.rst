@@ -184,8 +184,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
 You need to enable the Slf4jEventHandler in the 'event-handlers' element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.
 More fine grained log levels can be defined in the configuration of the SLF4J backend
-(e.g. logback.xml). The String representation of the source object that is used when
-creating the ``LoggingAdapter`` correspond to the name of the SL4FJ logger.
+(e.g. logback.xml).
 
 .. code-block:: ruby
 
@@ -193,6 +192,23 @@ creating the ``LoggingAdapter`` correspond to the name of the SL4FJ logger.
     event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
     loglevel = "DEBUG"
   }
+
+The SLF4J logger selected for each log event is chosen based on the
+:class:`Class` of the log source specified when creating the
+:class:`LoggingAdapter`, unless that was given directly as a string in which
+case that string is used (i.e. ``LoggerFactory.getLogger(Class c)`` is used in
+the first case and ``LoggerFactory.getLogger(String s)`` in the second).
+
+.. note::
+
+  Beware that the the actor system’s name is appended to a :class:`String` log
+  source if the LoggingAdapter was created giving an :class:`ActorSystem` to
+  the factory. If this is not intended, give a :class:`LoggingBus` instead as
+  shown below:
+
+.. code-block:: scala
+
+  final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.nice.string");
 
 Logging Thread and Akka Source in MDC
 -------------------------------------
