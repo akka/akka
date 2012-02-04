@@ -118,23 +118,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * It traverses interfaces and super classes to find any configured Serializer that match
    * the class name.
    */
-  def serializerFor(clazz: Class[_]): Serializer = {
-
-    def resolve(c: Class[_]): Option[Serializer] = if (c ne null) {
-      serializerMap.get(c.getName) match {
-        case null ⇒
-          val classes = c.getInterfaces ++ Seq(c.getSuperclass)
-          classes flatMap resolve headOption
-        case x ⇒ Some(x)
-      }
-    } else {
-      None
-    }
-
+  def serializerFor(clazz: Class[_]): Serializer =
     if (bindings.isEmpty) {
       // quick path to default when no bindings are registered
       serializers("default")
     } else {
+
+      def resolve(c: Class[_]): Option[Serializer] =
+        serializerMap.get(c.getName) match {
+          case null ⇒
+            val classes = c.getInterfaces ++ Option(c.getSuperclass)
+            classes.view map resolve collectFirst { case Some(x) ⇒ x }
+          case x ⇒ Some(x)
+        }
+
       serializerMap.get(clazz.getName) match {
         case null ⇒
           val ser = resolve(clazz).getOrElse(serializers("default"))
@@ -148,7 +145,6 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         case ser ⇒ ser
       }
     }
-  }
 
   /**
    * Tries to load the specified Serializer by the FQN
