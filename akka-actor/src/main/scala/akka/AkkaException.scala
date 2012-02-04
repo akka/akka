@@ -8,10 +8,10 @@ import akka.actor.newUuid
 import java.net.{ InetAddress, UnknownHostException }
 
 object AkkaException {
-  val hostname = try InetAddress.getLocalHost.getHostAddress catch { case e: UnknownHostException ⇒ "unknown" }
+  val hostname = try InetAddress.getLocalHost.getHostAddress catch { case e: UnknownHostException ⇒ "unknown host" }
 
   def toStringWithStackTrace(throwable: Throwable): String = {
-    if (throwable eq null) "Unknown Exception"
+    if (throwable eq null) "Unknown Throwable: was 'null'"
     throwable match {
       case ae: AkkaException ⇒ ae.toLongString
       case e                 ⇒ "%s:%s\n%s" format (e.getClass.getName, e.getMessage, stackTraceToString(e))

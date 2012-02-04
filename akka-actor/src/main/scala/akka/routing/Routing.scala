@@ -728,6 +728,9 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
                                              override val resizer: Option[Resizer] = None)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
+  if (within.length <= 0) throw new IllegalArgumentException(
+    "[within: Duration] can not be zero or negative, was [" + within + "]")
+
   /**
    * Constructor that sets nrOfInstances to be created.
    * Java API
