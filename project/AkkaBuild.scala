@@ -145,7 +145,7 @@ object AkkaBuild extends Build {
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
     settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox)
+    aggregate = Seq(mailboxesCommon, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox, amqpMailbox)
   )
 
   lazy val mailboxesCommon = Project(
@@ -154,6 +154,19 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes
+    )
+  )
+
+  val testAmqpMailbox = SettingKey[Boolean]("test-amqp-mailbox")
+
+  lazy val amqpMailbox = Project(
+    id = "akka-amqp-mailbox",
+    base = file("akka-durable-mailboxes/akka-amqp-mailbox"),
+    dependencies = Seq(mailboxesCommon % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.amqpMailbox,
+      testAmqpMailbox := false,
+      testOptions in Test <+= testAmqpMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -441,6 +454,8 @@ object Dependencies {
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
+  val amqpMailbox = Seq(rabbit, commonsPool, slf4jApi, Test.junit)
+
   val fileMailbox = Seq(Test.scalatest, Test.junit)
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
@@ -490,7 +505,7 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
+    val Rabbit       = "2.7.1"
     val ScalaStm     = "0.4"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
