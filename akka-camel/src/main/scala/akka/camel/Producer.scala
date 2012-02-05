@@ -14,7 +14,7 @@ import org.apache.camel.{ ExchangePattern, AsyncCallback }
  * @author Martin Krasser
  */
 trait ProducerSupport { this: Actor ⇒
-  implicit lazy val camel = CamelExtension(context.system)
+  protected[this] implicit lazy val camel = CamelExtension(context.system)
 
   protected[this] lazy val (endpoint, processor) = camel.registerProducer(self, endpointUri)
 

@@ -7,15 +7,15 @@ package akka.camel
 import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
-import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
 import akka.dispatch.Await
 import akka.util.duration._
+import org.scalatest._
 
-class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
-  import UntypedProducerFeatureTest._
+class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
+  import UntypedProducerTest._
   val timeout = 1 second
   override protected def beforeAll = {
     camel.context.addRoutes(new TestRoute)
@@ -25,9 +25,9 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
     mockEndpoint.reset
   }
 
-  feature("Produce a message to a sync Camel route") {
+  "An UntypedProducer producing a message to a sync Camel route" must {
 
-    scenario("produce message and receive normal response") {
+    "produce a message and receive a normal response" in {
       given("a registered two-way producer")
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
@@ -43,7 +43,7 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
     }
 
-    scenario("produce message and receive failure response") {
+    "produce a message and receive a failure response" in {
       given("a registered two-way producer")
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
@@ -64,9 +64,9 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
   }
 
-  feature("Produce a message to a sync Camel route and then forward the response") {
+  "An UntypedProducer producing a message to a sync Camel route and then forwarding the response" must {
 
-    scenario("produce message and send normal response to direct:forward-test-1") {
+    "produce a message and send a normal response to direct:forward-test-1" in {
       given("a registered one-way producer configured with a forward target")
       val producer = system.actorOf(Props[SampleUntypedForwardingProducer])
 
@@ -83,7 +83,7 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
   private def mockEndpoint = camel.context.getEndpoint("mock:mock", classOf[MockEndpoint])
 }
 
-object UntypedProducerFeatureTest {
+object UntypedProducerTest {
   class TestRoute extends RouteBuilder {
     def configure {
       from("direct:forward-test-1").to("mock:mock")

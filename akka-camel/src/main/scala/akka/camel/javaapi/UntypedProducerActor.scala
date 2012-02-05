@@ -19,7 +19,6 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subclasses.
    */
-  @throws(classOf[Exception])
   def onReceiveBeforeProduce(message: Any): Any = super.receiveBeforeProduce(message)
 
   /**
@@ -28,7 +27,6 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
    * done. This method may be overridden by subclasses (e.g. to forward responses to another actor).
    */
-  @throws(classOf[Exception])
   def onReceiveAfterProduce(message: Any): Unit = super.receiveAfterProduce(message)
 
   final override def receiveBeforeProduce = {
