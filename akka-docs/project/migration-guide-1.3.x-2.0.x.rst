@@ -609,11 +609,11 @@ Java
 
 For Java there is a special helper object with Java-friendly methods::
 
-  import scala.concurrent.stm.japi.Stm;
+  import scala.concurrent.stm.japi.STM;
 
 These methods can also be statically imported::
 
-  import static scala.concurrent.stm.japi.Stm.*;
+  import static scala.concurrent.stm.japi.STM.*;
 
 Other imports that are needed are in the stm package, particularly ``Ref``::
 
@@ -671,7 +671,7 @@ v1.3::
 
 v2.0::
 
-  import static scala.concurrent.stm.japi.Stm.atomic;
+  import static scala.concurrent.stm.japi.STM.atomic;
   import java.util.concurrent.Callable;
 
   atomic(new Runnable() {
@@ -756,7 +756,7 @@ Java
 
 As ``Ref.View`` in ScalaSTM does not require implicit transactions, this is more
 easily used from Java. ``Ref`` could be used, but requires explicit threading of
-transactions. There are helper methods in ``japi.Stm`` for creating ``Ref.View``
+transactions. There are helper methods in ``japi.STM`` for creating ``Ref.View``
 references.
 
 v1.3::
@@ -765,7 +765,7 @@ v1.3::
 
 v2.0::
 
-  Ref.View<Integer> ref = Stm.newRef(0);
+  Ref.View<Integer> ref = STM.newRef(0);
 
 The ``set`` and ``get`` methods work the same way for both versions.
 
@@ -780,7 +780,7 @@ v2.0::
   ref.set(1); // set new value
 
 There are also ``transform``, ``getAndTransform``, and ``transformAndGet``
-methods in ``japi.Stm`` which accept ``scala.runtime.AbstractFunction1``.
+methods in ``japi.STM`` which accept ``japi.STM.Transformer`` objects.
 
 There are ``increment`` helper methods for ``Ref.View<Integer>`` and
 ``Ref.View<Long>`` references.
@@ -821,7 +821,7 @@ Java
 
 Rather than using the ``deferred`` and ``compensating`` methods in
 ``akka.stm.StmUtils``, use the ``afterCommit`` and ``afterRollback`` methods in
-``scala.concurrent.stm.japi.Stm``, which behave in the same way and accept
+``scala.concurrent.stm.japi.STM``, which behave in the same way and accept
 ``Runnable``.
 
 Transactional Datastructures
@@ -830,12 +830,12 @@ Transactional Datastructures
 In ScalaSTM see ``TMap``, ``TSet``, and ``TArray`` for transactional
 datastructures.
 
-There are helper methods for creating these from Java in ``japi.Stm``:
+There are helper methods for creating these from Java in ``japi.STM``:
 ``newTMap``, ``newTSet``, and ``newTArray``. These datastructures implement the
 ``scala.collection`` interfaces and can also be used from Java with Scala's
 ``JavaConversions``. There are helper methods that apply the conversions,
 returning ``java.util`` ``Map``, ``Set``, and ``List``: ``newMap``, ``newSet``,
-and ``newList``.
+and ``newArrayAsList``.
 
 
 More to be written
