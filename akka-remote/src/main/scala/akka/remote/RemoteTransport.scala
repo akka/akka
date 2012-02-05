@@ -112,7 +112,7 @@ case class RemoteServerClientConnected(
   override def logLevel = Logging.DebugLevel
   override def toString =
     "RemoteServerClientConnected@" + remote +
-      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
+      ": Client[" + clientAddress.getOrElse("no address") + "]"
 }
 
 case class RemoteServerClientDisconnected(
@@ -121,7 +121,7 @@ case class RemoteServerClientDisconnected(
   override def logLevel = Logging.DebugLevel
   override def toString =
     "RemoteServerClientDisconnected@" + remote +
-      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
+      ": Client[" + clientAddress.getOrElse("no address") + "]"
 }
 
 case class RemoteServerClientClosed(
@@ -130,7 +130,7 @@ case class RemoteServerClientClosed(
   override def logLevel = Logging.DebugLevel
   override def toString =
     "RemoteServerClientClosed@" + remote +
-      ": Client[" + (if (clientAddress.isDefined) clientAddress.get else "no address") + "]"
+      ": Client[" + clientAddress.getOrElse("no address") + "]"
 }
 
 case class RemoteServerWriteFailed(
