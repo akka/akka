@@ -1,25 +1,24 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.camel
 
-import org.apache.camel.{Exchange, Processor}
+import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
-import org.scalatest.{GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec}
+import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 
-import akka.actor.Actor._
+import akka.camel.TestSupport.SharedCamelSystem
+import akka.actor.Props
+import akka.dispatch.Await
+import akka.util.duration._
 
-class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
+class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
   import UntypedProducerFeatureTest._
-
+  val timeout = 1 second
   override protected def beforeAll = {
-    registry.shutdownAll
-    CamelContextManager.init
-    CamelContextManager.mandatoryContext.addRoutes(new TestRoute)
-    CamelContextManager.start
-  }
-
-  override protected def afterAll = {
-    CamelContextManager.stop
-    registry.shutdownAll
+    camel.context.addRoutes(new TestRoute)
   }
 
   override protected def afterEach = {
@@ -30,32 +29,37 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
     scenario("produce message and receive normal response") {
       given("a registered two-way producer")
-      val producer = actorOf(classOf[SampleUntypedReplyingProducer])
-      producer.start
+      val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
       when("a test message is sent to the producer with !!")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.sendRequestReply(message)
-
+      val future = producer.ask(message, timeout)
       then("a normal response should have been returned by the producer")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
-      assert(result === expected)
+      Await.result(future, timeout) match {
+        case result: Message ⇒ assert(result === expected)
+        case unexpected      ⇒ fail("Actor responded with unexpected message:" + unexpected)
+      }
+
     }
 
     scenario("produce message and receive failure response") {
       given("a registered two-way producer")
-      val producer = actorOf(classOf[SampleUntypedReplyingProducer])
-      producer.start
+      val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
       when("a test message causing an exception is sent to the producer with !!")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val result = producer.sendRequestReply(message).asInstanceOf[Failure]
-
+      val future = producer.ask(message, timeout)
       then("a failure response should have been returned by the producer")
-      val expectedFailureText = result.cause.getMessage
-      val expectedHeaders = result.headers
-      assert(expectedFailureText === "failure")
-      assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
+      Await.result(future, timeout) match {
+        case result: Failure ⇒ {
+          val expectedFailureText = result.cause.getMessage
+          val expectedHeaders = result.headers
+          assert(expectedFailureText === "failure")
+          assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
+        }
+        case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
+      }
     }
 
   }
@@ -64,12 +68,11 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
     scenario("produce message and send normal response to direct:forward-test-1") {
       given("a registered one-way producer configured with a forward target")
-      val producer = actorOf(classOf[SampleUntypedForwardingProducer])
-      producer.start
+      val producer = system.actorOf(Props[SampleUntypedForwardingProducer])
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      val result = producer.sendOneWay(Message("test"), producer)
+      val result = producer.tell(Message("test", Map[String, Any]()), producer)
 
       then("a normal response should have been sent")
       mockEndpoint.assertIsSatisfied
@@ -77,7 +80,7 @@ class UntypedProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with
 
   }
 
-  private def mockEndpoint = CamelContextManager.mandatoryContext.getEndpoint("mock:mock", classOf[MockEndpoint])
+  private def mockEndpoint = camel.context.getEndpoint("mock:mock", classOf[MockEndpoint])
 }
 
 object UntypedProducerFeatureTest {
@@ -87,8 +90,8 @@ object UntypedProducerFeatureTest {
       from("direct:producer-test-1").process(new Processor() {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
-            case "fail" => throw new Exception("failure")
-            case body   => exchange.getOut.setBody("received %s" format body)
+            case "fail" ⇒ throw new Exception("failure")
+            case body   ⇒ exchange.getOut.setBody("received %s" format body)
           }
         }
       })

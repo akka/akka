@@ -1,5 +1,10 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.camel;
 
+import akka.camel.javaapi.UntypedProducerActor;
 /**
  * @author Martin Krasser
  */
@@ -11,8 +16,8 @@ public class SampleUntypedForwardingProducer extends UntypedProducerActor {
 
     @Override
     public void onReceiveAfterProduce(Object message) {
-        Message msg = (Message)message;
+        RichMessage msg = rich((Message)message);
         String body = msg.getBodyAs(String.class);
-        CamelContextManager.getMandatoryTemplate().sendBody("direct:forward-test-1", body);
+        getProducerTemplate().sendBody("direct:forward-test-1", body);
     }
 }
