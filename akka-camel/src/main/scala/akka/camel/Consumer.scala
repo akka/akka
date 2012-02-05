@@ -19,7 +19,7 @@ import akka.util.duration._
 trait Consumer extends Actor with ConsumerConfig {
 
   def endpointUri: String
-  implicit lazy val camel = CamelExtension(context.system)
+  protected[this] implicit lazy val camel = CamelExtension(context.system)
 
   camel.registerConsumer(endpointUri, this, activationTimeout)
 }
