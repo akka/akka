@@ -11,7 +11,7 @@ import akka.event.Logging
 //#imports1
 
 import akka.dispatch.Future
-import akka.actor.ActorSystem
+import akka.actor.{ ActorRef, ActorSystem }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
@@ -354,6 +354,31 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     f pipeTo actorD // .. or ..
     pipe(f) to actorD
     //#ask-pipeTo
+  }
+
+  "replying with own or other sender" in {
+    val actor = system.actorOf(Props(new Actor {
+      def receive = {
+        case ref: ActorRef ⇒
+          //#reply-with-sender
+          sender.tell("reply", context.parent) // replies will go back to parent
+          sender.!("reply")(context.parent) // alternative syntax (beware of the parens!)
+        //#reply-with-sender
+        case x ⇒
+          //#reply-without-sender
+          sender ! x // replies will go to this actor
+        //#reply-without-sender
+      }
+    }))
+    implicit val me = testActor
+    actor ! 42
+    expectMsg(42)
+    lastSender must be === actor
+    actor ! me
+    expectMsg("reply")
+    lastSender must be === system.actorFor("/user")
+    expectMsg("reply")
+    lastSender must be === system.actorFor("/user")
   }
 
 }
