@@ -5,8 +5,8 @@
 package akka.camel
 
 import akka.actor.Actor
-import akka.camel.CamelMessageConversion._
-import org.apache.camel.{ ExchangePattern, AsyncCallback }
+import internal.CamelExchangeAdapter
+import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
 
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -58,8 +58,11 @@ trait ProducerSupport { this: Actor ⇒
    * @param pattern exchange pattern
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
+    implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter = new CamelExchangeAdapter(exchange)
+
     val cmsg = Message.canonicalize(msg)
-    val exchange = endpoint.createExchange(pattern).setRequest(cmsg)
+    val exchange = endpoint.createExchange(pattern)
+    exchange.setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
       // Need copies of sender reference here since the callback could be done

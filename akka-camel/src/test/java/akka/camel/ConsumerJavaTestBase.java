@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 public class ConsumerJavaTestBase {
 
     static ActorSystem system = ActorSystem.create("test");
-    static Camel camel = ((Camel) CamelExtension.get(system));
+    static Camel camel = (Camel) CamelExtension.get(system);
 
 
     @AfterClass

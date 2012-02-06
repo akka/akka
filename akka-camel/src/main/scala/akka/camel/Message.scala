@@ -8,10 +8,8 @@ import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
 
 import scala.collection.JavaConversions._
 
-import org.apache.camel.util.ExchangeHelper
-
 import akka.japi.{ Function ⇒ JFunction }
-import org.apache.camel.{ CamelContext, Exchange, Message ⇒ CamelMessage }
+import org.apache.camel.{ CamelContext, Message ⇒ CamelMessage }
 
 /**
  * An immutable representation of a Camel message.
@@ -121,6 +119,11 @@ case class Message(body: Any, headers: Map[String, Any]) {
    * the existing headers.
    */
   def withoutHeader(headerName: String) = copy(this.body, this.headers - headerName)
+
+  def copyContentTo(to: CamelMessage) = {
+    to.setBody(this.body)
+    for ((name, value) ← this.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
+  }
 }
 
 class RichMessage(message: Message, camelContext: CamelContext) {
@@ -200,6 +203,20 @@ object Message {
     case mobj: Message ⇒ mobj
     case body          ⇒ Message(body, Map.empty)
   }
+
+  /**
+   * Creates a new Message object from the Camel message.
+   */
+  def from(camelMessage: CamelMessage): Message = from(camelMessage, Map.empty)
+
+  /**
+   * Creates a new Message object from the Camel message.
+   *
+   * @param headers additional headers to set on the created Message in addition to those
+   *                in the Camel message.
+   */
+  def from(camelMessage: CamelMessage, headers: Map[String, Any]): Message = Message(camelMessage.getBody, headers ++ camelMessage.getHeaders)
+
 }
 
 /**
@@ -248,138 +265,4 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
    * Java API
    */
   def getHeaders: JMap[String, Any] = headers
-}
-
-/**
- *  Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
- *
- * @author Martin Krasser
- */
-//TODO: think on improving method names
-class CamelExchangeAdapter(exchange: Exchange) {
-  def getExchangeId = exchange.getExchangeId
-
-  def isOutCapable = exchange.getPattern.isOutCapable
-
-  import CamelMessageConversion.toMessageAdapter
-
-  /**
-   * Sets Exchange.getIn from the given Message object.
-   */
-  def setRequest(msg: Message): Exchange = { request.copyContentFrom(msg); exchange }
-
-  /**
-   * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
-   * Message object. If the exchange is out-capable then the Exchange.getOut is set, otherwise
-   * Exchange.getIn.
-   */
-  def setResponse(msg: Message): Exchange = { response.copyContentFrom(msg); exchange }
-
-  /**
-   * Sets Exchange.getException from the given Failure message. Headers of the Failure message
-   * are ignored.
-   */
-  def setFailure(msg: Failure): Exchange = { exchange.setException(msg.cause); exchange }
-
-  /**
-   * Creates a Message object from Exchange.getIn.
-   */
-  def toRequestMessage: Message = toRequestMessage(Map.empty)
-
-  /**
-   * Depending on the exchange pattern, creates a Message object from Exchange.getIn or Exchange.getOut.
-   * If the exchange is out-capable then the Exchange.getOut is set, otherwise Exchange.getIn.
-   */
-  def toResponseMessage: Message = toResponseMessage(Map.empty)
-
-  /**
-   * Creates a Failure object from the adapted Exchange.
-   *
-   * @see Failure
-   */
-  def toFailureMessage: Failure = toFailureMessage(Map.empty)
-
-  /**
-   * Creates a Message object from Exchange.getIn.
-   *
-   * @param headers additional headers to set on the created Message in addition to those
-   *                in the Camel message.
-   */
-  def toRequestMessage(headers: Map[String, Any]): Message = request.toMessage(headers)
-
-  /**
-   * Depending on the exchange pattern, creates a Message object from Exchange.getIn or Exchange.getOut.
-   * If the exchange is out-capable then the Exchange.getOut is set, otherwise Exchange.getIn.
-   *
-   * @param headers additional headers to set on the created Message in addition to those
-   *                in the Camel message.
-   */
-  def toResponseMessage(headers: Map[String, Any]): Message = response.toMessage(headers)
-
-  /**
-   * Creates a Failure object from the adapted Exchange.
-   *
-   * @param headers additional headers to set on the created Message in addition to those
-   *                in the Camel message.
-   *
-   * @see Failure
-   */
-  def toFailureMessage(headers: Map[String, Any]): Failure =
-    Failure(exchange.getException, headers ++ response.toMessage.headers)
-
-  private def request = exchange.getIn
-
-  private def response = ExchangeHelper.getResultMessage(exchange)
-
-}
-
-/**
- * Adapter for converting an org.apache.camel.Message to and from Message objects.
- *
- *  @author Martin Krasser
- */
-class CamelMessageAdapter(val cm: CamelMessage) {
-  /**
-   * Set the adapted Camel message from the given Message object.
-   */
-  def copyContentFrom(m: Message): CamelMessage = {
-    cm.setBody(m.body)
-    for (h ← m.headers) cm.getHeaders.put(h._1, h._2.asInstanceOf[AnyRef])
-    cm
-  }
-
-  /**
-   * Creates a new Message object from the adapted Camel message.
-   */
-  def toMessage: Message = toMessage(Map.empty)
-
-  /**
-   * Creates a new Message object from the adapted Camel message.
-   *
-   * @param headers additional headers to set on the created Message in addition to those
-   *                in the Camel message.
-   */
-  def toMessage(headers: Map[String, Any]): Message = Message(cm.getBody, cmHeaders(headers, cm))
-
-  private def cmHeaders(headers: Map[String, Any], cm: CamelMessage) = headers ++ cm.getHeaders
-}
-
-/**
- * Defines conversion methods to CamelExchangeAdapter and CamelMessageAdapter.
- * Imported by applications that implicitly want to use conversion methods of
- * CamelExchangeAdapter and CamelMessageAdapter.
- */
-object CamelMessageConversion {
-
-  /**
-   * Creates a CamelExchangeAdaptor for the given Camel exchange
-   */
-  implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter =
-    new CamelExchangeAdapter(exchange)
-
-  /**
-   * Creates a CamelMessageAdapter for the given Camel message.
-   */
-  implicit def toMessageAdapter(cm: CamelMessage): CamelMessageAdapter =
-    new CamelMessageAdapter(cm)
 }
