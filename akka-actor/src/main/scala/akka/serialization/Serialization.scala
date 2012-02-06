@@ -150,7 +150,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Tries to load the specified Serializer by the FQN
    */
   def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
-    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs)
+    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs, system.internalClassLoader)
 
   /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
