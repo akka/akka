@@ -45,6 +45,9 @@ class MyOwnSerializer extends Serializer {
 }
 //#my-own-serializer
 
+trait MyOwnSerializable
+case class Customer(name: String) extends MyOwnSerializable
+
 class SerializationDocSpec extends AkkaSpec {
   "demonstrate configuration of serialize messages" in {
     //#serialize-messages-config
@@ -82,8 +85,8 @@ class SerializationDocSpec extends AkkaSpec {
       akka {
         actor {
           serializers {
-            default = "akka.serialization.JavaSerializer"
-
+            java = "akka.serialization.JavaSerializer"
+            proto = "akka.serialization.ProtobufSerializer"
             myown = "akka.docs.serialization.MyOwnSerializer"
           }
         }
@@ -91,8 +94,6 @@ class SerializationDocSpec extends AkkaSpec {
     """)
     //#serialize-serializers-config
     val a = ActorSystem("system", config)
-    SerializationExtension(a).serializers("default").getClass.getName must equal("akka.serialization.JavaSerializer")
-    SerializationExtension(a).serializers("myown").getClass.getName must equal("akka.docs.serialization.MyOwnSerializer")
     a.shutdown()
   }
 
@@ -102,31 +103,26 @@ class SerializationDocSpec extends AkkaSpec {
       akka {
         actor {
           serializers {
-            default = "akka.serialization.JavaSerializer"
             java = "akka.serialization.JavaSerializer"
             proto = "akka.serialization.ProtobufSerializer"
             myown = "akka.docs.serialization.MyOwnSerializer"
           }
 
           serialization-bindings {
-           java = ["java.lang.String",
-                   "app.my.Customer"]
-           proto = ["com.google.protobuf.Message"]
-           myown = ["my.own.BusinessObject",
-                    "something.equally.Awesome",
-                    "akka.docs.serialization.MyOwnSerializable"
-                    "java.lang.Boolean"]
-         }
+            "java.lang.String" = java
+            "akka.docs.serialization.Customer" = java
+            "com.google.protobuf.Message" = proto
+            "akka.docs.serialization.MyOwnSerializable" = myown
+            "java.lang.Boolean" = myown
+          }
         }
       }
     """)
     //#serialization-bindings-config
     val a = ActorSystem("system", config)
-    SerializationExtension(a).serializers("default").getClass.getName must equal("akka.serialization.JavaSerializer")
-    SerializationExtension(a).serializers("java").getClass.getName must equal("akka.serialization.JavaSerializer")
-    SerializationExtension(a).serializers("myown").getClass.getName must equal("akka.docs.serialization.MyOwnSerializer")
-    SerializationExtension(a).serializerFor(classOf[String]).getClass.getName must equal("akka.serialization.JavaSerializer")
-    SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass.getName must equal("akka.docs.serialization.MyOwnSerializer")
+    SerializationExtension(a).serializerFor(classOf[String]).getClass must equal(classOf[JavaSerializer])
+    SerializationExtension(a).serializerFor(classOf[Customer]).getClass must equal(classOf[JavaSerializer])
+    SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass must equal(classOf[MyOwnSerializer])
     a.shutdown()
   }
 

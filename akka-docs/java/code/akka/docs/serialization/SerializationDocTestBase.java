@@ -54,61 +54,7 @@ public class SerializationDocTestBase {
       }
     }
 //#my-own-serializer
-    @Test public void haveExamples() {
-        /*
-        //#serialize-messages-config
-        akka {
-          actor {
-            serialize-messages = on
-          }
-        }
-        //#serialize-messages-config
 
-        //#serialize-creators-config
-        akka {
-          actor {
-            serialize-creators = on
-          }
-        }
-        //#serialize-creators-config
-
-
-        //#serialize-serializers-config
-        akka {
-          actor {
-            serializers {
-              default = "akka.serialization.JavaSerializer"
-
-              myown = "akka.docs.serialization.MyOwnSerializer"
-            }
-          }
-        }
-        //#serialize-serializers-config
-
-        //#serialization-bindings-config
-        akka {
-          actor {
-            serializers {
-              default = "akka.serialization.JavaSerializer"
-              java = "akka.serialization.JavaSerializer"
-              proto = "akka.serialization.ProtobufSerializer"
-              myown = "akka.docs.serialization.MyOwnSerializer"
-            }
-
-            serialization-bindings {
-             java = ["java.lang.String",
-                     "app.my.Customer"]
-             proto = ["com.google.protobuf.Message"]
-             myown = ["my.own.BusinessObject",
-                      "something.equally.Awesome",
-                      "akka.docs.serialization.MyOwnSerializable"
-                      "java.lang.Boolean"]
-           }
-          }
-        }
-        //#serialization-bindings-config
-        */
-    }
 
     @Test public void demonstrateTheProgrammaticAPI() {
       //#programmatic
