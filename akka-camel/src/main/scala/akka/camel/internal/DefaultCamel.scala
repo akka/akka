@@ -10,11 +10,11 @@ import akka.event.Logging
 import akka.camel.Camel
 
 /**
- * Creates an instance of Camel subsystem.
+ * Creates an instance of the Camel subsystem.
  *
  * @param system is used to create internal actors needed by camel instance.
- * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
- * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the actor system it extends.
+ * Camel doesn't maintain the lifecycle of this actor system. The actor system has to be shut down by the user.
+ * In the typical scenario, when camel is used with akka extension, it is natural that camel reuses the actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources.
  */
 private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
@@ -36,7 +36,6 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    * Only the creator of Camel should start and stop it.
    * @see akka.camel.DefaultCamel#stop()
    */
-  //TODO consider starting Camel during initialization to avoid lifecycle issues. This would require checking if we are not limiting context configuration after it's started.
   def start = {
     context.start()
     Try(template.start()) otherwise context.stop()

@@ -8,9 +8,10 @@ import internal._
 import akka.actor._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 
+//TODO complete this doc
 /**
  * Camel trait encapsulates the underlying camel machinery.
- * It can be used to access
+ *
  */
 trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with Activation {
   /**
@@ -56,7 +57,7 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
 }
 
 /**
- * This class can be used to get hold of an instance of Camel class bound to the actor system.
+ * This class can be used to get hold of an instance of the Camel class bound to the actor system.
  * <p>For example:
  * {{{
  * val system = ActorSystem("some system")
@@ -71,7 +72,7 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
 object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
 
   /**
-   * Creates new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
+   * Creates a new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
    */
   def createExtension(system: ActorSystemImpl) = {
     val camel = new DefaultCamel(system).start;
