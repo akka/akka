@@ -13,8 +13,6 @@ import akka.util.duration._
 //#app
 object Pi extends App {
 
-  calculate(nrOfWorkers = 4, nrOfElements = 10000, nrOfMessages = 10000)
-
   //#actors-and-messages
   //#messages
   sealed trait PiMessage
@@ -44,7 +42,7 @@ object Pi extends App {
   //#worker
 
   //#master
-  class Master(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int, listener: ActorRef)
+  class Master(nrOfMessages: Int, nrOfElements: Int, listener: ActorRef)
     extends Actor {
 
     var pi: Double = _
@@ -53,7 +51,7 @@ object Pi extends App {
 
     //#create-router
     val workerRouter = context.actorOf(
-      Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
+      Props[Worker].withRouter(RoundRobinRouter(4)), name = "workerRouter")
     //#create-router
 
     //#master-receive
@@ -90,21 +88,23 @@ object Pi extends App {
 
   //#actors-and-messages
 
-  def calculate(nrOfWorkers: Int, nrOfElements: Int, nrOfMessages: Int) {
-    // Create an Akka system
-    val system = ActorSystem("PiSystem")
+  // Create an Akka system
+  val system = ActorSystem("PiSystem")
 
-    // create the result listener, which will print the result and shutdown the system
-    val listener = system.actorOf(Props[Listener], name = "listener")
+  // extract configuration items
+  val config = system.settings.config
+  val nrOfMessages = config.getInt("pi.messages")
+  val nrOfElements = config.getInt("pi.elements")
 
-    // create the master
-    val master = system.actorOf(Props(new Master(
-      nrOfWorkers, nrOfMessages, nrOfElements, listener)),
-      name = "master")
+  // create the result listener, which will print the result and shutdown the system
+  val listener = system.actorOf(Props[Listener], name = "listener")
 
-    // start the calculation
-    master ! Calculate
+  // create the master
+  val master = system.actorOf(
+    Props(new Master(nrOfMessages, nrOfElements, listener)),
+    name = "master")
 
-  }
+  // start the calculation
+  master ! Calculate
 }
 //#app

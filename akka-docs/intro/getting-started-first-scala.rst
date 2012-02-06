@@ -314,15 +314,16 @@ style using a for comprehension and an accumulator:
 Creating the master
 ===================
 
-The master actor is a little bit more involved. In its constructor we create a round-robin router
-to make it easier to spread out the work evenly between the workers. Let's do that first:
+The master actor is a little bit more involved. In its constructor we create a
+round-robin router to make it easier to spread out the work evenly between the
+workers (four in this case, but keep reading until the end to see how simple it
+is to change that). Let's do that first:
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#create-router
 
 Now we have a router that is representing all our workers in a single
-abstraction. So now let's create the master actor. We pass it three integer variables:
+abstraction. So now let's create the master actor. We pass it two integer variables:
 
-- ``nrOfWorkers`` -- defining how many workers we should start up
 - ``nrOfMessages`` -- defining how many number chunks to send out to the workers
 - ``nrOfElements`` -- defining how big the number chunks sent to each worker should be
 
@@ -375,17 +376,20 @@ and run the calculation for us. We do that by creating an object that we call
 be able to run this as an application directly from the command line.
 
 The ``Pi`` object is a perfect container module for our actors and messages, so
-let's put them all there. We also create a method ``calculate`` in which we
-start up the ``Master`` actor and wait for it to finish:
+let's put them all there.
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#app
    :exclude: actors-and-messages
 
-As you can see the *calculate* method above it creates an ``ActorSystem`` and this is the Akka container which
-will contain all actors created in that "context". An example of how to create actors in the container
-is the *'system.actorOf(...)'* line in the calculate method. In this case we create two top level actors.
-If you instead where in an actor context, i.e. inside an actor creating other actors, you should use
-*context.actorOf(...)*. This is illustrated in the Master code above.
+As you can see the app creates an ``ActorSystem`` and this is the Akka
+container which will contain all actors created in that "context". An example
+of how to create actors in the container is the *'system.actorOf(...)'* line in
+the calculate method. In this case we create two top level actors.  If you
+instead where in an actor context, i.e. inside an actor creating other actors,
+you should use *context.actorOf(...)*. This is illustrated in the Master code
+above. The extraction of ``nrOfMessages`` and ``nrOfElements`` from the
+configuration shows how easy it is to access values provided externally; the
+file which defines them is ``application.conf`` in the resources directory.
 
 That's it. Now we are done.
 
@@ -449,10 +453,13 @@ The sample project includes an ``application.conf`` file in the resources direct
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/resources/application.conf
 
-If you uncomment the two lines, you should see a change in performance,
-hopefully for the better. It should be noted that overriding only works if a
-router type is given, so just uncommenting ``nr-of-instances`` does not work;
-see :ref:`routing-scala` for more details.
+If you uncomment the two lines in the deployment section, you should see a
+change in performance, hopefully for the better (you might have to increase the
+``messages`` parameter in the ``pi`` section to make the effect visible in case
+the application takes less than a second to run with standard settings). It
+should be noted that overriding only works if a router type is given, so just
+uncommenting ``nr-of-instances`` does not work; see :ref:`routing-scala` for
+more details.
 
 Conclusion
 ==========
