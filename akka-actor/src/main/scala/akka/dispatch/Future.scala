@@ -8,18 +8,18 @@ import akka.event.Logging.Error
 import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 import scala.util.continuations._
-import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Duration, BoxedType }
 import akka.dispatch.Await.CanAwait
-import java.util.concurrent._
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
 import akka.event.Logging.Debug
-import atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 
 object Await {
 
