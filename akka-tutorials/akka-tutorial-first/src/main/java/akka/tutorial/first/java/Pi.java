@@ -14,6 +14,7 @@ import akka.actor.UntypedActorFactory;
 import akka.routing.RoundRobinRouter;
 import akka.util.Duration;
 import java.util.concurrent.TimeUnit;
+import com.typesafe.config.Config;
 
 //#imports
 
@@ -22,7 +23,7 @@ public class Pi {
 
   public static void main(String[] args) {
     Pi pi = new Pi();
-    pi.calculate(4, 10000, 10000);
+    pi.calculate();
   }
 
   //#actors-and-messages
@@ -119,13 +120,14 @@ public class Pi {
     private final ActorRef listener;
     private final ActorRef workerRouter;
 
-    public Master(final int nrOfWorkers, int nrOfMessages, int nrOfElements, ActorRef listener) {
+    public Master(int nrOfMessages, int nrOfElements, ActorRef listener) {
       this.nrOfMessages = nrOfMessages;
       this.nrOfElements = nrOfElements;
       this.listener = listener;
 
       //#create-router
-      workerRouter = this.getContext().actorOf(new Props(Worker.class).withRouter(new RoundRobinRouter(nrOfWorkers)),
+      workerRouter = this.getContext().actorOf(
+          new Props(Worker.class).withRouter(new RoundRobinRouter(4)),
           "workerRouter");
       //#create-router
     }
@@ -175,9 +177,14 @@ public class Pi {
   //#result-listener
   //#actors-and-messages
 
-  public void calculate(final int nrOfWorkers, final int nrOfElements, final int nrOfMessages) {
+  public void calculate() {
     // Create an Akka system
     ActorSystem system = ActorSystem.create("PiSystem");
+    
+    // extract configuration items
+    Config config = system.settings().config();
+    final int nrOfMessages = config.getInt("pi.messages");
+    final int nrOfElements = config.getInt("pi.elements");
 
     // create the result listener, which will print the result and shutdown the system
     final ActorRef listener = system.actorOf(new Props(Listener.class), "listener");
@@ -185,7 +192,7 @@ public class Pi {
     // create the master
     ActorRef master = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
-        return new Master(nrOfWorkers, nrOfMessages, nrOfElements, listener);
+        return new Master(nrOfMessages, nrOfElements, listener);
       }
     }), "master");
 
