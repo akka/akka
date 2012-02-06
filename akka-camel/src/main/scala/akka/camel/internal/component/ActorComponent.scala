@@ -10,6 +10,7 @@ import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
 
 import akka.actor._
+import akka.pattern._
 
 import scala.reflect.BeanProperty
 import akka.util.{ Duration, Timeout }
@@ -149,7 +150,7 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
   private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
     try {
       val actor = actorFor(config.path)
-      val future = actor ? (message, new Timeout(config.replyTimeout))
+      val future = actor.ask(message)(new Timeout(config.replyTimeout))
       future.onComplete(onComplete)
     } catch {
       case e ⇒ onComplete(Left(e))

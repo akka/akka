@@ -4,19 +4,17 @@
 
 package akka.camel.internal.component
 
-import org.junit._
-import org.scalatest.junit.JUnitSuite
-
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import akka.camel.TestSupport.SharedCamelSystem
 import org.apache.camel.Component
+import org.scalatest.WordSpec
 
-class ActorComponentConfigurationTest extends JUnitSuite with MustMatchers with SharedCamelSystem {
+class ActorComponentConfigurationTest extends WordSpec with MustMatchers with SharedCamelSystem {
 
   val component: Component = camel.context.getComponent("actor")
 
-  @Test def configurationSanityTest = {
+  "Endpoint url config must be correctly parsed" in {
     val actorEndpointConfig = component.createEndpoint("actor://path:akka://test/user/$a?autoack=false&replyTimeout=987000000+nanos").asInstanceOf[ActorEndpointConfig]
 
     actorEndpointConfig must have(

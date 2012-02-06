@@ -9,6 +9,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, FeatureSpec }
 import akka.actor._
+import akka.pattern._
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.camel.TestSupport.SharedCamelSystem
@@ -37,7 +38,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2", true)))
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
       then("a normal response must have been returned by the producer")
       val expected = Message("received TEST", Map(Message.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
@@ -52,7 +53,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
       Await.result(future, timeout) match {
         case result: Failure ⇒ {
           then("a failure response must have been returned by the producer")
@@ -98,7 +99,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
 
       Await.result(future, timeout) match {
         case result: Message ⇒ {
@@ -116,7 +117,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
       Await.result(future, timeout) match {
         case result: Failure ⇒ {
           then("a failure response must have been returned by the producer")
@@ -136,7 +137,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
 
       Await.result(future, timeout) match {
         case result: Message ⇒ {
@@ -155,7 +156,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
       Await.result(future, timeout) match {
         case failure: Failure ⇒ {
           then("a failure response must have been returned by the forward target")
@@ -204,7 +205,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
       when("a test message is sent to the producer with ?")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
 
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
 
       then("a normal response must have been returned by the forward target")
       Await.result(future, timeout) match {
@@ -223,7 +224,7 @@ class ProducerFeatureTest extends FeatureSpec with BeforeAndAfterAll with Before
 
       when("a test message causing an exception is sent to the producer with !!")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val future = producer ? (message, timeout)
+      val future = producer.ask(message)(timeout)
       Await.result(future, timeout) match {
         case failure: Failure ⇒ {
           then("a failure response must have been returned by the forward target")

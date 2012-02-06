@@ -24,7 +24,7 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   /**
    * Sets Exchange.getIn from the given Message object.
    */
-  def setRequest(msg: Message) {  msg.copyContentTo(request) }
+  def setRequest(msg: Message) { msg.copyContentTo(request) }
 
   /**
    * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
