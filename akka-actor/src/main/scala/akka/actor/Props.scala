@@ -103,6 +103,7 @@ object Props {
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
+@SerialVersionUID(1L)
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,

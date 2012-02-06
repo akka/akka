@@ -10,7 +10,7 @@ import akka.util.ClassLoaderObjectInputStream
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object
  */
-trait Serializer extends scala.Serializable {
+trait Serializer {
   /**
    * Completely unique value to identify this implementation of Serializer, used to optimize network traffic
    * Values from 0 to 16 is reserved for Akka internal usage

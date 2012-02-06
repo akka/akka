@@ -25,6 +25,7 @@ import akka.util.ReflectiveAccess
  * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
+@SerialVersionUID(1L)
 final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
@@ -62,6 +63,7 @@ trait Scope {
   def withFallback(other: Scope): Scope
 }
 
+@SerialVersionUID(1L)
 case object LocalScope extends Scope {
   /**
    * Java API
@@ -74,6 +76,7 @@ case object LocalScope extends Scope {
 /**
  * This is the default value and as such allows overrides.
  */
+@SerialVersionUID(1L)
 case object NoScopeGiven extends Scope {
   def withFallback(other: Scope): Scope = other
 }

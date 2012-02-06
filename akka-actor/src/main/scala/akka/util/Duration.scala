@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import TimeUnit._
 import java.lang.{ Double ⇒ JDouble }
 
+@SerialVersionUID(1L)
 case class Deadline private (time: Duration) {
   def +(other: Duration): Deadline = copy(time = time + other)
   def -(other: Duration): Deadline = copy(time = time - other)
@@ -232,6 +233,7 @@ object Duration {
  * val d3 = d2 + 1.millisecond
  * </pre>
  */
+@SerialVersionUID(1L)
 abstract class Duration extends Serializable with Ordered[Duration] {
   def length: Long
   def unit: TimeUnit
@@ -276,6 +278,7 @@ object FiniteDuration {
   }
 }
 
+@SerialVersionUID(1L)
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import Duration._
 
@@ -525,6 +528,7 @@ class DurationDouble(d: Double) {
   def day[C, CC <: Classifier[C]](c: C)(implicit ev: CC): CC#R = ev.convert(Duration(d, DAYS))
 }
 
+@SerialVersionUID(1L)
 case class Timeout(duration: Duration) {
   def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
   def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))
