@@ -9,10 +9,10 @@ import akka.actor.*;
 import akka.transactor.*;
 import java.util.Set;
 import scala.concurrent.stm.Ref;
-import scala.concurrent.stm.japi.Stm;
+import scala.concurrent.stm.japi.STM;
 
 public class FriendlyCounter extends UntypedTransactor {
-    Ref.View<Integer> count = Stm.newRef(0);
+    Ref.View<Integer> count = STM.newRef(0);
 
     @Override public Set<SendTo> coordinate(Object message) {
         if (message instanceof Increment) {
@@ -25,7 +25,7 @@ public class FriendlyCounter extends UntypedTransactor {
 
     public void atomically(Object message) {
         if (message instanceof Increment) {
-            Stm.increment(count, 1);
+            STM.increment(count, 1);
         }
     }
 

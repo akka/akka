@@ -15,24 +15,6 @@ import scala.reflect.BeanInfo
 import com.google.protobuf.Message
 import akka.pattern.ask
 
-class ProtobufSerializer extends Serializer {
-  val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-  def includeManifest: Boolean = true
-  def identifier = 2
-
-  def toBinary(obj: AnyRef): Array[Byte] = {
-    if (!obj.isInstanceOf[Message]) throw new IllegalArgumentException(
-      "Can't serialize a non-protobuf message using protobuf [" + obj + "]")
-    obj.asInstanceOf[Message].toByteArray
-  }
-
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef = {
-    if (!clazz.isDefined) throw new IllegalArgumentException(
-      "Need a protobuf message class to be able to serialize bytes using protobuf")
-    clazz.get.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
-  }
-}
-
 object SerializeSpec {
 
   val serializationConf = ConfigFactory.parseString("""
@@ -40,11 +22,12 @@ object SerializeSpec {
       actor {
         serializers {
           java = "akka.serialization.JavaSerializer"
+          test = "akka.serialization.TestSerializer"
         }
-    
+
         serialization-bindings {
           java = ["akka.serialization.SerializeSpec$Person", "akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
-          proto = ["com.google.protobuf.Message", "akka.actor.ProtobufProtocol$MyMessage"]
+          test = ["akka.serialization.TestSerializble", "akka.serialization.SerializeSpec$PlainMessage"]
         }
       }
     }
@@ -56,6 +39,21 @@ object SerializeSpec {
   case class Person(name: String, age: Int, address: Address) { def this() = this("", 0, null) }
 
   case class Record(id: Int, person: Person)
+
+  class SimpleMessage(s: String) extends TestSerializble
+
+  class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
+
+  trait AnotherInterface extends TestSerializble
+
+  class AnotherMessage extends AnotherInterface
+
+  class ExtendedAnotherMessage extends AnotherMessage
+
+  class PlainMessage
+
+  class ExtendedPlainMessage extends PlainMessage
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -72,7 +70,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
 
     "have correct bindings" in {
       ser.bindings(addr.getClass.getName) must be("java")
-      ser.bindings("akka.actor.ProtobufProtocol$MyMessage") must be("proto")
+      ser.bindings(classOf[PlainMessage].getName) must be("test")
     }
 
     "serialize Address" in {
@@ -145,6 +143,37 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         a.shutdown()
       }
     }
+
+    "resove serializer by direct interface" in {
+      val msg = new SimpleMessage("foo")
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
+    "resove serializer by interface implemented by super class" in {
+      val msg = new ExtendedSimpleMessage("foo", 17)
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
+    "resove serializer by indirect interface" in {
+      val msg = new AnotherMessage
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
+    "resove serializer by indirect interface implemented by super class" in {
+      val msg = new ExtendedAnotherMessage
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
+    "resove serializer for message with binding" in {
+      val msg = new PlainMessage
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
+    "resove serializer for message extending class with with binding" in {
+      val msg = new ExtendedPlainMessage
+      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    }
+
   }
 }
 
@@ -158,13 +187,11 @@ object VerifySerializabilitySpec {
 
         serializers {
           java = "akka.serialization.JavaSerializer"
-          proto = "akka.serialization.ProtobufSerializer"
           default = "akka.serialization.JavaSerializer"
         }
 
         serialization-bindings {
           java = ["akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
-          proto = ["com.google.protobuf.Message", "akka.actor.ProtobufProtocol$MyMessage"]
         }
       }
     }
@@ -207,5 +234,22 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
       val b = system.actorOf(Props(new NonSerializableActor(system)))
     }
     system stop a
+  }
+}
+
+trait TestSerializble
+
+class TestSerializer extends Serializer {
+  def includeManifest: Boolean = false
+
+  def identifier = 9999
+
+  def toBinary(o: AnyRef): Array[Byte] = {
+    Array.empty[Byte]
+  }
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None,
+                 classLoader: Option[ClassLoader] = None): AnyRef = {
+    null
   }
 }
