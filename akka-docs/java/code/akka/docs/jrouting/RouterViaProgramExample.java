@@ -68,4 +68,18 @@ public class RouterViaProgramExample {
       router3.tell(new ExampleActor.Message(i));
     }
   }
+  
+  private class CompileCheckJavaDocsForRouting extends UntypedActor {
+
+    @Override
+    public void onReceive(Object o) {
+      //#reply-with-parent
+      getSender().tell("reply", getContext().parent()); // replies go to router
+      //#reply-with-parent
+      //#reply-with-self
+      getSender().tell("reply", getSelf()); // replies go to this actor
+      //#reply-with-self
+    }
+    
+  }
 }

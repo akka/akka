@@ -87,10 +87,9 @@ deterministic fashion. Since each actor knows its own external representation
 as well as that of its parent, the routees decide where replies should be sent
 when reacting to a message:
 
-.. code-block:: java
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#reply-with-parent
 
-  getSender().tell(reply, getContext().parent()); // replies go to the router
-  getSender().tell(reply, getSelf()); // replies go to this routee
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#reply-with-self
 
 It is apparent now why routing needs to be enabled in code rather than being
 possible to “bolt on” later: whether or not an actor is routed means a change
