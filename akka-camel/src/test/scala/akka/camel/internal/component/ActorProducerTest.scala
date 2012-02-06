@@ -18,16 +18,13 @@ import akka.camel._
 import internal.CamelExchangeAdapter
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
-import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
-import org.mockito.{ArgumentMatcher, Matchers, Mockito}
+import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
+import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
 import org.scalatest.matchers.MustMatchers
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
-
-
   "ActorProducer" when {
-
 
     "synchronous" when {
 
@@ -112,7 +109,6 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
         }
 
-
         "response is ok" must {
           "get a response and async callback as soon as it gets the response (but not before)" in {
             producer = given(outCapable = true)
@@ -156,7 +152,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             producer.process(exchange, asyncCallback)
             asyncCallback.awaitCalled(100 millis)
             verify(exchange).setFailure(Matchers.argThat(new ArgumentMatcher[Failure] {
-              def matches(failure: AnyRef) = {failure.asInstanceOf[Failure].getCause must be(anInstanceOf[TimeoutException]); true}
+              def matches(failure: AnyRef) = { failure.asInstanceOf[Failure].getCause must be(anInstanceOf[TimeoutException]); true }
 
             }))
           }
@@ -206,11 +202,10 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
 
           "expecting Ack or Failure message and some other message is sent as a response" must {
-            "fail" in  {
+            "fail" in {
               producer = given(outCapable = false, autoAck = false)
 
               producer.process(exchange, asyncCallback)
-
 
               within(1 second) {
                 probe.expectMsgType[Message]; info("message sent to consumer")

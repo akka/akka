@@ -34,20 +34,20 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
    *
    * <p>It can be used to start producers, consumers or any other actors which need to interact with camel,
    * for example:
-   {{{
-val system = ActorSystem("test")
-system.actorOf(Props[SysOutConsumer])
-
-class SysOutConsumer extends Consumer {
-  def endpointUri = "file://data/input/CamelConsumer"
-
-  protected def receive = {
-    case msg: Message ⇒ {
-      printf("Received '%s'\\n", msg.bodyAs[String])
-    }
-  }
-}
-   }}}
+   * {{{
+   * val system = ActorSystem("test")
+   * system.actorOf(Props[SysOutConsumer])
+   *
+   * class SysOutConsumer extends Consumer {
+   * def endpointUri = "file://data/input/CamelConsumer"
+   *
+   * protected def receive = {
+   * case msg: Message ⇒ {
+   * printf("Received '%s'\\n", msg.bodyAs[String])
+   * }
+   * }
+   * }
+   * }}}
    * '''Note:''' This actor system is responsible for stopping the underlying camel instance.
    *
    * @see [[akka.camel.CamelExtension]]
@@ -58,11 +58,11 @@ class SysOutConsumer extends Consumer {
 /**
  * This class can be used to get hold of an instance of Camel class bound to the actor system.
  * <p>For example:
-{{{
-val system = ActorSystem("some system")
-val camel = CamelExtension(system)
-camel.context.addRoutes(...)
-}}}
+ * {{{
+ * val system = ActorSystem("some system")
+ * val camel = CamelExtension(system)
+ * camel.context.addRoutes(...)
+ * }}}
  *
  * @see akka.actor.ExtensionId
  * @see akka.actor.ExtensionIdProvider

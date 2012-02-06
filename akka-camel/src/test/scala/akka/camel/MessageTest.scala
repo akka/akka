@@ -5,13 +5,13 @@
 package akka.camel
 
 import org.apache.camel.impl.{ DefaultExchange, DefaultMessage }
-import org.apache.camel.{Message => CamelMessage}
+import org.apache.camel.{ Message ⇒ CamelMessage }
 import akka.camel.TestSupport.SharedCamelSystem
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.WordSpec
 
 //TODO merge it with MessageScalaTest
-class MessageTest extends MustMatchers with WordSpec with SharedCamelSystem{
+class MessageTest extends MustMatchers with WordSpec with SharedCamelSystem {
 
   "Message" must {
 

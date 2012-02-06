@@ -6,7 +6,7 @@ package akka.camel
 
 import akka.actor.Actor
 import internal.CamelExchangeAdapter
-import org.apache.camel.{Exchange, ExchangePattern, AsyncCallback}
+import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
 
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -58,7 +58,6 @@ trait ProducerSupport { this: Actor ⇒
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter = new CamelExchangeAdapter(exchange)
-
 
     val cmsg = Message.canonicalize(msg)
     val exchange = endpoint.createExchange(pattern).setRequest(cmsg)

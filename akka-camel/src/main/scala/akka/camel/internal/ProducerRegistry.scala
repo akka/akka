@@ -2,10 +2,9 @@ package akka.camel.internal
 
 import java.util.concurrent.ConcurrentHashMap
 import org.apache.camel.processor.SendProcessor
-import akka.actor.{Props, ActorRef, Terminated, Actor}
+import akka.actor.{ Props, ActorRef, Terminated, Actor }
 import org.apache.camel.Endpoint
 import akka.camel.Camel
-
 
 /**
  * Watches the end of life of <code>Producer</code>s.

@@ -1,14 +1,13 @@
 package akka.camel.internal
 
 import akka.actor.ActorSystem
-import component.{DurationTypeConverter, ActorComponent}
+import component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.CamelContext
 import org.apache.camel.impl.DefaultCamelContext
 import akka.util.Duration
 import scala.Predef._
 import akka.event.Logging
 import akka.camel.Camel
-
 
 /**
  * Creates an instance of Camel subsystem.

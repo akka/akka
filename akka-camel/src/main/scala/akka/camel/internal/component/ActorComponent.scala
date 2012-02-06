@@ -15,7 +15,7 @@ import scala.reflect.BeanProperty
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import akka.camel.{ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, Message}
+import akka.camel.{ ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, Message }
 import akka.camel.internal.CamelExchangeAdapter
 
 /**
@@ -149,20 +149,19 @@ class ConsumerAsyncProcessor(config: ActorEndpointConfig, camel: Camel) {
   private def sendAsync(message: Message, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
     try {
       val actor = actorFor(config.path)
-      val future = actor ?(message, new Timeout(config.replyTimeout))
+      val future = actor ? (message, new Timeout(config.replyTimeout))
       future.onComplete(onComplete)
-    }
-    catch {
-      case e => onComplete(Left(e))
+    } catch {
+      case e ⇒ onComplete(Left(e))
     }
     false // Done async
   }
 
-  private def fireAndForget(message: Message, exchange : CamelExchangeAdapter) {
+  private def fireAndForget(message: Message, exchange: CamelExchangeAdapter) {
     try {
       actorFor(config.path) ! message
     } catch {
-      case e => exchange.setFailure(new CamelFailure(e))
+      case e ⇒ exchange.setFailure(new CamelFailure(e))
     }
   }
 

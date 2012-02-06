@@ -8,13 +8,13 @@ import akka.camel.internal.Try._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.event.LoggingAdapter
-import org.scalatest.{BeforeAndAfterEach, WordSpec}
+import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 
 class TryTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
 
   import org.mockito.Mockito._
   import org.mockito.Matchers._
-  import org.mockito.Matchers.{eq ⇒ the}
+  import org.mockito.Matchers.{ eq ⇒ the }
 
   implicit var log: LoggingAdapter = _
 

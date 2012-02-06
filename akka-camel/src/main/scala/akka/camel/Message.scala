@@ -8,7 +8,6 @@ import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
 
 import scala.collection.JavaConversions._
 
-
 import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ CamelContext, Message ⇒ CamelMessage }
 
@@ -178,7 +177,6 @@ class RichMessage(message: Message, camelContext: CamelContext) {
    */
   def getHeaderAs[T](name: String, clazz: Class[T]) = headerAs[T](name)(Manifest.classType(clazz)).get
 
-
 }
 
 /**
@@ -205,11 +203,11 @@ object Message {
     case mobj: Message ⇒ mobj
     case body          ⇒ Message(body, Map.empty)
   }
-  
+
   /**
    * Creates a new Message object from the Camel message.
    */
-  def from(camelMessage: CamelMessage) : Message = from(camelMessage, Map.empty)
+  def from(camelMessage: CamelMessage): Message = from(camelMessage, Map.empty)
 
   /**
    * Creates a new Message object from the adapted Camel message.
@@ -218,7 +216,7 @@ object Message {
    *                in the Camel message.
    */
   def from(camelMessage: CamelMessage, headers: Map[String, Any]): Message = Message(camelMessage.getBody, headers ++ camelMessage.getHeaders)
-  
+
 }
 
 /**

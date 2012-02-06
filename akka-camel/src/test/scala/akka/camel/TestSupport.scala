@@ -9,7 +9,7 @@ import akka.util.Duration
 import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
-import org.scalatest.matchers.{BePropertyMatcher, BePropertyMatchResult}
+import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 
 private[camel] object TestSupport {
 
@@ -79,12 +79,12 @@ private[camel] object TestSupport {
   }
 
   def anInstanceOf[T](implicit manifest: Manifest[T]) = {
-     val clazz = manifest.erasure.asInstanceOf[Class[T]]
-     new BePropertyMatcher[AnyRef] {
-        def apply(left: AnyRef) = BePropertyMatchResult(
-           clazz.isAssignableFrom(left.getClass),
-           "an instance of " + clazz.getName)
-     }
+    val clazz = manifest.erasure.asInstanceOf[Class[T]]
+    new BePropertyMatcher[AnyRef] {
+      def apply(left: AnyRef) = BePropertyMatchResult(
+        clazz.isAssignableFrom(left.getClass),
+        "an instance of " + clazz.getName)
+    }
   }
 
 }

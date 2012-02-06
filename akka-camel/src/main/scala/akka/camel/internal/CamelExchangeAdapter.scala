@@ -8,7 +8,7 @@ import org.apache.camel.util.ExchangeHelper
 
 import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ Exchange, Message ⇒ CamelMessage }
-import akka.camel.{Failure, Message}
+import akka.camel.{ Failure, Message }
 
 /**
  *  Adapter for converting an org.apache.camel.Exchange to and from Message and Failure objects.
@@ -87,6 +87,6 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
 
   private def request = exchange.getIn
 
-  private def response : CamelMessage = ExchangeHelper.getResultMessage(exchange)
+  private def response: CamelMessage = ExchangeHelper.getResultMessage(exchange)
 
 }

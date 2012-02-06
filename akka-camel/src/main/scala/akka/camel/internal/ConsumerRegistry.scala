@@ -16,7 +16,6 @@ import org.apache.camel.model.RouteDefinition
 import org.apache.camel.CamelContext
 import akka.util.Duration
 
-
 /**
  * Manages consumer registration. Consumers call registerConsumer method to register themselves  when they get created.
  * ActorEndpoint uses it to lookup an actor by its path.
