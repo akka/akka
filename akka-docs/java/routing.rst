@@ -25,7 +25,7 @@ is really easy to create your own. The routers shipped with Akka are:
 * ``akka.routing.BroadcastRouter``
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
 
-Routers Explained
+Routers In Action
 ^^^^^^^^^^^^^^^^^
 
 This is an example of how to create a router that is defined in configuration:
@@ -45,8 +45,11 @@ You can also give the router already created routees as in:
 When you create a router programatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
-*It is also worth pointing out that if you define the ``router`` in the configuration file then this value will be used
-instead of any programmatically sent parameters.*
+*It is also worth pointing out that if you define the ``router`` in the
+configuration file then this value will be used instead of any programmatically
+sent parameters. The decision whether to create a router at all, on the other
+hand, must be taken within the code, i.e. you cannot make something a router by
+external configuration alone (see below for details).*
 
 Once you have the router actor it is just to send messages to it as you would to any actor:
 
@@ -55,6 +58,45 @@ Once you have the router actor it is just to send messages to it as you would to
   router.tell(new MyMsg());
 
 The router will apply its behavior to the message it receives and forward it to the routees.
+
+How Routing is Designed within Akka
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Routers behave like single actors, but they should also not hinder scalability.
+This apparent contradiction is solved by making routers be represented by a
+special :class:`RoutedActorRef`, which dispatches incoming messages destined
+for the routees without actually invoking the router actor’s behavior (and thus
+avoiding its mailbox; the single router actor’s task is to manage all aspects
+related to the lifecycle of the routees). This means that the code which decides
+which route to take is invoked concurrently from all possible senders and hence
+must be thread-safe, it cannot live the simple and happy life of code within an
+actor.
+
+There is one part in the above paragraph which warrants some more background
+explanation: Why does a router need a “head” which is actual parent to all the
+routees? The initial design tried to side-step this issue, but location
+transparency as well as mandatory parental supervision required a redesign.
+Each of the actors which the router spawns must have its unique identity, which
+translates into a unique actor path. Since the router has only one given name
+in its parent’s context, another level in the name space is needed, which
+according to the addressing semantics implies the existence of an actor with
+the router’s name. This is not only necessary for the internal messaging
+involved in creating, restarting and terminating actors, it is also needed when
+the pooled actors need to converse with other actors and receive replies in a
+deterministic fashion. Since each actor knows its own external representation
+as well as that of its parent, the routees decide where replies should be sent
+when reacting to a message:
+
+.. code-block:: java
+
+  getSender().tell(reply, getContext().parent()); // replies go to the router
+  getSender().tell(reply, getSelf()); // replies go to this routee
+
+It is apparent now why routing needs to be enabled in code rather than being
+possible to “bolt on” later: whether or not an actor is routed means a change
+to the actor hierarchy, changing the actor paths of all children of the router.
+The routees especially do need to know that they are routed to in order to
+choose the sender reference for any messages they dispatch as shown above.
 
 Router usage
 ^^^^^^^^^^^^
