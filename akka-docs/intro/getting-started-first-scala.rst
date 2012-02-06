@@ -442,6 +442,18 @@ When this in done we can run our application directly inside SBT::
 
 Yippee! It is working.
 
+Overriding Configuration Externally
+===================================
+
+The sample project includes an ``application.conf`` file in the resources directory:
+
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/resources/application.conf
+
+If you uncomment the two lines, you should see a change in performance,
+hopefully for the better. It should be noted that overriding only works if a
+router type is given, so just uncommenting ``nr-of-instances`` does not work;
+see :ref:`routing-scala` for more details.
+
 Conclusion
 ==========
 
