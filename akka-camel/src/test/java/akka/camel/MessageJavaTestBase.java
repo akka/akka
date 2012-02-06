@@ -27,7 +27,7 @@ public class MessageJavaTestBase {
     @BeforeClass
     public static void setUpBeforeClass() {
         system = ActorSystem.create("test");
-        camel = new DefaultCamel(system).start();
+        camel = (Camel) CamelExtension.get(system);
     }
 
     @AfterClass

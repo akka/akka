@@ -5,6 +5,7 @@
 package akka.camel
 
 import akka.camel.TestSupport.SharedCamelSystem
+import internal.DefaultCamel
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.actor.ActorSystem

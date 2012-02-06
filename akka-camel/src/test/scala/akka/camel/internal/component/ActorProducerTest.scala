@@ -4,12 +4,10 @@
 
 package akka.camel.internal.component
 
-import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the, any }
 import org.mockito.Mockito._
 import org.apache.camel.AsyncCallback
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.duration._
 import akka.util.Duration
@@ -17,33 +15,38 @@ import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
+import internal.CamelExchangeAdapter
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
-import org.mockito.Mockito
+import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
+import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
+import org.scalatest.matchers.MustMatchers
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
   "ActorProducer" when {
 
-    "consumer actor doesnt exist" must {
-      "set failure message on exchange" in (pending)
-    }
-
     "synchronous" when {
 
-      "in-only" must {
-        def process() = {
-          producer = given(outCapable = false)
-          time(producer.process(exchange))
+      "consumer actor doesnt exist" must {
+        "set failure message on exchange" in {
+          producer = given(actor = null)
+          producer.process(exchange)
+
+          verify(exchange).setFailure(any[Failure])
         }
+      }
+
+      "in-only" must {
+        def producer = given(outCapable = false)
 
         "pass the message to the consumer" in {
-          process()
+          producer.process(exchange)
           within(1 second)(probe.expectMsg(message))
         }
 
         "not expect response and not block" in {
-          process must be < (30 millis)
+          time(producer.process(exchange)) must be < (30 millis)
         }
 
       }
@@ -90,7 +93,21 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
     }
 
     "asynchronous" when {
+
+      def verifyFailureIsSet {
+        producer.process(exchange, asyncCallback)
+        asyncCallback.awaitCalled()
+        verify(exchange).setFailure(any[Failure])
+      }
+
       "out-capable" when {
+
+        "consumer actor doesnt exist" must {
+          "set failure message on exchange" in {
+            producer = given(actor = null, outCapable = true)
+            verifyFailureIsSet
+          }
+        }
 
         "response is ok" must {
           "get a response and async callback as soon as it gets the response (but not before)" in {
@@ -130,12 +147,28 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
 
         "no response is sent within timeout" must {
-          "set failure on exchange" in pending
+          "set TimeoutException on exchange" in {
+            producer = given(outCapable = true, replyTimeout = 10 millis)
+            producer.process(exchange, asyncCallback)
+            asyncCallback.awaitCalled(100 millis)
+            verify(exchange).setFailure(Matchers.argThat(new ArgumentMatcher[Failure] {
+              def matches(failure: AnyRef) = { failure.asInstanceOf[Failure].getCause must be(anInstanceOf[TimeoutException]); true }
+
+            }))
+          }
         }
 
       }
 
       "in-only" when {
+
+        "consumer actor doesnt exist" must {
+          "set failure message on exchange" in {
+            producer = given(actor = null, outCapable = false)
+            verifyFailureIsSet
+          }
+        }
+
         "autoAck" must {
 
           "get sync callback as soon as it sends a message" in {
@@ -168,9 +201,21 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             }
           }
 
-          //TODO: write this test
           "expecting Ack or Failure message and some other message is sent as a response" must {
-            "fail" in pending
+            "fail" in {
+              producer = given(outCapable = false, autoAck = false)
+
+              producer.process(exchange, asyncCallback)
+
+              within(1 second) {
+                probe.expectMsgType[Message]; info("message sent to consumer")
+                probe.sender ! "some neither Ack nor Failure response"
+                asyncCallback.expectDoneAsyncWithin(remaining); info("async callback called")
+              }
+              verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
+              verify(exchange).setFailure(any[Failure]); info("failure set")
+
+            }
           }
 
           "no Ack is sent within timeout" must {
@@ -185,7 +230,21 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           }
 
           "response is Failure" must {
-            "set an exception on exchange" in pending
+            "set an exception on exchange" in {
+              producer = given(outCapable = false, autoAck = false)
+
+              val doneSync = producer.process(exchange, asyncCallback)
+
+              doneSync must be(false)
+              within(1 second) {
+                probe.expectMsgType[Message]; info("message sent to consumer")
+                probe.sender ! Failure(new Exception)
+                asyncCallback.awaitCalled(remaining);
+              }
+              verify(exchange, never()).setResponse(any[Message]); info("no response forwarded to exchange")
+              verify(exchange).setFailure(any[Failure]); info("failure set")
+            }
+
           }
 
         }
@@ -227,7 +286,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def msg(s: String) = Message(s, Map.empty)
 
-  def given(actor: ActorRef = probe.ref, outCapable: Boolean, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
+  def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
     new ConsumerAsyncProcessor(config(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }

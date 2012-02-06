@@ -1,8 +1,9 @@
+package akka.camel.internal
+
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.camel
 import akka.event.LoggingAdapter
 
 private[camel] object Try {

@@ -17,9 +17,9 @@ trait Activation {
   private[camel] val activationTracker = system.actorOf(Props[ActivationTracker])
 
   /**
-   * Awaits for endpoint to be activated. It is blocking until endpoint is registered in camel context or timeout expires.
+   * Awaits for endpoint to be activated. It blocks until the endpoint is registered in camel context or timeout expires.
    *
-   * @throws ActivationTimeoutException if endpoint is not activated within timeout.
+   * @throws akka.camel.ActivationTimeoutException if endpoint is not activated within timeout.
    */
   def awaitActivation(endpoint: ActorRef, timeout: Duration): ActorRef = {
     try {
@@ -30,9 +30,9 @@ trait Activation {
   }
 
   /**
-   * Awaits for endpoint to be deactivated. It is blocking until endpoint is unregistered in camel context or timeout expires.
+   * Awaits for endpoint to be de-activated. It is blocking until endpoint is unregistered in camel context or timeout expires.
    *
-   * @throws DeActivationTimeoutException if endpoint is not activated within timeout.
+   * @throws akka.camel.DeActivationTimeoutException if endpoint is not de-activated within timeout.
    */
   def awaitDeactivation(endpoint: ActorRef, timeout: Duration) {
     try {
@@ -43,7 +43,7 @@ trait Activation {
   }
 
   /**
-   * Similar to awaitActivation but returns future instead.
+   * Similar to `awaitActivation` but returns future instead.
    */
   def activationFutureFor(endpoint: ActorRef, timeout: Duration): Future[ActorRef] = {
     (activationTracker ? (AwaitActivation(endpoint), Timeout(timeout))).map[ActorRef] {
