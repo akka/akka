@@ -125,11 +125,11 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   def serializerFor(clazz: Class[_]): Serializer =
     serializerMap.get(clazz) match {
       case null ⇒
-        val ser = bindings.find { case (c, s) ⇒ c.isAssignableFrom(clazz) } match {
-          case None ⇒ throw new NotSerializableException(
-            "No configured serialization-bindings for class [%s]" format clazz.getName)
-          case Some((c, s)) ⇒ s
-        }
+        val ser = bindings.collectFirst {
+          case (c, s) if c.isAssignableFrom(clazz) ⇒ s
+        } getOrElse (throw new NotSerializableException(
+          "No configured serialization-bindings for class [%s]" format clazz.getName))
+
         // memorize for performance
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
@@ -161,7 +161,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings) yield {
-      val c = ReflectiveAccess.getClassFor(k, system.internalClassLoader).fold(throw _, (c: Class[_]) ⇒ c)
+      val c = ReflectiveAccess.getClassFor(k, system.internalClassLoader).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)

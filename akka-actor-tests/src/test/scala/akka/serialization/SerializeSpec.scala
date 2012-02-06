@@ -80,8 +80,8 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
   "Serialization" must {
 
     "have correct bindings" in {
-      ser.bindings.find(_._1 == addr.getClass).map(_._2.getClass) must be(Some(classOf[JavaSerializer]))
-      ser.bindings.find(_._1 == classOf[PlainMessage]).map(_._2.getClass) must be(Some(classOf[TestSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } must be(Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } must be(Some(classOf[TestSerializer]))
     }
 
     "serialize Address" in {
