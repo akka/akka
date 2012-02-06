@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, /*cluster,*/ slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -86,7 +86,7 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
-  /*lazy val cluster = Project(
+  lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
@@ -103,7 +103,7 @@ object AkkaBuild extends Build {
       },
       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
     )
-  ) configs (MultiJvm)*/
+  ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -320,7 +320,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, /*cluster,*/ slf4j, agent, transactor, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
+    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -429,7 +429,7 @@ object Dependencies {
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
-  //val cluster = Seq(Test.junit, Test.scalatest)
+ val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi)
 
