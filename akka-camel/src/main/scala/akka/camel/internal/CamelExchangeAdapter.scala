@@ -24,20 +24,20 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   /**
    * Sets Exchange.getIn from the given Message object.
    */
-  def setRequest(msg: Message): Exchange = { msg.copyContentTo(exchange.getIn); exchange }
+  def setRequest(msg: Message) {  msg.copyContentTo(request) }
 
   /**
    * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
    * Message object. If the exchange is out-capable then the Exchange.getOut is set, otherwise
    * Exchange.getIn.
    */
-  def setResponse(msg: Message): Exchange = { msg.copyContentTo(response); exchange }
+  def setResponse(msg: Message) { msg.copyContentTo(response) }
 
   /**
    * Sets Exchange.getException from the given Failure message. Headers of the Failure message
    * are ignored.
    */
-  def setFailure(msg: Failure): Exchange = { exchange.setException(msg.cause); exchange }
+  def setFailure(msg: Failure) { exchange.setException(msg.cause) }
 
   /**
    * Creates a Message object from Exchange.getIn.

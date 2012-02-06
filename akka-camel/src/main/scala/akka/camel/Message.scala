@@ -210,7 +210,7 @@ object Message {
   def from(camelMessage: CamelMessage): Message = from(camelMessage, Map.empty)
 
   /**
-   * Creates a new Message object from the adapted Camel message.
+   * Creates a new Message object from the Camel message.
    *
    * @param headers additional headers to set on the created Message in addition to those
    *                in the Camel message.

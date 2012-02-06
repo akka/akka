@@ -61,7 +61,8 @@ trait ProducerSupport { this: Actor ⇒
     implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter = new CamelExchangeAdapter(exchange)
 
     val cmsg = Message.canonicalize(msg)
-    val exchange = endpoint.createExchange(pattern).setRequest(cmsg)
+    val exchange = endpoint.createExchange(pattern)
+    exchange.setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
       val producer = self
       // Need copies of sender reference here since the callback could be done
