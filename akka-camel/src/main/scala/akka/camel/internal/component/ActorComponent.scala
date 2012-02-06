@@ -15,7 +15,8 @@ import scala.reflect.BeanProperty
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import akka.camel.{ConsumerConfig, Camel, CamelExchangeAdapter, Ack, Failure ⇒ CamelFailure, Message}
+import akka.camel.{ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, Message}
+import akka.camel.internal.CamelExchangeAdapter
 
 /**
  * Camel component for sending messages to and receiving replies from (untyped) actors.

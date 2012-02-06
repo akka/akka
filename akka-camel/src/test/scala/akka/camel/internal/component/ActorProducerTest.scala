@@ -15,6 +15,7 @@ import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
+import internal.CamelExchangeAdapter
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}

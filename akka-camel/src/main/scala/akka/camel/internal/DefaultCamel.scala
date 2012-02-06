@@ -5,10 +5,9 @@ import component.{DurationTypeConverter, ActorComponent}
 import org.apache.camel.CamelContext
 import org.apache.camel.impl.DefaultCamelContext
 import akka.util.Duration
-import akka.camel.Try.{safe, apply}
 import scala.Predef._
 import akka.event.Logging
-import akka.camel.{Try, Camel}
+import akka.camel.Camel
 
 
 /**
@@ -16,7 +15,7 @@ import akka.camel.{Try, Camel}
  *
  * @param system is used to create internal actors needed by camel instance.
  * Camel doesn't maintain the lifecycle of this actorSystem. It has to be shut down by the user.
- * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the  actor system it extends.
+ * In typical scenario, when camel is used with akka extension, it is natural that camel reuses the actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources.
  */
 private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
@@ -54,7 +53,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    try context.stop() finally safe(template.stop())
+    try context.stop() finally Try.safe(template.stop())
     log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
 }

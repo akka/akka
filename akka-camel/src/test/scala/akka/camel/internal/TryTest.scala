@@ -1,20 +1,20 @@
+package akka.camel.internal
+
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.camel
-
-import internal.Try
-import akka.camel.Try._
+import akka.camel.internal.Try._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import akka.event.LoggingAdapter
-import org.scalatest.{ BeforeAndAfterEach, WordSpec }
+import org.scalatest.{BeforeAndAfterEach, WordSpec}
 
 class TryTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
+
   import org.mockito.Mockito._
   import org.mockito.Matchers._
-  import org.mockito.Matchers.{ eq ⇒ the }
+  import org.mockito.Matchers.{eq ⇒ the}
 
   implicit var log: LoggingAdapter = _
 
@@ -24,7 +24,9 @@ class TryTest extends WordSpec with MustMatchers with MockitoSugar with BeforeAn
 
   "Safe executes block" in {
     var executed = false
-    safe { executed = true }
+    safe {
+      executed = true
+    }
     executed must be(true)
     verifyNoMoreInteractions(log)
   }

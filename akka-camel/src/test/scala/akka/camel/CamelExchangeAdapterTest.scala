@@ -4,6 +4,7 @@
 
 package akka.camel
 
+import internal.CamelExchangeAdapter
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.{ Exchange, ExchangePattern }
 import akka.camel.TestSupport.{ SharedCamelSystem, MessageSugar }
