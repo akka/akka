@@ -14,9 +14,9 @@ import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
-import akka.jsr166y.ForkJoinPool
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
+import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -424,7 +424,30 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
     threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
 }
 
+object ForkJoinExecutorConfigurator {
+  class AkkaForkJoinPool(parallelism: Int, threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory) extends ForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, true) {
+    override def execute(r: Runnable): Unit = r match {
+      case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
+      case other      ⇒ super.execute(other)
+    }
+  }
+  class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
+    final override def setRawResult(u: Unit): Unit = ()
+    final override def getRawResult(): Unit = ()
+    final override def exec(): Boolean = try { mailbox.run; true } catch {
+      case anything ⇒
+        val t = Thread.currentThread
+        t.getUncaughtExceptionHandler match {
+          case null ⇒
+          case some ⇒ some.uncaughtException(t, anything)
+        }
+        throw anything
+    }
+  }
+}
+
 class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+  import ForkJoinExecutorConfigurator._
 
   def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = prerequisites.threadFactory match {
     case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
@@ -433,7 +456,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
 
   class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                        val parallelism: Int) extends ExecutorServiceFactory {
-    def createExecutorService: ExecutorService = new ForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, true)
+    def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory)
   }
   final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
     new ForkJoinExecutorServiceFactory(
