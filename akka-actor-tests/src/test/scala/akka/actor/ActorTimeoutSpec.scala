@@ -1,54 +1,33 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
-import org.scalatest.BeforeAndAfterAll
 import akka.util.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
-import java.util.concurrent.TimeoutException
+import akka.testkit._
 import akka.dispatch.Await
 import akka.util.Timeout
+import akka.pattern.{ ask, AskTimeoutException }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorTimeoutSpec extends AkkaSpec with BeforeAndAfterAll with DefaultTimeout {
+class ActorTimeoutSpec extends AkkaSpec {
 
-  val defaultTimeout = system.settings.ActorTimeout.duration
-  val testTimeout = if (system.settings.ActorTimeout.duration < 400.millis) 500 millis else 100 millis
+  val testTimeout = 200.millis.dilated
+  val leeway = 500.millis.dilated
 
   "An Actor-based Future" must {
 
-    "use the global default timeout if no implicit in scope" in {
-      within(defaultTimeout - 100.millis, defaultTimeout + 400.millis) {
-        val echo = system.actorOf(Props.empty)
-        try {
-          val d = system.settings.ActorTimeout.duration
-          val f = echo ? "hallo"
-          intercept[AskTimeoutException] { Await.result(f, d + d) }
-        } finally { system.stop(echo) }
-      }
-    }
-
     "use implicitly supplied timeout" in {
       implicit val timeout = Timeout(testTimeout)
-      within(testTimeout - 100.millis, testTimeout + 300.millis) {
-        val echo = system.actorOf(Props.empty)
-        try {
-          val f = (echo ? "hallo").mapTo[String]
-          intercept[AskTimeoutException] { Await.result(f, testTimeout + testTimeout) }
-        } finally { system.stop(echo) }
-      }
+      val echo = system.actorOf(Props.empty)
+      val f = (echo ? "hallo")
+      intercept[AskTimeoutException] { Await.result(f, testTimeout + leeway) }
     }
 
     "use explicitly supplied timeout" in {
-      within(testTimeout - 100.millis, testTimeout + 300.millis) {
-        val echo = system.actorOf(Props.empty)
-        val f = echo.?("hallo", testTimeout)
-        try {
-          intercept[AskTimeoutException] { Await.result(f, testTimeout + 300.millis) }
-        } finally { system.stop(echo) }
-      }
+      val echo = system.actorOf(Props.empty)
+      val f = echo.?("hallo")(testTimeout)
+      intercept[AskTimeoutException] { Await.result(f, testTimeout + leeway) }
     }
   }
 }

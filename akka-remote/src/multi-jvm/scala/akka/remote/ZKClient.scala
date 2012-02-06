@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2011 Typesafe <http://typesafe.com/>
+ *  Copyright (C) 2011-2012 Typesafe <http://typesafe.com/>
  */
 package akka.remote
 
@@ -25,7 +25,8 @@ object ZkClient extends Watcher {
     private def waitForServer() {
       // SI-1672
       val r = try {
-        zk.exists("/", false); true
+        zk.exists("/", false)
+        true
       } catch {
         case _: KeeperException.ConnectionLossException =>
           Thread.sleep(10000)
@@ -35,9 +36,7 @@ object ZkClient extends Watcher {
     }
     waitForServer()
 
-    try {
-      zk.create(root, Array[Byte](), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
-    } catch {
+    try zk.create(root, Array[Byte](), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT) catch {
       case _: KeeperException.NodeExistsException =>
     }
 
@@ -46,9 +45,7 @@ object ZkClient extends Watcher {
     private def block(num: Int) {
       val start = System.currentTimeMillis
       while (true) {
-        if (System.currentTimeMillis - start > timeoutMs)
-          throw new InterruptedException("Timed out blocking in zk")
-
+        if (System.currentTimeMillis - start > timeoutMs) throw new InterruptedException("Timed out blocking in zk")
         ZkClient.this.synchronized {
           val children = zk.getChildren(root, true)
           if (children.size < num) {
@@ -60,16 +57,12 @@ object ZkClient extends Watcher {
     }
 
     def enter() {
-      zk.create(root + "/" + name, Array[Byte](), Ids.OPEN_ACL_UNSAFE,
-                CreateMode.EPHEMERAL)
-
+      zk.create(root + "/" + name, Array[Byte](), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
       block(count)
     }
 
     final def leave() {
-      zk.create(root + "/" + name + ".leave", Array[Byte](), Ids.OPEN_ACL_UNSAFE,
-                CreateMode.EPHEMERAL)
-
+      zk.create(root + "/" + name + ".leave", Array[Byte](), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
       block(2*count)
     }
   }

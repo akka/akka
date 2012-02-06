@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
@@ -14,6 +14,9 @@ import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
+import akka.jsr166y.ForkJoinPool
+import akka.util.NonFatal
+import akka.event.Logging.LogEventException
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -79,12 +82,27 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
     try {
       runnable.run()
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
+      case NonFatal(e) ⇒
+        eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
     } finally {
       cleanup()
     }
   }
+}
+
+/**
+ * Java API to create ExecutionContexts
+ */
+object ExecutionContexts {
+  /**
+   * Creates an ExecutionContext from the given ExecutorService
+   */
+  def fromExecutorService(e: ExecutorService): ExecutionContext = new ExecutionContext.WrappedExecutorService(e)
+
+  /**
+   * Creates an ExecutionContext from the given Executor
+   */
+  def fromExecutor(e: Executor): ExecutionContext = new ExecutionContext.WrappedExecutor(e)
 }
 
 object ExecutionContext {
@@ -100,10 +118,25 @@ object ExecutionContext {
    */
   def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
 
-  private class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext
+  /**
+   * Internal Akka use only
+   */
+  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+    override def reportFailure(t: Throwable): Unit = t match {
+      case e: LogEventException ⇒ e.getCause.printStackTrace()
+      case _                    ⇒ t.printStackTrace()
+    }
+  }
 
-  private class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+  /**
+   * Internal Akka use only
+   */
+  private[akka] class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
+    override def reportFailure(t: Throwable): Unit = t match {
+      case e: LogEventException ⇒ e.getCause.printStackTrace()
+      case _                    ⇒ t.printStackTrace()
+    }
   }
 }
 
@@ -118,6 +151,13 @@ trait ExecutionContext {
    * Submits the runnable for execution
    */
   def execute(runnable: Runnable): Unit
+
+  /**
+   * Failed tasks should call reportFailure to let the ExecutionContext
+   * log the problem or whatever is appropriate for the implementation.
+   */
+  def reportFailure(t: Throwable): Unit
+
 }
 
 object MessageDispatcher {
@@ -138,11 +178,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    *  Creates and returns a mailbox for the given actor.
    */
   protected[akka] def createMailbox(actor: ActorCell): Mailbox
-
-  /**
-   * Name of this dispatcher.
-   */
-  def name: String
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
@@ -170,10 +205,15 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     try {
       executeTask(invocation)
     } catch {
-      case e ⇒
+      case t ⇒
         inhabitantsUpdater.decrementAndGet(this)
-        throw e
+        throw t
     }
+  }
+
+  def reportFailure(t: Throwable): Unit = t match {
+    case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
+    case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
 
   @tailrec
@@ -287,8 +327,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   @inline
   protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
-  @inline
-  protected[akka] final val isThroughputDefined = throughput > 1
 
   protected[akka] def executeTask(invocation: TaskInvocation)
 
@@ -298,6 +336,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   protected[akka] def shutdown(): Unit
 }
+
+abstract class ExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceFactoryProvider
 
 /**
  * Base class to be used for hooking in new dispatchers into Dispatchers.
@@ -328,8 +368,8 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
           BoundedMailbox(capacity, duration)
         }
       case fqcn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config])
-        ReflectiveAccess.createInstance[MailboxType](fqcn, constructorSignature, Array[AnyRef](config)) match {
+        val args = Seq(classOf[Config] -> config)
+        ReflectiveAccess.createInstance[MailboxType](fqcn, args, prerequisites.classloader) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -340,14 +380,30 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
     }
   }
 
-  def configureThreadPool(
-    config: Config,
-    createDispatcher: ⇒ (ThreadPoolConfig) ⇒ MessageDispatcher): ThreadPoolConfigDispatcherBuilder = {
-    import ThreadPoolConfigDispatcherBuilder.conf_?
+  def configureExecutor(): ExecutorServiceConfigurator = {
+    config.getString("executor") match {
+      case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
+      case fqcn ⇒
+        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
+        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites), prerequisites.classloader) match {
+          case Right(instance) ⇒ instance
+          case Left(exception) ⇒ throw new IllegalArgumentException(
+            ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
+                make sure it has an accessible constructor with a [%s,%s] signature""")
+              .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
+        }
+    }
+  }
+}
 
-    //Apply the following options to the config if they are present in the config
+class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+  import ThreadPoolConfigBuilder.conf_?
 
-    ThreadPoolConfigDispatcherBuilder(createDispatcher, ThreadPoolConfig(daemonic = config getBoolean "daemonic"))
+  val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
+
+  protected def createThreadPoolConfigBuilder(config: Config, prerequisites: DispatcherPrerequisites): ThreadPoolConfigBuilder = {
+    ThreadPoolConfigBuilder(ThreadPoolConfig())
       .setKeepAliveTime(Duration(config getMilliseconds "keep-alive-time", TimeUnit.MILLISECONDS))
       .setAllowCoreThreadTimeout(config getBoolean "allow-core-timeout")
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
@@ -363,4 +419,27 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
           case _ ⇒ None
         })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
+
+  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
+}
+
+class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
+
+  def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = prerequisites.threadFactory match {
+    case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
+    case x ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
+  }
+
+  class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+                                       val parallelism: Int) extends ExecutorServiceFactory {
+    def createExecutorService: ExecutorService = new ForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, true)
+  }
+  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    new ForkJoinExecutorServiceFactory(
+      validate(threadFactory),
+      ThreadPoolConfig.scaledPoolSize(
+        config.getInt("parallelism-min"),
+        config.getDouble("parallelism-factor"),
+        config.getInt("parallelism-max")))
 }

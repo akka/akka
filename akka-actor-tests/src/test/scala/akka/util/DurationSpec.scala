@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
 
@@ -53,11 +53,12 @@ class DurationSpec extends WordSpec with MustMatchers {
     "support fromNow" in {
       val dead = 2.seconds.fromNow
       val dead2 = 2 seconds fromNow
-      dead.timeLeft must be > 1.second
-      dead2.timeLeft must be > 1.second
+      // view bounds vs. very local type inference vs. operator precedence: sigh
+      dead.timeLeft must be > (1 second: Duration)
+      dead2.timeLeft must be > (1 second: Duration)
       1.second.sleep
-      dead.timeLeft must be < 1.second
-      dead2.timeLeft must be < 1.second
+      dead.timeLeft must be < (1 second: Duration)
+      dead2.timeLeft must be < (1 second: Duration)
     }
 
   }

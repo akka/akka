@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.dispatch
 
@@ -20,6 +20,7 @@ import akka.util.duration._
 import akka.event.Logging.Error
 import com.typesafe.config.Config
 import akka.util.Duration
+import akka.pattern.ask
 
 object ActorModelSpec {
 
@@ -447,17 +448,14 @@ object DispatcherModelSpec {
   class MessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
-    private val instance: MessageDispatcher = {
-      configureThreadPool(config,
-        threadPoolConfig ⇒ new Dispatcher(prerequisites,
-          config.getString("name"),
-          config.getString("id"),
-          config.getInt("throughput"),
-          Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-          mailboxType,
-          threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
-    }
+    private val instance: MessageDispatcher =
+      new Dispatcher(prerequisites,
+        config.getString("id"),
+        config.getInt("throughput"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        mailboxType,
+        configureExecutor(),
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
@@ -522,17 +520,14 @@ object BalancingDispatcherModelSpec {
   class BalancingMessageDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
-    private val instance: MessageDispatcher = {
-      configureThreadPool(config,
-        threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-          config.getString("name"),
-          config.getString("id"),
-          config.getInt("throughput"),
-          Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-          mailboxType,
-          threadPoolConfig,
-          Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor).build
-    }
+    private val instance: MessageDispatcher =
+      new BalancingDispatcher(prerequisites,
+        config.getString("id"),
+        config.getInt("throughput"),
+        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+        mailboxType,
+        configureExecutor(),
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }

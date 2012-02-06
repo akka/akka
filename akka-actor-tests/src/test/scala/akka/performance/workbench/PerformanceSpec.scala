@@ -31,7 +31,8 @@ abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends Akk
   def compareResultWith: Option[String] = None
 
   def acceptClients(numberOfClients: Int): Boolean = {
-    (minClients <= numberOfClients && numberOfClients <= maxClients)
+    (minClients <= numberOfClients && numberOfClients <= maxClients &&
+      (maxClients <= 16 || numberOfClients % 4 == 0))
   }
 
   def logMeasurement(numberOfClients: Int, durationNs: Long, n: Long) {

@@ -7,9 +7,12 @@ package akka.camelexamples
 import akka.camel._
 import akka.util.duration._
 import akka.actor.{ Actor, OneForOneStrategy }
+import akka.actor.SupervisorStrategy._
 
 object ExamplesSupport {
-  val retry3xWithin1s = OneForOneStrategy(List(classOf[Exception]), maxNrOfRetries = 3, withinTimeRange = 1000)
+  val retry3xWithin1s = OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1 second) {
+    case _: Exception ⇒ Restart
+  }
 }
 
 class SysOutConsumer extends Consumer {

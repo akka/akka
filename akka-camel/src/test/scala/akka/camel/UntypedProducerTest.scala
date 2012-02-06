@@ -10,6 +10,7 @@ import org.apache.camel.component.mock.MockEndpoint
 
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
+import akka.pattern._
 import akka.dispatch.Await
 import akka.util.duration._
 import org.scalatest._
@@ -33,7 +34,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message is sent to the producer with !!")
       val message = Message("test", Map(Message.MessageExchangeId -> "123"))
-      val future = producer.ask(message, timeout)
+      val future = producer.ask(message)(timeout)
       then("a normal response should have been returned by the producer")
       val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
@@ -49,7 +50,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with !!")
       val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
-      val future = producer.ask(message, timeout)
+      val future = producer.ask(message)(timeout)
       then("a failure response should have been returned by the producer")
       Await.result(future, timeout) match {
         case result: Failure ⇒ {

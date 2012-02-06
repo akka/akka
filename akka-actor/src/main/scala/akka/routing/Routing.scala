@@ -1,18 +1,23 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
 import akka.actor._
-import akka.dispatch.Future
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.TimeUnit
-import akka.util.{ Duration, Timeout }
+import akka.util.Duration
 import akka.util.duration._
-import com.typesafe.config.Config
 import akka.config.ConfigurationException
+import akka.pattern.pipe
+import akka.pattern.AskSupport
+
+import com.typesafe.config.Config
+
 import scala.collection.JavaConversions.iterableAsScalaIterable
+
+import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
+import java.util.concurrent.TimeUnit
+
+import akka.jsr166y.ThreadLocalRandom
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -95,11 +100,6 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     }
   }
 
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    resize()
-    super.?(message)(timeout)
-  }
-
   def resize() {
     for (r ← _props.routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true)) {
@@ -139,13 +139,10 @@ trait RouterConfig {
 
   def createActor(): Router = new Router {}
 
-  def adaptFromDeploy(deploy: Option[Deploy]): RouterConfig = {
-    deploy match {
-      case Some(Deploy(_, _, NoRouter, _)) ⇒ this
-      case Some(Deploy(_, _, r, _))        ⇒ r
-      case _                               ⇒ this
-    }
-  }
+  /**
+   * Overridable merge strategy, by default completely prefers “this” (i.e. no merge).
+   */
+  def withFallback(other: RouterConfig): RouterConfig = this
 
   protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
 
@@ -297,11 +294,14 @@ case class RouterRoutees(routees: Iterable[ActorRef])
 case class Destination(sender: ActorRef, recipient: ActorRef)
 
 /**
- * Routing configuration that indicates no routing.
- * Oxymoron style.
+ * Routing configuration that indicates no routing; this is also the default
+ * value which hence overrides the merge strategy in order to accept values
+ * from lower-precendence sources. The decision whether or not to create a
+ * router is taken in the LocalActorRefProvider based on Props.
  */
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  override def withFallback(other: RouterConfig): RouterConfig = other
 }
 
 /**
@@ -453,23 +453,16 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
 }
 
 trait RandomLike { this: RouterConfig ⇒
-
-  import java.security.SecureRandom
-
   def nrOfInstances: Int
 
   def routees: Iterable[String]
-
-  private val random = new ThreadLocal[SecureRandom] {
-    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
-  }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
       val _routees = routeeProvider.routees
-      _routees(random.get.nextInt(_routees.size))
+      _routees(ThreadLocalRandom.current.nextInt(_routees.size))
     }
 
     {
@@ -699,10 +692,7 @@ trait BroadcastLike { this: RouterConfig ⇒
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     {
-      case (sender, message) ⇒
-        message match {
-          case _ ⇒ toAll(sender, routeeProvider.routees)
-        }
+      case (sender, message) ⇒ toAll(sender, routeeProvider.routees)
     }
   }
 }
@@ -720,11 +710,13 @@ object ScatterGatherFirstCompletedRouter {
 }
 /**
  * Simple router that broadcasts the message to all routees, and replies with the first response.
- * <br>
+ * <br/>
+ * You have to defin the 'within: Duration' parameter (f.e: within = 10 seconds).
+ * <br/>
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical sense as this means
  * that the router should both create new actors and use the 'routees' actor(s).
  * In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
+ * <br/>
  * <b>The</b> configuration parameter trumps the constructor arguments. This means that
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
@@ -735,6 +727,9 @@ object ScatterGatherFirstCompletedRouter {
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
+
+  if (within <= Duration.Zero) throw new IllegalArgumentException(
+    "[within: Duration] can not be zero or negative, was [" + within + "]")
 
   /**
    * Constructor that sets nrOfInstances to be created.
@@ -774,12 +769,10 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
     {
       case (sender, message) ⇒
-        // FIXME avoid this cast
-        val asker = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider.ask(Timeout(within)).get
+        val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
+        val asker = akka.pattern.createAsker(provider, within)
         asker.result.pipeTo(sender)
-        message match {
-          case _ ⇒ toAll(asker, routeeProvider.routees)
-        }
+        toAll(asker, routeeProvider.routees)
     }
   }
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
@@ -14,14 +14,11 @@ import org.bson.BSONSerializer
 import org.bson.DefaultBSONDeserializer
 import org.bson.DefaultBSONSerializer
 
-import akka.actor.SerializedActorRef
 import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
-import akka.actor.{ ActorSystem, ActorSystemImpl, Props }
+import akka.actor.ExtendedActorSystem
 
-class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
-
-  val systemImpl = system.asInstanceOf[ActorSystemImpl]
+class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
 
@@ -68,10 +65,10 @@ class BSONSerializableMailbox(system: ActorSystem) extends SerializableBSONObjec
     val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
     system.log.debug("Deserializing a durable message from MongoDB: {}", doc)
     val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg = MessageSerializer.deserialize(system, msgData)
+    val msg = MessageSerializer.deserialize(system, msgData, system.internalClassLoader)
     val ownerPath = doc.as[String]("ownerPath")
     val senderPath = doc.as[String]("senderPath")
-    val sender = systemImpl.actorFor(senderPath)
+    val sender = system.actorFor(senderPath)
 
     MongoDurableMessage(ownerPath, msg, sender)
   }

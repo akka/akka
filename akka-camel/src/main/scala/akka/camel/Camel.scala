@@ -74,7 +74,7 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
   /**
    * Creates a new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
    */
-  def createExtension(system: ActorSystemImpl) = {
+  def createExtension(system: ExtendedActorSystem) = {
     val camel = new DefaultCamel(system).start;
     system.registerOnTermination(camel.shutdown())
     camel

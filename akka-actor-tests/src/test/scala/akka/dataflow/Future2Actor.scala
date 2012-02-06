@@ -1,14 +1,14 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.dataflow
 
 import akka.actor.{ Actor, Props }
 import akka.dispatch.{ Future, Await }
-import akka.actor.future2actor
 import akka.util.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
+import akka.pattern.{ ask, pipe }
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
 

@@ -1,14 +1,14 @@
 package akka.actor
 
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Duration, Timeout }
+import akka.util.{ Timeout, NonFatal }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import akka.serialization.{ Serializer, Serialization, SerializationExtension }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
 import java.lang.IllegalStateException
@@ -80,7 +80,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
 
   def lookup() = this
-  def createExtension(system: ActorSystemImpl): TypedActorExtension = new TypedActorExtension(system)
+  def createExtension(system: ExtendedActorSystem): TypedActorExtension = new TypedActorExtension(system)
 
   /**
    * Returns a contextual TypedActorFactory of this extension, this means that any TypedActors created by this TypedActorExtension
@@ -218,6 +218,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       TypedActor.currentContext set null
     }
 
+    override def supervisorStrategy(): SupervisorStrategy = me match {
+      case l: Supervisor ⇒ l.supervisorStrategy
+      case _             ⇒ super.supervisorStrategy
+    }
+
     override def preStart(): Unit = me match {
       case l: PreStart ⇒ l.preStart()
       case _           ⇒ super.preStart()
@@ -265,7 +270,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
                 sender ! m(me)
               }
             } catch {
-              case t: Throwable ⇒ sender ! Status.Failure(t); throw t
+              case NonFatal(e) ⇒
+                sender ! Status.Failure(e)
+                throw e
             }
           }
         } finally {
@@ -273,6 +280,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           TypedActor.currentContext set null
         }
     }
+  }
+
+  /**
+   * Mix this into your TypedActor to be able to define supervisor strategy
+   */
+  trait Supervisor {
+    /**
+     * User overridable definition the strategy to use for supervising
+     * child actors.
+     */
+    def supervisorStrategy(): SupervisorStrategy
   }
 
   /**
@@ -284,7 +302,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * <p/>
      * Is called when an Actor is started by invoking 'actor'.
      */
-    def preStart(): Unit = ()
+    def preStart(): Unit
   }
 
   /**
@@ -296,7 +314,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * <p/>
      * Is called when 'actor.stop()' is invoked.
      */
-    def postStop(): Unit = ()
+    def postStop(): Unit
   }
 
   /**
@@ -310,7 +328,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * up of resources before Actor is terminated.
      * By default it calls postStop()
      */
-    def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
+    def preRestart(reason: Throwable, message: Option[Any]): Unit
   }
 
   trait PostRestart {
@@ -320,7 +338,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
      * By default it calls preStart()
      */
-    def postRestart(reason: Throwable): Unit = ()
+    def postRestart(reason: Throwable): Unit
   }
 
   private[akka] class TypedActorInvocationHandler(val extension: TypedActorExtension, val actorVar: AtomVar[ActorRef], val timeout: Timeout) extends InvocationHandler {
@@ -332,17 +350,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        import akka.pattern.ask
         MethodCall(method, args) match {
           case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ actor.?(m, timeout)
+          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
-            val f = actor.?(m, timeout)
+            val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
               case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
               case Some(Right(joption: AnyRef)) ⇒ joption
               case Some(Left(ex))               ⇒ throw ex
             }
-          case m ⇒ Await.result(actor.?(m, timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
   }
@@ -355,12 +374,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 object TypedProps {
 
   val defaultDispatcherId: String = Dispatchers.DefaultDispatcherId
-  val defaultFaultHandler: FaultHandlingStrategy = akka.actor.Props.defaultFaultHandler
   val defaultTimeout: Option[Timeout] = None
   val defaultLoader: Option[ClassLoader] = None
 
   /**
-   * @returns a sequence of interfaces that the speicified class implements,
+   * @return a sequence of interfaces that the speicified class implements,
    * or a sequence containing only itself, if itself is an interface.
    */
   def extractInterfaces(clazz: Class[_]): Seq[Class[_]] =
@@ -415,7 +433,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
-  faultHandler: FaultHandlingStrategy = TypedProps.defaultFaultHandler,
+  deploy: Deploy = Props.defaultDeploy,
   timeout: Option[Timeout] = TypedProps.defaultTimeout,
   loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
@@ -454,17 +472,17 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
       creator = () ⇒ implementation.newInstance())
 
   /**
-   * Returns a new Props with the specified dispatcher set.
+   * Returns a new TypedProps with the specified dispatcher set.
    */
-  def withDispatcher(d: String) = copy(dispatcher = d)
+  def withDispatcher(d: String): TypedProps[T] = copy(dispatcher = d)
 
   /**
-   * Returns a new Props with the specified faulthandler set.
+   * Returns a new TypedProps with the specified deployment configuration.
    */
-  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
+  def withDeploy(d: Deploy): TypedProps[T] = copy(deploy = d)
 
   /**
-   * @returns a new Props that will use the specified ClassLoader to create its proxy class in
+   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Java API
@@ -472,7 +490,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: ClassLoader): TypedProps[T] = withLoader(Option(loader))
 
   /**
-   * @returns a new Props that will use the specified ClassLoader to create its proxy class in
+   * @return a new TypedProps that will use the specified ClassLoader to create its proxy class in
    * If loader is null, it will use the bootstrap classloader.
    *
    * Scala API
@@ -480,7 +498,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withLoader(loader: Option[ClassLoader]): TypedProps[T] = this.copy(loader = loader)
 
   /**
-   * @returns a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if null is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Java API
@@ -488,7 +506,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withTimeout(timeout: Timeout): TypedProps[T] = this.copy(timeout = Option(timeout))
 
   /**
-   * @returns a new Props that will use the specified Timeout for its non-void-returning methods,
+   * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
    * if None is specified, it will use the default ActorTimeout as specified in the configuration.
    *
    * Scala API
@@ -496,7 +514,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def withTimeout(timeout: Option[Timeout]): TypedProps[T] = this.copy(timeout = timeout)
 
   /**
-   * Returns a new Props that has the specified interface,
+   * Returns a new TypedProps that has the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements,
    * appended in the sequence of interfaces.
    */
@@ -504,7 +522,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
     this.copy(interfaces = interfaces ++ TypedProps.extractInterfaces(interface))
 
   /**
-   * Returns a new Props without the specified interface,
+   * Returns a new TypedProps without the specified interface,
    * or if the interface class is not an interface, all the interfaces it implements.
    */
   def withoutInterface(interface: Class[_ >: T]): TypedProps[T] =
@@ -512,8 +530,8 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   import akka.actor.{ Props ⇒ ActorProps }
   def actorProps(): ActorProps =
-    if (dispatcher == ActorProps().dispatcher && faultHandler == ActorProps().faultHandler) ActorProps()
-    else ActorProps(dispatcher = dispatcher, faultHandler = faultHandler)
+    if (dispatcher == ActorProps().dispatcher) ActorProps()
+    else ActorProps(dispatcher = dispatcher)
 }
 
 case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext) extends TypedActorFactory {
@@ -521,7 +539,7 @@ case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFac
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
-class TypedActorExtension(system: ActorSystemImpl) extends TypedActorFactory with Extension {
+class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this

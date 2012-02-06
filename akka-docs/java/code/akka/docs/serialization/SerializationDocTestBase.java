@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.serialization;
 
@@ -91,14 +91,17 @@ public class SerializationDocTestBase {
             serializers {
               default = "akka.serialization.JavaSerializer"
               java = "akka.serialization.JavaSerializer"
+              proto = "akka.serialization.ProtobufSerializer"
               myown = "akka.docs.serialization.MyOwnSerializer"
             }
 
             serialization-bindings {
              java = ["java.lang.String",
                      "app.my.Customer"]
+             proto = ["com.google.protobuf.Message"]
              myown = ["my.own.BusinessObject",
                       "something.equally.Awesome",
+                      "akka.docs.serialization.MyOwnSerializable"
                       "java.lang.Boolean"]
            }
           }

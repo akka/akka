@@ -1,15 +1,12 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
 
 import akka.actor._
 import akka.util._
-import com.eaio.uuid.UUID
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.dispatch.{ DispatcherPrerequisites, Mailbox }
+import akka.dispatch.DispatcherPrerequisites
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -62,8 +59,8 @@ class TestFSMRef[S, D, T <: Actor](
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Option[Duration] = None, stopReason: Option[FSM.Reason] = None) {
-    fsm.applyState(FSM.State(stateName, stateData, timeout, stopReason))
+  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Duration = null, stopReason: Option[FSM.Reason] = None) {
+    fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
   }
 
   /**

@@ -9,7 +9,7 @@ import akka.dispatch.Future
 import akka.dispatch.OldFuture
 import akka.util.Duration
 import java.util.concurrent.TimeUnit
-import java.net.InetSocketAddress
+import akka.migration.AskableActorRef
 
 /**
  * Migration replacement for `object akka.actor.Actor`.
@@ -54,7 +54,6 @@ object OldActor {
 
   @deprecated("OldActor.remote should not be used", "2.0")
   lazy val remote: OldRemoteSupport = new OldRemoteSupport
-
 }
 
 @deprecated("use Actor", "2.0")
@@ -65,6 +64,8 @@ abstract class OldActor extends Actor {
   implicit def future2OldFuture[T](future: Future[T]): OldFuture[T] = akka.migration.future2OldFuture(future)
 
   implicit def actorRef2OldActorRef(actorRef: ActorRef) = new OldActorRef(actorRef)
+
+  implicit def askableActorRef(actorRef: ActorRef): AskableActorRef = new AskableActorRef(actorRef)
 
   @deprecated("Use context.become instead", "2.0")
   def become(behavior: Receive, discardOld: Boolean = true) = context.become(behavior, discardOld)

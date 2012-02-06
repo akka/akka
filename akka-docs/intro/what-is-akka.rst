@@ -82,6 +82,20 @@ Akka can be used in two different ways
 
 See the :ref:`deployment-scenarios` for details.
 
+What happened to Cloudy Akka?
+=============================
+
+The commercial offering was earlier referred to as Cloudy Akka. This offering 
+consisted of two things:
+
+- Cluster support for Akka
+- Monitoring & Management (formerly called Atmos)
+
+Cloudy Akka have been discontinued and the Cluster support is now being moved into the 
+Open Source version of Akka (the upcoming Akka 2.1), while the Monitoring & Management 
+(Atmos) is now rebranded into Typesafe Console and is part of the commercial subscription 
+for the Typesafe Stack (see below for details).
+
 Typesafe Stack
 ==============
 
@@ -100,6 +114,7 @@ Typesafe Console
 On top of the Typesafe Stack we have also have commercial product called Typesafe
 Console which provides the following features:
 
+#. Slick Web UI with real-time view into the system
 #. Management through Dashboard, JMX and REST
 #. Dapper-style tracing of messages across components and remote nodes
 #. Real-time statistics

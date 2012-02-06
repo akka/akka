@@ -1,30 +1,25 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+
 package akka.actor
 
 import akka.config.ConfigurationException
-import akka.actor._
 import akka.event._
 import akka.dispatch._
-import akka.util.duration._
-import akka.util.Timeout
-import akka.util.Timeout._
+import akka.pattern.ask
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeUnit.NANOSECONDS
-import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigResolveOptions
-import com.typesafe.config.ConfigException
-import akka.util.{ Helpers, Duration, ReflectiveAccess }
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{ CountDownLatch, Executors, ConcurrentHashMap }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
+import akka.dispatch.Await.Awaitable
+import akka.dispatch.Await.CanAwait
+import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
+import akka.util._
+import collection.immutable.Stack
 
 object ActorSystem {
 
@@ -96,6 +91,7 @@ object ActorSystem {
 
     final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
     final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+    final val Daemonicity = getBoolean("akka.daemonic")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -133,6 +129,13 @@ object ActorSystem {
  * }}}
  *
  * Where no name is given explicitly, one will be automatically generated.
+ *
+ * <b><i>Important Notice:</i></o>
+ *
+ * This class is not meant to be extended by user code. If you want to
+ * actually roll your own Akka, it will probably be better to look into
+ * extending [[akka.actor.ExtendedActorSystem]] instead, but beware that you
+ * are completely on your own in that case!
  */
 abstract class ActorSystem extends ActorRefFactory {
   import ActorSystem._
@@ -223,18 +226,41 @@ abstract class ActorSystem extends ActorRefFactory {
   def dispatcher: MessageDispatcher
 
   /**
-   * Register a block of code to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
-   * guarantee that they will be executed in a particular order.
+   * Register a block of code (callback) to run after all actors in this actor system have
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * last registration is run first.
+   *
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   *
+   * Scala API
    */
-  def registerOnTermination[T](code: ⇒ T)
+  def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times; there is no
-   * guarantee that they will be executed in a particular order (Java API).
+   * Register a block of code (callback) to run after all actors in this actor system have
+   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * last registration is run first.
+   *
+   * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
+   *
+   * Java API
    */
-  def registerOnTermination(code: Runnable)
+  def registerOnTermination(code: Runnable): Unit
+
+  /**
+   * Block current thread until the system has been shutdown, or the specified
+   * timeout has elapsed. This will block until after all on termination
+   * callbacks have been run.
+   */
+  def awaitTermination(timeout: Duration): Unit
+
+  /**
+   * Block current thread until the system has been shutdown. This will
+   * block until after all on termination callbacks have been run.
+   */
+  def awaitTermination(): Unit
 
   /**
    * Stop this actor system. This will stop the guardian actor, which in turn
@@ -242,7 +268,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
-  def shutdown()
+  def shutdown(): Unit
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -266,14 +292,69 @@ abstract class ActorSystem extends ActorRefFactory {
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
-class ActorSystemImpl(val name: String, applicationConfig: Config) extends ActorSystem {
+/**
+ * More powerful interface to the actor system’s implementation which is presented to extensions (see [[akka.actor.Extension]]).
+ *
+ * <b><i>Important Notice:</i></o>
+ *
+ * This class is not meant to be extended by user code. If you want to
+ * actually roll your own Akka, beware that you are completely on your own in
+ * that case!
+ */
+abstract class ExtendedActorSystem extends ActorSystem {
+
+  /**
+   * The ActorRefProvider is the only entity which creates all actor references within this actor system.
+   */
+  def provider: ActorRefProvider
+
+  /**
+   * The top-level supervisor of all actors created using system.actorOf(...).
+   */
+  def guardian: InternalActorRef
+
+  /**
+   * The top-level supervisor of all system-internal services like logging.
+   */
+  def systemGuardian: InternalActorRef
+
+  /**
+   * Implementation of the mechanism which is used for watch()/unwatch().
+   */
+  def deathWatch: DeathWatch
+
+  /**
+   * ClassLoader which is used for reflective accesses internally. This is set
+   * to the context class loader, if one is set, or the class loader which
+   * loaded the ActorSystem implementation. The context class loader is also
+   * set on all threads created by the ActorSystem, if one was set during
+   * creation.
+   */
+  def internalClassLoader: ClassLoader
+}
+
+class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
 
   if (!name.matches("""^\w+$"""))
     throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
 
   import ActorSystem._
 
-  final val settings = new Settings(applicationConfig, name)
+  final val settings: Settings = new Settings(applicationConfig, name)
+
+  protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
+    new Thread.UncaughtExceptionHandler() {
+      def uncaughtException(thread: Thread, cause: Throwable): Unit = {
+        log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+        cause match {
+          case NonFatal(_) | _: InterruptedException ⇒
+          case _                                     ⇒ shutdown()
+        }
+      }
+    }
+
+  final val threadFactory: MonitorableThreadFactory =
+    MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader), uncaughtExceptionHandler)
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -318,18 +399,32 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
-  val eventStream = new EventStream(DebugEventStream)
+  val eventStream: EventStream = new EventStream(DebugEventStream)
   eventStream.startStdoutLogger(settings)
 
-  // unfortunately we need logging before we know the rootpath address, which wants to be inserted here
-  @volatile
-  private var _log = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
-  def log = _log
+  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
 
-  val scheduler = createScheduler()
+  val scheduler: Scheduler = createScheduler()
 
-  val deadLetters = new DeadLetterActorRef(eventStream)
-  val deadLetterMailbox = new Mailbox(null) {
+  val internalClassLoader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
+
+  val provider: ActorRefProvider = {
+    val arguments = Seq(
+      classOf[String] -> name,
+      classOf[Settings] -> settings,
+      classOf[EventStream] -> eventStream,
+      classOf[Scheduler] -> scheduler,
+      classOf[ClassLoader] -> internalClassLoader)
+
+    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, internalClassLoader) match {
+      case Left(e)  ⇒ throw e
+      case Right(p) ⇒ p
+    }
+  }
+
+  def deadLetters: ActorRef = provider.deadLetters
+
+  val deadLetterMailbox: Mailbox = new Mailbox(null) {
     becomeClosed()
     override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
     override def dequeue() = null
@@ -340,28 +435,12 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     override def numberOfMessages = 0
   }
 
-  val provider: ActorRefProvider = {
-    val providerClass = ReflectiveAccess.getClassFor(ProviderClass) match {
-      case Left(e)  ⇒ throw e
-      case Right(b) ⇒ b
-    }
-    val arguments = Seq(
-      classOf[String] -> name,
-      classOf[Settings] -> settings,
-      classOf[EventStream] -> eventStream,
-      classOf[Scheduler] -> scheduler,
-      classOf[InternalActorRef] -> deadLetters)
-    val types: Array[Class[_]] = arguments map (_._1) toArray
-    val values: Array[AnyRef] = arguments map (_._2) toArray
+  def locker: Locker = provider.locker
 
-    ReflectiveAccess.createInstance[ActorRefProvider](providerClass, types, values) match {
-      case Left(e)  ⇒ throw e
-      case Right(p) ⇒ p
-    }
-  }
+  val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
+    threadFactory, eventStream, deadLetterMailbox, scheduler, internalClassLoader))
 
-  val dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(eventStream, deadLetterMailbox, scheduler))
-  val dispatcher = dispatchers.defaultGlobalDispatcher
+  val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
@@ -375,28 +454,25 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
-    _log = new BusLogging(eventStream, "ActorSystem(" + lookupRoot.path.address + ")", this.getClass)
-    deadLetters.init(dispatcher, lookupRoot.path / "deadLetters")
-    // this starts the reaper actor and the user-configured logging subscribers, which are also actors
     registerOnTermination(stopScheduler())
-    _locker = new Locker(scheduler, ReaperInterval, lookupRoot.path / "locker", deathWatch)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
   }
 
-  @volatile
-  private var _locker: Locker = _ // initialized in start()
-  def locker = _locker
+  def start(): this.type = _start
 
-  def start() = _start
-
-  def registerOnTermination[T](code: ⇒ T) { terminationFuture onComplete (_ ⇒ code) }
-  def registerOnTermination(code: Runnable) { terminationFuture onComplete (_ ⇒ code.run) }
-
-  def shutdown() {
-    stop(guardian)
+  private lazy val terminationCallbacks = {
+    val callbacks = new TerminationCallbacks
+    terminationFuture onComplete (_ ⇒ callbacks.run)
+    callbacks
   }
+  def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
+  def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
+  def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
+  def awaitTermination() = awaitTermination(Duration.Inf)
+
+  def shutdown(): Unit = stop(guardian)
 
   /**
    * Create the scheduler service. This one needs one special behavior: if
@@ -408,18 +484,18 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
    * executed upon close(), the task may execute before its timeout.
    */
   protected def createScheduler(): Scheduler = {
-    val threadFactory = new MonitorableThreadFactory("DefaultScheduler")
-    val hwt = new HashedWheelTimer(log, threadFactory, settings.SchedulerTickDuration, settings.SchedulerTicksPerWheel)
+    val hwt = new HashedWheelTimer(log,
+      threadFactory.copy(threadFactory.name + "-scheduler"),
+      settings.SchedulerTickDuration,
+      settings.SchedulerTicksPerWheel)
     // note that dispatcher is by-name parameter in DefaultScheduler constructor,
     // because dispatcher is not initialized when the scheduler is created
-    def safeDispatcher = {
-      if (dispatcher eq null) {
+    def safeDispatcher = dispatcher match {
+      case null ⇒
         val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
         log.error(exc, exc.getMessage)
         throw exc
-      } else {
-        dispatcher
-      }
+      case dispatcher ⇒ dispatcher
     }
     new DefaultScheduler(hwt, log, safeDispatcher)
   }
@@ -481,8 +557,8 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      import ReflectiveAccess._
-      getObjectFor[AnyRef](fqcn).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+      import ReflectiveAccess.{ getObjectFor, createInstance, noParams, noArgs }
+      getObjectFor[AnyRef](fqcn, internalClassLoader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
@@ -492,5 +568,44 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Actor
     }
   }
 
-  override def toString = lookupRoot.path.root.address.toString
+  override def toString: String = lookupRoot.path.root.address.toString
+
+  final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
+    private val lock = new ReentrantGuard
+    private var callbacks: Stack[Runnable] = _ //non-volatile since guarded by the lock
+    lock withGuard { callbacks = Stack.empty[Runnable] }
+
+    private val latch = new CountDownLatch(1)
+
+    final def add(callback: Runnable): Unit = {
+      latch.getCount match {
+        case 0 ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
+        case _ ⇒ lock withGuard {
+          if (latch.getCount == 0) throw new RejectedExecutionException("Must be called prior to system shutdown.")
+          else callbacks = callbacks.push(callback)
+        }
+      }
+    }
+
+    final def run(): Unit = lock withGuard {
+      @tailrec def runNext(c: Stack[Runnable]): Stack[Runnable] = c.headOption match {
+        case None ⇒ Stack.empty[Runnable]
+        case Some(callback) ⇒
+          try callback.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+          runNext(c.pop)
+      }
+      try { callbacks = runNext(callbacks) } finally latch.countDown()
+    }
+
+    final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
+      if (atMost.isFinite()) {
+        if (!latch.await(atMost.length, atMost.unit))
+          throw new TimeoutException("Await termination timed out after [%s]" format (atMost.toString))
+      } else latch.await()
+
+      this
+    }
+
+    final def result(atMost: Duration)(implicit permit: CanAwait): Unit = ready(atMost)
+  }
 }

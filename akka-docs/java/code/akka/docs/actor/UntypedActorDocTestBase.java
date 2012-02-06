@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.actor;
 
@@ -11,6 +11,8 @@ import akka.actor.Props;
 
 //#import-future
 import akka.dispatch.Future;
+import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
 import akka.dispatch.Await;
 import akka.util.Duration;
 import akka.util.Timeout;
@@ -36,6 +38,17 @@ import akka.util.Duration;
 import akka.actor.ActorTimeoutException;
 //#import-gracefulStop
 
+//#import-askPipe
+import static akka.pattern.Patterns.ask;
+import static akka.pattern.Patterns.pipe;
+import akka.dispatch.Future;
+import akka.dispatch.Futures;
+import akka.util.Duration;
+import akka.util.Timeout;
+import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+//#import-askPipe
+
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -44,7 +57,10 @@ import akka.dispatch.MessageDispatcher;
 import org.junit.Test;
 import scala.Option;
 import java.lang.Object;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import akka.pattern.Patterns;
 
 import static org.junit.Assert.*;
 
@@ -123,7 +139,7 @@ public class UntypedActorDocTestBase {
     }), "myactor");
 
     //#using-ask
-    Future<Object> future = myActor.ask("Hello", 1000);
+    Future<Object> future = Patterns.ask(myActor, "Hello", 1000);
     Object result = Await.result(future, Duration.create(1, TimeUnit.SECONDS));
     //#using-ask
     system.shutdown();
@@ -175,7 +191,7 @@ public class UntypedActorDocTestBase {
   public void useWatch() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
-    Future<Object> future = myActor.ask("kill", 1000);
+    Future<Object> future = Patterns.ask(myActor, "kill", 1000);
     assert Await.result(future, Duration.parse("1 second")).equals("finished");
     system.shutdown();
   }
@@ -194,6 +210,45 @@ public class UntypedActorDocTestBase {
       // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
+    system.shutdown();
+  }
+
+  class Result {
+    final int x;
+    final String s;
+
+    public Result(int x, String s) {
+      this.x = x;
+      this.s = s;
+    }
+  }
+
+  @Test
+  public void usePatternsAskPipe() {
+    ActorSystem system = ActorSystem.create("MySystem");
+    ActorRef actorA = system.actorOf(new Props(MyUntypedActor.class));
+    ActorRef actorB = system.actorOf(new Props(MyUntypedActor.class));
+    ActorRef actorC = system.actorOf(new Props(MyUntypedActor.class));
+    //#ask-pipe
+    final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+
+    final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
+    futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
+    futures.add(ask(actorB, "reqeest", t)); // using timeout from above
+
+    final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
+    
+    final Future<Result> transformed = aggregate.map(new Mapper<Iterable<Object>, Result>() {
+      public Result apply(Iterable<Object> coll) {
+        final Iterator<Object> it = coll.iterator();
+        final String s = (String) it.next();
+        final int x = (Integer) it.next();
+        return new Result(x, s);
+      }
+    });
+
+    pipe(transformed).to(actorC);
+    //#ask-pipe
     system.shutdown();
   }
 

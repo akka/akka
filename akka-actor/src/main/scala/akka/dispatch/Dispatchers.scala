@@ -1,33 +1,33 @@
 /**
- *   Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *   Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.ConcurrentHashMap
 import akka.actor.newUuid
 import akka.util.{ Duration, ReflectiveAccess }
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import akka.actor.Scheduler
-import akka.actor.ActorSystem.Settings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.config.ConfigurationException
 import akka.event.Logging.Warning
-import akka.actor.Props
+import java.util.concurrent.{ ThreadFactory, TimeUnit, ConcurrentHashMap }
 
 trait DispatcherPrerequisites {
+  def threadFactory: ThreadFactory
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
+  def classloader: ClassLoader
 }
 
 case class DefaultDispatcherPrerequisites(
+  val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
-  val scheduler: Scheduler) extends DispatcherPrerequisites
+  val scheduler: Scheduler,
+  val classloader: ClassLoader) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -136,8 +136,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator(cfg, prerequisites)
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
-        ReflectiveAccess.createInstance[MessageDispatcherConfigurator](fqn, constructorSignature, Array[AnyRef](cfg, prerequisites)) match {
+        val args = Seq(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
+        ReflectiveAccess.createInstance[MessageDispatcherConfigurator](fqn, args, prerequisites.classloader) match {
           case Right(configurator) ⇒ configurator
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -158,16 +158,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance =
-    configureThreadPool(config,
-      threadPoolConfig ⇒ new Dispatcher(prerequisites,
-        config.getString("name"),
-        config.getString("id"),
-        config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType,
-        threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
+  private val instance = new Dispatcher(
+    prerequisites,
+    config.getString("id"),
+    config.getInt("throughput"),
+    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    mailboxType,
+    configureExecutor(),
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -183,15 +181,13 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
 class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance =
-    configureThreadPool(config,
-      threadPoolConfig ⇒ new BalancingDispatcher(prerequisites,
-        config.getString("name"),
-        config.getString("id"),
-        config.getInt("throughput"),
-        Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
-        mailboxType, threadPoolConfig,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))).build
+  private val instance = new BalancingDispatcher(
+    prerequisites,
+    config.getString("id"),
+    config.getInt("throughput"),
+    Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+    mailboxType, configureExecutor(),
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -206,13 +202,23 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
  */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
+
+  val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
+    case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
+    case other ⇒
+      prerequisites.eventStream.publish(
+        Warning("PinnedDispatcherConfigurator",
+          this.getClass,
+          "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
+            config.getString("id"))))
+      ThreadPoolConfig()
+  }
   /**
    * Creates new dispatcher for each invocation.
    */
-  override def dispatcher(): MessageDispatcher = configureThreadPool(config,
-    threadPoolConfig ⇒
-      new PinnedDispatcher(prerequisites, null, config.getString("name"), config.getString("id"), mailboxType,
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
-        threadPoolConfig)).build
+  override def dispatcher(): MessageDispatcher =
+    new PinnedDispatcher(
+      prerequisites, null, config.getString("id"), mailboxType,
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS), threadPoolConfig)
 
 }

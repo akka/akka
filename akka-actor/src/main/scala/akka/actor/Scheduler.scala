@@ -1,19 +1,11 @@
-/*
- * Copyright 2007 WorldWide Conferencing, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
  */
+
 package akka.actor
 
 import akka.util.Duration
-import org.jboss.netty.akka.util.{ Timer, TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
+import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
@@ -32,8 +24,8 @@ trait Scheduler {
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
-   * thereafter every 500ms you would set delay = Duration.Zero and frequency
-   * = Duration(500, TimeUnit.MILLISECONDS)
+   * thereafter every 500ms you would set delay=Duration.Zero and
+   * frequency=Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */
@@ -123,7 +115,9 @@ trait Cancellable {
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
  * returned from stop().
  */
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
+                       log: LoggingAdapter,
+                       dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
   def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
@@ -132,7 +126,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter, 
         receiver ! message
         // Check if the receiver is still alive and kicking before reschedule the task
         if (receiver.isTerminated) {
-          log.warning("Could not reschedule message to be sent because receiving actor has been terminated.")
+          log.debug("Could not reschedule message to be sent because receiving actor has been terminated.")
         } else {
           scheduleNext(timeout, delay, continuousCancellable)
         }

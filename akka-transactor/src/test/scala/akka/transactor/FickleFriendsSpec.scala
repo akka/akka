@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
@@ -15,6 +15,7 @@ import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._
 import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
+import akka.pattern.ask
 
 object FickleFriends {
   case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)

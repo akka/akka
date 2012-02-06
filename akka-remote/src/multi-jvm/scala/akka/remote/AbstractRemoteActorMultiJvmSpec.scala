@@ -6,23 +6,24 @@ trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
   def commonConfig: Config
 
-  def remotes: Seq[String] = {
-    val arrayOpt = Option(AkkaRemoteSpec.testNodes).map(_ split ",")
-    (arrayOpt getOrElse Array.fill(NrOfNodes)("localhost")).toSeq
+  def PortRangeStart = 1990
+  def NodeRange = 1 to NrOfNodes
+  def PortRange = PortRangeStart to NrOfNodes
+
+  private[this] val remotes: IndexedSeq[String] = {
+    val nodesOpt = Option(AkkaRemoteSpec.testNodes).map(_.split(",").toIndexedSeq)
+    nodesOpt getOrElse IndexedSeq.fill(NrOfNodes)("localhost")
   }
 
-  def specString(count: Int): String = {
-    val specs = for ((host, idx) <- remotes.take(count).zipWithIndex) yield
-      "\"akka://AkkaRemoteSpec@%s:%d\"".format(host, 9991+idx)
-    specs.mkString(",")
-  }
-
-  val nodeConfigs = ((1 to NrOfNodes).toList zip remotes) map {
-    case (idx, host) =>
+  val nodeConfigs = (NodeRange.toList zip remotes) map {
+    case (port, host) =>
       ConfigFactory.parseString("""
         akka {
-          remote.server.hostname="%s"
-          remote.server.port = "%d"
-        }""".format(host, 9990+idx, idx)) withFallback commonConfig
+          remote.netty.hostname="%s"
+          remote.netty.port = "%d"
+        }""".format(host, PortRangeStart + port, port)) withFallback commonConfig
   }
+
+  def akkaSpec(port: Int) = "AkkaRemoteSpec@%s:%d".format(remotes(port), PortRangeStart + 1 + port)
+  def akkaURIs(count: Int): String = 0 until count map {idx => "\"akka://" + akkaSpec(idx) + "\""} mkString ","
 }

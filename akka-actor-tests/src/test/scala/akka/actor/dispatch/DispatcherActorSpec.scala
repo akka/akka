@@ -8,6 +8,7 @@ import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers, Dispatcher }
+import akka.pattern.ask
 
 object DispatcherActorSpec {
   val config = """
@@ -15,14 +16,20 @@ object DispatcherActorSpec {
     }
     test-throughput-dispatcher {
       throughput = 101
-      core-pool-size-min = 1
-      core-pool-size-max = 1
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        core-pool-size-min = 1
+        core-pool-size-max = 1
+      }
     }
     test-throughput-deadline-dispatcher {
       throughput = 2
       throughput-deadline-time = 100 milliseconds
-      core-pool-size-min = 1
-      core-pool-size-max = 1
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        core-pool-size-min = 1
+        core-pool-size-max = 1
+      }
     }
 
     """

@@ -102,7 +102,7 @@ be sent.
    :language: java
 
 To enter the coordinated transaction use the atomic method of the coordinated
-object, passing in an ``akka.transactor.Atomically`` object.
+object, passing in a ``java.lang.Runnable``.
 
 .. includecode:: code/akka/docs/transactor/Coordinator.java#coordinated-atomic
    :language: java

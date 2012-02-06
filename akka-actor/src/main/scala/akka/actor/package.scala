@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
@@ -27,15 +27,4 @@ package object actor {
     val i = n.lastIndexOf('.')
     n.substring(i + 1)
   }
-
-  implicit def future2actor[T](f: akka.dispatch.Future[T]) = new {
-    def pipeTo(actor: ActorRef): this.type = {
-      f onComplete {
-        case Right(r) ⇒ actor ! r
-        case Left(f)  ⇒ actor ! Status.Failure(f)
-      }
-      this
-    }
-  }
-
 }

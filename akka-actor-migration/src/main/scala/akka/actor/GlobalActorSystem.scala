@@ -8,7 +8,6 @@ import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
-import com.typesafe.config.ConfigResolveOptions
 
 @deprecated("use ActorSystem instead", "2.0")
 object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfigurationLoader.defaultConfig) {

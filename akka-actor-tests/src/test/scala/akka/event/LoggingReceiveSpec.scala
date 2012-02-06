@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -15,6 +15,8 @@ import akka.actor._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 5 seconds)(List(classOf[Throwable]))
     def receive = { case _ ⇒ }
   }
 }
@@ -54,11 +56,12 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     "decorate a Receive" in {
       new TestKit(appLogging) {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
-        val r: Actor.Receive = {
-          case null ⇒
-        }
-        val log = LoggingReceive("funky")(r)
-        log.isDefinedAt("hallo")
+        val a = system.actorOf(Props(new Actor {
+          def receive = new LoggingReceive(Some("funky"), {
+            case null ⇒
+          })
+        }))
+        a ! "hallo"
         expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources], "received unhandled message hallo"))
       }
     }
@@ -75,7 +78,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
         val actor = TestActorRef(new Actor {
           def switch: Actor.Receive = { case "becomenull" ⇒ context.become(r, false) }
-          def receive = switch orElse LoggingReceive(this) {
+          def receive = switch orElse LoggingReceive {
             case x ⇒ sender ! "x"
           }
         })
@@ -83,7 +86,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         val name = actor.path.toString
         actor ! "buh"
         within(1 second) {
-          expectMsg(Logging.Debug(name, actor.underlyingActor.getClass, "received handled message buh"))
+          expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh"))
           expectMsg("x")
         }
 
@@ -103,7 +106,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
       new TestKit(appLogging) with ImplicitSender {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
-          def receive = LoggingReceive(this)(LoggingReceive(this) {
+          def receive = LoggingReceive(LoggingReceive {
             case _ ⇒ sender ! "x"
           })
         })
@@ -149,7 +152,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         within(3 seconds) {
           val lifecycleGuardian = appLifecycle.asInstanceOf[ActorSystemImpl].guardian
           val lname = lifecycleGuardian.path.toString
-          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor].withFaultHandler(OneForOneStrategy(List(classOf[Throwable]), 5, 5000)))
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
           val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 

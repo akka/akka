@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -9,13 +9,10 @@ import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.Serialization
-import java.util.concurrent.TimeUnit
 import akka.event.EventStream
-import akka.event.DeathWatch
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
+import java.util.concurrent.{ ConcurrentHashMap }
 import akka.event.LoggingAdapter
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -60,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  *     } else if (o instanceof Request3) {
  *       val msg = ((Request3) o).getMsg();
- *       getSender().tell(other.ask(msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
+ *       getSender().tell(ask(other, msg, 5000)); // reply with Future for holding the other’s reply (timeout 5 seconds)
  *
  *     } else {
  *       unhandled(o);
@@ -103,33 +100,6 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * </pre>
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
-
-  /**
-   * Akka Java API.
-   *
-   * Sends a message asynchronously returns a future holding the eventual reply message.
-   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
-   * timeout has expired.
-   *
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use 'tell' together with the sender
-   * parameter to implement non-blocking request/response message exchanges.
-   *
-   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
-   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
-   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
-   * otherwise the sender will block until the timeout expires.
-   *
-   * When using future callbacks, inside actors you need to carefully avoid closing over
-   * the containing actor’s reference, i.e. do not call methods or access mutable state
-   * on the enclosing actor from within the callback. This would break the actor
-   * encapsulation and may introduce synchronization bugs and race conditions because
-   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
-   * there is not yet a way to detect these illegal accesses at compile time.
-   */
-  def ask(message: Any, timeout: Timeout): Future[AnyRef] = ?(message, timeout).asInstanceOf[Future[AnyRef]]
-
-  def ask(message: Any, timeoutMillis: Long): Future[AnyRef] = ask(message, new Timeout(timeoutMillis))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -179,35 +149,6 @@ trait ScalaActorRef { ref: ActorRef ⇒
    */
   def !(message: Any)(implicit sender: ActorRef = null): Unit
 
-  /**
-   * Sends a message asynchronously, returning a future which may eventually hold the reply.
-   * The Future will be completed with an [[akka.actor.AskTimeoutException]] after the given
-   * timeout has expired.
-   *
-   * <b>NOTE:</b>
-   * Use this method with care. In most cases it is better to use '!' together with implicit or explicit
-   * sender parameter to implement non-blocking request/response message exchanges.
-   *
-   * If you are sending messages using <code>ask</code> and using blocking operations on the Future, such as
-   * 'get', then you <b>have to</b> use <code>getContext().sender().tell(...)</code>
-   * in the target actor to send a reply message to the original sender, and thereby completing the Future,
-   * otherwise the sender will block until the timeout expires.
-   *
-   * When using future callbacks, inside actors you need to carefully avoid closing over
-   * the containing actor’s reference, i.e. do not call methods or access mutable state
-   * on the enclosing actor from within the callback. This would break the actor
-   * encapsulation and may introduce synchronization bugs and race conditions because
-   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
-   * there is not yet a way to detect these illegal accesses at compile time.
-   */
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any]
-
-  /**
-   * Sends a message asynchronously, returning a future which may eventually hold the reply.
-   * The implicit parameter with the default value is just there to disambiguate it from the version that takes the
-   * implicit timeout
-   */
-  def ?(message: Any, timeout: Timeout)(implicit ignore: Int = 0): Future[Any] = ?(message)(timeout)
 }
 
 /**
@@ -230,12 +171,25 @@ trait LocalRef extends ActorRefScope {
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
 private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope ⇒
+  /*
+   * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
+   */
   def resume(): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def stop(): Unit
   def sendSystemMessage(message: SystemMessage): Unit
+
+  /**
+   * Get a reference to the actor ref provider which created this ref.
+   */
+  def provider: ActorRefProvider
+
+  /**
+   * Obtain parent of this ref; used by getChild for ".." paths.
+   */
   def getParent: InternalActorRef
+
   /**
    * Obtain ActorRef by possibly traversing the actor tree or looking it up at
    * some provider-specific location. This method shall return the end result,
@@ -245,6 +199,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * exist, return Nobody.
    */
   def getChild(name: Iterator[String]): InternalActorRef
+
   /**
    * Scope: if this ref points to an actor which resides within the same JVM,
    * i.e. whose mailbox is directly reachable etc.
@@ -252,8 +207,12 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def isLocal: Boolean
 }
 
+/**
+ * This is an internal look-up failure token, not useful for anything else.
+ */
 private[akka] case object Nobody extends MinimalActorRef {
-  val path = new RootActorPath(new LocalAddress("all-systems"), "/Nobody")
+  val path = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
+  def provider = throw new UnsupportedOperationException("Nobody does not provide")
 }
 
 /**
@@ -265,8 +224,7 @@ private[akka] class LocalActorRef private[akka] (
   _supervisor: InternalActorRef,
   val path: ActorPath,
   val systemService: Boolean = false,
-  _receiveTimeout: Option[Duration] = None,
-  _hotswap: Stack[PartialFunction[Any, Unit]] = Props.noHotSwap)
+  _receiveTimeout: Option[Duration] = None)
   extends InternalActorRef with LocalRef {
 
   /*
@@ -279,7 +237,7 @@ private[akka] class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout, _hotswap)
+  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout)
   actorCell.start()
 
   protected def newActorCell(
@@ -287,9 +245,8 @@ private[akka] class LocalActorRef private[akka] (
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration],
-    hotswap: Stack[PartialFunction[Any, Unit]]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout, hotswap)
+    receiveTimeout: Option[Duration]): ActorCell =
+    new ActorCell(system, ref, props, supervisor, receiveTimeout)
 
   protected def actorContext: ActorContext = actorCell
 
@@ -320,6 +277,8 @@ private[akka] class LocalActorRef private[akka] (
   def stop(): Unit = actorCell.stop()
 
   def getParent: InternalActorRef = actorCell.parent
+
+  def provider = actorCell.provider
 
   /**
    * Method for looking up a single child beneath this actor. Override in order
@@ -365,27 +324,16 @@ private[akka] class LocalActorRef private[akka] (
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    actorCell.provider.ask(timeout) match {
-      case Some(a) ⇒
-        this.!(message)(a)
-        a.result
-      case None ⇒
-        this.!(message)(null)
-        Promise[Any]()(actorCell.system.dispatcher)
-    }
-  }
-
   def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
+  protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-case class SerializedActorRef(path: String) {
+case class SerializedActorRef private (path: String) {
   import akka.serialization.Serialization.currentSystem
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -399,12 +347,22 @@ case class SerializedActorRef(path: String) {
   }
 }
 
+object SerializedActorRef {
+  def apply(path: ActorPath): SerializedActorRef = {
+    Serialization.currentTransportAddress.value match {
+      case null ⇒ new SerializedActorRef(path.toString)
+      case addr ⇒ new SerializedActorRef(path.toStringWithAddress(addr))
+    }
+  }
+}
+
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
  */
-trait MinimalActorRef extends InternalActorRef with LocalRef {
+private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def getParent: InternalActorRef = Nobody
+
   def getChild(names: Iterator[String]): InternalActorRef = {
     val dropped = names.dropWhile(_.isEmpty)
     if (dropped.isEmpty) this
@@ -420,19 +378,17 @@ trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
-  def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    throw new UnsupportedOperationException("Not supported for [%s]".format(getClass.getName))
-
   def sendSystemMessage(message: SystemMessage): Unit = ()
   def restart(cause: Throwable): Unit = ()
 
   @throws(classOf[java.io.ObjectStreamException])
-  protected def writeReplace(): AnyRef = SerializedActorRef(path.toString)
+  protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
-object MinimalActorRef {
-  def apply(_path: ActorPath)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
+private[akka] object MinimalActorRef {
+  def apply(_path: ActorPath, _provider: ActorRefProvider)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
     def path = _path
+    def provider = _provider
     override def !(message: Any)(implicit sender: ActorRef = null): Unit =
       if (receive.isDefinedAt(message)) receive(message)
   }
@@ -440,7 +396,7 @@ object MinimalActorRef {
 
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
-object DeadLetterActorRef {
+private[akka] object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters
@@ -449,58 +405,47 @@ object DeadLetterActorRef {
   val serialized = new SerializedDeadLetterActorRef
 }
 
-trait DeadLetterActorRefLike extends MinimalActorRef {
-
-  def eventStream: EventStream
-
-  @volatile
-  private var brokenPromise: Future[Any] = _
-  @volatile
-  private var _path: ActorPath = _
-  def path: ActorPath = {
-    assert(_path != null)
-    _path
-  }
-
-  private[akka] def init(dispatcher: MessageDispatcher, path: ActorPath) {
-    _path = path
-    brokenPromise = Promise.failed(new ActorKilledException("In DeadLetterActorRef - promises are always broken."))(dispatcher)
-  }
+/**
+ * This special dead letter reference has a name: it is that which is returned
+ * by a local look-up which is unsuccessful.
+ */
+private[akka] class EmptyLocalActorRef(
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
+
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
+    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+  }
+}
+
+/**
+ * Internal implementation of the dead letter destination: will publish any
+ * received message to the eventStream, wrapped as [[akka.actor.DeadLetter]].
+ */
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
+  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ eventStream.publish(d)
     case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
 
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] = {
-    eventStream.publish(DeadLetter(message, this, this))
-    // leave this in: guard with good visibility against really stupid/weird errors
-    assert(brokenPromise != null)
-    brokenPromise
-  }
-}
-
-class DeadLetterActorRef(val eventStream: EventStream) extends DeadLetterActorRefLike {
   @throws(classOf[java.io.ObjectStreamException])
   override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
 /**
- * This special dead letter reference has a name: it is that which is returned
- * by a local look-up which is unsuccessful.
+ * Internal implementation detail used for paths like “/temp”
  */
-class EmptyLocalActorRef(val eventStream: EventStream, _dispatcher: MessageDispatcher, _path: ActorPath)
-  extends DeadLetterActorRefLike {
-  init(_dispatcher, _path)
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
-  }
-}
-
-class VirtualPathContainer(val path: ActorPath, override val getParent: InternalActorRef, val log: LoggingAdapter) extends MinimalActorRef {
+private[akka] class VirtualPathContainer(
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  override val getParent: InternalActorRef,
+  val log: LoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
@@ -532,43 +477,5 @@ class VirtualPathContainer(val path: ActorPath, override val getParent: Internal
           else some.getChild(name)
       }
     }
-  }
-}
-
-/**
- * This is what is used to complete a Future that is returned from an ask/? call,
- * when it times out.
- */
-class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException {
-  def this(message: String) = this(message, null: Throwable)
-}
-
-class AskActorRef(
-  val path: ActorPath,
-  override val getParent: InternalActorRef,
-  val dispatcher: MessageDispatcher,
-  val deathWatch: DeathWatch) extends MinimalActorRef {
-
-  final val running = new AtomicBoolean(true)
-  final val result = Promise[Any]()(dispatcher)
-
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = if (running.get) message match {
-    case Status.Success(r) ⇒ result.success(r)
-    case Status.Failure(f) ⇒ result.failure(f)
-    case other             ⇒ result.success(other)
-  }
-
-  override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate ⇒ stop()
-    case _            ⇒
-  }
-
-  override def ?(message: Any)(implicit timeout: Timeout): Future[Any] =
-    Promise.failed(new UnsupportedOperationException("Ask/? is not supported for [%s]".format(getClass.getName)))(dispatcher)
-
-  override def isTerminated = result.isCompleted
-
-  override def stop(): Unit = if (running.getAndSet(false)) {
-    deathWatch.publish(Terminated(this))
   }
 }

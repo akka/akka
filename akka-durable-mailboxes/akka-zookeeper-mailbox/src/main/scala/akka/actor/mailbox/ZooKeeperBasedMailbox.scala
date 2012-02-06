@@ -1,12 +1,9 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.util.Duration
 import akka.AkkaException
-import org.I0Itec.zkclient.serialize._
 import akka.actor.ActorContext
 import akka.cluster.zookeeper.AkkaZkClient
 import akka.dispatch.Envelope
@@ -15,6 +12,7 @@ import akka.cluster.zookeeper.ZooKeeperQueue
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.util.NonFatal
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -48,7 +46,7 @@ class ZooKeeperBasedMailbox(val owner: ActorContext) extends DurableMailbox(owne
   } catch {
     case e: java.util.NoSuchElementException ⇒ null
     case e: InterruptedException             ⇒ null
-    case e ⇒
+    case NonFatal(e) ⇒
       log.error(e, "Couldn't dequeue from ZooKeeper-based mailbox, due to: " + e.getMessage)
       throw e
   }

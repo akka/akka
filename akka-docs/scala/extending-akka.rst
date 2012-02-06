@@ -1,7 +1,9 @@
 .. _extending-akka-scala:
 
-Akka Extensions
-===============
+#########################
+ Akka Extensions (Scala)
+#########################
+
 
 .. sidebar:: Contents
 
@@ -9,19 +11,19 @@ Akka Extensions
 
 
 Building an Extension
----------------------
+=====================
 
 So let's create a sample extension that just lets us count the number of times something has happened.
 
 First, we define what our ``Extension`` should do:
 
 .. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
-   :include: imports,extension
+   :include: extension
 
 Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
 
 .. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
-   :include: imports,extensionid 
+   :include: extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
@@ -41,13 +43,42 @@ You can also hide extension behind traits:
 That's all there is to it!
 
 Loading from Configuration
---------------------------
+==========================
 
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either ``ExtensionId`` or ``ExtensionIdProvider``
-in the "akka.extensions" section of the config you provide to your ``ActorSystem``.
+in the ``akka.extensions`` section of the config you provide to your ``ActorSystem``.
+
+.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+   :include: config
+
+Note that in this case ``CountExtension`` is an object and therefore the class name ends with ``$``.
 
 Applicability
--------------
+=============
 
 The sky is the limit!
 By the way, did you know that Akka's ``Typed Actors``, ``Serialization`` and other features are implemented as Akka Extensions?
+
+.. _extending-akka-scala.settings:
+
+Application specific settings
+-----------------------------
+
+The :ref:`configuration` can be used for application specific settings. A good practice is to place those settings in an Extension.
+
+Sample configuration:
+
+.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+   :include: config
+
+The ``Extension``:
+
+.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+   :include: imports,extension,extensionid
+
+
+Use it:
+
+.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+   :include: extension-usage-actor
+

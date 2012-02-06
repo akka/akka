@@ -1,8 +1,9 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 import scala.annotation.tailrec
+import java.net.MalformedURLException
 
 object ActorPath {
   def split(s: String): List[String] = {
@@ -14,6 +15,14 @@ object ActorPath {
       if (from == -1) l else rec(from, l)
     }
     rec(s.length, Nil)
+  }
+
+  /**
+   * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
+   */
+  def fromString(s: String): ActorPath = s match {
+    case ActorPathExtractor(addr, elems) ⇒ RootActorPath(addr) / elems
+    case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
   val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
@@ -87,6 +96,12 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
    */
   def root: RootActorPath
 
+  /**
+   * Generate String representation, replacing the Address in the RootActor
+   * Path with the given one unless this path’s address includes host and port
+   * information.
+   */
+  def toStringWithAddress(address: Address): String
 }
 
 /**
@@ -104,6 +119,10 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
   val elements: Iterable[String] = List("")
 
   override val toString = address + name
+
+  def toStringWithAddress(addr: Address): String =
+    if (address.host.isDefined) address + name
+    else addr + name
 
   def compareTo(other: ActorPath) = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString
@@ -146,6 +165,15 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     @tailrec
     def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
       case r: RootActorPath ⇒ s.insert(0, r.toString)
+      case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
+    }
+    rec(parent, new StringBuilder(32).append(name)).toString
+  }
+
+  override def toStringWithAddress(addr: Address) = {
+    @tailrec
+    def rec(p: ActorPath, s: StringBuilder): StringBuilder = p match {
+      case r: RootActorPath ⇒ s.insert(0, r.toStringWithAddress(addr))
       case _                ⇒ rec(p.parent, s.insert(0, '/').insert(0, p.name))
     }
     rec(parent, new StringBuilder(32).append(name)).toString

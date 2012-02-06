@@ -1,23 +1,13 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import akka.dispatch._
-import akka.routing._
-import akka.util.Duration
-import akka.japi.{ Creator, Procedure }
-import akka.serialization.{ Serializer, Serialization }
-import akka.event.Logging.Debug
-import akka.event.LogSource
-import akka.experimental
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-import com.eaio.uuid.UUID
-import java.util.concurrent.TimeUnit
-import java.util.{ Collection ⇒ JCollection }
+import scala.collection.immutable.Stack
 import java.util.regex.Pattern
 
 /**
@@ -112,7 +102,7 @@ object Status {
 }
 
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system, context.self)
+  val log = akka.event.Logging(context.system, this)
 }
 
 object Actor {
@@ -123,6 +113,7 @@ object Actor {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
   }
+
 }
 
 /**
@@ -141,6 +132,14 @@ object Actor {
  *
  * {{{
  * class ExampleActor extends Actor {
+ *
+ *   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+ *     case _: ArithmeticException      ⇒ Resume
+ *     case _: NullPointerException     ⇒ Restart
+ *     case _: IllegalArgumentException ⇒ Stop
+ *     case _: Exception                ⇒ Escalate
+ *   }
+ *
  *   def receive = {
  *                                      // directly calculated reply
  *     case Request(r)               => sender ! calculate(r)
@@ -175,7 +174,7 @@ trait Actor {
   type Receive = Actor.Receive
 
   /**
-   * Stores the context for this actor, including self, sender, and hotswap.
+   * Stores the context for this actor, including self, and sender.
    * It is implicit to support operations such as `forward`.
    *
    * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
@@ -223,6 +222,12 @@ trait Actor {
    * with the actor logic.
    */
   protected def receive: Receive
+
+  /**
+   * User overridable definition the strategy to use for supervising
+   * child actors.
+   */
+  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.
@@ -278,15 +283,37 @@ trait Actor {
   // ==== INTERNAL IMPLEMENTATION DETAILS ====
   // =========================================
 
+  /**
+   * For Akka internal use only.
+   */
   private[akka] final def apply(msg: Any) = {
-    val behaviorStack = context.asInstanceOf[ActorCell].hotswap
-    msg match {
-      case msg if behaviorStack.nonEmpty && behaviorStack.head.isDefinedAt(msg) ⇒ behaviorStack.head.apply(msg)
-      case msg if behaviorStack.isEmpty && processingBehavior.isDefinedAt(msg) ⇒ processingBehavior.apply(msg)
-      case unknown ⇒ unhandled(unknown)
-    }
+    // TODO would it be more efficient to assume that most messages are matched and catch MatchError instead of using isDefinedAt?
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
   }
 
-  private[this] val processingBehavior = receive //ProcessingBehavior is the original behavior
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def pushBehavior(behavior: Receive): Unit = {
+    behaviorStack = behaviorStack.push(behavior)
+  }
+
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def popBehavior(): Unit = {
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
+  }
+
+  /**
+   * For Akka internal use only.
+   */
+  private[akka] def clearBehaviorStack(): Unit =
+    behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
+
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
 

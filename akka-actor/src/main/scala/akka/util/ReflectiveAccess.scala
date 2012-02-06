@@ -1,10 +1,9 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
 
-import akka.actor._
 import java.lang.reflect.InvocationTargetException
 
 object ReflectiveAccess {
@@ -38,6 +37,15 @@ object ReflectiveAccess {
       case Left(exception) ⇒ Left(exception) //We could just cast this to Either[Exception, T] but it's ugly
     }
   }
+
+  def createInstance[T](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Exception, T] =
+    createInstance(clazz, args.map(_._1).toArray, args.map(_._2).toArray)
+
+  def createInstance[T](fqcn: String, args: Seq[(Class[_], AnyRef)], classloader: ClassLoader): Either[Exception, T] =
+    createInstance(fqcn, args.map(_._1).toArray, args.map(_._2).toArray, classloader)
+
+  def createInstance[T](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Exception, T] =
+    createInstance(fqcn, args.map(_._1).toArray, args.map(_._2).toArray, loader)
 
   //Obtains a reference to fqn.MODULE$
   def getObjectFor[T](fqn: String, classloader: ClassLoader = loader): Either[Exception, T] = try {

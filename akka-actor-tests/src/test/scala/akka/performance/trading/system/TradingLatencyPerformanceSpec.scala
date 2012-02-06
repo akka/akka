@@ -84,7 +84,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
       } yield Bid(s + i, 100 - i, 1000)
       val orders = askOrders.zip(bidOrders).map(x ⇒ Seq(x._1, x._2)).flatten
 
-      val clientDispatcher = "benchmark.client-dispatcher"
+      val latencyDispatcher = "benchmark.trading-dispatcher"
 
       val ordersPerClient = repeat * orders.size / numberOfClients
       val totalNumberOfOrders = ordersPerClient * numberOfClients
@@ -93,7 +93,7 @@ class TradingLatencyPerformanceSpec extends PerformanceSpec {
       val start = System.nanoTime
       val clients = (for (i ← 0 until numberOfClients) yield {
         val receiver = receivers(i % receivers.size)
-        val props = Props(new Client(receiver, orders, latch, ordersPerClient, clientDelay.toMicros.toInt)).withDispatcher(clientDispatcher)
+        val props = Props(new Client(receiver, orders, latch, ordersPerClient, clientDelay.toMicros.toInt)).withDispatcher(latencyDispatcher)
         system.actorOf(props)
       })
 

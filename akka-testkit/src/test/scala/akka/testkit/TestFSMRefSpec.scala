@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.testkit
@@ -12,19 +12,17 @@ import akka.util.duration._
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestFSMRefSpec extends AkkaSpec {
 
-  import FSM._
-
   "A TestFSMRef" must {
 
     "allow access to state data" in {
       val fsm = TestFSMRef(new Actor with FSM[Int, String] {
         startWith(1, "")
         when(1) {
-          case Ev("go")         ⇒ goto(2) using "go"
-          case Ev(StateTimeout) ⇒ goto(2) using "timeout"
+          case Event("go", _)         ⇒ goto(2) using "go"
+          case Event(StateTimeout, _) ⇒ goto(2) using "timeout"
         }
         when(2) {
-          case Ev("back") ⇒ goto(1) using "back"
+          case Event("back", _) ⇒ goto(1) using "back"
         }
       }, "test-fsm-ref-1")
       fsm.stateName must be(1)

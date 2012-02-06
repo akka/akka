@@ -9,6 +9,7 @@ import akka.util.{ Timeout, Duration }
 import akka.dispatch.Future
 import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
+import akka.pattern._
 
 trait Activation {
   import akka.dispatch.Await
@@ -46,7 +47,7 @@ trait Activation {
    * Similar to `awaitActivation` but returns future instead.
    */
   def activationFutureFor(endpoint: ActorRef, timeout: Duration): Future[ActorRef] = {
-    (activationTracker ? (AwaitActivation(endpoint), Timeout(timeout))).map[ActorRef] {
+    (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef] {
       case EndpointActivated(_)               ⇒ endpoint
       case EndpointFailedToActivate(_, cause) ⇒ throw cause
     }
@@ -56,7 +57,7 @@ trait Activation {
    * Similar to awaitDeactivation but returns future instead.
    */
   def deactivationFutureFor(endpoint: ActorRef, timeout: Duration): Future[Unit] = {
-    (activationTracker ? (AwaitDeActivation(endpoint), Timeout(timeout))).map[Unit] {
+    (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[Unit] {
       case EndpointDeActivated(_)               ⇒ {}
       case EndpointFailedToDeActivate(_, cause) ⇒ throw cause
     }

@@ -34,3 +34,34 @@ The code for the Hello Kernel example (see the ``HelloKernel`` class for an exam
 of creating a Bootable):
 
 .. includecode:: ../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala
+
+
+Distribution of microkernel application
+---------------------------------------
+
+To make a distribution package of the microkernel and your application the ``akka-sbt-plugin`` provides
+``AkkaKernelPlugin``. It creates the directory structure, with jar files, configuration files and
+start scripts.
+
+To use the sbt plugin you define it in your ``project/plugins.sbt``:
+
+.. includecode:: ../../akka-sbt-plugin/sample/project/plugins.sbt
+
+Then you add it to the settings of your ``project/Build.scala``. It is also important that you add the ``akka-kernel`` dependency.
+This is an example of a complete sbt build file:
+
+.. includecode:: ../../akka-sbt-plugin/sample/project/Build.scala
+
+Run the plugin with sbt::
+
+  > dist
+  > dist:clean
+
+There are several settings that can be defined:
+
+* ``outputDirectory`` - destination directory of the package, default ``target/dist``
+* ``distJvmOptions`` - JVM parameters to be used in the start script
+* ``configSourceDirs`` - Configuration files are copied from these directories, default ``src/config``, ``src/main/config``, ``src/main/resources``
+* ``distMainClass`` - Kernel main class to use in start script
+* ``libFilter`` - Filter of dependency jar files
+* ``additionalLibs`` - Additional dependency jar files

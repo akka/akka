@@ -1,9 +1,9 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.serialization
 
-import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ActorSystemImpl }
+import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ExtendedActorSystem }
 
 /**
  * SerializationExtension is an Akka Extension to interact with the Serialization
@@ -12,5 +12,5 @@ import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ActorSystemIm
 object SerializationExtension extends ExtensionId[Serialization] with ExtensionIdProvider {
   override def get(system: ActorSystem): Serialization = super.get(system)
   override def lookup = SerializationExtension
-  override def createExtension(system: ActorSystemImpl): Serialization = new Serialization(system)
+  override def createExtension(system: ExtendedActorSystem): Serialization = new Serialization(system)
 }

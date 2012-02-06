@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.future
 
@@ -13,6 +13,7 @@ import akka.dispatch.Future
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.dispatch.Promise
+import java.lang.IllegalStateException
 
 object FutureDocSpec {
 
@@ -44,9 +45,10 @@ class FutureDocSpec extends AkkaSpec {
     val msg = "hello"
     //#ask-blocking
     import akka.dispatch.Await
+    import akka.pattern.ask
 
     implicit val timeout = system.settings.ActorTimeout
-    val future = actor ? msg
+    val future = actor ? msg // enabled by the “ask” import
     val result = Await.result(future, timeout.duration).asInstanceOf[String]
     //#ask-blocking
     result must be("HELLO")
@@ -58,8 +60,9 @@ class FutureDocSpec extends AkkaSpec {
     implicit val timeout = system.settings.ActorTimeout
     //#map-to
     import akka.dispatch.Future
+    import akka.pattern.ask
 
-    val future: Future[String] = (actor ? msg).mapTo[String]
+    val future: Future[String] = ask(actor, msg).mapTo[String]
     //#map-to
     Await.result(future, timeout.duration) must be("HELLO")
   }
@@ -123,12 +126,28 @@ class FutureDocSpec extends AkkaSpec {
     //#flat-map
   }
 
+  "demonstrate usage of filter" in {
+    //#filter
+    val future1 = Promise.successful(4)
+    val future2 = future1.filter(_ % 2 == 0)
+    val result = Await.result(future2, 1 second)
+    result must be(4)
+
+    val failedFilter = future1.filter(_ % 2 == 1).recover {
+      case m: MatchError ⇒ 0 //When filter fails, it will have a MatchError
+    }
+    val result2 = Await.result(failedFilter, 1 second)
+    result2 must be(0) //Can only be 0 when there was a MatchError
+    //#filter
+  }
+
   "demonstrate usage of for comprehension" in {
     //#for-comprehension
     val f = for {
       a ← Future(10 / 2) // 10 / 2 = 5
       b ← Future(a + 1) //  5 + 1 = 6
       c ← Future(a - 1) //  5 - 1 = 4
+      if c > 3 // Future.filter
     } yield b * c //  6 * 4 = 24
 
     // Note that the execution of futures a, b, and c
@@ -147,15 +166,16 @@ class FutureDocSpec extends AkkaSpec {
     val msg2 = 2
     implicit val timeout = system.settings.ActorTimeout
     import akka.dispatch.Await
+    import akka.pattern.ask
     //#composing-wrong
 
-    val f1 = actor1 ? msg1
-    val f2 = actor2 ? msg2
+    val f1 = ask(actor1, msg1)
+    val f2 = ask(actor2, msg2)
 
     val a = Await.result(f1, 1 second).asInstanceOf[Int]
     val b = Await.result(f2, 1 second).asInstanceOf[Int]
 
-    val f3 = actor3 ? (a + b)
+    val f3 = ask(actor3, (a + b))
 
     val result = Await.result(f3, 1 second).asInstanceOf[Int]
     //#composing-wrong
@@ -170,15 +190,16 @@ class FutureDocSpec extends AkkaSpec {
     val msg2 = 2
     implicit val timeout = system.settings.ActorTimeout
     import akka.dispatch.Await
+    import akka.pattern.ask
     //#composing
 
-    val f1 = actor1 ? msg1
-    val f2 = actor2 ? msg2
+    val f1 = ask(actor1, msg1)
+    val f2 = ask(actor2, msg2)
 
     val f3 = for {
       a ← f1.mapTo[Int]
       b ← f2.mapTo[Int]
-      c ← (actor3 ? (a + b)).mapTo[Int]
+      c ← ask(actor3, (a + b)).mapTo[Int]
     } yield c
 
     val result = Await.result(f3, 1 second).asInstanceOf[Int]
@@ -191,7 +212,7 @@ class FutureDocSpec extends AkkaSpec {
     val oddActor = system.actorOf(Props[OddActor])
     //#sequence-ask
     // oddActor returns odd numbers sequentially from 1 as a List[Future[Int]]
-    val listOfFutures = List.fill(100)((oddActor ? GetNext).mapTo[Int])
+    val listOfFutures = List.fill(100)(akka.pattern.ask(oddActor, GetNext).mapTo[Int])
 
     // now we have a Future[List[Int]]
     val futureList = Future.sequence(listOfFutures)
@@ -239,11 +260,105 @@ class FutureDocSpec extends AkkaSpec {
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#recover
-    val future = actor ? msg1 recover {
+    val future = akka.pattern.ask(actor, msg1) recover {
       case e: ArithmeticException ⇒ 0
     }
     //#recover
     Await.result(future, 1 second) must be(0)
+  }
+
+  "demonstrate usage of recoverWith" in {
+    implicit val timeout = system.settings.ActorTimeout
+    val actor = system.actorOf(Props[MyActor])
+    val msg1 = -1
+    //#try-recover
+    val future = akka.pattern.ask(actor, msg1) recoverWith {
+      case e: ArithmeticException        ⇒ Promise.successful(0)
+      case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!"))
+    }
+    //#try-recover
+    Await.result(future, 1 second) must be(0)
+  }
+
+  "demonstrate usage of zip" in {
+    val future1 = Future { "foo" }
+    val future2 = Future { "bar" }
+    //#zip
+    val future3 = future1 zip future2 map { case (a, b) ⇒ a + " " + b }
+    //#zip
+    Await.result(future3, 1 second) must be("foo bar")
+  }
+
+  "demonstrate usage of andThen" in {
+    def loadPage(s: String) = s
+    val url = "foo bar"
+    def log(cause: Throwable) = ()
+    def watchSomeTV = ()
+    //#and-then
+    val result = Future { loadPage(url) } andThen {
+      case Left(exception) ⇒ log(exception)
+    } andThen {
+      case _ ⇒ watchSomeTV
+    }
+    //#and-then
+    Await.result(result, 1 second) must be("foo bar")
+  }
+
+  "demonstrate usage of fallbackTo" in {
+    val future1 = Future { "foo" }
+    val future2 = Future { "bar" }
+    val future3 = Future { "pigdog" }
+    //#fallback-to
+    val future4 = future1 fallbackTo future2 fallbackTo future3
+    //#fallback-to
+    Await.result(future4, 1 second) must be("foo")
+  }
+
+  "demonstrate usage of onSuccess & onFailure & onComplete" in {
+    {
+      val future = Future { "foo" }
+      //#onSuccess
+      future onSuccess {
+        case "bar"     ⇒ println("Got my bar alright!")
+        case x: String ⇒ println("Got some random string: " + x)
+      }
+      //#onSuccess
+      Await.result(future, 1 second) must be("foo")
+    }
+    {
+      val future = Promise.failed[String](new IllegalStateException("OHNOES"))
+      //#onFailure
+      future onFailure {
+        case ise: IllegalStateException if ise.getMessage == "OHNOES" ⇒
+        //OHNOES! We are in deep trouble, do something!
+        case e: Exception ⇒
+        //Do something else
+      }
+      //#onFailure
+    }
+    {
+      val future = Future { "foo" }
+      def doSomethingOnSuccess(r: String) = ()
+      def doSomethingOnFailure(t: Throwable) = ()
+      //#onComplete
+      future onComplete {
+        case Right(result) ⇒ doSomethingOnSuccess(result)
+        case Left(failure) ⇒ doSomethingOnFailure(failure)
+      }
+      //#onComplete
+      Await.result(future, 1 second) must be("foo")
+    }
+  }
+
+  "demonstrate usage of Promise.success & Promise.failed" in {
+    //#successful
+    val future = Promise.successful("Yay!")
+    //#successful
+    //#failed
+    val otherFuture = Promise.failed[String](new IllegalArgumentException("Bang!"))
+    //#failed
+    Await.result(future, 1 second) must be("Yay!")
+    intercept[IllegalArgumentException] { Await.result(otherFuture, 1 second) }
   }
 
 }

@@ -1,8 +1,9 @@
 /**
- *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ *   Copyright (C) 2011-2012 Typesafe Inc. <http://typesafe.com>
  */
 package com.typesafe.config.impl;
 
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -227,5 +228,15 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
             indent(sb, indent);
             sb.append("# ) end of unresolved merge\n");
         }
+    }
+
+    // This ridiculous hack is because some JDK versions apparently can't
+    // serialize an array, which is used to implement ArrayList and EmptyList.
+    // maybe
+    // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6446627
+    private Object writeReplace() throws ObjectStreamException {
+        // switch to LinkedList
+        return new ConfigDelayedMerge(origin(),
+                new java.util.LinkedList<AbstractConfigValue>(stack), ignoresFallbacks);
     }
 }

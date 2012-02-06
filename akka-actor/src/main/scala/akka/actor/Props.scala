@@ -1,12 +1,11 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
 import akka.dispatch._
 import akka.japi.Creator
-import akka.util._
 import collection.immutable.Stack
 import akka.routing._
 
@@ -18,20 +17,13 @@ import akka.routing._
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
 object Props {
-  import FaultHandlingStrategy._
 
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
-  final val defaultDecider: Decider = {
-    case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: Exception                    ⇒ Restart
-    case _                               ⇒ Escalate
-  }
 
   final val defaultRoutedProps: RouterConfig = NoRouter
 
-  final val defaultFaultHandler: FaultHandlingStrategy = OneForOneStrategy(defaultDecider, None, None)
-  final val noHotSwap: Stack[Actor.Receive] = Stack.empty
+  final val defaultDeploy = Deploy()
+
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
   /**
@@ -79,8 +71,6 @@ object Props {
   def apply(behavior: ActorContext ⇒ Actor.Receive): Props =
     apply(new Actor { def receive = behavior(context) })
 
-  def apply(faultHandler: FaultHandlingStrategy): Props =
-    apply(new Actor { def receive = { case _ ⇒ } }).withFaultHandler(faultHandler)
 }
 
 /**
@@ -94,14 +84,10 @@ object Props {
  *  val props = Props(
  *    creator = ..,
  *    dispatcher = ..,
- *    faultHandler = ..,
  *    routerConfig = ..
  *  )
  *  val props = Props().withCreator(new MyActor)
  *  val props = Props[MyActor].withRouter(RoundRobinRouter(..))
- *  val props = Props[MyActor].withFaultHandler(OneForOneStrategy {
- *    case e: IllegalStateException ⇒ Resume
- *  })
  * }}}
  *
  * Examples on Java API:
@@ -114,31 +100,28 @@ object Props {
  *    }
  *  });
  *  Props props = new Props().withCreator(new UntypedActorFactory() { ... });
- *  Props props = new Props(MyActor.class).withFaultHandler(new OneForOneStrategy(...));
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,
-  faultHandler: FaultHandlingStrategy = Props.defaultFaultHandler,
-  routerConfig: RouterConfig = Props.defaultRoutedProps) {
+  routerConfig: RouterConfig = Props.defaultRoutedProps,
+  deploy: Deploy = Props.defaultDeploy) {
 
   /**
    * No-args constructor that sets all the default values.
    */
   def this() = this(
     creator = Props.defaultCreator,
-    dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler)
+    dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
    * Java API.
    */
   def this(factory: UntypedActorFactory) = this(
     creator = () ⇒ factory.create(),
-    dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler)
+    dispatcher = Dispatchers.DefaultDispatcherId)
 
   /**
    * Java API.
@@ -146,7 +129,6 @@ case class Props(
   def this(actorClass: Class[_ <: Actor]) = this(
     creator = () ⇒ actorClass.newInstance,
     dispatcher = Dispatchers.DefaultDispatcherId,
-    faultHandler = Props.defaultFaultHandler,
     routerConfig = Props.defaultRoutedProps)
 
   /**
@@ -154,34 +136,34 @@ case class Props(
    *
    * Scala API.
    */
-  def withCreator(c: ⇒ Actor) = copy(creator = () ⇒ c)
+  def withCreator(c: ⇒ Actor): Props = copy(creator = () ⇒ c)
 
   /**
    * Returns a new Props with the specified creator set.
    *
    * Java API.
    */
-  def withCreator(c: Creator[Actor]) = copy(creator = () ⇒ c.create)
+  def withCreator(c: Creator[Actor]): Props = copy(creator = () ⇒ c.create)
 
   /**
    * Returns a new Props with the specified creator set.
    *
    * Java API.
    */
-  def withCreator(c: Class[_ <: Actor]) = copy(creator = () ⇒ c.newInstance)
+  def withCreator(c: Class[_ <: Actor]): Props = copy(creator = () ⇒ c.newInstance)
 
   /**
    * Returns a new Props with the specified dispatcher set.
    */
-  def withDispatcher(d: String) = copy(dispatcher = d)
-
-  /**
-   * Returns a new Props with the specified faulthandler set.
-   */
-  def withFaultHandler(f: FaultHandlingStrategy) = copy(faultHandler = f)
+  def withDispatcher(d: String): Props = copy(dispatcher = d)
 
   /**
    * Returns a new Props with the specified router config set.
    */
-  def withRouter(r: RouterConfig) = copy(routerConfig = r)
+  def withRouter(r: RouterConfig): Props = copy(routerConfig = r)
+
+  /**
+   * Returns a new Props with the specified deployment configuration.
+   */
+  def withDeploy(d: Deploy): Props = copy(deploy = d)
 }

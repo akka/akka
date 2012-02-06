@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.serialization
@@ -9,7 +9,9 @@ import akka.util.ReflectiveAccess
 import scala.util.DynamicVariable
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.actor.{ Extension, ActorSystem, ActorSystemImpl }
+import akka.actor.{ Extension, ActorSystem, ExtendedActorSystem, Address }
+import java.util.concurrent.ConcurrentHashMap
+import akka.event.Logging
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -26,6 +28,12 @@ object Serialization {
    * }
    */
   val currentSystem = new DynamicVariable[ActorSystem](null)
+
+  /**
+   * This holds a reference to the current transport address to be inserted
+   * into local actor refs during serialization.
+   */
+  val currentTransportAddress = new DynamicVariable[Address](null)
 
   class Settings(val config: Config) {
 
@@ -55,10 +63,11 @@ object Serialization {
  * Serialization module. Contains methods for serialization and deserialization as well as
  * locating a Serializer for a particular class as defined in the mapping in the 'akka.conf' file.
  */
-class Serialization(val system: ActorSystemImpl) extends Extension {
+class Serialization(val system: ExtendedActorSystem) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.settings.config)
+  val log = Logging(system, getClass.getName)
 
   /**
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
@@ -75,10 +84,10 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   def deserialize(bytes: Array[Byte],
                   serializerId: Int,
                   clazz: Option[Class[_]],
-                  classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
+                  classLoader: ClassLoader): Either[Exception, AnyRef] =
     try {
       currentSystem.withValue(system) {
-        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, classLoader))
+        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, Some(classLoader)))
       }
     } catch { case e: Exception ⇒ Left(e) }
 
@@ -105,10 +114,37 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   }
 
   /**
-   * Returns the configured Serializer for the given Class, falls back to the Serializer named "default"
+   * Returns the configured Serializer for the given Class, falls back to the Serializer named "default".
+   * It traverses interfaces and super classes to find any configured Serializer that match
+   * the class name.
    */
-  def serializerFor(clazz: Class[_]): Serializer = //TODO fall back on BestMatchClass THEN default AND memoize the lookups
-    serializerMap.get(clazz.getName).getOrElse(serializers("default"))
+  def serializerFor(clazz: Class[_]): Serializer =
+    if (bindings.isEmpty) {
+      // quick path to default when no bindings are registered
+      serializers("default")
+    } else {
+
+      def resolve(c: Class[_]): Option[Serializer] =
+        serializerMap.get(c.getName) match {
+          case null ⇒
+            val classes = c.getInterfaces ++ Option(c.getSuperclass)
+            classes.view map resolve collectFirst { case Some(x) ⇒ x }
+          case x ⇒ Some(x)
+        }
+
+      serializerMap.get(clazz.getName) match {
+        case null ⇒
+          val ser = resolve(clazz).getOrElse(serializers("default"))
+          // memorize the lookups for performance
+          serializerMap.putIfAbsent(clazz.getName, ser) match {
+            case null ⇒
+              log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
+              ser
+            case some ⇒ some
+          }
+        case ser ⇒ ser
+      }
+    }
 
   /**
    * Tries to load the specified Serializer by the FQN
@@ -140,9 +176,15 @@ class Serialization(val system: ActorSystemImpl) extends Extension {
   }
 
   /**
-   * serializerMap is a Map whose keys = FQN of class that is serializable and values = the FQN of the serializer to be used for that class
+   * serializerMap is a Map whose keys = FQN of class that is serializable and values is the serializer to be used for that class
    */
-  lazy val serializerMap: Map[String, Serializer] = bindings mapValues serializers
+  private lazy val serializerMap: ConcurrentHashMap[String, Serializer] = {
+    val serializerMap = new ConcurrentHashMap[String, Serializer]
+    for ((k, v) ← bindings) {
+      serializerMap.put(k, serializers(v))
+    }
+    serializerMap
+  }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)

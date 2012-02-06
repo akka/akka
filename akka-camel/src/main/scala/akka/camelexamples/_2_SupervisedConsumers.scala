@@ -13,7 +13,7 @@ object SupervisedConsumersExample extends App {
   val system = ActorSystem("test1")
 
   system.actorOf(Props(new Actor {
-    context.watch(context.actorOf(Props[EndpointManager].withFaultHandler(retry3xWithin1s)))
+    context.watch(context.actorOf(Props[EndpointManager]))
     protected def receive = {
       case Terminated(ref) ⇒ system.shutdown()
     }
@@ -24,6 +24,8 @@ object SupervisedConsumersExample extends App {
 
 class EndpointManager extends Actor {
   import context._
+
+  override def supervisorStrategy() = retry3xWithin1s
 
   watch(actorOf(Props[SysOutConsumer]))
   watch(actorOf(Props[TroubleMaker]))

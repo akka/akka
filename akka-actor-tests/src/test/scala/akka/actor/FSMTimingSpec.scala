@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -160,37 +160,37 @@ object FSMTimingSpec {
 
     startWith(Initial, 0)
     when(Initial) {
-      case Ev(TestSingleTimer) ⇒
+      case Event(TestSingleTimer, _) ⇒
         setTimer("tester", Tick, 500 millis, false)
         goto(TestSingleTimer)
-      case Ev(TestRepeatedTimer) ⇒
+      case Event(TestRepeatedTimer, _) ⇒
         setTimer("tester", Tick, 100 millis, true)
         goto(TestRepeatedTimer) using 4
-      case Ev(TestStateTimeoutOverride) ⇒
+      case Event(TestStateTimeoutOverride, _) ⇒
         goto(TestStateTimeout) forMax (Duration.Inf)
-      case Ev(x: FSMTimingSpec.State) ⇒ goto(x)
+      case Event(x: FSMTimingSpec.State, _) ⇒ goto(x)
     }
     when(TestStateTimeout, stateTimeout = 500 millis) {
-      case Ev(StateTimeout) ⇒ goto(Initial)
-      case Ev(Cancel)       ⇒ goto(Initial) replying (Cancel)
+      case Event(StateTimeout, _) ⇒ goto(Initial)
+      case Event(Cancel, _)       ⇒ goto(Initial) replying (Cancel)
     }
     when(TestSingleTimer) {
-      case Ev(Tick) ⇒
+      case Event(Tick, _) ⇒
         tester ! Tick
         goto(Initial)
     }
     when(TestCancelTimer) {
-      case Ev(Tick) ⇒
+      case Event(Tick, _) ⇒
         setTimer("hallo", Tock, 1 milli, false)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1 second)
         cancelTimer("hallo")
         sender ! Tick
         setTimer("hallo", Tock, 500 millis, false)
         stay
-      case Ev(Tock) ⇒
+      case Event(Tock, _) ⇒
         tester ! Tock
         stay
-      case Ev(Cancel) ⇒
+      case Event(Cancel, _) ⇒
         cancelTimer("hallo")
         goto(Initial)
     }
@@ -206,29 +206,29 @@ object FSMTimingSpec {
     }
     when(TestCancelStateTimerInNamedTimerMessage) {
       // FSM is suspended after processing this message and resumed 500ms later
-      case Ev(Tick) ⇒
+      case Event(Tick, _) ⇒
         suspend(self)
         setTimer("named", Tock, 1 millis, false)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1 second)
         stay forMax (1 millis) replying Tick
-      case Ev(Tock) ⇒
+      case Event(Tock, _) ⇒
         goto(TestCancelStateTimerInNamedTimerMessage2)
     }
     when(TestCancelStateTimerInNamedTimerMessage2) {
-      case Ev(StateTimeout) ⇒
+      case Event(StateTimeout, _) ⇒
         goto(Initial)
-      case Ev(Cancel) ⇒
+      case Event(Cancel, _) ⇒
         goto(Initial) replying Cancel
     }
     when(TestUnhandled) {
-      case Ev(SetHandler) ⇒
+      case Event(SetHandler, _) ⇒
         whenUnhandled {
-          case Ev(Tick) ⇒
+          case Event(Tick, _) ⇒
             tester ! Unhandled(Tick)
             stay
         }
         stay
-      case Ev(Cancel) ⇒
+      case Event(Cancel, _) ⇒
         whenUnhandled(NullFunction)
         goto(Initial)
     }

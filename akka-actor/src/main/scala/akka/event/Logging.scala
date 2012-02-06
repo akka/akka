@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -101,7 +101,7 @@ trait LoggingBus extends ActorEventBus {
         if loggerName != StandardOutLoggerName
       } yield {
         try {
-          ReflectiveAccess.getClassFor[Actor](loggerName) match {
+          ReflectiveAccess.getClassFor[Actor](loggerName, system.internalClassLoader) match {
             case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
             case Left(exception)   ⇒ throw exception
           }
@@ -155,6 +155,7 @@ trait LoggingBus extends ActorEventBus {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
     implicit val timeout = Timeout(3 seconds)
+    import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
         publish(Warning(logName, this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
@@ -498,6 +499,14 @@ object Logging {
   class EventHandlerException extends AkkaException
 
   /**
+   * Exception that wraps a LogEvent.
+   */
+  class LogEventException(val event: LogEvent, cause: Throwable) extends NoStackTrace {
+    override def getMessage: String = event.toString
+    override def getCause: Throwable = cause
+  }
+
+  /**
    * Base type of LogEvents
    */
   sealed trait LogEvent {
@@ -647,7 +656,8 @@ object Logging {
    * <code>akka.stdout-loglevel</code> in <code>akka.conf</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
-    val path: ActorPath = new RootActorPath(LocalAddress("all-systems"), "/StandardOutLogger")
+    val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
+    def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }

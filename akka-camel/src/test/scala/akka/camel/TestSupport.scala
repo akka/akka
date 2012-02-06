@@ -5,11 +5,11 @@
 package akka.camel
 
 import akka.actor.{ Props, ActorSystem, Actor }
-import akka.util.Duration
 import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
+import akka.util.{ FiniteDuration, Duration }
 
 private[camel] object TestSupport {
 
@@ -71,7 +71,7 @@ private[camel] object TestSupport {
     }
 
   }
-  def time[A](block: ⇒ A): Duration = {
+  def time[A](block: ⇒ A): FiniteDuration = {
     val start = System.currentTimeMillis()
     block
     val duration = System.currentTimeMillis() - start

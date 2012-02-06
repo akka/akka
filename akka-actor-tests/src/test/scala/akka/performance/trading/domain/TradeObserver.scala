@@ -1,11 +1,8 @@
 package akka.performance.trading.domain
 
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.ActorSystemImpl
-import akka.actor.ActorSystem
+
+import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorSystem }
 
 abstract trait TradeObserver {
   def trade(bid: Bid, ask: Ask)
@@ -38,5 +35,5 @@ object TotalTradeCounterExtension
   extends ExtensionId[TotalTradeCounter]
   with ExtensionIdProvider {
   override def lookup = TotalTradeCounterExtension
-  override def createExtension(system: ActorSystemImpl) = new TotalTradeCounter
+  override def createExtension(system: ExtendedActorSystem) = new TotalTradeCounter
 }

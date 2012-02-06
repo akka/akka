@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -12,11 +12,11 @@ import akka.util.ReflectiveAccess
 
 object MessageSerializer {
 
-  def deserialize(system: ActorSystem, messageProtocol: MessageProtocol, classLoader: Option[ClassLoader] = None): AnyRef = {
+  def deserialize(system: ActorSystem, messageProtocol: MessageProtocol, classLoader: ClassLoader): AnyRef = {
     val clazz = if (messageProtocol.hasMessageManifest) {
       Option(ReflectiveAccess.getClassFor[AnyRef](
         messageProtocol.getMessageManifest.toStringUtf8,
-        classLoader.getOrElse(ReflectiveAccess.loader)) match {
+        classLoader) match {
           case Left(e)  ⇒ throw e
           case Right(r) ⇒ r
         })

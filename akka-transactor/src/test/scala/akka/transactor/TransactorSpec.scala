@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor
@@ -10,6 +10,7 @@ import akka.util.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
+import akka.pattern.ask
 
 object TransactorIncrement {
   case class Increment(friends: Seq[ActorRef], latch: TestLatch)

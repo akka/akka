@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor.mailbox
 
@@ -11,7 +11,7 @@ import akka.actor._
 object BeanstalkBasedMailboxExtension extends ExtensionId[BeanstalkMailboxSettings] with ExtensionIdProvider {
   override def get(system: ActorSystem): BeanstalkMailboxSettings = super.get(system)
   def lookup() = this
-  def createExtension(system: ActorSystemImpl) = new BeanstalkMailboxSettings(system.settings.config)
+  def createExtension(system: ExtendedActorSystem) = new BeanstalkMailboxSettings(system.settings.config)
 }
 
 class BeanstalkMailboxSettings(val config: Config) extends Extension {
