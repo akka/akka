@@ -1,8 +1,8 @@
 .. _akka-testkit:
 
-#####################
-Testing Actor Systems
-#####################
+##############################
+Testing Actor Systems (Scala)
+##############################
 
 .. toctree::
 
@@ -75,7 +75,7 @@ Expecting Exceptions
 --------------------
 
 Testing that an expected exception is thrown while processing a message sent to
-the actor under test can be done by using a :class:`TestActorRef` :meth:`apply` based
+the actor under test can be done by using a :class:`TestActorRef` :meth:`receive` based
 invocation:
 
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-expecting-exceptions
@@ -144,7 +144,7 @@ The Way In-Between
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the :class:`TestActorRef` swallow
 any thrown exceptions, then there is another mode available for you: just use
-the :meth:`apply` method :class:`TestActorRef`, which will be forwarded to the
+the :meth:`receive` method :class:`TestActorRef`, which will be forwarded to the
 underlying actor:
 
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#test-unhandled
@@ -600,9 +600,6 @@ options:
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala#logging-receive
 
 .
-  The first argument to :meth:`LoggingReceive` defines the source to be used in the
-  logging events, which should be the current actor.
-
   If the abovementioned setting is not given in the :ref:`configuration`, this method will
   pass through the given :class:`Receive` function unmodified, meaning that
   there is no runtime cost unless actually enabled.

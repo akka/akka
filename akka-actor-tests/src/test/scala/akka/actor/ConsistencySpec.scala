@@ -9,12 +9,15 @@ object ConsistencySpec {
       consistency-dispatcher {
         throughput = 1
         keep-alive-time = 1 ms
-        core-pool-size-min = 10
-        core-pool-size-max = 10
-        max-pool-size-min = 10
-        max-pool-size-max = 10
-        task-queue-type = array
-        task-queue-size = 7
+        executor = "thread-pool-executor"
+        thread-pool-executor {
+          core-pool-size-min = 10
+          core-pool-size-max = 10
+          max-pool-size-min = 10
+          max-pool-size-max = 10
+          task-queue-type = array
+          task-queue-size = 7
+        }
       }
     """
   class CacheMisaligned(var value: Long, var padding1: Long, var padding2: Long, var padding3: Int) //Vars, no final fences

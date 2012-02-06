@@ -39,8 +39,26 @@ should be serialized using which ``Serializer``, this is done in the "akka.actor
 
 .. note::
 
-   Akka currently only checks for absolute equality of Classes, i.e. it does not yet check ``isAssignableFrom``,
-   this means that you'll need to list the specific classes.
+   You only need to specify the name of an interface or abstract base class if the messages implements
+   that. E.g. ``com.google.protobuf.Message`` for protobuf serialization.
+
+Protobuf
+--------
+
+Akka provides a ``Serializer`` for `protobuf <http://code.google.com/p/protobuf/>`_ messages.
+To use that you need to add the following to the configuration::
+
+      akka {
+        actor {
+          serializers {
+            proto = "akka.serialization.ProtobufSerializer"
+          }
+
+          serialization-bindings {
+            proto = ["com.google.protobuf.Message"]
+          }
+        }
+      }
 
 Verification
 ------------

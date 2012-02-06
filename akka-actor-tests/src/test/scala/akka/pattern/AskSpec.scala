@@ -1,0 +1,36 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.pattern
+
+import akka.testkit.AkkaSpec
+import akka.util.duration._
+
+class AskSpec extends AkkaSpec {
+
+  "The “ask” pattern" must {
+
+    "return broken promises on DeadLetters" in {
+      val dead = system.actorFor("/system/deadLetters")
+      val f = dead.ask(42)(1 second)
+      f.isCompleted must be(true)
+      f.value.get match {
+        case Left(_: AskTimeoutException) ⇒
+        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+      }
+    }
+
+    "return broken promises on EmptyLocalActorRefs" in {
+      val empty = system.actorFor("unknown")
+      implicit val timeout = system.settings.ActorTimeout
+      val f = empty ? 3.14
+      f.isCompleted must be(true)
+      f.value.get match {
+        case Left(_: AskTimeoutException) ⇒
+        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+      }
+    }
+
+  }
+
+}

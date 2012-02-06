@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.util
@@ -108,7 +108,6 @@ class BoundedBlockingQueue[E <: AnyRef](
                 throw ie
             }
             false
-          // TODO catching all and continue isn't good for OOME, ticket #1418
           case e ⇒
             notFull.signal()
             result = e

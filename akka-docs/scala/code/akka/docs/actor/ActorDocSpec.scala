@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.actor
 
@@ -133,6 +133,29 @@ class SpecificActor extends GenericActor {
 case class MyMsg(subject: String)
 //#receive-orElse
 
+//#receive-orElse2
+trait ComposableActor extends Actor {
+  private var receives: List[Receive] = List()
+  protected def registerReceive(receive: Receive) {
+    receives = receive :: receives
+  }
+
+  def receive = receives reduce { _ orElse _ }
+}
+
+class MyComposableActor extends ComposableActor {
+  override def preStart() {
+    registerReceive({
+      case "foo" ⇒ /* Do something */
+    })
+
+    registerReceive({
+      case "bar" ⇒ /* Do something */
+    })
+  }
+}
+
+//#receive-orElse2
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {
@@ -212,31 +235,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.stop(myActor)
   }
 
-  "using ask" in {
-    //#using-ask
-    class MyActor extends Actor {
-      def receive = {
-        case x: String ⇒ sender ! x.toUpperCase
-        case n: Int    ⇒ sender ! (n + 1)
-      }
-    }
-
-    val myActor = system.actorOf(Props(new MyActor), name = "myactor")
-    implicit val timeout = system.settings.ActorTimeout
-    val future = myActor ? "hello"
-    for (x ← future) println(x) //Prints "hello"
-
-    val result: Future[Int] = for (x ← (myActor ? 3).mapTo[Int]) yield { 2 * x }
-    //#using-ask
-
-    system.stop(myActor)
-  }
-
   "using implicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-implicit-timeout
     import akka.util.duration._
     import akka.util.Timeout
+    import akka.pattern.ask
     implicit val timeout = Timeout(500 millis)
     val future = myActor ? "hello"
     //#using-implicit-timeout
@@ -248,7 +252,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
     import akka.util.duration._
-    val future = myActor ? ("hello", timeout = 500 millis)
+    import akka.pattern.ask
+    val future = myActor.ask("hello")(500 millis)
     //#using-explicit-timeout
     Await.result(future, 500 millis) must be("hello")
   }
@@ -327,6 +332,28 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       case e: ActorTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
-
   }
+
+  "using pattern ask / pipeTo" in {
+    val actorA, actorB, actorC, actorD = system.actorOf(Props.empty)
+    //#ask-pipeTo
+    import akka.pattern.{ ask, pipe }
+
+    case class Result(x: Int, s: String, d: Double)
+    case object Request
+
+    implicit val timeout = Timeout(5 seconds) // needed for `?` below
+
+    val f: Future[Result] =
+      for {
+        x ← ask(actorA, Request).mapTo[Int] // call pattern directly
+        s ← actorB ask Request mapTo manifest[String] // call by implicit conversion
+        d ← actorC ? Request mapTo manifest[Double] // call by symbolic name
+      } yield Result(x, s, d)
+
+    f pipeTo actorD // .. or ..
+    pipe(f) to actorD
+    //#ask-pipeTo
+  }
+
 }

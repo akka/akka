@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.docs.agent;
 
@@ -44,7 +44,7 @@ public class AgentDocTest {
 
   @Test
   public void createAndClose() {
-  	//#create
+        //#create
     ActorSystem system = ActorSystem.create("app");
 
     Agent<Integer> agent = new Agent<Integer>(5, system);

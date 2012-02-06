@@ -7,7 +7,7 @@ package akka.kernel
 import akka.actor.ActorSystem
 import java.io.File
 import java.lang.Boolean.getBoolean
-import java.net.{ URL, URLClassLoader }
+import java.net.URLClassLoader
 import java.util.jar.JarFile
 import scala.collection.JavaConverters._
 

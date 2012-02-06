@@ -1,8 +1,9 @@
 /**
- *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ *   Copyright (C) 2011-2012 Typesafe Inc. <http://typesafe.com>
  */
 package com.typesafe.config.impl;
 
+import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +29,7 @@ import com.typesafe.config.ConfigValueType;
  * with a one-level java.util.Map from paths to non-null values. Null values are
  * not "in" the map.
  */
-final class SimpleConfig implements Config, MergeableValue {
+final class SimpleConfig implements Config, MergeableValue, Serializable {
 
     final private AbstractConfigObject object;
 

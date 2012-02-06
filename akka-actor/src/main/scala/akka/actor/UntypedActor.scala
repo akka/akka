@@ -1,11 +1,10 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import akka.japi.{ Creator, Procedure }
-import akka.dispatch.{ MessageDispatcher, Promise }
+import akka.japi.{ Creator }
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
@@ -35,6 +34,27 @@ import akka.dispatch.{ MessageDispatcher, Promise }
  *        this.sender = sender;
  *        this.result = result;
  *      }
+ *    }
+ *
+ *   private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+ *     new Function<Throwable, Directive>() {
+ *       @Override
+ *       public Directive apply(Throwable t) {
+ *         if (t instanceof ArithmeticException) {
+ *           return resume();
+ *         } else if (t instanceof NullPointerException) {
+ *           return restart();
+ *         } else if (t instanceof IllegalArgumentException) {
+ *           return stop();
+ *         } else {
+ *           return escalate();
+ *         }
+ *       }
+ *     });
+ *
+ *   @Override
+ *   public SupervisorStrategy supervisorStrategy() {
+ *     return strategy;
  *    }
  *
  *    public void onReceive(Object message) throws Exception {
@@ -91,6 +111,12 @@ abstract class UntypedActor extends Actor {
    * for the reply, in which case it will be sent to the dead letter mailbox.
    */
   def getSender(): ActorRef = sender
+
+  /**
+   * User overridable definition the strategy to use for supervising
+   * child actors.
+   */
+  override def supervisorStrategy(): SupervisorStrategy = super.supervisorStrategy()
 
   /**
    * User overridable callback.

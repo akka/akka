@@ -1,27 +1,18 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
-import akka.event.Logging.{ Warning, Error }
+import java.lang.ref.WeakReference
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
-import java.util.concurrent.RejectedExecutionException
-import akka.util.Switch
-import java.lang.ref.WeakReference
 import scala.annotation.tailrec
-import akka.actor.{ ActorCell, ActorRef, ActorSystem }
-import akka.dispatch._
-import akka.actor.Scheduler
-import akka.event.EventStream
-import akka.util.Duration
-import akka.util.duration._
-import java.util.concurrent.TimeUnit
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.ActorSystemImpl
-import akka.actor.Extension
 import com.typesafe.config.Config
+import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
+import akka.dispatch.{ TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
+import akka.util.duration.intToDurationInt
+import akka.util.{ Switch, Duration }
+import akka.util.NonFatal
 
 /*
  * Locking rules:
@@ -42,7 +33,7 @@ import com.typesafe.config.Config
 
 private[testkit] object CallingThreadDispatcherQueues extends ExtensionId[CallingThreadDispatcherQueues] with ExtensionIdProvider {
   override def lookup = CallingThreadDispatcherQueues
-  override def createExtension(system: ActorSystemImpl): CallingThreadDispatcherQueues = new CallingThreadDispatcherQueues
+  override def createExtension(system: ExtendedActorSystem): CallingThreadDispatcherQueues = new CallingThreadDispatcherQueues
 }
 
 private[testkit] class CallingThreadDispatcherQueues extends Extension {
@@ -232,7 +223,7 @@ class CallingThreadDispatcher(
             Thread.currentThread().interrupt()
             intex = ie
             true
-          case e ⇒
+          case NonFatal(e) ⇒
             log.error(e, "Error during message processing")
             queue.leave
             false
@@ -242,7 +233,7 @@ class CallingThreadDispatcher(
         false
       } else false
     } catch {
-      case e ⇒ queue.leave; throw e
+      case NonFatal(e) ⇒ queue.leave; throw e
     } finally {
       mbox.ctdLock.unlock
     }
@@ -301,8 +292,8 @@ class CallingThreadMailbox(_receiver: ActorCell) extends Mailbox(_receiver) with
 
   override def cleanUp(): Unit = {
     /*
-     * This is called from dispatcher.unregister, i.e. under this.lock. If 
-     * another thread obtained a reference to this mailbox and enqueues after 
+     * This is called from dispatcher.unregister, i.e. under this.lock. If
+     * another thread obtained a reference to this mailbox and enqueues after
      * the gather operation, tough luck: no guaranteed delivery to deadLetters.
      */
     suspendSwitch.locked {

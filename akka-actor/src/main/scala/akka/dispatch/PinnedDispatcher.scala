@@ -1,16 +1,11 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
-import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.actor.Scheduler
 import akka.util.Duration
-import java.util.concurrent.TimeUnit
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -21,13 +16,11 @@ import java.util.concurrent.TimeUnit
 class PinnedDispatcher(
   _prerequisites: DispatcherPrerequisites,
   _actor: ActorCell,
-  _name: String,
   _id: String,
   _mailboxType: MailboxType,
   _shutdownTimeout: Duration,
   _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
   extends Dispatcher(_prerequisites,
-    _name,
     _id,
     Int.MaxValue,
     Duration.Zero,

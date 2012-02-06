@@ -1,9 +1,8 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
 
-import java.io.{ PrintWriter, StringWriter }
 import java.util.Comparator
 import scala.annotation.tailrec
 import java.util.regex.Pattern

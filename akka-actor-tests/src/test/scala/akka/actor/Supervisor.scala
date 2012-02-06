@@ -1,9 +1,14 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
-class Supervisor extends Actor {
+/**
+ * For testing Supervisor behavior, normally you don't supply the strategy
+ * from the outside like this.
+ */
+class Supervisor(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+
   def receive = {
     case x: Props ⇒ sender ! context.actorOf(x)
   }

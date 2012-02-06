@@ -1,17 +1,13 @@
 /**
- *    Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *    Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.dispatch
 
 import util.DynamicVariable
-import akka.actor.{ ActorCell, Actor, IllegalActorStateException, ActorRef }
+import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
-import java.util.{ Comparator, Queue }
 import annotation.tailrec
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.actor.Scheduler
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.Duration
 
@@ -31,14 +27,13 @@ import akka.util.Duration
  */
 class BalancingDispatcher(
   _prerequisites: DispatcherPrerequisites,
-  _name: String,
   _id: String,
   throughput: Int,
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
-  config: ThreadPoolConfig,
+  _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   _shutdownTimeout: Duration)
-  extends Dispatcher(_prerequisites, _name, _id, throughput, throughputDeadlineTime, mailboxType, config, _shutdownTimeout) {
+  extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
   val rebalance = new AtomicBoolean(false)

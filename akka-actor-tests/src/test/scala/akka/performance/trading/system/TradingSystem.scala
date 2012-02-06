@@ -39,11 +39,9 @@ class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {
   val orDispatcher = orderReceiverDispatcher
   val meDispatcher = matchingEngineDispatcher
 
-  // by default we use default-dispatcher
-  def orderReceiverDispatcher: Option[String] = None
+  def orderReceiverDispatcher: Option[String] = Some("benchmark.trading-dispatcher")
 
-  // by default we use default-dispatcher
-  def matchingEngineDispatcher: Option[String] = None
+  def matchingEngineDispatcher: Option[String] = Some("benchmark.trading-dispatcher")
 
   override val orderbooksGroupedByMatchingEngine: List[List[Orderbook]] =
     for (groupOfSymbols: List[String] ← OrderbookRepository.orderbookSymbolsGroupedByMatchingEngine)

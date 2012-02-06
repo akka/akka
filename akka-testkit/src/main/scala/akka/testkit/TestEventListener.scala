@@ -1,15 +1,13 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
-import scala.annotation.tailrec
 import scala.util.matching.Regex
 import akka.actor.{ DeadLetter, ActorSystem, Terminated }
 import akka.dispatch.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
-import akka.testkit.TestEvent.{ UnMute, Mute }
 import akka.util.Duration
 
 /**

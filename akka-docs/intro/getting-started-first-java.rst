@@ -237,13 +237,24 @@ e.g. in ``$AKKA_HOME/tutorial/akka/tutorial/first/java/Pi.java``.
 Creating the messages
 ---------------------
 
-The design we are aiming for is to have one ``Master`` actor initiating the computation, creating a set of ``Worker`` actors. Then it splits up the work into discrete chunks, and sends these chunks to the different workers in a round-robin fashion. The master waits until all the workers have completed their work and sent back results for aggregation. When computation is completed the master prints out the result, shuts down all workers and then itself.
+The design we are aiming for is to have one ``Master`` actor initiating the
+computation, creating a set of ``Worker`` actors. Then it splits up the work
+into discrete chunks, and sends these chunks to the different workers in a
+round-robin fashion. The master waits until all the workers have completed their
+work and sent back results for aggregation. When computation is completed the
+master sends the result to the ``Listener``, which prints out the result.
 
-With this in mind, let's now create the messages that we want to have flowing in the system. We need three different messages:
+With this in mind, let's now create the messages that we want to have flowing in
+the system. We need four different messages:
 
 - ``Calculate`` -- sent to the ``Master`` actor to start the calculation
-- ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing the work assignment
-- ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor containing the result from the worker's calculation
+- ``Work`` -- sent from the ``Master`` actor to the ``Worker`` actors containing
+  the work assignment
+- ``Result`` -- sent from the ``Worker`` actors to the ``Master`` actor
+  containing the result from the worker's calculation
+- ``PiApproximation`` -- sent from the ``Master`` actor to the
+  ``Listener`` actor containing the the final pi result and how long time
+  the calculation took
 
 Messages sent to actors should always be immutable to avoid sharing mutable state. So let's start by creating three messages as immutable POJOs. We also create a wrapper ``Pi`` class to hold our implementation:
 
@@ -285,19 +296,8 @@ Here is the master actor:
 
 A couple of things are worth explaining further.
 
-First, we are passing in a ``java.util.concurrent.CountDownLatch`` to the
-``Master`` actor. This latch is only used for plumbing (in this specific
-tutorial), to have a simple way of letting the outside world knowing when the
-master can deliver the result and shut down. In more idiomatic Akka code
-we would not use a latch but other abstractions and functions like ``Future``
-and ``ask()`` to achieve the same thing in a non-blocking way.
-But for simplicity let's stick to a ``CountDownLatch`` for now.
-
-Second, we are adding a couple of life-cycle callback methods; ``preStart`` and
-``postStop``. In the ``preStart`` callback we are recording the time when the
-actor is started and in the ``postStop`` callback we are printing out the result
-(the approximation of Pi) and the time it took to calculate it. In this call we
-also invoke ``latch.countDown()`` to tell the outside world that we are done.
+Note that we are passing in a ``ActorRef`` to the ``Master`` actor. This is used to
+report the the final result to the outside world.
 
 But we are not done yet. We are missing the message handler for the ``Master`` actor.
 This message handler needs to be able to react to two different messages:
@@ -310,14 +310,24 @@ The ``Calculate`` handler is sending out work to all the ``Worker`` via its rout
 The ``Result`` handler gets the value from the ``Result`` message and aggregates it to
 our ``pi`` member variable. We also keep track of how many results we have received back,
 and if that matches the number of tasks sent out, the ``Master`` actor considers itself done and
-invokes the ``self.stop()`` method to stop itself *and* all its supervised actors.
+sends the final result to the ``listener``. When done it also invokes the ``getContext().stop(getSelf())``
+method to stop itself *and* all its supervised actors.
 In this case it has one supervised actor, the router, and this in turn has ``nrOfWorkers`` supervised actors.
 All of them will be stopped automatically as the invocation of any supervisor's ``stop`` method
 will propagate down to all its supervised 'children'.
 
+
 Let's capture this in code:
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java#master-receive
+
+Creating the result listener
+----------------------------
+
+The listener is straightforward. When it receives the ``PiApproximation`` from the ``Master`` it
+prints the result and shuts down the ``ActorSystem``.
+
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java#result-listener
 
 Bootstrap the calculation
 -------------------------
@@ -329,11 +339,11 @@ invoke method ``calculate`` in which we start up the ``Master`` actor and wait f
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java#app
    :exclude: actors-and-messages
 
-As you can see the *calculate* method above it creates an ActorSystem and this is the Akka container which
+As you can see the *calculate* method above it creates an ``ActorSystem`` and this is the Akka container which
 will contain all actors created in that "context". An example of how to create actors in the container
-is the *'system.actorOf(...)'* line in the calculate method. In this case we create a top level actor.
+is the *'system.actorOf(...)'* line in the calculate method. In this case we create two top level actors.
 If you instead where in an actor context, i.e. inside an actor creating other actors, you should use
-*this.getContext.actorOf(...)*. This is illustrated in the Master code above.
+*getContext().actorOf(...)*. This is illustrated in the Master code above.
 
 That's it. Now we are done.
 
@@ -365,8 +375,8 @@ we compiled ourselves::
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
         akka.tutorial.java.first.Pi
 
-    Pi estimate:        3.1435501812459323
-    Calculation time:   609 millis
+    Pi approximation:   3.1435501812459323
+    Calculation time:   359 millis
 
 Yippee! It is working.
 
@@ -382,8 +392,8 @@ When this in done we can run our application directly inside Maven::
 
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi estimate:        3.1435501812459323
-    Calculation time:   597 millis
+    Pi approximation:   3.1435501812459323
+    Calculation time:   359 millis
 
 Yippee! It is working.
 

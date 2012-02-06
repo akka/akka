@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -18,6 +18,7 @@ object RemoteDeployerSpec {
           remote = "akka://sys@wallace:2552"
         }
       }
+      akka.remote.netty.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
@@ -41,7 +42,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           RoundRobinRouter(3),
-          RemoteScope(UnparsedSystemAddress(Some("sys"), UnparsedTransportAddress("akka", "wallace", 2552))))))
+          RemoteScope(Address("akka", "sys", Some("wallace"), Some(2552))))))
     }
 
   }

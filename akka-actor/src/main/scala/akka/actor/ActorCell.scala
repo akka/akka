@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -14,6 +14,8 @@ import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
+import akka.util.NonFatal
+import akka.event.Logging.LogEventException
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -174,8 +176,7 @@ private[akka] class ActorCell(
   val self: InternalActorRef,
   val props: Props,
   @volatile var parent: InternalActorRef,
-  /*no member*/ _receiveTimeout: Option[Duration],
-  var hotswap: Stack[PartialFunction[Any, Unit]]) extends UntypedActorContext {
+  /*no member*/ _receiveTimeout: Option[Duration]) extends UntypedActorContext {
 
   import ActorCell._
 
@@ -209,10 +210,10 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  final var receiveTimeoutData: (Long, Cancellable) =
+  var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
-  final var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
+  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
 
   private def _actorOf(props: Props, name: String): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -225,7 +226,7 @@ private[akka] class ActorCell(
         }
       }
     }
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None)
+    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
     childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
     actor
   }
@@ -255,16 +256,16 @@ private[akka] class ActorCell(
     a.stop()
   }
 
-  final var currentMessage: Envelope = null
+  var currentMessage: Envelope = null
 
-  final var actor: Actor = _
+  var actor: Actor = _
 
-  final var stopping = false
+  var stopping = false
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
-  final var nextNameSequence: Long = 0
+  var nextNameSequence: Long = 0
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
   final protected def randomName(): String = {
@@ -363,10 +364,9 @@ private[akka] class ActorCell(
       checkReceiveTimeout
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒
+      case NonFatal(e) ⇒
         try {
-          system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
@@ -389,17 +389,15 @@ private[akka] class ActorCell(
         }
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
-      hotswap = Props.noHotSwap // Reset the behavior
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
 
       dispatcher.resume(this) //FIXME should this be moved down?
 
-      props.faultHandler.handleSupervisorRestarted(cause, self, children)
+      actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
     } catch {
-      // TODO catching all and continue isn't good for OOME, ticket #1418
-      case e ⇒ try {
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while creating actor"))
+      case NonFatal(e) ⇒ try {
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
@@ -462,8 +460,8 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case e ⇒ //Should we really catch everything here?
-        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "error while processing " + message))
+      case NonFatal(e) ⇒
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
         //TODO FIXME How should problems here be handled???
         throw e
     }
@@ -478,40 +476,42 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg                      ⇒ actor(msg)
+            // FIXME: actor can be null when creation fails with fatal error, why?
+            case msg if actor == null ⇒
+              system.eventStream.publish(Warning(self.path.toString, this.getClass, "Ignoring message due to null actor [%s]" format msg))
+            case msg ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
-          case e ⇒
-            system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
-
+          case e: InterruptedException ⇒
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
-
             // make sure that InterruptedException does not leave this thread
-            if (e.isInstanceOf[InterruptedException]) {
-              val ex = ActorInterruptedException(e)
-              props.faultHandler.handleSupervisorFailing(self, children)
-              parent.tell(Failed(ex), self)
-              throw e //Re-throw InterruptedExceptions as expected
-            } else {
-              props.faultHandler.handleSupervisorFailing(self, children)
-              parent.tell(Failed(e), self)
-            }
+            val ex = ActorInterruptedException(e)
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(ex), self)
+            throw e //Re-throw InterruptedExceptions as expected
+          case NonFatal(e) ⇒
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
+            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            parent.tell(Failed(e), self)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
         }
       } catch {
-        case e ⇒
-          system.eventStream.publish(Error(e, self.path.toString, clazz(actor), e.getMessage))
+        case NonFatal(e) ⇒
+          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
           throw e
       }
     }
   }
 
-  def become(behavior: Actor.Receive, discardOld: Boolean = true) {
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    hotswap = hotswap.push(behavior)
+    actor.pushBehavior(behavior)
   }
 
   /**
@@ -527,10 +527,7 @@ private[akka] class ActorCell(
     become(newReceive, discardOld)
   }
 
-  def unbecome() {
-    val h = hotswap
-    if (h.nonEmpty) hotswap = h.pop
-  }
+  def unbecome(): Unit = actor.popBehavior()
 
   def autoReceiveMessage(msg: Envelope) {
     if (system.settings.DebugAutoReceive)
@@ -547,9 +544,9 @@ private[akka] class ActorCell(
   }
 
   private def doTerminate() {
+    val a = actor
     try {
       try {
-        val a = actor
         if (a ne null) a.postStop()
       } finally {
         dispatcher.detach(this)
@@ -563,13 +560,13 @@ private[akka] class ActorCell(
       } finally {
         currentMessage = null
         clearActorFields()
-        hotswap = Props.noHotSwap
+        if (a ne null) a.clearBehaviorStack()
       }
     }
   }
 
   final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.path.name) match {
-    case Some(stats) if stats.child == child ⇒ if (!props.faultHandler.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
+    case Some(stats) if stats.child == child ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
     case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
     case None                                ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
   }
@@ -577,7 +574,7 @@ private[akka] class ActorCell(
   final def handleChildTerminated(child: ActorRef): Unit = {
     if (childrenRefs contains child.path.name) {
       childrenRefs -= child.path.name
-      props.faultHandler.handleChildTerminated(this, child, children)
+      actor.supervisorStrategy.handleChildTerminated(this, child, children)
       if (stopping && childrenRefs.isEmpty) doTerminate()
     } else system.locker ! ChildTerminated(child)
   }

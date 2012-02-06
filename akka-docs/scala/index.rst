@@ -22,5 +22,7 @@ Scala API
    stm
    agents
    transactors
+   io
    testing
    extending-akka
+   zeromq

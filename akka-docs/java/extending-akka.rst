@@ -1,7 +1,8 @@
 .. _extending-akka-java:
 
-Akka Extensions
-===============
+########################
+ Akka Extensions (Java)
+########################
 
 .. sidebar:: Contents
 
@@ -15,13 +16,13 @@ You can choose to have your Extension loaded on-demand or at ``ActorSystem`` cre
 Details on how to make that happens are below, in the "Loading from Configuration" section.
 
 .. warning::
-   
+
     Since an extension is a way to hook into Akka itself, the implementor of the extension needs to
     ensure the thread safety of his/her extension.
 
 
 Building an Extension
----------------------
+=====================
 
 So let's create a sample extension that just lets us count the number of times something has happened.
 
@@ -33,7 +34,7 @@ First, we define what our ``Extension`` should do:
 Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
 
 .. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
-   :include: imports,extensionid 
+   :include: imports,extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
@@ -48,16 +49,43 @@ Or from inside of an Akka Actor:
 That's all there is to it!
 
 Loading from Configuration
---------------------------
+==========================
 
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either ``ExtensionId`` or ``ExtensionIdProvider``
 in the "akka.extensions" section of the config you provide to your ``ActorSystem``.
 
-.. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
-   :include: extensionid-provider
+::
+
+    akka {
+      extensions = ["akka.docs.extension.ExtensionDocTestBase.CountExtension"]
+    }
 
 Applicability
--------------
+=============
 
 The sky is the limit!
 By the way, did you know that Akka's ``Typed Actors``, ``Serialization`` and other features are implemented as Akka Extensions?
+
+.. _extending-akka-java.settings:
+
+Application specific settings
+-----------------------------
+
+The :ref:`configuration` can be used for application specific settings. A good practice is to place those settings in an Extension.
+
+Sample configuration:
+
+.. includecode:: ../scala/code/akka/docs/extension/SettingsExtensionDocSpec.scala
+   :include: config
+
+The ``Extension``:
+
+.. includecode:: code/akka/docs/extension/SettingsExtensionDocTestBase.java
+   :include: imports,extension,extensionid
+
+
+Use it:
+
+.. includecode:: code/akka/docs/extension/SettingsExtensionDocTestBase.java
+   :include: extension-usage-actor
+

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -12,7 +12,7 @@ import akka.actor.InternalActorRef
 import akka.actor.Props
 import akka.config.ConfigurationException
 import akka.remote.RemoteScope
-import akka.remote.RemoteAddressExtractor
+import akka.actor.AddressExtractor
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -20,7 +20,7 @@ import akka.remote.RemoteAddressExtractor
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
+case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
 
   override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
 
@@ -32,6 +32,10 @@ class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends R
 
   override def resizer: Option[Resizer] = local.resizer
 
+  override def withFallback(other: RouterConfig): RouterConfig = other match {
+    case RemoteRouterConfig(local, nodes) ⇒ copy(local = this.local.withFallback(local))
+    case _                                ⇒ this
+  }
 }
 
 /**
@@ -46,8 +50,8 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter = {
     val nodeAddresses = nodes map {
-      case RemoteAddressExtractor(a) ⇒ a
-      case x                         ⇒ throw new ConfigurationException("unparseable remote node " + x)
+      case AddressExtractor(a) ⇒ a
+      case x                   ⇒ throw new ConfigurationException("unparseable remote node " + x)
     }
     Stream.continually(nodeAddresses).flatten.iterator
   }
@@ -62,7 +66,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + i
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy))
+          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy), false)
         })
 
       case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"

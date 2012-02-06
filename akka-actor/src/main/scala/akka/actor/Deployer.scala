@@ -1,34 +1,89 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
-import collection.immutable.Seq
-import akka.event.Logging
-import akka.AkkaException
-import akka.config.ConfigurationException
 import akka.util.Duration
-import akka.event.EventStream
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
 import akka.util.ReflectiveAccess
 
-case class Deploy(path: String, config: Config, routing: RouterConfig = NoRouter, scope: Scope = LocalScope)
+/**
+ * This class represents deployment configuration for a given actor path. It is
+ * marked final in order to guarantee stable merge semantics (i.e. what
+ * overrides what in case multiple configuration sources are available) and is
+ * fully extensible via its Scope argument, and by the fact that an arbitrary
+ * Config section can be passed along with it (which will be merged when merging
+ * two Deploys).
+ *
+ * The path field is used only when inserting the Deploy into a deployer and
+ * not needed when just doing deploy-as-you-go:
+ *
+ * {{{
+ * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
+ * }}}
+ */
+final case class Deploy(
+  path: String = "",
+  config: Config = ConfigFactory.empty,
+  routerConfig: RouterConfig = NoRouter,
+  scope: Scope = NoScopeGiven) {
 
-case class ActorRecipe(implementationClass: Class[_ <: Actor]) //TODO Add ActorConfiguration here
+  def this(routing: RouterConfig) = this("", ConfigFactory.empty, routing)
+  def this(routing: RouterConfig, scope: Scope) = this("", ConfigFactory.empty, routing, scope)
+  def this(scope: Scope) = this("", ConfigFactory.empty, NoRouter, scope)
 
-trait Scope
-case class LocalScope() extends Scope
-case object LocalScope extends Scope
+  /**
+   * Do a merge between this and the other Deploy, where values from “this” take
+   * precedence. The “path” of the other Deploy is not taken into account. All
+   * other members are merged using ``<X>.withFallback(other.<X>)``.
+   */
+  def withFallback(other: Deploy): Deploy =
+    Deploy(path, config.withFallback(other.config), routerConfig.withFallback(other.routerConfig), scope.withFallback(other.scope))
+}
+
+/**
+ * The scope of a [[akka.actor.Deploy]] serves two purposes: as a marker for
+ * pattern matching the “scope” (i.e. local/remote/cluster) as well as for
+ * extending the information carried by the final Deploy class. Scopes can be
+ * used in conjunction with a custom [[akka.actor.ActorRefProvider]], making
+ * Akka actors fully extensible.
+ */
+trait Scope {
+  /**
+   * When merging [[akka.actor.Deploy]] instances using ``withFallback()`` on
+   * the left one, this is propagated to “merging” scopes in the same way.
+   * The setup is biased towards preferring the callee over the argument, i.e.
+   * ``a.withFallback(b)`` is called expecting that ``a`` should in general take
+   * precedence.
+   */
+  def withFallback(other: Scope): Scope
+}
+
+case object LocalScope extends Scope {
+  /**
+   * Java API
+   */
+  def scope: Scope = this
+
+  def withFallback(other: Scope): Scope = this
+}
+
+/**
+ * This is the default value and as such allows overrides.
+ */
+case object NoScopeGiven extends Scope {
+  def withFallback(other: Scope): Scope = other
+}
 
 /**
  * Deployer maps actor paths to actor deployments.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings) {
+class Deployer(val settings: ActorSystem.Settings, val classloader: ClassLoader) {
 
   import scala.collection.JavaConverters._
 
@@ -46,7 +101,6 @@ class Deployer(val settings: ActorSystem.Settings) {
   def deploy(d: Deploy): Unit = deployments.put(d.path, d)
 
   protected def parseConfig(key: String, config: Config): Option[Deploy] = {
-    import akka.util.ReflectiveAccess.getClassFor
 
     val deployment = config.withFallback(default)
 
@@ -70,8 +124,8 @@ class Deployer(val settings: ActorSystem.Settings) {
       case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case fqn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config])
-        ReflectiveAccess.createInstance[RouterConfig](fqn, constructorSignature, Array[AnyRef](deployment)) match {
+        val args = Seq(classOf[Config] -> deployment)
+        ReflectiveAccess.createInstance[RouterConfig](fqn, args, classloader) match {
           case Right(router) ⇒ router
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -82,7 +136,7 @@ class Deployer(val settings: ActorSystem.Settings) {
         }
     }
 
-    Some(Deploy(key, deployment, router, LocalScope))
+    Some(Deploy(key, deployment, router, NoScopeGiven))
   }
 
 }

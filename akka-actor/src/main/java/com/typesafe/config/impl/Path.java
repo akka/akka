@@ -1,14 +1,15 @@
 /**
- *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ *   Copyright (C) 2011-2012 Typesafe Inc. <http://typesafe.com>
  */
 package com.typesafe.config.impl;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
 import com.typesafe.config.ConfigException;
 
-final class Path {
+final class Path implements Serializable {
 
     final private String first;
     final private Path remainder;

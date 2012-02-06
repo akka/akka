@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -7,6 +7,7 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 import akka.dispatch.Await
+import akka.pattern.ask
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -33,7 +34,7 @@ object RemoteCommunicationSpec {
 class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
-  remote.server {
+  remote.netty {
     hostname = localhost
     port = 12345
   }
@@ -47,7 +48,7 @@ akka {
 
   import RemoteCommunicationSpec._
 
-  val conf = ConfigFactory.parseString("akka.remote.server.port=12346").withFallback(system.settings.config)
+  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
   val other = ActorSystem("remote_sys", conf)
 
   val remote = other.actorOf(Props(new Actor {
@@ -81,8 +82,8 @@ akka {
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
-        case ("pong", s: AskActorRef) ⇒ // good
-        case m                        ⇒ fail(m + " was not (pong, AskActorRef)")
+        case ("pong", s: akka.pattern.PromiseActorRef) ⇒ // good
+        case m                                         ⇒ fail(m + " was not (pong, AskActorRef)")
       }
     }
 

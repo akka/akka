@@ -5,6 +5,7 @@ import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import akka.dispatch.Await
+import akka.pattern.ask
 import java.util.concurrent.atomic.AtomicInteger
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -32,7 +33,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       collectCancellable(system.scheduler.schedule(0 milliseconds, 50 milliseconds, tickActor, Tick))
 
       // after max 1 second it should be executed at least the 3 times already
-      assert(countDownLatch.await(1, TimeUnit.SECONDS))
+      assert(countDownLatch.await(2, TimeUnit.SECONDS))
 
       val countDownLatch2 = new CountDownLatch(3)
 
@@ -42,14 +43,21 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
     }
 
-    "should stop continuous scheduling if the receiving actor has been terminated" in {
+    "should stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
+      val actor = system.actorOf(Props(new Actor {
+        def receive = {
+          case x ⇒ testActor ! x
+        }
+      }))
+
       // run immediately and then every 100 milliseconds
-      collectCancellable(system.scheduler.schedule(0 milliseconds, 100 milliseconds, testActor, "msg"))
+      collectCancellable(system.scheduler.schedule(0 milliseconds, 100 milliseconds, actor, "msg"))
+      expectNoMsg(1 second)
 
       // stop the actor and, hence, the continuous messaging from happening
-      testActor ! PoisonPill
+      actor ! PoisonPill
 
-      expectNoMsg(500 milliseconds)
+      expectMsg("msg")
     }
 
     "schedule once" in {
@@ -68,7 +76,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       countDownLatch.getCount must be(3)
 
       // after 1 second the wait should fail
-      assert(countDownLatch.await(1, TimeUnit.SECONDS) == false)
+      assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
       // should still be 1 left
       countDownLatch.getCount must be(1)
     }
@@ -92,7 +100,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(ticks.await(3, TimeUnit.SECONDS) == false) //No counting down should've been made
     }
 
-    "be cancellable during initial delay" in {
+    "be cancellable during initial delay" taggedAs TimingTest in {
       val ticks = new AtomicInteger
 
       val initialDelay = 200.milliseconds.dilated
@@ -107,7 +115,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       ticks.get must be(0)
     }
 
-    "be cancellable after initial delay" in {
+    "be cancellable after initial delay" taggedAs TimingTest in {
       val ticks = new AtomicInteger
 
       val initialDelay = 20.milliseconds.dilated
@@ -133,7 +141,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       val restartLatch = new TestLatch
       val pingLatch = new TestLatch(6)
 
-      val supervisor = system.actorOf(Props[Supervisor].withFaultHandler(AllForOneStrategy(List(classOf[Exception]), 3, 1000)))
+      val supervisor = system.actorOf(Props(new Supervisor(AllForOneStrategy(3, 1 second)(List(classOf[Exception])))))
       val props = Props(new Actor {
         def receive = {
           case Ping  ⇒ pingLatch.countDown()
@@ -164,8 +172,8 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
         def receive = {
           case Msg(ts) ⇒
             val now = System.nanoTime
-            // Make sure that no message has been dispatched before the scheduled time (10ms = 10000000ns) has occurred
-            if (now - ts < 10000000) throw new RuntimeException("Interval is too small: " + (now - ts))
+            // Make sure that no message has been dispatched before the scheduled time (10ms) has occurred
+            if (now - ts < 10.millis.toNanos) throw new RuntimeException("Interval is too small: " + (now - ts))
             ticks.countDown()
         }
       }))
@@ -178,7 +186,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       Await.ready(ticks, 3 seconds)
     }
 
-    "schedule with different initial delay and frequency" in {
+    "schedule with different initial delay and frequency" taggedAs TimingTest in {
       val ticks = new TestLatch(3)
 
       case object Msg

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.transactor;
@@ -18,6 +18,7 @@ import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.dispatch.Await;
 import akka.dispatch.Future;
+import static akka.pattern.Patterns.ask;
 import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;
 import akka.testkit.ErrorFilter;
@@ -80,7 +81,7 @@ public class UntypedCoordinatedIncrementTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future<Object> future = counter.ask("GetCount", timeout);
+      Future<Object> future = ask(counter, "GetCount", timeout);
       int count = (Integer) Await.result(future, timeout.duration());
       assertEquals(1, count);
     }
@@ -102,7 +103,7 @@ public class UntypedCoordinatedIncrementTest {
     } catch (InterruptedException exception) {
     }
     for (ActorRef counter : counters) {
-      Future<Object>future = counter.ask("GetCount", timeout);
+      Future<Object>future = ask(counter, "GetCount", timeout);
       int count = (Integer) Await.result(future, timeout.duration());
       assertEquals(0, count);
     }

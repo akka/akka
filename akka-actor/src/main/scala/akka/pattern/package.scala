@@ -3,57 +3,43 @@
  */
 package akka
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ActorTimeoutException
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.actor.ReceiveTimeout
-import akka.actor.Terminated
-import akka.dispatch.Future
-import akka.dispatch.Promise
-import akka.util.Duration
+import akka.actor._
+import akka.dispatch.{ Future, Promise }
+import akka.util.{ Timeout, Duration }
 
 /**
- * Akka patterns that provide solutions to commonly occurring problems.
+ * == Commonly Used Patterns With Akka ==
+ *
+ * This package is used as a collection point for usage patterns which involve
+ * actors, futures, etc. but are loosely enough coupled to (multiple of) them
+ * to present them separately from the core implementation. Currently supported
+ * are:
+ *
+ * <ul>
+ * <li><b>ask:</b> create a temporary one-off actor for receiving a reply to a
+ * message and complete a [[akka.dispatch.Future]] with it; returns said
+ * Future.</li>
+ * <li><b>pipeTo:</b> feed eventually computed value of a future to an actor as
+ * a message.</li>
+ * </ul>
+ *
+ * In Scala the recommended usage is to import the pattern from the package
+ * object:
+ * {{{
+ * import akka.pattern.ask
+ *
+ * ask(actor, message) // use it directly
+ * actor ask message   // use it by implicit conversion
+ * }}}
+ *
+ * For Java the patterns are available as static methods of the [[akka.pattern.Patterns]]
+ * class:
+ * {{{
+ * import static akka.pattern.Patterns.ask;
+ *
+ * ask(actor, message);
+ * }}}
  */
-package object pattern {
-
-  /**
-   * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when
-   * existing messages of the target actor has been processed and the actor has been
-   * terminated.
-   *
-   * Useful when you need to wait for termination or compose ordered termination of several actors.
-   *
-   * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
-   * is completed with failure [[akka.actor.ActorTimeoutException]].
-   */
-  def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
-    if (target.isTerminated) {
-      Promise.successful(true)
-    } else {
-      val result = Promise[Boolean]()
-      system.actorOf(Props(new Actor {
-        // Terminated will be received when target has been stopped
-        context watch target
-        target ! PoisonPill
-        // ReceiveTimeout will be received if nothing else is received within the timeout
-        context setReceiveTimeout timeout
-
-        def receive = {
-          case Terminated(a) if a == target ⇒
-            result success true
-            context stop self
-          case ReceiveTimeout ⇒
-            result failure new ActorTimeoutException(
-              "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))
-            context stop self
-        }
-      }))
-      result
-    }
-  }
+package object pattern extends PipeToSupport with AskSupport with GracefulStopSupport {
 
 }

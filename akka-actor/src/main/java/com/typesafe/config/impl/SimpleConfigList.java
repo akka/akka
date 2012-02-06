@@ -1,8 +1,9 @@
 /**
- *   Copyright (C) 2011 Typesafe Inc. <http://typesafe.com>
+ *   Copyright (C) 2011-2012 Typesafe Inc. <http://typesafe.com>
  */
 package com.typesafe.config.impl;
 
+import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -21,7 +22,8 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     final private boolean resolved;
 
     SimpleConfigList(ConfigOrigin origin, List<AbstractConfigValue> value) {
-        this(origin, value, ResolveStatus.fromValues(value));
+        this(origin, value, ResolveStatus
+                .fromValues(value));
     }
 
     SimpleConfigList(ConfigOrigin origin, List<AbstractConfigValue> value,
@@ -365,5 +367,15 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     @Override
     protected SimpleConfigList newCopy(boolean ignoresFallbacks, ConfigOrigin newOrigin) {
         return new SimpleConfigList(newOrigin, value);
+    }
+
+    // This ridiculous hack is because some JDK versions apparently can't
+    // serialize an array, which is used to implement ArrayList and EmptyList.
+    // maybe
+    // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6446627
+    private Object writeReplace() throws ObjectStreamException {
+        // switch to LinkedList
+        return new SimpleConfigList(origin(), new java.util.LinkedList<AbstractConfigValue>(value),
+                resolveStatus());
     }
 }

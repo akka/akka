@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.agent
@@ -7,6 +7,7 @@ package akka.agent
 import akka.actor._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
 import akka.dispatch._
+import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
 
@@ -123,7 +124,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
    * that new state can be obtained within the given timeout.
    */
   def alter(f: T ⇒ T)(timeout: Timeout): Future[T] = {
-    def dispatch = updater.?(Alter(f), timeout).asInstanceOf[Future[T]]
+    def dispatch = ask(updater, Alter(f))(timeout).asInstanceOf[Future[T]]
     val txn = Txn.findCurrent
     if (txn.isDefined) {
       val result = Promise[T]()(system.dispatcher)
@@ -171,7 +172,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
     send((value: T) ⇒ {
       suspend()
       val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher("akka.agent.alter-off-dispatcher"))
-      result completeWith threadBased.?(Alter(f), timeout).asInstanceOf[Future[T]]
+      result completeWith ask(threadBased, Alter(f))(timeout).asInstanceOf[Future[T]]
       value
     })
     result
