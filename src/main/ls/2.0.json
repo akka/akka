@@ -2,7 +2,7 @@
 {
  "organization":"com.typesafe.akka",
  "name":"akka",
- "version":"2.0-SNAPSHOT",
+ "version":"2.0-M4",
  "description":"Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
  "site":"",
  "tags":["actors","stm","concurrency","distributed","fault-tolerance","scala","java","futures","dataflow","remoting"],

@@ -7,7 +7,7 @@
 http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
 http://akka.io/schema/akka
-http://akka.io/akka-2.0-SNAPSHOT.xsd">
+http://akka.io/akka-2.0-M4.xsd">
 
   <akka:supervision id="supervision1">
     <akka:restart-strategy failover="AllForOne" retries="3" timerange="1000">
