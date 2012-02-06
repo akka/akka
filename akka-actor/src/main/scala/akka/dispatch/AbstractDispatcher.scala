@@ -425,13 +425,24 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 }
 
 object ForkJoinExecutorConfigurator {
-  class AkkaForkJoinPool(parallelism: Int, threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory) extends ForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing, true) {
+
+  /**
+   * INTERNAL AKKA USAGE ONLY
+   */
+  final class AkkaForkJoinPool(parallelism: Int,
+                               threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+                               unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
+    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) {
     override def execute(r: Runnable): Unit = r match {
       case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
       case other      ⇒ super.execute(other)
     }
   }
-  class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
+
+  /**
+   * INTERNAL AKKA USAGE ONLY
+   */
+  final class MailboxExecutionTask(mailbox: Mailbox) extends ForkJoinTask[Unit] {
     final override def setRawResult(u: Unit): Unit = ()
     final override def getRawResult(): Unit = ()
     final override def exec(): Boolean = try { mailbox.run; true } catch {
@@ -456,7 +467,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
 
   class ForkJoinExecutorServiceFactory(val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                        val parallelism: Int) extends ExecutorServiceFactory {
-    def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory)
+    def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing)
   }
   final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
     new ForkJoinExecutorServiceFactory(
