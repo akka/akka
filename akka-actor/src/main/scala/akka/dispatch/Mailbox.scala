@@ -4,13 +4,14 @@
 package akka.dispatch
 
 import akka.AkkaException
-import java.util.{ Comparator, PriorityQueue, Queue }
+import java.util.{ Comparator, PriorityQueue, Queue, Deque }
 import akka.util._
 import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
 import akka.actor.ActorContext
+import com.typesafe.config.Config
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -317,6 +318,10 @@ trait QueueBasedMessageQueue extends MessageQueue {
   final def hasMessages = !queue.isEmpty
 }
 
+trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
+  def queue: Deque[Envelope]
+}
+
 /**
  * Mailbox configuration.
  */
@@ -331,6 +336,13 @@ case class UnboundedMailbox() extends MailboxType {
   override def create(receiver: ActorContext) =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
+    }
+}
+
+case class UnboundedDequeBasedMailbox(config: Config) extends MailboxType {
+  override def create(receiver: ActorContext) =
+    new Mailbox(receiver.asInstanceOf[ActorCell]) with DequeBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
+      final val queue = new LinkedBlockingDeque[Envelope]()
     }
 }
 
