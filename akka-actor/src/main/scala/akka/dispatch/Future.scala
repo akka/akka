@@ -53,7 +53,7 @@ object Await {
    * WARNING: Blocking operation, use with caution.
    *
    * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @returns The returned value as returned by Awaitable.ready
+   * @return The returned value as returned by Awaitable.ready
    */
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
 
@@ -62,7 +62,7 @@ object Await {
    * WARNING: Blocking operation, use with caution.
    *
    * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @returns The returned value as returned by Awaitable.result
+   * @return The returned value as returned by Awaitable.result
    */
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
@@ -984,7 +984,7 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
    * This method will be invoked once when/if the Future this recover callback is registered on
    * becomes completed with a failure.
    *
-   * @returns a successful value for the passed in failure
+   * @return a successful value for the passed in failure
    * @throws the passed in failure to propagate it.
    *
    * Java API
@@ -1007,7 +1007,7 @@ abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes completed with a success.
    *
-   * @returns true if the successful value should be propagated to the new Future or not
+   * @return true if the successful value should be propagated to the new Future or not
    */
   def filter(result: T): Boolean
 }
