@@ -27,38 +27,19 @@ you wish to use, like this:
 
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
 
-.. note::
-
-   The name ``default`` is special in the sense that the ``Serializer``
-   mapped to it will be used as default.
-
 After you've bound names to different implementations of ``Serializer`` you need to wire which classes
 should be serialized using which ``Serializer``, this is done in the "akka.actor.serialization-bindings"-section:
 
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
 
-.. note::
+You only need to specify the name of an interface or abstract base class of the messages. In case of ambiguity,
+i.e. the message implements several of the configured classes, it is primarily using the most specific
+configured class, and secondly the entry configured first.
 
-   You only need to specify the name of an interface or abstract base class if the messages implements
-   that. E.g. ``com.google.protobuf.Message`` for protobuf serialization.
-
-Protobuf
---------
-
-Akka provides a ``Serializer`` for `protobuf <http://code.google.com/p/protobuf/>`_ messages.
-To use that you need to add the following to the configuration::
-
-      akka {
-        actor {
-          serializers {
-            proto = "akka.serialization.ProtobufSerializer"
-          }
-
-          serialization-bindings {
-            proto = ["com.google.protobuf.Message"]
-          }
-        }
-      }
+Akka provides serializers for ``java.io.Serializable`` and `protobuf <http://code.google.com/p/protobuf/>`_
+``com.google.protobuf.Message`` by default, so normally you don't need to add configuration for that, but
+it can be done to force a specific serializer in case messages implements both ``java.io.Serializable``
+and ``com.google.protobuf.Message``.
 
 Verification
 ------------
