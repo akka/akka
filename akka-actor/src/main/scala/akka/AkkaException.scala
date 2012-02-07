@@ -23,6 +23,7 @@ object AkkaException {
       sb.append("\tat %s\n" format trace(i))
     sb.toString
   }
+
 }
 
 /**

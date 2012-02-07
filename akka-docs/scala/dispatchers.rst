@@ -54,6 +54,17 @@ Default values are taken from ``default-dispatcher``, i.e. all options doesn't n
 :ref:`configuration` for the default values of the ``default-dispatcher``. You can also override
 the values for the ``default-dispatcher`` in your configuration.
 
+There are two different executor services:
+
+* executor = "fork-join-executor", ``ExecutorService`` based on ForkJoinPool (jsr166y). This is used by default for
+  ``default-dispatcher``.
+* executor = "thread-pool-executor", ``ExecutorService`` based on ``java.util.concurrent.ThreadPoolExecutor``.
+
+Note that the pool size is configured differently for the two executor services. The configuration above
+is an example for ``fork-join-executor``. Below is an example for ``thread-pool-executor``:
+
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
+
 Let's now walk through the different dispatchers in more detail.
 
 Thread-based
@@ -66,9 +77,11 @@ has worse performance and scalability than the event-based dispatcher but works 
 a low frequency of messages and are allowed to go off and do their own thing for a longer period of time. Another advantage with
 this dispatcher is that Actors do not block threads for each other.
 
-The ``PinnedDispatcher`` can't be configured, but is created and associated with an actor like this:
+The ``PinnedDispatcher`` is configured like this:
 
-.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#defining-pinned-dispatcher
+.. includecode:: code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-pinned-dispatcher-config
+
+Note that it must be used with ``executor = "thread-pool-executor"``.
 
 Event-based
 ^^^^^^^^^^^
