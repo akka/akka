@@ -179,14 +179,10 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
       ser.serializerFor(classOf[ExtendedPlainMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resolve serializer for message with several bindings" in {
-      ser.serializerFor(classOf[Both]).getClass must be(classOf[TestSerializer])
-    }
-
-    "resolve serializer in the order of the bindings" in {
-      ser.serializerFor(classOf[A]).getClass must be(classOf[JavaSerializer])
-      ser.serializerFor(classOf[B]).getClass must be(classOf[TestSerializer])
-      ser.serializerFor(classOf[C]).getClass must be(classOf[JavaSerializer])
+    "throw exception for message with several bindings" in {
+      intercept[java.io.NotSerializableException] {
+        ser.serializerFor(classOf[Both])
+      }
     }
 
     "resolve serializer in the order of most specific binding first" in {
