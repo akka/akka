@@ -92,6 +92,7 @@ object ActorSystem {
     final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
     final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
     final val Daemonicity = getBoolean("akka.daemonic")
+    final val JvmExitOnFatalError = getBoolean("akka.jvmExitOnFatalError")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -348,6 +349,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
         log.error(cause, "Uncaught error from thread [{}]", thread.getName)
         cause match {
           case NonFatal(_) | _: InterruptedException ⇒
+          case _ if settings.JvmExitOnFatalError     ⇒ System.exit(-1)
           case _                                     ⇒ shutdown()
         }
       }

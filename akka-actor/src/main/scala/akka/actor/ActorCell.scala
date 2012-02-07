@@ -476,10 +476,7 @@ private[akka] class ActorCell(
           cancelReceiveTimeout() // FIXME: leave this here???
           messageHandle.message match {
             case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            // FIXME: actor can be null when creation fails with fatal error, why?
-            case msg if actor == null ⇒
-              system.eventStream.publish(Warning(self.path.toString, this.getClass, "Ignoring message due to null actor [%s]" format msg))
-            case msg ⇒ actor(msg)
+            case msg                      ⇒ actor(msg)
           }
           currentMessage = null // reset current message after successful invocation
         } catch {
