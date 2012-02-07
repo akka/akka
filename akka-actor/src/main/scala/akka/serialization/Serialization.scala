@@ -129,19 +129,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         def unique(cs: Seq[Class[_]], ser: Set[Serializer]): Boolean = (cs forall (_ isAssignableFrom cs(0))) || ser.size == 1
 
         val possible = bindings filter { _._1 isAssignableFrom clazz }
-        possible.size match {
+        val ser = possible.size match {
           case 0 ⇒
             throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
           case x if x == 1 || unique(possible map (_._1), possible.map(_._2)(scala.collection.breakOut)) ⇒
-            val ser = possible(0)._2
-            serializerMap.putIfAbsent(clazz, ser) match {
-              case null ⇒
-                log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
-                ser
-              case some ⇒ some
-            }
+            possible(0)._2
           case _ ⇒
-            throw new NotSerializableException("Multiple serializers found for " + clazz + ": " + possible)
+            log.warning("Multiple serializers found for " + clazz + ", choosing first: " + possible)
+            possible(0)._2
+        }
+        serializerMap.putIfAbsent(clazz, ser) match {
+          case null ⇒
+            log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
+            ser
+          case some ⇒ some
         }
       case ser ⇒ ser
     }

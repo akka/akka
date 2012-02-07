@@ -37,8 +37,7 @@ messages. In case of ambiguity, i.e. the message implements several of the
 configured classes, the most specific configured class will be used, i.e. the
 one of which all other candidates are superclasses. If this condition cannot be
 met, because e.g. ``java.io.Serializable`` and ``MyOwnSerializable`` both apply
-and neither is a subtype of the other, an exception will be thrown during
-serialization.
+and neither is a subtype of the other, a warning will be issued
 
 Akka provides serializers for :class:`java.io.Serializable` and `protobuf
 <http://code.google.com/p/protobuf/>`_

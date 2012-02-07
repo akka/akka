@@ -4,7 +4,7 @@
 
 package akka.serialization
 
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
 import akka.dispatch.Await
@@ -179,9 +179,17 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
       ser.serializerFor(classOf[ExtendedPlainMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "throw exception for message with several bindings" in {
-      intercept[java.io.NotSerializableException] {
-        ser.serializerFor(classOf[Both])
+    "give warning for message with several bindings" in {
+      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
+        ser.serializerFor(classOf[Both]).getClass must be(classOf[TestSerializer])
+      }
+    }
+
+    "resolve serializer in the order of the bindings" in {
+      ser.serializerFor(classOf[A]).getClass must be(classOf[JavaSerializer])
+      ser.serializerFor(classOf[B]).getClass must be(classOf[TestSerializer])
+      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
+        ser.serializerFor(classOf[C]).getClass must be(classOf[JavaSerializer])
       }
     }
 
