@@ -29,11 +29,12 @@ import akka.dispatch.{ Envelope, DequeBasedMessageQueue }
  *
  *  Note that the `Stash` trait can only be used together with actors that have a deque-based
  *  mailbox. Actors can be configured to use a deque-based mailbox using a configuration like
- *  the following:
+ *  the following (see the documentation on dispatchers on how to configure a custom
+ *  dispatcher):
  *  <pre>
  *  akka {
  *    actor {
- *      default-dispatcher {
+ *      my-custom-dispatcher {
  *        mailboxType = "akka.dispatch.UnboundedDequeBasedMailbox"
  *      }
  *    }
@@ -46,15 +47,20 @@ trait Stash extends Actor {
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.
    */
-  private[this] var theStash = Vector.empty[Envelope]
+  private var theStash = Vector.empty[Envelope]
 
   /* The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
    */
-  private[this] val mailbox: DequeBasedMessageQueue = {
+  private val mailbox: DequeBasedMessageQueue = {
     context.asInstanceOf[ActorCell].mailbox match {
       case queue: DequeBasedMessageQueue ⇒ queue
-      case other                         ⇒ throw new ActorInitializationException(self, "UnboundedDequeBasedMailbox required, got: " + other.getClass())
+      case other ⇒ throw new ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
+An (unbounded) deque-based mailbox can be configured as follows:
+  my-custom-dispatcher {
+    mailboxType = "akka.dispatch.UnboundedDequeBasedMailbox"
+  }
+""")
     }
   }
 

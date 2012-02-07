@@ -333,14 +333,14 @@ trait MailboxType {
  * It's a case class for Java (new UnboundedMailbox)
  */
 case class UnboundedMailbox() extends MailboxType {
-  override def create(receiver: ActorContext) =
+  override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
     }
 }
 
 case class UnboundedDequeBasedMailbox(config: Config) extends MailboxType {
-  override def create(receiver: ActorContext) =
+  override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with DequeBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new LinkedBlockingDeque[Envelope]()
     }
