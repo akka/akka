@@ -16,11 +16,16 @@ class ClusterSettings(val config: Config, val systemName: String) {
   // cluster config section
   val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  val SeedNodeConnectionTimeout = Duration(config.getMilliseconds("akka.cluster.seed-node-connection-timeout"), MILLISECONDS)
-  val MaxTimeToRetryJoiningCluster = Duration(config.getMilliseconds("akka.cluster.max-time-to-retry-joining-cluster"), MILLISECONDS)
-  val InitialDelayForGossip = Duration(getMilliseconds("akka.cluster.gossip.initial-delay"), MILLISECONDS)
-  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
-  val SeedNodes = Set.empty[Address] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
-    case AddressFromURIString(addr) ⇒ addr
+
+  // join config
+  val JoinContactPoint: Option[Address] = getString("akka.cluster.join.contact-point") match {
+    case ""                     ⇒ None
+    case AddressExtractor(addr) ⇒ Some(addr)
   }
+  val JoinTimeout = Duration(config.getMilliseconds("akka.cluster.join.timeout"), MILLISECONDS)
+  val JoinMaxTimeToRetry = Duration(config.getMilliseconds("akka.cluster.join.max-time-to-retry"), MILLISECONDS)
+
+  // gossip config
+  val GossipInitialDelay = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
+  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
 }
