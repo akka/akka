@@ -431,7 +431,7 @@ object Dependencies {
 
  val cluster = Seq(Test.junit, Test.scalatest)
 
-  val slf4j = Seq(slf4jApi)
+  val slf4j = Seq(slf4jApi, Test.logback)
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
