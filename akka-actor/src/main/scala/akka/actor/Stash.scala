@@ -40,8 +40,8 @@ import akka.dispatch.{ Envelope, DequeBasedMessageQueue }
  *  }
  *  </pre>
  */
-trait Stash {
-  thisActor: Actor ⇒
+trait Stash extends Actor {
+  this: Actor ⇒
 
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.
@@ -89,9 +89,13 @@ trait Stash {
     context.become(handler)
   }
 
+  /**
+   *  Overridden callback. Prepends all messages in the stash to the mailbox,
+   *  clears the stash, and invokes the callback of the superclass.
+   */
   override def preRestart(reason: Throwable, message: Option[Any]) {
     unstashAll()
-    thisActor.preRestart(reason, message)
+    super.preRestart(reason, message)
   }
 
 }

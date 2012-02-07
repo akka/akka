@@ -4,6 +4,10 @@
 package akka.actor
 
 import akka.testkit._
+import akka.testkit.DefaultTimeout
+import akka.testkit.TestEvent._
+import akka.dispatch.Await
+import akka.pattern.ask
 import akka.util.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
@@ -60,18 +64,20 @@ object ActorWithStashSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorWithStashSpec(system: ActorSystem) extends AkkaSpec with BeforeAndAfterEach {
+class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
-  def this() = this(ActorSystem("ActorWithStashSpec", ActorWithStashSpec.testConf))
-
   implicit val sys = system
+
+  override def atStartup {
+    system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
+  }
 
   override def beforeEach() = {
     state.finished.reset
   }
 
-  "An Actor" must {
+  "An Actor with Stash" must {
 
     "stash messages" in {
       val stasher = system.actorOf(Props(new StashingActor))
@@ -93,5 +99,40 @@ class ActorWithStashSpec(system: ActorSystem) extends AkkaSpec with BeforeAndAft
       state.finished.await
     }
 
+    "process stashed messages after restart" in {
+      val boss = system.actorOf(Props(new Supervisor(
+        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
+
+      val restartLatch = new TestLatch
+      val hasMsgLatch = new TestLatch
+
+      val slaveProps = Props(new Actor with Stash {
+        protected def receive = {
+          case "crash" ⇒
+            throw new Exception("Crashing...")
+
+          // when restartLatch is not yet open, stash all messages != "crash"
+          case msg if !restartLatch.isOpen ⇒
+            stash()
+
+          // when restartLatch is open, must receive "hello"
+          case "hello" ⇒
+            hasMsgLatch.open()
+        }
+
+        override def preRestart(reason: Throwable, message: Option[Any]) = {
+          if (!restartLatch.isOpen)
+            restartLatch.open()
+          super.preRestart(reason, message)
+        }
+      })
+      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+
+      slave ! "hello"
+      slave ! "crash"
+
+      Await.ready(restartLatch, 10 seconds)
+      Await.ready(hasMsgLatch, 10 seconds)
+    }
   }
 }
