@@ -251,9 +251,9 @@ Mapped Diagnostic Context (MDC) with attribute name ``sourceThread``.
 With Logback the thread name is available with ``%X{sourceThread}`` specifier within the pattern layout configuration::
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <layout>
+    <encoder>
       <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
-    </layout>
+    </encoder>
   </appender>
 
 .. note::
@@ -268,9 +268,9 @@ is available for associating log messages e.g. with members of a router. This
 information is available in the MDC with attribute name ``akkaSource``::
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <layout>
+    <encoder>
       <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-    </layout>
+    </encoder>
   </appender>
 
 For more details on what this attribute contains—also for non-actors—please see
