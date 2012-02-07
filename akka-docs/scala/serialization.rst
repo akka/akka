@@ -32,14 +32,25 @@ should be serialized using which ``Serializer``, this is done in the "akka.actor
 
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
 
-You only need to specify the name of an interface or abstract base class of the messages. In case of ambiguity,
-i.e. the message implements several of the configured classes, it is primarily using the most specific
-configured class, and secondly the entry configured first.
+You only need to specify the name of an interface or abstract base class of the
+messages. In case of ambiguity, i.e. the message implements several of the
+configured classes, the most specific configured class will be used, i.e. the
+one of which all other candidates are superclasses. If this condition cannot be
+met, because e.g. ``java.io.Serializable`` and ``MyOwnSerializable`` both apply
+and neither is a subtype of the other, a warning will be issued
 
-Akka provides serializers for ``java.io.Serializable`` and `protobuf <http://code.google.com/p/protobuf/>`_
-``com.google.protobuf.Message`` by default, so normally you don't need to add configuration for that, but
-it can be done to force a specific serializer in case messages implements both ``java.io.Serializable``
-and ``com.google.protobuf.Message``.
+Akka provides serializers for :class:`java.io.Serializable` and `protobuf
+<http://code.google.com/p/protobuf/>`_
+:class:`com.google.protobuf.GeneratedMessage` by default (the latter only if
+depending on the akka-remote module), so normally you don't need to add
+configuration for that; since :class:`com.google.protobuf.GeneratedMessage`
+implements :class:`java.io.Serializable`, protobuf messages will always by
+serialized using the protobuf protocol unless specifically overridden. In order
+to disable a default serializer, map its marker type to “none”::
+
+  akka.actor.serialization-bindings {
+    "java.io.Serializable" = none
+  }
 
 Verification
 ------------
