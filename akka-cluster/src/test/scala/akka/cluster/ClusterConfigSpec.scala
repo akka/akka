@@ -25,11 +25,13 @@ class ClusterConfigSpec extends AkkaSpec(
       import settings._
       FailureDetectorThreshold must be(8)
       FailureDetectorMaxSampleSize must be(1000)
-      SeedNodeConnectionTimeout must be(30 seconds)
-      MaxTimeToRetryJoiningCluster must be(30 seconds)
-      InitialDelayForGossip must be(5 seconds)
+
+      JoinContactPoint must be(None)
+      JoinTimeout must be(30 seconds)
+      JoinMaxTimeToRetry must be(30 seconds)
+
+      GossipInitialDelay must be(5 seconds)
       GossipFrequency must be(1 second)
-      SeedNodes must be(Set())
     }
   }
 }
