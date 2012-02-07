@@ -435,6 +435,7 @@ object DispatcherModelSpec {
   val config = {
     """
       boss {
+        executor = thread-pool-executor
         type = PinnedDispatcher
       }
     """ +
@@ -506,6 +507,7 @@ object BalancingDispatcherModelSpec {
   val config = {
     """
       boss {
+        executor = thread-pool-executor
         type = PinnedDispatcher
       }
     """ +

@@ -12,6 +12,7 @@ import akka.pattern.ask
 object PinnedActorSpec {
   val config = """
     pinned-dispatcher {
+      executor = thread-pool-executor
       type = PinnedDispatcher
     }
     """
