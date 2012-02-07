@@ -19,18 +19,16 @@ class NonFatalSpec extends AkkaSpec with MustMatchers {
       }
     }
 
-    "not match StackOverflowError" in {
+    "match StackOverflowError" in {
       //not @tailrec
       def blowUp(n: Long): Long = {
         blowUp(n + 1) + 1
       }
 
-      intercept[StackOverflowError] {
-        try {
-          blowUp(0)
-        } catch {
-          case NonFatal(e) ⇒ assert(false)
-        }
+      try {
+        blowUp(0)
+      } catch {
+        case NonFatal(e) ⇒ // as expected
       }
     }
 
