@@ -222,7 +222,6 @@ trait RemoteRef extends ActorRefScope {
  * Remote ActorRef that is used when referencing the Actor on a different node than its "home" node.
  * This reference is network-aware (remembers its origin) and immutable.
  */
-@SerialVersionUID(1L)
 private[akka] class RemoteActorRef private[akka] (
   val provider: RemoteActorRefProvider,
   remote: RemoteTransport,

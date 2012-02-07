@@ -33,7 +33,7 @@ object AkkaException {
  *   <li>toLongString which also includes the stack trace</li>
  * </ul>
  */
-@SerialVersionUID(1L)
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 class AkkaException(message: String = "", cause: Throwable = null) extends RuntimeException(message, cause) with Serializable {
   val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
 

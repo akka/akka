@@ -333,7 +333,7 @@ private[akka] class LocalActorRef private[akka] (
 /**
  * Memento pattern for serializing ActorRefs transparently
  */
-@SerialVersionUID(1L)
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class SerializedActorRef private (path: String) {
   import akka.serialization.Serialization.currentSystem
 
@@ -398,7 +398,7 @@ private[akka] object MinimalActorRef {
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 private[akka] object DeadLetterActorRef {
-  @SerialVersionUID(1L)
+  //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters

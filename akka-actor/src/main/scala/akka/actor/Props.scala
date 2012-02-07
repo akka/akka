@@ -103,7 +103,7 @@ object Props {
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
-@SerialVersionUID(1L)
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed when SI-4804 is fixed
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,
