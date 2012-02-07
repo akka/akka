@@ -74,6 +74,15 @@ each node hosting some part of the application. Cluster membership and
 partitioning of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
 
+Single-node Cluster
+-------------------
+
+If a node does not have a preconfigured contact point to join in the Akka
+configuration, then it is considered a single-node cluster and will
+automatically transition from ``joining`` to ``up``. Single-node clusters
+can later explicitly send a ``Join`` message to another node to form a N-node
+cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
+
 
 Singleton Cluster
 -----------------
