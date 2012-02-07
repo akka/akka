@@ -314,6 +314,16 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       log.info("Node [{}] - Sending [{}] to [{}] through connection [{}]", remoteAddress, command, member.address, connection)
       connection ! command
     }
+
+    contactPoint match {
+      case None ⇒ log.info("Booting up in singleton cluster mode")
+      case Some(member) ⇒
+        log.info("Trying to join contact point node defined in the configuration [{}]", member)
+        setUpConnectionTo(member) match {
+          case None             ⇒ log.error("Could not set up connection to join contact point node defined in the configuration [{}]", member)
+          case Some(connection) ⇒ tryJoinContactPoint(connection, deadline)
+        }
+    }
   }
 
   /**
