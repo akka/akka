@@ -14,6 +14,7 @@ import akka.util.duration._
 object SupervisorMiscSpec {
   val config = """
     pinned-dispatcher {
+      executor = thread-pool-executor
       type = PinnedDispatcher
     }
     test-dispatcher {

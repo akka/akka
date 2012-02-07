@@ -16,6 +16,7 @@ object CallingThreadDispatcherModelSpec {
   val config = {
     """
       boss {
+        executor = thread-pool-executor
         type = PinnedDispatcher
       }
     """ +
