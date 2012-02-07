@@ -125,12 +125,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   def serializerFor(clazz: Class[_]): Serializer =
     serializerMap.get(clazz) match {
       case null ⇒
-        val ser = bindings.collectFirst {
-          case (c, s) if c.isAssignableFrom(clazz) ⇒ s
-        } getOrElse (throw new NotSerializableException(
-          "No configured serialization-bindings for class [%s]" format clazz.getName))
+        // bindings are ordered from most specific to least specific
+        def unique(possibilities: Seq[(Class[_], Serializer)]): Boolean =
+          possibilities.size == 1 ||
+            (possibilities map (_._1) forall (_ isAssignableFrom possibilities(0)._1)) ||
+            (possibilities map (_._2) forall (_ == possibilities(0)._2))
 
-        // memorize for performance
+        val ser = bindings filter { _._1 isAssignableFrom clazz } match {
+          case Seq() ⇒
+            throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
+          case possibilities ⇒
+            if (!unique(possibilities))
+              log.warning("Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
+            possibilities(0)._2
+        }
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
             log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
@@ -160,7 +168,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    *  It is primarily ordered by the most specific classes first, and secondly in the configured order.
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
-    val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings) yield {
+    val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
       val c = ReflectiveAccess.getClassFor(k, system.internalClassLoader).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
