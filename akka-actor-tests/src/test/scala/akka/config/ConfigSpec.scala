@@ -34,6 +34,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
 
         getMilliseconds("akka.scheduler.tickDuration") must equal(100)
         settings.SchedulerTickDuration must equal(100 millis)
+
+        settings.Daemonicity must be(false)
+        settings.JvmExitOnFatalError must be(true)
       }
 
       {

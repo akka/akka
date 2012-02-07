@@ -333,14 +333,14 @@ trait MailboxType {
  * It's a case class for Java (new UnboundedMailbox)
  */
 case class UnboundedMailbox() extends MailboxType {
-  override def create(receiver: ActorContext): Mailbox =
+  final override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
     }
 }
 
 case class UnboundedDequeBasedMailbox(config: Config) extends MailboxType {
-  override def create(receiver: ActorContext): Mailbox =
+  final override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with DequeBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new LinkedBlockingDeque[Envelope]()
     }
@@ -351,7 +351,7 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(receiver: ActorContext) =
+  final override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new LinkedBlockingQueue[Envelope](capacity)
       final val pushTimeOut = BoundedMailbox.this.pushTimeOut
@@ -359,7 +359,7 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
 }
 
 case class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
-  override def create(receiver: ActorContext) =
+  final override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new PriorityBlockingQueue[Envelope](11, cmp)
     }
@@ -370,7 +370,7 @@ case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final va
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  override def create(receiver: ActorContext) =
+  final override def create(receiver: ActorContext): Mailbox =
     new Mailbox(receiver.asInstanceOf[ActorCell]) with QueueBasedMessageQueue with BoundedMessageQueueSemantics with DefaultSystemMessageQueue {
       final val queue = new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
       final val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut

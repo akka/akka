@@ -369,7 +369,7 @@ case class Gossiper(remote: RemoteActorRefProvider, system: ActorSystemImpl) {
   /**
    * Gossips to a random member in the set of members passed in as argument.
    *
-   * @returns 'true' if it gossiped to a "seed" member.
+   * @return 'true' if it gossiped to a "seed" member.
    */
   private def gossipToRandomNodeOf(members: Set[Member]): Boolean = {
     val peers = members filter (_.address != address) // filter out myself

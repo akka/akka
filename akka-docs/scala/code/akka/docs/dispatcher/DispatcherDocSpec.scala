@@ -23,6 +23,27 @@ object DispatcherDocSpec {
       # Dispatcher is the name of the event-based dispatcher
       type = Dispatcher
       # What kind of ExecutionService to use
+      executor = "fork-join-executor"
+      # Configuration for the fork join pool
+      fork-join-executor {
+        # Min number of threads to cap factor-based parallelism number to
+        parallelism-min = 2
+        # Parallelism (threads) ... ceil(available processors * factor)
+        parallelism-factor = 2.0
+        # Max number of threads to cap factor-based parallelism number to
+        parallelism-max = 10
+      }
+      # Throughput defines the number of messages that are processed in a batch before the
+      # thread is returned to the pool. Set to 1 for as fair as possible.
+      throughput = 100
+    }
+    //#my-dispatcher-config
+
+    //#my-thread-pool-dispatcher-config
+    my-thread-pool-dispatcher {
+      # Dispatcher is the name of the event-based dispatcher
+      type = Dispatcher
+      # What kind of ExecutionService to use
       executor = "thread-pool-executor"
       # Configuration for the thread pool
       thread-pool-executor {
@@ -37,7 +58,14 @@ object DispatcherDocSpec {
       # thread is returned to the pool. Set to 1 for as fair as possible.
       throughput = 100
     }
-    //#my-dispatcher-config
+    //#my-thread-pool-dispatcher-config
+
+    //#my-pinned-dispatcher-config
+    my-pinned-dispatcher {
+      executor = "thread-pool-executor"
+      type = PinnedDispatcher
+    }
+    //#my-pinned-dispatcher-config
 
     //#my-bounded-config
     my-dispatcher-bounded-queue {

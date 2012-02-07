@@ -8,18 +8,18 @@ import akka.event.Logging.Error
 import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 import scala.util.continuations._
-import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.{ Duration, BoxedType }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger }
 import akka.dispatch.Await.CanAwait
-import java.util.concurrent._
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
 import akka.event.Logging.Debug
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 
 object Await {
 
@@ -53,7 +53,7 @@ object Await {
    * WARNING: Blocking operation, use with caution.
    *
    * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @returns The returned value as returned by Awaitable.ready
+   * @return The returned value as returned by Awaitable.ready
    */
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
 
@@ -62,7 +62,7 @@ object Await {
    * WARNING: Blocking operation, use with caution.
    *
    * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @returns The returned value as returned by Awaitable.result
+   * @return The returned value as returned by Awaitable.result
    */
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
@@ -192,7 +192,7 @@ object Future {
   def firstCompletedOf[T](futures: Traversable[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
     val futureResult = Promise[T]()
 
-    val completeFirst: Either[Throwable, T] ⇒ Unit = futureResult complete _
+    val completeFirst: Either[Throwable, T] ⇒ Unit = futureResult tryComplete _
     futures.foreach(_ onComplete completeFirst)
 
     futureResult
@@ -208,12 +208,12 @@ object Future {
       val ref = new AtomicInteger(futures.size)
       val search: Either[Throwable, T] ⇒ Unit = v ⇒ try {
         v match {
-          case Right(r) ⇒ if (predicate(r)) result success Some(r)
+          case Right(r) ⇒ if (predicate(r)) result tryComplete Right(Some(r))
           case _        ⇒
         }
       } finally {
         if (ref.decrementAndGet == 0)
-          result success None
+          result tryComplete Right(None)
       }
 
       futures.foreach(_ onComplete search)
@@ -279,13 +279,13 @@ object Future {
    * The Delimited Continuations compiler plugin must be enabled in order to use this method.
    */
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit executor: ExecutionContext): Future[A] = {
-    val future = Promise[A]
+    val p = Promise[A]
     dispatchTask({ () ⇒
-      (reify(body) foreachFull (future success, future failure): Future[Any]) onFailure {
-        case e: Exception ⇒ future failure e
+      (reify(body) foreachFull (p success, p failure): Future[Any]) onFailure {
+        case NonFatal(e) ⇒ p tryComplete Left(e)
       }
     }, true)
-    future
+    p.future
   }
 
   /**
@@ -379,7 +379,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
       case Left(t)  ⇒ p failure t
       case Right(r) ⇒ that onSuccess { case r2 ⇒ p success ((r, r2)) }
     }
-    that onFailure { case f ⇒ p failure f }
+    that onFailure { case f ⇒ p tryComplete Left(f) }
     p.future
   }
 
@@ -411,7 +411,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * callbacks may be registered; there is no guarantee that they will be
    * executed in a particular order.
    */
-  def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type
+  def onComplete[U](func: Either[Throwable, T] ⇒ U): this.type
 
   /**
    * When the future is completed with a valid result, apply the provided
@@ -483,7 +483,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
   final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
     val p = Promise[A]()
     onComplete {
-      case Left(e) if pf isDefinedAt e ⇒ p.complete(try { Right(pf(e)) } catch { case x: Exception ⇒ Left(x) })
+      case Left(e) if pf isDefinedAt e ⇒ p.complete(try { Right(pf(e)) } catch { case NonFatal(x) ⇒ Left(x) })
       case otherwise                   ⇒ p complete otherwise
     }
     p.future
@@ -699,9 +699,12 @@ trait Promise[T] extends Future[T] {
 
   /**
    * Completes this Promise with the specified result, if not already completed.
+   * @throws IllegalStateException if already completed, this is to aid in debugging of complete-races,
+   *         use tryComplete to do a conditional complete.
    * @return this
    */
-  final def complete(value: Either[Throwable, T]): this.type = { tryComplete(value); this }
+  final def complete(value: Either[Throwable, T]): this.type =
+    if (tryComplete(value)) this else throw new IllegalStateException("Promise already completed: " + this + " tried to complete with " + value)
 
   /**
    * Completes this Promise with the specified result, if not already completed.
@@ -721,7 +724,7 @@ trait Promise[T] extends Future[T] {
    * @return this.
    */
   final def completeWith(other: Future[T]): this.type = {
-    other onComplete { complete(_) }
+    other onComplete { tryComplete(_) }
     this
   }
 
@@ -840,7 +843,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
     }
   }
 
-  def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
+  def onComplete[U](func: Either[Throwable, T] ⇒ U): this.type = {
     @tailrec //Returns whether the future has already been completed or not
     def tryAddCallback(): Either[Throwable, T] = {
       val cur = getState
@@ -858,9 +861,8 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
     }
   }
 
-  private final def notifyCompleted(func: Either[Throwable, T] ⇒ Unit, result: Either[Throwable, T]) {
-    try { func(result) } catch { case NonFatal(e) ⇒ executor.reportFailure(e) }
-  }
+  private final def notifyCompleted[U](func: Either[Throwable, T] ⇒ U, result: Either[Throwable, T]): Unit =
+    try func(result) catch { case NonFatal(e) ⇒ executor reportFailure e }
 }
 
 /**
@@ -871,7 +873,7 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
   val value = Some(resolve(suppliedValue))
 
   def tryComplete(value: Either[Throwable, T]): Boolean = false
-  def onComplete(func: Either[Throwable, T] ⇒ Unit): this.type = {
+  def onComplete[U](func: Either[Throwable, T] ⇒ U): this.type = {
     val completedAs = value.get
     Future dispatchTask (() ⇒ func(completedAs))
     this
@@ -982,7 +984,7 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
    * This method will be invoked once when/if the Future this recover callback is registered on
    * becomes completed with a failure.
    *
-   * @returns a successful value for the passed in failure
+   * @return a successful value for the passed in failure
    * @throws the passed in failure to propagate it.
    *
    * Java API
@@ -1005,7 +1007,7 @@ abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes completed with a success.
    *
-   * @returns true if the successful value should be propagated to the new Future or not
+   * @return true if the successful value should be propagated to the new Future or not
    */
   def filter(result: T): Boolean
 }
