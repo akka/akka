@@ -233,7 +233,7 @@ abstract class SupervisorStrategy {
  *
  * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
- * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
+ * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
 case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
@@ -279,7 +279,7 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
  *
  * @param maxNrOfRetries the number of times an actor is allowed to be restarted, negative value means no limit
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
- * @param decider = mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
+ * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   `Seq` of Throwables which maps the given Throwables to restarts, otherwise escalates.
  */
 case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)

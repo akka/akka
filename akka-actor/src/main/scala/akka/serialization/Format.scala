@@ -7,7 +7,7 @@ package akka.serialization
 import akka.actor.Actor
 
 /**
- * trait Serializer extends scala.Serializable {
+ * trait Serializer {
  * @volatile
  * var classLoader: Option[ClassLoader] = None
  * def deepClone(obj: AnyRef): AnyRef = fromBinary(toBinary(obj), Some(obj.getClass))
@@ -74,7 +74,7 @@ trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
  * }
  * </pre>
  */
-trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
+trait StatelessActorFormat[T <: Actor] extends Format[T] {
   def fromBinary(bytes: Array[Byte], act: T) = act
 
   def toBinary(ac: T) = Array.empty[Byte]
@@ -94,7 +94,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable
  * }
  * </pre>
  */
-trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
+trait SerializerBasedActorFormat[T <: Actor] extends Format[T] {
   val serializer: Serializer
 
   def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.getClass)).asInstanceOf[T]

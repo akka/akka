@@ -168,7 +168,7 @@ object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable with Executor with ExecutionContext {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Executor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsUpdater, shutdownScheduleUpdater }

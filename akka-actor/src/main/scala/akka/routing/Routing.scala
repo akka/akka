@@ -299,6 +299,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * from lower-precendence sources. The decision whether or not to create a
  * router is taken in the LocalActorRefProvider based on Props.
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
   override def withFallback(other: RouterConfig): RouterConfig = other
@@ -315,6 +316,7 @@ case object FromConfig extends RouterConfig {
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class FromConfig() extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
@@ -345,6 +347,7 @@ object RoundRobinRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RoundRobinLike {
 
@@ -424,6 +427,7 @@ object RandomRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with RandomLike {
 
@@ -509,6 +513,7 @@ object SmallestMailboxRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with SmallestMailboxLike {
 
@@ -653,6 +658,7 @@ object BroadcastRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
   extends RouterConfig with BroadcastLike {
 
@@ -724,6 +730,7 @@ object ScatterGatherFirstCompletedRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
+//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
