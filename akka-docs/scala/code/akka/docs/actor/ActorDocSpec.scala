@@ -233,7 +233,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     system.stop(myActor)
   }
 
-  "using implicit timeout" in {
+  "using implicit timeout" taggedAs TimingTest in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-implicit-timeout
     import akka.util.duration._
@@ -246,7 +246,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   }
 
-  "using explicit timeout" in {
+  "using explicit timeout" taggedAs TimingTest in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
     import akka.util.duration._
