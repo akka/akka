@@ -138,6 +138,8 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   val gossipInitialDelay = clusterSettings.GossipInitialDelay
   val gossipFrequency = clusterSettings.GossipFrequency
 
+  implicit val memberOrdering = Ordering.fromLessThan[Member](_.address.toString > _.address.toString)
+
   implicit val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
   private val nodeToJoin: Option[Member] =
@@ -156,7 +158,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   private val state = {
     val member = Member(remoteAddress, MemberStatus.Joining)
-    val gossip = Gossip(self = member, members = SortedSet.empty[Member](memberOrdering) + member)
+    val gossip = Gossip(self = member, members = SortedSet.empty[Member] + member)
     new AtomicReference[State](State(gossip))
   }
 
@@ -223,6 +225,9 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val oldMembers = oldGossip.members
     val newGossip = oldGossip copy (members = oldMembers + Member(node, MemberStatus.Joining)) // add joining node as Joining
     val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
+
+    // FIXME set flag state.isSingletonCluster = false (if true)
+
     if (!state.compareAndSet(oldState, newState)) joining(node) // recur if we failed update
   }
 
@@ -332,32 +337,33 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
    */
   private def gossip() {
     val oldState = state.get
-    val oldGossip = oldState.latestGossip
+    if (!oldState.isSingletonCluster) { // do not gossip if we are a singleton cluster
+      val oldGossip = oldState.latestGossip
+      val oldMembers = oldGossip.members
+      val oldMembersSize = oldMembers.size
 
-    val oldMembers = oldGossip.members
-    val oldMembersSize = oldMembers.size
+      val oldUnavailableMembers = oldGossip.unavailableMembers
+      val oldUnavailableMembersSize = oldUnavailableMembers.size
 
-    val oldUnavailableMembers = oldGossip.unavailableMembers
-    val oldUnavailableMembersSize = oldUnavailableMembers.size
+      // 1. gossip to alive members
+      val shouldGossipToDeputy =
+        if (oldUnavailableMembersSize > 0) gossipToRandomNodeOf(oldMembers)
+        else false
 
-    // 1. gossip to alive members
-    val shouldGossipToDeputy =
-      if (oldUnavailableMembersSize > 0) gossipToRandomNodeOf(oldMembers)
-      else false
+      // 2. gossip to dead members
+      if (oldUnavailableMembersSize > 0) {
+        val probability: Double = oldUnavailableMembersSize / (oldMembersSize + 1)
+        if (random.nextDouble() < probability) gossipToRandomNodeOf(oldUnavailableMembers)
+      }
 
-    // 2. gossip to dead members
-    if (oldUnavailableMembersSize > 0) {
-      val probability: Double = oldUnavailableMembersSize / (oldMembersSize + 1)
-      if (random.nextDouble() < probability) gossipToRandomNodeOf(oldUnavailableMembers)
-    }
-
-    // 3. gossip to a deputy nodes for facilitating partition healing
-    val deputies = deputyNodesWithoutMyself
-    if ((!shouldGossipToDeputy || oldMembersSize < 1) && !deputies.isEmpty) {
-      if (oldMembersSize == 0) gossipToRandomNodeOf(deputies)
-      else {
-        val probability = 1.0 / oldMembersSize + oldUnavailableMembersSize
-        if (random.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
+      // 3. gossip to a deputy nodes for facilitating partition healing
+      val deputies = deputyNodesWithoutMyself
+      if ((!shouldGossipToDeputy || oldMembersSize < 1) && !deputies.isEmpty) {
+        if (oldMembersSize == 0) gossipToRandomNodeOf(deputies)
+        else {
+          val probability = 1.0 / oldMembersSize + oldUnavailableMembersSize
+          if (random.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
+        }
       }
     }
   }
@@ -378,7 +384,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       else member
     }
     // ugly crap to work around bug in scala colletions ('val ss: SortedSet[Member] = SortedSet.empty[Member] ++ aSet' does not compile)
-    val newMembersSortedSet = SortedSet[Member](newMembersSet.toList: _*)(memberOrdering)
+    val newMembersSortedSet = SortedSet[Member](newMembersSet.toList: _*)
 
     val newGossip = oldGossip copy (self = newSelf, members = newMembersSortedSet)
     val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
@@ -421,27 +427,28 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   @tailrec
   final private def scrutinize() {
     val oldState = state.get
-    val oldGossip = oldState.latestGossip
+    if (!oldState.isSingletonCluster) { // do not scrutinize if we are a singleton cluster
+      val oldGossip = oldState.latestGossip
+      val oldMembers = oldGossip.members
+      val oldUnavailableMembers = oldGossip.unavailableMembers
+      val newlyDetectedUnavailableMembers = oldMembers filterNot (member ⇒ failureDetector.isAvailable(member.address))
 
-    val oldMembers = oldGossip.members
-    val oldUnavailableMembers = oldGossip.unavailableMembers
-    val newlyDetectedUnavailableMembers = oldMembers filterNot (member ⇒ failureDetector.isAvailable(member.address))
+      if (!newlyDetectedUnavailableMembers.isEmpty) { // we have newly detected members marked as unavailable
+        val newMembers = oldMembers diff newlyDetectedUnavailableMembers
+        val newUnavailableMembers = oldUnavailableMembers ++ newlyDetectedUnavailableMembers
 
-    if (!newlyDetectedUnavailableMembers.isEmpty) { // we have newly detected members marked as unavailable
-      val newMembers = oldMembers diff newlyDetectedUnavailableMembers
-      val newUnavailableMembers = oldUnavailableMembers ++ newlyDetectedUnavailableMembers
+        val newGossip = oldGossip copy (members = newMembers, unavailableMembers = newUnavailableMembers)
+        val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
 
-      val newGossip = oldGossip copy (members = newMembers, unavailableMembers = newUnavailableMembers)
-      val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
-
-      // if we won the race then update else try again
-      if (!state.compareAndSet(oldState, newState)) scrutinize() // recur
-      else {
-        // notify listeners on successful update of state
-        for {
-          deadNode ← newUnavailableMembers
-          listener ← oldState.memberMembershipChangeListeners
-        } listener memberDisconnected deadNode
+        // if we won the race then update else try again
+        if (!state.compareAndSet(oldState, newState)) scrutinize() // recur
+        else {
+          // notify listeners on successful update of state
+          for {
+            deadNode ← newUnavailableMembers
+            listener ← oldState.memberMembershipChangeListeners
+          } listener memberDisconnected deadNode
+        }
       }
     }
   }
@@ -485,6 +492,4 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   private def deputyNodesWithoutMyself: Seq[Member] = Seq.empty[Member] filter (_.address != remoteAddress) // FIXME read in deputy nodes from gossip data - now empty seq
 
   private def selectRandomNode(members: Seq[Member]): Member = members(random.nextInt(members.size))
-
-  private def memberOrdering = Ordering.fromLessThan[Member](_.address.toString > _.address.toString)
 }
