@@ -48,9 +48,7 @@ class FirstActor extends Actor {
             context.stop(self)
         }
         def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
-      })) ! m
-
-    case replyMsg: String ⇒ sender ! replyMsg
+      })) forward m
   }
   //#anonymous-actor
 }
