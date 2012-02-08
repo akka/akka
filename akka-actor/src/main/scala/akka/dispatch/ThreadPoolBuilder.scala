@@ -173,7 +173,7 @@ case class MonitorableThreadFactory(name: String,
   def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
     val t = wire(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool))
     // Name of the threads for the ForkJoinPool are not customizable. Change it here.
-    if (t.getName.startsWith("ForkJoinPool-")) t.setName(name + "-" + t.getName.substring("ForkJoinPool-".length))
+    t.setName(name + "-" + counter.incrementAndGet())
     t
   }
 

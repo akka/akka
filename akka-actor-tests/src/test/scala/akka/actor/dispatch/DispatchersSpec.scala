@@ -107,7 +107,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {
       system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")) ! "what's the name?"
-      val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*-worker-[1-9][0-9]*)".r
+      val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
       expectMsgPF(5 seconds) {
         case Expected(x) ⇒
       }
@@ -123,7 +123,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "include system name and dispatcher id in thread names for default-dispatcher" in {
       system.actorOf(Props[ThreadNameEcho]) ! "what's the name?"
-      val Expected = "(DispatchersSpec-akka.actor.default-dispatcher-[1-9][0-9]*-worker-[1-9][0-9]*)".r
+      val Expected = "(DispatchersSpec-akka.actor.default-dispatcher-[1-9][0-9]*)".r
       expectMsgPF(5 seconds) {
         case Expected(x) ⇒
       }
