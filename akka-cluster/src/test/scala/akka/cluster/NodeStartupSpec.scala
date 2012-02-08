@@ -38,16 +38,16 @@ class NodeStartupSpec extends AkkaSpec("""
     val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
     gossiper0 = Gossiper(node0, remote0)
 
-    "A first cluster node with a 'node-to-join' config set to empty string" must {
-      "be in 'Joining' phase when started up" in {
+    "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
+      "be a singleton cluster when started up" in {
+        gossiper0.isSingletonCluster must be(true)
+      }
+
+      "be in 'Up' phase when started up" in {
         val members = gossiper0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5550)
         joiningMember must be('defined)
-        joiningMember.get.status must be(MemberStatus.Joining)
-      }
-
-      "be a singleton cluster when started up" in {
-        gossiper0.isSingletonCluster must be(true)
+        joiningMember.get.status must be(MemberStatus.Up)
       }
     }
 

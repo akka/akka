@@ -156,9 +156,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   private val state = {
     val member = Member(remoteAddress, MemberStatus.Joining)
-    val gossip = Gossip(
-      self = member,
-      members = SortedSet.empty[Member](Ordering.fromLessThan[Member](_.address.toString > _.address.toString)) + member) // add joining node as Joining
+    val gossip = Gossip(self = member, members = SortedSet.empty[Member](memberOrdering) + member)
     new AtomicReference[State](State(gossip))
   }
 
@@ -168,7 +166,10 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   log.info("Node [{}] - Starting cluster Gossiper...", remoteAddress)
 
   // try to join the node defined in the 'akka.cluster.node-to-join' option
-  join()
+  nodeToJoin match {
+    case None         ⇒ switchStatusTo(MemberStatus.Up) // if we are singleton cluster then we are already considered to be UP
+    case Some(member) ⇒ join(member)
+  }
 
   // start periodic gossip and cluster scrutinization
   val gossipCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) {
@@ -308,10 +309,10 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   /**
    * Joins the pre-configured contact point and retrieves current gossip state.
    */
-  private def join() = nodeToJoin foreach { member ⇒
+  private def join(member: Member) {
     setUpConnectionTo(member) foreach { connection ⇒
       val command = Join(remoteAddress)
-      log.info("Node [{}] - Sending [{}] to [{}] through connection [{}]", remoteAddress, command, member.address, connection)
+      log.info("Node [{}] - Sending [{}] to [{}]", remoteAddress, command, member.address)
       connection ! command
     }
 
@@ -359,6 +360,29 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         if (random.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
       }
     }
+  }
+
+  @tailrec
+  final private def switchStatusTo(newStatus: MemberStatus) {
+    log.info("Node [{}] - Switching membership status to [{}]", remoteAddress, newStatus)
+    val oldState = state.get
+    val oldGossip = oldState.latestGossip
+
+    val oldSelf = oldGossip.self
+    val oldMembers = oldGossip.members
+
+    val newSelf = oldSelf copy (status = newStatus)
+
+    val newMembersSet = oldMembers map { member ⇒
+      if (member.address == remoteAddress) newSelf
+      else member
+    }
+    // ugly crap to work around bug in scala colletions ('val ss: SortedSet[Member] = SortedSet.empty[Member] ++ aSet' does not compile)
+    val newMembersSortedSet = SortedSet[Member](newMembersSet.toList: _*)(memberOrdering)
+
+    val newGossip = oldGossip copy (self = newSelf, members = newMembersSortedSet)
+    val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
+    if (!state.compareAndSet(oldState, newState)) switchStatusTo(newStatus) // recur if we failed update
   }
 
   /**
@@ -461,4 +485,6 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   private def deputyNodesWithoutMyself: Seq[Member] = Seq.empty[Member] filter (_.address != remoteAddress) // FIXME read in deputy nodes from gossip data - now empty seq
 
   private def selectRandomNode(members: Seq[Member]): Member = members(random.nextInt(members.size))
+
+  private def memberOrdering = Ordering.fromLessThan[Member](_.address.toString > _.address.toString)
 }
