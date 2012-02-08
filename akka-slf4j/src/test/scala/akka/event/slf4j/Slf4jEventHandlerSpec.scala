@@ -59,6 +59,8 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
     output.reset()
   }
 
+  val sourceThreadRegex = "sourceThread=\\[Slf4jEventHandlerSpec-akka.actor.default-dispatcher-[1-9][0-9]*-worker-[1-9][0-9]*\\]"
+
   "Slf4jEventHandler" must {
 
     "log error with stackTrace" in {
@@ -69,7 +71,7 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
       s must include("akkaSource=[akka://Slf4jEventHandlerSpec/user/logProducer]")
       s must include("level=[ERROR]")
       s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$LogProducer]")
-      s must include regex ("sourceThread=\\[ForkJoinPool-[1-9][0-9]*-worker-[1-9][0-9]*\\]")
+      s must include regex (sourceThreadRegex)
       s must include("msg=[Simulated error]")
       s must include("java.lang.RuntimeException: Simulated error")
       s must include("at akka.event.slf4j.Slf4jEventHandlerSpec")
@@ -83,7 +85,7 @@ class Slf4jEventHandlerSpec extends AkkaSpec(Slf4jEventHandlerSpec.config) with 
       s must include("akkaSource=[akka://Slf4jEventHandlerSpec/user/logProducer]")
       s must include("level=[INFO]")
       s must include("logger=[akka.event.slf4j.Slf4jEventHandlerSpec$LogProducer]")
-      s must include regex ("sourceThread=\\[ForkJoinPool-[1-9][0-9]*-worker-[1-9][0-9]*\\]")
+      s must include regex (sourceThreadRegex)
       s must include("msg=[test x=3 y=17]")
     }
 

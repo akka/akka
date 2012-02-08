@@ -66,7 +66,7 @@ trait ExecutorServiceFactory {
  * Generic way to specify an ExecutorService to a Dispatcher, create it with the given name if desired
  */
 trait ExecutorServiceFactoryProvider {
-  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory
 }
 
 /**
@@ -93,7 +93,7 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
       service
     }
   }
-  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+  final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
     new ThreadPoolExecutorServiceFactory(threadFactory)
 }
 
@@ -170,9 +170,14 @@ case class MonitorableThreadFactory(name: String,
   extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
   protected val counter = new AtomicLong
 
-  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = wire(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool))
+  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
+    val t = wire(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool))
+    // Name of the threads for the ForkJoinPool are not customizable. Change it here.
+    if (t.getName.startsWith("ForkJoinPool-")) t.setName(name + "-" + t.getName.substring("ForkJoinPool-".length))
+    t
+  }
 
-  def newThread(runnable: Runnable): Thread = wire(new Thread(runnable, name + counter.incrementAndGet()))
+  def newThread(runnable: Runnable): Thread = wire(new Thread(runnable, name + "-" + counter.incrementAndGet()))
 
   protected def wire[T <: Thread](t: T): T = {
     t.setUncaughtExceptionHandler(exceptionHandler)
