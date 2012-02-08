@@ -224,6 +224,10 @@ object VerifySerializabilitySpec {
     }
   }
 
+  class FooUntypedActor extends UntypedActor {
+    def onReceive(message: Any) {}
+  }
+
   class NonSerializableActor(system: ActorSystem) extends Actor {
     def receive = {
       case s: String ⇒ sender ! s
@@ -243,17 +247,28 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
 
   "verify creators" in {
     val a = system.actorOf(Props[FooActor])
-    intercept[NotSerializableException] {
-      Await.result(a ? new AnyRef, timeout.duration)
-    }
     system stop a
+
+    val b = system.actorOf(Props(new FooActor))
+    system stop b
+
+    val c = system.actorOf(Props().withCreator(new UntypedActorFactory {
+      def create() = new FooUntypedActor
+    }))
+    system stop c
+
+    intercept[java.io.NotSerializableException] {
+      val d = system.actorOf(Props(new NonSerializableActor(system)))
+    }
+
   }
 
   "verify messages" in {
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
-    intercept[java.io.NotSerializableException] {
-      val b = system.actorOf(Props(new NonSerializableActor(system)))
+
+    intercept[NotSerializableException] {
+      Await.result(a ? new AnyRef, timeout.duration)
     }
     system stop a
   }
