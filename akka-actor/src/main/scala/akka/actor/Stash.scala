@@ -74,8 +74,11 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
    */
   def unstashAll(): Unit = {
-    theStash.reverseIterator foreach mailbox.queue.addFirst
-    theStash = Vector.empty[Envelope]
+    try {
+      mailbox.enqueueAllFirst(self, theStash.reverseIterator, theStash.size)
+    } finally {
+      theStash = Vector.empty[Envelope]
+    }
   }
 
   /**
