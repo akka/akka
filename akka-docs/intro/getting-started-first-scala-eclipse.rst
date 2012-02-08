@@ -421,17 +421,25 @@ arguments to the JVM on the ``Arguments`` page, for instance to define where :re
 Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window.
 You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
 
-Overriding Configuration Externally
------------------------------------
+Overriding Configuration Externally (Optional)
+----------------------------------------------
 
 The sample project includes an ``application.conf`` file in the resources directory:
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/resources/application.conf
 
 If you uncomment the two lines, you should see a change in performance,
-hopefully for the better. It should be noted that overriding only works if a
-router type is given, so just uncommenting ``nr-of-instances`` does not work;
-see :ref:`routing-java` for more details.
+hopefully for the better (you might want to increase the number of messages in
+the code to prolong the time the application runs). It should be noted that
+overriding only works if a router type is given, so just uncommenting
+``nr-of-instances`` does not work; see :ref:`routing-scala` for more details.
+
+.. note::
+
+  Make sure that your ``application.conf`` is on the class path when you run
+  the application. If running from inside SBT that should already be the case,
+  otherwise you need to add the directory containing this file to the JVM’s
+  ``-classpath`` option.
 
 Conclusion
 ----------
