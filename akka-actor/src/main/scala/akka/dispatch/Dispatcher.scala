@@ -33,12 +33,7 @@ class Dispatcher(
   extends MessageDispatcher(_prerequisites) {
 
   protected[akka] val executorServiceFactory: ExecutorServiceFactory =
-    executorServiceFactoryProvider.createExecutorServiceFactory(
-      id,
-      prerequisites.threadFactory match {
-        case m: MonitorableThreadFactory ⇒ m.copy(m.name + "-" + id)
-        case other                       ⇒ other
-      })
+    executorServiceFactoryProvider.createExecutorServiceFactory(id, prerequisites.threadFactory)
 
   protected[akka] val executorService = new AtomicReference[ExecutorService](new ExecutorServiceDelegate {
     lazy val executor = executorServiceFactory.createExecutorService

@@ -7,8 +7,12 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.reflect.{ Manifest }
 import akka.dispatch._
 import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
+import akka.actor.Actor
+import akka.actor.Props
+import akka.util.duration._
 
 object DispatchersSpec {
   val config = """
@@ -16,13 +20,22 @@ object DispatchersSpec {
       mydispatcher {
         throughput = 17
       }
+      thread-pool-dispatcher {
+        executor = thread-pool-executor
+      }
     }
     """
+
+  class ThreadNameEcho extends Actor {
+    def receive = {
+      case _ ⇒ sender ! Thread.currentThread.getName
+    }
+  }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
-
+class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSender {
+  import DispatchersSpec._
   val df = system.dispatchers
   import df._
 
@@ -90,6 +103,30 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) {
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
       d1 must be === d2
+    }
+
+    "include system name and dispatcher id in thread names for fork-join-executor" in {
+      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")) ! "what's the name?"
+      val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
+      expectMsgPF(5 seconds) {
+        case Expected(x) ⇒
+      }
+    }
+
+    "include system name and dispatcher id in thread names for thread-pool-executor" in {
+      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.thread-pool-dispatcher")) ! "what's the name?"
+      val Expected = "(DispatchersSpec-myapp.thread-pool-dispatcher-[1-9][0-9]*)".r
+      expectMsgPF(5 seconds) {
+        case Expected(x) ⇒
+      }
+    }
+
+    "include system name and dispatcher id in thread names for default-dispatcher" in {
+      system.actorOf(Props[ThreadNameEcho]) ! "what's the name?"
+      val Expected = "(DispatchersSpec-akka.actor.default-dispatcher-[1-9][0-9]*)".r
+      expectMsgPF(5 seconds) {
+        case Expected(x) ⇒
+      }
     }
 
   }
