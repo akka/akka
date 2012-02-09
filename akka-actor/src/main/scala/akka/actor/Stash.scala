@@ -72,6 +72,13 @@ An (unbounded) deque-based mailbox can be configured as follows:
 
   /**
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
+   *
+   *  Either the entire stash is appended to the actor's mailbox, or none of the stashed messages.
+   *  Moreover, the stash is guaranteed to be empty after calling unstashAll(). This means that in case of a
+   *  capacity violation all messages in the stash are dropped.
+   *
+   *  @throws MessageQueueAppendFailedException in case of a capacity violation when appending the stash to a bounded
+   *          mailbox
    */
   def unstashAll(): Unit = {
     try {

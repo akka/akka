@@ -369,7 +369,9 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   final def enqueueAllFirst(receiver: ActorRef, handleIterator: Iterator[Envelope], size: Int) {
     lock.lock()
     try {
-      handleIterator foreach { enqueueFirst(receiver, _) }
+      if (queue.asInstanceOf[BlockingQueue[Envelope]].remainingCapacity >= size) {
+        handleIterator foreach { enqueueFirst(receiver, _) }
+      } else throw new MessageQueueAppendFailedException("Couldn't enqueue stash to " + receiver)
     } finally {
       lock.unlock()
     }
