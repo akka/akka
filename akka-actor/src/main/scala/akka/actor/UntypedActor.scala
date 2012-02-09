@@ -158,4 +158,4 @@ abstract class UntypedActor extends Actor {
 /**
  * Factory closure for an UntypedActor, to be used with 'Actors.actorOf(factory)'.
  */
-trait UntypedActorFactory extends Creator[Actor]
+trait UntypedActorFactory extends Creator[Actor] with Serializable

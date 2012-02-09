@@ -168,7 +168,7 @@ object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Serializable with Executor with ExecutionContext {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Executor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsUpdater, shutdownScheduleUpdater }
@@ -420,8 +420,15 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
         })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
 
-  def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
-    threadPoolConfig.createExecutorServiceFactory(name, threadFactory)
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+    val tf = threadFactory match {
+      case m: MonitorableThreadFactory ⇒
+        // add the dispatcher id to the thread names
+        m.copy(m.name + "-" + id)
+      case other ⇒ other
+    }
+    threadPoolConfig.createExecutorServiceFactory(id, tf)
+  }
 }
 
 object ForkJoinExecutorConfigurator {
@@ -460,7 +467,7 @@ object ForkJoinExecutorConfigurator {
 class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
   import ForkJoinExecutorConfigurator._
 
-  def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = prerequisites.threadFactory match {
+  def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = t match {
     case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
     case x ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
   }
@@ -469,11 +476,18 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
                                        val parallelism: Int) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = new AkkaForkJoinPool(parallelism, threadFactory, MonitorableThreadFactory.doNothing)
   }
-  final def createExecutorServiceFactory(name: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+  final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+    val tf = threadFactory match {
+      case m: MonitorableThreadFactory ⇒
+        // add the dispatcher id to the thread names
+        m.copy(m.name + "-" + id)
+      case other ⇒ other
+    }
     new ForkJoinExecutorServiceFactory(
-      validate(threadFactory),
+      validate(tf),
       ThreadPoolConfig.scaledPoolSize(
         config.getInt("parallelism-min"),
         config.getDouble("parallelism-factor"),
         config.getInt("parallelism-max")))
+  }
 }

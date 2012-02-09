@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%date{ISO8601} %-5level %logger %X{akkaSource} %X{sourceThread} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="TEST"
+		class="akka.event.slf4j.Slf4jEventHandlerSpec$TestAppender">
+		<encoder>
+			<pattern>%date{ISO8601} level=[%level] logger=[%logger] akkaSource=[%X{akkaSource}] sourceThread=[%X{sourceThread}] - msg=[%msg]%n----%n</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="akka.event.slf4j.Slf4jEventHandlerSpec" level="info" additivity="false">
+		<appender-ref ref="TEST" />
+	</logger>
+
+	<root level="info">
+		<appender-ref ref="STDOUT" />
+	</root>
+
+</configuration>

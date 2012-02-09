@@ -54,6 +54,13 @@ Default values are taken from ``default-dispatcher``, i.e. all options doesn't n
 :ref:`configuration` for the default values of the ``default-dispatcher``. You can also override
 the values for the ``default-dispatcher`` in your configuration.
 
+.. note::
+
+  It should be noted that the ``dispatcher-id`` used in :class:`Props` is in
+  fact an absolute path into the configuration object, i.e. you can declare a
+  dispatcher configuration nested within other configuration objects and refer
+  to it like so: ``"my.config.object.myAwesomeDispatcher"``
+
 There are two different executor services:
 
 * executor = "fork-join-executor", ``ExecutorService`` based on ForkJoinPool (jsr166y). This is used by default for

@@ -284,7 +284,7 @@ In Scala we have 'case classes' which make excellent messages. So let's start by
 We also create a common base trait for our messages (that we define as being ``sealed`` in order to prevent creating messages
 outside our control):
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#messages
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#messages
 
 
 Creating the worker
@@ -295,7 +295,7 @@ trait and defining the ``receive`` method. The ``receive`` method defines our
 message handler. We expect it to be able to handle the ``Work`` message so we
 need to add a handler for this message:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#worker
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#worker
    :exclude: calculatePiFor
 
 The ``Actor`` trait is defined in ``akka.actor`` and you can either import it explicitly,
@@ -318,7 +318,7 @@ The only thing missing in our ``Worker`` actor is the implementation on the
 algorithm in Scala, in this introductory tutorial we have chosen an imperative
 style using a for comprehension and an accumulator:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#calculatePiFor
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#calculatePiFor
 
 
 Creating the master
@@ -328,11 +328,11 @@ Now create a new class for the master actor. The master actor is a little bit
 more involved.  In its constructor we create a round-robin router to make it easier
 to spread out the work evenly between the workers. First we need to add some imports:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#imports
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#imports
 
 and then we can create the router:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#create-router
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#create-router
 
 Now we have a router that is representing all our workers in a single
 abstraction. So now let's create the master actor. We pass it three integer variables:
@@ -343,7 +343,7 @@ abstraction. So now let's create the master actor. We pass it three integer vari
 
 Here is the master actor:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#master
    :exclude: handle-messages
 
 A couple of things are worth explaining further.
@@ -370,7 +370,7 @@ will propagate down to all its supervised 'children'.
 
 Let's capture this in code:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#master-receive
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#master-receive
 
 Creating the result listener
 ----------------------------
@@ -378,7 +378,7 @@ Creating the result listener
 The listener is straightforward. When it receives the ``PiApproximation`` from the ``Master`` it
 prints the result and shuts down the ``ActorSystem``.
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#result-listener
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#result-listener
 
 Bootstrap the calculation
 -------------------------
@@ -390,7 +390,7 @@ which means that we will be able to run this as an application directly from the
 The ``Pi`` object is a perfect container module for our actors and messages, so let's put them all there.
 We also create a method ``calculate`` in which we start up the ``Master`` actor and wait for it to finish:
 
-.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala#app
+.. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#app
    :exclude: actors-and-messages
 
 As you can see the *calculate* method above it creates an ``ActorSystem`` and this is the Akka container which
@@ -421,17 +421,25 @@ arguments to the JVM on the ``Arguments`` page, for instance to define where :re
 Once you finished your run configuration, click ``Run``. You should see the same output in the ``Console`` window.
 You can use the same configuration for debugging the application, by choosing ``Run/Debug History`` or just ``Debug As``.
 
-Overriding Configuration Externally
------------------------------------
+Overriding Configuration Externally (Optional)
+----------------------------------------------
 
 The sample project includes an ``application.conf`` file in the resources directory:
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/resources/application.conf
 
 If you uncomment the two lines, you should see a change in performance,
-hopefully for the better. It should be noted that overriding only works if a
-router type is given, so just uncommenting ``nr-of-instances`` does not work;
-see :ref:`routing-java` for more details.
+hopefully for the better (you might want to increase the number of messages in
+the code to prolong the time the application runs). It should be noted that
+overriding only works if a router type is given, so just uncommenting
+``nr-of-instances`` does not work; see :ref:`routing-scala` for more details.
+
+.. note::
+
+  Make sure that your ``application.conf`` is on the class path when you run
+  the application. If running from inside SBT that should already be the case,
+  otherwise you need to add the directory containing this file to the JVM’s
+  ``-classpath`` option.
 
 Conclusion
 ----------
