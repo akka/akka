@@ -8,19 +8,38 @@ import java.lang.reflect.InvocationTargetException
 
 /**
  * The property master is responsible for acquiring all props needed for a
- * performance; in Akka this is the class which is used for reflectively
- * loading all configurable parts of an actor system.
+ * performance; in Akka this is the class which is used for
+ * loading all configurable parts of an actor system (the
+ * [[akka.actor.ReflectivePropertyMaster]] is the default implementation).
+ *
+ * This is an internal facility and users are not expected to encounter it
+ * unless they are extending Akka in ways which go beyond simple Extensions.
  */
-trait PropertyMaster {
+private[akka] trait PropertyMaster {
 
+  /**
+   * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
+   * returned by `classLoader`).
+   */
   def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
 
+  /**
+   * Obtain an object conforming to the type T, which is expected to be
+   * instantiated from a class designated by the fully-qualified class name
+   * given, where the constructor is selected and invoked according to the
+   * `args` argument. The exact usage of args depends on which type is requested,
+   * see the relevant requesting code for details.
+   */
   def getInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T]
 
+  /**
+   * Obtain the Scala “object” instance for the given fully-qualified class name, if there is one.
+   */
   def getObjectFor[T: ClassManifest](fqcn: String): Either[Throwable, T]
 
   /**
-   * This is needed e.g. by the JavaSerializer to build the ObjectInputStream.
+   * This is the class loader to be used in those special cases where the
+   * other factory method are not applicable (e.g. when constructing a ClassLoaderBinaryInputStream).
    */
   def classLoader: ClassLoader
 
@@ -28,6 +47,14 @@ trait PropertyMaster {
 
 object PropertyMaster {
 
+  /**
+   * Convenience method which given a `Class[_]` object and a constructor description
+   * will create a new instance of that class.
+   *
+   * {{{
+   * val obj = PropertyMaster.getInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
+   * }}}
+   */
   def getInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
     val types = args.map(_._1).toArray
     val values = args.map(_._2).toArray
@@ -58,7 +85,14 @@ object PropertyMaster {
 
 }
 
-class DefaultPropertyMaster(val classLoader: ClassLoader) extends PropertyMaster {
+/**
+ * This is the default [[akka.actor.PropertyMaster]] implementation used by [[akka.actor.ActorSystemImpl]]
+ * unless overridden. It uses reflection to turn fully-qualified class names into `Class[_]` objects
+ * and creates instances from there using `getDeclaredConstructor()` and invoking that. The class loader
+ * to be used for all this is determined by the [[akka.actor.ActorSystemImpl]]’s `findClassLoader` method
+ * by default.
+ */
+class ReflectivePropertyMaster(val classLoader: ClassLoader) extends PropertyMaster {
 
   import PropertyMaster.withErrorHandling
 

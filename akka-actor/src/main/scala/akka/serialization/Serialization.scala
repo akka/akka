@@ -11,6 +11,7 @@ import akka.config.ConfigurationException
 import akka.actor.{ Extension, ExtendedActorSystem, Address }
 import java.util.concurrent.ConcurrentHashMap
 import akka.event.Logging
+import akka.util.NonFatal
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
 
@@ -59,9 +60,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
    * to either an Array of Bytes or an Exception if one was thrown.
    */
-  def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
+  def serialize(o: AnyRef): Either[Throwable, Array[Byte]] =
     try Right(findSerializerFor(o).toBinary(o))
-    catch { case e: Exception ⇒ Left(e) }
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Deserializes the given array of bytes using the specified serializer id,
@@ -70,18 +71,18 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def deserialize(bytes: Array[Byte],
                   serializerId: Int,
-                  clazz: Option[Class[_]]): Either[Exception, AnyRef] =
+                  clazz: Option[Class[_]]): Either[Throwable, AnyRef] =
     try Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz))
-    catch { case e: Exception ⇒ Left(e) }
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
    * You can specify an optional ClassLoader to load the object into.
    * Returns either the resulting object or an Exception if one was thrown.
    */
-  def deserialize(bytes: Array[Byte], clazz: Class[_]): Either[Exception, AnyRef] =
+  def deserialize(bytes: Array[Byte], clazz: Class[_]): Either[Throwable, AnyRef] =
     try Right(serializerFor(clazz).fromBinary(bytes, Some(clazz)))
-    catch { case e: Exception ⇒ Left(e) }
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Returns the Serializer configured for the given object, returns the NullSerializer if it's null,
@@ -126,7 +127,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
   /**
-   * Tries to load the specified Serializer by the FQN
+   * Tries to load the specified Serializer by the fully-qualified name; the actual
+   * loading is performed by the system’s [[akka.actor.PropertyMaster]].
    */
   def serializerOf(serializerFQN: String): Either[Throwable, Serializer] = {
     val pm = system.propertyMaster

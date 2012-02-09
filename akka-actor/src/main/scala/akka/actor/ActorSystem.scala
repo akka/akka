@@ -333,7 +333,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def propertyMaster: PropertyMaster
 }
 
-class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
+class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config) extends ExtendedActorSystem {
 
   if (!name.matches("""^\w+$"""))
     throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
@@ -360,25 +360,26 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
    * This is an extension point: by overriding this method, subclasses can
    * control all reflection activities of an actor system.
    */
-  protected def createPropertyMaster(): PropertyMaster = new DefaultPropertyMaster(findClassLoader)
+  protected def createPropertyMaster(): PropertyMaster = new ReflectivePropertyMaster(findClassLoader)
 
-  protected def findClassLoader: ClassLoader =
+  protected def findClassLoader: ClassLoader = {
+    def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
+      val frames = Iterator.from(2).map(get)
+      frames dropWhile { c ⇒
+        c != null &&
+          (c.getName.startsWith("akka.actor.ActorSystem") ||
+            c.getName.startsWith("scala.Option") ||
+            c.getName.startsWith("scala.collection.Iterator") ||
+            c.getName.startsWith("akka.util.Reflect"))
+      } next () match {
+        case null ⇒ getClass.getClassLoader
+        case c    ⇒ c.getClassLoader
+      }
+    }
+
     Option(Thread.currentThread.getContextClassLoader) orElse
       (Reflect.getCallerClass map findCaller) getOrElse
       getClass.getClassLoader
-
-  private def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
-    val frames = Iterator.from(2).map(get)
-    frames dropWhile { c ⇒
-      c != null &&
-        (c.getName.startsWith("akka.actor.ActorSystem") ||
-          c.getName.startsWith("scala.Option") ||
-          c.getName.startsWith("scala.collection.Iterator") ||
-          c.getName.startsWith("akka.util.Reflect"))
-    } next () match {
-      case null ⇒ getClass.getClassLoader
-      case c    ⇒ c.getClassLoader
-    }
   }
 
   private val _pm: PropertyMaster = createPropertyMaster()

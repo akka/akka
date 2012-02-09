@@ -25,7 +25,9 @@ import scala.util.DynamicVariable
  * load classes using reflection.</li>
  * </ul>
  *
- * <b>Be sure to always use the PropertyManager for loading classes!</b>
+ * <b>Be sure to always use the PropertyManager for loading classes!</b> This is necessary to
+ * avoid strange match errors and inequalities which arise from different class loaders loading
+ * the same class.
  */
 trait Serializer extends scala.Serializable {
 

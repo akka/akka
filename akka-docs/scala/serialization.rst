@@ -109,3 +109,14 @@ First you need to create a class definition of your ``Serializer`` like so:
 
 Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
 list which classes that should be serialized using it.
+
+A Word About Java Serialization
+===============================
+
+When using Java serialization without employing the :class:`JavaSerializer` for
+the task, you must make sure to supply a valid :class:`ExtendedActorSystem` in
+the dynamic variable ``JavaSerializer.currentSystem``. This is used when
+reading in the representation of an :class:`ActorRef` for turning the string
+representation into a real reference. :class:`DynamicVariable` is a
+thread-local variable, so be sure to have it set while deserializing anything
+which might contain actor references.
