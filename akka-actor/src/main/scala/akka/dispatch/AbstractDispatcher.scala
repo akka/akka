@@ -354,12 +354,12 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
   /**
    * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
    * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
-   * as FQCN in mailboxType config property. If mailboxType is unspecified (empty)
+   * as FQCN in mailbox-type config property. If mailbox-type is unspecified (empty)
    * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
    * otherwise [[akka.dispatch.BoundedMailbox]].
    */
   def mailboxType(): MailboxType = {
-    config.getString("mailboxType") match {
+    config.getString("mailbox-type") match {
       case "" ⇒
         val capacity = config.getInt("mailbox-capacity")
         if (capacity < 1) UnboundedMailbox()

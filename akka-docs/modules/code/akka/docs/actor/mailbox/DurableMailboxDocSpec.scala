@@ -23,7 +23,7 @@ object DurableMailboxDocSpec {
   val config = """
     //#dispatcher-config
     my-dispatcher {
-      mailboxType = akka.actor.mailbox.FileBasedMailboxType
+      mailbox-type = akka.actor.mailbox.FileBasedMailboxType
     }
     //#dispatcher-config
     """
