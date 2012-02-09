@@ -50,6 +50,8 @@ object ActorModelSpec {
 
   case object Restart extends ActorModelMessage
 
+  case object DoubleStop extends ActorModelMessage
+
   case class ThrowException(e: Throwable) extends ActorModelMessage
 
   val Ping = "Ping"
@@ -86,6 +88,7 @@ object ActorModelSpec {
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
       case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
+      case DoubleStop                   ⇒ ack; context.stop(self); context.stop(self); busy.switchOff
     }
   }
 
@@ -190,13 +193,13 @@ object ActorModelSpec {
   }
 
   def assertRef(actorRef: ActorRef, dispatcher: MessageDispatcher = null)(
-    suspensions: Long = statsFor(actorRef).suspensions.get(),
-    resumes: Long = statsFor(actorRef).resumes.get(),
-    registers: Long = statsFor(actorRef).registers.get(),
-    unregisters: Long = statsFor(actorRef).unregisters.get(),
-    msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
-    msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
-    restarts: Long = statsFor(actorRef).restarts.get())(implicit system: ActorSystem) {
+    suspensions: Long = statsFor(actorRef, dispatcher).suspensions.get(),
+    resumes: Long = statsFor(actorRef, dispatcher).resumes.get(),
+    registers: Long = statsFor(actorRef, dispatcher).registers.get(),
+    unregisters: Long = statsFor(actorRef, dispatcher).unregisters.get(),
+    msgsReceived: Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
+    msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
+    restarts: Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -425,6 +428,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         assert(f3.value.isEmpty)
         assert(f5.value.isEmpty)
       }
+    }
+
+    "not double-deregister" in {
+      implicit val dispatcher = interceptedDispatcher()
+      val a = newTestActor(dispatcher.id)
+      a ! DoubleStop
+      awaitCond(statsFor(a, dispatcher).registers.get == 1)
+      awaitCond(statsFor(a, dispatcher).unregisters.get == 1)
     }
   }
 }
