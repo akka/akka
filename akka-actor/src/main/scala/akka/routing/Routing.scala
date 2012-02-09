@@ -9,16 +9,13 @@ import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.pattern.pipe
 import akka.pattern.AskSupport
-
 import com.typesafe.config.Config
-
 import scala.collection.JavaConversions.iterableAsScalaIterable
-
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
-
 import akka.jsr166y.ThreadLocalRandom
+import akka.util.Unsafe
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -40,60 +37,57 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * synchronized. This is done exactly once at start-up, all other accesses
    * are done from the Router actor. This means that the only thing which is
    * really hairy is making sure that the Router does not touch its childrenRefs
-   * before we are done with them: create a locked latch really early (hence the
+   * before we are done with them: lock the monitor of the actor cell (hence the
    * override of newActorCell) and use that to block the Router constructor for
    * as long as it takes to setup the RoutedActorRef itself.
    */
-  private[akka] var routeReady: ReentrantLock = _
   override def newActorCell(
     system: ActorSystemImpl,
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell = {
-    /*
-     * TODO RK: check that this really sticks, since this is executed before
-     * the constructor of RoutedActorRef is executed (invoked from
-     * LocalActorRef); works on HotSpot and JRockit.
-     */
-    routeReady = new ReentrantLock
-    routeReady.lock()
-    super.newActorCell(system, ref, props, supervisor, receiveTimeout)
-  }
+    receiveTimeout: Option[Duration]): ActorCell =
+    {
+      val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
+      Unsafe.instance.monitorEnter(cell)
+      cell
+    }
 
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
-  private[akka] val resizeProgress = new AtomicBoolean
+  private[akka] val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
 
   @volatile
   private var _routees: IndexedSeq[ActorRef] = IndexedSeq.empty[ActorRef] // this MUST be initialized during createRoute
   def routees = _routees
 
-  private[akka] var routeeProvider: RouteeProvider = _
+  @volatile
+  private var _routeeProvider: RouteeProvider = _
+  def routeeProvider = _routeeProvider
+
   val route =
     try {
-      routeeProvider = routerConfig.createRouteeProvider(actorContext)
+      _routeeProvider = routerConfig.createRouteeProvider(actorContext)
       val r = routerConfig.createRoute(routeeProps, routeeProvider)
       // initial resize, before message send
-      resize()
+      routerConfig.resizer foreach { r ⇒
+        if (r.isTimeForResize(resizeCounter.getAndIncrement()))
+          r.resize(routeeProps, routeeProvider)
+      }
       r
-    } finally routeReady.unlock() // unblock Router’s constructor
+    } finally Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
-
-  _routees match {
-    case x ⇒ _routees = x // volatile write to publish the route before sending messages
-  }
 
   /*
    * end of construction
    */
 
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
-    case _: AutoReceivedMessage ⇒ Nil
-    case Terminated(_)          ⇒ Nil
+    case _: AutoReceivedMessage ⇒ Destination(this, this) :: Nil
+    case Terminated(_)          ⇒ Destination(this, this) :: Nil
     case CurrentRoutees ⇒
       sender ! RouterRoutees(_routees)
       Nil
@@ -108,7 +102,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`
    */
-  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]) {
+  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
     newRoutees foreach underlying.watch
@@ -120,7 +114,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`
    */
-  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]) {
+  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees diff abandonedRoutees
     abandonedRoutees foreach underlying.unwatch
   }
@@ -136,14 +130,14 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     }
 
     applyRoute(s, message) match {
-      case Nil  ⇒ super.!(message)(s)
-      case refs ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
+      case Destination(_, x) :: Nil if x eq this ⇒ super.!(message)(s)
+      case refs                                  ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
     }
   }
 
-  def resize() {
+  def resize(): Unit = {
     for (r ← routerConfig.resizer) {
-      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true))
+      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
         super.!(Router.Resize)
     }
   }
@@ -282,22 +276,19 @@ trait CustomRoute {
  */
 trait Router extends Actor {
 
-  val ref = self match {
-    case x: RoutedActorRef ⇒ x
-    case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
-  }
-
   // make sure that we synchronize properly to get the childrenRefs into our CPU cache
-  ref.routeReady.lock()
-  try if (context.children.isEmpty)
-    throw new ActorInitializationException("RouterConfig did not create any children")
-  finally ref.routeReady.unlock()
+  val ref = context.synchronized {
+    self match {
+      case x: RoutedActorRef ⇒ x
+      case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
+    }
+  }
 
   final def receive = ({
 
     case Router.Resize ⇒
       try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider))
-      finally ref.resizeProgress.set(false)
+      finally assert(ref.resizeInProgress.getAndSet(false))
 
     case Terminated(child) ⇒
       ref.removeRoutees(IndexedSeq(child))
@@ -310,7 +301,7 @@ trait Router extends Actor {
   }
 }
 
-object Router {
+private object Router {
   case object Resize
 }
 

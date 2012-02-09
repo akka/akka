@@ -20,6 +20,7 @@ import akka.event.Logging.Debug
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
+import akka.pattern.AskTimeoutException
 
 object Await {
 
@@ -795,8 +796,9 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 
   def result(atMost: Duration)(implicit permit: CanAwait): T =
     ready(atMost).value.get match {
-      case Left(e)  ⇒ throw e
-      case Right(r) ⇒ r
+      case Left(e: AskTimeoutException) ⇒ throw new AskTimeoutException(e.getMessage, e)
+      case Left(e)                      ⇒ throw e
+      case Right(r)                     ⇒ r
     }
 
   def value: Option[Either[Throwable, T]] = getState match {
