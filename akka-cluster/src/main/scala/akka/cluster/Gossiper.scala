@@ -45,22 +45,19 @@ sealed trait ClusterMessage extends Serializable
 case class Join(node: Address) extends ClusterMessage
 
 /**
- * Represents the state of the cluster; cluster ring membership, ring convergence, meta data - all versioned by a vector clock.
+ * Command to leave the cluster.
  */
-case class Gossip(
-  self: Member,
-  // sorted set of members with their status, sorted by name
-  members: SortedSet[Member],
-  unavailableMembers: Set[Member] = Set.empty[Member],
-  // for ring convergence
-  seen: Map[Member, VectorClock] = Map.empty[Member, VectorClock],
-  // for handoff
-  //pendingChanges: Option[Vector[PendingPartitioningChange]] = None,
-  meta: Option[Map[String, Array[Byte]]] = None,
-  // vector clock version
-  version: VectorClock = VectorClock())
-  extends ClusterMessage // is a serializable cluster message
-  with Versioned // has a vector clock as version
+case class Leave(node: Address) extends ClusterMessage
+
+/**
+ * Command to mark node as temporay down.
+ */
+case class Down(node: Address) extends ClusterMessage
+
+/**
+ * Command to remove a node from the cluster immediately.
+ */
+case class Remove(node: Address) extends ClusterMessage
 
 /**
  * Represents the address and the current status of a cluster member node.
@@ -81,25 +78,49 @@ object MemberStatus {
   case object Down extends MemberStatus
 }
 
-// sealed trait PendingPartitioningStatus
-// object PendingPartitioningStatus {
-//   case object Complete extends PendingPartitioningStatus
-//   case object Awaiting extends PendingPartitioningStatus
+// sealed trait PartitioningStatus
+// object PartitioningStatus {
+//   case object Complete extends PartitioningStatus
+//   case object Awaiting extends PartitioningStatus
 // }
 
-// case class PendingPartitioningChange(
-//   owner: Address,
-//   nextOwner: Address,
-//   changes: Vector[VNodeMod],
-//   status: PendingPartitioningStatus)
+// case class PartitioningChange(
+//   from: Address,
+//   to: Address,
+//   path: PartitionPath,
+//   status: PartitioningStatus)
+
+/**
+ * Represents the overview of the cluster, holds the cluster convergence table and unreachable nodes.
+ */
+case class GossipOverview(
+  seen: Map[Member, VectorClock] = Map.empty[Member, VectorClock],
+  unreachable: Set[Member] = Set.empty[Member])
+
+/**
+ * Represents the state of the cluster; cluster ring membership, ring convergence, meta data - all versioned by a vector clock.
+ */
+case class Gossip(
+  overview: GossipOverview = GossipOverview(),
+  self: Member,
+  members: SortedSet[Member], // sorted set of members with their status, sorted by name
+  //partitions: Tree[PartitionPath, Node] = Tree.empty[PartitionPath, Node],
+  //pending: Set[PartitioningChange] = Set.empty[PartitioningChange],
+  meta: Map[String, Array[Byte]] = Map.empty[String, Array[Byte]],
+  version: VectorClock = VectorClock()) // vector clock version
+  extends ClusterMessage // is a serializable cluster message
+  with Versioned // has a vector clock as version
 
 final class ClusterDaemon(system: ActorSystem, gossiper: Gossiper) extends Actor {
   val log = Logging(system, "ClusterDaemon")
 
   def receive = {
-    case Join(address)  ⇒ gossiper.joining(address)
-    case gossip: Gossip ⇒ gossiper.receive(gossip)
-    case unknown        ⇒ log.error("Unknown message sent to cluster daemon [" + unknown + "]")
+    case gossip: Gossip  ⇒ gossiper.receive(gossip)
+    case Join(address)   ⇒ gossiper.joining(address)
+    case Leave(address)  ⇒ //gossiper.leaving(address)
+    case Down(address)   ⇒ //gossiper.downing(address)
+    case Remove(address) ⇒ //gossiper.removing(address)
+    case unknown         ⇒ log.error("Unknown message sent to cluster daemon [" + unknown + "]")
   }
 }
 
@@ -185,8 +206,11 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
    * Shuts down all connections to other members, the cluster daemon and the periodic gossip and cleanup tasks.
    */
   def shutdown() {
+
+    // FIXME Cheating. Can't just shut down. Node must first gossip an Leave command, wait for Leader to do proper Handoff and then await an Exit command before switching to Removed
+
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Node [{}] - Shutting down Gossiper", remoteAddress)
+      log.info("Node [{}] - Shutting down Gossiper and ClusterDaemon", remoteAddress)
       try connectionManager.shutdown() finally {
         try system.stop(clusterDaemon) finally {
           try gossipCanceller.cancel() finally {
@@ -251,14 +275,14 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     // val gossip = VectorClock.latestVersionOf(newGossip, oldState.latestGossip)
     // println("-------- WINNING VERSION " + gossip)
 
-    // val latestAvailableNodes = gossip.members
-    // val latestUnavailableNodes = gossip.unavailableMembers
+    // val latestMembers = gossip.members
+    // val latestUnreachableMembers  = gossip.overview.unreachable
     // println("=======>>> myself: " + myself)
-    // println("=======>>> latestAvailableNodes: " + latestAvailableNodes)
-    // if (!(latestAvailableNodes contains myself) && !(latestUnavailableNodes contains myself)) {
+    // println("=======>>> latestMembers: " + latestMembers)
+    // if (!(latestMembers contains myself) && !(latestUnreachableMembers  contains myself)) {
     //   println("-------- NEW NODE")
     //   // we have a new member
-    //   val newGossip = gossip copy (availableNodes = latestAvailableNodes + myself)
+    //   val newGossip = gossip copy (availableNodes = latestMembers + myself)
     //   val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
 
     //   println("--------- new GOSSIP " + newGossip.members)
@@ -268,19 +292,19 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     //   else {
     //     println("---------- WON RACE - setting state")
     //     // create connections for all new members in the latest gossip
-    //     (latestAvailableNodes + myself) foreach { member ⇒
+    //     (latestMembers + myself) foreach { member ⇒
     //       setUpConnectionTo(member)
     //       oldState.memberMembershipChangeListeners foreach (_ memberConnected member) // notify listeners about the new members
     //     }
     //   }
 
-    // } else if (latestUnavailableNodes contains myself) {
+    // } else if (latestUnreachableMembers  contains myself) {
     //   // gossip from an old former dead member
 
-    //   val newUnavailableMembers = latestUnavailableNodes - myself
-    //   val newMembers = latestAvailableNodes + myself
+    //   val newUnreachableMembers = latestUnreachableMembers  - myself
+    //   val newMembers = latestMembers + myself
 
-    //   val newGossip = gossip copy (availableNodes = newMembers, unavailableNodes = newUnavailableMembers)
+    //   val newGossip = gossip copy (availableNodes = newMembers, unavailableNodes = newUnreachableMembers)
     //   val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
 
     //   // if we won the race then update else try again
@@ -342,18 +366,18 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       val oldMembers = oldGossip.members
       val oldMembersSize = oldMembers.size
 
-      val oldUnavailableMembers = oldGossip.unavailableMembers
-      val oldUnavailableMembersSize = oldUnavailableMembers.size
+      val oldUnreachableMembers = oldGossip.overview.unreachable
+      val oldUnreachableSize = oldUnreachableMembers.size
 
       // 1. gossip to alive members
       val shouldGossipToDeputy =
-        if (oldUnavailableMembersSize > 0) gossipToRandomNodeOf(oldMembers)
+        if (oldUnreachableSize > 0) gossipToRandomNodeOf(oldMembers)
         else false
 
       // 2. gossip to dead members
-      if (oldUnavailableMembersSize > 0) {
-        val probability: Double = oldUnavailableMembersSize / (oldMembersSize + 1)
-        if (random.nextDouble() < probability) gossipToRandomNodeOf(oldUnavailableMembers)
+      if (oldUnreachableSize > 0) {
+        val probability: Double = oldUnreachableSize / (oldMembersSize + 1)
+        if (random.nextDouble() < probability) gossipToRandomNodeOf(oldUnreachableMembers)
       }
 
       // 3. gossip to a deputy nodes for facilitating partition healing
@@ -361,7 +385,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       if ((!shouldGossipToDeputy || oldMembersSize < 1) && !deputies.isEmpty) {
         if (oldMembersSize == 0) gossipToRandomNodeOf(deputies)
         else {
-          val probability = 1.0 / oldMembersSize + oldUnavailableMembersSize
+          val probability = 1.0 / oldMembersSize + oldUnreachableSize
           if (random.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
         }
       }
@@ -429,15 +453,17 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val oldState = state.get
     if (!oldState.isSingletonCluster) { // do not scrutinize if we are a singleton cluster
       val oldGossip = oldState.latestGossip
+      val oldOverview = oldGossip.overview
       val oldMembers = oldGossip.members
-      val oldUnavailableMembers = oldGossip.unavailableMembers
-      val newlyDetectedUnavailableMembers = oldMembers filterNot (member ⇒ failureDetector.isAvailable(member.address))
+      val oldUnreachableMembers = oldGossip.overview.unreachable
+      val newlyDetectedUnreachableMembers = oldMembers filterNot (member ⇒ failureDetector.isAvailable(member.address))
 
-      if (!newlyDetectedUnavailableMembers.isEmpty) { // we have newly detected members marked as unavailable
-        val newMembers = oldMembers diff newlyDetectedUnavailableMembers
-        val newUnavailableMembers = oldUnavailableMembers ++ newlyDetectedUnavailableMembers
+      if (!newlyDetectedUnreachableMembers.isEmpty) { // we have newly detected members marked as unavailable
+        val newMembers = oldMembers diff newlyDetectedUnreachableMembers
+        val newUnreachableMembers = oldUnreachableMembers ++ newlyDetectedUnreachableMembers
 
-        val newGossip = oldGossip copy (members = newMembers, unavailableMembers = newUnavailableMembers)
+        val newOverview = oldOverview copy (unreachable = newUnreachableMembers)
+        val newGossip = oldGossip copy (overview = newOverview, members = newMembers)
         val newState = oldState copy (latestGossip = incrementVersionForGossip(newGossip))
 
         // if we won the race then update else try again
@@ -445,7 +471,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         else {
           // notify listeners on successful update of state
           for {
-            deadNode ← newUnavailableMembers
+            deadNode ← newUnreachableMembers
             listener ← oldState.memberMembershipChangeListeners
           } listener memberDisconnected deadNode
         }
