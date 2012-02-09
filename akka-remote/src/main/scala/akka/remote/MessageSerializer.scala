@@ -6,32 +6,25 @@ package akka.remote
 
 import akka.remote.RemoteProtocol._
 import com.google.protobuf.ByteString
-import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
-import akka.util.ReflectiveAccess
 
 object MessageSerializer {
 
-  def deserialize(system: ActorSystem, messageProtocol: MessageProtocol, classLoader: ClassLoader): AnyRef = {
-    val clazz = if (messageProtocol.hasMessageManifest) {
-      Option(ReflectiveAccess.getClassFor[AnyRef](
-        messageProtocol.getMessageManifest.toStringUtf8,
-        classLoader) match {
-          case Left(e)  ⇒ throw e
-          case Right(r) ⇒ r
-        })
-    } else None
-    SerializationExtension(system).deserialize(
-      messageProtocol.getMessage.toByteArray,
-      messageProtocol.getSerializerId,
-      clazz,
-      classLoader) match {
+  def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {
+    val clazz =
+      if (messageProtocol.hasMessageManifest) {
+        system.propertyMaster.getClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8)
+          .fold(throw _, Some(_))
+      } else None
+    SerializationExtension(system)
+      .deserialize(messageProtocol.getMessage.toByteArray, messageProtocol.getSerializerId, clazz) match {
         case Left(e)  ⇒ throw e
         case Right(r) ⇒ r
       }
   }
 
-  def serialize(system: ActorSystem, message: AnyRef): MessageProtocol = {
+  def serialize(system: ExtendedActorSystem, message: AnyRef): MessageProtocol = {
     val s = SerializationExtension(system)
     val serializer = s.findSerializerFor(message)
     val builder = MessageProtocol.newBuilder

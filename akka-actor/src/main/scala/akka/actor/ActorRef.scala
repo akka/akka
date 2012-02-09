@@ -334,7 +334,7 @@ private[akka] class LocalActorRef private[akka] (
  * Memento pattern for serializing ActorRefs transparently
  */
 case class SerializedActorRef private (path: String) {
-  import akka.serialization.Serialization.currentSystem
+  import akka.serialization.JavaSerializer.currentSystem
 
   @throws(classOf[java.io.ObjectStreamException])
   def readResolve(): AnyRef = currentSystem.value match {
@@ -399,7 +399,7 @@ case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 private[akka] object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
-    private def readResolve(): AnyRef = Serialization.currentSystem.value.deadLetters
+    private def readResolve(): AnyRef = akka.serialization.JavaSerializer.currentSystem.value.deadLetters
   }
 
   val serialized = new SerializedDeadLetterActorRef

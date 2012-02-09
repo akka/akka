@@ -5,7 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.{ ReflectiveAccess, Duration }
+import akka.util.Duration
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.Stack
 import akka.dispatch._
@@ -121,8 +121,7 @@ object TestActorRef {
   def apply[T <: Actor](implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   def apply[T <: Actor](name: String)(implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
-    import ReflectiveAccess.{ createInstance, noParams, noArgs }
-    createInstance[T](m.erasure, noParams, noArgs) match {
+    PropertyMaster.getInstanceFor[T](m.erasure, Seq()) match {
       case Right(value) ⇒ value
       case Left(exception) ⇒ throw new ActorInitializationException(null,
         "Could not instantiate Actor" +

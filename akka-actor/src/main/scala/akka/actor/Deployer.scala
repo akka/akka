@@ -8,7 +8,6 @@ import akka.util.Duration
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
-import akka.util.ReflectiveAccess
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -83,7 +82,7 @@ case object NoScopeGiven extends Scope {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings, val classloader: ClassLoader) {
+class Deployer(val settings: ActorSystem.Settings, val propertyMaster: PropertyMaster) {
 
   import scala.collection.JavaConverters._
 
@@ -125,7 +124,7 @@ class Deployer(val settings: ActorSystem.Settings, val classloader: ClassLoader)
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case fqn ⇒
         val args = Seq(classOf[Config] -> deployment)
-        ReflectiveAccess.createInstance[RouterConfig](fqn, args, classloader) match {
+        propertyMaster.getInstanceFor[RouterConfig](fqn, args) match {
           case Right(router) ⇒ router
           case Left(exception) ⇒
             throw new IllegalArgumentException(

@@ -220,7 +220,7 @@ private[akka] class ActorCell(
       val ser = SerializationExtension(system)
       ser.serialize(props.creator) match {
         case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass, None) match {
+        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass) match {
           case Left(t) ⇒ throw t
           case _       ⇒ //All good
         }

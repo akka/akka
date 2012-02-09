@@ -6,11 +6,29 @@ package akka.serialization
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 import akka.util.ClassLoaderObjectInputStream
+import akka.actor.PropertyMaster
+import akka.actor.ExtendedActorSystem
+import scala.util.DynamicVariable
 
 /**
- * A Serializer represents a bimap between an object and an array of bytes representing that object
+ * A Serializer represents a bimap between an object and an array of bytes representing that object.
+ *
+ * Serializers are loaded using reflection during [[akka.actor.ActorSystem]]
+ * start-up, where two constructors are tried in order:
+ *
+ * <ul>
+ * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]];
+ * this should be the preferred one because all reflective loading of classes
+ * during deserialization should use ExtendedActorSystem.propertyMaster (see
+ * [[akka.actor.PropertyMaster]]), and</li>
+ * <li>without arguments, which is only an option if the serializer does not
+ * load classes using reflection.</li>
+ * </ul>
+ *
+ * <b>Be sure to always use the PropertyManager for loading classes!</b>
  */
 trait Serializer extends scala.Serializable {
+
   /**
    * Completely unique value to identify this implementation of Serializer, used to optimize network traffic
    * Values from 0 to 16 is reserved for Akka internal usage
@@ -28,42 +46,52 @@ trait Serializer extends scala.Serializable {
   def includeManifest: Boolean
 
   /**
-   * Deserializes the given Array of Bytes into an AnyRef
+   * Produces an object from an array of bytes, with an optional type-hint;
+   * the class should be loaded using ActorSystem.propertyMaster.
    */
-  def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None, None)
-
-  /**
-   * Deserializes the given Array of Bytes into an AnyRef with an optional type hint
-   */
-  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = fromBinary(bytes, manifest, None)
-
-  /**
-   *  Produces an object from an array of bytes, with an optional type-hint and a classloader to load the class into
-   */
-  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]], classLoader: Option[ClassLoader]): AnyRef
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
 }
 
 /**
- * Java API for creating a Serializer
+ * Java API for creating a Serializer: make sure to include a constructor which
+ * takes exactly one argument of type [[akka.actor.ExtendedActorSystem]], because
+ * that is the preferred constructor which will be invoked when reflectively instantiating
+ * the JSerializer (also possible with empty constructor).
  */
 abstract class JSerializer extends Serializer {
-  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef =
-    fromBinary(bytes, manifest.orNull, classLoader.orNull)
+  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
+    fromBinary(bytes, manifest.orNull)
 
   /**
    * This method should be overridden,
    * manifest and classLoader may be null.
    */
-  def fromBinary(bytes: Array[Byte], manifest: Class[_], classLoader: ClassLoader): AnyRef
+  def fromBinary(bytes: Array[Byte], manifest: Class[_]): AnyRef
 }
 
-object JavaSerializer extends JavaSerializer
 object NullSerializer extends NullSerializer
+
+object JavaSerializer {
+
+  /**
+   * This holds a reference to the current ActorSystem (the surrounding context)
+   * during serialization and deserialization.
+   *
+   * If you are using Serializers yourself, outside of SerializationExtension,
+   * you'll need to surround the serialization/deserialization with:
+   *
+   * currentSystem.withValue(system) {
+   *   ...code...
+   * }
+   */
+  val currentSystem = new DynamicVariable[ExtendedActorSystem](null)
+
+}
 
 /**
  * This Serializer uses standard Java Serialization
  */
-class JavaSerializer extends Serializer {
+class JavaSerializer(val system: ExtendedActorSystem) extends Serializer {
 
   def includeManifest: Boolean = false
 
@@ -77,12 +105,11 @@ class JavaSerializer extends Serializer {
     bos.toByteArray
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None,
-                 classLoader: Option[ClassLoader] = None): AnyRef = {
-    val in =
-      if (classLoader.isDefined) new ClassLoaderObjectInputStream(classLoader.get, new ByteArrayInputStream(bytes)) else
-        new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val obj = in.readObject
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
+    val in = new ClassLoaderObjectInputStream(system.propertyMaster.classLoader, new ByteArrayInputStream(bytes))
+    val obj = JavaSerializer.currentSystem.withValue(system) {
+      in.readObject
+    }
     in.close()
     obj
   }
@@ -96,5 +123,5 @@ class NullSerializer extends Serializer {
   def includeManifest: Boolean = false
   def identifier = 0
   def toBinary(o: AnyRef) = nullAsBytes
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None, classLoader: Option[ClassLoader] = None): AnyRef = null
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }

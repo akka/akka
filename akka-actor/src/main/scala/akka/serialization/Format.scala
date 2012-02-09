@@ -61,6 +61,7 @@ trait ToBinary[T <: Actor] {
  * Type class definition for Actor Serialization.
  * Client needs to implement Format[] for the respective actor.
  */
+// FIXME RK: should this go? It’s not used anywhere, looks like cluster residue.
 trait Format[T <: Actor] extends FromBinary[T] with ToBinary[T]
 
 /**
@@ -97,7 +98,7 @@ trait StatelessActorFormat[T <: Actor] extends Format[T] with scala.Serializable
 trait SerializerBasedActorFormat[T <: Actor] extends Format[T] with scala.Serializable {
   val serializer: Serializer
 
-  def fromBinary(bytes: Array[Byte], act: T) = serializer.fromBinary(bytes, Some(act.getClass)).asInstanceOf[T]
+  def fromBinary(bytes: Array[Byte], act: T): T = serializer.fromBinary(bytes, Some(act.getClass)).asInstanceOf[T]
 
-  def toBinary(ac: T) = serializer.toBinary(ac)
+  def toBinary(ac: T): Array[Byte] = serializer.toBinary(ac)
 }

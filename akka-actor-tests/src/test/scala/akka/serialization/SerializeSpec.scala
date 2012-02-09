@@ -78,7 +78,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
       }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Address], None) match {
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Address]) match {
         case Left(exception) ⇒ fail(exception)
         case Right(add)      ⇒ assert(add === addr)
       }
@@ -90,7 +90,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
       }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Person], None) match {
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Person]) match {
         case Left(exception) ⇒ fail(exception)
         case Right(p)        ⇒ assert(p === person)
       }
@@ -103,7 +103,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         case Left(exception) ⇒ fail(exception)
         case Right(bytes)    ⇒ bytes
       }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Record], None) match {
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[Record]) match {
         case Left(exception) ⇒ fail(exception)
         case Right(p)        ⇒ assert(p === r)
       }
@@ -135,7 +135,7 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
         out.close()
 
         val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-        Serialization.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
+        JavaSerializer.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
           val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
           (deadLetters eq a.deadLetters) must be(true)
         }
@@ -248,8 +248,5 @@ class TestSerializer extends Serializer {
     Array.empty[Byte]
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]] = None,
-                 classLoader: Option[ClassLoader] = None): AnyRef = {
-    null
-  }
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }

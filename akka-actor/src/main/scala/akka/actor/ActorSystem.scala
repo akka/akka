@@ -324,13 +324,13 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def deathWatch: DeathWatch
 
   /**
-   * ClassLoader which is used for reflective accesses internally. This is set
-   * to the context class loader, if one is set, or the class loader which
+   * ClassLoader wrapper which is used for reflective accesses internally. This is set
+   * to use the context class loader, if one is set, or the class loader which
    * loaded the ActorSystem implementation. The context class loader is also
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def internalClassLoader: ClassLoader
+  def propertyMaster: PropertyMaster
 }
 
 class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
@@ -355,6 +355,34 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   final val threadFactory: MonitorableThreadFactory =
     MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader), uncaughtExceptionHandler)
+
+  /**
+   * This is an extension point: by overriding this method, subclasses can
+   * control all reflection activities of an actor system.
+   */
+  protected def createPropertyMaster(): PropertyMaster = new DefaultPropertyMaster(findClassLoader)
+
+  protected def findClassLoader: ClassLoader =
+    Option(Thread.currentThread.getContextClassLoader) orElse
+      (Reflect.getCallerClass map findCaller) getOrElse
+      getClass.getClassLoader
+
+  private def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
+    val frames = Iterator.from(2).map(get)
+    frames dropWhile { c ⇒
+      c != null &&
+        (c.getName.startsWith("akka.actor.ActorSystem") ||
+          c.getName.startsWith("scala.Option") ||
+          c.getName.startsWith("scala.collection.Iterator") ||
+          c.getName.startsWith("akka.util.Reflect"))
+    } next () match {
+      case null ⇒ getClass.getClassLoader
+      case c    ⇒ c.getClassLoader
+    }
+  }
+
+  private val _pm: PropertyMaster = createPropertyMaster()
+  def propertyMaster: PropertyMaster = _pm
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -406,17 +434,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   val scheduler: Scheduler = createScheduler()
 
-  val internalClassLoader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
-
   val provider: ActorRefProvider = {
     val arguments = Seq(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler,
-      classOf[ClassLoader] -> internalClassLoader)
+      classOf[PropertyMaster] -> propertyMaster)
 
-    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, internalClassLoader) match {
+    propertyMaster.getInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }
@@ -438,7 +464,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   def locker: Locker = provider.locker
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, internalClassLoader))
+    threadFactory, eventStream, deadLetterMailbox, scheduler, propertyMaster))
 
   val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
@@ -557,8 +583,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      import ReflectiveAccess.{ getObjectFor, createInstance, noParams, noArgs }
-      getObjectFor[AnyRef](fqcn, internalClassLoader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+      propertyMaster.getObjectFor[AnyRef](fqcn).fold(_ ⇒ propertyMaster.getInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)

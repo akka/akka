@@ -5,6 +5,7 @@
 package akka.serialization
 
 import com.google.protobuf.Message
+import akka.actor.PropertyMaster
 
 /**
  * This Serializer serializes `com.google.protobuf.Message`s
@@ -19,7 +20,7 @@ class ProtobufSerializer extends Serializer {
     case _          ⇒ throw new IllegalArgumentException("Can't serialize a non-protobuf message using protobuf [" + obj + "]")
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]], classLoader: Option[ClassLoader] = None): AnyRef =
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef =
     clazz match {
       case None    ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
       case Some(c) ⇒ c.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]

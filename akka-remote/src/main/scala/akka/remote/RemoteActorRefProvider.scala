@@ -12,7 +12,6 @@ import akka.event.EventStream
 import akka.config.ConfigurationException
 import java.util.concurrent.{ TimeoutException }
 import com.typesafe.config.Config
-import akka.util.ReflectiveAccess
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 
@@ -28,11 +27,11 @@ class RemoteActorRefProvider(
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   val scheduler: Scheduler,
-  val classloader: ClassLoader) extends ActorRefProvider {
+  val propertyMaster: PropertyMaster) extends ActorRefProvider {
 
   val remoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer = new RemoteDeployer(settings, classloader)
+  val deployer = new RemoteDeployer(settings, propertyMaster)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, deployer)
 
@@ -84,7 +83,7 @@ class RemoteActorRefProvider(
         classOf[ActorSystemImpl] -> system,
         classOf[RemoteActorRefProvider] -> this)
 
-      ReflectiveAccess.createInstance[RemoteTransport](fqn, args, system.internalClassLoader) match {
+      system.propertyMaster.getInstanceFor[RemoteTransport](fqn, args) match {
         case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
         case Right(remote) ⇒ remote
       }

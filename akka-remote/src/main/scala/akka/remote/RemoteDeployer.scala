@@ -12,7 +12,7 @@ case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this
 }
 
-class RemoteDeployer(_settings: ActorSystem.Settings, _classloader: ClassLoader) extends Deployer(_settings, _classloader) {
+class RemoteDeployer(_settings: ActorSystem.Settings, _pm: PropertyMaster) extends Deployer(_settings, _pm) {
 
   override protected def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._

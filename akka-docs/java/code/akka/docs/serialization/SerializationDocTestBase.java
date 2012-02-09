@@ -3,6 +3,7 @@
  */
 package akka.docs.serialization;
 
+import akka.japi.Option;
 import akka.serialization.JSerializer;
 import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
@@ -13,6 +14,7 @@ import static org.junit.Assert.*;
 
 import akka.serialization.*;
 import akka.actor.ActorSystem;
+import akka.actor.PropertyMaster;
 import com.typesafe.config.*;
 
 //#imports
@@ -45,8 +47,7 @@ public class SerializationDocTestBase {
       // using the type hint (if any, see "includeManifest" above)
       // into the optionally provided classLoader.
       @Override public Object fromBinary(byte[] bytes,
-                     Class clazz,
-                     ClassLoader classLoader) {
+                     Class clazz) {
         // Put your code that deserializes here
         //#...
         return null;
@@ -128,7 +129,7 @@ public class SerializationDocTestBase {
 
       // Turn it back into an object,
       // the nulls are for the class manifest and for the classloader
-      String back = (String)serializer.fromBinary(bytes);
+      String back = (String)serializer.fromBinary(bytes, Option.<Class<?>>none().asScala());
 
       // Voilá!
       assertEquals(original, back);

@@ -129,7 +129,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
-          val s = SerializationExtension(Serialization.currentSystem.value).findSerializerFor(p)
+          val system = akka.serialization.JavaSerializer.currentSystem.value
+          val s = SerializationExtension(system).findSerializerFor(p)
           val m = if (s.includeManifest) p.getClass else null
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
@@ -146,7 +147,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val system = akka.serialization.Serialization.currentSystem.value
+      val system = akka.serialization.JavaSerializer.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
@@ -158,7 +159,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
             val (sId, manifest, bytes) = a(i)
-            deserializedParameters(i) = serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
+            deserializedParameters(i) =
+              serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
           }
 
           deserializedParameters
