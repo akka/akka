@@ -13,12 +13,21 @@ class VectorClockException(message: String) extends AkkaException(message)
  */
 trait Versioned {
   def version: VectorClock
+
+  /**
+   * Returns the Versioned that have the latest version.
+   */
+  def or(other: Versioned): Versioned = Versioned.latestVersionOf(this, other)
 }
 
 /**
  * Utility methods for comparing Versioned instances.
  */
 object Versioned {
+
+  /**
+   * Returns the Versioned that have the latest version.
+   */
   def latestVersionOf[T <: Versioned](versioned1: T, versioned2: T): T = {
     (versioned1.version compare versioned2.version) match {
       case VectorClock.Before     ⇒ versioned2 // version 1 is BEFORE (older), use version 2
