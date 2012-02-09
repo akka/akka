@@ -14,7 +14,7 @@ import com.typesafe.config._
 
 class NodeStartupSpec extends AkkaSpec("""
   akka {
-    loglevel = "DEBUG"
+    loglevel = "INFO"
   }
   """) with ImplicitSender {
 
