@@ -21,8 +21,18 @@ object Helpers {
     if (diff > 0) 1 else if (diff < 0) -1 else 0
   }
 
-  val IdentityHashComparator = new Comparator[AnyRef] {
-    def compare(a: AnyRef, b: AnyRef): Int = compareIdentityHash(a, b)
+  /**
+   * Create a comparator which will efficiently use `System.identityHashCode`,
+   * unless that happens to be the same for two non-equals objects, in which
+   * case the supplied “real” comparator is used; the comparator must be
+   * consistent with equals, otherwise it would not be an enhancement over
+   * the identityHashCode.
+   */
+  def identityHashComparator[T <: AnyRef](comp: Comparator[T]): Comparator[T] = new Comparator[T] {
+    def compare(a: T, b: T): Int = compareIdentityHash(a, b) match {
+      case 0 if a != b ⇒ comp.compare(a, b)
+      case x           ⇒ x
+    }
   }
 
   final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+~"

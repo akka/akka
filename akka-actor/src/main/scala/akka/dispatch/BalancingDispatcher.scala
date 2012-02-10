@@ -9,7 +9,8 @@ import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import annotation.tailrec
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.util.Duration
+import akka.util.{ Duration, Helpers }
+import java.util.Comparator
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -35,10 +36,13 @@ class BalancingDispatcher(
   _shutdownTimeout: Duration)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
-  val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
+  val buddies = new ConcurrentSkipListSet[ActorCell](
+    Helpers.identityHashComparator(new Comparator[ActorCell] {
+      def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
+    }))
 
   val messageQueue: MessageQueue = mailboxType match {
-    case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+    case _: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
       final val queue = new ConcurrentLinkedQueue[Envelope]
     }
     case BoundedMailbox(cap, timeout) ⇒ new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
