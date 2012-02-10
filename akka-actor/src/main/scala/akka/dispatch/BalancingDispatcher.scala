@@ -79,9 +79,20 @@ class BalancingDispatcher(
     }
   }
 
+  protected[akka] override def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit =
+    invocation match {
+      case Create() ⇒
+      case x        ⇒ super.systemDispatch(receiver, invocation)
+    }
+
   protected[akka] override def register(actor: ActorCell) = {
+    val mbox = actor.mailbox
+    mbox.systemEnqueue(actor.self, Create())
+    // must make sure that Create() is the first message enqueued in this mailbox
     super.register(actor)
     assert(buddies.add(actor))
+    // must make sure that buddy-add is executed before the actor has had a chance to die
+    registerForExecution(mbox, false, true)
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {

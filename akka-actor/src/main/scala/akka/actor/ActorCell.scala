@@ -290,10 +290,10 @@ private[akka] class ActorCell(
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
+    dispatcher.attach(this)
+
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     dispatcher.systemDispatch(this, Create())
-
-    dispatcher.attach(this)
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
