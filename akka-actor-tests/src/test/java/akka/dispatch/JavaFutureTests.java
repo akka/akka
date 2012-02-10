@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 
 import akka.japi.*;
 import akka.util.Duration;
+import akka.testkit.TestKitExtension;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,7 +29,7 @@ public class JavaFutureTests {
   @BeforeClass
   public static void beforeAll() {
     system = ActorSystem.create("JavaFutureTests", AkkaSpec.testConf());
-    t = system.settings().ActorTimeout();
+    t = TestKitExtension.get(system).DefaultTimeout();
   }
 
   @AfterClass
@@ -61,10 +62,10 @@ public class JavaFutureTests {
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
     f.onSuccess(new OnSuccess<String>() {
-        public void onSuccess(String result) {
-            if (result.equals("foo"))
-                latch.countDown();
-        }
+      public void onSuccess(String result) {
+        if (result.equals("foo"))
+          latch.countDown();
+      }
     });
 
     cf.success("foo");
@@ -78,10 +79,10 @@ public class JavaFutureTests {
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
     f.onFailure(new OnFailure() {
-        public void onFailure(Throwable t) {
-            if (t instanceof NullPointerException)
-                latch.countDown();
-        }
+      public void onFailure(Throwable t) {
+        if (t instanceof NullPointerException)
+          latch.countDown();
+      }
     });
 
     Throwable exception = new NullPointerException();
@@ -296,8 +297,10 @@ public class JavaFutureTests {
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<Object> f = p.future().recover(new Recover<Object>() {
       public Object recover(Throwable t) throws Throwable {
-        if (t == fail) return "foo";
-        else throw t;
+        if (t == fail)
+          return "foo";
+        else
+          throw t;
       }
     });
     Duration d = Duration.create(1, TimeUnit.SECONDS);
@@ -311,8 +314,10 @@ public class JavaFutureTests {
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {
       public Future<Object> recover(Throwable t) throws Throwable {
-        if (t == fail) return Futures.<Object>successful("foo", system.dispatcher()).future();
-        else throw t;
+        if (t == fail)
+          return Futures.<Object> successful("foo", system.dispatcher()).future();
+        else
+          throw t;
       }
     });
     Duration d = Duration.create(1, TimeUnit.SECONDS);

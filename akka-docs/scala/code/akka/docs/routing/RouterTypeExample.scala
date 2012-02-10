@@ -7,6 +7,7 @@ import akka.routing.{ ScatterGatherFirstCompletedRouter, BroadcastRouter, Random
 import annotation.tailrec
 import akka.actor.{ Props, Actor }
 import akka.util.duration._
+import akka.util.Timeout
 import akka.dispatch.Await
 import akka.pattern.ask
 import akka.routing.SmallestMailboxRouter
@@ -80,7 +81,7 @@ class ParentActor extends Actor {
       val scatterGatherFirstCompletedRouter = context.actorOf(
         Props[FibonacciActor].withRouter(ScatterGatherFirstCompletedRouter(
           nrOfInstances = 5, within = 2 seconds)), "router")
-      implicit val timeout = context.system.settings.ActorTimeout
+      implicit val timeout = Timeout(5 seconds)
       val futureResult = scatterGatherFirstCompletedRouter ? FibonacciNumber(10)
       val result = Await.result(futureResult, timeout.duration)
       //#scatterGatherFirstCompletedRouter

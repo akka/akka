@@ -11,6 +11,7 @@ import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atom
 import atomic.AtomicInteger
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
+import akka.util.Timeout
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -644,5 +645,5 @@ trait ImplicitSender { this: TestKit ⇒
 }
 
 trait DefaultTimeout { this: TestKit ⇒
-  implicit val timeout = system.settings.ActorTimeout
+  implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }

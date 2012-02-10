@@ -44,7 +44,7 @@ akka {
     /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
-""") with ImplicitSender {
+""") with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
 
@@ -58,8 +58,6 @@ akka {
   }), "echo")
 
   val here = system.actorFor("akka://remote_sys@localhost:12346/user/echo")
-
-  implicit val timeout = system.settings.ActorTimeout
 
   override def atTermination() {
     other.shutdown()

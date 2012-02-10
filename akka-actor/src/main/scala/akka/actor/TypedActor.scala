@@ -11,7 +11,9 @@ import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.lang.IllegalStateException
+import akka.util.Duration
 
 trait TypedActorFactory {
 
@@ -502,7 +504,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   /**
    * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
-   * if null is specified, it will use the default ActorTimeout as specified in the configuration.
+   * if null is specified, it will use the default timeout as specified in the configuration.
    *
    * Java API
    */
@@ -510,7 +512,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   /**
    * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
-   * if None is specified, it will use the default ActorTimeout as specified in the configuration.
+   * if None is specified, it will use the default timeout as specified in the configuration.
    *
    * Scala API
    */
@@ -551,6 +553,11 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   val settings = system.settings
 
   /**
+   * Default timeout for typed actor methods with non-void return type
+   */
+  final val DefaultReturnTimeout = Timeout(Duration(settings.config.getMilliseconds("akka.actor.typed.timeout"), MILLISECONDS))
+
+  /**
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found
    */
   def getActorRefFor(proxy: AnyRef): ActorRef = invocationHandlerFor(proxy) match {
@@ -575,7 +582,7 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
       new TypedActorInvocationHandler(
         this,
         actorVar,
-        if (props.timeout.isDefined) props.timeout.get else this.settings.ActorTimeout)).asInstanceOf[R]
+        if (props.timeout.isDefined) props.timeout.get else DefaultReturnTimeout)).asInstanceOf[R]
 
     proxyVar match {
       case null ⇒
