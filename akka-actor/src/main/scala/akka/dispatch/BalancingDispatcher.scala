@@ -10,7 +10,7 @@ import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, Concur
 import annotation.tailrec
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.{ Duration, Helpers }
-import java.util.Comparator
+import java.util.{ Comparator, Iterator }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -33,7 +33,8 @@ class BalancingDispatcher(
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  _shutdownTimeout: Duration)
+  _shutdownTimeout: Duration,
+  buddyWakeupThreshold: Int)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](
@@ -98,11 +99,16 @@ class BalancingDispatcher(
   protected[akka] override def unregister(actor: ActorCell) = {
     assert(buddies.remove(actor))
     super.unregister(actor)
+    if (messageQueue.hasMessages) registerOne()
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    registerForExecution(receiver.mailbox, false, false)
-    //Somewhere around here we have to make sure that not only the intended actor is kept busy
+    if (!registerForExecution(receiver.mailbox, false, false) &&
+      buddyWakeupThreshold >= 0 &&
+      messageQueue.numberOfMessages >= buddyWakeupThreshold) registerOne()
   }
+
+  @tailrec private def registerOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
+    if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) registerOne(i)
 }

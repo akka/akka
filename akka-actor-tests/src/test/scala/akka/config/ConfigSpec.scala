@@ -53,6 +53,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
           c.getMilliseconds("shutdown-timeout") must equal(1 * 1000)
           c.getInt("throughput") must equal(5)
           c.getMilliseconds("throughput-deadline-time") must equal(0)
+          c.getInt("buddy-wakeup-threshold") must equal(5)
         }
 
         //Fork join executor config

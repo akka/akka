@@ -546,7 +546,8 @@ object BalancingDispatcherModelSpec {
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        config.getInt("buddy-wakeup-threshold")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
