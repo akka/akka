@@ -27,38 +27,30 @@ you wish to use, like this:
 
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
 
-.. note::
-
-   The name ``default`` is special in the sense that the ``Serializer``
-   mapped to it will be used as default.
-
 After you've bound names to different implementations of ``Serializer`` you need to wire which classes
 should be serialized using which ``Serializer``, this is done in the "akka.actor.serialization-bindings"-section:
 
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
 
-.. note::
+You only need to specify the name of an interface or abstract base class of the
+messages. In case of ambiguity, i.e. the message implements several of the
+configured classes, the most specific configured class will be used, i.e. the
+one of which all other candidates are superclasses. If this condition cannot be
+met, because e.g. ``java.io.Serializable`` and ``MyOwnSerializable`` both apply
+and neither is a subtype of the other, a warning will be issued
 
-   You only need to specify the name of an interface or abstract base class if the messages implements
-   that. E.g. ``com.google.protobuf.Message`` for protobuf serialization.
+Akka provides serializers for :class:`java.io.Serializable` and `protobuf
+<http://code.google.com/p/protobuf/>`_
+:class:`com.google.protobuf.GeneratedMessage` by default (the latter only if
+depending on the akka-remote module), so normally you don't need to add
+configuration for that; since :class:`com.google.protobuf.GeneratedMessage`
+implements :class:`java.io.Serializable`, protobuf messages will always by
+serialized using the protobuf protocol unless specifically overridden. In order
+to disable a default serializer, map its marker type to “none”::
 
-Protobuf
---------
-
-Akka provides a ``Serializer`` for `protobuf <http://code.google.com/p/protobuf/>`_ messages.
-To use that you need to add the following to the configuration::
-
-      akka {
-        actor {
-          serializers {
-            proto = "akka.serialization.ProtobufSerializer"
-          }
-
-          serialization-bindings {
-            proto = ["com.google.protobuf.Message"]
-          }
-        }
-      }
+  akka.actor.serialization-bindings {
+    "java.io.Serializable" = none
+  }
 
 Verification
 ------------
@@ -120,3 +112,4 @@ reading in the representation of an :class:`ActorRef` for turning the string
 representation into a real reference. :class:`DynamicVariable` is a
 thread-local variable, so be sure to have it set while deserializing anything
 which might contain actor references.
+

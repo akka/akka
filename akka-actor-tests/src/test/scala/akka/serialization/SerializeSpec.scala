@@ -4,8 +4,7 @@
 
 package akka.serialization
 
-import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
+import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
 import akka.dispatch.Await
@@ -17,21 +16,25 @@ import akka.pattern.ask
 
 object SerializeSpec {
 
-  val serializationConf = ConfigFactory.parseString("""
+  val config = """
     akka {
       actor {
         serializers {
-          java = "akka.serialization.JavaSerializer"
           test = "akka.serialization.TestSerializer"
         }
 
         serialization-bindings {
-          java = ["akka.serialization.SerializeSpec$Person", "akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
-          test = ["akka.serialization.TestSerializble", "akka.serialization.SerializeSpec$PlainMessage"]
+          "akka.serialization.SerializeSpec$Person" = java
+          "akka.serialization.SerializeSpec$Address" = java
+          "akka.serialization.TestSerializble" = test
+          "akka.serialization.SerializeSpec$PlainMessage" = test
+          "akka.serialization.SerializeSpec$A" = java
+          "akka.serialization.SerializeSpec$B" = test
+          "akka.serialization.SerializeSpec$D" = test
         }
       }
     }
-  """)
+  """
 
   @BeanInfo
   case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
@@ -54,10 +57,18 @@ object SerializeSpec {
 
   class ExtendedPlainMessage extends PlainMessage
 
+  class Both(s: String) extends SimpleMessage(s) with Serializable
+
+  trait A
+  trait B
+  class C extends B with A
+  class D extends A
+  class E extends D
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
+class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
   import SerializeSpec._
 
   val ser = SerializationExtension(system)
@@ -69,8 +80,8 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
   "Serialization" must {
 
     "have correct bindings" in {
-      ser.bindings(addr.getClass.getName) must be("java")
-      ser.bindings(classOf[PlainMessage].getName) must be("test")
+      ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } must be(Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } must be(Some(classOf[TestSerializer]))
     }
 
     "serialize Address" in {
@@ -144,63 +155,77 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.serializationConf) {
       }
     }
 
-    "resove serializer by direct interface" in {
-      val msg = new SimpleMessage("foo")
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer by direct interface" in {
+      ser.serializerFor(classOf[SimpleMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resove serializer by interface implemented by super class" in {
-      val msg = new ExtendedSimpleMessage("foo", 17)
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer by interface implemented by super class" in {
+      ser.serializerFor(classOf[ExtendedSimpleMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resove serializer by indirect interface" in {
-      val msg = new AnotherMessage
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer by indirect interface" in {
+      ser.serializerFor(classOf[AnotherMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resove serializer by indirect interface implemented by super class" in {
-      val msg = new ExtendedAnotherMessage
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer by indirect interface implemented by super class" in {
+      ser.serializerFor(classOf[ExtendedAnotherMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resove serializer for message with binding" in {
-      val msg = new PlainMessage
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer for message with binding" in {
+      ser.serializerFor(classOf[PlainMessage]).getClass must be(classOf[TestSerializer])
     }
 
-    "resove serializer for message extending class with with binding" in {
-      val msg = new ExtendedPlainMessage
-      ser.serializerFor(msg.getClass).getClass must be(classOf[TestSerializer])
+    "resolve serializer for message extending class with with binding" in {
+      ser.serializerFor(classOf[ExtendedPlainMessage]).getClass must be(classOf[TestSerializer])
+    }
+
+    "give warning for message with several bindings" in {
+      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
+        ser.serializerFor(classOf[Both]).getClass must be(classOf[TestSerializer])
+      }
+    }
+
+    "resolve serializer in the order of the bindings" in {
+      ser.serializerFor(classOf[A]).getClass must be(classOf[JavaSerializer])
+      ser.serializerFor(classOf[B]).getClass must be(classOf[TestSerializer])
+      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
+        ser.serializerFor(classOf[C]).getClass must be(classOf[JavaSerializer])
+      }
+    }
+
+    "resolve serializer in the order of most specific binding first" in {
+      ser.serializerFor(classOf[A]).getClass must be(classOf[JavaSerializer])
+      ser.serializerFor(classOf[D]).getClass must be(classOf[TestSerializer])
+      ser.serializerFor(classOf[E]).getClass must be(classOf[TestSerializer])
+    }
+
+    "throw java.io.NotSerializableException when no binding" in {
+      intercept[java.io.NotSerializableException] {
+        ser.serializerFor(classOf[Actor])
+      }
     }
 
   }
 }
 
 object VerifySerializabilitySpec {
-  val conf = ConfigFactory.parseString("""
+  val conf = """
     akka {
       actor {
         serialize-messages = on
-
         serialize-creators = on
-
-        serializers {
-          java = "akka.serialization.JavaSerializer"
-          default = "akka.serialization.JavaSerializer"
-        }
-
-        serialization-bindings {
-          java = ["akka.serialization.SerializeSpec$Address", "akka.serialization.MyJavaSerializableActor", "akka.serialization.MyStatelessActorWithMessagesInMailbox", "akka.serialization.MyActorWithProtobufMessagesInMailbox"]
-        }
       }
     }
-  """)
+  """
 
   class FooActor extends Actor {
     def receive = {
       case s: String ⇒ sender ! s
     }
+  }
+
+  class FooUntypedActor extends UntypedActor {
+    def onReceive(message: Any) {}
   }
 
   class NonSerializableActor(system: ActorSystem) extends Actor {
@@ -210,6 +235,7 @@ object VerifySerializabilitySpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf) {
   import VerifySerializabilitySpec._
   implicit val timeout = Timeout(5 seconds)
@@ -221,17 +247,28 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
 
   "verify creators" in {
     val a = system.actorOf(Props[FooActor])
-    intercept[NotSerializableException] {
-      Await.result(a ? new AnyRef, timeout.duration)
-    }
     system stop a
+
+    val b = system.actorOf(Props(new FooActor))
+    system stop b
+
+    val c = system.actorOf(Props().withCreator(new UntypedActorFactory {
+      def create() = new FooUntypedActor
+    }))
+    system stop c
+
+    intercept[java.io.NotSerializableException] {
+      val d = system.actorOf(Props(new NonSerializableActor(system)))
+    }
+
   }
 
   "verify messages" in {
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
-    intercept[java.io.NotSerializableException] {
-      val b = system.actorOf(Props(new NonSerializableActor(system)))
+
+    intercept[NotSerializableException] {
+      Await.result(a ? new AnyRef, timeout.duration)
     }
     system stop a
   }

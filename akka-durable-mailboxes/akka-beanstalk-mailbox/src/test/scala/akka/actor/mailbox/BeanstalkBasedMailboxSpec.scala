@@ -3,7 +3,7 @@ package akka.actor.mailbox
 object BeanstalkBasedMailboxSpec {
   val config = """
     Beanstalkd-dispatcher {
-      mailboxType = akka.actor.mailbox.BeanstalkBasedMailboxType
+      mailbox-type = akka.actor.mailbox.BeanstalkBasedMailboxType
       throughput = 1
     }
     """

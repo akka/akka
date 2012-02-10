@@ -320,7 +320,8 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox),
+    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor,
+        fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox, zeroMQ),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -431,7 +432,7 @@ object Dependencies {
 
  val cluster = Seq(Test.junit, Test.scalatest)
 
-  val slf4j = Seq(slf4jApi)
+  val slf4j = Seq(slf4jApi, Test.logback)
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 

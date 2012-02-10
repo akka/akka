@@ -12,7 +12,7 @@ import akka.dispatch.MessageDispatcher
 object MongoBasedMailboxSpec {
   val config = """
     mongodb-dispatcher {
-      mailboxType = akka.actor.mailbox.MongoBasedMailboxType
+      mailbox-type = akka.actor.mailbox.MongoBasedMailboxType
       throughput = 1
     }
     """

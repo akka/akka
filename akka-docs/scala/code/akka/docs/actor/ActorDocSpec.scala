@@ -37,6 +37,12 @@ case class Message(s: String)
 class FirstActor extends Actor {
   val myActor = context.actorOf(Props[MyActor], name = "myactor")
   //#context-actorOf
+  def receive = {
+    case x ⇒ sender ! x
+  }
+}
+
+class AnonymousActor extends Actor {
   //#anonymous-actor
   def receive = {
     case m: DoIt ⇒
@@ -48,9 +54,7 @@ class FirstActor extends Actor {
             context.stop(self)
         }
         def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
-      })) ! m
-
-    case replyMsg: String ⇒ sender ! replyMsg
+      })) forward m
   }
   //#anonymous-actor
 }
@@ -241,7 +245,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     import akka.util.duration._
     import akka.util.Timeout
     import akka.pattern.ask
-    implicit val timeout = Timeout(500 millis)
+    implicit val timeout = Timeout(5 seconds)
     val future = myActor ? "hello"
     //#using-implicit-timeout
     Await.result(future, timeout.duration) must be("hello")
@@ -253,9 +257,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#using-explicit-timeout
     import akka.util.duration._
     import akka.pattern.ask
-    val future = myActor.ask("hello")(500 millis)
+    val future = myActor.ask("hello")(5 seconds)
     //#using-explicit-timeout
-    Await.result(future, 500 millis) must be("hello")
+    Await.result(future, 5 seconds) must be("hello")
   }
 
   "using receiveTimeout" in {

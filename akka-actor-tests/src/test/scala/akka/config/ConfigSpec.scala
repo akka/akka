@@ -29,11 +29,14 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
         getBoolean("akka.actor.serialize-messages") must equal(false)
         settings.SerializeAllMessages must equal(false)
 
-        getInt("akka.scheduler.ticksPerWheel") must equal(512)
+        getInt("akka.scheduler.ticks-per-wheel") must equal(512)
         settings.SchedulerTicksPerWheel must equal(512)
 
-        getMilliseconds("akka.scheduler.tickDuration") must equal(100)
+        getMilliseconds("akka.scheduler.tick-duration") must equal(100)
         settings.SchedulerTickDuration must equal(100 millis)
+
+        settings.Daemonicity must be(false)
+        settings.JvmExitOnFatalError must be(true)
       }
 
       {
@@ -46,7 +49,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
           c.getString("executor") must equal("fork-join-executor")
           c.getInt("mailbox-capacity") must equal(-1)
           c.getMilliseconds("mailbox-push-timeout-time") must equal(10 * 1000)
-          c.getString("mailboxType") must be("")
+          c.getString("mailbox-type") must be("")
           c.getMilliseconds("shutdown-timeout") must equal(1 * 1000)
           c.getInt("throughput") must equal(5)
           c.getMilliseconds("throughput-deadline-time") must equal(0)

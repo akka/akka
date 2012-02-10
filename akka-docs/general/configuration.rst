@@ -172,12 +172,12 @@ More advanced include and substitution mechanisms are explained in the `HOCON <h
 specification.
 
 
-.. _-Dakka.logConfigOnStart:
+.. _-Dakka.log-config-on-start:
 
 Logging of Configuration
 ------------------------
 
-If the system or config property ``akka.logConfigOnStart`` is set to ``on``, then the
+If the system or config property ``akka.log-config-on-start`` is set to ``on``, then the
 complete configuration at INFO level when the actor system is started. This is useful
 when you are uncertain of what configuration is used.
 

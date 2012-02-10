@@ -29,7 +29,7 @@ import scala.util.DynamicVariable
  * avoid strange match errors and inequalities which arise from different class loaders loading
  * the same class.
  */
-trait Serializer extends scala.Serializable {
+trait Serializer {
 
   /**
    * Completely unique value to identify this implementation of Serializer, used to optimize network traffic

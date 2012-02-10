@@ -77,7 +77,7 @@ object ActorSystem {
     final val LogLevel = getString("akka.loglevel")
     final val StdoutLogLevel = getString("akka.stdout-loglevel")
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
-    final val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
+    final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
     final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
@@ -89,9 +89,10 @@ object ActorSystem {
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
+    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticks-per-wheel")
     final val Daemonicity = getBoolean("akka.daemonic")
+    final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -348,6 +349,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
         log.error(cause, "Uncaught error from thread [{}]", thread.getName)
         cause match {
           case NonFatal(_) | _: InterruptedException ⇒
+          case _ if settings.JvmExitOnFatalError     ⇒ System.exit(-1)
           case _                                     ⇒ shutdown()
         }
       }
