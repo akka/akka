@@ -128,6 +128,8 @@ public class ZeromqDocTestBase {
     system.actorOf(new Props(HeapAlerter.class), "alerter");
     //#alerter2
 
+    // Let it run for a while to see some output.
+    // Don't do like this in real tests, this is only doc demonstration.
     Thread.sleep(3000L);
   }
 
@@ -190,7 +192,7 @@ public class ZeromqDocTestBase {
 
     @Override
     public void postRestart(Throwable reason) {
-      // don't call preStart
+      // don't call preStart, only schedule once
     }
 
     @Override

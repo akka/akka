@@ -35,7 +35,13 @@ object ZeromqDocSpec {
     val os = ManagementFactory.getOperatingSystemMXBean
     val ser = SerializationExtension(context.system)
 
-    context.system.scheduler.schedule(1 second, 1 second, self, Tick)
+    override def preStart() {
+      context.system.scheduler.schedule(1 second, 1 second, self, Tick)
+    }
+
+    override def postRestart(reason: Throwable) {
+      // don't call preStart, only schedule once
+    }
 
     def receive: Receive = {
       case Tick ⇒
@@ -172,7 +178,9 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
     system.actorOf(Props[HeapAlerter], name = "alerter")
     //#alerter
 
-    Thread.sleep(3000)
+    // Let it run for a while to see some output.
+    // Don't do like this in real tests, this is only doc demonstration.
+    3.seconds.sleep()
 
   }
 
