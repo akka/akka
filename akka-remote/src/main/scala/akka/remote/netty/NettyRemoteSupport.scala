@@ -59,7 +59,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   private[akka] def setAddressFromChannel(ch: Channel) = {
     val addr = ch.getLocalAddress match {
       case sa: InetSocketAddress ⇒ sa
-      case x                     ⇒ throw new RemoteTransportException("unknown local address type " + x.getClass, null)
+      case x                     ⇒ throw new RemoteTransportException("unknown local address type " + x.getClass, null, system)
     }
     _address.compareAndSet(null, Address("akka", remoteSettings.systemName, Some(settings.Hostname), Some(addr.getPort)))
   }

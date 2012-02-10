@@ -152,9 +152,9 @@ case class RemoteServerWriteFailed(
 class RemoteClientException private[akka] (
   message: String,
   @BeanProperty val client: RemoteTransport,
-  val remoteAddress: Address, cause: Throwable = null) extends AkkaException(message, cause)
+  val remoteAddress: Address, cause: Throwable = null) extends AkkaException(message, cause, null)
 
-class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
+class RemoteTransportException(message: String, cause: Throwable, system: ActorSystem) extends AkkaException(message, cause, system)
 
 /**
  * The remote transport is responsible for sending and receiving messages.

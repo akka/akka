@@ -22,7 +22,7 @@ class NettySettings(config: Config, val systemName: String) {
   val RequireCookie = {
     val requireCookie = getBoolean("require-cookie")
     if (requireCookie && SecureCookie.isEmpty) throw new ConfigurationException(
-      "Configuration option 'akka.remote.netty.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.netty.secure-cookie'.")
+      "Configuration option 'akka.remote.netty.require-cookie' is turned on but no secure cookie is defined in 'akka.remote.netty.secure-cookie'.", null)
     requireCookie
   }
 

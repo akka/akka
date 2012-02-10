@@ -85,7 +85,7 @@ class RemoteActorRefProvider(
         classOf[RemoteActorRefProvider] -> this)
 
       ReflectiveAccess.createInstance[RemoteTransport](fqn, args, system.internalClassLoader) match {
-        case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
+        case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem, system)
         case Right(remote) ⇒ remote
       }
     }

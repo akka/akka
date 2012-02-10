@@ -136,7 +136,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {
           case FF(Failed(_: ActorKilledException)) if lastSender eq failed ⇒ 1
-          case FF(Failed(DeathPactException(`failed`))) if lastSender eq brother ⇒ 2
+          case FF(Failed(DeathPactException(`failed`, _))) if lastSender eq brother ⇒ 2
           case Terminated(`brother`) ⇒ 3
         }
         testActor.isTerminated must not be true

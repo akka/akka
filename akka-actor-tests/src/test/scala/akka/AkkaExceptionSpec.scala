@@ -1,18 +1,14 @@
 package akka;
 
-import akka.actor._
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.WordSpec;
+import akka.testkit.AkkaSpec
+import akka.actor.ActorKilledException
 
-/**
- * A spec that verified that the AkkaException has at least a single argument constructor of type String.
- *
- * This is required to make Akka Exceptions be friends with serialization/deserialization.
- */
-class AkkaExceptionSpec extends WordSpec with MustMatchers {
+class AkkaExceptionSpec extends AkkaSpec {
 
   "AkkaException" must {
     "have a AkkaException(String msg) constructor to be serialization friendly" in {
+      // This is required to make Akka Exceptions be friends with serialization/deserialization.
+
       //if the call to this method completes, we know what there is at least a single constructor which has
       //the expected argument type.
       verify(classOf[AkkaException])
@@ -20,8 +16,15 @@ class AkkaExceptionSpec extends WordSpec with MustMatchers {
       //lets also try it for the exception that triggered this bug to be discovered.
       verify(classOf[ActorKilledException])
     }
+
+    "include system address in toString" in {
+      new AkkaException("test", system)
+    }
   }
 
+  /**
+   * Verifies that the AkkaException has at least a single argument constructor of type String.
+   */
   def verify(clazz: java.lang.Class[_]) {
     clazz.getConstructor(Array(classOf[String]): _*)
   }

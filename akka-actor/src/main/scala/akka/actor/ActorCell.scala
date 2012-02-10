@@ -236,13 +236,13 @@ private[akka] class ActorCell(
   def actorOf(props: Props, name: String): ActorRef = {
     import ActorPath.ElementRegex
     name match {
-      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
-      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
+      case null           ⇒ throw new InvalidActorNameException("actor name must not be null", system)
+      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty", system)
       case ElementRegex() ⇒ // this is fine
-      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
+      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex, system)
     }
     if (childrenRefs contains name)
-      throw new InvalidActorNameException("actor name " + name + " is not unique!")
+      throw new InvalidActorNameException("actor name " + name + " is not unique!", system)
     _actorOf(props, name)
   }
 
@@ -344,7 +344,7 @@ private[akka] class ActorCell(
       val instance = props.creator()
 
       if (instance eq null)
-        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
+        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'", null, system)
 
       instance
     } finally {
@@ -370,7 +370,7 @@ private[akka] class ActorCell(
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
+          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e, system)), self)
         }
     }
 
@@ -401,7 +401,7 @@ private[akka] class ActorCell(
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
       } finally {
-        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
+        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e, system)), self)
       }
     }
 
@@ -485,7 +485,7 @@ private[akka] class ActorCell(
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
             // make sure that InterruptedException does not leave this thread
-            val ex = ActorInterruptedException(e)
+            val ex = ActorInterruptedException(e, system)
             actor.supervisorStrategy.handleSupervisorFailing(self, children)
             parent.tell(Failed(ex), self)
             throw e //Re-throw InterruptedExceptions as expected
@@ -532,7 +532,7 @@ private[akka] class ActorCell(
 
     msg.message match {
       case Failed(cause)            ⇒ handleFailure(sender, cause)
-      case Kill                     ⇒ throw new ActorKilledException("Kill")
+      case Kill                     ⇒ throw new ActorKilledException("Kill", system)
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
       case SelectChildName(name, m) ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
@@ -614,7 +614,7 @@ private[akka] class ActorCell(
       if (success) true
       else {
         val parent = clazz.getSuperclass
-        if (parent eq null) throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        if (parent eq null) throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait", system)
         lookupAndSetField(parent, actor, name, value)
       }
     }

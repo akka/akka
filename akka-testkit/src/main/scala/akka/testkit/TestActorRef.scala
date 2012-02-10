@@ -65,7 +65,7 @@ class TestActorRef[T <: Actor](
    */
   def underlyingActor: T = {
     // volatile mailbox read to bring in actor field
-    if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated")
+    if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated", _system)
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
         val t = underlying.system.settings.ActorTimeout
@@ -128,7 +128,7 @@ object TestActorRef {
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +
-          "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.", exception)
+          "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.", exception, system)
     }
   }), name)
 }
