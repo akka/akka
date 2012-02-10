@@ -373,6 +373,9 @@ case object FromConfig extends RouterConfig {
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends RouterConfig {
+
+  def this() = this(Dispatchers.DefaultDispatcherId)
+
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 }
