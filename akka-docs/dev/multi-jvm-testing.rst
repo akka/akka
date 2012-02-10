@@ -18,28 +18,46 @@ The multi-JVM testing is an sbt plugin that you can find here:
 
 http://github.com/typesafehub/sbt-multi-jvm
 
-You can add it as a plugin by adding the following to your plugins/build.sbt::
+You can add it as a plugin by adding the following to your project/plugins.sbt::
 
    resolvers += Classpaths.typesafeResolver
 
    addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
 
-You can then add multi-JVM testing to a project by including the ``MultiJvm``
+You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. For example, here is how the akka-remote project adds
 multi-JVM testing::
 
-   import MultiJvmPlugin.{ MultiJvm, extraOptions }
+   import sbt._
+   import Keys._
+   import com.typesafe.sbtmultijvm.MultiJvmPlugin
+   import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions }
 
-   lazy val cluster = Project(
-     id = "akka-remote",
-     base = file("akka-remote"),
-     settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
-       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dconfig.file=" + _.absolutePath).toSeq
-       },
-       test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+   object AkkaBuild extends Build {
+
+     lazy val remote = Project(
+       id = "akka-remote",
+       base = file("akka-remote"),
+       settings = defaultSettings ++ MultiJvmPlugin.settings ++ Seq(
+         extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+            (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dconfig.file=" + _.absolutePath).toSeq
+         },
+         test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+       )
+     ) configs (MultiJvm)
+
+     lazy val buildSettings = Defaults.defaultSettings ++ Seq(
+       organization := "com.typesafe.akka",
+       version      := "2.0-SNAPSHOT",
+       scalaVersion := "2.9.1",
+       crossPaths   := false
      )
-   ) configs (MultiJvm)
+
+     lazy val defaultSettings = buildSettings ++ Seq(
+       resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
+     )
+
+   }
 
 You can specify JVM options for the forked JVMs::
 
@@ -87,8 +105,8 @@ options after the test names and ``--``. For example:
 Creating application tests
 ==========================
 
-The tests are discovered, and combined, through a naming convention. A test is
-named with the following pattern:
+The tests are discovered, and combined, through a naming convention. MultiJvm tests are
+located in ``src/multi-jvm/scala`` directory. A test is named with the following pattern:
 
 .. code-block:: none
 
